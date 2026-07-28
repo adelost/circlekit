@@ -10,20 +10,20 @@ class ReleaseSafetyTest {
     fun `download URL policy permits only the exact public product route`() {
         assertTrue(
             ReleaseUrlPolicy.isAllowedAssetUrl(
-                "https://sky.v1d.io/downloads/skyvw-mobile.apk",
-                expectedUrl = "https://sky.v1d.io/downloads/skyvw-mobile.apk",
+                "https://sky.v1d.io/downloads/circle-mobile.apk",
+                expectedUrl = "https://sky.v1d.io/downloads/circle-mobile.apk",
             ),
         )
         assertFalse(
             ReleaseUrlPolicy.isAllowedAssetUrl(
-                "https://sky.v1d.io/downloads/skyvw-altimeter.apk",
-                expectedUrl = "https://sky.v1d.io/downloads/skyvw-mobile.apk",
+                "https://sky.v1d.io/downloads/circle-altimeter.apk",
+                expectedUrl = "https://sky.v1d.io/downloads/circle-mobile.apk",
             ),
         )
         assertFalse(
             ReleaseUrlPolicy.isAllowedAssetUrl(
-                "https://sky.v1d.io.evil.example/downloads/skyvw-mobile.apk",
-                expectedUrl = "https://sky.v1d.io/downloads/skyvw-mobile.apk",
+                "https://sky.v1d.io.evil.example/downloads/circle-mobile.apk",
+                expectedUrl = "https://sky.v1d.io/downloads/circle-mobile.apk",
             ),
         )
     }

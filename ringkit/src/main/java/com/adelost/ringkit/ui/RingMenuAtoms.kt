@@ -80,13 +80,13 @@ private fun TapBackRing(
     diameter: Dp,
     modifier: Modifier,
 ) {
-    val feedback = rememberSkyvwActionFeedbackState()
+    val feedback = rememberCircleActionFeedbackState()
     Box(modifier = modifier.size(diameter), contentAlignment = Alignment.Center) {
         Box(
             modifier = Modifier
                 .requiredSize(maxOf(diameter, MenuDesign.backTouchTarget))
                 .clip(CircleShape)
-                .skyvwSafeTap(
+                .circleSafeTap(
                     feedback = feedback,
                     enabled = enabled,
                     onTap = onBack,
@@ -137,7 +137,7 @@ private fun BackDisc(
     scrim: Boolean,
     diameter: Dp,
 ) {
-    SkyvwBackDisc(
+    CircleBackDisc(
         enabled = enabled,
         pressed = pressed,
         scrim = scrim,
@@ -156,13 +156,13 @@ fun TextAction(
     onTap: () -> Unit,
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
-    labelProgress: SkyvwLabelProgress? = null,
+    labelProgress: CircleLabelProgress? = null,
 ) {
-    val feedback = rememberSkyvwActionFeedbackState()
+    val feedback = rememberCircleActionFeedbackState()
     Box(
         modifier = modifier
             .clip(RoundedCornerShape(8.dp))
-            .skyvwSafeTap(feedback = feedback, enabled = enabled, onTap = onTap)
+            .circleSafeTap(feedback = feedback, enabled = enabled, onTap = onTap)
             .padding(horizontal = 18.dp, vertical = 7.dp),
         contentAlignment = Alignment.Center,
     ) {
@@ -172,7 +172,7 @@ fun TextAction(
             fontSize = MenuDesign.textActionSize,
             fontWeight = FontWeight.Bold,
             letterSpacing = MenuDesign.textActionTracking,
-            modifier = Modifier.skyvwLabelProgress(
+            modifier = Modifier.circleLabelProgress(
                 progress = labelProgress,
                 pressed = feedback.pressed,
             ),
@@ -196,25 +196,25 @@ fun RingRow(
     holdMs: Long = 900L,
     onLongPress: (() -> Unit)? = null,
     ringActive: Boolean? = null,
-    accent: SkyvwAccent = ringIconAccent(icon),
-    labelProgress: SkyvwLabelProgress? = null,
+    accent: CircleAccent = ringIconAccent(icon),
+    labelProgress: CircleLabelProgress? = null,
     leading: (@Composable () -> Unit)? = null,
     trailing: (@Composable () -> Unit)? = null,
     centerValue: String? = null,
-    actionTiming: SkyvwActionTiming = SkyvwActionTiming.DELIBERATE,
+    actionTiming: CircleActionTiming = CircleActionTiming.DELIBERATE,
     actionHoldMs: Long = actionTiming.holdMs,
     /** One sentence about what this row does; read out by the centre cue. */
     hint: String = "",
 ) {
     if (holdToConfirm) {
         val confirm = requireNotNull(onTap) { "A hold row requires an action" }
-        val brandColor = skyvwBrandColor()
+        val brandColor = circleBrandColor()
         var holdProgress by remember { mutableStateOf<Float?>(null) }
         val cue = if (icon != null) {
-            rememberSkyvwActionCueController(
+            rememberCircleActionCueController(
                 icon = icon,
                 label = title,
-                timing = SkyvwActionTiming.DELIBERATE,
+                timing = CircleActionTiming.DELIBERATE,
                 pressed = false,
                 holdDurationMs = holdMs,
                 determinateProgress = holdProgress,
@@ -239,7 +239,7 @@ fun RingRow(
             contentAlignment = Alignment.CenterStart,
             progressFeedback = HoldProgressFeedback.External { holdProgress = it },
         ) {
-            SkyvwRingRowContent(
+            CircleRingRowContent(
                 title = title,
                 sub = sub,
                 icon = icon,
@@ -248,7 +248,7 @@ fun RingRow(
                 leading = leading,
                 trailing = trailing,
                 labelProgress = labelProgress ?: holdProgress?.let {
-                    SkyvwLabelProgress.Determinate(it.coerceIn(0f, 1f))
+                    CircleLabelProgress.Determinate(it.coerceIn(0f, 1f))
                 },
                 pressHoldMs = holdMs,
                 centerValue = centerValue,
@@ -256,7 +256,7 @@ fun RingRow(
         }
         return
     }
-    SkyvwRingRow(
+    CircleRingRow(
         title = title,
         sub = sub,
         onTap = onTap,

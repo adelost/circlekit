@@ -9,7 +9,7 @@ sealed interface ReleaseFetchResult {
     data class Failure(val reason: String) : ReleaseFetchResult
 }
 
-/** Token-free network adapter for the sanitized Skyvw release feed. */
+/** Token-free network adapter for the sanitized Circle release feed. */
 object PublicReleaseClient {
     fun fetchNewest(product: ReleaseProductContract): ReleaseFetchResult {
         val feedUrl = product.releaseFeedUrl

@@ -12,7 +12,7 @@ class MeasuredWorkLabelProgressTest {
     fun `idle refresh has no progress and unknown work is indeterminate`() {
         assertNull(measuredWorkLabelProgress(progress = Progress(2, 4), inFlight = false))
         assertEquals(
-            SkyvwLabelProgress.Indeterminate,
+            CircleLabelProgress.Indeterminate,
             measuredWorkLabelProgress(progress = null, inFlight = true),
         )
     }
@@ -20,11 +20,11 @@ class MeasuredWorkLabelProgressTest {
     @Test
     fun `measured refresh is clamped and rendered by the label`() {
         assertEquals(
-            SkyvwLabelProgress.Determinate(0.5f),
+            CircleLabelProgress.Determinate(0.5f),
             measuredWorkLabelProgress(progress = Progress(2, 4), inFlight = true),
         )
         assertEquals(
-            SkyvwLabelProgress.Determinate(1f),
+            CircleLabelProgress.Determinate(1f),
             measuredWorkLabelProgress(progress = Progress(8, 4), inFlight = true),
         )
     }

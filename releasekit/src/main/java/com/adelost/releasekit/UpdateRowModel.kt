@@ -3,7 +3,7 @@ package com.adelost.releasekit
 /**
  * What an update row says and offers, for every product.
  *
- * Skyvw and Agentmux Link both render a single "UPDATE" row that has to name
+ * Circle and Agentmux Link both render a single "UPDATE" row that has to name
  * eight states and decide which tap each one accepts. Written twice, the two
  * drift: one app says READY while the other says "Verified · tap Install", and
  * a state added to [UpdateState] gets a sentence in one place only.

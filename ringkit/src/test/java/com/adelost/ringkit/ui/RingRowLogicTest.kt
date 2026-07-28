@@ -27,11 +27,11 @@ class RingRowLogicTest {
 
     @Test
     fun `resting choice keeps the ring dark, anything past it lights it`() {
-        assertFalse(choiceIsActive(onOff, "OFF", SkyvwChoiceRole.TOGGLE))
-        assertTrue(choiceIsActive(onOff, "ON", SkyvwChoiceRole.TOGGLE))
-        assertFalse(choiceIsActive(volume, "QUIET", SkyvwChoiceRole.STEPPED))
-        assertFalse(choiceIsActive(volume, "NORMAL", SkyvwChoiceRole.STEPPED))
-        assertFalse(choiceIsActive(threeWay, "C", SkyvwChoiceRole.STEPPED))
+        assertFalse(choiceIsActive(onOff, "OFF", CircleChoiceRole.TOGGLE))
+        assertTrue(choiceIsActive(onOff, "ON", CircleChoiceRole.TOGGLE))
+        assertFalse(choiceIsActive(volume, "QUIET", CircleChoiceRole.STEPPED))
+        assertFalse(choiceIsActive(volume, "NORMAL", CircleChoiceRole.STEPPED))
+        assertFalse(choiceIsActive(threeWay, "C", CircleChoiceRole.STEPPED))
     }
 
     @Test
@@ -46,19 +46,19 @@ class RingRowLogicTest {
     fun `choice gesture and centre cue consume the row declared timing`() {
         val settings = row(choices = threeWay, onSelect = {}).copy(
             holdMs = DELIBERATE_CHANGE_HOLD_MS,
-            actionTiming = SkyvwActionTiming.DELIBERATE,
+            actionTiming = CircleActionTiming.DELIBERATE,
         )
         val immediate = settings.copy(
-            holdMs = SkyvwActionTiming.IMMEDIATE.holdMs,
-            actionTiming = SkyvwActionTiming.IMMEDIATE,
+            holdMs = CircleActionTiming.IMMEDIATE.holdMs,
+            actionTiming = CircleActionTiming.IMMEDIATE,
         )
 
         assertEquals(
-            ChoiceRowInteraction(DELIBERATE_CHANGE_HOLD_MS, SkyvwActionTiming.DELIBERATE),
+            ChoiceRowInteraction(DELIBERATE_CHANGE_HOLD_MS, CircleActionTiming.DELIBERATE),
             choiceRowInteraction(settings),
         )
         assertEquals(
-            ChoiceRowInteraction(0L, SkyvwActionTiming.IMMEDIATE),
+            ChoiceRowInteraction(0L, CircleActionTiming.IMMEDIATE),
             choiceRowInteraction(immediate),
         )
     }
@@ -81,7 +81,7 @@ class RingRowLogicTest {
     fun `a selected value outside the choice set fails loud`() {
         assertThrows(IllegalArgumentException::class.java) { nextChoice(onOff, "MAYBE") }
         assertThrows(IllegalArgumentException::class.java) {
-            choiceIsActive(onOff, "MAYBE", SkyvwChoiceRole.TOGGLE)
+            choiceIsActive(onOff, "MAYBE", CircleChoiceRole.TOGGLE)
         }
     }
 
@@ -113,7 +113,7 @@ class RingRowLogicTest {
             // kind with it — there is nothing to keep in sync by hand.
             rowKind(
                 row(choices = onOff, onSelect = {}).copy(
-                    choiceRole = SkyvwChoiceRole.TOGGLE,
+                    choiceRole = CircleChoiceRole.TOGGLE,
                 ),
             ),
         )
@@ -257,7 +257,7 @@ class RingRowLogicTest {
             viewportHeightDp = FACE_DP,
             titleBandBottomDp = titleBandBottom,
             baseInsetDp = roundRowInsetH.value,
-            reservedSlots = listOf(SkyvwChromeSlot.HOUR_9),
+            reservedSlots = listOf(CircleChromeSlot.HOUR_9),
         )
 
         // Mounting a button may only ever ask for MORE room, never be the

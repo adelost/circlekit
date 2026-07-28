@@ -107,7 +107,7 @@ data class ReleaseCandidate(
  *
  * The instant named by `validUntilEpochMs` counts as already expired: a
  * deadline that still admits its own boundary leaves one tick during which a
- * revoked release installs. A source that publishes no deadline (Skyvw's
+ * revoked release installs. A source that publishes no deadline (Circle's
  * GitHub feed) never expires — absence of a claim is not a stale claim.
  */
 fun ReleaseCandidate.isExpiredAt(nowEpochMs: Long): Boolean =

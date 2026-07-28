@@ -9,7 +9,7 @@ import androidx.compose.ui.unit.sp
 
 /** User-selectable circle-grid density (DISPLAY → MENU GRID). REGULAR is the
  * calm 3-column composition; COMPACT trades ring size for a 4-column sweep. */
-enum class SkyvwMenuDensity { REGULAR, COMPACT }
+enum class CircleMenuDensity { REGULAR, COMPACT }
 
 /** A menu surface carries two grids with distinct jobs: the logbook trio and
  * the settings launcher. ROUND sizes them differently; rectangular hosts do
@@ -111,23 +111,23 @@ object MenuGridCatalog {
 }
 
 fun menuGridSpec(
-    surface: SkyvwSurfaceClass,
-    density: SkyvwMenuDensity,
+    surface: CircleSurfaceClass,
+    density: CircleMenuDensity,
     role: MenuGridRole,
 ): MenuGridSpec = when (surface) {
     // Role deliberately does not branch here: on the watch both grids ARE the
     // same layout item. It stays in the signature so a future round-only
     // divergence is a row in the catalog, never an inline ternary.
-    SkyvwSurfaceClass.ROUND -> MenuGridCatalog.RoundTrio
-    SkyvwSurfaceClass.PHONE_COMPACT -> when (density) {
-        SkyvwMenuDensity.REGULAR -> MenuGridCatalog.PhoneRegular
-        SkyvwMenuDensity.COMPACT -> MenuGridCatalog.PhoneCompact
+    CircleSurfaceClass.ROUND -> MenuGridCatalog.RoundTrio
+    CircleSurfaceClass.PHONE_COMPACT -> when (density) {
+        CircleMenuDensity.REGULAR -> MenuGridCatalog.PhoneRegular
+        CircleMenuDensity.COMPACT -> MenuGridCatalog.PhoneCompact
     }
-    SkyvwSurfaceClass.PHONE_WIDE -> when (density) {
-        SkyvwMenuDensity.REGULAR -> MenuGridCatalog.WideRegular
-        SkyvwMenuDensity.COMPACT -> MenuGridCatalog.WideCompact
+    CircleSurfaceClass.PHONE_WIDE -> when (density) {
+        CircleMenuDensity.REGULAR -> MenuGridCatalog.WideRegular
+        CircleMenuDensity.COMPACT -> MenuGridCatalog.WideCompact
     }
 }
 
 /** Set once by the host from persisted settings; menu renderers read it. */
-val LocalSkyvwMenuDensity = staticCompositionLocalOf { SkyvwMenuDensity.REGULAR }
+val LocalCircleMenuDensity = staticCompositionLocalOf { CircleMenuDensity.REGULAR }

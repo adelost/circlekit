@@ -6,7 +6,7 @@ import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
-/** One form-factor-neutral design spec for the canonical Skyvw menu row. */
+/** One form-factor-neutral design spec for the canonical Circle menu row. */
 object MenuDesign {
     /** Calm centred composition shared by menu grids on every host.
      * The remaining 25% is split symmetrically by the renderer. */
@@ -58,7 +58,7 @@ object MenuDesign {
     val ringResting: Color = RingTokens.Outline
     val ringNeutral: Color = RingTokens.NeutralRing
 
-    /** What [skyvwRingContour] actually leaves on screen: the circle clip eats
+    /** What [circleRingContour] actually leaves on screen: the circle clip eats
      * the outer half of [iconRingStroke]. A straight line that must read as
      * the SAME chrome as the icon rings is drawn at this width, not at the
      * stroke the arc is issued with (Mattias 2026-07-21: "samma som gråa
@@ -71,7 +71,7 @@ object MenuDesign {
     /** Advancing a settings choice (RingChoiceRow and friends). */
     const val holdDeliberateMs: Long = 500L
 
-    /** Every plain action's short intent gate, via [skyvwSafeTap]. It remains
+    /** Every plain action's short intent gate, via [circleSafeTap]. It remains
      * visibly different from an instant touch, without making navigation feel
      * like a confirmation gesture. Settings choices keep their deliberate
      * half-second rung below; destructive actions stay longer still. */

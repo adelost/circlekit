@@ -2,9 +2,9 @@ package com.adelost.ringkit.ui
 
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import com.adelost.designkit.ui.SkyvwActionTiming
-import com.adelost.designkit.ui.SkyvwChoiceRole
-import com.adelost.designkit.ui.SkyvwChromeSlot
+import com.adelost.designkit.ui.CircleActionTiming
+import com.adelost.designkit.ui.CircleChoiceRole
+import com.adelost.designkit.ui.CircleChromeSlot
 import com.adelost.designkit.ui.roundChordInsetDp
 import com.adelost.designkit.ui.roundSafeInsetDp
 
@@ -36,10 +36,10 @@ internal fun rowKindFor(
     onDec: (() -> Unit)?,
     onInc: (() -> Unit)?,
     choices: List<String>,
-    choiceRole: SkyvwChoiceRole,
+    choiceRole: CircleChoiceRole,
 ): RowKind = when {
     onDec != null || onInc != null -> RowKind.ADJUSTMENT
-    choices.isNotEmpty() && choiceRole == SkyvwChoiceRole.TOGGLE ->
+    choices.isNotEmpty() && choiceRole == CircleChoiceRole.TOGGLE ->
         RowKind.TOGGLE
     choices.isNotEmpty() -> RowKind.CHOICE_OF_N
     onTap != null -> RowKind.ACTION
@@ -48,7 +48,7 @@ internal fun rowKindFor(
 
 internal data class ChoiceRowInteraction(
     val holdMs: Long,
-    val timing: SkyvwActionTiming,
+    val timing: CircleActionTiming,
 )
 
 /** Both Watch and Phone consume the exact cadence declared by row data. */
@@ -121,7 +121,7 @@ internal fun rowsListInsetDp(
     viewportHeightDp: Float,
     titleBandBottomDp: Float,
     baseInsetDp: Float,
-    reservedSlots: List<SkyvwChromeSlot>,
+    reservedSlots: List<CircleChromeSlot>,
 ): Float = maxOf(
     baseInsetDp,
     roundChordInsetDp(

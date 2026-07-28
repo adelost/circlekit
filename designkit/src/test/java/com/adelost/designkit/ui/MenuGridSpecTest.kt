@@ -13,15 +13,15 @@ class MenuGridSpecTest {
     fun `round is density-invariant for both roles`() {
         MenuGridRole.entries.forEach { role ->
             assertEquals(
-                menuGridSpec(SkyvwSurfaceClass.ROUND, SkyvwMenuDensity.REGULAR, role),
-                menuGridSpec(SkyvwSurfaceClass.ROUND, SkyvwMenuDensity.COMPACT, role),
+                menuGridSpec(CircleSurfaceClass.ROUND, CircleMenuDensity.REGULAR, role),
+                menuGridSpec(CircleSurfaceClass.ROUND, CircleMenuDensity.COMPACT, role),
             )
         }
     }
 
     @Test
     fun `every round menu grid is the same three-up layout item`() {
-        val logbook = menuGridSpec(SkyvwSurfaceClass.ROUND, SkyvwMenuDensity.REGULAR, MenuGridRole.LOGBOOK)
+        val logbook = menuGridSpec(CircleSurfaceClass.ROUND, CircleMenuDensity.REGULAR, MenuGridRole.LOGBOOK)
         assertEquals(3, logbook.columns)
         assertEquals(0.75f, logbook.contentWidthFraction, 0.001f)
         // The one watch action-ring standard: the home rim buttons' 30 dp.
@@ -30,7 +30,7 @@ class MenuGridSpecTest {
         // SETTINGS is not a second composition: same columns, same ring, same
         // gaps. A watch screen shows one rhythm, never two.
         MenuGridRole.entries.forEach { role ->
-            assertEquals(role.name, logbook, menuGridSpec(SkyvwSurfaceClass.ROUND, SkyvwMenuDensity.REGULAR, role))
+            assertEquals(role.name, logbook, menuGridSpec(CircleSurfaceClass.ROUND, CircleMenuDensity.REGULAR, role))
         }
     }
 
@@ -50,8 +50,8 @@ class MenuGridSpecTest {
 
     @Test
     fun `every menu role reserves twelve point five percent per side on every host`() {
-        SkyvwSurfaceClass.entries.forEach { surface ->
-            SkyvwMenuDensity.entries.forEach { density ->
+        CircleSurfaceClass.entries.forEach { surface ->
+            CircleMenuDensity.entries.forEach { density ->
                 MenuGridRole.entries.forEach { role ->
                     val spec = menuGridSpec(surface, density, role)
                     assertEquals(
@@ -75,17 +75,17 @@ class MenuGridSpecTest {
     fun `phone menu atoms fit the centred content column`() {
         val compactPortraitContentDp = 328f
         val wideContentDp = mapOf(
-            SkyvwMenuDensity.REGULAR to 528f,
-            SkyvwMenuDensity.COMPACT to 608f,
+            CircleMenuDensity.REGULAR to 528f,
+            CircleMenuDensity.COMPACT to 608f,
         )
 
-        SkyvwMenuDensity.entries.forEach { density ->
+        CircleMenuDensity.entries.forEach { density ->
             assertGridAtomsFit(
-                menuGridSpec(SkyvwSurfaceClass.PHONE_COMPACT, density, MenuGridRole.SETTINGS),
+                menuGridSpec(CircleSurfaceClass.PHONE_COMPACT, density, MenuGridRole.SETTINGS),
                 compactPortraitContentDp,
             )
             assertGridAtomsFit(
-                menuGridSpec(SkyvwSurfaceClass.PHONE_WIDE, density, MenuGridRole.SETTINGS),
+                menuGridSpec(CircleSurfaceClass.PHONE_WIDE, density, MenuGridRole.SETTINGS),
                 requireNotNull(wideContentDp[density]),
             )
         }
@@ -111,10 +111,10 @@ class MenuGridSpecTest {
 
     @Test
     fun `compact adds a column but never resizes the ring atom`() {
-        listOf(SkyvwSurfaceClass.PHONE_COMPACT, SkyvwSurfaceClass.PHONE_WIDE).forEach { surface ->
+        listOf(CircleSurfaceClass.PHONE_COMPACT, CircleSurfaceClass.PHONE_WIDE).forEach { surface ->
             MenuGridRole.entries.forEach { role ->
-                val regular = menuGridSpec(surface, SkyvwMenuDensity.REGULAR, role)
-                val compact = menuGridSpec(surface, SkyvwMenuDensity.COMPACT, role)
+                val regular = menuGridSpec(surface, CircleMenuDensity.REGULAR, role)
+                val compact = menuGridSpec(surface, CircleMenuDensity.COMPACT, role)
                 assertTrue("$surface/$role columns", compact.columns > regular.columns)
                 // One ring size on every rectangular surface — the start
                 // screen's 56 dp action is the standard (Mattias 2026-07-21).
@@ -126,10 +126,10 @@ class MenuGridSpecTest {
 
     @Test
     fun `wide grows capacity and width but never atom size`() {
-        SkyvwMenuDensity.entries.forEach { density ->
+        CircleMenuDensity.entries.forEach { density ->
             MenuGridRole.entries.forEach { role ->
-                val phone = menuGridSpec(SkyvwSurfaceClass.PHONE_COMPACT, density, role)
-                val wide = menuGridSpec(SkyvwSurfaceClass.PHONE_WIDE, density, role)
+                val phone = menuGridSpec(CircleSurfaceClass.PHONE_COMPACT, density, role)
+                val wide = menuGridSpec(CircleSurfaceClass.PHONE_WIDE, density, role)
                 assertEquals("$density/$role diameter", phone.diameter, wide.diameter)
                 assertTrue("$density/$role columns", wide.columns > phone.columns)
                 assertTrue(
@@ -142,11 +142,11 @@ class MenuGridSpecTest {
 
     @Test
     fun `content width is capped exactly on rectangular hosts`() {
-        SkyvwSurfaceClass.entries.forEach { surface ->
-            SkyvwMenuDensity.entries.forEach { density ->
+        CircleSurfaceClass.entries.forEach { surface ->
+            CircleMenuDensity.entries.forEach { density ->
                 MenuGridRole.entries.forEach { role ->
                     val spec = menuGridSpec(surface, density, role)
-                    if (surface == SkyvwSurfaceClass.ROUND) {
+                    if (surface == CircleSurfaceClass.ROUND) {
                         assertNull(spec.contentMaxWidth)
                     } else {
                         assertNotNull(spec.contentMaxWidth)

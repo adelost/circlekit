@@ -45,11 +45,11 @@ import com.adelost.designkit.measurement.LocalDisplayUnits
 import com.adelost.designkit.ui.GraphiteTokens
 import com.adelost.designkit.ui.MenuDesign
 import com.adelost.designkit.ui.RingIcons
-import com.adelost.designkit.ui.SkyvwActionTiming
-import com.adelost.designkit.ui.SkyvwColorScheme
-import com.adelost.designkit.ui.SkyvwColorSchemes
-import com.adelost.designkit.ui.SkyvwColorTheme
-import com.adelost.designkit.ui.SkyvwIconDisc
+import com.adelost.designkit.ui.CircleActionTiming
+import com.adelost.designkit.ui.CircleColorScheme
+import com.adelost.designkit.ui.CircleColorSchemes
+import com.adelost.designkit.ui.CircleColorTheme
+import com.adelost.designkit.ui.CircleIconDisc
 import kotlin.math.roundToInt
 
 @Composable
@@ -57,7 +57,7 @@ internal fun ColorPickerScreen(
     screen: RingScreen.ColorPicker,
     nav: RingNavigator,
 ) {
-    val selected = screen.selected.collectAsState(initial = SkyvwColorTheme.SEA_GLASS).value
+    val selected = screen.selected.collectAsState(initial = CircleColorTheme.SEA_GLASS).value
     ColorPickerContent(
         title = screen.title,
         selected = selected,
@@ -82,7 +82,7 @@ internal fun PhoneColorPickerScreen(
     nav: RingNavigator,
     onBack: () -> Unit,
 ) {
-    val selected = screen.selected.collectAsState(initial = SkyvwColorTheme.SEA_GLASS).value
+    val selected = screen.selected.collectAsState(initial = CircleColorTheme.SEA_GLASS).value
     Column(
         modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()),
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -110,13 +110,13 @@ internal fun PhoneColorPickerScreen(
 @Composable
 private fun ColorPickerContent(
     title: String,
-    selected: SkyvwColorTheme,
+    selected: CircleColorTheme,
     preview: ColorDialPreviewSpec,
-    onSelect: (SkyvwColorTheme) -> Unit,
+    onSelect: (CircleColorTheme) -> Unit,
     onPreview: (Float) -> Unit,
     phone: Boolean,
 ) {
-    val scheme = SkyvwColorSchemes.resolve(selected)
+    val scheme = CircleColorSchemes.resolve(selected)
     val units = LocalDisplayUnits.current
     var startAltitudeM by remember(preview) { mutableFloatStateOf(preview.defaultAltitudeM) }
     val altitudeLabel = units.formatAltitude(startAltitudeM).spaced()
@@ -150,7 +150,7 @@ private fun ColorPickerContent(
             horizontalArrangement = Arrangement.SpaceEvenly,
             verticalAlignment = Alignment.Top,
         ) {
-            SkyvwColorSchemes.all.forEach { candidate ->
+            CircleColorSchemes.all.forEach { candidate ->
                 ColorSchemeChoice(
                     scheme = candidate,
                     selected = candidate.theme == selected,
@@ -175,7 +175,7 @@ private fun ColorPickerContent(
             phone = phone,
         )
         Spacer(Modifier.height(if (phone) 18.dp else 2.dp))
-        SkyvwIconDisc(
+        CircleIconDisc(
             icon = RingIcons.Play,
             contentDescription = "Preview from $altitudeLabel",
             actionLabel = "PREVIEW",
@@ -184,7 +184,7 @@ private fun ColorPickerContent(
             iconSize = if (phone) 23.dp else MenuDesign.iconSize,
             active = true,
             iconTint = scheme.active,
-            timing = SkyvwActionTiming.IMMEDIATE,
+            timing = CircleActionTiming.IMMEDIATE,
         )
         Text(
             text = "PREVIEW",
@@ -199,13 +199,13 @@ private fun ColorPickerContent(
 
 @Composable
 private fun ColorSchemeChoice(
-    scheme: SkyvwColorScheme,
+    scheme: CircleColorScheme,
     selected: Boolean,
     onTap: () -> Unit,
     phone: Boolean,
 ) {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        SkyvwIconDisc(
+        CircleIconDisc(
             icon = RingIcons.Palette,
             contentDescription = "Use ${scheme.theme.optionLabel}",
             // The palette's own name IS the action here: a bare "USE" would
@@ -216,7 +216,7 @@ private fun ColorSchemeChoice(
             iconSize = if (phone) 23.dp else MenuDesign.iconSize,
             active = selected,
             iconTint = scheme.active,
-            timing = SkyvwActionTiming.DELIBERATE,
+            timing = CircleActionTiming.DELIBERATE,
         )
         Spacer(Modifier.height(if (phone) 7.dp else 2.dp))
         Text(
@@ -233,7 +233,7 @@ private fun ColorSchemeChoice(
 private fun AltitudePreviewScrubber(
     altitudeM: Float,
     spec: ColorDialPreviewSpec,
-    scheme: SkyvwColorScheme,
+    scheme: CircleColorScheme,
     onAltitudeChange: (Float) -> Unit,
     phone: Boolean,
 ) {

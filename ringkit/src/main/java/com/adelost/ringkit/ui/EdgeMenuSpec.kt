@@ -1,7 +1,7 @@
 package com.adelost.ringkit.ui
 
-import com.adelost.designkit.ui.SkyvwActionTiming
-import com.adelost.designkit.ui.SkyvwChoiceState
+import com.adelost.designkit.ui.CircleActionTiming
+import com.adelost.designkit.ui.CircleChoiceState
 
 import androidx.compose.ui.graphics.vector.ImageVector
 
@@ -32,7 +32,7 @@ class EdgeMenuOption(
     /** State for [RowKind.TOGGLE]. */
     val active: Boolean? = null,
     /** Ordered-state position for [RowKind.CHOICE_OF_N]. */
-    val choiceState: SkyvwChoiceState? = null,
+    val choiceState: CircleChoiceState? = null,
     /** Optional human labels for an ordered choice. Empty keeps numeric steps. */
     val choiceLabels: List<String> = emptyList(),
     val onTap: () -> Unit,
@@ -45,7 +45,7 @@ class EdgeMenuOption(
     val value: String? = null,
     /** Apply the action and return to the spatial surface immediately. */
     val closeOnTap: Boolean = false,
-    val timing: SkyvwActionTiming = SkyvwActionTiming.DELIBERATE,
+    val timing: CircleActionTiming = CircleActionTiming.DELIBERATE,
 ) {
     init {
         when (kind) {

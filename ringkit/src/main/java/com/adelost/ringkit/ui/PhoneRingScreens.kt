@@ -48,7 +48,7 @@ internal fun PhoneRingScreen(
 ) {
     val back: () -> Unit = { if (!nav.back()) onExit() }
     Box(
-        modifier = Modifier.fillMaxSize().skyvwMenuCanvas(),
+        modifier = Modifier.fillMaxSize().circleMenuCanvas(),
         contentAlignment = Alignment.TopCenter,
     ) {
         when (val screen = nav.current) {
@@ -109,7 +109,7 @@ fun PhoneScreenHeader(
             modifier = Modifier.weight(1f),
         )
         actions.forEach { action ->
-            SkyvwIconDisc(
+            CircleIconDisc(
                 icon = action.icon,
                 contentDescription = action.contentDescription,
                 actionLabel = action.label,
@@ -132,8 +132,8 @@ data class PhoneHeaderAction(
     val contentDescription: String = label,
     val active: Boolean = false,
     val enabled: Boolean = true,
-    val accent: SkyvwAccent = ringIconAccent(icon),
-    val timing: SkyvwActionTiming = SkyvwActionTiming.DELIBERATE,
+    val accent: CircleAccent = ringIconAccent(icon),
+    val timing: CircleActionTiming = CircleActionTiming.DELIBERATE,
     val onTap: () -> Unit,
 )
 
@@ -239,8 +239,8 @@ private fun PhoneLauncherScreen(
     gridRole: MenuGridRole,
 ) {
     val grid = menuGridSpec(
-        LocalSkyvwSurfaceLayout.current.surfaceClass,
-        LocalSkyvwMenuDensity.current,
+        LocalCircleSurfaceLayout.current.surfaceClass,
+        LocalCircleMenuDensity.current,
         gridRole,
     )
     Column(

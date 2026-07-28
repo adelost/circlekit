@@ -32,20 +32,20 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.wear.compose.material.Icon
 import androidx.wear.compose.material.Text
-import com.adelost.designkit.ui.LocalSkyvwSurfaceLayout
-import com.adelost.designkit.ui.SkyvwSurfaceClass
+import com.adelost.designkit.ui.LocalCircleSurfaceLayout
+import com.adelost.designkit.ui.CircleSurfaceClass
 import com.adelost.designkit.ui.MenuDesign
 import com.adelost.designkit.ui.RingIcons
 import com.adelost.designkit.ui.RingTokens
-import com.adelost.designkit.ui.SkyvwAccent
-import com.adelost.designkit.ui.SkyvwAccentStrength
-import com.adelost.designkit.ui.SkyvwLabelProgress
-import com.adelost.designkit.ui.rememberSkyvwActionFeedbackState
+import com.adelost.designkit.ui.CircleAccent
+import com.adelost.designkit.ui.CircleAccentStrength
+import com.adelost.designkit.ui.CircleLabelProgress
+import com.adelost.designkit.ui.rememberCircleActionFeedbackState
 import com.adelost.designkit.ui.ringIconAccent
-import com.adelost.designkit.ui.skyvwAccentColor
-import com.adelost.designkit.ui.skyvwBrandColor
-import com.adelost.designkit.ui.skyvwLabelProgress
-import com.adelost.designkit.ui.skyvwSafeTap
+import com.adelost.designkit.ui.circleAccentColor
+import com.adelost.designkit.ui.circleBrandColor
+import com.adelost.designkit.ui.circleLabelProgress
+import com.adelost.designkit.ui.circleSafeTap
 import kotlinx.coroutines.flow.map
 
 internal fun RingScreen.Rows.adjustmentScreen(initial: RowSpec): RingScreen.Adjustment {
@@ -96,7 +96,7 @@ internal fun RingAdjustmentScreen(screen: RingScreen.Adjustment) {
     BoxWithConstraints(Modifier.fillMaxSize()) {
         val diameter = if (maxWidth < maxHeight) maxWidth else maxHeight
         val insets = ringRowHorizontalInsets(
-            round = LocalSkyvwSurfaceLayout.current.surfaceClass == SkyvwSurfaceClass.ROUND,
+            round = LocalCircleSurfaceLayout.current.surfaceClass == CircleSurfaceClass.ROUND,
         )
         val safeTop = circleSafeTopInsetDp(
             diameterDp = diameter.value,
@@ -180,7 +180,7 @@ private fun StepperPillRow(
     onInc: () -> Unit,
     icon: ImageVector? = null,
     semanticColor: Color? = null,
-    accent: SkyvwAccent = ringIconAccent(icon),
+    accent: CircleAccent = ringIconAccent(icon),
     enabled: Boolean? = null,
     onToggle: (() -> Unit)? = null,
     adjustHoldMs: Long? = null,
@@ -188,8 +188,8 @@ private fun StepperPillRow(
     modifier: Modifier = Modifier,
 ) {
     var adjustmentProgress by remember { mutableStateOf<Float?>(null) }
-    val centreFeedback = rememberSkyvwActionFeedbackState()
-    val brandColor = skyvwBrandColor()
+    val centreFeedback = rememberCircleActionFeedbackState()
+    val brandColor = circleBrandColor()
     Row(verticalAlignment = Alignment.CenterVertically, modifier = modifier) {
         StepCircle(
             text = "−",
@@ -200,9 +200,9 @@ private fun StepperPillRow(
         val valueContent: @Composable () -> Unit = {
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
-                modifier = Modifier.skyvwLabelProgress(
+                modifier = Modifier.circleLabelProgress(
                     progress = adjustmentProgress?.let {
-                        SkyvwLabelProgress.Determinate(it.coerceIn(0f, 1f))
+                        CircleLabelProgress.Determinate(it.coerceIn(0f, 1f))
                     },
                     pressed = centreFeedback.pressed,
                     color = brandColor.copy(alpha = 0.35f),
@@ -213,7 +213,7 @@ private fun StepperPillRow(
                     title = title,
                     color = RingTokens.Dim,
                     iconColor = semanticColor
-                        ?: skyvwAccentColor(accent, SkyvwAccentStrength.SUPPORTING),
+                        ?: circleAccentColor(accent, CircleAccentStrength.SUPPORTING),
                     fontSize = 8.5.sp,
                     letterSpacing = 0.2.sp,
                 )
@@ -223,7 +223,7 @@ private fun StepperPillRow(
                             imageVector = icon,
                             contentDescription = null,
                             tint = semanticColor
-                                ?: skyvwAccentColor(accent, SkyvwAccentStrength.SUPPORTING),
+                                ?: circleAccentColor(accent, CircleAccentStrength.SUPPORTING),
                             modifier = Modifier.size(MenuDesign.stepperIconSize),
                         )
                         Spacer(Modifier.size(MenuDesign.stepperIconGap))
@@ -267,7 +267,7 @@ private fun StepperPillRow(
                     .weight(1f)
                     .then(
                         if (onToggle != null) {
-                            Modifier.skyvwSafeTap(feedback = centreFeedback, onTap = onToggle)
+                            Modifier.circleSafeTap(feedback = centreFeedback, onTap = onToggle)
                         } else {
                             Modifier
                         },
@@ -291,7 +291,7 @@ private fun StepCircle(
     holdMs: Long?,
     onProgressChange: (Float?) -> Unit,
 ) {
-    val brandColor = skyvwBrandColor()
+    val brandColor = circleBrandColor()
     if (holdMs != null) {
         HoldFillBox(
             onConfirm = onTap,
@@ -308,13 +308,13 @@ private fun StepCircle(
         }
         return
     }
-    val feedback = rememberSkyvwActionFeedbackState()
+    val feedback = rememberCircleActionFeedbackState()
     Box(
         modifier = Modifier
             .size(MenuDesign.iconRingDiameter)
             .clip(CircleShape)
             .border(MenuDesign.contourStroke, RingTokens.Outline, CircleShape)
-            .skyvwSafeTap(feedback = feedback, onTap = onTap),
+            .circleSafeTap(feedback = feedback, onTap = onTap),
         contentAlignment = Alignment.Center,
     ) {
         Text(
@@ -322,7 +322,7 @@ private fun StepCircle(
             color = RingTokens.Ink,
             fontSize = 16.sp,
             fontWeight = FontWeight.Bold,
-            modifier = Modifier.skyvwLabelProgress(pressed = feedback.pressed),
+            modifier = Modifier.circleLabelProgress(pressed = feedback.pressed),
         )
     }
 }

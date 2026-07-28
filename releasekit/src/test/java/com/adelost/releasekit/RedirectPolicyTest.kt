@@ -13,7 +13,7 @@ class RedirectPolicyTest {
         host = "link.v1d.io",
         pathPrefix = "/downloads/",
     )
-    private val skyvwPolicy = ExactAssetUrlPolicy("https://sky.v1d.io/downloads/skyvw-altimeter.apk")
+    private val circlePolicy = ExactAssetUrlPolicy("https://sky.v1d.io/downloads/circle-altimeter.apk")
 
     @Test
     fun `a relative redirect resolves against the current url and stays fenced`() {
@@ -79,14 +79,14 @@ class RedirectPolicyTest {
     }
 
     @Test
-    fun `Skyvw's exact pin admits no redirect at all, not even same-host`() {
-        // The exact policy is the whole point of Skyvw's fence: one pinned
+    fun `Circle's exact pin admits no redirect at all, not even same-host`() {
+        // The exact policy is the whole point of Circle's fence: one pinned
         // route, so any hop away from it — however plausible — is refused.
         assertNull(
             ReleaseUrlPolicy.resolvedRedirectTarget(
-                currentUrl = "https://sky.v1d.io/downloads/skyvw-altimeter.apk",
-                location = "https://sky.v1d.io/downloads/skyvw-altimeter-v1.apk",
-                policy = skyvwPolicy,
+                currentUrl = "https://sky.v1d.io/downloads/circle-altimeter.apk",
+                location = "https://sky.v1d.io/downloads/circle-altimeter-v1.apk",
+                policy = circlePolicy,
             ),
         )
     }

@@ -37,7 +37,7 @@ import com.adelost.ringkit.data.Progress
 fun Modifier.holdProgressSweep(
     progress: Float?,
     color: Color = RingTokens.ProgressArc.copy(alpha = 0.30f),
-): Modifier = skyvwProgressSweep(progress = progress, color = color)
+): Modifier = circleProgressSweep(progress = progress, color = color)
 
 /**
  * The one linear renderer for measured background progress. Hold gestures use
@@ -54,7 +54,7 @@ fun LabelProgressBar(
     trackColor: Color = RingTokens.ProgressTrack,
     fillColor: Color? = null,
 ) {
-    val resolvedFill = fillColor ?: skyvwBrandColor()
+    val resolvedFill = fillColor ?: circleBrandColor()
     Box(
         modifier = modifier
             .width(width)
@@ -111,7 +111,7 @@ fun ProgressRing(
     surfaceColor: Color = Color.Transparent,
     progressCap: StrokeCap = StrokeCap.Butt,
 ) {
-    val resolvedProgress = progressColor ?: skyvwBrandColor()
+    val resolvedProgress = progressColor ?: circleBrandColor()
     Canvas(modifier = modifier.size(diameter)) {
         if (surfaceColor != Color.Transparent) {
             drawCircle(
@@ -166,14 +166,14 @@ fun ProgressArcRing(
 fun measuredWorkLabelProgress(
     progress: Progress?,
     inFlight: Boolean,
-): SkyvwLabelProgress? {
+): CircleLabelProgress? {
     if (!inFlight) return null
     return progress
         ?.takeIf { it.total > 0 }
         ?.let {
-            SkyvwLabelProgress.Determinate(
+            CircleLabelProgress.Determinate(
                 (it.done.toFloat() / it.total.toFloat()).coerceIn(0f, 1f),
             )
         }
-        ?: SkyvwLabelProgress.Indeterminate
+        ?: CircleLabelProgress.Indeterminate
 }

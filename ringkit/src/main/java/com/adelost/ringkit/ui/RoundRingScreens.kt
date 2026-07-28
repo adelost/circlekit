@@ -1,7 +1,7 @@
 package com.adelost.ringkit.ui
 
-import com.adelost.designkit.ui.LocalSkyvwSurfaceLayout
-import com.adelost.designkit.ui.SkyvwSurfaceClass
+import com.adelost.designkit.ui.LocalCircleSurfaceLayout
+import com.adelost.designkit.ui.CircleSurfaceClass
 import com.adelost.designkit.ui.*
 
 import androidx.compose.foundation.ScrollState
@@ -193,7 +193,7 @@ internal fun DetailScreen(s: RingScreen.Detail) {
                 title = action.label,
                 sub = "",
                 icon = action.icon,
-                accent = if (action.destructive) SkyvwAccent.DANGER else ringIconAccent(action.icon),
+                accent = if (action.destructive) CircleAccent.DANGER else ringIconAccent(action.icon),
                 onTap = action.onRun,
                 holdToConfirm = action.holdToConfirm,
                 modifier = Modifier
@@ -229,8 +229,8 @@ internal fun LauncherScreen(
     gridRole: MenuGridRole,
 ) {
     val grid = menuGridSpec(
-        LocalSkyvwSurfaceLayout.current.surfaceClass,
-        LocalSkyvwMenuDensity.current,
+        LocalCircleSurfaceLayout.current.surfaceClass,
+        LocalCircleMenuDensity.current,
         gridRole,
     )
     Column(
@@ -268,7 +268,7 @@ internal fun RowsScreen(
     BoxWithConstraints(Modifier.fillMaxSize()) {
         val diameter = if (maxWidth < maxHeight) maxWidth else maxHeight
         val insets = ringRowHorizontalInsets(
-            round = LocalSkyvwSurfaceLayout.current.surfaceClass == SkyvwSurfaceClass.ROUND,
+            round = LocalCircleSurfaceLayout.current.surfaceClass == CircleSurfaceClass.ROUND,
         )
         // Full-width rows must start where their edges clear the round
         // frame (watch physically, phone via the WatchFrame simulation) —
@@ -310,7 +310,7 @@ internal fun RowsScreen(
             // is mounted from 9 o'clock downward (see ROUND_CHROME_* slots),
             // leaving the top of the face free. A future button at 11, 12 or 1
             // would silently overlap the title, so such a slot must take the
-            // reservation into account here as well (skyvw:8 review).
+            // reservation into account here as well (circle:8 review).
             ScreenTitle(s.title)
             Spacer(Modifier.height(maxOf(safeTop - MenuDesign.roundTitleTopPadding, 8.dp)))
             items.value.forEach { row ->

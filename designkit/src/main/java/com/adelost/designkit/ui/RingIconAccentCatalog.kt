@@ -8,41 +8,41 @@ import androidx.compose.ui.graphics.vector.ImageVector
  * is more important, but ordinary menus get a recognizable colour without
  * screen-specific conditionals.
  */
-internal val ICON_ACCENTS: Map<String, SkyvwAccent> = buildMap {
-    register(SkyvwAccent.SUN, "sun", "cloud-sun", "cloud-sun-sun")
-    register(SkyvwAccent.CLOUD, "cloud", "cloud-sun-cloud", "fog", "rain-cloud", "storm-cloud")
-    register(SkyvwAccent.RAIN, "rain", "rain-drops", "wind", "sink-rate", "touchdown-sink")
-    register(SkyvwAccent.COLD, "snow", "mountain", "moon", "thermometer")
-    register(SkyvwAccent.DANGER, "storm", "storm-bolt", "cross", "trash", "record", "stop")
+internal val ICON_ACCENTS: Map<String, CircleAccent> = buildMap {
+    register(CircleAccent.SUN, "sun", "cloud-sun", "cloud-sun-sun")
+    register(CircleAccent.CLOUD, "cloud", "cloud-sun-cloud", "fog", "rain-cloud", "storm-cloud")
+    register(CircleAccent.RAIN, "rain", "rain-drops", "wind", "sink-rate", "touchdown-sink")
+    register(CircleAccent.COLD, "snow", "mountain", "moon", "thermometer")
+    register(CircleAccent.DANGER, "storm", "storm-bolt", "cross", "trash", "record", "stop")
     register(
-        SkyvwAccent.POSITIVE,
+        CircleAccent.POSITIVE,
         "gps", "gps-points", "target", "activity", "chart", "download", "plus", "calendar",
         "ruler", "check", "touchdown-run",
     )
     register(
-        SkyvwAccent.CAUTION,
+        CircleAccent.CAUTION,
         "gauge", "bell", "wrench", "minus", "zigzag", "warning", "gps-break", "rotation-rate",
     )
-    register(SkyvwAccent.ACHIEVEMENT, "book", "flag", "star", "pitch")
+    register(CircleAccent.ACHIEVEMENT, "book", "flag", "star", "pitch")
     register(
-        SkyvwAccent.VIOLET,
+        CircleAccent.VIOLET,
         "sliders", "gear", "vibrate", "layers", "cube", "palette", "clock", "pencil",
         "watch", "phone", "spatial-path", "roll",
     )
     register(
-        SkyvwAccent.SKY,
+        CircleAccent.SKY,
         "map", "plane", "chute", "arrow", "eye", "eye-off", "speaker", "wifi", "refresh", "link",
         "home", "grid", "ground-track", "yaw",
     )
     register(
-        SkyvwAccent.NEUTRAL,
+        CircleAccent.NEUTRAL,
         "freefly", "head-down", "belly-arch", "lock",
         "chevron-left", "chevron-right", "chevron-up", "chevron-down",
         "play", "pause",
     )
 }
 
-private fun MutableMap<String, SkyvwAccent>.register(accent: SkyvwAccent, vararg names: String) {
+private fun MutableMap<String, CircleAccent>.register(accent: CircleAccent, vararg names: String) {
     names.forEach { name ->
         check(put(name, accent) == null) { "Ring icon '$name' has more than one semantic accent" }
     }
@@ -80,24 +80,24 @@ val RING_ICON_CATALOG: List<ImageVector> = listOf(
 )
 
 /** DEV → ICONS → STYLE: the FILLED home-language set or the OUTLINE set. */
-enum class SkyvwIconSetStyle { FILLED, OUTLINE }
+enum class CircleIconSetStyle { FILLED, OUTLINE }
 
-val LocalSkyvwIconSetStyle = androidx.compose.runtime.staticCompositionLocalOf { SkyvwIconSetStyle.FILLED }
+val LocalCircleIconSetStyle = androidx.compose.runtime.staticCompositionLocalOf { CircleIconSetStyle.FILLED }
 
 /** Style resolution by icon name. Vectors outside the catalog (frozen
  * Material baseline, HUD chrome) render themselves in both styles —
  * deliberate pass-through, not a fallback. */
-fun skyvwIconVariant(icon: ImageVector, style: SkyvwIconSetStyle): ImageVector =
-    if (style == SkyvwIconSetStyle.OUTLINE) RING_ICON_OUTLINE_BY_NAME[icon.name] ?: icon else icon
+fun circleIconVariant(icon: ImageVector, style: CircleIconSetStyle): ImageVector =
+    if (style == CircleIconSetStyle.OUTLINE) RING_ICON_OUTLINE_BY_NAME[icon.name] ?: icon else icon
 
-fun ringIconAccent(icon: ImageVector?): SkyvwAccent =
-    icon?.name?.let(ICON_ACCENTS::get) ?: SkyvwAccent.NEUTRAL
+fun ringIconAccent(icon: ImageVector?): CircleAccent =
+    icon?.name?.let(ICON_ACCENTS::get) ?: CircleAccent.NEUTRAL
 
 /** A composable glyph is a stack of vectors sharing the same 24x24 viewport. */
 @Immutable
-data class SkyvwIconLayer(
+data class CircleIconLayer(
     val icon: ImageVector,
-    val accent: SkyvwAccent,
+    val accent: CircleAccent,
 )
 
 /**
@@ -106,37 +106,37 @@ data class SkyvwIconLayer(
  * renderer or a screen-local colour table.
  */
 @Immutable
-data class SkyvwIconStyle(
-    val layers: List<SkyvwIconLayer>,
-    val primaryAccent: SkyvwAccent = layers.last().accent,
+data class CircleIconStyle(
+    val layers: List<CircleIconLayer>,
+    val primaryAccent: CircleAccent = layers.last().accent,
 ) {
     init {
         require(layers.isNotEmpty()) { "An icon style needs at least one layer" }
     }
 }
 
-private fun singleStyle(icon: ImageVector, accent: SkyvwAccent) =
-    SkyvwIconStyle(listOf(SkyvwIconLayer(icon, accent)))
+private fun singleStyle(icon: ImageVector, accent: CircleAccent) =
+    CircleIconStyle(listOf(CircleIconLayer(icon, accent)))
 
-private val COMPOSITE_ICON_STYLES: Map<String, SkyvwIconStyle> by lazy {
+private val COMPOSITE_ICON_STYLES: Map<String, CircleIconStyle> by lazy {
     mapOf(
-        RingIcons.CloudSun.name to SkyvwIconStyle(
+        RingIcons.CloudSun.name to CircleIconStyle(
             listOf(
-                SkyvwIconLayer(RingIcons.CloudSunSun, SkyvwAccent.SUN),
-                SkyvwIconLayer(RingIcons.CloudSunCloud, SkyvwAccent.CLOUD),
+                CircleIconLayer(RingIcons.CloudSunSun, CircleAccent.SUN),
+                CircleIconLayer(RingIcons.CloudSunCloud, CircleAccent.CLOUD),
             ),
-            primaryAccent = SkyvwAccent.SUN,
+            primaryAccent = CircleAccent.SUN,
         ),
-        RingIcons.Rain.name to SkyvwIconStyle(
+        RingIcons.Rain.name to CircleIconStyle(
             listOf(
-                SkyvwIconLayer(RingIcons.RainCloud, SkyvwAccent.CLOUD),
-                SkyvwIconLayer(RingIcons.RainDrops, SkyvwAccent.RAIN),
+                CircleIconLayer(RingIcons.RainCloud, CircleAccent.CLOUD),
+                CircleIconLayer(RingIcons.RainDrops, CircleAccent.RAIN),
             ),
         ),
-        RingIcons.Storm.name to SkyvwIconStyle(
+        RingIcons.Storm.name to CircleIconStyle(
             listOf(
-                SkyvwIconLayer(RingIcons.StormCloud, SkyvwAccent.CLOUD),
-                SkyvwIconLayer(RingIcons.StormBolt, SkyvwAccent.DANGER),
+                CircleIconLayer(RingIcons.StormCloud, CircleAccent.CLOUD),
+                CircleIconLayer(RingIcons.StormBolt, CircleAccent.DANGER),
             ),
         ),
     )
@@ -149,8 +149,8 @@ private val COMPOSITE_ICON_STYLES: Map<String, SkyvwIconStyle> by lazy {
  */
 fun ringIconStyle(
     icon: ImageVector,
-    accentOverride: SkyvwAccent? = null,
-): SkyvwIconStyle {
+    accentOverride: CircleAccent? = null,
+): CircleIconStyle {
     val catalogAccent = ringIconAccent(icon)
     if (accentOverride != null && accentOverride != catalogAccent) {
         return singleStyle(icon, accentOverride)
@@ -159,16 +159,16 @@ fun ringIconStyle(
 }
 
 /** Stable UI vocabulary at the weather/data boundary. */
-enum class SkyvwWeatherSymbol { UNKNOWN, CLEAR, PARTLY_CLOUDY, CLOUDY, FOG, RAIN, SNOW, STORM }
+enum class CircleWeatherSymbol { UNKNOWN, CLEAR, PARTLY_CLOUDY, CLOUDY, FOG, RAIN, SNOW, STORM }
 
 /** Every weather surface consumes these same centrally coloured glyphs. */
-fun skyvwWeatherIconStyle(symbol: SkyvwWeatherSymbol): SkyvwIconStyle = when (symbol) {
-    SkyvwWeatherSymbol.UNKNOWN -> singleStyle(RingIcons.Cloud, SkyvwAccent.NEUTRAL)
-    SkyvwWeatherSymbol.CLEAR -> ringIconStyle(RingIcons.Sun)
-    SkyvwWeatherSymbol.PARTLY_CLOUDY -> ringIconStyle(RingIcons.CloudSun)
-    SkyvwWeatherSymbol.CLOUDY -> ringIconStyle(RingIcons.Cloud)
-    SkyvwWeatherSymbol.FOG -> ringIconStyle(RingIcons.Fog)
-    SkyvwWeatherSymbol.RAIN -> ringIconStyle(RingIcons.Rain)
-    SkyvwWeatherSymbol.SNOW -> ringIconStyle(RingIcons.Snow)
-    SkyvwWeatherSymbol.STORM -> ringIconStyle(RingIcons.Storm)
+fun circleWeatherIconStyle(symbol: CircleWeatherSymbol): CircleIconStyle = when (symbol) {
+    CircleWeatherSymbol.UNKNOWN -> singleStyle(RingIcons.Cloud, CircleAccent.NEUTRAL)
+    CircleWeatherSymbol.CLEAR -> ringIconStyle(RingIcons.Sun)
+    CircleWeatherSymbol.PARTLY_CLOUDY -> ringIconStyle(RingIcons.CloudSun)
+    CircleWeatherSymbol.CLOUDY -> ringIconStyle(RingIcons.Cloud)
+    CircleWeatherSymbol.FOG -> ringIconStyle(RingIcons.Fog)
+    CircleWeatherSymbol.RAIN -> ringIconStyle(RingIcons.Rain)
+    CircleWeatherSymbol.SNOW -> ringIconStyle(RingIcons.Snow)
+    CircleWeatherSymbol.STORM -> ringIconStyle(RingIcons.Storm)
 }

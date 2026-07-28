@@ -9,11 +9,11 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
 /**
- * The rectangular-host translation of Skyvw's shared atoms.
+ * The rectangular-host translation of Circle's shared atoms.
  *
  * Product state and components stay common with Wear; this data only gives a
  * touch screen a phone-readable type floor and touch geometry. Keeping the
- * values behind [SkyvwSurfaceClass] makes it impossible for a phone polish to
+ * values behind [CircleSurfaceClass] makes it impossible for a phone polish to
  * silently resize the canonical round face.
  */
 @Immutable
@@ -66,7 +66,7 @@ object PhoneSurfaceDesignCatalog {
             verticalGap = 14.dp,
         ),
         // 48 dp is an accessibility floor, not the desired primary-control
-        // feel. 56 dp is comfortable under a thumb without turning Skyvw's
+        // feel. 56 dp is comfortable under a thumb without turning Circle's
         // restrained rings into oversized mobile cards.
         actionDiameter = 56.dp,
         actionIconSize = 24.dp,
@@ -113,16 +113,16 @@ object PhoneSurfaceDesignCatalog {
 }
 
 /** Pure resolver so layout tests can prove that ROUND never enters phone sizing. */
-fun phoneSurfaceDesignFor(surfaceClass: SkyvwSurfaceClass): PhoneSurfaceDesign? =
+fun phoneSurfaceDesignFor(surfaceClass: CircleSurfaceClass): PhoneSurfaceDesign? =
     when (surfaceClass) {
-        SkyvwSurfaceClass.ROUND -> null
-        SkyvwSurfaceClass.PHONE_COMPACT -> PhoneSurfaceDesignCatalog.Compact
-        SkyvwSurfaceClass.PHONE_WIDE -> PhoneSurfaceDesignCatalog.Wide
+        CircleSurfaceClass.ROUND -> null
+        CircleSurfaceClass.PHONE_COMPACT -> PhoneSurfaceDesignCatalog.Compact
+        CircleSurfaceClass.PHONE_WIDE -> PhoneSurfaceDesignCatalog.Wide
     }
 
 @Composable
 @ReadOnlyComposable
 fun phoneSurfaceDesign(): PhoneSurfaceDesign =
-    requireNotNull(phoneSurfaceDesignFor(LocalSkyvwSurfaceLayout.current.surfaceClass)) {
+    requireNotNull(phoneSurfaceDesignFor(LocalCircleSurfaceLayout.current.surfaceClass)) {
         "Phone surface design is unavailable on the canonical round host"
     }
