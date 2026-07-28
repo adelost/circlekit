@@ -126,17 +126,18 @@ fun RingPlaybackControls(
                 }
             }
         }
-        SkyvwIconDisc(
-            icon = RingIcons.Stop,
-            contentDescription = "Stop playback",
-            actionLabel = "STOP",
-            onTap = spec.onStop,
-            diameter = controlDiameter,
-            iconSize = controlIconSize,
-            enabled = canStop,
-            timing = SkyvwActionTiming.IMMEDIATE,
-            modifier = Modifier.size(controlDiameter),
-        )
+        if (canStop) {
+            SkyvwIconDisc(
+                icon = RingIcons.Stop,
+                contentDescription = "Stop playback",
+                actionLabel = "STOP",
+                onTap = spec.onStop,
+                diameter = controlDiameter,
+                iconSize = controlIconSize,
+                timing = SkyvwActionTiming.IMMEDIATE,
+                modifier = Modifier.size(controlDiameter),
+            )
+        }
     }
 }
 
