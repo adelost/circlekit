@@ -61,7 +61,12 @@ class ReleaseProductContract(
     internal fun versionFor(releaseTag: String, assetName: String): String? =
         versionForAsset(releaseTag, assetName)?.takeIf { SemanticVersion.parse(it) != null }
 
-    internal fun isNewer(
+    /**
+     * Public because a product declares this rule and should be able to prove
+     * what it declared. A consumer that can only test its own copy of the
+     * predicate has tested nothing.
+     */
+    fun isNewer(
         candidate: ReleaseCandidate,
         currentVersionName: String,
         currentVersionCode: Int,
