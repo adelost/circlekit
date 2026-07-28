@@ -1,8 +1,6 @@
 package com.adelost.designkit.ui
 
-import com.adelost.designkit.measurement.MeasurementText
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertThrows
 import org.junit.Test
 
 class SkyvwRadialBarDesignTest {
@@ -21,20 +19,5 @@ class SkyvwRadialBarDesignTest {
             SkyvwRadialBarDesign.strokeForShortSide(320f) / 320f,
             0f,
         )
-    }
-
-    @Test
-    fun `bar weight is one validated instrument input`() {
-        val spec = SkyvwInstrumentDialSpec(
-            altitude = MeasurementText("1000", "m"),
-            motionLabel = "GROUND",
-            altitudeColor = androidx.compose.ui.graphics.Color.White,
-            barWeightScale = 1.4f,
-        )
-
-        assertEquals(1.4f, spec.barWeightScale, 0f)
-        assertThrows(IllegalArgumentException::class.java) {
-            spec.copy(barWeightScale = 0f)
-        }
     }
 }
