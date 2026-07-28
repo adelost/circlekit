@@ -5,8 +5,12 @@ import org.junit.Assert.assertNull
 import org.junit.Test
 
 class ReleaseCatalogTest {
+    // Product identities belong to products, so the selection mechanism is
+    // exercised through fixtures declared here. Reaching into a consumer's
+    // catalog would have made this test fail whenever that consumer renamed
+    // an asset — a fact about Skyvw, not about selectNewestCompatibleRelease.
     @Test
-    fun `legacy phone and universal Android select only their own signed release assets`() {
+    fun `two products select only their own signed release assets`() {
         val releases = parseGitHubReleases(FIXTURE)
 
         assertEquals(
@@ -17,7 +21,7 @@ class ReleaseCatalogTest {
                 sizeBytes = 4_000_000,
                 sha256 = WATCH_SHA,
             ),
-            selectNewestCompatibleRelease(releases, SkyvwReleaseProducts.UNIVERSAL_ANDROID),
+            selectNewestCompatibleRelease(releases, UNIVERSAL),
         )
         assertEquals(
             ReleaseCandidate(
@@ -27,7 +31,7 @@ class ReleaseCatalogTest {
                 sizeBytes = 5_000_000,
                 sha256 = PHONE_SHA,
             ),
-            selectNewestCompatibleRelease(releases, SkyvwReleaseProducts.PHONE),
+            selectNewestCompatibleRelease(releases, LEGACY_PHONE),
         )
     }
 
@@ -40,7 +44,7 @@ class ReleaseCatalogTest {
             ]}]""",
         )
 
-        assertNull(selectNewestCompatibleRelease(releases, SkyvwReleaseProducts.PHONE))
+        assertNull(selectNewestCompatibleRelease(releases, LEGACY_PHONE))
     }
 
     @Test
@@ -54,7 +58,7 @@ class ReleaseCatalogTest {
             ]""",
         )
 
-        assertNull(selectNewestCompatibleRelease(releases, SkyvwReleaseProducts.PHONE))
+        assertNull(selectNewestCompatibleRelease(releases, LEGACY_PHONE))
     }
 
     @Test
@@ -66,6 +70,27 @@ class ReleaseCatalogTest {
     }
 
     private companion object {
+        private const val ORIGIN = "https://sky.v1d.io"
+        private val VERSIONED_WEAR = Regex("""^(?:skyvw-altimeter|skydive-altimeter)-v(\d+\.\d+\.\d+)\.apk$""")
+        private val VERSIONED_PHONE = Regex("""^(?:skyvw-mobile|mobile-release)-v(\d+\.\d+\.\d+)\.apk$""")
+
+        val UNIVERSAL = ReleaseProductContract(
+            id = "universal-android",
+            packageName = "com.example.universal",
+            publicDownloadUrl = "$ORIGIN/downloads/skyvw-altimeter.apk",
+        ) { releaseTag, assetName ->
+            when {
+                assetName == "app-release.apk" -> releaseTag.removePrefix("v")
+                else -> VERSIONED_WEAR.matchEntire(assetName)?.groupValues?.get(1)
+            }
+        }
+
+        val LEGACY_PHONE = ReleaseProductContract(
+            id = "phone",
+            packageName = "com.example.phone",
+            publicDownloadUrl = "$ORIGIN/downloads/skyvw-mobile.apk",
+        ) { _, assetName -> VERSIONED_PHONE.matchEntire(assetName)?.groupValues?.get(1) }
+
         const val WATCH_SHA = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
         const val PHONE_SHA = "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
         val FIXTURE = """[

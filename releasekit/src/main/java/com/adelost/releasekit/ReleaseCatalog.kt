@@ -68,40 +68,9 @@ class ReleaseProductContract(
     ): Boolean = candidateIsNewer(candidate, currentVersionName, currentVersionCode)
 }
 
-/** Release identities. The current Android app is universal across form factors. */
-object SkyvwReleaseProducts {
-    // Repository identity remains part of publication and legacy-client verification;
-    // current app binaries never authenticate to this private origin.
-    private const val OWNER = "adelost"
-    private const val REPO = "skydive-altimeter"
-    private const val PUBLIC_ORIGIN = "https://sky.v1d.io"
-    private const val RELEASE_FEED = "https://sky.v1d.io/downloads/releases.json"
-    private val VERSIONED_WEAR = Regex("""^(?:skyvw-altimeter|skydive-altimeter)-v(\d+\.\d+\.\d+)\.apk$""")
-    private val VERSIONED_PHONE = Regex("""^(?:skyvw-mobile|mobile-release)-v(\d+\.\d+\.\d+)\.apk$""")
-
-    val UNIVERSAL_ANDROID = ReleaseProductContract(
-        id = "universal-android",
-        packageName = "com.adelost.skydivealtimeter",
-        releaseFeedUrl = RELEASE_FEED,
-        publicDownloadUrl = "$PUBLIC_ORIGIN/downloads/skyvw-altimeter.apk",
-    ) { releaseTag, assetName ->
-        when {
-            assetName == "app-release.apk" -> releaseTag.removePrefix("v")
-            else -> VERSIONED_WEAR.matchEntire(assetName)?.groupValues?.get(1)
-        }
-    }
-
-    /** Historical alias for release tooling and already-published attestations. */
-    val WEAR = UNIVERSAL_ANDROID
-
-    /** Legacy discarded `com.adelost.jump` contract; current binaries never use it. */
-    val PHONE = ReleaseProductContract(
-        id = "phone",
-        packageName = "com.adelost.jump",
-        releaseFeedUrl = RELEASE_FEED,
-        publicDownloadUrl = "$PUBLIC_ORIGIN/downloads/skyvw-mobile.apk",
-    ) { _, assetName -> VERSIONED_PHONE.matchEntire(assetName)?.groupValues?.get(1) }
-}
+// Product identities live with their product. A catalog here would name a
+// consumer's package inside the shared library, which is the end of reuse and
+// the exact thing ReleaseProductContract exists to inject.
 
 data class GitHubReleaseAsset(
     val name: String,
