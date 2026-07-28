@@ -38,6 +38,27 @@ object ReleaseUrlPolicy {
         return ExactAssetUrlPolicy(expectedUrl).allows(url)
     }
 
+    /**
+     * Where a `Location` header actually points, or null when the fence
+     * refuses it.
+     *
+     * A redirect is the one place an asset URL changes after the policy has
+     * already approved it, and `Location` may be relative — so resolution and
+     * re-approval have to happen together. Keeping them in one pure function
+     * means the hop is decided by the same policy as the initial URL, and can
+     * be proven without opening a socket.
+     */
+    fun resolvedRedirectTarget(
+        currentUrl: String,
+        location: String?,
+        policy: AssetUrlPolicy,
+    ): String? {
+        if (location.isNullOrBlank()) return null
+        val resolved = runCatching { URI(currentUrl).resolve(location).toString() }.getOrNull()
+            ?: return null
+        return resolved.takeIf(policy::allows)
+    }
+
     internal fun safeHttpsUri(url: String): URI? = runCatching { URI(url) }.getOrNull()?.takeIf {
         it.scheme.equals("https", ignoreCase = true) &&
             !it.host.isNullOrBlank() &&

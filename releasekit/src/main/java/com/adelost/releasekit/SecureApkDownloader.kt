@@ -6,7 +6,6 @@ import com.adelost.servicekit.ServiceTransfer
 import java.io.File
 import java.io.FileOutputStream
 import java.net.HttpURLConnection
-import java.net.URI
 import java.net.URL
 import java.security.MessageDigest
 
@@ -123,10 +122,12 @@ object SecureApkDownloader {
             if (code !in 300..399) return connection
             val location = connection.getHeaderField("Location")
             connection.disconnect()
-            if (redirectCount == MAX_REDIRECTS || location.isNullOrBlank()) return null
-            val resolved = URI(current).resolve(location).toString()
-            if (!product.assetUrlPolicy.allows(resolved)) return null
-            current = resolved
+            if (redirectCount == MAX_REDIRECTS) return null
+            current = ReleaseUrlPolicy.resolvedRedirectTarget(
+                currentUrl = current,
+                location = location,
+                policy = product.assetUrlPolicy,
+            ) ?: return null
         }
         return null
     }

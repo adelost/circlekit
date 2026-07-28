@@ -128,6 +128,17 @@ data class ReleaseCandidate(
     val changelog: String = "",
 )
 
+/**
+ * Whether signed metadata has run out at [nowEpochMs].
+ *
+ * The instant named by `validUntilEpochMs` counts as already expired: a
+ * deadline that still admits its own boundary leaves one tick during which a
+ * revoked release installs. A source that publishes no deadline (Skyvw's
+ * GitHub feed) never expires — absence of a claim is not a stale claim.
+ */
+fun ReleaseCandidate.isExpiredAt(nowEpochMs: Long): Boolean =
+    validUntilEpochMs?.let { it <= nowEpochMs } == true
+
 /** Parse is deliberately total: malformed remote metadata becomes an empty, non-blocking catalog. */
 fun parseGitHubReleases(body: String): List<GitHubRelease> = runCatching {
     val array = JSONArray(body)

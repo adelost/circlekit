@@ -254,6 +254,3 @@ class UpdateController(
         }
     }
 }
-
-private fun ReleaseCandidate.isExpiredAt(nowEpochMs: Long): Boolean =
-    validUntilEpochMs?.let { it <= nowEpochMs } == true

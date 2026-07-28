@@ -46,7 +46,9 @@ afterEvaluate {
 }
 
 dependencies {
-    implementation(project(":servicekit"))
+    // ReleaseProductContract.telemetryServiceId is a public ServiceId, so a
+    // consumer declaring its own product must be able to name the type.
+    api(project(":servicekit"))
     implementation(libs.androidx.core.ktx)
     implementation(libs.kotlinx.coroutines.core)
     implementation(libs.org.json)
