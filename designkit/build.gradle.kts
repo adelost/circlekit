@@ -44,7 +44,10 @@ afterEvaluate {
         repositories {
             maven {
                 name = "circlekit"
-                url = uri(rootProject.layout.buildDirectory.dir("maven").get().asFile)
+                url = uri(
+                    providers.gradleProperty("circlekitPublishDir").orNull
+                        ?: rootProject.layout.buildDirectory.dir("maven").get().asFile,
+                )
             }
         }
     }
