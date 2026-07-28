@@ -172,7 +172,10 @@ small presentation mapper if needed.
 
 ## Artifact and development model
 
-- Publish immutable Maven artifacts manually from CircleKit.
+- Publish immutable Maven artifacts with
+  `scripts/publish-maven.sh X.Y.Z`. The publisher stages the complete remote
+  repository plus the new version before deploying, so a Pages snapshot can
+  never make older pinned coordinates disappear.
 - Default consumer repository: `https://circlekit.pages.dev/`.
 - Pin an exact CircleKit version in both consumers.
 - A local Maven repository override may be used while developing, but it must
