@@ -118,6 +118,7 @@ fun IconRing(
     sub: String? = null,
     choiceState: SkyvwChoiceState? = null,
     labelSize: androidx.compose.ui.unit.TextUnit = 9.5.sp,
+    centerValue: String? = null,
 ) {
     SkyvwIconRing(
         icon = icon,
@@ -131,6 +132,7 @@ fun IconRing(
         sub = sub,
         choiceState = choiceState,
         labelSize = labelSize,
+        centerValue = centerValue,
     )
 }
 
