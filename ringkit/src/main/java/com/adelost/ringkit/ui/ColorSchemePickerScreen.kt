@@ -50,7 +50,6 @@ import com.adelost.designkit.ui.SkyvwColorScheme
 import com.adelost.designkit.ui.SkyvwColorSchemes
 import com.adelost.designkit.ui.SkyvwColorTheme
 import com.adelost.designkit.ui.SkyvwIconDisc
-import com.adelost.designkit.ui.SkyvwInstrumentDial
 import kotlin.math.roundToInt
 
 @Composable
@@ -239,7 +238,7 @@ private fun AltitudePreviewScrubber(
     phone: Boolean,
 ) {
     val fraction = (altitudeM / spec.maxAltitudeM).coerceIn(0f, 1f)
-    val currentColor = spec.frameAt(altitudeM, scheme.theme).altitudeColor
+    val currentColor = spec.colorAt(altitudeM, scheme.theme)
 
     fun altitudeAt(x: Float, width: Float): Float =
         previewAltitudeAtFraction(x / width.coerceAtLeast(1f), spec.maxAltitudeM)
@@ -288,7 +287,7 @@ private fun AltitudePreviewScrubber(
         spec.checkpointsM.distinct().forEach { checkpoint ->
             val x = size.width * (checkpoint / spec.maxAltitudeM).coerceIn(0f, 1f)
             drawLine(
-                color = spec.frameAt(checkpoint, scheme.theme).altitudeColor.copy(alpha = 0.8f),
+                color = spec.colorAt(checkpoint, scheme.theme).copy(alpha = 0.8f),
                 start = Offset(x, y - stroke * 1.8f),
                 end = Offset(x, y + stroke * 1.8f),
                 strokeWidth = stroke * 0.65f,
@@ -324,9 +323,10 @@ internal fun DialPreviewScreen(screen: RingScreen.DialPreview) {
             ),
         )
     }
-    SkyvwInstrumentDial(
-        spec = screen.spec.frameAt(altitude.value, screen.theme),
-        modifier = Modifier.fillMaxSize(),
+    screen.spec.render(
+        altitude.value,
+        screen.theme,
+        Modifier.fillMaxSize(),
     )
 }
 

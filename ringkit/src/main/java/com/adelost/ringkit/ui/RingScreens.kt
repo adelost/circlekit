@@ -147,7 +147,12 @@ data class ColorDialPreviewSpec(
     val maxAltitudeM: Float,
     val defaultAltitudeM: Float,
     val checkpointsM: List<Float>,
-    val frameAt: (altitudeM: Float, theme: SkyvwColorTheme) -> SkyvwInstrumentDialSpec,
+    val colorAt: (altitudeM: Float, theme: SkyvwColorTheme) -> Color,
+    val render: @Composable (
+        altitudeM: Float,
+        theme: SkyvwColorTheme,
+        modifier: Modifier,
+    ) -> Unit,
 ) {
     init {
         require(maxAltitudeM > 0f && maxAltitudeM.isFinite())
