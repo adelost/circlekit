@@ -14,7 +14,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.wear.compose.material.Text
 import com.adelost.designkit.ui.RingTokens
-import com.adelost.designkit.ui.skyvwBrandColor
+import com.adelost.designkit.ui.circleBrandColor
 
 /** Normalized recent audio energy plus honest elapsed capture time. */
 data class RingAudioCaptureFeedbackSpec(
@@ -38,7 +38,7 @@ fun RingAudioCaptureFeedback(
     modifier: Modifier = Modifier,
 ) {
     val samples = spec.levels.takeLast(AUDIO_WAVEFORM_BARS)
-    val pigment = if (spec.active) skyvwBrandColor() else RingTokens.Dim
+    val pigment = if (spec.active) circleBrandColor() else RingTokens.Dim
     Column(
         modifier = modifier,
         horizontalAlignment = Alignment.CenterHorizontally,

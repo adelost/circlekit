@@ -23,7 +23,7 @@ data class CircleUiModel(
     val key: String,
     val label: String,
     val icon: ImageVector,
-    val accent: SkyvwAccent = ringIconAccent(icon),
+    val accent: CircleAccent = ringIconAccent(icon),
     val active: Boolean? = null,
     /** State line under the label; null renders nothing. */
     val sub: String? = null,

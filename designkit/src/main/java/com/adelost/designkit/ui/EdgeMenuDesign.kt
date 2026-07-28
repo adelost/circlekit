@@ -27,10 +27,10 @@ object EdgeMenuDesign {
 
     /** Host translation for the same option group. */
     fun optionLayout(
-        surfaceClass: SkyvwSurfaceClass,
-        menuDensity: SkyvwMenuDensity,
+        surfaceClass: CircleSurfaceClass,
+        menuDensity: CircleMenuDensity,
     ): EdgeMenuLayout = when (surfaceClass) {
-        SkyvwSurfaceClass.ROUND -> EdgeMenuLayout(
+        CircleSurfaceClass.ROUND -> EdgeMenuLayout(
             columns = optionsPerRow,
             ringDiameter = optionRingDiameter,
             horizontalGap = optionSpacing,
@@ -38,8 +38,8 @@ object EdgeMenuDesign {
             labelSizeSp = optionLabelSizeSp,
             sectionLabelSizeSp = 7.5f,
         )
-        SkyvwSurfaceClass.PHONE_COMPACT,
-        SkyvwSurfaceClass.PHONE_WIDE,
+        CircleSurfaceClass.PHONE_COMPACT,
+        CircleSurfaceClass.PHONE_WIDE,
         -> {
             val grid = menuGridSpec(surfaceClass, menuDensity, MenuGridRole.SETTINGS)
             val phone = requireNotNull(phoneSurfaceDesignFor(surfaceClass))

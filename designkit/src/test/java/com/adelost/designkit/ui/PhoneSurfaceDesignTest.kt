@@ -9,8 +9,8 @@ class PhoneSurfaceDesignTest {
     @Test
     fun `phone profiles keep readable type and touch floors`() {
         listOf(
-            requireNotNull(phoneSurfaceDesignFor(SkyvwSurfaceClass.PHONE_COMPACT)),
-            requireNotNull(phoneSurfaceDesignFor(SkyvwSurfaceClass.PHONE_WIDE)),
+            requireNotNull(phoneSurfaceDesignFor(CircleSurfaceClass.PHONE_COMPACT)),
+            requireNotNull(phoneSurfaceDesignFor(CircleSurfaceClass.PHONE_WIDE)),
         ).forEach { design ->
             assertTrue(design.actionDiameter.value >= 56f)
             assertTrue(design.actionIconSize.value >= 24f)
@@ -28,7 +28,7 @@ class PhoneSurfaceDesignTest {
 
     @Test
     fun `round profile cannot consume phone design`() {
-        assertNull(phoneSurfaceDesignFor(SkyvwSurfaceClass.ROUND))
+        assertNull(phoneSurfaceDesignFor(CircleSurfaceClass.ROUND))
     }
 
     @Test

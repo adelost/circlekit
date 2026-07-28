@@ -8,7 +8,7 @@ class ReleaseCatalogTest {
     // Product identities belong to products, so the selection mechanism is
     // exercised through fixtures declared here. Reaching into a consumer's
     // catalog would have made this test fail whenever that consumer renamed
-    // an asset — a fact about Skyvw, not about selectNewestCompatibleRelease.
+    // an asset — a fact about Circle, not about selectNewestCompatibleRelease.
     @Test
     fun `two products select only their own signed release assets`() {
         val releases = parseGitHubReleases(FIXTURE)
@@ -17,7 +17,7 @@ class ReleaseCatalogTest {
             ReleaseCandidate(
                 versionName = "0.5.336",
                 assetName = "app-release.apk",
-                downloadUrl = "https://sky.v1d.io/downloads/skyvw-altimeter.apk",
+                downloadUrl = "https://sky.v1d.io/downloads/circle-altimeter.apk",
                 sizeBytes = 4_000_000,
                 sha256 = WATCH_SHA,
             ),
@@ -26,8 +26,8 @@ class ReleaseCatalogTest {
         assertEquals(
             ReleaseCandidate(
                 versionName = "0.2.2",
-                assetName = "skyvw-mobile-v0.2.2.apk",
-                downloadUrl = "https://sky.v1d.io/downloads/skyvw-mobile.apk",
+                assetName = "circle-mobile-v0.2.2.apk",
+                downloadUrl = "https://sky.v1d.io/downloads/circle-mobile.apk",
                 sizeBytes = 5_000_000,
                 sha256 = PHONE_SHA,
             ),
@@ -39,8 +39,8 @@ class ReleaseCatalogTest {
     fun `missing digest or ambiguous generic APK is fail safe`() {
         val releases = parseGitHubReleases(
             """[{"tag_name":"v9.9.9","assets":[
-                {"name":"mobile-release.apk","url":"https://sky.v1d.io/downloads/skyvw-mobile.apk","size":4},
-                {"name":"skyvw-mobile-v9.9.9.apk","url":"https://sky.v1d.io/downloads/skyvw-mobile.apk","size":4}
+                {"name":"mobile-release.apk","url":"https://sky.v1d.io/downloads/circle-mobile.apk","size":4},
+                {"name":"circle-mobile-v9.9.9.apk","url":"https://sky.v1d.io/downloads/circle-mobile.apk","size":4}
             ]}]""",
         )
 
@@ -52,9 +52,9 @@ class ReleaseCatalogTest {
         val sha = "d".repeat(64)
         val releases = parseGitHubReleases(
             """[
-              {"tag_name":"mobile-draft","draft":true,"assets":[{"name":"skyvw-mobile-v9.0.0.apk","url":"https://sky.v1d.io/downloads/skyvw-mobile.apk","size":4,"digest":"sha256:$sha"}]},
-              {"tag_name":"mobile-rc","prerelease":true,"assets":[{"name":"skyvw-mobile-v8.0.0.apk","url":"https://sky.v1d.io/downloads/skyvw-mobile.apk","size":4,"digest":"sha256:$sha"}]},
-              {"tag_name":"mobile-huge","assets":[{"name":"skyvw-mobile-v7.0.0.apk","url":"https://sky.v1d.io/downloads/skyvw-mobile.apk","size":${MAX_RELEASE_APK_BYTES + 1},"digest":"sha256:$sha"}]}
+              {"tag_name":"mobile-draft","draft":true,"assets":[{"name":"circle-mobile-v9.0.0.apk","url":"https://sky.v1d.io/downloads/circle-mobile.apk","size":4,"digest":"sha256:$sha"}]},
+              {"tag_name":"mobile-rc","prerelease":true,"assets":[{"name":"circle-mobile-v8.0.0.apk","url":"https://sky.v1d.io/downloads/circle-mobile.apk","size":4,"digest":"sha256:$sha"}]},
+              {"tag_name":"mobile-huge","assets":[{"name":"circle-mobile-v7.0.0.apk","url":"https://sky.v1d.io/downloads/circle-mobile.apk","size":${MAX_RELEASE_APK_BYTES + 1},"digest":"sha256:$sha"}]}
             ]""",
         )
 
@@ -71,13 +71,13 @@ class ReleaseCatalogTest {
 
     private companion object {
         private const val ORIGIN = "https://sky.v1d.io"
-        private val VERSIONED_WEAR = Regex("""^(?:skyvw-altimeter|skydive-altimeter)-v(\d+\.\d+\.\d+)\.apk$""")
-        private val VERSIONED_PHONE = Regex("""^(?:skyvw-mobile|mobile-release)-v(\d+\.\d+\.\d+)\.apk$""")
+        private val VERSIONED_WEAR = Regex("""^(?:circle-altimeter|skydive-altimeter)-v(\d+\.\d+\.\d+)\.apk$""")
+        private val VERSIONED_PHONE = Regex("""^(?:circle-mobile|mobile-release)-v(\d+\.\d+\.\d+)\.apk$""")
 
         val UNIVERSAL = ReleaseProductContract(
             id = "universal-android",
             packageName = "com.example.universal",
-            publicDownloadUrl = "$ORIGIN/downloads/skyvw-altimeter.apk",
+            publicDownloadUrl = "$ORIGIN/downloads/circle-altimeter.apk",
         ) { releaseTag, assetName ->
             when {
                 assetName == "app-release.apk" -> releaseTag.removePrefix("v")
@@ -88,18 +88,18 @@ class ReleaseCatalogTest {
         val LEGACY_PHONE = ReleaseProductContract(
             id = "phone",
             packageName = "com.example.phone",
-            publicDownloadUrl = "$ORIGIN/downloads/skyvw-mobile.apk",
+            publicDownloadUrl = "$ORIGIN/downloads/circle-mobile.apk",
         ) { _, assetName -> VERSIONED_PHONE.matchEntire(assetName)?.groupValues?.get(1) }
 
         const val WATCH_SHA = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
         const val PHONE_SHA = "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
         val FIXTURE = """[
           {"tag_name":"v0.5.336","assets":[
-            {"name":"app-release.apk","url":"https://sky.v1d.io/downloads/skyvw-altimeter.apk","size":4000000,"digest":"sha256:$WATCH_SHA"},
-            {"name":"skyvw-mobile-v0.2.2.apk","url":"https://sky.v1d.io/downloads/skyvw-mobile.apk","size":5000000,"digest":"sha256:$PHONE_SHA"}
+            {"name":"app-release.apk","url":"https://sky.v1d.io/downloads/circle-altimeter.apk","size":4000000,"digest":"sha256:$WATCH_SHA"},
+            {"name":"circle-mobile-v0.2.2.apk","url":"https://sky.v1d.io/downloads/circle-mobile.apk","size":5000000,"digest":"sha256:$PHONE_SHA"}
           ]},
           {"tag_name":"v0.5.335","assets":[
-            {"name":"skyvw-mobile-v0.2.1.apk","url":"https://sky.v1d.io/downloads/skyvw-mobile.apk","size":4900000,"digest":"sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"}
+            {"name":"circle-mobile-v0.2.1.apk","url":"https://sky.v1d.io/downloads/circle-mobile.apk","size":4900000,"digest":"sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"}
           ]}
         ]"""
     }

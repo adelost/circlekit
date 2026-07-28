@@ -18,10 +18,10 @@ object GraphiteTokens {
     val Muted = Color(0xFFA4A49F)
     val Faint = Color(0xFF727579)
     // Default accent is the mathematically balanced Sea Glass family.
-    // Runtime-selected families are exposed through LocalSkyvwColorScheme.
-    val Primary = SkyvwColorSchemes.SeaGlass.active
+    // Runtime-selected families are exposed through LocalCircleColorScheme.
+    val Primary = CircleColorSchemes.SeaGlass.active
     val PrimaryInk = Color(0xFF121719)
-    val PrimaryStrong = SkyvwColorSchemes.SeaGlass.highlight
+    val PrimaryStrong = CircleColorSchemes.SeaGlass.highlight
     val Blue = Primary
     val Orange = Color(0xFFE2AF32)
     val Red = Color(0xFFED6863)

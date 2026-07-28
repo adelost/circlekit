@@ -10,7 +10,7 @@ import androidx.compose.ui.graphics.vector.addPathNodes
 import androidx.compose.ui.unit.dp
 
 /**
- * The Skyvw icon set in the HOME LANGUAGE (Mattias 2026-07-21: "Jag vill ha
+ * The Circle icon set in the HOME LANGUAGE (Mattias 2026-07-21: "Jag vill ha
  * allting i hemspråket"): filled silhouettes in the icon's semantic accent,
  * real holes (EvenOdd subpaths) only where recognition needs them, and pure
  * line motifs as thick 2.6 px strokes. One tint per vector — duotone comes

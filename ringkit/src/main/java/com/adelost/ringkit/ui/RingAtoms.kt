@@ -71,7 +71,7 @@ const val DELIBERATE_CHANGE_HOLD_MS = MenuDesign.holdDeliberateMs
  * steppers).
  *
  * REDESIGN SEAM: every menu dimension/type/state colour lives in
- * [MenuDesign], and only [SkyvwRingRowContent] (and [BackRing]
+ * [MenuDesign], and only [CircleRingRowContent] (and [BackRing]
  * for the back shape) turn that spec into layout. A new design language
  * edits the spec and those molecules; screens and settings catalogs never
  * change.
@@ -92,7 +92,7 @@ fun StatRing(
     modifier: Modifier = Modifier,
     diameter: Dp = MenuDesign.statRingDiameter,
 ) {
-    SkyvwIconRing(
+    CircleIconRing(
         icon = icon,
         label = label,
         onTap = onTap,
@@ -114,15 +114,15 @@ fun IconRing(
     modifier: Modifier = Modifier,
     diameter: Dp = MenuDesign.launcherDiameter,
     active: Boolean? = null,
-    accent: SkyvwAccent = ringIconAccent(icon),
+    accent: CircleAccent = ringIconAccent(icon),
     sub: String? = null,
-    choiceState: SkyvwChoiceState? = null,
+    choiceState: CircleChoiceState? = null,
     labelSize: androidx.compose.ui.unit.TextUnit = 9.5.sp,
     centerValue: String? = null,
     iconRotationDegrees: Float = 0f,
-    actionTiming: SkyvwActionTiming = SkyvwActionTiming.DELIBERATE,
+    actionTiming: CircleActionTiming = CircleActionTiming.DELIBERATE,
 ) {
-    SkyvwIconRing(
+    CircleIconRing(
         icon = icon,
         label = label,
         onTap = onTap,
@@ -155,7 +155,7 @@ fun HoldPill(
     destructive: Boolean = false,
     holdMs: Long = MenuDesign.holdDestructiveMs,
 ) {
-    val fill = if (destructive) RingTokens.Broken else skyvwBrandColor()
+    val fill = if (destructive) RingTokens.Broken else circleBrandColor()
     HoldFillBox(
         onConfirm = onConfirm,
         fill = fill,
@@ -277,10 +277,10 @@ fun HoldFillBox(
 internal fun choiceIsActive(
     options: List<String>,
     selected: String,
-    role: SkyvwChoiceRole,
+    role: CircleChoiceRole,
 ): Boolean {
     require(selected in options) { "Selected value '$selected' is not one of $options" }
-    return role == SkyvwChoiceRole.TOGGLE && selected != options.first()
+    return role == CircleChoiceRole.TOGGLE && selected != options.first()
 }
 
 /** The choice a completed hold advances to: next in declaration order,
@@ -302,18 +302,18 @@ fun RingChoiceRow(
     title: String,
     selected: String,
     options: List<String>,
-    role: SkyvwChoiceRole,
+    role: CircleChoiceRole,
     onSelect: (String) -> Unit,
     icon: ImageVector? = null,
-    accent: SkyvwAccent = ringIconAccent(icon),
+    accent: CircleAccent = ringIconAccent(icon),
     modifier: Modifier = Modifier,
     holdMs: Long = DELIBERATE_CHANGE_HOLD_MS,
-    actionTiming: SkyvwActionTiming = SkyvwActionTiming.DELIBERATE,
+    actionTiming: CircleActionTiming = CircleActionTiming.DELIBERATE,
     /** One sentence about what this row does; read out by the centre cue. */
     hint: String = "",
 ) {
     val active = choiceIsActive(options, selected, role)
-    val choiceState = skyvwChoiceState(options, selected)
+    val choiceState = circleChoiceState(options, selected)
     RingRow(
         title = title,
         sub = selected,
@@ -325,10 +325,10 @@ fun RingChoiceRow(
         actionHoldMs = holdMs,
         hint = hint,
         trailing = {
-            SkyvwChoiceIndicator(
+            CircleChoiceIndicator(
                 state = choiceState,
                 modifier = Modifier.size(
-                    width = skyvwChoiceIndicatorWidth(choiceState.optionCount),
+                    width = circleChoiceIndicatorWidth(choiceState.optionCount),
                     height = 8.dp,
                 ),
             )

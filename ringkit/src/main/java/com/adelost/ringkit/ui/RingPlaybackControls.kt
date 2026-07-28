@@ -15,15 +15,15 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.adelost.designkit.ui.LocalSkyvwSurfaceLayout
+import com.adelost.designkit.ui.LocalCircleSurfaceLayout
 import com.adelost.designkit.ui.MenuDesign
 import com.adelost.designkit.ui.RingIcons
 import com.adelost.designkit.ui.RingTokens
-import com.adelost.designkit.ui.SkyvwActionTiming
-import com.adelost.designkit.ui.SkyvwText
-import com.adelost.designkit.ui.SkyvwIconDisc
+import com.adelost.designkit.ui.CircleActionTiming
+import com.adelost.designkit.ui.CircleText
+import com.adelost.designkit.ui.CircleIconDisc
 import com.adelost.designkit.ui.phoneSurfaceDesignFor
-import com.adelost.designkit.ui.skyvwBrandColor
+import com.adelost.designkit.ui.circleBrandColor
 
 enum class RingPlaybackState {
     READY,
@@ -60,13 +60,13 @@ fun RingPlaybackControls(
     spec: RingPlaybackSpec,
     modifier: Modifier = Modifier,
 ) {
-    val surface = LocalSkyvwSurfaceLayout.current.surfaceClass
+    val surface = LocalCircleSurfaceLayout.current.surfaceClass
     val phoneDesign = phoneSurfaceDesignFor(surface)
     val controlDiameter = phoneDesign?.rowIconDiameter ?: MenuDesign.watchActionRingDiameter
     val controlIconSize = phoneDesign?.rowIconSize ?: MenuDesign.iconSize
     val horizontalPadding = phoneDesign?.screenPadding ?: MenuDesign.rowInsetH
     val progress = playbackProgressFraction(spec.positionMs, spec.durationMs)
-    val brand = skyvwBrandColor()
+    val brand = circleBrandColor()
     val playing = spec.state == RingPlaybackState.PLAYING
     val canStop = spec.state == RingPlaybackState.PLAYING ||
         spec.state == RingPlaybackState.PAUSED
@@ -78,7 +78,7 @@ fun RingPlaybackControls(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(phoneDesign?.controlGap ?: 8.dp),
     ) {
-        SkyvwIconDisc(
+        CircleIconDisc(
             icon = if (playing) RingIcons.Pause else RingIcons.Play,
             contentDescription = if (playing) "Pause playback" else "Play audio",
             actionLabel = if (playing) "PAUSE" else "PLAY",
@@ -86,20 +86,20 @@ fun RingPlaybackControls(
             diameter = controlDiameter,
             iconSize = controlIconSize,
             active = playing,
-            timing = SkyvwActionTiming.IMMEDIATE,
+            timing = CircleActionTiming.IMMEDIATE,
         )
         Column(
             modifier = Modifier.weight(1f),
             verticalArrangement = Arrangement.spacedBy(4.dp),
         ) {
-            SkyvwText(
+            CircleText(
                 text = spec.title,
                 color = RingTokens.Ink,
                 fontSizeSp = phoneDesign?.rowTitleSize?.value ?: MenuDesign.titleSize.value,
                 fontWeight = FontWeight.Bold,
                 maxLines = 1,
             )
-            SkyvwText(
+            CircleText(
                 text = playbackTimeLabel(spec.positionMs, spec.durationMs),
                 color = RingTokens.Dim,
                 fontSizeSp = phoneDesign?.metadataSize?.value ?: MenuDesign.subSize.value,
@@ -127,14 +127,14 @@ fun RingPlaybackControls(
             }
         }
         if (canStop) {
-            SkyvwIconDisc(
+            CircleIconDisc(
                 icon = RingIcons.Stop,
                 contentDescription = "Stop playback",
                 actionLabel = "STOP",
                 onTap = spec.onStop,
                 diameter = controlDiameter,
                 iconSize = controlIconSize,
-                timing = SkyvwActionTiming.IMMEDIATE,
+                timing = CircleActionTiming.IMMEDIATE,
                 modifier = Modifier.size(controlDiameter),
             )
         }

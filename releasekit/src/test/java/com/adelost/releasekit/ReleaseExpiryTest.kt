@@ -40,7 +40,7 @@ class ReleaseExpiryTest {
 
     @Test
     fun `a source that publishes no deadline never expires`() {
-        // Skyvw's GitHub feed carries no expiry. Absence of a claim must not
+        // Circle's GitHub feed carries no expiry. Absence of a claim must not
         // be read as a stale claim, or its updates would never install.
         assertFalse(candidate(null).isExpiredAt(now))
         assertFalse(candidate(null).isExpiredAt(Long.MAX_VALUE))

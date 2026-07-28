@@ -1,7 +1,7 @@
 package com.adelost.ringkit.ui
 
-import com.adelost.designkit.ui.LocalSkyvwSurfaceLayout
-import com.adelost.designkit.ui.SkyvwSurfaceClass
+import com.adelost.designkit.ui.LocalCircleSurfaceLayout
+import com.adelost.designkit.ui.CircleSurfaceClass
 import com.adelost.designkit.ui.*
 
 import androidx.compose.foundation.layout.Box
@@ -52,7 +52,7 @@ sealed interface RingScreen {
      * The shape IS the case. A parallel `RingMenuLayout` taxonomy used to
      * restate it, which meant both hosts dispatched on the layout and then
      * `require`d the matching screen type — validating at runtime what the
-     * compiler already knew (skyvw:8 review, 2026-07-27).
+     * compiler already knew (circle:8 review, 2026-07-27).
      */
     sealed interface Menu : RingScreen
 
@@ -120,8 +120,8 @@ sealed interface RingScreen {
      */
     data class ColorPicker(
         override val title: String = "COLORS",
-        val selected: Flow<SkyvwColorTheme>,
-        val onSelect: (SkyvwColorTheme) -> Unit,
+        val selected: Flow<CircleColorTheme>,
+        val onSelect: (CircleColorTheme) -> Unit,
         val dialPreview: ColorDialPreviewSpec,
     ) : RingScreen
 
@@ -133,7 +133,7 @@ sealed interface RingScreen {
     data class DialPreview(
         override val title: String = "PREVIEW",
         val startAltitudeM: Float,
-        val theme: SkyvwColorTheme,
+        val theme: CircleColorTheme,
         val spec: ColorDialPreviewSpec,
     ) : RingScreen
 }
@@ -147,10 +147,10 @@ data class ColorDialPreviewSpec(
     val maxAltitudeM: Float,
     val defaultAltitudeM: Float,
     val checkpointsM: List<Float>,
-    val colorAt: (altitudeM: Float, theme: SkyvwColorTheme) -> Color,
+    val colorAt: (altitudeM: Float, theme: CircleColorTheme) -> Color,
     val render: @Composable (
         altitudeM: Float,
-        theme: SkyvwColorTheme,
+        theme: CircleColorTheme,
         modifier: Modifier,
     ) -> Unit,
 ) {
@@ -218,7 +218,7 @@ data class LaunchSpec(
  * // Toggle — two states, the ring carries them.
  * RowSpec(key = "grid", title = "GRID", sub = if (on) "ON" else "OFF",
  *         icon = RingIcons.Grid, choices = listOf("OFF", "ON"),
- *         choiceRole = SkyvwChoiceRole.TOGGLE, onSelect = { vm.setGrid(it == "ON") })
+ *         choiceRole = CircleChoiceRole.TOGGLE, onSelect = { vm.setGrid(it == "ON") })
  *
  * // Choice of N — a finite named set; renders step dots.
  * RowSpec(key = "units", title = "UNITS", sub = current.label, icon = RingIcons.Ruler,
@@ -249,7 +249,7 @@ data class RowSpec(
      */
     val hint: String = "",
     /** Product meaning, resolved to the same pigment on Watch and Phone. */
-    val accent: SkyvwAccent = ringIconAccent(icon),
+    val accent: CircleAccent = ringIconAccent(icon),
     /** Optional product-semantic colour for the row's value/icon (for
      * altitude alarm bands, health states, etc.). */
     val semanticColor: Color? = null,
@@ -257,7 +257,7 @@ data class RowSpec(
     val onTap: (() -> Unit)? = null,
     /** Optional asynchronous work rendered through the shared label sweep.
      * The renderer also supplies the standard safe-tap delay automatically. */
-    val labelProgress: SkyvwLabelProgress? = null,
+    val labelProgress: CircleLabelProgress? = null,
     /** Both set = the row opens a dedicated continuous-value submenu. */
     val onDec: (() -> Unit)? = null,
     val onInc: (() -> Unit)? = null,
@@ -280,10 +280,10 @@ data class RowSpec(
     val onSelect: ((String) -> Unit)? = null,
     /** Boolean choices also light the icon ring; ordinary ordered choices
      * remain neutral and communicate position through the shared dot rail. */
-    val choiceRole: SkyvwChoiceRole = SkyvwChoiceRole.STEPPED,
+    val choiceRole: CircleChoiceRole = CircleChoiceRole.STEPPED,
     /** Interaction cadence is product data; camera/transport rows are
      * immediate while ordinary settings retain wrist-safe intent. */
-    val actionTiming: SkyvwActionTiming = SkyvwActionTiming.DELIBERATE,
+    val actionTiming: CircleActionTiming = CircleActionTiming.DELIBERATE,
     /** Adjustment submenu only: holding the value centre fires [onToggle]
      * after this long (a deliberate reset) while +/- stay plain taps. */
     val centerHoldMs: Long? = null,
@@ -297,7 +297,7 @@ data class RowSpec(
      * It used to be a constructor parameter defaulting to the same resolver,
      * guarded by a `require` that it matched. That made a wrong kind
      * constructible and then rejected at runtime; deriving it makes the wrong
-     * state unrepresentable (skyvw:8 review, 2026-07-27).
+     * state unrepresentable (circle:8 review, 2026-07-27).
      */
     val kind: RowKind = rowKindFor(onTap, onDec, onInc, choices, choiceRole)
 
@@ -305,7 +305,7 @@ data class RowSpec(
         require(
             (choices.isEmpty() && onSelect == null) ||
                 (
-                    choices.size in SkyvwChoiceState.MIN_OPTIONS..SkyvwChoiceState.MAX_OPTIONS &&
+                    choices.size in CircleChoiceState.MIN_OPTIONS..CircleChoiceState.MAX_OPTIONS &&
                         choices.distinct().size == choices.size && onSelect != null
                     ),
         ) { "Row choices require 2..7 unique options and an onSelect handler" }
@@ -359,12 +359,12 @@ fun RenderRingScreen(
     nav: RingNavigator,
     onExit: () -> Unit,
 ) {
-    if (LocalSkyvwSurfaceLayout.current.surfaceClass != SkyvwSurfaceClass.ROUND) {
+    if (LocalCircleSurfaceLayout.current.surfaceClass != CircleSurfaceClass.ROUND) {
         PhoneRingScreen(nav = nav, onExit = onExit)
         return
     }
     val s = nav.current
-    Box(Modifier.fillMaxSize().skyvwMenuCanvas()) {
+    Box(Modifier.fillMaxSize().circleMenuCanvas()) {
         when (s) {
             is RingScreen.Hub -> HubScreen(s, nav)
             is RingScreen.Detail -> DetailScreen(s)

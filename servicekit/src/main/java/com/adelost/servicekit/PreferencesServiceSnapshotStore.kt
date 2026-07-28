@@ -95,7 +95,7 @@ internal class PreferencesServiceSnapshotStore(context: Context) : ServiceSnapsh
     }.getOrNull()
 
     companion object {
-        private const val NAME = "skyvw-service-diagnostics"
+        private const val NAME = "circlekit-service-diagnostics"
         private const val KEY = "snapshots-v1"
     }
 }
