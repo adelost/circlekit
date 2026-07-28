@@ -79,8 +79,12 @@ fun PhoneScreenHeader(
     title: String,
     onBack: (() -> Unit)?,
     icon: ImageVector? = null,
+    actions: List<PhoneHeaderAction> = emptyList(),
     modifier: Modifier = Modifier,
 ) {
+    require(actions.size <= MAX_PHONE_HEADER_ACTIONS) {
+        "A phone header supports at most $MAX_PHONE_HEADER_ACTIONS actions"
+    }
     val design = phoneSurfaceDesign()
     Row(
         modifier = modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 14.dp),
@@ -102,9 +106,38 @@ fun PhoneScreenHeader(
             fontSize = design.headerTitleSize,
             fontWeight = FontWeight.SemiBold,
             letterSpacing = 1.2.sp,
+            modifier = Modifier.weight(1f),
         )
+        actions.forEach { action ->
+            SkyvwIconDisc(
+                icon = action.icon,
+                contentDescription = action.contentDescription,
+                actionLabel = action.label,
+                onTap = action.onTap,
+                diameter = design.rowIconDiameter,
+                iconSize = design.rowIconSize,
+                active = action.active,
+                enabled = action.enabled,
+                accent = action.accent,
+                timing = action.timing,
+            )
+        }
     }
 }
+
+/** Product-neutral trailing action rendered by the canonical phone header. */
+data class PhoneHeaderAction(
+    val icon: ImageVector,
+    val label: String,
+    val contentDescription: String = label,
+    val active: Boolean = false,
+    val enabled: Boolean = true,
+    val accent: SkyvwAccent = ringIconAccent(icon),
+    val timing: SkyvwActionTiming = SkyvwActionTiming.DELIBERATE,
+    val onTap: () -> Unit,
+)
+
+private const val MAX_PHONE_HEADER_ACTIONS = 2
 
 @Composable
 private fun PhoneHubScreen(
