@@ -100,6 +100,7 @@ fun RingTextComposer(
             onTap = spec.onSubmit,
             diameter = design.actionDiameter,
             active = canSubmit,
+            iconRotationDegrees = 90f,
         )
     }
 }
