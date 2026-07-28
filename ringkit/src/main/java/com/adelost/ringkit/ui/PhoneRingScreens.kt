@@ -75,7 +75,7 @@ private fun PhoneMenuScreen(
 }
 
 @Composable
-internal fun PhoneScreenHeader(
+fun PhoneScreenHeader(
     title: String,
     onBack: (() -> Unit)?,
     icon: ImageVector? = null,
