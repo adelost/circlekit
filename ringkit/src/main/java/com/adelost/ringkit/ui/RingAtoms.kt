@@ -120,6 +120,7 @@ fun IconRing(
     labelSize: androidx.compose.ui.unit.TextUnit = 9.5.sp,
     centerValue: String? = null,
     iconRotationDegrees: Float = 0f,
+    actionTiming: SkyvwActionTiming = SkyvwActionTiming.DELIBERATE,
 ) {
     SkyvwIconRing(
         icon = icon,
@@ -135,6 +136,7 @@ fun IconRing(
         labelSize = labelSize,
         centerValue = centerValue,
         iconRotationDegrees = iconRotationDegrees,
+        timing = actionTiming,
     )
 }
 
