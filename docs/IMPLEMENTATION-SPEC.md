@@ -1,4 +1,9 @@
-# CircleKit two-day extraction contract
+# CircleKit extraction and product-neutral API contract
+
+Status: the initial extraction is complete. CircleKit `0.2.0` replaced the
+temporary Skyvw-prefixed shared API with the product-neutral
+`Circle`/`circle` API. Historical product references below describe the source
+and consumer requirements; they are not current library symbol names.
 
 Owner: `skyvw:0`  
 Reviewer: `skyvw:9`  
@@ -24,8 +29,9 @@ Target duration: two focused working days.
 - Preserve the working Skyvw patterns. Do not invent a second UI dialect or a
   new updater architecture.
 - Product state and business logic stay in each app.
-- Keep the existing package/API names during this extraction. A broad
-  `Skyvw*` to `CircleKit*` rename is explicitly out of scope.
+- Keep the stable `com.adelost.*` package namespaces. Shared symbols use the
+  `Circle`/`circle` prefix; production library code must contain no
+  product-specific Skyvw identifiers.
 - New or materially rewritten source files stay at or below 500 lines.
 - Declarative data/spec inputs and callbacks are preferred over free
   composable slots.
@@ -69,16 +75,16 @@ consumer completion.
 
 ## UI contract
 
-Keep and reuse the existing Skyvw model:
+Keep and reuse the established model, now exposed as product-neutral API:
 
-- `SkyvwSurfaceClass`: `ROUND`, `PHONE_COMPACT`, `PHONE_WIDE`
-- `resolveSkyvwSurfaceLayout(...)`
+- `CircleSurfaceClass`: `ROUND`, `PHONE_COMPACT`, `PHONE_WIDE`
+- `resolveCircleSurfaceLayout(...)`
 - canonical round canvas of 192 dp
 - host scales the round canvas; atoms always remain at scale 1
 - `RenderRingScreen(...)` as the single screen renderer
 - `RingScreen`, `RowSpec`, action specs, state flows and callbacks as the
   public shape
-- `skyvwHostClip()` as the only round-host clipping boundary
+- `circleHostClip()` as the only round-host clipping boundary
 - Graphite tokens and round-safe geometry as the canonical visual language
 
 Do not add a parallel slot/scaffold component system.

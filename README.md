@@ -10,6 +10,7 @@ Shared Android foundations used by Skyvw and Agentmux Link.
 Consumers pin released Maven artifacts. Product data and business logic stay
 in their owning applications; CircleKit owns rendering and update mechanics.
 
-The current `com.adelost.*` package names intentionally remain source
-compatible with Skyvw during the first extraction. They are API names, not
-permission for product-specific behavior to enter the shared modules.
+The stable `com.adelost.*` package namespaces describe the four library
+modules. Since `0.2.0`, shared types and functions use the product-neutral
+`Circle`/`circle` prefix; product names, storage keys and business behavior
+do not belong in CircleKit.
