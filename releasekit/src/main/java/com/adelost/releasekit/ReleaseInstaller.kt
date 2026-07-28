@@ -95,13 +95,30 @@ class ReleaseInstallReceiver : BroadcastReceiver() {
         }
     }
 
-    private fun installFailureReason(status: Int, message: String?): String = when (status) {
-        PackageInstaller.STATUS_FAILURE_STORAGE -> "Not enough storage"
-        PackageInstaller.STATUS_FAILURE_BLOCKED -> "Install blocked"
-        PackageInstaller.STATUS_FAILURE_CONFLICT -> "Install conflict"
-        PackageInstaller.STATUS_FAILURE_INCOMPATIBLE -> "Incompatible APK"
-        PackageInstaller.STATUS_FAILURE_INVALID -> "Invalid APK"
-        PackageInstaller.STATUS_FAILURE_ABORTED -> "Install cancelled"
-        else -> message ?: "install status $status"
-    }
+    private fun installFailureReason(status: Int, message: String?): String =
+        installFailureReasonFor(status, message)
+}
+
+/**
+ * Whether an installer status is a real failure.
+ *
+ * PENDING_USER_ACTION and SUCCESS are the two statuses that must never be
+ * reported as failures: the first means Android is about to ask the user, and
+ * showing "install failed" underneath that dialog is how a working update
+ * looks broken. Kept as a pure function so both facts can be pinned without
+ * a device.
+ */
+fun isInstallFailureStatus(status: Int): Boolean = when (status) {
+    PackageInstaller.STATUS_PENDING_USER_ACTION, PackageInstaller.STATUS_SUCCESS -> false
+    else -> true
+}
+
+internal fun installFailureReasonFor(status: Int, message: String?): String = when (status) {
+    PackageInstaller.STATUS_FAILURE_STORAGE -> "Not enough storage"
+    PackageInstaller.STATUS_FAILURE_BLOCKED -> "Install blocked"
+    PackageInstaller.STATUS_FAILURE_CONFLICT -> "Install conflict"
+    PackageInstaller.STATUS_FAILURE_INCOMPATIBLE -> "Incompatible APK"
+    PackageInstaller.STATUS_FAILURE_INVALID -> "Invalid APK"
+    PackageInstaller.STATUS_FAILURE_ABORTED -> "Install cancelled"
+    else -> message ?: "install status $status"
 }
