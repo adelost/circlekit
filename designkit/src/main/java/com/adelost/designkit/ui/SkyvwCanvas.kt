@@ -1,0 +1,28 @@
+package com.adelost.designkit.ui
+
+import androidx.compose.foundation.background
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+
+/**
+ * THE canvas. Every Skyvw surface — instrument, menu, detail — is drawn on
+ * true black.
+ *
+ * There used to be a CARBON menu theme on the graphite canvas, and it was the
+ * default, so menus rendered grey while the instrument stayed black (Mattias
+ * 2026-07-21: "du kan ta bort graphite tema.. vi kör oled"). The theme enum,
+ * its setting and its composition local are gone rather than defaulted to
+ * OLED: a second canvas colour can no longer be selected, persisted or
+ * accidentally provided.
+ *
+ * The two modifier names below stay because they say WHICH surface a caller
+ * is painting; they are aliases of one decision and cannot diverge.
+ */
+private val SKYVW_CANVAS = Color.Black
+
+fun Modifier.skyvwMenuCanvas(): Modifier = background(SKYVW_CANVAS)
+
+fun Modifier.skyvwInstrumentCanvas(): Modifier = background(SKYVW_CANVAS)
+
+/** Callers that need the pigment itself rather than a background modifier. */
+fun skyvwCanvasColor(): Color = SKYVW_CANVAS

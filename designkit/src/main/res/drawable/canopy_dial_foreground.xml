@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Shared Canopy Dial identity. Both product shells reference this resource. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <path
+        android:fillColor="#67E8F9"
+        android:pathData="M24.03,47.71 Q29.95,26.99 54,25.14 Q78.05,26.99 83.97,47.71 Q75.83,41.42 68.8,45.49 Q61.4,38.09 54,44.38 Q46.6,38.09 39.2,45.49 Q32.17,41.42 24.03,47.71 Z" />
+    <path
+        android:fillColor="#00000000"
+        android:pathData="M39.2,45.49 Q42.53,32.91 45.49,29.58 M54,44.38 L54,25.88 M68.8,45.49 Q65.47,32.91 62.51,29.58"
+        android:strokeColor="#05070A"
+        android:strokeLineCap="round"
+        android:strokeWidth="2.6" />
+    <path
+        android:fillColor="#00000000"
+        android:pathData="M27.36,46.23 L48.45,73.24 M39.2,44.75 L51.04,73.24 M68.8,44.75 L56.96,73.24 M80.64,46.23 L59.55,73.24"
+        android:strokeColor="#E7E7EA"
+        android:strokeLineCap="round"
+        android:strokeWidth="2.3" />
+    <path
+        android:fillColor="#FB923C"
+        android:pathData="M54,68.06 A6.29,6.29 0,1 1,54,80.64 A6.29,6.29 0,1 1,54,68.06 Z" />
+    <path
+        android:fillColor="#05070A"
+        android:pathData="M54,71.76 A2.59,2.59 0,1 1,54,76.94 A2.59,2.59 0,1 1,54,71.76 Z" />
+    <path
+        android:fillColor="#00000000"
+        android:pathData="M41.42,84.34 L66.58,84.34"
+        android:strokeColor="#E7E7EA"
+        android:strokeLineCap="round"
+        android:strokeWidth="3.7" />
+</vector>
