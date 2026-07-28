@@ -89,5 +89,56 @@ if grep -rEn '^import io\.agentmux\.' \
   fail "a shared module imports Agentmux Link; consumers stay downstream"
 fi
 
+# --- the atoms themselves ---------------------------------------------------
+# These arrived from Skyvw's check-ui-atoms.sh with the source they inspect.
+# One renderer per shape is the whole point of a shared kit: a consumer that
+# cannot see these files cannot be the thing that guards them.
+RING_ATOMS="$RING/RingAtoms.kt"
+CIRCULAR_ATOMS="$DESIGN/SkyvwCircularAtoms.kt"
+MENU_SPEC="$RING/EdgeMenuSpec.kt"
+SAFE_INSET_ATOM="$DESIGN/SkyvwRoundSafeInset.kt"
+
+for f in "$RING_ATOMS" "$CIRCULAR_ATOMS" "$MENU_SPEC" "$SAFE_INSET_ATOM"; do
+  [ -f "$f" ] || fail "atom source missing: $f"
+done
+
+for atom in 'fun Modifier\.holdProgressSweep\(' 'fun LabelProgressBar\(' 'fun ProgressRing\('; do
+  grep -qE "^$atom" -r "$RING" --include='*.kt' \
+    || fail "shared progress atom missing: ${atom//\\/}"
+done
+
+# StatRing is the health/value variant of SkyvwIconRing, not permission to fork
+# stroke, icon and label metrics again.
+STAT_RING_SOURCE=$(sed -n '/^fun StatRing(/,/^}/p' "$RING_ATOMS")
+if grep -qE '^fun SkyvwBackRing\(' "$CIRCULAR_ATOMS" \
+  || ! printf '%s\n' "$STAT_RING_SOURCE" | grep -q 'SkyvwIconRing(' \
+  || printf '%s\n' "$STAT_RING_SOURCE" | grep -qE '(Canvas|drawCircle|\.border\()'; then
+  fail "labelled circles must reuse SkyvwIconRing; dead tap-only back wrappers stay deleted"
+fi
+
+grep -q 'val kind: RowKind' "$MENU_SPEC" \
+  || fail "menu options must declare RowKind, not a private enum"
+
+# RATCHET: the declarative screen list may shrink, never grow by habit. A new
+# case is justified only against the criterion documented in RingScreens.kt.
+SCREEN_CASE_BASELINE=7
+SCREEN_CASES=$(awk '/^sealed interface RingScreen \{/,/^\}/' "$RING_SCREENS" \
+  | grep -cE '^    data class [A-Za-z]+\(' || true)
+if [ "$SCREEN_CASES" -gt "$SCREEN_CASE_BASELINE" ]; then
+  fail "RingScreen cases: $SCREEN_CASES > baseline $SCREEN_CASE_BASELINE — a surface earns its own case only if it is neither rows nor a launcher grid, owns interaction the row grammar cannot say, AND needs its own back-stack entry"
+elif [ "$SCREEN_CASES" -lt "$SCREEN_CASE_BASELINE" ]; then
+  echo "note  RingScreen cases: $SCREEN_CASES < baseline $SCREEN_CASE_BASELINE — ratchet DOWN in the SAME commit"
+fi
+
+# Chord geometry is matched by SHAPE, not by name: a name list once missed
+# circleSafeTopInsetDp, the same chord solved for the other unknown.
+CHORD_MATH=$(grep -rlE 'sqrt\([^)]*(diameter|Diameter|radius|Radius)' \
+  "$RING" "$DESIGN" --include='*.kt' | grep -v 'SkyvwRoundSafeInset.kt' || true)
+if [ -n "$CHORD_MATH" ]; then
+  echo "$CHORD_MATH" >&2
+  fail "chord/chrome clearance math outside SkyvwRoundSafeInset.kt"
+fi
+
 echo "ok    adaptive contract holds: 3 surface classes, 192dp canon, atomScale 1,"
-echo "      one renderer, one clip boundary, declarative viewports, pure modules"
+echo "      one renderer, one clip boundary, declarative viewports, pure modules,"
+echo "      one atom per shape, RingScreen cases $SCREEN_CASES (baseline $SCREEN_CASE_BASELINE)"
