@@ -49,8 +49,12 @@ fun updateRowModel(state: UpdateState, currentVersionName: String): UpdateRowMod
             "INSTALLING…" to UpdateRowAction.NONE
         }
         is UpdateState.Checking -> "CHECKING…" to UpdateRowAction.NONE
-        is UpdateState.Failed -> "FAILED · TAP TO RETRY" to UpdateRowAction.CHECK
-        is UpdateState.InstallFailed -> "INSTALL FAILED · TAP" to UpdateRowAction.INSTALL
+        is UpdateState.Unavailable ->
+            "UNAVAILABLE · ${rowReason(state.reason)} · TAP TO CHECK" to UpdateRowAction.CHECK
+        is UpdateState.Failed ->
+            "FAILED · ${rowReason(state.reason)} · TAP TO RETRY" to UpdateRowAction.CHECK
+        is UpdateState.InstallFailed ->
+            "INSTALL FAILED · ${rowReason(state.reason)} · TAP" to UpdateRowAction.INSTALL
         is UpdateState.UpToDate -> "v$currentVersionName · UP TO DATE · TAP" to UpdateRowAction.CHECK
         else -> "v$currentVersionName · TAP TO CHECK" to UpdateRowAction.CHECK
     }
@@ -71,3 +75,12 @@ fun updateRowProgress(state: UpdateState): UpdateProgress? = when (state) {
 }
 
 private fun downloadPercent(progress: Float): Int = (progress.coerceIn(0f, 1f) * 100f).toInt()
+
+/**
+ * A failed check without its reason looks like a broken button.
+ *
+ * Release sources own the diagnostic vocabulary; the shared row only makes
+ * that already-classified reason single-line and bounded for phone and Wear.
+ */
+private fun rowReason(reason: String): String =
+    reason.replace(Regex("\\s+"), " ").trim().ifBlank { "UNKNOWN ERROR" }.take(72)
