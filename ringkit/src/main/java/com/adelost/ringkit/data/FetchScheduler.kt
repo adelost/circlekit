@@ -32,7 +32,7 @@ import kotlinx.coroutines.launch
  *
  * Execution: due sources run priority-ordered with a small concurrency cap,
  * back-to-back with no idle between them — a sweep is ONE radio window (the
- * radio's power tail is the real battery cost on a watch, not the bytes).
+ * radio's power tail is the real battery cost on a constrained host, not the bytes).
  */
 class FetchScheduler(
     rows: List<SchedulerRow<*>>,

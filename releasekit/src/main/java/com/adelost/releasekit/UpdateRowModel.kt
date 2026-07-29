@@ -3,10 +3,9 @@ package com.adelost.releasekit
 /**
  * What an update row says and offers, for every product.
  *
- * Circle and Agentmux Link both render a single "UPDATE" row that has to name
- * eight states and decide which tap each one accepts. Written twice, the two
- * drift: one app says READY while the other says "Verified · tap Install", and
- * a state added to [UpdateState] gets a sentence in one place only.
+ * Every host renders a single "UPDATE" row that has to name eight states and
+ * decide which tap each one accepts. Written per host, those projections
+ * drift, and a state added to [UpdateState] gets a sentence in one place only.
  *
  * The projection is data, not Compose. Presentation policy belongs beside the
  * state it describes, but a UI kit must not have to depend on an update

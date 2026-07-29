@@ -215,7 +215,7 @@ interface MonoClock {
 }
 
 /**
- * LAST GOOD VALUE PERSISTS: a cold start renders the watch's last knowledge
+ * LAST GOOD VALUE PERSISTS: a cold start renders the host's last knowledge
  * with honest AGING rings, never a grey dashboard begging for manual
  * refreshes. Persisted entries load with unknown monotonic age -> AGING.
  */

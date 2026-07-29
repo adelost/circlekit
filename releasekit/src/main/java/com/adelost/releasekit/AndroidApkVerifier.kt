@@ -34,6 +34,7 @@ object AndroidApkVerifier {
         }
     }
 
+    // API 26 verification still needs the legacy PackageManager overload.
     @Suppress("DEPRECATION")
     private fun installedIdentity(context: Context): ApkIdentity? = runCatching {
         val info = context.packageManager.getPackageInfo(
@@ -43,6 +44,7 @@ object AndroidApkVerifier {
         info.toIdentity()
     }.getOrNull()
 
+    // API 26 archive inspection has no non-deprecated equivalent.
     @Suppress("DEPRECATION")
     private fun archiveIdentity(context: Context, apkFile: File): ApkIdentity? = runCatching {
         context.packageManager.getPackageArchiveInfo(

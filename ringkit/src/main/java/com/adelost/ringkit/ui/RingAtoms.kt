@@ -144,8 +144,7 @@ fun IconRing(
  * A pill that requires a sustained press: the fill sweeps left-to-right
  * while held and the action fires only when it completes. Destructive or
  * state-swapping actions get this instead of a tap so a sleeve-brush can
- * never wipe a cache or zero an altimeter (same gesture the app's
- * settings already taught the user).
+ * never wipe a cache or replace a reference value.
  */
 @Composable
 fun HoldPill(

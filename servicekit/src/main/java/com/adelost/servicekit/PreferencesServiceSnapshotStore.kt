@@ -5,10 +5,19 @@ import org.json.JSONArray
 import org.json.JSONObject
 
 internal class PreferencesServiceSnapshotStore(context: Context) : ServiceSnapshotStore {
-    private val preferences = context.getSharedPreferences(NAME, Context.MODE_PRIVATE)
+    private val preferences = context.getSharedPreferences(
+        serviceSnapshotPreferencesName(context.packageName),
+        Context.MODE_PRIVATE,
+    )
+    private val legacyPreferences = context.getSharedPreferences(LEGACY_NAME, Context.MODE_PRIVATE)
 
     override fun load(): List<ServiceSnapshot> = runCatching {
-        val raw = preferences.getString(KEY, null) ?: return emptyList()
+        val raw = preferences.getString(KEY, null)
+            ?: legacyPreferences.getString(KEY, null)?.also { legacy ->
+                // Copy forward without deleting the only old copy before the async write lands.
+                preferences.edit().putString(KEY, legacy).apply()
+            }
+            ?: return emptyList()
         val array = JSONArray(raw)
         buildList(array.length()) {
             for (index in 0 until array.length()) {
@@ -95,7 +104,12 @@ internal class PreferencesServiceSnapshotStore(context: Context) : ServiceSnapsh
     }.getOrNull()
 
     companion object {
-        private const val NAME = "circlekit-service-diagnostics"
+        private const val LEGACY_NAME = "circlekit-service-diagnostics"
         private const val KEY = "snapshots-v1"
     }
+}
+
+internal fun serviceSnapshotPreferencesName(packageName: String): String {
+    require(packageName.isNotBlank()) { "Service diagnostics require a product package name" }
+    return "$packageName.circlekit-service-diagnostics"
 }
