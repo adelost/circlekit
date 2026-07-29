@@ -28,18 +28,32 @@ class UpdateRowModelTest {
 
     @Test
     fun `what failed can be retried and what is ready can be installed`() {
-        assertEquals(
-            UpdateRowAction.CHECK,
-            updateRowModel(UpdateState.Failed("network"), installed).action,
-        )
+        val failed = updateRowModel(UpdateState.Failed("release catalog HTTP 404"), installed)
+        assertEquals(UpdateRowAction.CHECK, failed.action)
+        assertEquals("FAILED · release catalog HTTP 404 · TAP TO RETRY", failed.sub)
         assertEquals(
             UpdateRowAction.INSTALL,
             updateRowModel(UpdateState.ReadyToInstall("1.2.4", "/cache/a.apk", 10), installed).action,
         )
-        assertEquals(
-            UpdateRowAction.INSTALL,
-            updateRowModel(UpdateState.InstallFailed("1.2.4", "/cache/a.apk", "no space", 10), installed).action,
+        val installFailed = updateRowModel(
+            UpdateState.InstallFailed("1.2.4", "/cache/a.apk", "no space", 10),
+            installed,
         )
+        assertEquals(UpdateRowAction.INSTALL, installFailed.action)
+        assertEquals("INSTALL FAILED · no space · TAP", installFailed.sub)
+    }
+
+    @Test
+    fun `an unavailable catalog is honest and its reason is bounded to one line`() {
+        val model = updateRowModel(
+            UpdateState.Unavailable("manifest\nexpired " + "x".repeat(100)),
+            installed,
+        )
+
+        assertEquals(UpdateRowAction.CHECK, model.action)
+        assert(model.sub.startsWith("UNAVAILABLE · manifest expired "))
+        assert(!model.sub.contains('\n'))
+        assertEquals(72, model.sub.substringAfter("UNAVAILABLE · ").substringBefore(" · TAP").length)
     }
 
     @Test
