@@ -55,5 +55,6 @@ dependencies {
     implementation(libs.androidx.core.ktx)
     implementation(libs.kotlinx.coroutines.core)
     implementation(libs.org.json)
+    implementation("net.i2p.crypto:eddsa:0.3.0")
     testImplementation(libs.junit)
 }
