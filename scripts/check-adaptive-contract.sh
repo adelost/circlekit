@@ -7,6 +7,10 @@
 # one of those greps would have read a missing file. A gate that cannot see
 # its subject must not be the gate that reports on it.
 #
+# Repointed 2026-07-28: the Skyvw* -> Circle* rename left every path and
+# symbol below dangling, so the gate aborted on its own missing-file check
+# and enforced nothing. The invariants are unchanged; the names caught up.
+#
 # Two rules govern what belongs here:
 #   1. the assertion is about CircleKit source, not a consumer's; and
 #   2. a consumer could not check it at all, because it consumes an AAR.
@@ -22,10 +26,10 @@ DESIGN="designkit/src/main/java/com/adelost/designkit/ui"
 RING="ringkit/src/main/java/com/adelost/ringkit/ui"
 
 PHONE_DESIGN="$DESIGN/PhoneSurfaceDesign.kt"
-HOST_SHAPE="$DESIGN/SkyvwHostShape.kt"
-COMPONENT_VIEWPORT="$DESIGN/SkyvwComponentViewport.kt"
-SURFACE_SPEC="$DESIGN/SkyvwSurfaceSpec.kt"
-UI_PROFILE="$DESIGN/SkyvwUiProfile.kt"
+HOST_SHAPE="$DESIGN/CircleHostShape.kt"
+COMPONENT_VIEWPORT="$DESIGN/CircleComponentViewport.kt"
+SURFACE_SPEC="$DESIGN/CircleSurfaceSpec.kt"
+UI_PROFILE="$DESIGN/CircleUiProfile.kt"
 RING_SCREENS="$RING/RingScreens.kt"
 PHONE_RING_SCREENS="$RING/PhoneRingScreens.kt"
 ROUND_RING_SCREENS="$RING/RoundRingScreens.kt"
@@ -36,9 +40,9 @@ for f in "$PHONE_DESIGN" "$HOST_SHAPE" "$COMPONENT_VIEWPORT" "$SURFACE_SPEC" \
 done
 
 # --- the three surface classes and how capacity is resolved ----------------
-grep -q 'enum class SkyvwSurfaceClass { ROUND, PHONE_COMPACT, PHONE_WIDE }' "$SURFACE_SPEC" \
+grep -q 'enum class CircleSurfaceClass { ROUND, PHONE_COMPACT, PHONE_WIDE }' "$SURFACE_SPEC" \
   || fail "the three named surface classes are no longer one closed enum"
-grep -q 'fun resolveSkyvwSurfaceLayout(' "$SURFACE_SPEC" \
+grep -q 'fun resolveCircleSurfaceLayout(' "$SURFACE_SPEC" \
   || fail "surface capacity is no longer resolved by a named function"
 
 # Mattias 2026-07-18: a bigger watch shows the SAME layout larger. The host
@@ -57,13 +61,13 @@ grep -q 'PhoneRingScreen(' "$RING_SCREENS" \
   || fail "ring menus lost their rectangular host translation"
 grep -q 'when (val screen = nav.current)' "$PHONE_RING_SCREENS" \
   || fail "phone ring renderer no longer consumes the shared screen model"
-grep -q 'SkyvwSurfaceClass.ROUND' "$HOST_SHAPE" \
+grep -q 'CircleSurfaceClass.ROUND' "$HOST_SHAPE" \
   || fail "host clipping is no longer driven by surface data"
-grep -q 'fun Modifier.skyvwHostClip()' "$HOST_SHAPE" \
+grep -q 'fun Modifier.circleHostClip()' "$HOST_SHAPE" \
   || fail "the one host-shape boundary is gone"
 
 # --- declarative component sizing -----------------------------------------
-grep -q 'sealed interface SkyvwContentScale' "$COMPONENT_VIEWPORT" \
+grep -q 'sealed interface CircleContentScale' "$COMPONENT_VIEWPORT" \
   || fail "shared components lost their declarative content-scale vocabulary"
 grep -q 'data class CanonicalFit' "$COMPONENT_VIEWPORT" \
   || fail "canonical component fit is no longer representable"
@@ -94,9 +98,9 @@ fi
 # One renderer per shape is the whole point of a shared kit: a consumer that
 # cannot see these files cannot be the thing that guards them.
 RING_ATOMS="$RING/RingAtoms.kt"
-CIRCULAR_ATOMS="$DESIGN/SkyvwCircularAtoms.kt"
+CIRCULAR_ATOMS="$DESIGN/CircleCircularAtoms.kt"
 MENU_SPEC="$RING/EdgeMenuSpec.kt"
-SAFE_INSET_ATOM="$DESIGN/SkyvwRoundSafeInset.kt"
+SAFE_INSET_ATOM="$DESIGN/CircleRoundSafeInset.kt"
 
 for f in "$RING_ATOMS" "$CIRCULAR_ATOMS" "$MENU_SPEC" "$SAFE_INSET_ATOM"; do
   [ -f "$f" ] || fail "atom source missing: $f"
@@ -107,14 +111,18 @@ for atom in 'fun Modifier\.holdProgressSweep\(' 'fun LabelProgressBar\(' 'fun Pr
     || fail "shared progress atom missing: ${atom//\\/}"
 done
 
-# StatRing is the health/value variant of SkyvwIconRing, not permission to fork
-# stroke, icon and label metrics again.
+# StatRing is the health/value variant of CircleIconRing, not permission to
+# fork stroke, icon and label metrics again. The back ring is one shared atom
+# with hold semantics; no surface draws its own.
 STAT_RING_SOURCE=$(sed -n '/^fun StatRing(/,/^}/p' "$RING_ATOMS")
-if grep -qE '^fun SkyvwBackRing\(' "$CIRCULAR_ATOMS" \
-  || ! printf '%s\n' "$STAT_RING_SOURCE" | grep -q 'SkyvwIconRing(' \
+if ! printf '%s\n' "$STAT_RING_SOURCE" | grep -q 'CircleIconRing(' \
   || printf '%s\n' "$STAT_RING_SOURCE" | grep -qE '(Canvas|drawCircle|\.border\()'; then
-  fail "labelled circles must reuse SkyvwIconRing; dead tap-only back wrappers stay deleted"
+  fail "labelled circles must reuse CircleIconRing"
 fi
+grep -q 'fun BackRing(' "$RING/RingMenuAtoms.kt" \
+  || fail "the shared back-ring atom is gone"
+sed -n '/^fun BackRing(/,/^}/p' "$RING/RingMenuAtoms.kt" | grep -q 'HoldBackRing(' \
+  || fail "BackRing no longer delegates to the hold-aware ring"
 
 grep -q 'val kind: RowKind' "$MENU_SPEC" \
   || fail "menu options must declare RowKind, not a private enum"
@@ -133,10 +141,10 @@ fi
 # Chord geometry is matched by SHAPE, not by name: a name list once missed
 # circleSafeTopInsetDp, the same chord solved for the other unknown.
 CHORD_MATH=$(grep -rlE 'sqrt\([^)]*(diameter|Diameter|radius|Radius)' \
-  "$RING" "$DESIGN" --include='*.kt' | grep -v 'SkyvwRoundSafeInset.kt' || true)
+  "$RING" "$DESIGN" --include='*.kt' | grep -v 'CircleRoundSafeInset.kt' || true)
 if [ -n "$CHORD_MATH" ]; then
   echo "$CHORD_MATH" >&2
-  fail "chord/chrome clearance math outside SkyvwRoundSafeInset.kt"
+  fail "chord/chrome clearance math outside CircleRoundSafeInset.kt"
 fi
 
 echo "ok    adaptive contract holds: 3 surface classes, 192dp canon, atomScale 1,"
