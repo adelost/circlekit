@@ -6,10 +6,7 @@ import net.i2p.crypto.eddsa.EdDSAPublicKey
 import net.i2p.crypto.eddsa.spec.EdDSANamedCurveTable
 import net.i2p.crypto.eddsa.spec.EdDSAPublicKeySpec
 
-/**
- * Verifies detached Ed25519 signatures without relying on Android's
- * AndroidKeyStore-backed Ed25519 provider.
- */
+/** WHAT: Checks detached Ed25519 signatures with Android-safe cryptography. WHY: Keeps release verification independent of AndroidKeyStore provider quirks. */
 object DetachedEd25519Verifier {
     fun verify(
         rawPublicKey: ByteArray,
