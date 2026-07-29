@@ -7,8 +7,8 @@ import kotlin.time.Duration.Companion.seconds
 /**
  * datakit — the fetched-data half of the shared RingKit Android library
  * (spec: docs/qa/2026-07-09-ringkit-master/ARCHITECTURE.md). Pure Kotlin:
- * this package must never import either product app, so it stays JVM-testable
- * and portable across the watch instrument and phone companion.
+ * this package must never import a product app, so it stays JVM-testable and
+ * portable across host surfaces.
  *
  * Sensors (barometer/GPS/attitude, P1b contracts) are NOT DataSources: a
  * stream has no TTL, no fetch and no offline state. The two families meet
@@ -25,7 +25,14 @@ enum class Trigger {
     /** Fetch when a screen that renders the source is open AND the TTL expired. */
     VISIBLE,
 
-    /** Fetch once on the climb prefetch sweep (connectivity + time in the plane). */
+    /** Fetch once when the host declares a bounded high-priority data window. */
+    HIGH_PRIORITY_WINDOW,
+
+    /** Compatibility alias for [HIGH_PRIORITY_WINDOW]. Removed after one release cycle. */
+    @Deprecated(
+        message = "Use HIGH_PRIORITY_WINDOW",
+        replaceWith = ReplaceWith("HIGH_PRIORITY_WINDOW"),
+    )
     PHASE_PREFETCH,
 }
 
@@ -63,9 +70,42 @@ sealed interface FetchPlan {
 
 enum class FetchTrigger {
     VISIBLE,
+
+    /** The host's bounded high-priority data window. */
+    HIGH_PRIORITY_WINDOW,
+
+    /** Either a visible consumer or the high-priority window can make this source due. */
+    VISIBLE_OR_HIGH_PRIORITY_WINDOW,
+
+    /** Execution is gated now; retry when the host reopens its execution window. */
+    EXECUTION_RESUMED,
+
+    /** A source-specific context prerequisite is not ready yet. */
+    CONTEXT_READY,
+
+    /** Compatibility aliases retained for one release cycle. */
+    @Deprecated(
+        message = "Use HIGH_PRIORITY_WINDOW",
+        replaceWith = ReplaceWith("HIGH_PRIORITY_WINDOW"),
+    )
     CLIMB,
+
+    @Deprecated(
+        message = "Use VISIBLE_OR_HIGH_PRIORITY_WINDOW",
+        replaceWith = ReplaceWith("VISIBLE_OR_HIGH_PRIORITY_WINDOW"),
+    )
     VISIBLE_OR_CLIMB,
+
+    @Deprecated(
+        message = "Use EXECUTION_RESUMED",
+        replaceWith = ReplaceWith("EXECUTION_RESUMED"),
+    )
     LANDING,
+
+    @Deprecated(
+        message = "Use CONTEXT_READY",
+        replaceWith = ReplaceWith("CONTEXT_READY"),
+    )
     HOME,
 }
 
@@ -106,7 +146,20 @@ interface DataSource<T> {
 
 /** Why one attempt became due. Adapters may force a network refresh only for
  * MANUAL while automatic paths remain cache-aware. */
-enum class FetchCause { VISIBLE, PHASE_PREFETCH, CONTEXT_CHANGED, INVALIDATED, MANUAL }
+enum class FetchCause {
+    VISIBLE,
+    HIGH_PRIORITY_WINDOW,
+    CONTEXT_CHANGED,
+    INVALIDATED,
+    MANUAL,
+
+    /** Compatibility alias for [HIGH_PRIORITY_WINDOW]. Removed after one release cycle. */
+    @Deprecated(
+        message = "Use HIGH_PRIORITY_WINDOW",
+        replaceWith = ReplaceWith("HIGH_PRIORITY_WINDOW"),
+    )
+    PHASE_PREFETCH,
+}
 
 data class FetchRequest(val cause: FetchCause) {
     val forceNetwork: Boolean get() = cause == FetchCause.MANUAL || cause == FetchCause.INVALIDATED

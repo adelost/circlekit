@@ -21,14 +21,14 @@ import kotlinx.coroutines.launch
  *
  * Events:
  *  - the visible-source set changed  -> fetch stale VISIBLE sources
- *  - a prefetch pulse (phase enters CLIMBING) -> fetch stale PHASE_PREFETCH sources
+ *  - a high-priority pulse              -> fetch declared priority-window sources
  *  - [manual]                        -> fetch that source, bypassing TTL
  *  - cache invalidation              -> refetch on its next eligible surface
  *  - a TTL tick (production: 1/min while anything is visible)
  *
  * Guards, in order: enabled && !inFlight && gate open && (due by trigger).
- * The gate is closed in FREEFALL/CANOPY: nothing fetches mid-jump, manual
- * included; pending manual requests run on landing.
+ * While the host closes the gate, no request starts, including manual ones.
+ * Pending work resumes when the host reopens it.
  *
  * Execution: due sources run priority-ordered with a small concurrency cap,
  * back-to-back with no idle between them — a sweep is ONE radio window (the
@@ -39,7 +39,7 @@ class FetchScheduler(
     private val scope: CoroutineScope,
     private val clock: MonoClock,
     gateOpen: Flow<Boolean>,
-    prefetchPulses: Flow<Unit>,
+    priorityWindowPulses: Flow<Unit>,
     visibleSources: Flow<Set<SourceId>>,
     ttlTicks: Flow<Unit>,
     private val store: SourceStore = SourceStore.None,
@@ -54,7 +54,7 @@ class FetchScheduler(
     private val jobs = mutableMapOf<SourceId, Job>()
     private val manualPending = mutableSetOf<SourceId>()
     private val invalidated = mutableSetOf<SourceId>()
-    private var prefetchPending = false
+    private var priorityWindowPending = false
     private var visible: Set<SourceId> = emptySet()
     private var open = true
 
@@ -70,7 +70,7 @@ class FetchScheduler(
         publishPlans()
         scope.launch { gateOpen.collect { onGate(it) } }
         scope.launch { visibleSources.collect { onVisible(it) } }
-        scope.launch { prefetchPulses.collect { onPrefetchPulse() } }
+        scope.launch { priorityWindowPulses.collect { onPriorityWindowPulse() } }
         scope.launch { ttlTicks.collect { evaluate() } }
     }
 
@@ -143,8 +143,8 @@ class FetchScheduler(
         evaluate()
     }
 
-    private fun onPrefetchPulse() {
-        synchronized(lock) { prefetchPending = true }
+    private fun onPriorityWindowPulse() {
+        synchronized(lock) { priorityWindowPending = true }
         publishPlans()
         evaluate()
     }
@@ -170,7 +170,7 @@ class FetchScheduler(
             // The pulse is consumed by one evaluation pass with the gate open;
             // sources that didn't fit in the cap are still stale and get the
             // freed slot on fetch completion below.
-            if (prefetchPending && due.isEmpty()) prefetchPending = false
+            if (priorityWindowPending && due.isEmpty()) priorityWindowPending = false
             publishPlansLocked(now)
         }
         toLaunch.forEach { launchFetch(it.row, it.request) }
@@ -197,10 +197,10 @@ class FetchScheduler(
             return FetchRequest(FetchCause.CONTEXT_CHANGED)
         }
         if (
-            prefetchPending && Trigger.PHASE_PREFETCH in policy.triggers &&
+            priorityWindowPending && policy.triggers.containsPriorityWindow() &&
             (stale || contextChanged || id in invalidated)
         ) {
-            return FetchRequest(FetchCause.PHASE_PREFETCH)
+            return FetchRequest(FetchCause.HIGH_PRIORITY_WINDOW)
         }
         if (Trigger.VISIBLE in policy.triggers && id in visible && stale) {
             return FetchRequest(FetchCause.VISIBLE)
@@ -317,7 +317,8 @@ class FetchScheduler(
         if (state.inFlight) return FetchPlan.Fetching
         policy.blockedPlan()?.let { return it }
         if (id in manualPending) {
-            return if (open) FetchPlan.Queued else FetchPlan.WaitingFor(FetchTrigger.LANDING)
+            return if (open) FetchPlan.Queued
+            else FetchPlan.WaitingFor(FetchTrigger.EXECUTION_RESUMED)
         }
         if (!policy.automaticEnabled()) return FetchPlan.ManualOnly
         nextRetryAtMono[id]?.let { retryAt ->
@@ -337,17 +338,25 @@ class FetchScheduler(
                 trigger = policy.fetchTrigger(),
             )
         }
-        if (!open) return FetchPlan.WaitingFor(FetchTrigger.LANDING)
+        if (!open) return FetchPlan.WaitingFor(FetchTrigger.EXECUTION_RESUMED)
         if (dueRequest(row, nowMono) != null) return FetchPlan.Queued
         return FetchPlan.WaitingFor(policy.fetchTrigger())
     }
 
     private fun SourcePolicy.fetchTrigger(): FetchTrigger = when {
-        Trigger.VISIBLE in triggers && Trigger.PHASE_PREFETCH in triggers ->
-            FetchTrigger.VISIBLE_OR_CLIMB
-        Trigger.PHASE_PREFETCH in triggers -> FetchTrigger.CLIMB
+        Trigger.VISIBLE in triggers && triggers.containsPriorityWindow() ->
+            FetchTrigger.VISIBLE_OR_HIGH_PRIORITY_WINDOW
+        triggers.containsPriorityWindow() -> FetchTrigger.HIGH_PRIORITY_WINDOW
         else -> FetchTrigger.VISIBLE
     }
+
+    /**
+     * The deprecated entry remains executable for one compatibility cycle so
+     * an already-compiled host never silently loses its priority fetches.
+     */
+    @Suppress("DEPRECATION")
+    private fun Set<Trigger>.containsPriorityWindow(): Boolean =
+        Trigger.HIGH_PRIORITY_WINDOW in this || Trigger.PHASE_PREFETCH in this
 
     private data class DueSource(
         val row: SchedulerRow<*>,
@@ -367,6 +376,7 @@ class FetchScheduler(
     private fun persist(row: SchedulerRow<*>, value: Any?) {
         val codec = row.codec ?: return
         if (value == null) return
+        // Scheduler rows intentionally erase T; the row keeps codec and source paired.
         @Suppress("UNCHECKED_CAST")
         val encoded = (codec as SourceCodec<Any?>).encode(value)
         store.save(row.source.id, encoded, clock.wallMs())

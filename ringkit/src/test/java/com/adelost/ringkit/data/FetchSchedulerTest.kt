@@ -82,7 +82,7 @@ class FetchSchedulerTest {
             scope = scope,
             clock = clock,
             gateOpen = gate,
-            prefetchPulses = pulses,
+            priorityWindowPulses = pulses,
             visibleSources = visible,
             ttlTicks = ticks,
             store = store,
@@ -114,13 +114,19 @@ class FetchSchedulerTest {
 
     // 2 ------------------------------------------------------------------
     @Test
-    fun `A prefetch pulse sweeps stale PHASE_PREFETCH sources, priority ordered, fresh skipped`() {
+    fun `A priority pulse sweeps stale priority-window sources in declared order`() {
         val order = mutableListOf<String>()
         val p1 = FakeSource("p1", order); val p2 = FakeSource("p2", order)
         val v = FakeSource("v", order)
         val h = Harness(listOf(
-            SchedulerRow(p2, SourcePolicy(15.minutes, setOf(Trigger.PHASE_PREFETCH), stagePriority = 2)),
-            SchedulerRow(p1, SourcePolicy(15.minutes, setOf(Trigger.PHASE_PREFETCH), stagePriority = 1)),
+            SchedulerRow(
+                p2,
+                SourcePolicy(15.minutes, setOf(Trigger.HIGH_PRIORITY_WINDOW), stagePriority = 2),
+            ),
+            SchedulerRow(
+                p1,
+                SourcePolicy(15.minutes, setOf(Trigger.HIGH_PRIORITY_WINDOW), stagePriority = 1),
+            ),
             SchedulerRow(v, visiblePolicy()),
         ))
         h.pulse()
@@ -132,16 +138,19 @@ class FetchSchedulerTest {
 
     // 3 ------------------------------------------------------------------
     @Test
-    fun `Frozen gate blocks everything, manual included, and queued work runs on landing`() {
+    fun `Frozen gate blocks everything and queued work runs when execution resumes`() {
         val a = FakeSource("a")
         val h = Harness(listOf(SchedulerRow(a, visiblePolicy())))
         h.gate.value = false
         h.visible.value = setOf(a.id)
         h.scheduler.manual(a.id)
         h.tick()
-        assertEquals(0, a.calls) // frozen mid-jump
-        assertEquals(FetchPlan.WaitingFor(FetchTrigger.LANDING), h.scheduler.plans.value[a.id])
-        h.gate.value = true      // landed
+        assertEquals(0, a.calls)
+        assertEquals(
+            FetchPlan.WaitingFor(FetchTrigger.EXECUTION_RESUMED),
+            h.scheduler.plans.value[a.id],
+        )
+        h.gate.value = true
         assertEquals(1, a.calls) // the queued manual runs
     }
 
@@ -194,7 +203,7 @@ class FetchSchedulerTest {
         val a = FakeSource("a")
         val policy = SourcePolicy(
             ttl = 15.minutes,
-            triggers = setOf(Trigger.VISIBLE, Trigger.PHASE_PREFETCH),
+            triggers = setOf(Trigger.VISIBLE, Trigger.HIGH_PRIORITY_WINDOW),
         )
         val h = Harness(listOf(SchedulerRow(a, policy)))
 
@@ -203,10 +212,32 @@ class FetchSchedulerTest {
         assertEquals(
             FetchPlan.FreshUntil(
                 atWallMs = h.clock.wall + 15 * 60_000L,
-                trigger = FetchTrigger.VISIBLE_OR_CLIMB,
+                trigger = FetchTrigger.VISIBLE_OR_HIGH_PRIORITY_WINDOW,
             ),
             h.scheduler.plans.value[a.id],
         )
+    }
+
+    @Suppress("DEPRECATION")
+    @Test
+    fun `legacy priority trigger remains executable for one compatibility cycle`() {
+        val a = FakeSource("legacy")
+        val h = Harness(
+            listOf(
+                SchedulerRow(
+                    a,
+                    SourcePolicy(
+                        ttl = 15.minutes,
+                        triggers = setOf(Trigger.PHASE_PREFETCH),
+                    ),
+                ),
+            ),
+        )
+
+        h.pulse()
+
+        assertEquals(1, a.calls)
+        assertEquals(FetchCause.HIGH_PRIORITY_WINDOW, a.requests.single().cause)
     }
 
     @Test
@@ -215,7 +246,7 @@ class FetchSchedulerTest {
         var waitingForHome = true
         val policy = visiblePolicy().copy(
             blockedPlan = {
-                if (waitingForHome) FetchPlan.WaitingFor(FetchTrigger.HOME) else null
+                if (waitingForHome) FetchPlan.WaitingFor(FetchTrigger.CONTEXT_READY) else null
             },
         )
         val h = Harness(listOf(SchedulerRow(a, policy)))
@@ -223,7 +254,10 @@ class FetchSchedulerTest {
         h.visible.value = setOf(a.id)
         h.scheduler.manual(a.id)
         assertEquals(0, a.calls)
-        assertEquals(FetchPlan.WaitingFor(FetchTrigger.HOME), h.scheduler.plans.value[a.id])
+        assertEquals(
+            FetchPlan.WaitingFor(FetchTrigger.CONTEXT_READY),
+            h.scheduler.plans.value[a.id],
+        )
 
         waitingForHome = false
         h.tick()
@@ -260,7 +294,7 @@ class FetchSchedulerTest {
         val row = SchedulerRow(a, visiblePolicy(), codec)
         val h = Harness(listOf(row), store = store)
         val s = h.scheduler.state(a.id).value
-        assertEquals("lastKnown", s.value)       // the watch remembers what it knew
+        assertEquals("lastKnown", s.value)       // the host remembers what it knew
         assertNull(s.fetchedAtMono)              // unknown age after reboot
         assertEquals(Health.AGING, healthOf(s, row.policy, h.clock.nowMs()))
     }
