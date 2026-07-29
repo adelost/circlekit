@@ -12,6 +12,7 @@ internal data class ReadyUpdateMetadata(
     val sizeBytes: Long,
     val sha256: String,
     val validUntilEpochMs: Long?,
+    val changelog: String = "",
 )
 
 internal class UpdatePrefs(context: Context, productId: String) {
@@ -36,7 +37,8 @@ internal class UpdatePrefs(context: Context, productId: String) {
             val sha = normalizedSha256(prefs.getString(KEY_READY_SHA, null)) ?: return null
             val versionCode = prefs.getInt(KEY_READY_VERSION_CODE, -1).takeIf { it >= 0 }
             val validUntil = prefs.getLong(KEY_READY_VALID_UNTIL, -1L).takeIf { it > 0L }
-            return ReadyUpdateMetadata(version, versionCode, asset, path, size, sha, validUntil)
+            val changelog = prefs.getString(KEY_READY_CHANGELOG, "").orEmpty()
+            return ReadyUpdateMetadata(version, versionCode, asset, path, size, sha, validUntil, changelog)
         }
         set(value) {
             if (value == null) {
@@ -54,6 +56,7 @@ internal class UpdatePrefs(context: Context, productId: String) {
                     .putString(KEY_READY_PATH, value.apkPath)
                     .putLong(KEY_READY_SIZE, value.sizeBytes)
                     .putString(KEY_READY_SHA, "sha256:${value.sha256}")
+                    .putString(KEY_READY_CHANGELOG, value.changelog)
                     .apply()
             }
         }
@@ -67,6 +70,7 @@ internal class UpdatePrefs(context: Context, productId: String) {
             .remove(KEY_READY_PATH)
             .remove(KEY_READY_SIZE)
             .remove(KEY_READY_SHA)
+            .remove(KEY_READY_CHANGELOG)
             .apply()
     }
 
@@ -80,6 +84,7 @@ internal class UpdatePrefs(context: Context, productId: String) {
         const val KEY_READY_PATH = "ready_path"
         const val KEY_READY_SIZE = "ready_size"
         const val KEY_READY_SHA = "ready_sha256"
+        const val KEY_READY_CHANGELOG = "ready_changelog"
     }
 }
 

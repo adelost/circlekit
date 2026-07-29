@@ -81,7 +81,7 @@ class UpdateController(
             fetched == null -> UpdateState.Unavailable("No compatible ${product.id} release")
             fetched.isExpiredAt(nowEpochMs()) -> UpdateState.Unavailable("Release metadata expired")
             !product.isNewer(fetched, currentVersionName, currentVersionCode) -> UpdateState.UpToDate
-            else -> UpdateState.Available(fetched.versionName, fetched.sizeBytes)
+            else -> UpdateState.Available(fetched.versionName, fetched.sizeBytes, fetched.changelog)
         }
         mutableState.value = next
         if (mutableAutoUpdate.value && next is UpdateState.Available) download(installAfterDownload = false)
@@ -91,11 +91,21 @@ class UpdateController(
         val release = candidate ?: return
         val state = mutableState.value
         if (state !is UpdateState.Available) return
-        mutableState.value = UpdateState.Downloading(release.versionName, 0f, release.sizeBytes)
+        mutableState.value = UpdateState.Downloading(
+            release.versionName,
+            0f,
+            release.sizeBytes,
+            release.changelog,
+        )
         scope.launch {
             val result = withContext(Dispatchers.IO) {
                 SecureApkDownloader.download(appContext, product, release) { progress ->
-                    mutableState.value = UpdateState.Downloading(release.versionName, progress, release.sizeBytes)
+                    mutableState.value = UpdateState.Downloading(
+                        release.versionName,
+                        progress,
+                        release.sizeBytes,
+                        release.changelog,
+                    )
                 }
             }
             when (result) {
@@ -130,16 +140,29 @@ class UpdateController(
                 release.sizeBytes,
                 release.sha256,
                 release.validUntilEpochMs,
+                release.changelog,
             )
         }
         // A download started for an install never surfaces READY in between:
         // one frame of a tappable "READY · TAP" invites a second tap into a
         // flow that is already running.
         if (installAfterDownload) {
-            install(UpdateState.Installing(release.versionName, file.absolutePath, release.sizeBytes))
+            install(
+                UpdateState.Installing(
+                    release.versionName,
+                    file.absolutePath,
+                    release.sizeBytes,
+                    changelog = release.changelog,
+                ),
+            )
             return
         }
-        mutableState.value = UpdateState.ReadyToInstall(release.versionName, file.absolutePath, release.sizeBytes)
+        mutableState.value = UpdateState.ReadyToInstall(
+            release.versionName,
+            file.absolutePath,
+            release.sizeBytes,
+            release.changelog,
+        )
     }
 
     private fun install(claim: UpdateState.Installing) {
@@ -155,13 +178,19 @@ class UpdateController(
             }
             // Re-published from the verified metadata, not the claim: prefs is
             // what actually gets handed to the installer.
-            mutableState.value = UpdateState.Installing(ready.versionName, ready.apkPath, ready.sizeBytes)
+            mutableState.value = UpdateState.Installing(
+                ready.versionName,
+                ready.apkPath,
+                ready.sizeBytes,
+                changelog = ready.changelog,
+            )
             val storageFailure = withContext(Dispatchers.IO) {
                 installStorageFailureLabel(ready.sizeBytes, ReleaseInstaller.availableInstallBytes(appContext))
             }
             if (storageFailure != null) {
                 mutableState.value = UpdateState.InstallFailed(
                     ready.versionName, ready.apkPath, storageFailure, ready.sizeBytes,
+                    ready.changelog,
                 )
                 return@launch
             }
@@ -172,6 +201,7 @@ class UpdateController(
                     ready.apkPath,
                     result.reason ?: "install handoff failed",
                     ready.sizeBytes,
+                    ready.changelog,
                 )
             }
         }
@@ -179,7 +209,12 @@ class UpdateController(
 
     private fun restoreReadyState(): UpdateState.ReadyToInstall? {
         val ready = verifiedReadyMetadata() ?: return null
-        return UpdateState.ReadyToInstall(ready.versionName, ready.apkPath, ready.sizeBytes)
+        return UpdateState.ReadyToInstall(
+            ready.versionName,
+            ready.apkPath,
+            ready.sizeBytes,
+            ready.changelog,
+        )
     }
 
     private fun verifiedReadyMetadata(): ReadyUpdateMetadata? {
@@ -247,6 +282,7 @@ class UpdateController(
                             installing.apkPath,
                             event.reason,
                             installing.sizeBytes,
+                            installing.changelog,
                         )
                     }
                 }
