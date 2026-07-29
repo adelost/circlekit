@@ -4,13 +4,13 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 
 /**
- * Shared product-family colours. The watch owns the health semantics; the
- * phone companion reuses the neutral graphite/ink/accent primitives without
- * pretending that every phone surface is a watch ring.
+ * Shared surface-family colours. Round instruments own health semantics;
+ * rectangular companions reuse the neutral graphite/ink/accent primitives
+ * without pretending every surface is a status ring.
  */
 object RingTokens {
-    // Health remains an explicit watch-only semantic, but the pigments now
-    // come from the same Cinematic Graphite ladder as Jump/Trackbook.
+    // Health remains an explicit instrument semantic, and its pigments come
+    // from the same Cinematic Graphite ladder as the neutral surfaces.
     val Fresh = GraphiteTokens.Green
     val Aging = GraphiteTokens.Orange
     val Broken = GraphiteTokens.Red

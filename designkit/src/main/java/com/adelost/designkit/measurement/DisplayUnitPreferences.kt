@@ -28,11 +28,11 @@ data class MeasurementText(val value: String, val unit: String) {
 /**
  * The single display-only seam between SI domain data and UI strings.
  *
- * Altitude and horizontal distance are intentionally independent: Norwegian
- * and European skydivers commonly use feet for the altimeter while retaining
- * metric map distances. Every speed remains SI (m/s), independent of those
- * two display choices. This prevents one debrief from mixing ft/s, mph and
- * m/s while altitude and map distance use their selected conventions.
+ * Altitude and horizontal distance are intentionally independent because a
+ * host may combine imperial altitude with metric map distances. Every speed
+ * remains SI (m/s), independent of those two display choices. This prevents
+ * one view from mixing ft/s, mph and m/s while altitude and distance use
+ * their selected conventions.
  */
 data class DisplayUnitPreferences(
     val altitude: AltitudeDisplayUnit = AltitudeDisplayUnit.METRES,
@@ -43,7 +43,7 @@ data class DisplayUnitPreferences(
         AltitudeDisplayUnit.FEET -> MeasurementText(decimal(metres * METRES_TO_FEET, decimals), "ft")
     }
 
-    /** Compact saved-jump value: 1.7 km / 5.6 kft instead of five digits. */
+    /** Compact long-range value: 1.7 km / 5.6 kft instead of five digits. */
     fun formatAltitudeCompact(metres: Float): MeasurementText = when (altitude) {
         AltitudeDisplayUnit.METRES -> if (abs(metres) >= METRES_PER_KILOMETRE) {
             MeasurementText(decimal(metres / METRES_PER_KILOMETRE, 1), "km")
@@ -61,7 +61,7 @@ data class DisplayUnitPreferences(
     }
 
     /**
-     * Live dial altitude. Keep the measured value in ordinary altitude units:
+     * Primary altitude readout. Keep the measured value in ordinary units:
      * metric tenths while the value has at most three whole digits, then whole
      * metres. Feet are always whole because a tenth of a foot overstates the
      * barometer's physical resolution. Never coarsen either unit to ten-unit
