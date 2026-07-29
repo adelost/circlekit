@@ -16,8 +16,18 @@ fun canStartUpdateInstall(state: UpdateState): Boolean =
  * downloaded to install yet.
  */
 fun installClaimState(state: UpdateState): UpdateState.Installing? = when (state) {
-    is UpdateState.ReadyToInstall -> UpdateState.Installing(state.versionName, state.apkPath, state.sizeBytes)
-    is UpdateState.InstallFailed -> UpdateState.Installing(state.versionName, state.apkPath, state.sizeBytes)
+    is UpdateState.ReadyToInstall -> UpdateState.Installing(
+        state.versionName,
+        state.apkPath,
+        state.sizeBytes,
+        changelog = state.changelog,
+    )
+    is UpdateState.InstallFailed -> UpdateState.Installing(
+        state.versionName,
+        state.apkPath,
+        state.sizeBytes,
+        changelog = state.changelog,
+    )
     else -> null
 }
 
@@ -73,6 +83,16 @@ fun updateTargetSizeBytes(state: UpdateState): Long? = when (state) {
     is UpdateState.Installing -> state.sizeBytes
     is UpdateState.InstallFailed -> state.sizeBytes
     else -> null
+}
+
+/** Verified release notes carried by every state that still represents that release. */
+fun updateTargetChangelog(state: UpdateState): String = when (state) {
+    is UpdateState.Available -> state.changelog
+    is UpdateState.Downloading -> state.changelog
+    is UpdateState.ReadyToInstall -> state.changelog
+    is UpdateState.Installing -> state.changelog
+    is UpdateState.InstallFailed -> state.changelog
+    else -> ""
 }
 
 fun updateSizeLabel(sizeBytes: Long?): String? {

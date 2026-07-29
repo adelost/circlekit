@@ -30,17 +30,39 @@ class UpdatePolicyTest {
 
     @Test
     fun `an install tap claims installing before the apk is re-verified`() {
-        val ready = UpdateState.ReadyToInstall("0.5.441", "/cache/update.apk", 6_154_512L)
+        val ready = UpdateState.ReadyToInstall(
+            "0.5.441",
+            "/cache/update.apk",
+            6_154_512L,
+            "New controls",
+        )
         assertEquals(
-            UpdateState.Installing("0.5.441", "/cache/update.apk", 6_154_512L),
+            UpdateState.Installing(
+                "0.5.441",
+                "/cache/update.apk",
+                6_154_512L,
+                changelog = "New controls",
+            ),
             installClaimState(ready),
         )
 
-        val failed = UpdateState.InstallFailed("0.5.441", "/cache/update.apk", "install blocked", 6_154_512L)
+        val failed = UpdateState.InstallFailed(
+            "0.5.441",
+            "/cache/update.apk",
+            "install blocked",
+            6_154_512L,
+            "New controls",
+        )
         assertEquals(
-            UpdateState.Installing("0.5.441", "/cache/update.apk", 6_154_512L),
+            UpdateState.Installing(
+                "0.5.441",
+                "/cache/update.apk",
+                6_154_512L,
+                changelog = "New controls",
+            ),
             installClaimState(failed),
         )
+        assertEquals("New controls", updateTargetChangelog(installClaimState(ready)!!))
     }
 
     @Test
