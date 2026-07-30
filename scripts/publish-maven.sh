@@ -159,9 +159,14 @@ env -u CLOUDFLARE_API_TOKEN npx wrangler pages deploy "$cumulative_repository" \
 for module in "${MODULES[@]}"; do
   for extension in "${EXTENSIONS[@]}"; do
     url="$REMOTE_REPOSITORY/io/v1d/circlekit/$module/$VERSION/$module-$VERSION.$extension"
-    status="$(curl -sS -o /dev/null -w '%{http_code}' "$url")"
+    status=000
+    for attempt in {1..15}; do
+      status="$(curl -sS -o /dev/null -w '%{http_code}' "$url")"
+      [[ "$status" == 200 ]] && break
+      sleep 2
+    done
     [[ "$status" == 200 ]] || {
-      echo "publish-maven: deployed URL is not reachable: $url (HTTP $status)" >&2
+      echo "publish-maven: deployed URL is not reachable after 30 s: $url (HTTP $status)" >&2
       exit 1
     }
   done
