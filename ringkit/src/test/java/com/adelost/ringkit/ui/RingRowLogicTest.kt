@@ -236,6 +236,39 @@ class RingRowLogicTest {
         assertEquals(36f, settingsRowInsetH.value, 0.001f)
     }
 
+    @Test
+    fun `adjustment controls clear floating back chrome inside their local round face`() {
+        val localFaceDp = CircleUiProfiles.CANON_ROUND_CANVAS_DP
+        val withBack = adjustmentRowInsetDp(
+            viewportWidthDp = localFaceDp,
+            viewportHeightDp = localFaceDp,
+            round = true,
+            baseInsetDp = roundRowInsetH.value,
+            reservedSlots = listOf(CircleChromeSlot.HOUR_9),
+        )
+        val withoutBack = adjustmentRowInsetDp(
+            viewportWidthDp = localFaceDp,
+            viewportHeightDp = localFaceDp,
+            round = true,
+            baseInsetDp = roundRowInsetH.value,
+            reservedSlots = emptyList(),
+        )
+
+        assertEquals(40.12f, withBack, 0.05f)
+        assertEquals(roundRowInsetH.value, withoutBack, 0.001f)
+        assertEquals(
+            settingsRowInsetH.value,
+            adjustmentRowInsetDp(
+                viewportWidthDp = 360f,
+                viewportHeightDp = 800f,
+                round = false,
+                baseInsetDp = settingsRowInsetH.value,
+                reservedSlots = listOf(CircleChromeSlot.HOUR_9),
+            ),
+            0.001f,
+        )
+    }
+
     /**
      * The straight edge used to be measured at the viewport centre, where the
      * circle takes nothing away — so the X at 9 o'clock was the only thing

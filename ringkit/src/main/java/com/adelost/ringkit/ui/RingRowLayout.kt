@@ -99,6 +99,34 @@ internal fun ringRowHorizontalInsets(round: Boolean): RingRowHorizontalInsets {
 }
 
 /**
+ * Horizontal clearance for the shared continuous-value editor.
+ *
+ * The step controls are vertically centred, therefore their geometry is
+ * deterministic and does not need a position-observer. Using the editor's
+ * own viewport also keeps the answer correct when a round watch face is
+ * embedded in a larger rectangular host for preview or testing.
+ */
+internal fun adjustmentRowInsetDp(
+    viewportWidthDp: Float,
+    viewportHeightDp: Float,
+    round: Boolean,
+    baseInsetDp: Float,
+    reservedSlots: List<CircleChromeSlot>,
+): Float = if (round) {
+    maxOf(
+        baseInsetDp,
+        roundSafeInsetDp(
+            viewportWidthDp = viewportWidthDp,
+            viewportHeightDp = viewportHeightDp,
+            contentCenterYDp = viewportHeightDp / 2f,
+            reservedSlots = reservedSlots,
+        ),
+    )
+} else {
+    baseInsetDp
+}
+
+/**
  * The straight horizontal inset a rows list keeps on a round face.
  *
  * A reading list keeps a STRAIGHT left edge, so ONE width has to be safe for
