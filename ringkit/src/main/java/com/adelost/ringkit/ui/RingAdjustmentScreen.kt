@@ -1,8 +1,6 @@
 package com.adelost.ringkit.ui
 
 import androidx.compose.foundation.border
-import com.adelost.designkit.ui.circleSafeTopInsetDp
-import com.adelost.designkit.ui.roundSafeContentInset
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
@@ -33,6 +31,7 @@ import androidx.compose.ui.unit.sp
 import androidx.wear.compose.material.Icon
 import androidx.wear.compose.material.Text
 import com.adelost.designkit.ui.LocalCircleSurfaceLayout
+import com.adelost.designkit.ui.LocalRoundChromeReservation
 import com.adelost.designkit.ui.CircleSurfaceClass
 import com.adelost.designkit.ui.MenuDesign
 import com.adelost.designkit.ui.RingIcons
@@ -94,23 +93,19 @@ internal fun adjustmentLinkRow(
 internal fun RingAdjustmentScreen(screen: RingScreen.Adjustment) {
     val row = screen.row.collectAsState(initial = screen.initial).value
     BoxWithConstraints(Modifier.fillMaxSize()) {
-        val diameter = if (maxWidth < maxHeight) maxWidth else maxHeight
+        val round = LocalCircleSurfaceLayout.current.surfaceClass == CircleSurfaceClass.ROUND
         val insets = ringRowHorizontalInsets(
-            round = LocalCircleSurfaceLayout.current.surfaceClass == CircleSurfaceClass.ROUND,
+            round = round,
         )
-        val safeTop = circleSafeTopInsetDp(
-            diameterDp = diameter.value,
-            contentWidthDp = (maxWidth - insets.start - insets.end).value,
+        val adjustmentInset = adjustmentRowInsetDp(
+            viewportWidthDp = maxWidth.value,
+            viewportHeightDp = maxHeight.value,
+            round = round,
+            baseInsetDp = insets.start.value,
+            reservedSlots = LocalRoundChromeReservation.current,
         ).dp
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            modifier = Modifier.fillMaxSize(),
-        ) {
-            // Same fixed height as every other menu screen (#532). This file
-            // still pinned the title to the bottom of a band measured for the
-            // stepper's width, which is the placement that ate ALARM HEIGHTS.
+        Box(modifier = Modifier.fillMaxSize()) {
             ScreenTitle(screen.title)
-            Spacer(Modifier.height(maxOf(safeTop - MenuDesign.roundTitleTopPadding, 14.dp)))
             StepperPillRow(
                 title = "VALUE",
                 value = row.sub,
@@ -123,17 +118,15 @@ internal fun RingAdjustmentScreen(screen: RingScreen.Adjustment) {
                 onToggle = row.onToggle,
                 adjustHoldMs = row.adjustHoldMs,
                 centerHoldMs = row.centerHoldMs,
-                // The minus button was drawn UNDER the X: this row took the
-                // plain row inset, which knows about the circle but not about
-                // the chrome mounted at 9 o'clock -- and the stepper sits at
-                // the vertical centre, which is exactly where X lives. The
-                // shared modifier measures its own position and steps aside,
-                // with the existing padding as its base so it is not counted
-                // twice.
+                // Adjustment is one shared layout on every round host. Its
+                // controls sit on the face centreline, so reserve that exact
+                // chord and the floating chrome there. Measuring the local
+                // BoxWithConstraints is essential: a watch face preview is a
+                // nested square inside a rectangular phone root.
                 modifier = Modifier
+                    .align(Alignment.Center)
                     .fillMaxWidth()
-                    .padding(horizontal = insets.start)
-                    .roundSafeContentInset(baseInsetDp = insets.start.value),
+                    .padding(horizontal = adjustmentInset),
             )
         }
     }
