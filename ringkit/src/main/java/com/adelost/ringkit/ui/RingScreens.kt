@@ -261,6 +261,13 @@ data class RowSpec(
     /** Both set = the row opens a dedicated continuous-value submenu. */
     val onDec: (() -> Unit)? = null,
     val onInc: (() -> Unit)? = null,
+    /**
+     * Optional structured copy for the continuous-value submenu. [sub]
+     * remains the compact parent-row summary; this separates the value a
+     * person changes from its reference/context so a round editor never has
+     * to parse product prose or wrap one opaque string around its controls.
+     */
+    val adjustmentValue: AdjustmentValuePresentation? = null,
     /** Optional visibility toggle shown as an eye in the value centre. */
     val enabled: Boolean? = null,
     val onToggle: (() -> Unit)? = null,
@@ -315,10 +322,25 @@ data class RowSpec(
         require(onDec == null || choices.isEmpty()) {
             "A row cannot be both an adjustment and a finite choice"
         }
+        require(adjustmentValue == null || onDec != null) {
+            "Structured adjustment copy belongs only to an adjustment row"
+        }
         require(icon == null || centerValue == null) { "A row ring holds either an icon or a value, never both" }
         require(hint.length <= MenuDesign.hintMaxChars) {
             "Row '$key' explains itself in ${hint.length} characters; the centre cue holds " +
                 "${MenuDesign.hintMaxChars} before it ellipsises. One sentence, not two."
+        }
+    }
+}
+
+data class AdjustmentValuePresentation(
+    val primary: String,
+    val supporting: String? = null,
+) {
+    init {
+        require(primary.isNotBlank()) { "An adjustment value needs visible primary copy" }
+        require(supporting == null || supporting.isNotBlank()) {
+            "Adjustment supporting copy is either absent or visible"
         }
     }
 }

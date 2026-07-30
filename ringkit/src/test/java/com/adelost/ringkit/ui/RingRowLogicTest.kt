@@ -129,6 +129,7 @@ class RingRowLogicTest {
         val adjustment = row(onDec = {}, onInc = {}).copy(
             icon = RingIcons.Gauge,
             accent = ringIconAccent(RingIcons.Gauge),
+            adjustmentValue = AdjustmentValuePresentation("300 M", "ABOVE START"),
         )
         val link = adjustmentLinkRow(adjustment) { opened = true }
 
@@ -139,8 +140,23 @@ class RingRowLogicTest {
         assertEquals(adjustment.sub, link.sub)
         assertNull(link.onDec)
         assertNull(link.onInc)
+        assertNull(link.adjustmentValue)
         link.onTap?.invoke()
         assertTrue(opened)
+    }
+
+    @Test
+    fun `structured adjustment copy is data and cannot leak onto another row kind`() {
+        val presentation = AdjustmentValuePresentation("30 M", "ABOVE START")
+        val adjustment = row(onDec = {}, onInc = {}).copy(adjustmentValue = presentation)
+
+        assertEquals(presentation, adjustment.adjustmentValue)
+        assertThrows(IllegalArgumentException::class.java) {
+            row().copy(adjustmentValue = presentation)
+        }
+        assertThrows(IllegalArgumentException::class.java) {
+            AdjustmentValuePresentation("", "ABOVE START")
+        }
     }
 
     @Test

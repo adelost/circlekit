@@ -76,6 +76,7 @@ internal fun adjustmentLinkRow(
         labelProgress = null,
         onDec = null,
         onInc = null,
+        adjustmentValue = null,
         enabled = null,
         onToggle = null,
         holdToConfirm = false,
@@ -108,7 +109,8 @@ internal fun RingAdjustmentScreen(screen: RingScreen.Adjustment) {
             ScreenTitle(screen.title)
             StepperPillRow(
                 title = "VALUE",
-                value = row.sub,
+                value = row.adjustmentValue?.primary ?: row.sub,
+                supporting = row.adjustmentValue?.supporting,
                 icon = row.icon,
                 semanticColor = row.semanticColor,
                 accent = row.accent,
@@ -146,7 +148,8 @@ internal fun PhoneAdjustmentScreen(
         Spacer(Modifier.height(28.dp))
         StepperPillRow(
             title = "VALUE",
-            value = row.sub,
+            value = row.adjustmentValue?.primary ?: row.sub,
+            supporting = row.adjustmentValue?.supporting,
             icon = row.icon,
             semanticColor = row.semanticColor,
             accent = row.accent,
@@ -169,6 +172,7 @@ internal fun PhoneAdjustmentScreen(
 private fun StepperPillRow(
     title: String,
     value: String,
+    supporting: String? = null,
     onDec: () -> Unit,
     onInc: () -> Unit,
     icon: ImageVector? = null,
@@ -240,6 +244,16 @@ private fun StepperPillRow(
                             modifier = Modifier.padding(start = 5.dp).size(13.dp),
                         )
                     }
+                }
+                if (supporting != null) {
+                    Text(
+                        text = supporting,
+                        color = RingTokens.Dim,
+                        fontSize = 7.sp,
+                        fontWeight = FontWeight.Bold,
+                        textAlign = TextAlign.Center,
+                        maxLines = 1,
+                    )
                 }
             }
         }
