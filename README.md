@@ -19,3 +19,14 @@ The non-published `showcase-catalog`, `showcase-phone`, and `showcase-wear`
 modules form an installable component laboratory over the same source. Debug
 builds expose named, side-effect-safe navigation through
 `tools/showcase-probe.sh`; release builds do not register the probe receiver.
+
+Build installable release hosts from one exact source revision with:
+
+```bash
+scripts/build-showcase-release.sh X.Y.Z
+```
+
+The command emits signed Phone/Wear APKs, SHA-256 digests and a provenance
+report under `build/showcase-release/X.Y.Z/`. The showcase uses the stable
+Android developer signer intentionally: it is a side-effect-free laboratory,
+never a trusted product/update authority.
