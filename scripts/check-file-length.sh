@@ -5,6 +5,8 @@
 # Run it while changing CircleKit structure. New production Kotlin files may
 # never exceed 500 lines; any audited legacy exception must be listed in the
 # shrink-only baseline next to this script.
+# Module scope comes from settings.gradle.kts, so its parser must tolerate
+# harmless formatting changes such as one-line or multi-line include calls.
 
 set -euo pipefail
 
@@ -14,22 +16,73 @@ BASELINE_FILE="$SCRIPT_DIR/file-length-baseline.txt"
 SETTINGS_FILE="$REPO_ROOT/settings.gradle.kts"
 MAX=500
 
+parse_gradle_modules() {
+  awk '
+    function emit_modules(text, match_text) {
+      while (match(text, /"(:[^"]+)"/)) {
+        match_text = substr(text, RSTART + 1, RLENGTH - 2)
+        print match_text
+        text = substr(text, RSTART + RLENGTH)
+      }
+    }
+
+    {
+      code = $0
+      sub(/[[:space:]]*\/\/.*$/, "", code)
+      if (!in_include) {
+        if (!match(code, /^[[:space:]]*include[[:space:]]*\(/)) next
+        code = substr(code, RSTART + RLENGTH)
+        in_include = 1
+      }
+      emit_modules(code)
+      if (code ~ /\)/) in_include = 0
+    }
+
+    END {
+      if (in_include) exit 3
+    }
+  ' "$1"
+}
+
+verify_module_parser() {
+  local actual expected
+  if ! actual="$(parse_gradle_modules /dev/stdin <<'EOF'
+include(":one-line")
+include (
+    ":multi-line",
+    ":nested:module", // ")" and ":commented-out"
+)
+EOF
+)"; then
+    echo "check-file-length: module parser canary failed" >&2
+    exit 2
+  fi
+  expected=$':one-line\n:multi-line\n:nested:module'
+  if [[ "$actual" != "$expected" ]]; then
+    echo "check-file-length: module parser canary returned unexpected scope" >&2
+    exit 2
+  fi
+}
+
 if [[ ! -f "$BASELINE_FILE" || ! -f "$SETTINGS_FILE" ]]; then
   echo "check-file-length: baseline or settings.gradle.kts is missing" >&2
   exit 2
 fi
 
+verify_module_parser
+
 declare -a modules=()
-while IFS= read -r line; do
-  [[ "$line" =~ ^[[:space:]]*include\( ]] || continue
-  remainder="$line"
-  while [[ "$remainder" =~ \"(:[^\"]+)\" ]]; do
-    match="${BASH_REMATCH[1]}"
-    path="${match#:}"
+if ! parsed_modules="$(parse_gradle_modules "$SETTINGS_FILE")"; then
+  echo "check-file-length: malformed Gradle include declaration" >&2
+  exit 2
+fi
+
+if [[ -n "$parsed_modules" ]]; then
+  while IFS= read -r module; do
+    path="${module#:}"
     modules+=("${path//:/\/}")
-    remainder="${remainder#*\"$match\"}"
-  done
-done < "$SETTINGS_FILE"
+  done <<< "$parsed_modules"
+fi
 
 if [[ "${#modules[@]}" -eq 0 ]]; then
   echo "check-file-length: no Gradle modules parsed; refusing a false green" >&2
