@@ -12,8 +12,8 @@ android {
         applicationId = "io.v1d.circlekit.showcase.phone"
         minSdk = 26
         targetSdk = 35
-        versionCode = 1
-        versionName = "0.1.0"
+        versionCode = rootProject.extra["showcaseVersionCode"] as Int
+        versionName = rootProject.version.toString()
     }
 
     compileOptions {
@@ -28,6 +28,14 @@ android {
     buildFeatures {
         compose = true
         buildConfig = true
+    }
+
+    buildTypes {
+        release {
+            // A stable low-authority lab signer makes the standalone APK
+            // installable without granting it any product signing authority.
+            signingConfig = signingConfigs.getByName("debug")
+        }
     }
 }
 

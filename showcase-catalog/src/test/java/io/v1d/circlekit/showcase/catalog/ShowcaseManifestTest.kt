@@ -73,6 +73,8 @@ class ShowcaseManifestTest {
         val root = ShowcaseScreens.root(ShowcaseSession()) as com.adelost.ringkit.ui.RingScreen.Launcher
 
         assertEquals(ShowcaseFamily.entries.size, root.entries.size)
+        assertEquals("TOKENS", root.entries.first().label)
+        assertTrue(root.entries.all { it.label.length <= 9 })
         root.entries.forEach { entry ->
             assertTrue(entry.open() is com.adelost.ringkit.ui.RingScreen.Launcher)
         }
