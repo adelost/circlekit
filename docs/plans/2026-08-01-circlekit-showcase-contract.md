@@ -416,6 +416,12 @@ unpublished version is never valid consumer evidence.
 
 Proof: focused interaction tests plus manual real holds on both devices.
 
+**Done:** the lab now covers data-owned launcher availability/timing, action
+rows, recoverable and blocked states, toggle/2/7-way choices, nested
+adjustments and measured work. Manual Phone/Wear proof covered early release,
+completed hold, rapid reuse and a 500 ms adjustment step. The named probe was
+also made cold-start deterministic after it reproduced a root-screen race.
+
 ### Wave 3 — text and media
 
 - Define the missing cross-host text-entry seam without inventing a watch
