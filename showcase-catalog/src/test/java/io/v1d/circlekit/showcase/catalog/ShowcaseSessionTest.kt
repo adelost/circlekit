@@ -1,6 +1,7 @@
 package io.v1d.circlekit.showcase.catalog
 
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -14,7 +15,7 @@ class ShowcaseSessionTest {
                 ShowcaseProbeCommand(
                     verb = "open",
                     caseId = "atom.icon-action",
-                    scenarioId = "interactive",
+                    scenarioId = "immediate",
                 ),
             ).ok,
         )
@@ -34,6 +35,39 @@ class ShowcaseSessionTest {
             ).ok,
         )
         assertTrue(session.iconActionActive.value)
+    }
+
+    @Test
+    fun `named interaction actions mutate only deterministic showcase state`() {
+        val session = ShowcaseSession()
+
+        assertTrue(session.open(ShowcaseCaseId("control.choice-row"), ShowcaseScenarioId("middle")))
+        assertEquals(3, session.interaction.choiceIndex.value)
+        assertTrue(session.invoke(ShowcaseActionId(ShowcaseSession.ACTION_NEXT_CHOICE)))
+        assertEquals(4, session.interaction.choiceIndex.value)
+
+        assertTrue(session.open(ShowcaseCaseId("control.adjustment"), ShowcaseScenarioId("maximum")))
+        assertEquals(1_000, session.interaction.adjustmentValue.value)
+        assertTrue(session.invoke(ShowcaseActionId(ShowcaseSession.ACTION_INCREMENT)))
+        assertEquals(1_000, session.interaction.adjustmentValue.value)
+
+        assertTrue(session.open(ShowcaseCaseId("control.progress"), ShowcaseScenarioId("failed")))
+        assertEquals(ShowcaseWorkState.FAILED, session.interaction.work.value)
+        assertTrue(session.invoke(ShowcaseActionId(ShowcaseSession.ACTION_ADVANCE_PROGRESS)))
+        assertEquals(ShowcaseWorkState.INDETERMINATE, session.interaction.work.value)
+    }
+
+    @Test
+    fun `recoverable availability has an action while blocked stays blocked`() {
+        val session = ShowcaseSession()
+
+        session.open(ShowcaseCaseId("control.action-row"), ShowcaseScenarioId("recoverable"))
+        assertEquals(ShowcaseAvailability.RECOVERABLE, session.interaction.availability.value)
+        session.invoke(ShowcaseActionId(ShowcaseSession.ACTION_RECOVER))
+        assertEquals(ShowcaseAvailability.AVAILABLE, session.interaction.availability.value)
+
+        session.open(ShowcaseCaseId("control.action-row"), ShowcaseScenarioId("blocked"))
+        assertEquals(ShowcaseAvailability.BLOCKED, session.interaction.availability.value)
     }
 
     @Test

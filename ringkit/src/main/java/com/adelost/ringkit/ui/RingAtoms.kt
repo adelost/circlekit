@@ -121,6 +121,7 @@ fun IconRing(
     centerValue: String? = null,
     iconRotationDegrees: Float = 0f,
     actionTiming: CircleActionTiming = CircleActionTiming.DELIBERATE,
+    enabled: Boolean = true,
 ) {
     CircleIconRing(
         icon = icon,
@@ -137,6 +138,7 @@ fun IconRing(
         centerValue = centerValue,
         iconRotationDegrees = iconRotationDegrees,
         timing = actionTiming,
+        enabled = enabled,
     )
 }
 

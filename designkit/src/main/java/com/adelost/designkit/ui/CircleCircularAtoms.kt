@@ -283,6 +283,7 @@ fun CircleIconRing(
      *  extra, so every existing ring is unaffected. */
     sub: String? = null,
     timing: CircleActionTiming = CircleActionTiming.DELIBERATE,
+    enabled: Boolean = true,
 ) {
     val feedback = rememberCircleActionFeedbackState()
     val cue = rememberCircleActionCueController(
@@ -305,9 +306,10 @@ fun CircleIconRing(
         iconRotationDegrees = iconRotationDegrees,
         choiceState = choiceState,
         sub = sub,
-        enabled = true,
+        enabled = enabled,
         gestureModifier = Modifier.circleSafeTap(
             feedback = feedback,
+            enabled = enabled,
             holdMs = timing.holdMs,
             onTap = {
                 cue.confirm()

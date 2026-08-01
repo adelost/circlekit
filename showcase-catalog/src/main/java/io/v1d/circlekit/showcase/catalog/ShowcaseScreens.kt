@@ -1,6 +1,7 @@
 package io.v1d.circlekit.showcase.catalog
 
 import com.adelost.designkit.ui.CircleAccent
+import com.adelost.designkit.ui.CircleActionTiming
 import com.adelost.designkit.ui.CircleChromeSlot
 import com.adelost.designkit.ui.CircleColorSchemes
 import com.adelost.designkit.ui.CircleColorTheme
@@ -43,6 +44,10 @@ object ShowcaseScreens {
             "foundation.colors" -> colors(pair.second)
             "foundation.geometry" -> geometry(pair.second)
             "atom.icon-action" -> iconActions(pair.second, session)
+            "control.action-row" -> ShowcaseInteractionScreens.actionRows(pair.second, session.interaction)
+            "control.choice-row" -> ShowcaseInteractionScreens.choiceRows(pair.second, session.interaction)
+            "control.adjustment" -> ShowcaseInteractionScreens.adjustmentRows(pair.second, session.interaction)
+            "control.progress" -> ShowcaseInteractionScreens.progressRows(pair.second, session.interaction)
             else -> error("No presentation for ${pair.first.id.value}")
         }
     }
@@ -154,8 +159,14 @@ object ShowcaseScreens {
         val active: Flow<Boolean?> = when (scenario.id.value) {
             "idle" -> flowOf(false)
             "active" -> flowOf(true)
-            "interactive" -> session.iconActionActive.map<Boolean, Boolean?> { it }
+            "immediate", "deliberate" -> session.iconActionActive.map<Boolean, Boolean?> { it }
+            "disabled" -> flowOf(false)
             else -> error("Unknown icon scenario ${scenario.id.value}")
+        }
+        val timing = if (scenario.id.value == "immediate") {
+            CircleActionTiming.IMMEDIATE
+        } else {
+            CircleActionTiming.DELIBERATE
         }
         return RingScreen.Launcher(
             title = scenario.label,
@@ -170,11 +181,14 @@ object ShowcaseScreens {
                     label = label,
                     open = { null },
                     run = {
-                        if (scenario.id.value == "interactive" && index == 0) {
+                        if (scenario.id.value in setOf("immediate", "deliberate") && index == 0) {
                             session.invoke(ShowcaseActionId(ShowcaseSession.ACTION_TOGGLE_ICON))
+                            session.invoke(ShowcaseActionId(ShowcaseSession.ACTION_RUN))
                         }
                     },
                     active = if (index == 0) active else flowOf(false),
+                    enabled = flowOf(scenario.id.value != "disabled" || index != 0),
+                    actionTiming = timing,
                 )
             },
         )
