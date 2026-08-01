@@ -1,13 +1,14 @@
 # CircleKit Showcase contract
 
-Status: draft for Kimi review; no showcase implementation may start until the
-review corrections are incorporated.
+Status: **accepted after independent Kimi review**. The review corrections and
+ownership boundaries below are normative. No showcase implementation may
+depart from them without updating this contract first.
 
 ## Recommendation
 
 Build a small standalone **CircleKit Showcase** product with two thin Android
 hosts (`showcase-phone` and `showcase-wear`) over one deterministic catalog and
-one renderer. Do not turn Skyvw's DEV menu into the library test bed: it is a
+CircleKit's existing surface renderers. Do not turn Skyvw's DEV menu into the library test bed: it is a
 useful consumer smoke, but it cannot prove that CircleKit is generic and it
 already omits several shared components.
 
@@ -58,9 +59,9 @@ grammar has seven cases.
 
 | Family | Canonical sources | Responsibility |
 | --- | --- | --- |
-| Color and type | `GraphiteTokens`, `GraphiteType`, `RingTokens`, `CircleColorSchemes`, `CircleAccent` | Product-neutral pigments, type and semantic emphasis |
-| Metrics and host shape | `MenuDesign`, `PhoneSurfaceDesign`, `CircleUiProfile`, `CircleSurfaceLayout`, `CircleHostShape` | One adaptive geometry contract for ROUND, PHONE_COMPACT and PHONE_WIDE |
-| Safe geometry | `CircleRoundSafeInset`, `CircleComponentViewport`, `CircleResponsiveSurface`, `MenuGridSpec`, `EdgeMenuDesign` | Circle chords, chrome reservations, scaling and grid capacity |
+| Color and type | `GraphiteTokens`, `GraphiteType`, `RingTokens`, `CircleColorScheme`, `CircleColorSchemes`, `CircleAccent` | Product-neutral pigments, type and semantic emphasis |
+| Metrics and host shape | `MenuDesign`, `PhoneSurfaceDesign`, `CircleUiProfiles`, `CircleSurfaceLayout`, `CircleSurfaceClass`, `circleHostClip` | One adaptive geometry contract for ROUND, PHONE_COMPACT and PHONE_WIDE |
+| Safe geometry | `roundSafeInsetDp`, `roundChordInsetDp`, `roundChromeInsetDp`, `CircleComponentViewport`, `CircleComponentViewportSpec`, `CircleResponsiveSurface`, `MenuGridSpec`, `EdgeMenuDesign` | Circle chords, chrome reservations, scaling and grid capacity |
 | Icon language | `RingIcons`, `RingIconsOutline`, `RING_ICON_CATALOG`, accent/style catalogs | One icon vocabulary and filled/outline projections |
 | Primitive content | `CircleText`, `CircleIcon`, `CircleStyledIcon`, `CircleCanvas` | Text, icons and canonical canvases |
 | Primitive interaction | `circleSafeTap`, `circlePressLifecycle`, `circleSafeTapOrHold`, `CircleActionTiming` | One gesture/timing law |
@@ -188,6 +189,7 @@ classDiagram
     ShowcaseCase --> RingScreen
     RingScreen --> RenderRingScreen
     RenderRingScreen --> CircleSurfaceLayout
+    note for ShowcaseProbe "invoke accepts registry-declared safe action IDs only; never arbitrary product callbacks"
 ```
 
 ## Verified gaps and risks before implementation
@@ -220,6 +222,14 @@ classDiagram
    added without a showcase case. A small explicit manifest/registry check is
    needed; it stays a manual focused tool and never enters a hosted CI or
    release gate.
+8. **Availability is richer than enabled/disabled.** Link already needs to
+   distinguish a recoverable state with an action (for example microphone
+   permission) from a blocked state with an honest reason (for example no
+   target or route). Flattening both to `disabled` loses the recovery UX.
+9. **Floating chrome is part of round safety.** A component can fit a circle
+   and still render below X@9 or gear@8. The showcase must reserve real
+   `CircleChromeSlot` data and verify content through `roundSafeInsetDp`, not
+   add sample-specific padding.
 
 These are candidate fixes, not permission to redesign. Each must first be
 reproduced in the showcase or a focused contract test, then fixed in the
@@ -246,6 +256,15 @@ versions. The showcase modules are explicitly excluded from Maven publication.
 
 Both application hosts provide only lifecycle, surface profile, system text
 input port and the debug receiver. Catalog/navigation/state code is shared.
+`showcase-catalog` is one Android library because it renders Compose content,
+but its registry, session, probe protocol and JSON projection live in a
+platform-free Kotlin package with no Android imports and focused JVM tests. A
+fourth architectural module adds no useful boundary.
+
+The text seam is deliberately small: CircleKit declares
+`openPlatformTextEntry(spec, callback)`. Phone may render the existing
+`RingTextComposer` inline; Wear delegates to the platform IME. There is no
+parallel `CircleTextEntryController` state machine.
 
 ## Catalog information model
 
@@ -259,14 +278,37 @@ data class ShowcaseCase(
     val section: ShowcaseSection,
     val title: String,
     val scenarios: List<ShowcaseScenario>,
-    val content: @Composable (ShowcaseSession) -> Unit,
+    val presentation: ShowcasePresentation,
 )
+
+sealed interface ShowcasePresentation {
+    data class Screen(val spec: RingScreen) : ShowcasePresentation
+    data class Atom(val id: ShowcaseAtomId) : ShowcasePresentation
+}
 ```
 
-The composable slot is allowed only in this non-published catalog because the
-catalog must instantiate atoms as well as full `RingScreen` templates. The
-production API remains data/spec driven. Scenario state and actions are named
-data; no host keeps a switch statement per component.
+There is exactly one catalog entry per visible design. If a public wrapper is
+the intended consumer seam, that wrapper is the catalog entry and its lower
+atom is not presented as a second component. Anything with an existing spec
+form (`RowSpec`, `RingScreen`, `EdgeMenuSpec`, and similar) is instantiated
+through that spec. A showcase-local `@Composable` slot is permitted only for a
+true atom with no spec form. The production API remains data/spec driven.
+Scenario state and actions are named data; no host keeps a switch statement
+per component.
+
+Canonical catalog projections:
+
+| Related public symbols | One visible catalog entry |
+| --- | --- |
+| `RingPressLifecycle`, `CirclePressIconRing` | press action through the lifecycle wrapper |
+| `StatRing`, `CircleIconRing`, `CircleValueDisc` | stat ring through its public spec/wrapper |
+| `BackRing`, `CircleBackDisc` | back action through `BackRing` |
+| `HoldPill`, `HoldFillBox` | hold action through `HoldPill` |
+| `ProgressRing`, `ProgressArcRing` | one progress family with its declared variants |
+| `CircleIconDisc`, `CircleIconRing` | one icon-action family with shape as data where supported |
+
+This is catalog consolidation, not permission to delete public code before a
+consumer and binary-compatibility audit.
 
 Stable ID examples:
 
@@ -304,8 +346,11 @@ tools/showcase-probe.sh --device phone open control.press-ring arming
 tools/showcase-probe.sh --device wear shot media.playback playing /tmp/play.png
 ```
 
-The probe may set deterministic state and invoke showcase-local actions. It
-must not claim a real hold/drag/rotary gesture passed unless ADB or a human
+The probe may set deterministic state and invoke only registry-declared,
+showcase-local safe action IDs. It never invokes an arbitrary `RowSpec.onTap`
+or other product callback. Navigation intent remains showcase-local until a
+second production consumer proves that it belongs in CircleKit's public API.
+It must not claim a real hold/drag/rotary gesture passed unless ADB or a human
 actually performs that gesture. Release APKs retain the visible scenario
 picker but do not register the broadcast receiver.
 
@@ -317,6 +362,7 @@ the component supports that host.
 | Dimension | Minimum cases |
 | --- | --- |
 | Interaction | idle, early release, completion, rapid reuse, disabled, callback failure |
+| Availability | available, recoverable with named action, blocked with honest reason |
 | Timing | immediate 0 ms, deliberate 200 ms, longer confirm/hold from data |
 | Work | none, indeterminate, 0%, 50%, 100%, failure/retry |
 | Choice | toggle, 2 options, 7 options, first/middle/last selection |
@@ -324,6 +370,7 @@ the component supports that host.
 | Media | no samples, active waveform, long duration, pause/resume/stop/failure |
 | Navigation | root, child, nested adjustment, back, state retained, reset |
 | Geometry | 192 dp round, common Wear diameters, compact portrait, wide/landscape, large font |
+| Chrome reservation | no chrome, X@9, X@9 + gear@8; content remains centred and unobscured |
 | Theme | every supported `CircleColorTheme`, active/supporting/danger/disabled accents |
 
 Invalid constructor inputs remain focused unit tests, not crash buttons in the
@@ -333,13 +380,15 @@ human gallery.
 
 ### Wave 0 — lock the contract
 
-- Kimi reviews this inventory, UML, missing-state list and module split.
-- Incorporate corrections and mark the document `accepted`.
+- Kimi reviewed this inventory, UML, missing-state list and module split.
+- Corrections are incorporated and the document is marked `accepted`.
 - No application code before the component taxonomy and probe safety are
   agreed.
 
-Done when both reviews name the same ownership boundaries and no open question
-changes module topology.
+**Done:** both reviews name the same ownership boundaries: showcase owns
+registry/session/probe; CircleKit owns all pixels and gesture law; hosts own
+only lifecycle, text-entry port and debug receiver. No open question changes
+module topology.
 
 ### Wave 1 — deterministic shell and foundations
 
@@ -358,6 +407,10 @@ no copied CircleKit pixel code.
 - Fix only reproduced shared-component defects; publish a new CircleKit Maven
   version before any consumer bump.
 
+Stop condition: the exact Maven artifact must be fetched back and proven to
+contain the change before Skyvw or Link may pin it. A locally published or
+unpublished version is never valid consumer evidence.
+
 Proof: focused interaction tests plus manual real holds on both devices.
 
 ### Wave 3 — text and media
@@ -365,7 +418,9 @@ Proof: focused interaction tests plus manual real holds on both devices.
 - Define the missing cross-host text-entry seam without inventing a watch
   keyboard.
 - Add capture waveform, press-to-record and playback scenarios.
-- Reproduce/fix the fixed-width waveform on round hosts.
+- Reproduce the fixed-width waveform on round hosts, then make the shared atom
+  constraint/viewport-driven and re-render it on both hosts. A showcase-only
+  width override is forbidden.
 
 Proof: Phone inline text, Wear platform text entry, recording lifecycle and
 playback controls all use the shared semantic specs.
@@ -402,6 +457,10 @@ and no private/sibling dependency in either production consumer.
 - Visual proof always records source SHA, host class, viewport and scenario ID.
 - Publishing happens only after the exact public Maven artifacts and APK
   signatures/digests are independently read back.
+- Manifest coverage is reciprocal and comes from one declared family list:
+  every family has at least one registry case, and every registry case names a
+  declared family. This is a focused JVM test; KSP or a binary-API toolchain is
+  unnecessary until the honest proxy proves insufficient.
 
 ## Decisions made now
 
@@ -414,17 +473,16 @@ and no private/sibling dependency in either production consumer.
 - Existing Skyvw gallery is retired or reduced after parity, not maintained as
   a second truth.
 
-## Questions for Kimi review
+## Kimi-reviewed decisions
 
-1. Is `showcase-catalog` the correct ownership boundary, or should its
-   non-visual registry be pure Kotlin with a separate `showcase-ui` Android
-   module?
-2. Is a round text-input host port sufficient, or should CircleKit expose a
-   broader `CircleTextEntryController` used by both hosts?
-3. Should explicit navigation intent be added to `RowSpec`, or remain a
-   showcase-only safe-action concern until a second production consumer needs
-   generic menu probing?
-4. Is the manual registry coverage check strong enough without adding KSP or
-   a binary-API toolchain?
-5. Which current public controls are accidental duplicates that should be
-   consolidated before they are made visible as separate catalog entries?
+- Keep one Android `showcase-catalog` plus the two application hosts; keep its
+  state/probe protocol platform-free by package contract and JVM test rather
+  than creating a fourth module.
+- Use a small host text-entry port, not a new controller abstraction.
+- Keep navigation intent showcase-local and expose only safe action IDs.
+- Use one reciprocal manifest/registry coverage test; no KSP.
+- Consolidate wrappers and their lower atoms as one visible catalog entry.
+- Treat Maven publication and read-back as a hard stop before consumer bumps.
+
+Independent review verdict: **ACCEPT WITH CORRECTIONS**, all corrections now
+incorporated.
