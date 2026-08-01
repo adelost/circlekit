@@ -434,6 +434,14 @@ also made cold-start deterministic after it reproduced a root-screen race.
 Proof: Phone inline text, Wear platform text entry, recording lifecycle and
 playback controls all use the shared semantic specs.
 
+**Done:** merged as #24 and published as CircleKit 0.3.9 from
+`7d625e044535a5dd13d881b8292367c83a2c6c5c`. Public Maven read-back proved
+the shared `RingTextEntryPort`, adaptive capture feedback, round playback
+projection and media geometry tokens before the annotated `v0.3.9` tag was
+pushed. Manual Phone/Wear proof covered inline text, the real Wear system IME,
+capture press/release and every playback state without a showcase-only visual
+renderer.
+
 ### Wave 4 — templates and shared flows
 
 - Exercise all seven `RingScreen` cases and navigator/back behavior.
