@@ -104,7 +104,7 @@ object ShowcaseManifest {
         ShowcaseCase(
             id = ShowcaseCaseId("control.adjustment"),
             family = ShowcaseFamily.CONTROLS,
-            title = "ADJUSTMENT",
+            title = "ADJUST",
             icon = RingIcons.Sliders,
             scenarios = listOf(
                 ShowcaseScenario(ShowcaseScenarioId("minimum"), "MINIMUM"),

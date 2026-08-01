@@ -400,6 +400,9 @@ module topology.
 Proof: direct named navigation on Phone and Wear plus representative images;
 no copied CircleKit pixel code.
 
+**Done:** merged as #22. The shared lab also reproduced and fixed dropped
+`RowSpec.semanticColor` propagation in the normal Phone/Wear renderers.
+
 ### Wave 2 — interaction and state laboratory
 
 - Add circular actions, rows, choices, adjustments, progress and action cues.
