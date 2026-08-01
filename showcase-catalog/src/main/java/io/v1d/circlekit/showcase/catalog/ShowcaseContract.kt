@@ -63,7 +63,7 @@ object ShowcaseManifest {
         ShowcaseCase(
             id = ShowcaseCaseId("atom.icon-action"),
             family = ShowcaseFamily.ATOMS,
-            title = "ICON ACTION",
+            title = "ACTIONS",
             icon = RingIcons.Watch,
             scenarios = listOf(
                 ShowcaseScenario(ShowcaseScenarioId("idle"), "IDLE"),

@@ -7,7 +7,6 @@ import com.adelost.designkit.ui.CircleColorTheme
 import com.adelost.designkit.ui.CircleSurfaceClass
 import com.adelost.designkit.ui.CircleUiProfiles
 import com.adelost.designkit.ui.MenuGridRole
-import com.adelost.designkit.ui.RING_ICON_CATALOG
 import com.adelost.designkit.ui.RingIcons
 import com.adelost.designkit.ui.roundSafeInsetDp
 import com.adelost.designkit.ui.resolveCircleSurfaceLayout
@@ -161,10 +160,14 @@ object ShowcaseScreens {
         return RingScreen.Launcher(
             title = scenario.label,
             gridRole = MenuGridRole.COMPONENT_GALLERY,
-            entries = RING_ICON_CATALOG.take(9).mapIndexed { index, icon ->
+            entries = listOf(
+                RingIcons.Sun to "SUN",
+                RingIcons.Cloud to "CLOUD",
+                RingIcons.Rain to "RAIN",
+            ).mapIndexed { index, (icon, label) ->
                 LaunchSpec(
                     icon = icon,
-                    label = icon.name.uppercase(),
+                    label = label,
                     open = { null },
                     run = {
                         if (scenario.id.value == "interactive" && index == 0) {

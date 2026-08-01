@@ -23,6 +23,11 @@ done
 [[ $# -ge 1 ]] || { usage >&2; exit 2; }
 
 package="io.v1d.circlekit.showcase.$device"
+if [[ "$device" == "phone" ]]; then
+  activity="$package/.PhoneShowcaseActivity"
+else
+  activity="$package/.WearShowcaseActivity"
+fi
 if [[ -z "$serial" ]]; then
   mapfile -t devices < <(adb devices | awk 'NR > 1 && $2 == "device" { print $1 }')
   [[ ${#devices[@]} -eq 1 ]] || {
@@ -33,7 +38,7 @@ if [[ -z "$serial" ]]; then
 fi
 adb_cmd=(adb -s "$serial")
 
-"${adb_cmd[@]}" shell monkey -p "$package" 1 >/dev/null
+"${adb_cmd[@]}" shell am start -n "$activity" >/dev/null
 
 command="$1"
 shift
