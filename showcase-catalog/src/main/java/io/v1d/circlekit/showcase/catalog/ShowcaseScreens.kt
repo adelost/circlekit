@@ -87,7 +87,7 @@ object ShowcaseScreens {
                 listOf(
                     colorRow("highlight", "HIGHLIGHT", scheme.highlight),
                     colorRow("active", "ACTIVE", scheme.active),
-                    colorRow("supporting", "SUPPORTING", scheme.supporting),
+                    colorRow("supporting", "SUPPORT", scheme.supporting),
                     colorRow("container", "CONTAINER", scheme.container),
                     colorRow("subdued", "SUBDUED", scheme.subdued),
                 ),
