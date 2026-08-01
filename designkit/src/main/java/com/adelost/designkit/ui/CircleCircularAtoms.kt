@@ -284,120 +284,97 @@ fun CircleIconRing(
     sub: String? = null,
     timing: CircleActionTiming = CircleActionTiming.DELIBERATE,
 ) {
-    val fontScale = LocalDensity.current.fontScale
     val feedback = rememberCircleActionFeedbackState()
-    val activeContour = circleBrandColor()
     val cue = rememberCircleActionCueController(
         icon = icon,
         label = label,
         timing = timing,
         pressed = feedback.pressed,
     )
-    Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = modifier) {
-        Box(
-            modifier = Modifier
-                .size(diameter)
-                .clip(CircleShape)
-                .circleSafeTap(
-                    feedback = feedback,
-                    holdMs = timing.holdMs,
-                    onTap = {
-                        cue.confirm()
-                        onTap()
-                    },
-                ),
-            contentAlignment = Alignment.Center,
-        ) {
-            // [contourColor] (data-state rings: source health) keeps the
-            // full-stroke circle because that ring IS the datum; everything
-            // else draws the one shared contour — neutral at rest,
-            // ringActive only for an ON toggle.
-            if (contourColor != null) {
-                Canvas(Modifier.size(diameter)) {
-                    drawCircle(
-                        color = contourColor,
-                        radius = size.minDimension / 2f - 2.dp.toPx(),
-                        style = Stroke(width = RingMetrics.StrokeWidth.toPx()),
-                    )
-                }
-            } else {
-                Box(
-                    Modifier
-                        .size(diameter)
-                        .circleRingContour(if (active == true) activeContour else MenuDesign.ringNeutral),
-                )
-            }
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                // Full-strength tint like the start screen's actions (Mattias
-                // 2026-07-21: "samma ljusstyrka som på huvudsidan"); state
-                // lives in the ring, never in a dimmed icon.
-                CircleStyledIcon(
-                    style = ringIconStyle(icon, accent),
-                    contentDescription = label,
-                    tintOverride = RingTokens.Ink.takeIf { centerValue != null },
-                    modifier = Modifier
-                        .size(
-                            diameter * if (centerValue != null) {
-                                RingMetrics.StatIconFraction
-                            } else {
-                                RingMetrics.IconFraction
-                            },
-                        )
-                        .rotate(iconRotationDegrees),
-                )
-                centerValue?.let { value ->
-                    BasicText(
-                        text = value,
-                        style = TextStyle(
-                            color = RingTokens.Ink,
-                            fontSize = fixedCircleUiSp(MenuDesign.statValueSize.value, fontScale).sp,
-                            fontFamily = fontFamily,
-                            fontWeight = FontWeight.Black,
-                            textAlign = TextAlign.Center,
-                        ),
-                        maxLines = 1,
-                    )
-                }
-            }
-            choiceState?.let { state ->
-                CircleChoiceIndicator(
-                    state = state,
-                    modifier = Modifier
-                        .align(Alignment.BottomCenter)
-                        .padding(bottom = 5.dp)
-                        .size(width = (state.optionCount * 5 + 5).dp, height = 7.dp),
-                )
-            }
-        }
-        BasicText(
-            text = label,
-            style = TextStyle(
-                color = RingTokens.Dim,
-                fontSize = fixedCircleUiSp(labelSize.value, fontScale).sp,
-                fontFamily = fontFamily,
-                fontWeight = FontWeight.Bold,
-                letterSpacing = 1.sp,
-                textAlign = TextAlign.Center,
-            ),
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.padding(top = 4.dp),
-        )
-        sub?.let {
-            BasicText(
-                text = it,
-                style = TextStyle(
-                    color = RingTokens.Dim,
-                    fontSize = fixedCircleUiSp(labelSize.value * 0.72f, fontScale).sp,
-                    fontFamily = fontFamily,
-                    textAlign = TextAlign.Center,
-                ),
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.padding(top = 1.dp),
-            )
-        }
-    }
+    CircleIconRingFrame(
+        icon = icon,
+        label = label,
+        modifier = modifier,
+        diameter = diameter,
+        active = active,
+        accent = accent,
+        fontFamily = fontFamily,
+        labelSize = labelSize,
+        centerValue = centerValue,
+        contourColor = contourColor,
+        iconRotationDegrees = iconRotationDegrees,
+        choiceState = choiceState,
+        sub = sub,
+        enabled = true,
+        gestureModifier = Modifier.circleSafeTap(
+            feedback = feedback,
+            holdMs = timing.holdMs,
+            onTap = {
+                cue.confirm()
+                onTap()
+            },
+        ),
+    )
+}
+
+/**
+ * The same icon-ring artwork with continuous press/release semantics.
+ * Progress, activation and release are one gesture contract; callers cannot
+ * accidentally layer a decorative no-op hold over a different real action.
+ */
+@Composable
+fun CirclePressIconRing(
+    icon: ImageVector,
+    label: String,
+    enabled: Boolean,
+    active: Boolean,
+    onBegin: () -> Boolean,
+    onRelease: () -> Unit,
+    onCancel: () -> Unit,
+    modifier: Modifier = Modifier,
+    diameter: Dp = MenuDesign.launcherDiameter,
+    accent: CircleAccent = ringIconAccent(icon),
+    fontFamily: FontFamily? = null,
+    labelSize: TextUnit = 9.5.sp,
+    centerValue: String? = null,
+    sub: String? = null,
+    holdMs: Long = MenuDesign.tapHoldMs,
+) {
+    val feedback = rememberCircleActionFeedbackState()
+    val timing = if (holdMs == 0L) CircleActionTiming.IMMEDIATE else CircleActionTiming.DELIBERATE
+    val cue = rememberCircleActionCueController(
+        icon = icon,
+        label = label,
+        timing = timing,
+        pressed = feedback.pressed,
+        holdDurationMs = holdMs,
+    )
+    CircleIconRingFrame(
+        icon = icon,
+        label = label,
+        modifier = modifier,
+        diameter = diameter,
+        active = active,
+        accent = accent,
+        fontFamily = fontFamily,
+        labelSize = labelSize,
+        centerValue = centerValue,
+        contourColor = null,
+        iconRotationDegrees = 0f,
+        choiceState = null,
+        sub = sub,
+        enabled = enabled,
+        gestureModifier = Modifier.circlePressLifecycle(
+            feedback = feedback,
+            enabled = enabled,
+            holdMs = holdMs,
+            onBegin = {
+                onBegin().also { started -> if (started) cue.confirm() }
+            },
+            onRelease = onRelease,
+            onCancel = onCancel,
+        ),
+    )
 }
 
 /** Shared back artwork. Gesture owners can provide tap or hold semantics without forking the visual. */

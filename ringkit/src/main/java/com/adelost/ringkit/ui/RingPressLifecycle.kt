@@ -1,15 +1,11 @@
 package com.adelost.ringkit.ui
 
-import android.view.HapticFeedbackConstants
-import androidx.compose.foundation.gestures.awaitEachGesture
-import androidx.compose.foundation.gestures.awaitFirstDown
-import androidx.compose.foundation.gestures.waitForUpOrCancellation
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.adelost.designkit.ui.CirclePressIconRing
+import com.adelost.designkit.ui.MenuDesign
 import com.adelost.designkit.ui.RingIcons
 
 /** State and lifecycle for actions whose meaning lasts exactly while pressed. */
@@ -19,6 +15,7 @@ data class RingPressLifecycleSpec(
     val enabled: Boolean,
     val centerValue: String? = null,
     val sub: String? = null,
+    val holdMs: Long = MenuDesign.tapHoldMs,
     val onBegin: () -> Boolean,
     val onRelease: () -> Unit,
     val onCancel: () -> Unit,
@@ -34,24 +31,18 @@ fun RingPressLifecycle(
     modifier: Modifier = Modifier,
     diameter: Dp = 80.dp,
 ) {
-    val view = LocalView.current
-    IconRing(
+    CirclePressIconRing(
         icon = RingIcons.Record,
         label = spec.label,
-        onTap = {},
         active = spec.active,
+        enabled = spec.enabled,
         centerValue = spec.centerValue,
         sub = spec.sub,
         diameter = diameter,
-        modifier = modifier.pointerInput(spec.enabled, spec.onBegin, spec.onRelease, spec.onCancel) {
-            awaitEachGesture {
-                val down = awaitFirstDown(requireUnconsumed = false)
-                down.consume()
-                if (!spec.enabled || !spec.onBegin()) return@awaitEachGesture
-                view.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS)
-                val up = waitForUpOrCancellation()
-                if (up == null) spec.onCancel() else spec.onRelease()
-            }
-        },
+        holdMs = spec.holdMs,
+        onBegin = spec.onBegin,
+        onRelease = spec.onRelease,
+        onCancel = spec.onCancel,
+        modifier = modifier,
     )
 }

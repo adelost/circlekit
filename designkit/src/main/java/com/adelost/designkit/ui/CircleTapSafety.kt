@@ -1,5 +1,6 @@
 package com.adelost.designkit.ui
 
+import android.view.HapticFeedbackConstants
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.waitForUpOrCancellation
@@ -13,6 +14,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.composed
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalView
 import kotlinx.coroutines.withTimeoutOrNull
 
 /** Product action timing is semantic data, not a per-screen millisecond.
@@ -29,6 +31,12 @@ enum class CircleActionTiming(val holdMs: Long) {
  */
 fun isCircleHoldComplete(pressDurationMs: Long, holdMs: Long = MenuDesign.tapHoldMs): Boolean =
     pressDurationMs >= holdMs
+
+/** The continuous action may start only when the gate completed under touch. */
+internal fun continuousPressMayBegin(
+    releasedBeforeActivation: Boolean,
+    cancelled: Boolean,
+): Boolean = !releasedBeforeActivation && !cancelled
 
 /**
  * The press gate every plain control shares: hold for [MenuDesign.tapHoldMs]
@@ -87,6 +95,64 @@ fun Modifier.circleSafeTap(
                     if (commits) latestTap.value()
                 }
             }
+    }
+}
+
+/**
+ * One continuous press lifecycle: arm through the normal deliberate hold,
+ * start while the finger is still down, then finish on release or cancel on
+ * gesture loss. Unlike composing a no-op [circleSafeTap] with a second
+ * pointer handler, the progress and the callbacks are driven by this single
+ * gesture owner.
+ */
+fun Modifier.circlePressLifecycle(
+    feedback: CircleActionFeedbackState,
+    enabled: Boolean,
+    holdMs: Long = MenuDesign.tapHoldMs,
+    onBegin: () -> Boolean,
+    onRelease: () -> Unit,
+    onCancel: () -> Unit,
+): Modifier = composed {
+    require(holdMs >= 0L) { "Press lifecycle hold duration cannot be negative" }
+    if (!enabled) {
+        Modifier
+    } else {
+        val view = LocalView.current
+        val latestBegin = rememberUpdatedState(onBegin)
+        val latestRelease = rememberUpdatedState(onRelease)
+        val latestCancel = rememberUpdatedState(onCancel)
+        Modifier.pointerInput(holdMs) {
+            awaitEachGesture {
+                val down = awaitFirstDown(requireUnconsumed = false)
+                down.consume()
+                feedback.pressed = true
+                var active = false
+                try {
+                    var cancelled = false
+                    val releasedBeforeActivation = withTimeoutOrNull(holdMs) {
+                        val release = waitForUpOrCancellation()
+                        cancelled = release == null
+                        release
+                    }
+                    if (!continuousPressMayBegin(releasedBeforeActivation != null, cancelled)) {
+                        return@awaitEachGesture
+                    }
+                    active = latestBegin.value()
+                    if (!active) return@awaitEachGesture
+                    // The intent gate is complete. Capture state now owns the
+                    // visible active phase; leaving this true would restart
+                    // the 0→1 arming cue throughout a long recording.
+                    feedback.pressed = false
+                    view.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS)
+                    val release = waitForUpOrCancellation()
+                    if (release == null) latestCancel.value() else latestRelease.value()
+                    active = false
+                } finally {
+                    feedback.pressed = false
+                    if (active) latestCancel.value()
+                }
+            }
+        }
     }
 }
 

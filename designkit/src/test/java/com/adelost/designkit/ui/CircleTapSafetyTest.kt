@@ -22,6 +22,13 @@ class CircleTapSafetyTest {
     }
 
     @Test
+    fun `continuous action starts only after one completed uncancelled gate`() {
+        assertFalse(continuousPressMayBegin(releasedBeforeActivation = true, cancelled = false))
+        assertFalse(continuousPressMayBegin(releasedBeforeActivation = false, cancelled = true))
+        assertTrue(continuousPressMayBegin(releasedBeforeActivation = false, cancelled = false))
+    }
+
+    @Test
     fun `a plain action uses the short 200 millisecond rung`() {
         assertEquals(200L, MenuDesign.tapHoldMs)
         assertTrue(MenuDesign.tapHoldMs < MenuDesign.holdDeliberateMs)
