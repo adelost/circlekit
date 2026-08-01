@@ -200,6 +200,10 @@ data class LaunchSpec(
     val run: (() -> Unit)? = null,
     val active: Flow<Boolean?> = flowOf(null),
     val liveLabel: Flow<String>? = null,
+    /** Availability and cadence are launcher data. Host renderers never
+     * invent different gating for the same semantic action. */
+    val enabled: Flow<Boolean> = flowOf(true),
+    val actionTiming: CircleActionTiming = CircleActionTiming.DELIBERATE,
 )
 
 /**

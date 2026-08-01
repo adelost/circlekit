@@ -18,7 +18,7 @@ value class ShowcaseScenarioId(val value: String)
 @JvmInline
 value class ShowcaseActionId(val value: String)
 
-enum class ShowcaseFamily { FOUNDATIONS, ATOMS }
+enum class ShowcaseFamily { FOUNDATIONS, ATOMS, CONTROLS }
 
 data class ShowcaseScenario(
     val id: ShowcaseScenarioId,
@@ -68,7 +68,63 @@ object ShowcaseManifest {
             scenarios = listOf(
                 ShowcaseScenario(ShowcaseScenarioId("idle"), "IDLE"),
                 ShowcaseScenario(ShowcaseScenarioId("active"), "ACTIVE"),
-                ShowcaseScenario(ShowcaseScenarioId("interactive"), "INTERACTIVE"),
+                ShowcaseScenario(ShowcaseScenarioId("immediate"), "IMMEDIATE"),
+                ShowcaseScenario(ShowcaseScenarioId("deliberate"), "DELIBERATE"),
+                ShowcaseScenario(ShowcaseScenarioId("disabled"), "DISABLED"),
+            ),
+        ),
+        ShowcaseCase(
+            id = ShowcaseCaseId("control.action-row"),
+            family = ShowcaseFamily.CONTROLS,
+            title = "ACTION ROW",
+            icon = RingIcons.TouchdownRun,
+            scenarios = listOf(
+                ShowcaseScenario(ShowcaseScenarioId("immediate"), "IMMEDIATE"),
+                ShowcaseScenario(ShowcaseScenarioId("deliberate"), "DELIBERATE"),
+                ShowcaseScenario(ShowcaseScenarioId("confirm"), "CONFIRM"),
+                ShowcaseScenario(ShowcaseScenarioId("recoverable"), "RECOVERABLE"),
+                ShowcaseScenario(ShowcaseScenarioId("blocked"), "BLOCKED"),
+                ShowcaseScenario(ShowcaseScenarioId("failure"), "FAILURE + RETRY"),
+            ),
+        ),
+        ShowcaseCase(
+            id = ShowcaseCaseId("control.choice-row"),
+            family = ShowcaseFamily.CONTROLS,
+            title = "CHOICES",
+            icon = RingIcons.Grid,
+            scenarios = listOf(
+                ShowcaseScenario(ShowcaseScenarioId("off"), "TOGGLE OFF"),
+                ShowcaseScenario(ShowcaseScenarioId("on"), "TOGGLE ON"),
+                ShowcaseScenario(ShowcaseScenarioId("two"), "TWO OPTIONS"),
+                ShowcaseScenario(ShowcaseScenarioId("first"), "SEVEN · FIRST"),
+                ShowcaseScenario(ShowcaseScenarioId("middle"), "SEVEN · MIDDLE"),
+                ShowcaseScenario(ShowcaseScenarioId("last"), "SEVEN · LAST"),
+            ),
+        ),
+        ShowcaseCase(
+            id = ShowcaseCaseId("control.adjustment"),
+            family = ShowcaseFamily.CONTROLS,
+            title = "ADJUST",
+            icon = RingIcons.Sliders,
+            scenarios = listOf(
+                ShowcaseScenario(ShowcaseScenarioId("minimum"), "MINIMUM"),
+                ShowcaseScenario(ShowcaseScenarioId("middle"), "MIDDLE"),
+                ShowcaseScenario(ShowcaseScenarioId("maximum"), "MAXIMUM"),
+                ShowcaseScenario(ShowcaseScenarioId("deliberate"), "DELIBERATE STEPS"),
+            ),
+        ),
+        ShowcaseCase(
+            id = ShowcaseCaseId("control.progress"),
+            family = ShowcaseFamily.CONTROLS,
+            title = "PROGRESS",
+            icon = RingIcons.Download,
+            scenarios = listOf(
+                ShowcaseScenario(ShowcaseScenarioId("none"), "NONE"),
+                ShowcaseScenario(ShowcaseScenarioId("indeterminate"), "INDETERMINATE"),
+                ShowcaseScenario(ShowcaseScenarioId("empty"), "0 PERCENT"),
+                ShowcaseScenario(ShowcaseScenarioId("half"), "50 PERCENT"),
+                ShowcaseScenario(ShowcaseScenarioId("complete"), "100 PERCENT"),
+                ShowcaseScenario(ShowcaseScenarioId("failed"), "FAILURE + RETRY"),
             ),
         ),
     )
@@ -106,6 +162,10 @@ data class ShowcaseProbeResult(
         append(",\"destination\":\"").append(snapshot.destination.jsonEscape()).append('"')
         append(",\"surface\":\"").append(snapshot.surface.jsonEscape()).append('"')
         append(",\"iconActionActive\":").append(snapshot.iconActionActive)
+        append(",\"actionCount\":").append(snapshot.actionCount)
+        append(",\"choiceIndex\":").append(snapshot.choiceIndex)
+        append(",\"adjustmentValue\":").append(snapshot.adjustmentValue)
+        append(",\"workState\":\"").append(snapshot.workState.jsonEscape()).append('"')
         append('}')
     }
 }
@@ -114,6 +174,10 @@ data class ShowcaseSnapshot(
     val destination: String,
     val surface: String,
     val iconActionActive: Boolean,
+    val actionCount: Int,
+    val choiceIndex: Int,
+    val adjustmentValue: Int,
+    val workState: String,
 )
 
 class ShowcaseSession {
@@ -121,12 +185,14 @@ class ShowcaseSession {
     private val mutableIconActionActive = MutableStateFlow(false)
     private var surface: String = "UNKNOWN"
     private var navigationBack: (() -> Boolean)? = null
+    val interaction = ShowcaseInteractionState()
 
     val destination: StateFlow<ShowcaseDestination> = mutableDestination.asStateFlow()
     val iconActionActive: StateFlow<Boolean> = mutableIconActionActive.asStateFlow()
 
     fun open(caseId: ShowcaseCaseId, scenarioId: ShowcaseScenarioId): Boolean {
         if (ShowcaseManifest.find(caseId, scenarioId) == null) return false
+        interaction.prepare(caseId, scenarioId)
         mutableDestination.value = ShowcaseDestination(caseId, scenarioId)
         return true
     }
@@ -134,6 +200,7 @@ class ShowcaseSession {
     fun reset() {
         mutableDestination.value = ShowcaseDestination()
         mutableIconActionActive.value = false
+        interaction.reset()
     }
 
     fun closeSelection() {
@@ -155,6 +222,11 @@ class ShowcaseSession {
             mutableIconActionActive.value = !mutableIconActionActive.value
             true
         }
+        ACTION_RUN -> true.also { interaction.runAction() }
+        ACTION_RECOVER -> true.also { interaction.recover() }
+        ACTION_NEXT_CHOICE -> true.also { interaction.nextChoice(7) }
+        ACTION_INCREMENT -> true.also { interaction.adjust(100) }
+        ACTION_ADVANCE_PROGRESS -> true.also { interaction.advanceWork() }
         else -> false
     }
 
@@ -194,11 +266,20 @@ class ShowcaseSession {
             },
             surface = surface,
             iconActionActive = mutableIconActionActive.value,
+            actionCount = interaction.actionCount.value,
+            choiceIndex = interaction.choiceIndex.value,
+            adjustmentValue = interaction.adjustmentValue.value,
+            workState = interaction.work.value.name,
         )
     }
 
     companion object {
         const val ACTION_TOGGLE_ICON = "atom.icon-action.toggle"
+        const val ACTION_RUN = "control.action.run"
+        const val ACTION_RECOVER = "control.availability.recover"
+        const val ACTION_NEXT_CHOICE = "control.choice.next"
+        const val ACTION_INCREMENT = "control.adjustment.increment"
+        const val ACTION_ADVANCE_PROGRESS = "control.progress.advance"
     }
 }
 

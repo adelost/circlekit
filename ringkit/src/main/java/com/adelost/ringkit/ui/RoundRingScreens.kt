@@ -241,11 +241,14 @@ internal fun LauncherScreen(
         Spacer(Modifier.height(8.dp))
         RingMenuGrid(items = s.entries, spec = grid) { entry ->
             val active = entry.active.collectAsState(initial = null).value
+            val enabled = entry.enabled.collectAsState(initial = true).value
             val label = entry.liveLabel?.collectAsState(initial = entry.label)?.value ?: entry.label
             IconRing(
                 icon = entry.icon,
                 label = label,
                 active = active,
+                enabled = enabled,
+                actionTiming = entry.actionTiming,
                 diameter = grid.diameter,
                 labelSize = grid.labelSize,
                 onTap = { entry.open()?.let(nav::push) ?: entry.run?.invoke() },

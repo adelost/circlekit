@@ -25,6 +25,7 @@ import com.adelost.designkit.ui.MenuDesign
 import com.adelost.designkit.ui.RadialChromeDesign
 import com.adelost.designkit.ui.RingIcons
 import com.adelost.ringkit.ui.RenderRingScreen
+import com.adelost.ringkit.ui.RingActionCueHost
 import com.adelost.ringkit.ui.RingNavigator
 import kotlin.math.cos
 import kotlin.math.sin
@@ -44,44 +45,46 @@ fun CircleKitShowcase(
 
     CircleColorSchemeProvider(selectedTheme) {
         CompositionLocalProvider(LocalRoundChromeReservation provides reservedChrome) {
-            Box(modifier.fillMaxSize()) {
-                val rootNavigator = remember(session) { RingNavigator(ShowcaseScreens.root(session)) }
-                val selectedNavigator = if (destination.isRoot) {
-                    null
-                } else {
-                    remember(destination) {
-                        RingNavigator(ShowcaseScreens.selected(destination, session))
-                    }
-                }
-                val navigator = selectedNavigator ?: rootNavigator
-                val navigateBack = remember(navigator, destination, onExit) {
-                    {
-                        when {
-                            navigator.back() -> true
-                            !destination.isRoot -> {
-                                session.closeSelection()
-                                true
-                            }
-                            else -> false
+            RingActionCueHost(modifier = modifier) {
+                Box(Modifier.fillMaxSize()) {
+                    val rootNavigator = remember(session) { RingNavigator(ShowcaseScreens.root(session)) }
+                    val selectedNavigator = if (destination.isRoot) {
+                        null
+                    } else {
+                        remember(destination) {
+                            RingNavigator(ShowcaseScreens.selected(destination, session))
                         }
                     }
-                }
+                    val navigator = selectedNavigator ?: rootNavigator
+                    val navigateBack = remember(navigator, destination, onExit) {
+                        {
+                            when {
+                                navigator.back() -> true
+                                !destination.isRoot -> {
+                                    session.closeSelection()
+                                    true
+                                }
+                                else -> false
+                            }
+                        }
+                    }
 
-                DisposableEffect(session, navigateBack) {
-                    session.attachNavigationBack(navigateBack)
-                    onDispose { session.attachNavigationBack(null) }
-                }
+                    DisposableEffect(session, navigateBack) {
+                        session.attachNavigationBack(navigateBack)
+                        onDispose { session.attachNavigationBack(null) }
+                    }
 
-                RenderRingScreen(
-                    nav = navigator,
-                    onExit = { if (!navigateBack()) onExit() },
-                )
-
-                if (surface == CircleSurfaceClass.ROUND) {
-                    RoundShowcaseChrome(
-                        slots = reservedChrome,
-                        onBack = { if (!navigateBack()) onExit() },
+                    RenderRingScreen(
+                        nav = navigator,
+                        onExit = { if (!navigateBack()) onExit() },
                     )
+
+                    if (surface == CircleSurfaceClass.ROUND) {
+                        RoundShowcaseChrome(
+                            slots = reservedChrome,
+                            onBack = { if (!navigateBack()) onExit() },
+                        )
+                    }
                 }
             }
         }

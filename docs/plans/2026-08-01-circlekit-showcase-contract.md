@@ -400,6 +400,9 @@ module topology.
 Proof: direct named navigation on Phone and Wear plus representative images;
 no copied CircleKit pixel code.
 
+**Done:** merged as #22. The shared lab also reproduced and fixed dropped
+`RowSpec.semanticColor` propagation in the normal Phone/Wear renderers.
+
 ### Wave 2 — interaction and state laboratory
 
 - Add circular actions, rows, choices, adjustments, progress and action cues.
@@ -412,6 +415,12 @@ contain the change before Skyvw or Link may pin it. A locally published or
 unpublished version is never valid consumer evidence.
 
 Proof: focused interaction tests plus manual real holds on both devices.
+
+**Done:** the lab now covers data-owned launcher availability/timing, action
+rows, recoverable and blocked states, toggle/2/7-way choices, nested
+adjustments and measured work. Manual Phone/Wear proof covered early release,
+completed hold, rapid reuse and a 500 ms adjustment step. The named probe was
+also made cold-start deterministic after it reproduced a root-screen race.
 
 ### Wave 3 — text and media
 
