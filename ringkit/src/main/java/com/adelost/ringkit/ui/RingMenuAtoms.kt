@@ -197,6 +197,7 @@ fun RingRow(
     onLongPress: (() -> Unit)? = null,
     ringActive: Boolean? = null,
     accent: CircleAccent = ringIconAccent(icon),
+    semanticColor: Color? = null,
     labelProgress: CircleLabelProgress? = null,
     leading: (@Composable () -> Unit)? = null,
     trailing: (@Composable () -> Unit)? = null,
@@ -245,6 +246,7 @@ fun RingRow(
                 icon = icon,
                 ringActive = ringActive,
                 accent = accent,
+                semanticColor = semanticColor,
                 leading = leading,
                 trailing = trailing,
                 labelProgress = labelProgress ?: holdProgress?.let {
@@ -265,6 +267,7 @@ fun RingRow(
         onLongPress = onLongPress,
         ringActive = ringActive,
         accent = accent,
+        semanticColor = semanticColor,
         labelProgress = labelProgress,
         leading = leading,
         trailing = trailing,

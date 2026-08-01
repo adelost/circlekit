@@ -18,6 +18,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -36,6 +37,7 @@ fun CircleRingRow(
     onLongPress: (() -> Unit)? = null,
     ringActive: Boolean? = null,
     accent: CircleAccent = ringIconAccent(icon),
+    semanticColor: Color? = null,
     labelProgress: CircleLabelProgress? = null,
     leading: (@Composable () -> Unit)? = null,
     trailing: (@Composable () -> Unit)? = null,
@@ -109,6 +111,7 @@ fun CircleRingRow(
             icon = icon,
             ringActive = ringActive,
             accent = accent,
+            semanticColor = semanticColor,
             leading = leading,
             trailing = trailing,
             labelProgress = labelProgress,
@@ -128,6 +131,7 @@ fun CircleRingRowContent(
     icon: ImageVector?,
     ringActive: Boolean?,
     accent: CircleAccent = ringIconAccent(icon),
+    semanticColor: Color? = null,
     leading: (@Composable () -> Unit)?,
     trailing: (@Composable () -> Unit)?,
     labelProgress: CircleLabelProgress? = null,
@@ -160,6 +164,7 @@ fun CircleRingRowContent(
                 centerValue = centerValue,
                 active = ringActive,
                 accent = accent,
+                semanticColor = semanticColor,
                 phoneDesign = phoneDesign,
                 feedbackSweep = feedbackSweep,
             )
@@ -259,6 +264,7 @@ private fun CircleRowLeadingRing(
     centerValue: String?,
     active: Boolean?,
     accent: CircleAccent,
+    semanticColor: Color?,
     phoneDesign: PhoneSurfaceDesign?,
     feedbackSweep: Float,
 ) {
@@ -284,12 +290,13 @@ private fun CircleRowLeadingRing(
             CircleStyledIcon(
                 style = ringIconStyle(icon, accent),
                 contentDescription = null,
+                tintOverride = semanticColor,
                 modifier = Modifier.size(phoneDesign?.rowIconSize ?: MenuDesign.iconSize),
             )
         } else {
             CircleText(
                 text = requireNotNull(centerValue),
-                color = circleAccentColor(accent),
+                color = semanticColor ?: circleAccentColor(accent),
                 fontSizeSp = (phoneDesign?.rowCenterValueSize ?: MenuDesign.rowCenterValueSize).value,
                 fontWeight = FontWeight.Black,
                 tabularNumerals = true,
