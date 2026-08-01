@@ -26,7 +26,7 @@ object ShowcaseScreens {
         entries = ShowcaseFamily.entries.map { family ->
             LaunchSpec(
                 icon = family.icon,
-                label = family.label,
+                label = family.menuLabel,
                 open = { familyScreen(family, session) },
             )
         },
@@ -220,6 +220,13 @@ private val ShowcaseFamily.label: String
         ShowcaseFamily.MEDIA -> "MEDIA"
         ShowcaseFamily.TEMPLATES -> "TEMPLATES"
         ShowcaseFamily.FLOWS -> "FLOWS"
+    }
+
+/** Short face labels are data; full family names remain the page titles. */
+private val ShowcaseFamily.menuLabel: String
+    get() = when (this) {
+        ShowcaseFamily.FOUNDATIONS -> "TOKENS"
+        else -> label
     }
 
 private val ShowcaseFamily.icon: androidx.compose.ui.graphics.vector.ImageVector
