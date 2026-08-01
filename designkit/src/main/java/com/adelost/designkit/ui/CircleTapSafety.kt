@@ -145,8 +145,11 @@ fun Modifier.circlePressLifecycle(
                     feedback.pressed = false
                     view.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS)
                     val release = waitForUpOrCancellation()
-                    if (release == null) latestCancel.value() else latestRelease.value()
+                    // Terminal ownership ends before application code runs.
+                    // A throwing callback must never make finally emit a
+                    // second, contradictory cancellation.
                     active = false
+                    if (release == null) latestCancel.value() else latestRelease.value()
                 } finally {
                     feedback.pressed = false
                     if (active) latestCancel.value()
