@@ -452,6 +452,17 @@ Proof: registry coverage test says every declared public showcase family and
 all `RingScreen` cases have at least one case; no network or installer side
 effect occurs inside the gallery.
 
+**Done:** the reciprocal catalog now covers all seven `RingScreen` cases plus
+deterministic source, update and service flows. The template fixtures include
+empty, maximum-capacity and long-content cases, and an exhaustive Kotlin
+classifier makes a new screen case fail compilation until it is represented.
+Focused tests prove that every visual family resolves through the production
+presentation seam and that the flow laboratory performs no network or install
+side effects. Manual Phone/Wear proof also reproduced a shared round-hub chord
+collision; the fix now derives a centred stat-ring diameter from actual
+floating-chrome reservations and gives compact stat labels their own shared
+design token.
+
 ### Wave 5 — consumer cleanup and publication
 
 - Replace or remove Skyvw's product-local component gallery rather than leave

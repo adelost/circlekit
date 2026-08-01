@@ -16,7 +16,6 @@ import com.adelost.ringkit.ui.ActionSpec
 import com.adelost.ringkit.ui.AdjustmentValuePresentation
 import com.adelost.ringkit.ui.ColorDialPreviewSpec
 import com.adelost.ringkit.ui.LaunchSpec
-import com.adelost.ringkit.ui.RingNavigator
 import com.adelost.ringkit.ui.RingScreen
 import com.adelost.ringkit.ui.RowSpec
 import com.adelost.ringkit.ui.StatRowSpec
