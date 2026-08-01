@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -16,6 +17,7 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.adelost.designkit.ui.LocalCircleSurfaceLayout
+import com.adelost.designkit.ui.CircleSurfaceClass
 import com.adelost.designkit.ui.MenuDesign
 import com.adelost.designkit.ui.RingIcons
 import com.adelost.designkit.ui.RingTokens
@@ -70,6 +72,23 @@ fun RingPlaybackControls(
     val playing = spec.state == RingPlaybackState.PLAYING
     val canStop = spec.state == RingPlaybackState.PLAYING ||
         spec.state == RingPlaybackState.PAUSED
+    val statusColor = when (spec.state) {
+        RingPlaybackState.FAILED -> RingTokens.Broken
+        RingPlaybackState.COMPLETE -> RingTokens.Fresh
+        else -> RingTokens.Dim
+    }
+
+    if (surface == CircleSurfaceClass.ROUND) {
+        RoundPlaybackControls(
+            spec = spec,
+            playing = playing,
+            canStop = canStop,
+            progress = progress,
+            statusColor = statusColor,
+            modifier = modifier,
+        )
+        return
+    }
 
     Row(
         modifier = modifier
@@ -100,31 +119,13 @@ fun RingPlaybackControls(
                 maxLines = 1,
             )
             CircleText(
-                text = playbackTimeLabel(spec.positionMs, spec.durationMs),
-                color = RingTokens.Dim,
+                text = playbackStatusLabel(spec.state, spec.positionMs, spec.durationMs),
+                color = statusColor,
                 fontSizeSp = phoneDesign?.metadataSize?.value ?: MenuDesign.subSize.value,
                 tabularNumerals = true,
                 maxLines = 1,
             )
-            Canvas(Modifier.fillMaxWidth().height(3.dp)) {
-                val centerY = size.height / 2f
-                drawLine(
-                    color = RingTokens.NeutralRing,
-                    start = Offset(0f, centerY),
-                    end = Offset(size.width, centerY),
-                    strokeWidth = size.height,
-                    cap = StrokeCap.Round,
-                )
-                if (progress > 0f) {
-                    drawLine(
-                        color = brand,
-                        start = Offset(0f, centerY),
-                        end = Offset(size.width * progress, centerY),
-                        strokeWidth = size.height,
-                        cap = StrokeCap.Round,
-                    )
-                }
-            }
+            PlaybackProgress(progress = progress, pigment = brand)
         }
         if (canStop) {
             CircleIconDisc(
@@ -140,6 +141,101 @@ fun RingPlaybackControls(
         }
     }
 }
+
+@Composable
+private fun RoundPlaybackControls(
+    spec: RingPlaybackSpec,
+    playing: Boolean,
+    canStop: Boolean,
+    progress: Float,
+    statusColor: androidx.compose.ui.graphics.Color,
+    modifier: Modifier,
+) {
+    Column(
+        modifier = modifier.width(MenuDesign.roundMediaContentWidth),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(MenuDesign.mediaContentGap),
+    ) {
+        CircleText(
+            text = spec.title,
+            color = RingTokens.Ink,
+            fontSizeSp = MenuDesign.titleSize.value,
+            fontWeight = FontWeight.Bold,
+            maxLines = 1,
+        )
+        CircleText(
+            text = playbackStatusLabel(spec.state, spec.positionMs, spec.durationMs),
+            color = statusColor,
+            fontSizeSp = MenuDesign.subSize.value,
+            tabularNumerals = true,
+            maxLines = 1,
+        )
+        PlaybackProgress(progress = progress, pigment = circleBrandColor())
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(MenuDesign.iconTextGap),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            PlaybackAction(playing = playing, onTap = spec.onPlayPause)
+            if (canStop) {
+                CircleIconDisc(
+                    icon = RingIcons.Stop,
+                    contentDescription = "Stop playback",
+                    actionLabel = "STOP",
+                    onTap = spec.onStop,
+                    diameter = MenuDesign.watchActionRingDiameter,
+                    iconSize = MenuDesign.iconSize,
+                    timing = CircleActionTiming.IMMEDIATE,
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun PlaybackAction(playing: Boolean, onTap: () -> Unit) {
+    CircleIconDisc(
+        icon = if (playing) RingIcons.Pause else RingIcons.Play,
+        contentDescription = if (playing) "Pause playback" else "Play audio",
+        actionLabel = if (playing) "PAUSE" else "PLAY",
+        onTap = onTap,
+        diameter = MenuDesign.watchActionRingDiameter,
+        iconSize = MenuDesign.iconSize,
+        active = playing,
+        timing = CircleActionTiming.IMMEDIATE,
+    )
+}
+
+@Composable
+private fun PlaybackProgress(
+    progress: Float,
+    pigment: androidx.compose.ui.graphics.Color,
+) {
+    Canvas(Modifier.fillMaxWidth().height(MenuDesign.mediaTrackHeight)) {
+        val centerY = size.height / 2f
+        drawLine(
+            color = RingTokens.NeutralRing,
+            start = Offset(0f, centerY),
+            end = Offset(size.width, centerY),
+            strokeWidth = size.height,
+            cap = StrokeCap.Round,
+        )
+        if (progress > 0f) {
+            drawLine(
+                color = pigment,
+                start = Offset(0f, centerY),
+                end = Offset(size.width * progress, centerY),
+                strokeWidth = size.height,
+                cap = StrokeCap.Round,
+            )
+        }
+    }
+}
+
+fun playbackStatusLabel(
+    state: RingPlaybackState,
+    positionMs: Long,
+    durationMs: Long,
+): String = "${state.name} · ${playbackTimeLabel(positionMs, durationMs)}"
 
 fun playbackProgressFraction(positionMs: Long, durationMs: Long): Float {
     require(positionMs >= 0L)

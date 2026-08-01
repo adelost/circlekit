@@ -27,6 +27,7 @@ import com.adelost.designkit.ui.RingIcons
 import com.adelost.ringkit.ui.RenderRingScreen
 import com.adelost.ringkit.ui.RingActionCueHost
 import com.adelost.ringkit.ui.RingNavigator
+import com.adelost.ringkit.ui.RingTextEntryPort
 import kotlin.math.cos
 import kotlin.math.sin
 
@@ -34,6 +35,7 @@ import kotlin.math.sin
 fun CircleKitShowcase(
     session: ShowcaseSession,
     onExit: () -> Unit,
+    textEntryPort: RingTextEntryPort? = null,
     modifier: Modifier = Modifier,
 ) {
     val destination by session.destination.collectAsState()
@@ -48,22 +50,25 @@ fun CircleKitShowcase(
             RingActionCueHost(modifier = modifier) {
                 Box(Modifier.fillMaxSize()) {
                     val rootNavigator = remember(session) { RingNavigator(ShowcaseScreens.root(session)) }
-                    val selectedNavigator = if (destination.isRoot) {
+                    val presentation = if (destination.isRoot) {
                         null
                     } else {
-                        remember(destination) {
-                            RingNavigator(ShowcaseScreens.selected(destination, session))
+                        remember(destination, surface, textEntryPort) {
+                            ShowcasePresentations.selected(destination, session, surface, textEntryPort)
                         }
                     }
-                    val navigator = selectedNavigator ?: rootNavigator
-                    val navigateBack = remember(navigator, destination, onExit) {
+                    val selectedNavigator = (presentation as? ShowcasePresentation.Screen)?.let { selected ->
+                        remember(destination, selected.value) { RingNavigator(selected.value) }
+                    }
+                    val navigateBack = remember(rootNavigator, selectedNavigator, destination, onExit) {
                         {
                             when {
-                                navigator.back() -> true
+                                selectedNavigator?.back() == true -> true
                                 !destination.isRoot -> {
                                     session.closeSelection()
                                     true
                                 }
+                                rootNavigator.back() -> true
                                 else -> false
                             }
                         }
@@ -74,10 +79,23 @@ fun CircleKitShowcase(
                         onDispose { session.attachNavigationBack(null) }
                     }
 
-                    RenderRingScreen(
-                        nav = navigator,
-                        onExit = { if (!navigateBack()) onExit() },
-                    )
+                    when (presentation) {
+                        null -> RenderRingScreen(
+                            nav = rootNavigator,
+                            onExit = { if (!navigateBack()) onExit() },
+                        )
+                        is ShowcasePresentation.Screen -> RenderRingScreen(
+                            nav = requireNotNull(selectedNavigator),
+                            onExit = { if (!navigateBack()) onExit() },
+                        )
+                        is ShowcasePresentation.Component -> ShowcasePresentations.ComponentPreview(
+                            destination = destination,
+                            kind = presentation.kind,
+                            state = session.media,
+                            surface = surface,
+                            onBack = { if (!navigateBack()) onExit() },
+                        )
+                    }
 
                     if (surface == CircleSurfaceClass.ROUND) {
                         RoundShowcaseChrome(

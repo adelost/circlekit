@@ -31,6 +31,9 @@ object MenuDesign {
     val iconSize: Dp = 14.dp
     val rowCenterValueSize: TextUnit = 7.5.sp
     val iconTextGap: Dp = 8.dp
+    val roundMediaContentWidth: Dp = 112.dp
+    val mediaTrackHeight: Dp = 3.dp
+    val mediaContentGap: Dp = 4.dp
 
     val statRingDiameter: Dp = 46.dp
     val statValueSize: TextUnit = 12.sp
@@ -121,6 +124,7 @@ object MenuDesign {
     const val backPressScale: Float = 0.93f
     const val backHoldMs: Long = holdDeliberateMs
     val overlayScrim: Color = Color.Black.copy(alpha = 0.45f)
+    val actionCueScrim: Color = Color.Black
     val textActionSize: TextUnit = 10.5.sp
     val textActionTracking: TextUnit = 1.5.sp
 }

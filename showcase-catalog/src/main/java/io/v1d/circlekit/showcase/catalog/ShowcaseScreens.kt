@@ -23,16 +23,16 @@ object ShowcaseScreens {
     fun root(session: ShowcaseSession): RingScreen = RingScreen.Launcher(
         title = "CIRCLEKIT",
         gridRole = MenuGridRole.COMPONENT_GALLERY,
-        entries = ShowcaseManifest.cases.map { case ->
+        entries = ShowcaseFamily.entries.map { family ->
             LaunchSpec(
-                icon = case.icon,
-                label = case.title,
-                open = { scenarios(case, session) },
+                icon = family.icon,
+                label = family.label,
+                open = { familyScreen(family, session) },
             )
         },
     )
 
-    fun selected(
+    fun selectedScreen(
         destination: ShowcaseDestination,
         session: ShowcaseSession,
     ): RingScreen {
@@ -51,6 +51,18 @@ object ShowcaseScreens {
             else -> error("No presentation for ${pair.first.id.value}")
         }
     }
+
+    private fun familyScreen(family: ShowcaseFamily, session: ShowcaseSession): RingScreen = RingScreen.Launcher(
+        title = family.label,
+        gridRole = MenuGridRole.COMPONENT_GALLERY,
+        entries = ShowcaseManifest.cases.filter { it.family == family }.map { case ->
+            LaunchSpec(
+                icon = case.icon,
+                label = case.title,
+                open = { scenarios(case, session) },
+            )
+        },
+    )
 
     fun reservedChrome(destination: ShowcaseDestination): List<CircleChromeSlot> = buildList {
         add(CircleChromeSlot.HOUR_9)
@@ -194,6 +206,24 @@ object ShowcaseScreens {
         )
     }
 }
+
+private val ShowcaseFamily.label: String
+    get() = when (this) {
+        ShowcaseFamily.FOUNDATIONS -> "FOUNDATIONS"
+        ShowcaseFamily.ATOMS -> "ATOMS"
+        ShowcaseFamily.CONTROLS -> "CONTROLS"
+        ShowcaseFamily.INPUT -> "INPUT"
+        ShowcaseFamily.MEDIA -> "MEDIA"
+    }
+
+private val ShowcaseFamily.icon: androidx.compose.ui.graphics.vector.ImageVector
+    get() = when (this) {
+        ShowcaseFamily.FOUNDATIONS -> RingIcons.Palette
+        ShowcaseFamily.ATOMS -> RingIcons.Grid
+        ShowcaseFamily.CONTROLS -> RingIcons.TouchdownRun
+        ShowcaseFamily.INPUT -> RingIcons.Pencil
+        ShowcaseFamily.MEDIA -> RingIcons.Play
+    }
 
 private fun CircleSurfaceClass.icon() = when (this) {
     CircleSurfaceClass.ROUND -> RingIcons.Watch

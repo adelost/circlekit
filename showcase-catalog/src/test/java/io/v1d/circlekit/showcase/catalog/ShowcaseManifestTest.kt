@@ -27,6 +27,16 @@ class ShowcaseManifestTest {
     }
 
     @Test
+    fun `root groups every declared family through the normal launcher grammar`() {
+        val root = ShowcaseScreens.root(ShowcaseSession()) as com.adelost.ringkit.ui.RingScreen.Launcher
+
+        assertEquals(ShowcaseFamily.entries.size, root.entries.size)
+        root.entries.forEach { entry ->
+            assertTrue(entry.open() is com.adelost.ringkit.ui.RingScreen.Launcher)
+        }
+    }
+
+    @Test
     fun `round chrome cases reserve the declared slots`() {
         val xOnly = ShowcaseScreens.reservedChrome(
             ShowcaseDestination(ShowcaseCaseId("foundation.geometry"), ShowcaseScenarioId("chrome-x")),

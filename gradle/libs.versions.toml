@@ -13,6 +13,7 @@ orgJson = "20240303"
 coil = "2.7.0"
 wearOngoing = "1.0.0"
 wear = "1.3.0"
+wearInput = "1.2.0"
 wearWatchface = "1.3.0"
 coroutines = "1.9.0"
 eddsa = "0.3.0"
@@ -45,6 +46,7 @@ coil-compose = { group = "io.coil-kt", name = "coil-compose", version.ref = "coi
 
 androidx-wear-ongoing = { group = "androidx.wear", name = "wear-ongoing", version.ref = "wearOngoing" }
 androidx-wear = { group = "androidx.wear", name = "wear", version.ref = "wear" }
+androidx-wear-input = { group = "androidx.wear", name = "wear-input", version.ref = "wearInput" }
 androidx-wear-watchface-complications-data-source-ktx = { group = "androidx.wear.watchface", name = "watchface-complications-data-source-ktx", version.ref = "wearWatchface" }
 
 junit = { group = "junit", name = "junit", version.ref = "junit" }

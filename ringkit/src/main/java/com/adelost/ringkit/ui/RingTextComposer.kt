@@ -42,6 +42,20 @@ data class RingTextInputSpec(
 }
 
 /**
+ * Small host boundary for text entry on surfaces that use a platform editor.
+ *
+ * Phone surfaces render [RingTextComposer] inline. A round Wear host opens its
+ * system IME and returns only the collected text through [onResult]; state and
+ * submission remain owned by the semantic [spec].
+ */
+fun interface RingTextEntryPort {
+    fun openPlatformTextEntry(
+        spec: RingTextInputSpec,
+        onResult: (String) -> Unit,
+    )
+}
+
+/**
  * The one CircleKit text-entry molecule: Graphite field plus the normal
  * icon-ring action. Products own text and submission; they never redraw it.
  */
@@ -100,6 +114,7 @@ fun RingTextComposer(
             onTap = spec.onSubmit,
             diameter = design.actionDiameter,
             active = canSubmit,
+            enabled = canSubmit,
             iconRotationDegrees = 90f,
         )
     }

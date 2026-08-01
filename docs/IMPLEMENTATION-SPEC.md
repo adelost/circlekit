@@ -69,9 +69,9 @@ The first public source commit is `9e38c98`. It already:
   install;
 - splits the only source file over 500 lines.
 
-A Cloudflare Pages project named `circlekit` exists but no artifact has been
-deployed. Treat the repository as a reviewed starting scaffold, not proof of
-consumer completion.
+The canonical Maven repository is `https://circlekit.pages.dev/`. Published
+versions are valid consumer inputs only after their AARs and metadata have
+been fetched back and matched to the exact tagged CircleKit source SHA.
 
 ## UI contract
 
@@ -89,11 +89,14 @@ Keep and reuse the established model, now exposed as product-neutral API:
 
 Do not add a parallel slot/scaffold component system.
 
-Link-specific conversation timeline, composer, PTT recorder and transport
-remain Link-local. They should be rendered with CircleKit tokens, host
-profiles, round-safe geometry and data specs. Add a shared row/action variant
-only when both form factors need the same interaction. A new `RingScreen`
-sealed case still requires the existing screen-case justification.
+Products keep conversation data, recorder/player engines and transport
+lifecycles. CircleKit owns their shared interaction and pixels through
+`RingTextInputSpec`/`RingTextComposer`/`RingTextEntryPort`,
+`RingPressLifecycle`, `RingAudioCaptureFeedback` and
+`RingPlaybackControls`. Phone renders the composer inline; round Wear opens
+the platform IME through the small host port. No product may redraw these
+controls or invent a fake watch keyboard. A new `RingScreen` sealed case still
+requires the existing screen-case justification.
 
 ### Required UI replacement
 
