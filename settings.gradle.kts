@@ -21,4 +21,12 @@ dependencyResolutionManagement {
 }
 
 rootProject.name = "CircleKit"
-include(":designkit", ":ringkit", ":releasekit", ":servicekit")
+include(
+    ":designkit",
+    ":ringkit",
+    ":releasekit",
+    ":servicekit",
+    ":showcase-catalog",
+    ":showcase-phone",
+    ":showcase-wear",
+)
