@@ -105,45 +105,69 @@ internal fun ScreenTitle(
 
 @Composable
 internal fun HubScreen(s: RingScreen.Hub, nav: RingNavigator) {
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = Modifier.fillMaxSize().padding(top = 6.dp),
-    ) {
-        ScreenTitle(s.title)
-        Spacer(Modifier.height(6.dp))
-        s.rows.chunked(3).forEach { rowChunk ->
-            // Pull the outer columns inward at the narrow lower chord.
-            Row(horizontalArrangement = Arrangement.spacedBy(3.dp)) {
-                rowChunk.forEach { row ->
-                    val value = row.value.collectAsState(initial = "–").value
-                    val health = row.health.collectAsState(initial = Health.OFF).value
-                    val iconRotation = row.iconRotation.collectAsState(initial = 0f).value
-                    StatRing(
-                        icon = row.icon,
-                        iconRotationDeg = iconRotation,
-                        value = value,
-                        health = health,
-                        label = row.label,
-                        // 50 dp still left ALT REF's final letter under the
-                        // physical 384 px bezel. 46 dp keeps all six labels
-                        // inside the lower chord without changing the grid.
-                        diameter = MenuDesign.statRingDiameter,
-                        onTap = { nav.push(row.detail()) },
-                    )
+    BoxWithConstraints(Modifier.fillMaxSize()) {
+        val face = minOf(maxWidth, maxHeight).value
+        val statDiameter = hubStatRingDiameterDp(
+            viewportDiameterDp = face,
+            reservedSlots = LocalRoundChromeReservation.current,
+        ).dp
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            modifier = Modifier.fillMaxSize().padding(top = 6.dp),
+        ) {
+            ScreenTitle(s.title)
+            Spacer(Modifier.height(6.dp))
+            s.rows.chunked(HUB_COLUMNS).forEach { rowChunk ->
+                Row(horizontalArrangement = Arrangement.spacedBy(HUB_GAP_DP.dp)) {
+                    rowChunk.forEach { row ->
+                        val value = row.value.collectAsState(initial = "–").value
+                        val health = row.health.collectAsState(initial = Health.OFF).value
+                        val iconRotation = row.iconRotation.collectAsState(initial = 0f).value
+                        StatRing(
+                            icon = row.icon,
+                            iconRotationDeg = iconRotation,
+                            value = value,
+                            health = health,
+                            label = row.label,
+                            diameter = statDiameter,
+                            onTap = { nav.push(row.detail()) },
+                        )
+                    }
                 }
+                Spacer(Modifier.height(4.dp))
             }
-            Spacer(Modifier.height(4.dp))
-        }
-        Spacer(Modifier.height(2.dp))
-        s.corner?.let { corner ->
-            IconRing(
-                icon = corner.icon,
-                label = "",
-                diameter = MenuDesign.cornerDiameter,
-                onTap = { corner.open()?.let(nav::push) ?: corner.run?.invoke() },
-            )
+            Spacer(Modifier.height(2.dp))
+            s.corner?.let { corner ->
+                IconRing(
+                    icon = corner.icon,
+                    label = "",
+                    diameter = MenuDesign.cornerDiameter,
+                    onTap = { corner.open()?.let(nav::push) ?: corner.run?.invoke() },
+                )
+            }
         }
     }
+}
+
+private const val HUB_COLUMNS = 3
+private const val HUB_GAP_DP = 3f
+
+/** Keeps the hub centred while shrinking only when floating chrome consumes its chord. */
+internal fun hubStatRingDiameterDp(
+    viewportDiameterDp: Float,
+    reservedSlots: List<CircleChromeSlot>,
+): Float {
+    val chromeInset = roundChromeInsetDp(
+        viewportWidthDp = viewportDiameterDp,
+        viewportHeightDp = viewportDiameterDp,
+        contentCenterYDp = viewportDiameterDp / 2f,
+        reservedSlots = reservedSlots,
+    )
+    val availableWidth = (viewportDiameterDp - chromeInset * 2f).coerceAtLeast(0f)
+    val diameterByWidth = (
+        availableWidth - HUB_GAP_DP * (HUB_COLUMNS - 1)
+        ).coerceAtLeast(0f) / HUB_COLUMNS
+    return minOf(MenuDesign.statRingDiameter.value, diameterByWidth)
 }
 
 @Composable

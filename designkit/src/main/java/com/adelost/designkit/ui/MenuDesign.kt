@@ -37,6 +37,7 @@ object MenuDesign {
 
     val statRingDiameter: Dp = 46.dp
     val statValueSize: TextUnit = 12.sp
+    val statLabelSize: TextUnit = 6.5.sp
     val launcherDiameter: Dp = watchActionRingDiameter
     val cornerDiameter: Dp = watchActionRingDiameter
     val stepperIconSize: Dp = 10.dp

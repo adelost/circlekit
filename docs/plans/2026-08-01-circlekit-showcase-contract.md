@@ -434,6 +434,14 @@ also made cold-start deterministic after it reproduced a root-screen race.
 Proof: Phone inline text, Wear platform text entry, recording lifecycle and
 playback controls all use the shared semantic specs.
 
+**Done:** merged as #24 and published as CircleKit 0.3.9 from
+`7d625e044535a5dd13d881b8292367c83a2c6c5c`. Public Maven read-back proved
+the shared `RingTextEntryPort`, adaptive capture feedback, round playback
+projection and media geometry tokens before the annotated `v0.3.9` tag was
+pushed. Manual Phone/Wear proof covered inline text, the real Wear system IME,
+capture press/release and every playback state without a showcase-only visual
+renderer.
+
 ### Wave 4 — templates and shared flows
 
 - Exercise all seven `RingScreen` cases and navigator/back behavior.
@@ -443,6 +451,17 @@ playback controls all use the shared semantic specs.
 Proof: registry coverage test says every declared public showcase family and
 all `RingScreen` cases have at least one case; no network or installer side
 effect occurs inside the gallery.
+
+**Done:** the reciprocal catalog now covers all seven `RingScreen` cases plus
+deterministic source, update and service flows. The template fixtures include
+empty, maximum-capacity and long-content cases, and an exhaustive Kotlin
+classifier makes a new screen case fail compilation until it is represented.
+Focused tests prove that every visual family resolves through the production
+presentation seam and that the flow laboratory performs no network or install
+side effects. Manual Phone/Wear proof also reproduced a shared round-hub chord
+collision; the fix now derives a centred stat-ring diameter from actual
+floating-chrome reservations and gives compact stat labels their own shared
+design token.
 
 ### Wave 5 — consumer cleanup and publication
 
