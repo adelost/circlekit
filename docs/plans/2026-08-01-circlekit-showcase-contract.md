@@ -1,6 +1,6 @@
 # CircleKit Showcase contract
 
-Status: **accepted after independent Kimi review**. The review corrections and
+Status: **complete after independent Kimi review**. The review corrections and
 ownership boundaries below are normative. No showcase implementation may
 depart from them without updating this contract first.
 
@@ -474,6 +474,26 @@ design token.
 
 Proof: fresh installs on physical/emulated Phone and Wear, direct GitHub links,
 and no private/sibling dependency in either production consumer.
+
+**Done:** CircleKit `v0.3.11` was built from merge
+`6d184c0ee64015b55bc74ce8c15ccdbfaa0ceeeb`, read back from the public Maven
+repository, and released with separately installable signed Phone and Wear
+showcase APKs plus a provenance manifest. Both APKs were freshly installed on
+the Phone and Wear emulators and the root catalog was exercised through the
+real hosts. Skyvw retired its local component gallery in #594
+(`a4042328abba72e40144fe3589dab5158fa2aa27`) and now launches the standalone
+showcase; auto-release `v0.5.664` includes that merge. Agentmux Link moved all
+four production consumer modules to the same immutable CircleKit `0.3.11` in
+#247 (`4a2f4d4ab61830788f3b6a9bedcf8332f32e926e`). Its shared UI/updater tests,
+Phone build and Wear build passed against the public artifacts. No hosted CI
+or full repository suite was used.
+
+Published evidence:
+
+- release: <https://github.com/adelost/circlekit/releases/tag/v0.3.11>
+- Phone APK: <https://github.com/adelost/circlekit/releases/download/v0.3.11/circlekit-showcase-phone-v0.3.11.apk>
+- Wear APK: <https://github.com/adelost/circlekit/releases/download/v0.3.11/circlekit-showcase-wear-v0.3.11.apk>
+- provenance: <https://github.com/adelost/circlekit/releases/download/v0.3.11/PROVENANCE.txt>
 
 ## Verification policy
 
