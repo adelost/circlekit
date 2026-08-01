@@ -27,7 +27,6 @@ import androidx.wear.compose.material.Text
 import com.adelost.designkit.ui.CircleActionCue
 import com.adelost.designkit.ui.CircleActionCueEvent
 import com.adelost.designkit.ui.LocalCircleActionCuePublisher
-import com.adelost.designkit.ui.MenuDesign
 import com.adelost.designkit.ui.RingTokens
 import com.adelost.designkit.ui.circleBrandColor
 import kotlinx.coroutines.delay
@@ -57,6 +56,16 @@ internal fun nextRingCueHostState(
     }
 }
 
+/** A dwell may clear only the exact confirmed receipt that scheduled it. */
+internal fun ringCueReceiptStillCurrent(
+    current: RingCueHostState,
+    scheduledOwner: Any,
+    scheduledCue: CircleActionCue,
+): Boolean = current.settledOwner === scheduledOwner &&
+    current.owner === scheduledOwner &&
+    current.cue == scheduledCue &&
+    current.cue.confirmed
+
 /**
  * One host for CircleKit action progress on rectangular and round surfaces.
  * Phone and Wear mount the same host once; controls only publish semantic cue
@@ -71,10 +80,14 @@ fun RingActionCueHost(
     val publish = remember {
         { event: CircleActionCueEvent -> state = nextRingCueHostState(state, event) }
     }
-    LaunchedEffect(state.settledOwner, state.cue?.label, state.cue?.value) {
-        if (state.settledOwner == null) return@LaunchedEffect
-        delay(state.cue?.dwellMs ?: MenuDesign.actionConfirmationMs)
-        state = RingCueHostState()
+    val settledCue = state.cue?.takeIf { it.confirmed }
+    LaunchedEffect(state.settledOwner, settledCue) {
+        val scheduledOwner = state.settledOwner ?: return@LaunchedEffect
+        val scheduledCue = settledCue ?: return@LaunchedEffect
+        delay(scheduledCue.dwellMs)
+        if (ringCueReceiptStillCurrent(state, scheduledOwner, scheduledCue)) {
+            state = RingCueHostState()
+        }
     }
     CompositionLocalProvider(LocalCircleActionCuePublisher provides publish) {
         Box(modifier = modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
