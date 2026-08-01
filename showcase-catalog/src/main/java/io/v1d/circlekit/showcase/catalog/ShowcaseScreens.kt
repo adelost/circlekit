@@ -48,6 +48,10 @@ object ShowcaseScreens {
             "control.choice-row" -> ShowcaseInteractionScreens.choiceRows(pair.second, session.interaction)
             "control.adjustment" -> ShowcaseInteractionScreens.adjustmentRows(pair.second, session.interaction)
             "control.progress" -> ShowcaseInteractionScreens.progressRows(pair.second, session.interaction)
+            "template.screens" -> ShowcaseTemplateFixtures.screen(pair.second, session)
+            "flow.source" -> ShowcaseFlowScreens.source(session.flows)
+            "flow.update" -> ShowcaseFlowScreens.update(session.flows)
+            "flow.service" -> ShowcaseFlowScreens.service(session.flows)
             else -> error("No presentation for ${pair.first.id.value}")
         }
     }
@@ -214,6 +218,8 @@ private val ShowcaseFamily.label: String
         ShowcaseFamily.CONTROLS -> "CONTROLS"
         ShowcaseFamily.INPUT -> "INPUT"
         ShowcaseFamily.MEDIA -> "MEDIA"
+        ShowcaseFamily.TEMPLATES -> "TEMPLATES"
+        ShowcaseFamily.FLOWS -> "FLOWS"
     }
 
 private val ShowcaseFamily.icon: androidx.compose.ui.graphics.vector.ImageVector
@@ -223,6 +229,8 @@ private val ShowcaseFamily.icon: androidx.compose.ui.graphics.vector.ImageVector
         ShowcaseFamily.CONTROLS -> RingIcons.TouchdownRun
         ShowcaseFamily.INPUT -> RingIcons.Pencil
         ShowcaseFamily.MEDIA -> RingIcons.Play
+        ShowcaseFamily.TEMPLATES -> RingIcons.Layers
+        ShowcaseFamily.FLOWS -> RingIcons.Wifi
     }
 
 private fun CircleSurfaceClass.icon() = when (this) {

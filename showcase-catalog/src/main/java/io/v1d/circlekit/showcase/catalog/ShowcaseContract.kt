@@ -18,7 +18,26 @@ value class ShowcaseScenarioId(val value: String)
 @JvmInline
 value class ShowcaseActionId(val value: String)
 
-enum class ShowcaseFamily { FOUNDATIONS, ATOMS, CONTROLS, INPUT, MEDIA }
+enum class ShowcaseFamily { FOUNDATIONS, ATOMS, CONTROLS, INPUT, MEDIA, TEMPLATES, FLOWS }
+
+/** One reciprocal vocabulary for the public visual families exercised here. */
+enum class ShowcaseComponentFamily {
+    COLORS,
+    GEOMETRY,
+    ICON_ACTION,
+    ACTION_ROW,
+    CHOICE_ROW,
+    ADJUSTMENT,
+    PROGRESS,
+    PRESS_ACTION,
+    TEXT_ENTRY,
+    AUDIO_CAPTURE,
+    AUDIO_PLAYBACK,
+    SCREEN_TEMPLATES,
+    SOURCE_HEALTH,
+    UPDATE_FLOW,
+    SERVICE_STATUS,
+}
 
 data class ShowcaseScenario(
     val id: ShowcaseScenarioId,
@@ -28,6 +47,7 @@ data class ShowcaseScenario(
 data class ShowcaseCase(
     val id: ShowcaseCaseId,
     val family: ShowcaseFamily,
+    val componentFamily: ShowcaseComponentFamily,
     val title: String,
     val icon: ImageVector,
     val scenarios: List<ShowcaseScenario>,
@@ -38,6 +58,7 @@ object ShowcaseManifest {
         ShowcaseCase(
             id = ShowcaseCaseId("foundation.colors"),
             family = ShowcaseFamily.FOUNDATIONS,
+            componentFamily = ShowcaseComponentFamily.COLORS,
             title = "COLORS",
             icon = RingIcons.Palette,
             scenarios = listOf(
@@ -50,6 +71,7 @@ object ShowcaseManifest {
         ShowcaseCase(
             id = ShowcaseCaseId("foundation.geometry"),
             family = ShowcaseFamily.FOUNDATIONS,
+            componentFamily = ShowcaseComponentFamily.GEOMETRY,
             title = "GEOMETRY",
             icon = RingIcons.Grid,
             scenarios = listOf(
@@ -63,6 +85,7 @@ object ShowcaseManifest {
         ShowcaseCase(
             id = ShowcaseCaseId("atom.icon-action"),
             family = ShowcaseFamily.ATOMS,
+            componentFamily = ShowcaseComponentFamily.ICON_ACTION,
             title = "ACTIONS",
             icon = RingIcons.Watch,
             scenarios = listOf(
@@ -76,6 +99,7 @@ object ShowcaseManifest {
         ShowcaseCase(
             id = ShowcaseCaseId("control.action-row"),
             family = ShowcaseFamily.CONTROLS,
+            componentFamily = ShowcaseComponentFamily.ACTION_ROW,
             title = "ACTION ROW",
             icon = RingIcons.TouchdownRun,
             scenarios = listOf(
@@ -90,6 +114,7 @@ object ShowcaseManifest {
         ShowcaseCase(
             id = ShowcaseCaseId("control.choice-row"),
             family = ShowcaseFamily.CONTROLS,
+            componentFamily = ShowcaseComponentFamily.CHOICE_ROW,
             title = "CHOICES",
             icon = RingIcons.Grid,
             scenarios = listOf(
@@ -104,6 +129,7 @@ object ShowcaseManifest {
         ShowcaseCase(
             id = ShowcaseCaseId("control.adjustment"),
             family = ShowcaseFamily.CONTROLS,
+            componentFamily = ShowcaseComponentFamily.ADJUSTMENT,
             title = "ADJUST",
             icon = RingIcons.Sliders,
             scenarios = listOf(
@@ -116,6 +142,7 @@ object ShowcaseManifest {
         ShowcaseCase(
             id = ShowcaseCaseId("control.progress"),
             family = ShowcaseFamily.CONTROLS,
+            componentFamily = ShowcaseComponentFamily.PROGRESS,
             title = "PROGRESS",
             icon = RingIcons.Download,
             scenarios = listOf(
@@ -130,6 +157,7 @@ object ShowcaseManifest {
         ShowcaseCase(
             id = ShowcaseCaseId("control.press-ring"),
             family = ShowcaseFamily.CONTROLS,
+            componentFamily = ShowcaseComponentFamily.PRESS_ACTION,
             title = "PRESS",
             icon = RingIcons.Record,
             scenarios = listOf(
@@ -142,6 +170,7 @@ object ShowcaseManifest {
         ShowcaseCase(
             id = ShowcaseCaseId("input.text"),
             family = ShowcaseFamily.INPUT,
+            componentFamily = ShowcaseComponentFamily.TEXT_ENTRY,
             title = "TEXT",
             icon = RingIcons.Pencil,
             scenarios = listOf(
@@ -154,6 +183,7 @@ object ShowcaseManifest {
         ShowcaseCase(
             id = ShowcaseCaseId("media.capture"),
             family = ShowcaseFamily.MEDIA,
+            componentFamily = ShowcaseComponentFamily.AUDIO_CAPTURE,
             title = "WAVEFORM",
             icon = RingIcons.Record,
             scenarios = listOf(
@@ -165,6 +195,7 @@ object ShowcaseManifest {
         ShowcaseCase(
             id = ShowcaseCaseId("media.playback"),
             family = ShowcaseFamily.MEDIA,
+            componentFamily = ShowcaseComponentFamily.AUDIO_PLAYBACK,
             title = "PLAYBACK",
             icon = RingIcons.Play,
             scenarios = listOf(
@@ -173,6 +204,68 @@ object ShowcaseManifest {
                 ShowcaseScenario(ShowcaseScenarioId("paused"), "PAUSED"),
                 ShowcaseScenario(ShowcaseScenarioId("complete"), "COMPLETE"),
                 ShowcaseScenario(ShowcaseScenarioId("failed"), "FAILED"),
+            ),
+        ),
+        ShowcaseCase(
+            id = ShowcaseCaseId("template.screens"),
+            family = ShowcaseFamily.TEMPLATES,
+            componentFamily = ShowcaseComponentFamily.SCREEN_TEMPLATES,
+            title = "SCREENS",
+            icon = RingIcons.Layers,
+            scenarios = listOf(
+                ShowcaseScenario(ShowcaseScenarioId("hub"), "HUB"),
+                ShowcaseScenario(ShowcaseScenarioId("detail"), "DETAIL"),
+                ShowcaseScenario(ShowcaseScenarioId("launcher"), "LAUNCHER"),
+                ShowcaseScenario(ShowcaseScenarioId("rows"), "ROWS"),
+                ShowcaseScenario(ShowcaseScenarioId("adjustment"), "ADJUSTMENT"),
+                ShowcaseScenario(ShowcaseScenarioId("color-picker"), "COLOR PICKER"),
+                ShowcaseScenario(ShowcaseScenarioId("dial-preview"), "DIAL PREVIEW"),
+                ShowcaseScenario(ShowcaseScenarioId("empty"), "EMPTY CONTENT"),
+                ShowcaseScenario(ShowcaseScenarioId("max-capacity"), "MAX CAPACITY"),
+                ShowcaseScenario(ShowcaseScenarioId("long-content"), "LONG CONTENT"),
+            ),
+        ),
+        ShowcaseCase(
+            id = ShowcaseCaseId("flow.source"),
+            family = ShowcaseFamily.FLOWS,
+            componentFamily = ShowcaseComponentFamily.SOURCE_HEALTH,
+            title = "SOURCE",
+            icon = RingIcons.Wifi,
+            scenarios = listOf(
+                ShowcaseScenario(ShowcaseScenarioId("off"), "OFF"),
+                ShowcaseScenario(ShowcaseScenarioId("loading"), "LOADING"),
+                ShowcaseScenario(ShowcaseScenarioId("fresh"), "FRESH"),
+                ShowcaseScenario(ShowcaseScenarioId("aging"), "AGING"),
+                ShowcaseScenario(ShowcaseScenarioId("partial"), "PARTIAL"),
+                ShowcaseScenario(ShowcaseScenarioId("broken"), "BROKEN"),
+            ),
+        ),
+        ShowcaseCase(
+            id = ShowcaseCaseId("flow.update"),
+            family = ShowcaseFamily.FLOWS,
+            componentFamily = ShowcaseComponentFamily.UPDATE_FLOW,
+            title = "UPDATE",
+            icon = RingIcons.Download,
+            scenarios = listOf(
+                ShowcaseScenario(ShowcaseScenarioId("checking"), "CHECKING"),
+                ShowcaseScenario(ShowcaseScenarioId("available"), "AVAILABLE"),
+                ShowcaseScenario(ShowcaseScenarioId("downloading"), "DOWNLOADING"),
+                ShowcaseScenario(ShowcaseScenarioId("ready"), "READY"),
+                ShowcaseScenario(ShowcaseScenarioId("failed"), "FAILED"),
+            ),
+        ),
+        ShowcaseCase(
+            id = ShowcaseCaseId("flow.service"),
+            family = ShowcaseFamily.FLOWS,
+            componentFamily = ShowcaseComponentFamily.SERVICE_STATUS,
+            title = "SERVICE",
+            icon = RingIcons.Wrench,
+            scenarios = listOf(
+                ShowcaseScenario(ShowcaseScenarioId("idle"), "IDLE"),
+                ShowcaseScenario(ShowcaseScenarioId("active"), "ACTIVE"),
+                ShowcaseScenario(ShowcaseScenarioId("success"), "SUCCESS"),
+                ShowcaseScenario(ShowcaseScenarioId("failed"), "FAILED"),
+                ShowcaseScenario(ShowcaseScenarioId("cache"), "CACHE"),
             ),
         ),
     )
@@ -245,6 +338,7 @@ class ShowcaseSession {
     private var navigationBack: (() -> Boolean)? = null
     val interaction = ShowcaseInteractionState()
     val media = ShowcaseMediaState()
+    val flows = ShowcaseFlowState()
 
     val destination: StateFlow<ShowcaseDestination> = mutableDestination.asStateFlow()
     val iconActionActive: StateFlow<Boolean> = mutableIconActionActive.asStateFlow()
@@ -253,6 +347,7 @@ class ShowcaseSession {
         if (ShowcaseManifest.find(caseId, scenarioId) == null) return false
         interaction.prepare(caseId, scenarioId)
         media.prepare(caseId, scenarioId)
+        flows.prepare(caseId, scenarioId)
         mutableDestination.value = ShowcaseDestination(caseId, scenarioId)
         return true
     }
@@ -262,6 +357,7 @@ class ShowcaseSession {
         mutableIconActionActive.value = false
         interaction.reset()
         media.reset()
+        flows.reset()
     }
 
     fun closeSelection() {
@@ -294,6 +390,9 @@ class ShowcaseSession {
         ACTION_CAPTURE_FAIL -> true.also { media.failCapture() }
         ACTION_PLAYBACK_TOGGLE -> true.also { media.togglePlayback() }
         ACTION_PLAYBACK_STOP -> true.also { media.stopPlayback() }
+        ACTION_SOURCE_REFRESH -> true.also { flows.refreshSource() }
+        ACTION_UPDATE_ADVANCE -> true.also { flows.advanceUpdate() }
+        ACTION_SERVICE_ADVANCE -> true.also { flows.advanceService() }
         else -> false
     }
 
@@ -358,6 +457,9 @@ class ShowcaseSession {
         const val ACTION_CAPTURE_FAIL = "control.press-ring.fail"
         const val ACTION_PLAYBACK_TOGGLE = "media.playback.toggle"
         const val ACTION_PLAYBACK_STOP = "media.playback.stop"
+        const val ACTION_SOURCE_REFRESH = "flow.source.refresh"
+        const val ACTION_UPDATE_ADVANCE = "flow.update.advance"
+        const val ACTION_SERVICE_ADVANCE = "flow.service.advance"
     }
 }
 
