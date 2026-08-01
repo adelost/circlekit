@@ -99,6 +99,7 @@ fun StatRing(
         modifier = modifier,
         diameter = diameter,
         fontFamily = androidx.wear.compose.material.MaterialTheme.typography.caption2.fontFamily,
+        labelSize = MenuDesign.statLabelSize,
         centerValue = value,
         contourColor = health.ringColor(),
         iconRotationDegrees = iconRotationDeg,
