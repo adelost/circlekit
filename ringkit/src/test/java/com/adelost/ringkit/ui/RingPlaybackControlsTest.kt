@@ -15,6 +15,14 @@ class RingPlaybackControlsTest {
         assertEquals(1f, playbackProgressFraction(130_000L, 125_000L))
     }
 
+    @Test
+    fun `playback state remains visible beside time truth`() {
+        assertEquals(
+            "FAILED · 0:12 / 1:23",
+            playbackStatusLabel(RingPlaybackState.FAILED, 12_000L, 83_000L),
+        )
+    }
+
     @Test(expected = IllegalArgumentException::class)
     fun `negative position is refused`() {
         playbackProgressFraction(-1L, 10L)

@@ -18,7 +18,7 @@ value class ShowcaseScenarioId(val value: String)
 @JvmInline
 value class ShowcaseActionId(val value: String)
 
-enum class ShowcaseFamily { FOUNDATIONS, ATOMS, CONTROLS }
+enum class ShowcaseFamily { FOUNDATIONS, ATOMS, CONTROLS, INPUT, MEDIA }
 
 data class ShowcaseScenario(
     val id: ShowcaseScenarioId,
@@ -127,6 +127,54 @@ object ShowcaseManifest {
                 ShowcaseScenario(ShowcaseScenarioId("failed"), "FAILURE + RETRY"),
             ),
         ),
+        ShowcaseCase(
+            id = ShowcaseCaseId("control.press-ring"),
+            family = ShowcaseFamily.CONTROLS,
+            title = "PRESS",
+            icon = RingIcons.Record,
+            scenarios = listOf(
+                ShowcaseScenario(ShowcaseScenarioId("idle"), "IDLE"),
+                ShowcaseScenario(ShowcaseScenarioId("recording"), "RECORDING"),
+                ShowcaseScenario(ShowcaseScenarioId("disabled"), "DISABLED"),
+                ShowcaseScenario(ShowcaseScenarioId("failed"), "FAILED + RETRY"),
+            ),
+        ),
+        ShowcaseCase(
+            id = ShowcaseCaseId("input.text"),
+            family = ShowcaseFamily.INPUT,
+            title = "TEXT",
+            icon = RingIcons.Pencil,
+            scenarios = listOf(
+                ShowcaseScenario(ShowcaseScenarioId("empty"), "EMPTY"),
+                ShowcaseScenario(ShowcaseScenarioId("filled"), "FILLED"),
+                ShowcaseScenario(ShowcaseScenarioId("max"), "MAX LENGTH"),
+                ShowcaseScenario(ShowcaseScenarioId("disabled"), "DISABLED"),
+            ),
+        ),
+        ShowcaseCase(
+            id = ShowcaseCaseId("media.capture"),
+            family = ShowcaseFamily.MEDIA,
+            title = "WAVEFORM",
+            icon = RingIcons.Record,
+            scenarios = listOf(
+                ShowcaseScenario(ShowcaseScenarioId("silent"), "NO SAMPLES"),
+                ShowcaseScenario(ShowcaseScenarioId("active"), "ACTIVE"),
+                ShowcaseScenario(ShowcaseScenarioId("long"), "LONG DURATION"),
+            ),
+        ),
+        ShowcaseCase(
+            id = ShowcaseCaseId("media.playback"),
+            family = ShowcaseFamily.MEDIA,
+            title = "PLAYBACK",
+            icon = RingIcons.Play,
+            scenarios = listOf(
+                ShowcaseScenario(ShowcaseScenarioId("ready"), "READY"),
+                ShowcaseScenario(ShowcaseScenarioId("playing"), "PLAYING"),
+                ShowcaseScenario(ShowcaseScenarioId("paused"), "PAUSED"),
+                ShowcaseScenario(ShowcaseScenarioId("complete"), "COMPLETE"),
+                ShowcaseScenario(ShowcaseScenarioId("failed"), "FAILED"),
+            ),
+        ),
     )
 
     fun find(caseId: ShowcaseCaseId): ShowcaseCase? = cases.find { it.id == caseId }
@@ -166,6 +214,11 @@ data class ShowcaseProbeResult(
         append(",\"choiceIndex\":").append(snapshot.choiceIndex)
         append(",\"adjustmentValue\":").append(snapshot.adjustmentValue)
         append(",\"workState\":\"").append(snapshot.workState.jsonEscape()).append('"')
+        append(",\"text\":\"").append(snapshot.text.jsonEscape()).append('"')
+        append(",\"textSubmitCount\":").append(snapshot.textSubmitCount)
+        append(",\"captureActive\":").append(snapshot.captureActive)
+        append(",\"captureElapsedMs\":").append(snapshot.captureElapsedMs)
+        append(",\"playbackState\":\"").append(snapshot.playbackState.jsonEscape()).append('"')
         append('}')
     }
 }
@@ -178,6 +231,11 @@ data class ShowcaseSnapshot(
     val choiceIndex: Int,
     val adjustmentValue: Int,
     val workState: String,
+    val text: String,
+    val textSubmitCount: Int,
+    val captureActive: Boolean,
+    val captureElapsedMs: Long,
+    val playbackState: String,
 )
 
 class ShowcaseSession {
@@ -186,6 +244,7 @@ class ShowcaseSession {
     private var surface: String = "UNKNOWN"
     private var navigationBack: (() -> Boolean)? = null
     val interaction = ShowcaseInteractionState()
+    val media = ShowcaseMediaState()
 
     val destination: StateFlow<ShowcaseDestination> = mutableDestination.asStateFlow()
     val iconActionActive: StateFlow<Boolean> = mutableIconActionActive.asStateFlow()
@@ -193,6 +252,7 @@ class ShowcaseSession {
     fun open(caseId: ShowcaseCaseId, scenarioId: ShowcaseScenarioId): Boolean {
         if (ShowcaseManifest.find(caseId, scenarioId) == null) return false
         interaction.prepare(caseId, scenarioId)
+        media.prepare(caseId, scenarioId)
         mutableDestination.value = ShowcaseDestination(caseId, scenarioId)
         return true
     }
@@ -201,6 +261,7 @@ class ShowcaseSession {
         mutableDestination.value = ShowcaseDestination()
         mutableIconActionActive.value = false
         interaction.reset()
+        media.reset()
     }
 
     fun closeSelection() {
@@ -227,6 +288,12 @@ class ShowcaseSession {
         ACTION_NEXT_CHOICE -> true.also { interaction.nextChoice(7) }
         ACTION_INCREMENT -> true.also { interaction.adjust(100) }
         ACTION_ADVANCE_PROGRESS -> true.also { interaction.advanceWork() }
+        ACTION_TEXT_SUBMIT -> true.also { media.submitText() }
+        ACTION_CAPTURE_BEGIN -> media.beginCapture()
+        ACTION_CAPTURE_RELEASE -> true.also { media.releaseCapture() }
+        ACTION_CAPTURE_FAIL -> true.also { media.failCapture() }
+        ACTION_PLAYBACK_TOGGLE -> true.also { media.togglePlayback() }
+        ACTION_PLAYBACK_STOP -> true.also { media.stopPlayback() }
         else -> false
     }
 
@@ -270,6 +337,11 @@ class ShowcaseSession {
             choiceIndex = interaction.choiceIndex.value,
             adjustmentValue = interaction.adjustmentValue.value,
             workState = interaction.work.value.name,
+            text = media.text.value,
+            textSubmitCount = media.submitCount.value,
+            captureActive = media.captureActive.value,
+            captureElapsedMs = media.captureElapsedMs.value,
+            playbackState = media.playbackState.value.name,
         )
     }
 
@@ -280,6 +352,12 @@ class ShowcaseSession {
         const val ACTION_NEXT_CHOICE = "control.choice.next"
         const val ACTION_INCREMENT = "control.adjustment.increment"
         const val ACTION_ADVANCE_PROGRESS = "control.progress.advance"
+        const val ACTION_TEXT_SUBMIT = "input.text.submit"
+        const val ACTION_CAPTURE_BEGIN = "control.press-ring.begin"
+        const val ACTION_CAPTURE_RELEASE = "control.press-ring.release"
+        const val ACTION_CAPTURE_FAIL = "control.press-ring.fail"
+        const val ACTION_PLAYBACK_TOGGLE = "media.playback.toggle"
+        const val ACTION_PLAYBACK_STOP = "media.playback.stop"
     }
 }
 

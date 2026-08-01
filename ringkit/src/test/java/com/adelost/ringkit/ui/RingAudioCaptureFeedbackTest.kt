@@ -17,4 +17,11 @@ class RingAudioCaptureFeedbackTest {
             RingAudioCaptureFeedbackSpec(0, listOf(-0.1f), active = true)
         }
     }
+
+    @Test
+    fun waveformNeverExceedsItsActualViewport() {
+        assertEquals(192f, captureWaveformWidthDp(192f))
+        assertEquals(220f, captureWaveformWidthDp(390f))
+        assertEquals(0f, captureWaveformWidthDp(0f))
+    }
 }

@@ -27,6 +27,7 @@ import androidx.wear.compose.material.Text
 import com.adelost.designkit.ui.CircleActionCue
 import com.adelost.designkit.ui.CircleActionCueEvent
 import com.adelost.designkit.ui.LocalCircleActionCuePublisher
+import com.adelost.designkit.ui.MenuDesign
 import com.adelost.designkit.ui.RingTokens
 import com.adelost.designkit.ui.circleBrandColor
 import kotlinx.coroutines.delay
@@ -92,7 +93,10 @@ fun RingActionCueHost(
     CompositionLocalProvider(LocalCircleActionCuePublisher provides publish) {
         Box(modifier = modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             content()
-            state.cue?.let { RingActionCue(it) }
+            state.cue?.let { cue ->
+                Box(Modifier.fillMaxSize().background(MenuDesign.actionCueScrim))
+                RingActionCue(cue)
+            }
         }
     }
 }

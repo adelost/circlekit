@@ -1,6 +1,7 @@
 package io.v1d.circlekit.showcase.wear
 
 import android.app.Activity
+import android.app.RemoteInput
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
@@ -9,6 +10,7 @@ import android.os.Bundle
 import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -24,6 +26,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Density
 import androidx.core.content.ContextCompat
+import androidx.wear.input.RemoteInputIntentHelper
 import com.adelost.designkit.ui.CircleUiProfiles
 import com.adelost.designkit.ui.LocalCircleSurfaceLayout
 import com.adelost.designkit.ui.resolveCircleSurfaceLayout
@@ -32,9 +35,33 @@ import io.v1d.circlekit.showcase.catalog.SHOWCASE_PROBE_ACTION
 import io.v1d.circlekit.showcase.catalog.SHOWCASE_PROBE_LOG_TAG
 import io.v1d.circlekit.showcase.catalog.ShowcaseProbeCommand
 import io.v1d.circlekit.showcase.catalog.ShowcaseSession
+import com.adelost.ringkit.ui.RingTextEntryPort
+import com.adelost.ringkit.ui.RingTextInputSpec
 
 class WearShowcaseActivity : ComponentActivity() {
     private val session = ShowcaseSession()
+    private var pendingTextEntry: PendingTextEntry? = null
+    private val textEntryLauncher = registerForActivityResult(
+        ActivityResultContracts.StartActivityForResult(),
+    ) { result ->
+        val pending = pendingTextEntry.also { pendingTextEntry = null } ?: return@registerForActivityResult
+        if (result.resultCode != Activity.RESULT_OK) return@registerForActivityResult
+        val value = RemoteInput.getResultsFromIntent(result.data)
+            ?.getCharSequence(TEXT_RESULT_KEY)
+            ?.toString()
+            ?: return@registerForActivityResult
+        pending.onResult(value.take(pending.spec.maxLength))
+    }
+    private val textEntryPort = RingTextEntryPort { spec, onResult ->
+        if (!spec.enabled) return@RingTextEntryPort
+        pendingTextEntry = PendingTextEntry(spec, onResult)
+        val remoteInput = RemoteInput.Builder(TEXT_RESULT_KEY)
+            .setLabel(spec.label)
+            .build()
+        val intent = RemoteInputIntentHelper.createActionRemoteInputIntent()
+        RemoteInputIntentHelper.putRemoteInputsExtra(intent, listOf(remoteInput))
+        textEntryLauncher.launch(intent)
+    }
     private var probeRegistered = false
     private val probeReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
@@ -82,6 +109,7 @@ class WearShowcaseActivity : ComponentActivity() {
                         CircleKitShowcase(
                             session = session,
                             onExit = ::finish,
+                            textEntryPort = textEntryPort,
                         )
                     }
                 }
@@ -108,5 +136,14 @@ class WearShowcaseActivity : ComponentActivity() {
             probeRegistered = false
         }
         super.onStop()
+    }
+
+    private data class PendingTextEntry(
+        val spec: RingTextInputSpec,
+        val onResult: (String) -> Unit,
+    )
+
+    private companion object {
+        const val TEXT_RESULT_KEY = "circlekit_showcase_text"
     }
 }
