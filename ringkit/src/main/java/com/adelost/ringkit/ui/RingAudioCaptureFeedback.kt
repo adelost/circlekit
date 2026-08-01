@@ -17,6 +17,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.wear.compose.material.Text
 import com.adelost.designkit.ui.RingTokens
+import com.adelost.designkit.ui.CircleSurfaceClass
+import com.adelost.designkit.ui.LocalCircleSurfaceLayout
 import com.adelost.designkit.ui.circleBrandColor
 import com.adelost.designkit.ui.roundSafeContentInset
 
@@ -41,6 +43,7 @@ fun RingAudioCaptureFeedback(
     spec: RingAudioCaptureFeedbackSpec,
     modifier: Modifier = Modifier,
 ) {
+    val round = LocalCircleSurfaceLayout.current.surfaceClass == CircleSurfaceClass.ROUND
     val samples = spec.levels.takeLast(AUDIO_WAVEFORM_BARS)
     val pigment = if (spec.active) circleBrandColor() else RingTokens.Dim
     Column(
@@ -54,7 +57,7 @@ fun RingAudioCaptureFeedback(
             fontWeight = FontWeight.Bold,
         )
         BoxWithConstraints(
-            modifier = Modifier.fillMaxWidth().roundSafeContentInset(),
+            modifier = Modifier.fillMaxWidth().roundSafeContentInset(enabled = round),
             contentAlignment = Alignment.Center,
         ) {
             val waveformWidth = captureWaveformWidthDp(maxWidth.value).dp
