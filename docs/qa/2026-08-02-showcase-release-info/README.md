@@ -1,6 +1,6 @@
 # Showcase release publication presentation
 
-Source APK commit: `a0cbb1b334e387780e160ab2bcebad4cea07ac74`.
+Source APK commit: `dc987243f660a9918d1e97ebd8eb8eb1caedc8f7`.
 All navigation used `tools/showcase-probe.sh`; no coordinate taps or fabricated
 network response were used.
 
@@ -13,18 +13,21 @@ network response were used.
   `https://api.github.com/repos/adelost/circlekit/releases`.
 - The newest compatible release observed during QA was `v0.3.17`, with Phone
   and Wear APKs and source-owned `published_at=2026-08-02T05:33:20Z`.
-- Showcase is a same-repository laboratory and intentionally consumes
-  `project(":releasekit")`. This adoption therefore uses the source published
-  as CircleKit `0.3.19`; replacing it with its own Maven dependency would test
-  different code from the repository under development.
+- The separately publishable `releasekit-ui` module owns the exact UPDATE row,
+  optional PUBLISHED row, icons, typed check/install action mapping, progress,
+  failure colour, and locale/timezone boundary. Showcase consumes that module
+  directly and has no local release-row adapter.
+- Showcase is a same-repository laboratory and intentionally consumes project
+  modules. Replacing them with Maven dependencies would test different code
+  from the repository under development.
 
 ## Pixel contract and result
 
 The named `flow.update/available` fixture carries that fixed absolute instant.
 Before inspection, each image was required to show `UPDATE FLOW`, the shared
-`v0.4.0 AVAILABLE · TAP` projection, and a separate `PUBLISHED` row containing
+available update projection, and a separate `PUBLISHED` row containing
 `v0.4.0` plus device-local time. All requirements were checked against the
-captured pixels:
+captured pixels and the named probe surface dump:
 
 - [`phone-responsive.png`](phone-responsive.png): 1080 × 2400 portrait;
   probe dump reported `PHONE_COMPACT`; the publication instant renders as
@@ -34,24 +37,31 @@ captured pixels:
   `DEG_90`; probe dump reported `PHONE_WIDE`; version and identical local time
   remain visible without changing update state.
 - [`phone-watch-exact-216.png`](phone-watch-exact-216.png): named
-  `WATCH_EXACT` plus diameter `216`; probe dump reported `ROUND`; the same
-  publication row fits the round preview and the AUTO exit remains visible.
+  `WATCH_EXACT` plus diameter `216`; probe dump reported `ROUND`; the narrow
+  preview visibly ellipsizes the update detail as `v0.4.0 AVAIL…`, while the
+  complete publication value wraps across two lines and AUTO remains visible.
 
 Screenshot SHA-256 values, in the order above:
 
-- `03516b11261a242e70c48d65e7864c78b1e4b42d3f86ee62313ec59e147c5a3a`
-- `2e354b94c56f6eba3764bb4e41e621d3064cbb1c17212075e1160067b37dbb94`
-- `93717f18df3616df59bea42434e61bf7f1014bf48411e7ae0d4a7eac9c1cfd56`
+- `80e9672c2c2a78d6308e425466b77a03de9778324d6a98e45e65440b7866e7c5`
+- `84d17954e0b6354edd8b0f25551ba451c13498b7ed89ab9e3bd49db00bf8c202`
+- `37029576451f9b4cb4e7e1ffe2bac28b8eefb57c1f0a29ca14da864c6cdc0f4d`
 
 ## Bounded checks
 
 - `:releasekit:testDebugUnitTest`: shared UTC→New York/Tokyo, DST and null
   presentation tests pass.
+- `:releasekit-ui:testDebugUnitTest`: row structure, Download/Calendar icons,
+  typed actions, progress, failure colour, New York/Tokyo localization and
+  null-time omission pass.
+- `:releasekit-ui:assembleRelease` and
+  `:releasekit-ui:generatePomFileForReleasePublication`: the publishable AAR
+  contains `ReleaseUpdateRowsKt`; its POM carries the releasekit/ringkit graph.
 - `:showcase-catalog:testDebugUnitTest`: real host-product mapping carries the
-  absolute instant; Showcase wiring localizes a known instant and emits no
-  date row for null.
+  absolute instant and the shared rows are exposed in the deterministic flow.
 - `:showcase-phone:compileDebugKotlin`, `:showcase-wear:compileDebugKotlin`,
   both debug APK assemblies, `scripts/check-file-length.sh`, and
+  `scripts/check-adaptive-contract.sh`, `bash -n` for edited scripts, and
   `git diff --check`: pass.
 
 No polling, auto-update, download, installer, feed URL, workflow or hook was
