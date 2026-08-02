@@ -48,35 +48,14 @@ internal object ShowcaseDevScreens {
                     choiceRole = CircleChoiceRole.TOGGLE,
                     onSelect = { selected -> port.onAutoUpdate(selected == "ON") },
                 ),
-                RowSpec(
-                    key = "update-state",
-                    title = "VERSION",
-                    sub = updateLabel(state, port.currentVersionName),
-                    icon = RingIcons.Download,
-                    onTap = when (state) {
-                        is UpdateState.Available,
-                        is UpdateState.ReadyToInstall,
-                        is UpdateState.InstallFailed -> port.onInstall
-                        UpdateState.Checking,
-                        is UpdateState.Downloading,
-                        is UpdateState.Installing -> null
-                        else -> port.onCheck
-                    },
-                ),
+            ) + showcaseUpdateRows(
+                state = state,
+                currentVersionName = port.currentVersionName,
+                updateKey = "update-state",
+                updateTitle = "VERSION",
+                onCheck = port.onCheck,
+                onInstall = port.onInstall,
             )
         },
     )
-}
-
-internal fun updateLabel(state: UpdateState, currentVersionName: String): String = when (state) {
-    is UpdateState.Available -> "v${state.versionName} AVAILABLE · TAP"
-    is UpdateState.ReadyToInstall -> "v${state.versionName} READY · TAP"
-    is UpdateState.Downloading -> "${(state.progress * 100f).toInt()}%"
-    is UpdateState.Installing -> "INSTALLING v${state.versionName}"
-    UpdateState.Checking -> "CHECKING…"
-    is UpdateState.Failed -> "FAILED · TAP TO RETRY"
-    is UpdateState.InstallFailed -> "INSTALL FAILED · TAP"
-    UpdateState.UpToDate -> "v$currentVersionName · UP TO DATE · TAP"
-    is UpdateState.Unavailable -> state.reason.uppercase()
-    UpdateState.Idle -> "v$currentVersionName · TAP TO CHECK"
 }

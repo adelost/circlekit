@@ -9,6 +9,7 @@ import org.junit.Test
 
 class ShowcaseReleaseProductsTest {
     private val digest = "sha256:${"a".repeat(64)}"
+    private val publishedAt = 1_785_648_800_000L
 
     @Test
     fun `phone and wear select only their same-version signed release asset`() {
@@ -18,6 +19,7 @@ class ShowcaseReleaseProductsTest {
                 asset("circlekit-showcase-phone-v0.3.13.apk"),
                 asset("circlekit-showcase-wear-v0.3.13.apk"),
             ),
+            publishedAtEpochMillis = publishedAt,
         )
 
         val phone = selectNewestCompatibleRelease(
@@ -30,8 +32,10 @@ class ShowcaseReleaseProductsTest {
         )
 
         assertEquals("0.3.13", phone?.versionName)
+        assertEquals(publishedAt, phone?.publishedAtEpochMillis)
         assertEquals("circlekit-showcase-phone-v0.3.13.apk", phone?.assetName)
         assertEquals("0.3.13", wear?.versionName)
+        assertEquals(publishedAt, wear?.publishedAtEpochMillis)
         assertEquals("circlekit-showcase-wear-v0.3.13.apk", wear?.assetName)
     }
 

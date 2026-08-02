@@ -62,10 +62,28 @@ class ShowcaseFlowState {
             is UpdateState.Failed,
             is UpdateState.InstallFailed,
             -> UpdateState.Checking
-            UpdateState.Checking -> UpdateState.Available("0.4.0", 4_200_000L, "Shared showcase fixture")
-            is UpdateState.Available -> UpdateState.Downloading(current.versionName, 0.5f, current.sizeBytes)
-            is UpdateState.Downloading -> UpdateState.ReadyToInstall(current.versionName, FIXTURE_APK, current.sizeBytes)
-            is UpdateState.ReadyToInstall -> UpdateState.Installing(current.versionName, current.apkPath, current.sizeBytes)
+            UpdateState.Checking -> availableUpdateFixture()
+            is UpdateState.Available -> UpdateState.Downloading(
+                current.versionName,
+                0.5f,
+                current.sizeBytes,
+                current.changelog,
+                current.publishedAtEpochMillis,
+            )
+            is UpdateState.Downloading -> UpdateState.ReadyToInstall(
+                current.versionName,
+                FIXTURE_APK,
+                current.sizeBytes,
+                current.changelog,
+                current.publishedAtEpochMillis,
+            )
+            is UpdateState.ReadyToInstall -> UpdateState.Installing(
+                current.versionName,
+                current.apkPath,
+                current.sizeBytes,
+                changelog = current.changelog,
+                publishedAtEpochMillis = current.publishedAtEpochMillis,
+            )
             is UpdateState.Installing -> UpdateState.UpToDate
         }
     }
@@ -103,12 +121,31 @@ class ShowcaseFlowState {
 
     private fun updateFixture(scenario: String): UpdateState = when (scenario) {
         "checking" -> UpdateState.Checking
-        "available" -> UpdateState.Available("0.4.0", 4_200_000L, "Shared showcase fixture")
-        "downloading" -> UpdateState.Downloading("0.4.0", 0.56f, 4_200_000L)
-        "ready" -> UpdateState.ReadyToInstall("0.4.0", FIXTURE_APK, 4_200_000L)
+        "available" -> availableUpdateFixture()
+        "downloading" -> UpdateState.Downloading(
+            "0.4.0",
+            0.56f,
+            4_200_000L,
+            "Shared showcase fixture",
+            FIXTURE_PUBLISHED_AT_MS,
+        )
+        "ready" -> UpdateState.ReadyToInstall(
+            "0.4.0",
+            FIXTURE_APK,
+            4_200_000L,
+            "Shared showcase fixture",
+            FIXTURE_PUBLISHED_AT_MS,
+        )
         "failed" -> UpdateState.Failed("NETWORK UNAVAILABLE")
         else -> error("Unknown update fixture $scenario")
     }
+
+    private fun availableUpdateFixture() = UpdateState.Available(
+        "0.4.0",
+        4_200_000L,
+        "Shared showcase fixture",
+        FIXTURE_PUBLISHED_AT_MS,
+    )
 
     private fun serviceFixture(scenario: String): ServiceSnapshot = when (scenario) {
         "idle" -> ServiceSnapshot(SERVICE_ID)
@@ -154,6 +191,7 @@ class ShowcaseFlowState {
     companion object {
         const val NOW_MONO_MS = 10_000L
         const val NOW_WALL_MS = 1_800_000_000_000L
+        const val FIXTURE_PUBLISHED_AT_MS = 1_785_648_800_000L
         private const val FIXTURE_APK = "/showcase/fixture.apk"
         private val SERVICE_ID = ServiceId("showcase-data")
     }
