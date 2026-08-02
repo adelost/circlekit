@@ -48,8 +48,10 @@ for apk in "$phone" "$wear"; do
   "$apksigner" verify --verbose --print-certs "$apk" >/dev/null
 done
 
-phone_badging="$($aapt dump badging "$phone" | head -1)"
-wear_badging="$($aapt dump badging "$wear" | head -1)"
+phone_badging_all="$($aapt dump badging "$phone")"
+wear_badging_all="$($aapt dump badging "$wear")"
+phone_badging="${phone_badging_all%%$'\n'*}"
+wear_badging="${wear_badging_all%%$'\n'*}"
 grep -Fq "name='io.v1d.circlekit.showcase.phone'" <<<"$phone_badging"
 grep -Fq "name='io.v1d.circlekit.showcase.wear'" <<<"$wear_badging"
 grep -Fq "versionName='$VERSION'" <<<"$phone_badging"
