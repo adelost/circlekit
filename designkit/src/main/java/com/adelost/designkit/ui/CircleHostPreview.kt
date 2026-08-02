@@ -17,6 +17,10 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.movableContentOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -107,8 +111,15 @@ fun CircleHostSurface(
     modifier: Modifier = Modifier,
     content: @Composable (CircleUiProfile) -> Unit,
 ) {
+    // Responsive and WatchExact have different parents, but the product tree
+    // is one movable composition. A plain call in each when-branch remounts
+    // every remember below it and resets navigation when DEV changes host.
+    val currentContent by rememberUpdatedState(content)
+    val movableContent = remember {
+        movableContentOf<CircleUiProfile> { profile -> currentContent(profile) }
+    }
     when (resolveCircleHostMode(isWatchDevice, requested = null, persisted = state.mode)) {
-        CircleHostMode.RESPONSIVE -> CircleResponsiveSurface(modifier, content)
+        CircleHostMode.RESPONSIVE -> CircleResponsiveSurface(modifier, movableContent)
         CircleHostMode.WATCH_EXACT -> CircleWatchExactSurface(
             emulatedDiameterDp = state.watchDiameterDp.takeUnless { isWatchDevice },
             onSelectDiameter = onStateChange?.takeUnless { isWatchDevice }?.let { update ->
@@ -118,7 +129,7 @@ fun CircleHostSurface(
                 { update(state.copy(mode = CircleHostMode.RESPONSIVE)) }
             },
             modifier = modifier,
-            content = content,
+            content = movableContent,
         )
     }
 }
