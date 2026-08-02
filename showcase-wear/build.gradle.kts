@@ -12,7 +12,7 @@ android {
         applicationId = "io.v1d.circlekit.showcase.wear"
         minSdk = 26
         targetSdk = 35
-        versionCode = rootProject.extra["showcaseVersionCode"] as Int
+        versionCode = rootProject.extra["showcaseWearVersionCode"] as Int
         versionName = rootProject.version.toString()
     }
 

@@ -4,8 +4,23 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import com.adelost.designkit.ui.CircleHostMode
+import com.adelost.designkit.ui.CircleHostPreviewState
 
 class ShowcaseSessionTest {
+    @Test
+    fun `host presentation changes cannot mutate product destination or state`() {
+        val session = ShowcaseSession()
+        session.open(ShowcaseCaseId("control.choice-row"), ShowcaseScenarioId("middle"))
+        val destination = session.destination.value
+        val choice = session.interaction.choiceIndex.value
+
+        CircleHostPreviewState(mode = CircleHostMode.WATCH_EXACT)
+
+        assertEquals(destination, session.destination.value)
+        assertEquals(choice, session.interaction.choiceIndex.value)
+    }
+
     @Test
     fun `probe opens named scenario and invokes only safe action ids`() {
         val session = ShowcaseSession()

@@ -5,6 +5,9 @@ usage() {
   echo "usage: $0 --device phone|wear [--serial SERIAL] list|dump|reset|back"
   echo "       $0 --device phone|wear [--serial SERIAL] open CASE SCENARIO"
   echo "       $0 --device phone|wear [--serial SERIAL] invoke ACTION"
+  echo "       $0 --device phone|wear [--serial SERIAL] host-mode RESPONSIVE|WATCH_EXACT"
+  echo "       $0 --device phone|wear [--serial SERIAL] watch-diameter 192|216|240|280|320|360|400"
+  echo "       $0 --device phone|wear [--serial SERIAL] orientation SYSTEM|DEG_0|DEG_90|DEG_180|DEG_270"
   echo "       $0 --device phone|wear [--serial SERIAL] shot CASE SCENARIO FILE.png"
 }
 
@@ -72,6 +75,10 @@ case "$command" in
   invoke)
     [[ $# -eq 1 ]] || { usage >&2; exit 2; }
     probe --es cmd invoke --es action "$1"
+    ;;
+  host-mode|watch-diameter|orientation)
+    [[ $# -eq 1 ]] || { usage >&2; exit 2; }
+    probe --es cmd "$command" --es value "$1"
     ;;
   shot)
     [[ $# -eq 3 ]] || { usage >&2; exit 2; }

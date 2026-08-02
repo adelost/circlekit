@@ -1,9 +1,11 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
     <application
         android:label="CircleKit Showcase"
         android:theme="@style/Theme.CircleKitShowcase">
         <activity
             android:name=".PhoneShowcaseActivity"
+            android:configChanges="orientation|screenSize|smallestScreenSize"
             android:exported="true"
             android:screenOrientation="fullSensor">
             <intent-filter>

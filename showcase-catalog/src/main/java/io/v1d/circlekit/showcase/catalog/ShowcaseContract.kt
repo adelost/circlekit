@@ -290,6 +290,7 @@ data class ShowcaseProbeCommand(
     val caseId: String? = null,
     val scenarioId: String? = null,
     val actionId: String? = null,
+    val value: String? = null,
 )
 
 data class ShowcaseProbeResult(
