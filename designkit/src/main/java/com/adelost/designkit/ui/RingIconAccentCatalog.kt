@@ -27,7 +27,7 @@ internal val ICON_ACCENTS: Map<String, CircleAccent> = buildMap {
     register(
         CircleAccent.VIOLET,
         "sliders", "gear", "vibrate", "layers", "cube", "palette", "clock", "pencil",
-        "watch", "phone", "spatial-path", "roll",
+        "watch", "phone", "spatial-path", "roll", "clown",
     )
     register(
         CircleAccent.SKY,
@@ -65,7 +65,7 @@ val RING_ICON_CATALOG: List<ImageVector> = listOf(
     RingIcons.Yaw, RingIcons.Pitch, RingIcons.Roll, RingIcons.RotationRate,
     RingIcons.Download, RingIcons.Plus, RingIcons.Calendar, RingIcons.Ruler, RingIcons.Check,
     RingIcons.Gauge, RingIcons.Bell, RingIcons.Wrench, RingIcons.Minus,
-    RingIcons.Zigzag, RingIcons.Warning,
+    RingIcons.Zigzag, RingIcons.Warning, RingIcons.Clown,
     RingIcons.Book, RingIcons.Flag, RingIcons.Star,
     RingIcons.Sliders, RingIcons.Gear, RingIcons.Vibrate, RingIcons.Layers,
     RingIcons.Cube, RingIcons.Palette, RingIcons.Clock, RingIcons.Pencil,

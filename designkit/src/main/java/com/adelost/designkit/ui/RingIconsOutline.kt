@@ -166,6 +166,9 @@ object RingIconsOutline {
         stroke("warning", "M12 3L2 21h20Z", "M12 9v4", "M12 17h0.01")
     }
 
+    /** The provenance marker stays a silhouette in both styles: its face must survive at 11–18 px. */
+    val Clown: ImageVector by lazy { RingIcons.Clown }
+
     val Trash: ImageVector by lazy {
         stroke("trash", "M3 6h18", "M8 6V4h8v2", "M6 6l1 15h10l1 -15", "M10 10v7", "M14 10v7")
     }

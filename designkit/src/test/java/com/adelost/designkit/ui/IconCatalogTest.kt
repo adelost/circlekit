@@ -1,6 +1,7 @@
 package com.adelost.designkit.ui
 
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertSame
 import org.junit.Test
 
 /** The data-driven icon contract: the gallery renders RING_ICON_CATALOG, the
@@ -28,5 +29,11 @@ class IconCatalogTest {
     fun `catalog names are unique`() {
         val names = RING_ICON_CATALOG.map { it.name }
         assertEquals(names.size, names.toSet().size)
+    }
+
+    @Test
+    fun `clown provenance marker stays a violet silhouette in both styles`() {
+        assertEquals(CircleAccent.VIOLET, ringIconAccent(RingIcons.Clown))
+        assertSame(RingIcons.Clown, RING_ICON_OUTLINE_BY_NAME["clown"])
     }
 }

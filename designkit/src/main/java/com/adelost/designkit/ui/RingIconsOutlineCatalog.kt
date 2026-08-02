@@ -10,7 +10,7 @@ val RING_ICON_OUTLINE_BY_NAME: Map<String, ImageVector> by lazy {
         RingIconsOutline.Wrench, RingIconsOutline.Sliders, RingIconsOutline.Ruler, RingIconsOutline.Gear,
         RingIconsOutline.Chute, RingIconsOutline.Activity, RingIconsOutline.Eye, RingIconsOutline.EyeOff,
         RingIconsOutline.Speaker, RingIconsOutline.Wifi, RingIconsOutline.Refresh, RingIconsOutline.Check,
-        RingIconsOutline.Warning, RingIconsOutline.Trash, RingIconsOutline.Target, RingIconsOutline.Gauge,
+        RingIconsOutline.Warning, RingIconsOutline.Clown, RingIconsOutline.Trash, RingIconsOutline.Target, RingIconsOutline.Gauge,
         RingIconsOutline.Bell, RingIconsOutline.Link, RingIconsOutline.Vibrate, RingIconsOutline.Download,
         RingIconsOutline.Layers, RingIconsOutline.Cube, RingIconsOutline.Palette, RingIconsOutline.Plus,
         RingIconsOutline.Minus, RingIconsOutline.Chart, RingIconsOutline.GroundTrack,
