@@ -62,7 +62,20 @@ class UpdateRowModelTest {
             val model = updateRowModel(state, installed)
             assertEquals(UpdateRowAction.CHECK, model.action)
             assert(model.sub.contains(installed)) { "$state hides which version is installed" }
+            assertNull(model.releaseInfo)
         }
+    }
+
+    @Test
+    fun `release identity reaches the row as raw epoch data`() {
+        val publishedAt = 1_801_234_567_890L
+        val model = updateRowModel(
+            UpdateState.Available("1.2.4", 4_200_000L, "New controls", publishedAt),
+            installed,
+        )
+
+        assertEquals(ReleaseInfo("1.2.4", publishedAt), model.releaseInfo)
+        assertEquals("v1.2.4 AVAILABLE · TAP", model.sub)
     }
 
     @Test
