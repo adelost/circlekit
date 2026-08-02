@@ -35,6 +35,10 @@ import kotlin.math.sin
 fun CircleKitShowcase(
     session: ShowcaseSession,
     onExit: () -> Unit,
+    devPort: ShowcaseDevPort? = null,
+    rootNavigator: RingNavigator = remember(session, devPort) {
+        RingNavigator(ShowcaseScreens.root(session, devPort))
+    },
     textEntryPort: RingTextEntryPort? = null,
     modifier: Modifier = Modifier,
 ) {
@@ -49,7 +53,6 @@ fun CircleKitShowcase(
         CompositionLocalProvider(LocalRoundChromeReservation provides reservedChrome) {
             RingActionCueHost(modifier = modifier) {
                 Box(Modifier.fillMaxSize()) {
-                    val rootNavigator = remember(session) { RingNavigator(ShowcaseScreens.root(session)) }
                     val presentation = if (destination.isRoot) {
                         null
                     } else {

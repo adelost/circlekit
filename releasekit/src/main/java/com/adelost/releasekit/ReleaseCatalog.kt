@@ -126,8 +126,11 @@ fun parseGitHubReleases(body: String): List<GitHubRelease> = runCatching {
                 for (assetIndex in 0 until assetsJson.length()) {
                     val asset = assetsJson.optJSONObject(assetIndex) ?: continue
                     val name = asset.optString("name").takeIf(String::isNotBlank) ?: continue
-                    val apiUrl = asset.optString("url").takeIf(String::isNotBlank)
-                        ?: asset.optString("browser_download_url").takeIf(String::isNotBlank)
+                    // Public browser URLs are token-free and redirect to the
+                    // digest-pinned release CDN. The API asset URL is only a
+                    // fallback for sanitized feeds that deliberately omit it.
+                    val apiUrl = asset.optString("browser_download_url").takeIf(String::isNotBlank)
+                        ?: asset.optString("url").takeIf(String::isNotBlank)
                         ?: continue
                     add(
                         GitHubReleaseAsset(

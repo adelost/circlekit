@@ -19,8 +19,13 @@ fi
 source_sha="$(git -C "$ROOT" rev-parse HEAD)"
 build_tools="$(find "$SDK/build-tools" -mindepth 1 -maxdepth 1 -type d | sort -V | tail -1)"
 apksigner="$build_tools/apksigner"
+aapt="$build_tools/aapt"
 [[ -x "$apksigner" ]] || {
   echo "showcase-release: apksigner not found under $SDK/build-tools" >&2
+  exit 2
+}
+[[ -x "$aapt" ]] || {
+  echo "showcase-release: aapt not found under $SDK/build-tools" >&2
   exit 2
 }
 
@@ -43,6 +48,19 @@ for apk in "$phone" "$wear"; do
   "$apksigner" verify --verbose --print-certs "$apk" >/dev/null
 done
 
+phone_badging="$($aapt dump badging "$phone" | head -1)"
+wear_badging="$($aapt dump badging "$wear" | head -1)"
+grep -Fq "name='io.v1d.circlekit.showcase.phone'" <<<"$phone_badging"
+grep -Fq "name='io.v1d.circlekit.showcase.wear'" <<<"$wear_badging"
+grep -Fq "versionName='$VERSION'" <<<"$phone_badging"
+grep -Fq "versionName='$VERSION'" <<<"$wear_badging"
+phone_code="$(sed -n "s/.*versionCode='\([^']*\)'.*/\1/p" <<<"$phone_badging")"
+wear_code="$(sed -n "s/.*versionCode='\([^']*\)'.*/\1/p" <<<"$wear_badging")"
+[[ -n "$phone_code" && -n "$wear_code" && "$phone_code" != "$wear_code" ]] || {
+  echo "showcase-release: expected distinct monotonic Phone/Wear version codes" >&2
+  exit 1
+}
+
 phone_sha="$(sha256sum "$phone" | cut -d' ' -f1)"
 wear_sha="$(sha256sum "$wear" | cut -d' ' -f1)"
 signer="$($apksigner verify --print-certs "$phone" | sed -n 's/^Signer #1 certificate SHA-256 digest: //p')"
@@ -58,8 +76,12 @@ report="$out/PROVENANCE.txt"
   echo "SOURCE_SHA=$source_sha"
   echo "SIGNER_SHA256=$signer"
   echo "PHONE_APK=$(basename "$phone")"
+  echo "PHONE_VERSION_NAME=$VERSION"
+  echo "PHONE_VERSION_CODE=$phone_code"
   echo "PHONE_SHA256=$phone_sha"
   echo "WEAR_APK=$(basename "$wear")"
+  echo "WEAR_VERSION_NAME=$VERSION"
+  echo "WEAR_VERSION_CODE=$wear_code"
   echo "WEAR_SHA256=$wear_sha"
 } > "$report"
 

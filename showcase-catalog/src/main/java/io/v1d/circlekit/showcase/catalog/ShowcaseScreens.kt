@@ -20,7 +20,7 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 
 object ShowcaseScreens {
-    fun root(session: ShowcaseSession): RingScreen = RingScreen.Launcher(
+    fun root(session: ShowcaseSession, dev: ShowcaseDevPort? = null): RingScreen = RingScreen.Launcher(
         title = "CIRCLEKIT",
         gridRole = MenuGridRole.COMPONENT_GALLERY,
         entries = ShowcaseFamily.entries.map { family ->
@@ -29,7 +29,11 @@ object ShowcaseScreens {
                 label = family.menuLabel,
                 open = { familyScreen(family, session) },
             )
-        },
+        } + listOfNotNull(
+            dev?.let { port ->
+                LaunchSpec(RingIcons.Wrench, "DEV", open = { ShowcaseDevScreens.root(port) })
+            },
+        ),
     )
 
     fun selectedScreen(
