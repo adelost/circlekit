@@ -85,11 +85,11 @@ grep -q 'pillMinHeight = 48.dp' "$PHONE_DESIGN" \
 # Skyvw's check-layer-imports.sh enforced this while it owned the source.
 # CircleKit is the library now, so the rule travels with it.
 if grep -rEn 'com\.adelost\.(skydivealtimeter|skyvwui|jumpcore|mapkit)' \
-  designkit/src/main ringkit/src/main servicekit/src/main releasekit/src/main; then
+  designkit/src/main ringkit/src/main servicekit/src/main releasekit/src/main releasekit-ui/src/main; then
   fail "a shared module names a consumer package; that is the end of reuse"
 fi
 if grep -rEn '^import io\.agentmux\.' \
-  designkit/src/main ringkit/src/main servicekit/src/main releasekit/src/main; then
+  designkit/src/main ringkit/src/main servicekit/src/main releasekit/src/main releasekit-ui/src/main; then
   fail "a shared module imports Agentmux Link; consumers stay downstream"
 fi
 

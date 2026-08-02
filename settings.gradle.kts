@@ -25,6 +25,7 @@ include(
     ":designkit",
     ":ringkit",
     ":releasekit",
+    ":releasekit-ui",
     ":servicekit",
     ":showcase-catalog",
     ":showcase-phone",

@@ -3,9 +3,7 @@ package io.v1d.circlekit.showcase.catalog
 import com.adelost.designkit.ui.CircleLabelProgress
 import com.adelost.designkit.ui.RingIcons
 import com.adelost.designkit.ui.RingTokens
-import com.adelost.releasekit.UpdateProgress
-import com.adelost.releasekit.UpdateRowAction
-import com.adelost.releasekit.updateRowModel
+import com.adelost.releasekit.ui.releaseUpdateRows
 import com.adelost.ringkit.data.FetchError
 import com.adelost.ringkit.data.Health
 import com.adelost.ringkit.data.SourceId
@@ -60,18 +58,14 @@ object ShowcaseFlowScreens {
     fun update(state: ShowcaseFlowState): RingScreen.Rows = RingScreen.Rows(
         title = "UPDATE FLOW",
         items = state.update.map { updateState ->
-            val model = updateRowModel(updateState, currentVersionName = "0.3.9")
-            listOf(
-                RowSpec(
-                    key = "update",
-                    title = "UPDATE",
-                    sub = model.sub,
-                    icon = RingIcons.Download,
-                    hint = "Advances only deterministic update data; no download or install is performed.",
-                    onTap = if (model.action == UpdateRowAction.NONE) null else state::advanceUpdate,
-                    labelProgress = model.progress.toLabelProgress(),
-                    semanticColor = RingTokens.Broken.takeIf { model.sub.startsWith("FAILED") },
-                ),
+            releaseUpdateRows(
+                state = updateState,
+                currentVersionName = "0.3.9",
+                updateKey = "update",
+                updateTitle = "UPDATE",
+                onCheck = state::advanceUpdate,
+                onInstall = state::advanceUpdate,
+                hint = "Advances only deterministic update data; no download or install is performed.",
             )
         },
     )
@@ -119,12 +113,6 @@ object ShowcaseFlowScreens {
         error != null -> "NO USABLE VALUE · ${error.word}"
         coverage < 1f -> "PARTIAL · ${(coverage * 100).toInt()}% COVERAGE"
         else -> "DETERMINISTIC FIXTURE"
-    }
-
-    private fun UpdateProgress?.toLabelProgress(): CircleLabelProgress? = when (this) {
-        UpdateProgress.Indeterminate -> CircleLabelProgress.Indeterminate
-        is UpdateProgress.Determinate -> CircleLabelProgress.Determinate(fraction)
-        null -> null
     }
 
 }

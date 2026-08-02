@@ -166,6 +166,11 @@ The local APK verifier remains authoritative for actual package name,
 version name/code and signer. Manifest verification never replaces local APK
 verification.
 
+`releasekit` owns the transport and absolute release data. The separately
+publishable `releasekit-ui` module owns the exact `UPDATE` row, optional
+`PUBLISHED` row, icons, action/progress mapping and device-locale/timezone
+boundary. Consumers do not rebuild or concatenate those rows locally.
+
 ### Required updater deletion
 
 After Link is wired to the shared engine, remove its duplicated:
@@ -214,7 +219,7 @@ CircleKit:
 - named URL-policy tests: exact pin, Link prefix, hostile host and redirect;
 - named release-selection/expiry-cache tests;
 - named surface/profile/round-safe tests touched by the extraction;
-- build and publish only the four library modules.
+- build and publish only the five library modules.
 
 Skyvw:
 

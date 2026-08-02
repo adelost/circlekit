@@ -29,7 +29,7 @@ android {
 dependencies {
     api(project(":designkit"))
     api(project(":ringkit"))
-    implementation(project(":releasekit"))
+    implementation(project(":releasekit-ui"))
     implementation(project(":servicekit"))
 
     implementation(platform(libs.androidx.compose.bom))

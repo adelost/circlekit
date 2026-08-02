@@ -37,11 +37,13 @@ class ShowcaseFlowScreensTest {
     fun `update fixture projects every state without download or install side effects`() = runBlocking {
         val state = ShowcaseFlowState()
         state.prepare(ShowcaseCaseId("flow.update"), ShowcaseScenarioId("downloading"))
-        val row = ShowcaseFlowScreens.update(state).items.first().single()
+        val rows = ShowcaseFlowScreens.update(state).items.first()
+        val row = rows.first { it.key == "update" }
 
         assertTrue(row.sub.contains("56%"))
         assertTrue(row.labelProgress is CircleLabelProgress.Determinate)
         assertNull(row.onTap)
+        assertTrue(rows.any { it.key == "update-published" })
 
         state.prepare(ShowcaseCaseId("flow.update"), ShowcaseScenarioId("failed"))
         val failed = ShowcaseFlowScreens.update(state).items.first().single()
