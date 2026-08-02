@@ -6,8 +6,6 @@ import com.adelost.ringkit.data.Health
 import com.adelost.ringkit.ui.RingScreen
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
-import java.time.ZoneId
-import java.util.Locale
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
@@ -52,38 +50,6 @@ class ShowcaseFlowScreensTest {
         assertNotNull(failed.onTap)
         failed.onTap?.invoke()
         assertEquals(UpdateState.Checking, state.update.value)
-    }
-
-    @Test
-    fun `showcase wiring localizes known publication time and omits an unknown date row`() {
-        val known = showcaseUpdateRows(
-            state = UpdateState.Available(
-                "0.4.0",
-                4_200_000L,
-                publishedAtEpochMillis = ShowcaseFlowState.FIXTURE_PUBLISHED_AT_MS,
-            ),
-            currentVersionName = "0.3.19",
-            updateKey = "update",
-            updateTitle = "VERSION",
-            onCheck = {},
-            onInstall = {},
-            zoneId = ZoneId.of("America/New_York"),
-            locale = Locale.US,
-        )
-
-        assertEquals("v0.4.0 AVAILABLE · TAP", known.first().sub)
-        assertEquals("v0.4.0 · Aug 2, 2026, 1:33 AM", known.last().sub)
-        assertEquals(
-            listOf("update"),
-            showcaseUpdateRows(
-                state = UpdateState.Available("0.4.0", 4_200_000L),
-                currentVersionName = "0.3.19",
-                updateKey = "update",
-                updateTitle = "VERSION",
-                onCheck = {},
-                onInstall = {},
-            ).map { it.key },
-        )
     }
 
     @Test

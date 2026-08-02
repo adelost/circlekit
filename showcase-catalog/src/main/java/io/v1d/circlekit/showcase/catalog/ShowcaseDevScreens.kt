@@ -3,6 +3,7 @@ package io.v1d.circlekit.showcase.catalog
 import com.adelost.designkit.ui.CircleChoiceRole
 import com.adelost.designkit.ui.RingIcons
 import com.adelost.releasekit.UpdateState
+import com.adelost.releasekit.ui.releaseUpdateRows
 import com.adelost.ringkit.ui.CircleHostPreviewPort
 import com.adelost.ringkit.ui.LaunchSpec
 import com.adelost.ringkit.ui.RingScreen
@@ -48,7 +49,7 @@ internal object ShowcaseDevScreens {
                     choiceRole = CircleChoiceRole.TOGGLE,
                     onSelect = { selected -> port.onAutoUpdate(selected == "ON") },
                 ),
-            ) + showcaseUpdateRows(
+            ) + releaseUpdateRows(
                 state = state,
                 currentVersionName = port.currentVersionName,
                 updateKey = "update-state",

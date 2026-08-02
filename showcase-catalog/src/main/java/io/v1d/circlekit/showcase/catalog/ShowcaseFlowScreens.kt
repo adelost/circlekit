@@ -3,6 +3,7 @@ package io.v1d.circlekit.showcase.catalog
 import com.adelost.designkit.ui.CircleLabelProgress
 import com.adelost.designkit.ui.RingIcons
 import com.adelost.designkit.ui.RingTokens
+import com.adelost.releasekit.ui.releaseUpdateRows
 import com.adelost.ringkit.data.FetchError
 import com.adelost.ringkit.data.Health
 import com.adelost.ringkit.data.SourceId
@@ -57,7 +58,7 @@ object ShowcaseFlowScreens {
     fun update(state: ShowcaseFlowState): RingScreen.Rows = RingScreen.Rows(
         title = "UPDATE FLOW",
         items = state.update.map { updateState ->
-            showcaseUpdateRows(
+            releaseUpdateRows(
                 state = updateState,
                 currentVersionName = "0.3.9",
                 updateKey = "update",
@@ -65,9 +66,7 @@ object ShowcaseFlowScreens {
                 onCheck = state::advanceUpdate,
                 onInstall = state::advanceUpdate,
                 hint = "Advances only deterministic update data; no download or install is performed.",
-            ).map { row ->
-                row.copy(semanticColor = RingTokens.Broken.takeIf { row.sub.startsWith("FAILED") })
-            }
+            )
         },
     )
 

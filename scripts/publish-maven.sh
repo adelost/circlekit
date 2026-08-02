@@ -9,7 +9,7 @@ REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 REMOTE_REPOSITORY="${CIRCLEKIT_REMOTE_REPOSITORY:-https://circlekit.pages.dev}"
 VERSION="${1:-}"
 MODE="${2:-}"
-MODULES=(designkit ringkit releasekit servicekit)
+MODULES=(designkit ringkit releasekit releasekit-ui servicekit)
 EXTENSIONS=(aar pom module)
 CHECKSUM_SUFFIXES=("" .md5 .sha1 .sha256 .sha512)
 
@@ -49,6 +49,7 @@ done
   :designkit:publishReleasePublicationToCirclekitRepository \
   :ringkit:publishReleasePublicationToCirclekitRepository \
   :releasekit:publishReleasePublicationToCirclekitRepository \
+  :releasekit-ui:publishReleasePublicationToCirclekitRepository \
   :servicekit:publishReleasePublicationToCirclekitRepository
 
 updated="$(date -u +%Y%m%d%H%M%S)"

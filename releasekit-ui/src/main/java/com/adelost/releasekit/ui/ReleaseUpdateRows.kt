@@ -1,7 +1,8 @@
-package io.v1d.circlekit.showcase.catalog
+package com.adelost.releasekit.ui
 
 import com.adelost.designkit.ui.CircleLabelProgress
 import com.adelost.designkit.ui.RingIcons
+import com.adelost.designkit.ui.RingTokens
 import com.adelost.releasekit.UpdateProgress
 import com.adelost.releasekit.UpdateRowAction
 import com.adelost.releasekit.UpdateState
@@ -11,14 +12,20 @@ import com.adelost.ringkit.ui.RowSpec
 import java.time.ZoneId
 import java.util.Locale
 
-/** One ReleaseKit projection shared by the real updater and its local fixture. */
-internal fun showcaseUpdateRows(
+/**
+ * The canonical ReleaseKit row projection for Phone and round Wear hosts.
+ *
+ * Products supply only their current version and typed workflow callbacks.
+ * ReleaseKit owns action/progress state; this atom owns icons, row structure,
+ * semantic failure colour and the locale/timezone presentation boundary.
+ */
+fun releaseUpdateRows(
     state: UpdateState,
     currentVersionName: String,
-    updateKey: String,
-    updateTitle: String,
     onCheck: () -> Unit,
     onInstall: () -> Unit,
+    updateKey: String = "update",
+    updateTitle: String = "UPDATE",
     hint: String = "",
     zoneId: ZoneId = ZoneId.systemDefault(),
     locale: Locale = Locale.getDefault(),
@@ -30,6 +37,9 @@ internal fun showcaseUpdateRows(
         sub = model.sub,
         icon = RingIcons.Download,
         hint = hint,
+        semanticColor = RingTokens.Broken.takeIf {
+            state is UpdateState.Failed || state is UpdateState.InstallFailed
+        },
         onTap = when (model.action) {
             UpdateRowAction.NONE -> null
             UpdateRowAction.CHECK -> onCheck
