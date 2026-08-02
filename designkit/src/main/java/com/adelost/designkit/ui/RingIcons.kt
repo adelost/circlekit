@@ -141,6 +141,26 @@ object RingIcons {
         glyph("warning", fills = listOf("M12 3.2a1.8 1.8 0 0 1 1.6 0.9l8 13.8a1.8 1.8 0 0 1 -1.6 2.7H4a1.8 1.8 0 0 1 -1.6 -2.7l8 -13.8A1.8 1.8 0 0 1 12 3.2ZM11.2 9h1.6v5h-1.6ZM11.05 16.2a0.95 0.95 0 1 0 1.9 0a0.95 0.95 0 1 0 -1.9 0Z"), evenOdd = true)
     }
 
+    /** Synthetic-data provenance: a flat clown silhouette, never a colour emoji. */
+    val Clown: ImageVector by lazy {
+        glyph(
+            "clown",
+            fills = listOf(
+                "M5.3 5.4a3 3 0 1 0 0.001 0ZM9 4a3 3 0 1 0 0.001 0ZM15 4a3 3 0 1 0 0.001 0Z" +
+                    "M18.7 5.4a3 3 0 1 0 0.001 0ZM4.6 10a3 3 0 1 0 0.001 0ZM19.4 10a3 3 0 1 0 0.001 0Z",
+                "M12 4.5C7.8 4.5 5.5 7.7 5.5 12.1C5.5 17 8.1 20.5 12 20.5s6.5 -3.5 6.5 -8.4" +
+                    "C18.5 7.7 16.2 4.5 12 4.5Z" +
+                    "M8.8 8.9a1.15 1.15 0 1 0 0.001 0Z" +
+                    "M15.2 8.9a1.15 1.15 0 1 0 0.001 0Z" +
+                    "M12 10.2a2.05 2.05 0 1 0 0.001 0Z" +
+                    "M7.8 14.3C8.7 16.4 10.1 17.4 12 17.4s3.3 -1 4.2 -3.1" +
+                    "c-1.4 0.8 -2.8 1.1 -4.2 1.1s-2.8 -0.3 -4.2 -1.1Z",
+                "M12 10.9a1.35 1.35 0 1 0 0.001 0Z",
+            ),
+            evenOdd = true,
+        )
+    }
+
     val Trash: ImageVector by lazy {
         glyph("trash", fills = listOf("M5.5 7.5h13l-1 12.2a1.8 1.8 0 0 1 -1.8 1.6H8.3a1.8 1.8 0 0 1 -1.8 -1.6ZM9.4 10.8h1.3v6.4H9.4ZM13.3 10.8h1.3v6.4h-1.3Z"), strokes = listOf("M4 7.5h16", "M9.5 7.5V5.6a1.1 1.1 0 0 1 1.1 -1.1h2.8a1.1 1.1 0 0 1 1.1 1.1v1.9"), strokeWidth = 2.2f, evenOdd = true)
     }
@@ -404,4 +424,3 @@ object RingIcons {
         glyph("phone", fills = listOf("M8.5 3.5h7A1.5 1.5 0 0 1 17 5v14a1.5 1.5 0 0 1 -1.5 1.5h-7A1.5 1.5 0 0 1 7 19V5a1.5 1.5 0 0 1 1.5 -1.5ZM10.4 17.6h3.2v1.1h-3.2Z"), evenOdd = true)
     }
 }
-

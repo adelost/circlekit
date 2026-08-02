@@ -195,6 +195,7 @@ object ShowcaseScreens {
                 RingIcons.Sun to "SUN",
                 RingIcons.Cloud to "CLOUD",
                 RingIcons.Rain to "RAIN",
+                RingIcons.Clown to "CLOWN",
             ).mapIndexed { index, (icon, label) ->
                 LaunchSpec(
                     icon = icon,
