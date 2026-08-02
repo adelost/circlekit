@@ -46,7 +46,7 @@ private fun circleHostPreviewRows(
                 RowSpec(
                     key = "watch-diameter",
                     title = "WATCH SIZE",
-                    sub = "${state.watchDiameterDp.toInt()} DP",
+                    sub = state.watchDiameterDp.toInt().toString(),
                     icon = RingIcons.Ruler,
                     choices = CIRCLE_WATCH_PREVIEW_DIAMETERS_DP.map { it.toInt().toString() },
                     onSelect = { label ->
