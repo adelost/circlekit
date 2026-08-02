@@ -47,4 +47,28 @@ class CircleHostPreviewScreenTest {
         assertFalse(rows.any { it.key == "host-mode" || it.key == "orientation" })
         assertEquals("ROUND · WATCH EXACT", rows.single().sub)
     }
+
+    @Test
+    fun `watch size selection always matches a declared choice`() = runBlocking {
+        val screen = circleHostPreviewScreen(
+            CircleHostPreviewPort(
+                isWatchDevice = false,
+                state = MutableStateFlow(
+                    CircleHostPreviewState(
+                        mode = CircleHostMode.WATCH_EXACT,
+                        watchDiameterDp = 216f,
+                    ),
+                ),
+                systemOrientationAllowed = true,
+                onMode = {},
+                onDiameter = {},
+                onOrientation = {},
+            ),
+        )
+
+        val sizeRow = screen.items.first().single { it.key == "watch-diameter" }
+
+        assertEquals("216", sizeRow.sub)
+        assertEquals(true, sizeRow.sub in sizeRow.choices)
+    }
 }
