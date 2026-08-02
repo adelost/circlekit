@@ -46,6 +46,10 @@ install -m 0644 \
 
 for apk in "$phone" "$wear"; do
   "$apksigner" verify --verbose --print-certs "$apk" >/dev/null
+  "$aapt" dump permissions "$apk" | grep -Fq "android.permission.INTERNET" || {
+    echo "showcase-release: $(basename "$apk") cannot reach its ReleaseKit feed" >&2
+    exit 1
+  }
 done
 
 phone_badging_all="$($aapt dump badging "$phone")"
