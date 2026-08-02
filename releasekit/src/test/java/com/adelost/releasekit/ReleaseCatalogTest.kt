@@ -3,8 +3,47 @@ package com.adelost.releasekit
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Test
+import java.time.Instant
 
 class ReleaseCatalogTest {
+    @Test
+    fun `GitHub published_at becomes an absolute candidate instant without changing payload fields`() {
+        val publishedAt = "2026-08-02T12:57:41Z"
+        val release = parseGitHubReleases(
+            """[{"tag_name":"v1.2.3","published_at":"$publishedAt","assets":[{"name":"app-release.apk","browser_download_url":"https://sky.v1d.io/downloads/circle-altimeter.apk","size":4000000,"digest":"sha256:$WATCH_SHA"}]}]""",
+        ).single()
+        val candidate = selectNewestCompatibleRelease(listOf(release), UNIVERSAL)!!
+
+        assertEquals(Instant.parse(publishedAt).toEpochMilli(), release.publishedAtEpochMillis)
+        assertEquals(Instant.parse(publishedAt).toEpochMilli(), candidate.publishedAtEpochMillis)
+        assertEquals("1.2.3", candidate.versionName)
+        assertEquals(4_000_000L, candidate.sizeBytes)
+        assertEquals("", candidate.changelog)
+    }
+
+    @Test
+    fun `nullable and sanitized absent publication times remain unknown`() {
+        val explicitNull = parseGitHubReleases(
+            """[{"tag_name":"v1.2.3","published_at":null,"assets":[]}]""",
+        ).single()
+        val absent = parseGitHubReleases(
+            """[{"tag_name":"v1.2.3","assets":[]}]""",
+        ).single()
+
+        assertNull(explicitNull.publishedAtEpochMillis)
+        assertNull(absent.publishedAtEpochMillis)
+    }
+
+    @Test
+    fun `present malformed publication time fails the catalog closed`() {
+        assertEquals(
+            emptyList<GitHubRelease>(),
+            parseGitHubReleases(
+                """[{"tag_name":"v1.2.3","published_at":"yesterday","assets":[]}]""",
+            ),
+        )
+    }
+
     @Test
     fun `public browser URL wins over token-oriented API URL`() {
         val releases = parseGitHubReleases(

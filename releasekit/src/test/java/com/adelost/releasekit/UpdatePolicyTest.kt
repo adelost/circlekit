@@ -30,11 +30,13 @@ class UpdatePolicyTest {
 
     @Test
     fun `an install tap claims installing before the apk is re-verified`() {
+        val publishedAt = 1_801_234_567_890L
         val ready = UpdateState.ReadyToInstall(
             "0.5.441",
             "/cache/update.apk",
             6_154_512L,
             "New controls",
+            publishedAt,
         )
         assertEquals(
             UpdateState.Installing(
@@ -42,6 +44,7 @@ class UpdatePolicyTest {
                 "/cache/update.apk",
                 6_154_512L,
                 changelog = "New controls",
+                publishedAtEpochMillis = publishedAt,
             ),
             installClaimState(ready),
         )
@@ -52,6 +55,7 @@ class UpdatePolicyTest {
             "install blocked",
             6_154_512L,
             "New controls",
+            publishedAt,
         )
         assertEquals(
             UpdateState.Installing(
@@ -59,10 +63,46 @@ class UpdatePolicyTest {
                 "/cache/update.apk",
                 6_154_512L,
                 changelog = "New controls",
+                publishedAtEpochMillis = publishedAt,
             ),
             installClaimState(failed),
         )
         assertEquals("New controls", updateTargetChangelog(installClaimState(ready)!!))
+        assertEquals(ReleaseInfo("0.5.441", publishedAt), updateTargetReleaseInfo(installClaimState(ready)!!))
+    }
+
+    @Test
+    fun `every release-bearing state preserves shared display metadata`() {
+        val version = "0.5.441"
+        val size = 6_154_512L
+        val changelog = "New controls"
+        val publishedAt = 1_801_234_567_890L
+        val states = listOf(
+            UpdateState.Available(version, size, changelog, publishedAt),
+            UpdateState.Downloading(version, 0.5f, size, changelog, publishedAt),
+            UpdateState.ReadyToInstall(version, "/cache/update.apk", size, changelog, publishedAt),
+            UpdateState.Installing(
+                version,
+                "/cache/update.apk",
+                size,
+                changelog = changelog,
+                publishedAtEpochMillis = publishedAt,
+            ),
+            UpdateState.InstallFailed(
+                version,
+                "/cache/update.apk",
+                "blocked",
+                size,
+                changelog,
+                publishedAt,
+            ),
+        )
+
+        states.forEach { state ->
+            assertEquals(ReleaseInfo(version, publishedAt), updateTargetReleaseInfo(state))
+            assertEquals(size, updateTargetSizeBytes(state))
+            assertEquals(changelog, updateTargetChangelog(state))
+        }
     }
 
     @Test

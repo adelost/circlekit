@@ -13,6 +13,7 @@ internal data class ReadyUpdateMetadata(
     val sha256: String,
     val validUntilEpochMs: Long?,
     val changelog: String = "",
+    val publishedAtEpochMillis: Long? = null,
 )
 
 internal class UpdatePrefs(context: Context, productId: String) {
@@ -38,7 +39,11 @@ internal class UpdatePrefs(context: Context, productId: String) {
             val versionCode = prefs.getInt(KEY_READY_VERSION_CODE, -1).takeIf { it >= 0 }
             val validUntil = prefs.getLong(KEY_READY_VALID_UNTIL, -1L).takeIf { it > 0L }
             val changelog = prefs.getString(KEY_READY_CHANGELOG, "").orEmpty()
-            return ReadyUpdateMetadata(version, versionCode, asset, path, size, sha, validUntil, changelog)
+            val publishedAt = prefs.getLong(KEY_READY_PUBLISHED_AT, 0L)
+                .takeIf { prefs.contains(KEY_READY_PUBLISHED_AT) }
+            return ReadyUpdateMetadata(
+                version, versionCode, asset, path, size, sha, validUntil, changelog, publishedAt,
+            )
         }
         set(value) {
             if (value == null) {
@@ -51,6 +56,8 @@ internal class UpdatePrefs(context: Context, productId: String) {
                             ?: editor.remove(KEY_READY_VERSION_CODE)
                         value.validUntilEpochMs?.let { editor.putLong(KEY_READY_VALID_UNTIL, it) }
                             ?: editor.remove(KEY_READY_VALID_UNTIL)
+                        value.publishedAtEpochMillis?.let { editor.putLong(KEY_READY_PUBLISHED_AT, it) }
+                            ?: editor.remove(KEY_READY_PUBLISHED_AT)
                     }
                     .putString(KEY_READY_ASSET, value.assetName)
                     .putString(KEY_READY_PATH, value.apkPath)
@@ -66,6 +73,7 @@ internal class UpdatePrefs(context: Context, productId: String) {
             .remove(KEY_READY_VERSION)
             .remove(KEY_READY_VERSION_CODE)
             .remove(KEY_READY_VALID_UNTIL)
+            .remove(KEY_READY_PUBLISHED_AT)
             .remove(KEY_READY_ASSET)
             .remove(KEY_READY_PATH)
             .remove(KEY_READY_SIZE)
@@ -80,6 +88,7 @@ internal class UpdatePrefs(context: Context, productId: String) {
         const val KEY_READY_VERSION = "ready_version"
         const val KEY_READY_VERSION_CODE = "ready_version_code"
         const val KEY_READY_VALID_UNTIL = "ready_valid_until_ms"
+        const val KEY_READY_PUBLISHED_AT = "ready_published_at_ms"
         const val KEY_READY_ASSET = "ready_asset"
         const val KEY_READY_PATH = "ready_path"
         const val KEY_READY_SIZE = "ready_size"

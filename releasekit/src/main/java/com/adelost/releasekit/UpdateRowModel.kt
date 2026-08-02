@@ -16,6 +16,8 @@ data class UpdateRowModel(
     val sub: String,
     val action: UpdateRowAction,
     val progress: UpdateProgress?,
+    /** Raw release data; hosts localize it through [releaseInfoPresentation]. */
+    val releaseInfo: ReleaseInfo? = null,
 )
 
 /** Which call a tap on the row should make, or none while work is in flight. */
@@ -57,7 +59,7 @@ fun updateRowModel(state: UpdateState, currentVersionName: String): UpdateRowMod
         is UpdateState.UpToDate -> "v$currentVersionName · UP TO DATE · TAP" to UpdateRowAction.CHECK
         else -> "v$currentVersionName · TAP TO CHECK" to UpdateRowAction.CHECK
     }
-    return UpdateRowModel(sub, action, updateRowProgress(state))
+    return UpdateRowModel(sub, action, updateRowProgress(state), state.releaseInfo)
 }
 
 /** Update state is data; each host owns how this feedback is drawn. */

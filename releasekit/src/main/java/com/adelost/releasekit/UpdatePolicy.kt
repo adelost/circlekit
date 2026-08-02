@@ -21,12 +21,14 @@ fun installClaimState(state: UpdateState): UpdateState.Installing? = when (state
         state.apkPath,
         state.sizeBytes,
         changelog = state.changelog,
+        publishedAtEpochMillis = state.publishedAtEpochMillis,
     )
     is UpdateState.InstallFailed -> UpdateState.Installing(
         state.versionName,
         state.apkPath,
         state.sizeBytes,
         changelog = state.changelog,
+        publishedAtEpochMillis = state.publishedAtEpochMillis,
     )
     else -> null
 }
@@ -67,14 +69,10 @@ fun updateVersionOverview(
     )
 }
 
-private fun updateTargetVersionName(state: UpdateState): String? = when (state) {
-    is UpdateState.Available -> state.versionName
-    is UpdateState.Downloading -> state.versionName
-    is UpdateState.ReadyToInstall -> state.versionName
-    is UpdateState.Installing -> state.versionName
-    is UpdateState.InstallFailed -> state.versionName
-    else -> null
-}
+private fun updateTargetVersionName(state: UpdateState): String? = state.releaseInfo?.versionName
+
+/** Absolute release identity carried by every state that still represents it. */
+fun updateTargetReleaseInfo(state: UpdateState): ReleaseInfo? = state.releaseInfo
 
 fun updateTargetSizeBytes(state: UpdateState): Long? = when (state) {
     is UpdateState.Available -> state.sizeBytes

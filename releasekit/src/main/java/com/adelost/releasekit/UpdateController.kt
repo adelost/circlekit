@@ -81,7 +81,12 @@ class UpdateController(
             fetched == null -> UpdateState.Unavailable("No compatible ${product.id} release")
             fetched.isExpiredAt(nowEpochMs()) -> UpdateState.Unavailable("Release metadata expired")
             !product.isNewer(fetched, currentVersionName, currentVersionCode) -> UpdateState.UpToDate
-            else -> UpdateState.Available(fetched.versionName, fetched.sizeBytes, fetched.changelog)
+            else -> UpdateState.Available(
+                fetched.versionName,
+                fetched.sizeBytes,
+                fetched.changelog,
+                fetched.publishedAtEpochMillis,
+            )
         }
         mutableState.value = next
         if (mutableAutoUpdate.value && next is UpdateState.Available) download(installAfterDownload = false)
@@ -96,6 +101,7 @@ class UpdateController(
             0f,
             release.sizeBytes,
             release.changelog,
+            release.publishedAtEpochMillis,
         )
         scope.launch {
             val result = withContext(Dispatchers.IO) {
@@ -105,6 +111,7 @@ class UpdateController(
                         progress,
                         release.sizeBytes,
                         release.changelog,
+                        release.publishedAtEpochMillis,
                     )
                 }
             }
@@ -141,6 +148,7 @@ class UpdateController(
                 release.sha256,
                 release.validUntilEpochMs,
                 release.changelog,
+                release.publishedAtEpochMillis,
             )
         }
         // A download started for an install never surfaces READY in between:
@@ -153,6 +161,7 @@ class UpdateController(
                     file.absolutePath,
                     release.sizeBytes,
                     changelog = release.changelog,
+                    publishedAtEpochMillis = release.publishedAtEpochMillis,
                 ),
             )
             return
@@ -162,6 +171,7 @@ class UpdateController(
             file.absolutePath,
             release.sizeBytes,
             release.changelog,
+            release.publishedAtEpochMillis,
         )
     }
 
@@ -183,6 +193,7 @@ class UpdateController(
                 ready.apkPath,
                 ready.sizeBytes,
                 changelog = ready.changelog,
+                publishedAtEpochMillis = ready.publishedAtEpochMillis,
             )
             val storageFailure = withContext(Dispatchers.IO) {
                 installStorageFailureLabel(ready.sizeBytes, ReleaseInstaller.availableInstallBytes(appContext))
@@ -191,6 +202,7 @@ class UpdateController(
                 mutableState.value = UpdateState.InstallFailed(
                     ready.versionName, ready.apkPath, storageFailure, ready.sizeBytes,
                     ready.changelog,
+                    ready.publishedAtEpochMillis,
                 )
                 return@launch
             }
@@ -202,6 +214,7 @@ class UpdateController(
                     result.reason ?: "install handoff failed",
                     ready.sizeBytes,
                     ready.changelog,
+                    ready.publishedAtEpochMillis,
                 )
             }
         }
@@ -214,6 +227,7 @@ class UpdateController(
             ready.apkPath,
             ready.sizeBytes,
             ready.changelog,
+            ready.publishedAtEpochMillis,
         )
     }
 
@@ -227,6 +241,7 @@ class UpdateController(
             sizeBytes = ready.sizeBytes,
             sha256 = ready.sha256,
             validUntilEpochMs = ready.validUntilEpochMs,
+            publishedAtEpochMillis = ready.publishedAtEpochMillis,
         )
         if (readyCandidate.isExpiredAt(nowEpochMs()) ||
             !product.isNewer(readyCandidate, currentVersionName, currentVersionCode)
@@ -283,6 +298,7 @@ class UpdateController(
                             event.reason,
                             installing.sizeBytes,
                             installing.changelog,
+                            installing.publishedAtEpochMillis,
                         )
                     }
                 }

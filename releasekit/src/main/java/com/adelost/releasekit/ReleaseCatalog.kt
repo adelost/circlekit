@@ -1,6 +1,7 @@
 package com.adelost.releasekit
 
 import com.adelost.servicekit.ServiceId
+import java.time.Instant
 import org.json.JSONArray
 import org.json.JSONObject
 
@@ -87,6 +88,7 @@ data class GitHubReleaseAsset(
 data class GitHubRelease(
     val tagName: String,
     val assets: List<GitHubReleaseAsset>,
+    val publishedAtEpochMillis: Long? = null,
 )
 
 const val MAX_RELEASE_APK_BYTES: Long = 150L * 1024L * 1024L
@@ -100,7 +102,10 @@ data class ReleaseCandidate(
     val versionCode: Int? = null,
     val validUntilEpochMs: Long? = null,
     val changelog: String = "",
-)
+    val publishedAtEpochMillis: Long? = null,
+) {
+    val releaseInfo: ReleaseInfo = ReleaseInfo(versionName, publishedAtEpochMillis)
+}
 
 /**
  * Whether signed metadata has run out at [nowEpochMs].
@@ -121,6 +126,7 @@ fun parseGitHubReleases(body: String): List<GitHubRelease> = runCatching {
             val release = array.optJSONObject(releaseIndex) ?: continue
             if (release.optBoolean("draft", false) || release.optBoolean("prerelease", false)) continue
             val tagName = release.optString("tag_name").takeIf(String::isNotBlank) ?: continue
+            val publishedAtEpochMillis = release.publishedAtEpochMillis()
             val assetsJson = release.optJSONArray("assets") ?: JSONArray()
             val assets = buildList {
                 for (assetIndex in 0 until assetsJson.length()) {
@@ -142,7 +148,7 @@ fun parseGitHubReleases(body: String): List<GitHubRelease> = runCatching {
                     )
                 }
             }
-            add(GitHubRelease(tagName, assets))
+            add(GitHubRelease(tagName, assets, publishedAtEpochMillis))
         }
     }
 }.getOrDefault(emptyList())
@@ -165,7 +171,22 @@ private fun releaseCandidate(
     val sha256 = normalizedSha256(asset.digest) ?: return null
     if (asset.sizeBytes !in 1..MAX_RELEASE_APK_BYTES) return null
     if (!product.assetUrlPolicy.allows(asset.apiUrl)) return null
-    return ReleaseCandidate(versionName, asset.name, asset.apiUrl, asset.sizeBytes, sha256)
+    return ReleaseCandidate(
+        versionName,
+        asset.name,
+        asset.apiUrl,
+        asset.sizeBytes,
+        sha256,
+        publishedAtEpochMillis = release.publishedAtEpochMillis,
+    )
+}
+
+/** GitHub permits null; Skyvw's sanitized feed currently omits this field. */
+private fun JSONObject.publishedAtEpochMillis(): Long? {
+    if (!has("published_at") || isNull("published_at")) return null
+    val value = get("published_at") as? String
+        ?: throw IllegalArgumentException("published_at must be an RFC3339 string or null")
+    return Instant.parse(value).toEpochMilli()
 }
 
 fun normalizedSha256(digest: String?): String? {
