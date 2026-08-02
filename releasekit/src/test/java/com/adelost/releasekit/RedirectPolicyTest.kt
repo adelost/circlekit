@@ -1,7 +1,9 @@
 package com.adelost.releasekit
 
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 /**
@@ -9,6 +11,18 @@ import org.junit.Test
  * fence, so every hop is re-approved by the same policy as the initial URL.
  */
 class RedirectPolicyTest {
+    @Test
+    fun `closed union admits github release and its known digest pinned cdn only`() {
+        val policy = AnyOfAssetUrlPolicy(
+            HttpsPrefixAssetUrlPolicy("github.com", "/adelost/circlekit/releases/download/"),
+            HttpsHostAssetUrlPolicy("release-assets.githubusercontent.com"),
+        )
+
+        assertTrue(policy.allows("https://github.com/adelost/circlekit/releases/download/v0.3.13/app.apk"))
+        assertTrue(policy.allows("https://release-assets.githubusercontent.com/github-production-release-asset/1/app.apk"))
+        assertFalse(policy.allows("http://release-assets.githubusercontent.com/app.apk"))
+        assertFalse(policy.allows("https://github.com/other/repo/releases/download/v1/app.apk"))
+    }
     private val linkPolicy = HttpsPrefixAssetUrlPolicy(
         host = "link.v1d.io",
         pathPrefix = "/downloads/",

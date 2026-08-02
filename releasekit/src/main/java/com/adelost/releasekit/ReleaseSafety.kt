@@ -6,6 +6,17 @@ fun interface AssetUrlPolicy {
     fun allows(url: String): Boolean
 }
 
+/** Closed union for a source whose public asset performs one known CDN hop. */
+class AnyOfAssetUrlPolicy(
+    private vararg val policies: AssetUrlPolicy,
+) : AssetUrlPolicy {
+    init {
+        require(policies.isNotEmpty())
+    }
+
+    override fun allows(url: String): Boolean = policies.any { it.allows(url) }
+}
+
 class ExactAssetUrlPolicy(expectedUrl: String) : AssetUrlPolicy {
     private val expected = ReleaseUrlPolicy.safeHttpsUri(expectedUrl)
 
@@ -26,6 +37,22 @@ class HttpsPrefixAssetUrlPolicy(
             uri.host.lowercase() == expectedHost &&
             uri.rawPath.startsWith(expectedPrefix) &&
             uri.rawFragment == null
+    }
+}
+
+/** HTTPS host fence used only for digest-pinned release CDNs with opaque paths. */
+class HttpsHostAssetUrlPolicy(
+    private vararg val hosts: String,
+) : AssetUrlPolicy {
+    private val expected = hosts.map(String::lowercase).toSet()
+
+    init {
+        require(expected.isNotEmpty() && expected.none(String::isBlank))
+    }
+
+    override fun allows(url: String): Boolean {
+        val uri = ReleaseUrlPolicy.safeHttpsUri(url) ?: return false
+        return uri.host.lowercase() in expected && uri.rawFragment == null
     }
 }
 

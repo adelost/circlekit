@@ -5,6 +5,17 @@ import org.junit.Assert.assertNull
 import org.junit.Test
 
 class ReleaseCatalogTest {
+    @Test
+    fun `public browser URL wins over token-oriented API URL`() {
+        val releases = parseGitHubReleases(
+            """[{"tag_name":"v1.2.3","assets":[{"name":"app-v1.2.3.apk","url":"https://api.github.com/repos/a/b/releases/assets/1","browser_download_url":"https://github.com/a/b/releases/download/v1.2.3/app-v1.2.3.apk","size":10,"digest":"sha256:${"a".repeat(64)}"}]}]""",
+        )
+
+        assertEquals(
+            "https://github.com/a/b/releases/download/v1.2.3/app-v1.2.3.apk",
+            releases.single().assets.single().apiUrl,
+        )
+    }
     // Product identities belong to products, so the selection mechanism is
     // exercised through fixtures declared here. Reaching into a consumer's
     // catalog would have made this test fail whenever that consumer renamed
