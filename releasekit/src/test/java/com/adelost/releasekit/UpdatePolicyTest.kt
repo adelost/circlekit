@@ -110,7 +110,7 @@ class UpdatePolicyTest {
         assertNull(installClaimState(UpdateState.Available("0.5.441", 6_154_512L)))
         assertNull(installClaimState(UpdateState.Downloading("0.5.441", 0.5f)))
         assertNull(installClaimState(UpdateState.Installing("0.5.441", "/cache/update.apk")))
-        assertNull(installClaimState(UpdateState.UpToDate))
+        assertNull(installClaimState(UpdateState.UpToDate("0.5.441", 1_801_234_567_890L)))
     }
 
     @Test
@@ -127,9 +127,11 @@ class UpdatePolicyTest {
 
     @Test
     fun `up to date overview names the installed version as latest`() {
-        val overview = updateVersionOverview("0.2.3", 6, UpdateState.UpToDate)
+        val state = UpdateState.UpToDate("0.2.3", 1_801_234_567_890L)
+        val overview = updateVersionOverview("0.2.3", 6, state)
         assertEquals("v0.2.3", overview.latestLabel)
         assertNull(overview.gapLabel)
+        assertEquals(ReleaseInfo("0.2.3", 1_801_234_567_890L), updateTargetReleaseInfo(state))
     }
 
     @Test

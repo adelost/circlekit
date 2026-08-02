@@ -57,7 +57,7 @@ class ShowcaseFlowState {
     fun advanceUpdate() {
         mutableUpdate.value = when (val current = mutableUpdate.value) {
             UpdateState.Idle,
-            UpdateState.UpToDate,
+            is UpdateState.UpToDate,
             is UpdateState.Unavailable,
             is UpdateState.Failed,
             is UpdateState.InstallFailed,
@@ -84,7 +84,10 @@ class ShowcaseFlowState {
                 changelog = current.changelog,
                 publishedAtEpochMillis = current.publishedAtEpochMillis,
             )
-            is UpdateState.Installing -> UpdateState.UpToDate
+            is UpdateState.Installing -> UpdateState.UpToDate(
+                current.versionName,
+                current.publishedAtEpochMillis,
+            )
         }
     }
 
