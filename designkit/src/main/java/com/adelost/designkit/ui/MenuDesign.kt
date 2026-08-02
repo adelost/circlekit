@@ -50,6 +50,22 @@ object MenuDesign {
     val titleSizeNoIcon: TextUnit = 12.sp
     val titleTracking: TextUnit = 0.2.sp
     val subSize: TextUnit = 9.5.sp
+
+    /**
+     * Maximum authored label for the compact option rows on a 192 dp round
+     * face. A longer label already ellipsises at the shipped font/geometry;
+     * the product should name the question briefly and leave detail to the
+     * value and hint.
+     */
+    const val menuOptionLabelMaxChars: Int = 11
+
+    /**
+     * Maximum one-glance action name in the centre cue. The cue has two lines
+     * in its 96 dp text column, while authored action names intentionally fit
+     * on one. This is distinct from row titles, which may use wider host
+     * geometry and are not governed by this budget.
+     */
+    const val actionCueLabelMaxChars: Int = 12
     /** Round titles clear the physical circle chord. This is content
      * geometry, not a top shelf or navigation-crown reserve. */
     val roundTitleTopPadding: Dp = 26.dp
@@ -111,6 +127,22 @@ object MenuDesign {
      * 2026-07-27, finding 10).
      */
     const val hintMaxChars: Int = 90
+
+    /** Fail at the authoring seam instead of shipping a truncated option. */
+    fun requireMenuOptionLabel(label: String, owner: String) {
+        require(label.length <= menuOptionLabelMaxChars) {
+            "$owner label '$label' has ${label.length} characters; the round option budget is " +
+                "$menuOptionLabelMaxChars"
+        }
+    }
+
+    /** Fail at the authoring seam instead of shipping an unreadable cue. */
+    fun requireActionCueLabel(label: String, owner: String) {
+        require(label.length <= actionCueLabelMaxChars) {
+            "$owner cue '$label' has ${label.length} characters; the action-cue budget is " +
+                "$actionCueLabelMaxChars"
+        }
+    }
 
     /** Destructive / state-swapping pills (HoldPill). */
     const val holdDestructiveMs: Long = 900L
