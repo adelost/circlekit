@@ -1,8 +1,7 @@
 # Release publication time
 
-Status: implemented in CircleKit ReleaseKit and stopped at the unpublished
-review boundary. Maven and product adoption wait for an exact-SHA review score
-of at least 9/10.
+Status: terminally published in CircleKit `0.3.19`. Product adoptions remain
+separate features.
 
 ## Shared contract
 
@@ -26,6 +25,27 @@ of at least 9/10.
 The upstream schema evidence is GitHub's REST OpenAPI release schema, where
 `published_at` is a nullable `date-time` field:
 https://github.com/github/rest-api-description.
+
+## CircleKit publication
+
+- PR [#37](https://github.com/adelost/circlekit/pull/37) was reviewed at exact
+  feature SHA `0c6e767871ba74bc18880ef4174a17168d2d3661`: Codex 9.6/10 GO and
+  Kimi 9.5/10 GO.
+- It merged as `1e2bf7373617ba75faf33555379f77ad3cb2b7af`; rollback source SHA is
+  `65768e590f3499e08398530dad3cff52cb83f9c5`.
+- Immutable Maven version `0.3.19` was published from that exact merge SHA in
+  Cloudflare Pages deployment
+  [`ca9e84e6`](https://ca9e84e6.circlekit.pages.dev). Stable coordinates are
+  served from `https://circlekit.pages.dev/io/v1d/circlekit/`.
+- The remote AAR, POM and Gradle module metadata for `designkit`, `ringkit`,
+  `releasekit` and `servicekit` match between the deployment and stable URLs.
+  Every new payload and `maven-metadata.xml` passed MD5, SHA-1, SHA-256 and
+  SHA-512 verification; metadata names `0.3.19` exactly once as latest/release.
+- Published AAR SHA-256 values: designkit
+  `7acb142c209f5be418da11fd646e2edb4049bd84821860f5a87419a86cb17af6`,
+  ringkit `b7c7a5b4b2a1a9a02a07f2508b1ccf51249b917bd17cf20b3a0ee5da6df596ae`,
+  releasekit `9a73ff1488f82d209b19e7ac0cb355f9fb2954c4ab945bc2c5e567f70137588f`,
+  servicekit `90b8ae819c71caba2c9c34deb545cc15f9da43985e4772e3aaae65baeceb9c3b`.
 
 ## Separate product adoptions
 
@@ -55,7 +75,7 @@ https://github.com/github/rest-api-description.
 - Pin the reviewed artifact and have `LinkUpdater.kt` render the shared
   presentation on Phone and Wear; retain signature, expiry and polling policy.
 
-## Bounded proof before publication
+## Bounded proof
 
 - Parser: valid GitHub timestamp, explicit null, sanitized absence and malformed
   present value.
@@ -63,5 +83,5 @@ https://github.com/github/rest-api-description.
   and null omission.
 - Flow: publication instant, version, changelog and size survive every
   release-bearing state and install retry; the row receives raw epoch data.
-- Run only `:releasekit:testDebugUnitTest`, inspect the diff for network/polling
-  changes, then commit, push and open a draft PR at the exact review SHA.
+- Only `:releasekit:testDebugUnitTest`, diff inspection and the manual file
+  ratchet ran before merge. No CI, full suite or product adoption was added.
