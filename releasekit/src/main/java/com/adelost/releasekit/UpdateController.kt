@@ -77,17 +77,13 @@ class UpdateController(
 
     private fun applyFetchedCandidate(fetched: ReleaseCandidate?) {
         candidate = fetched
-        val next = when {
-            fetched == null -> UpdateState.Unavailable("No compatible ${product.id} release")
-            fetched.isExpiredAt(nowEpochMs()) -> UpdateState.Unavailable("Release metadata expired")
-            !product.isNewer(fetched, currentVersionName, currentVersionCode) -> UpdateState.UpToDate
-            else -> UpdateState.Available(
-                fetched.versionName,
-                fetched.sizeBytes,
-                fetched.changelog,
-                fetched.publishedAtEpochMillis,
-            )
-        }
+        val next = fetchedReleaseState(
+            fetched,
+            product,
+            currentVersionName,
+            currentVersionCode,
+            nowEpochMs(),
+        )
         mutableState.value = next
         if (mutableAutoUpdate.value && next is UpdateState.Available) download(installAfterDownload = false)
     }
@@ -289,7 +285,10 @@ class UpdateController(
                     }
                     ReleaseInstallEvent.Success -> {
                         withContext(Dispatchers.IO) { prefs.clearReady() }
-                        mutableState.value = UpdateState.UpToDate
+                        mutableState.value = UpdateState.UpToDate(
+                            installing.versionName,
+                            installing.publishedAtEpochMillis,
+                        )
                     }
                     is ReleaseInstallEvent.Failed -> {
                         mutableState.value = UpdateState.InstallFailed(

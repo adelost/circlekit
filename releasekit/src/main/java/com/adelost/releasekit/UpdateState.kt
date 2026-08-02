@@ -6,7 +6,12 @@ sealed class UpdateState {
 
     data object Idle : UpdateState()
     data object Checking : UpdateState()
-    data object UpToDate : UpdateState()
+    data class UpToDate(
+        val versionName: String,
+        val publishedAtEpochMillis: Long?,
+    ) : UpdateState() {
+        override val releaseInfo = ReleaseInfo(versionName, publishedAtEpochMillis)
+    }
     data class Unavailable(val reason: String) : UpdateState()
     data class Available(
         val versionName: String,

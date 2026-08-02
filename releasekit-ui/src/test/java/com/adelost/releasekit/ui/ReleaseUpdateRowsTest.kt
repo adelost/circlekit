@@ -15,6 +15,24 @@ import org.junit.Test
 
 class ReleaseUpdateRowsTest {
     @Test
+    fun `up to date release keeps its localized publication row`() {
+        val publishedAt = Instant.parse("2026-08-02T16:24:31.289Z").toEpochMilli()
+        val rows = releaseUpdateRows(
+            state = UpdateState.UpToDate("1.2.2", publishedAt),
+            currentVersionName = "1.2.2",
+            onCheck = {},
+            onInstall = {},
+            zoneId = ZoneId.of("Europe/Stockholm"),
+            locale = Locale.US,
+        )
+
+        assertEquals(listOf("update", "update-published"), rows.map { it.key })
+        assertEquals("v1.2.2 · UP TO DATE · TAP", rows.first().sub)
+        assertEquals("PUBLISHED", rows.last().title)
+        assertEquals("v1.2.2 · Aug 2, 2026, 6:24 PM", rows.last().sub)
+    }
+
+    @Test
     fun `known publication creates canonical update and localized publication rows`() {
         var checks = 0
         var installs = 0

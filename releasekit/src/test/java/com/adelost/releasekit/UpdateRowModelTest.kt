@@ -58,12 +58,20 @@ class UpdateRowModelTest {
 
     @Test
     fun `an idle row names the installed version so the row is never blank`() {
-        for (state in listOf(UpdateState.Idle, UpdateState.UpToDate)) {
-            val model = updateRowModel(state, installed)
-            assertEquals(UpdateRowAction.CHECK, model.action)
-            assert(model.sub.contains(installed)) { "$state hides which version is installed" }
-            assertNull(model.releaseInfo)
-        }
+        val model = updateRowModel(UpdateState.Idle, installed)
+        assertEquals(UpdateRowAction.CHECK, model.action)
+        assert(model.sub.contains(installed))
+        assertNull(model.releaseInfo)
+    }
+
+    @Test
+    fun `up to date row retains the fetched release identity`() {
+        val publishedAt = 1_801_234_567_890L
+        val model = updateRowModel(UpdateState.UpToDate(installed, publishedAt), installed)
+
+        assertEquals(UpdateRowAction.CHECK, model.action)
+        assertEquals("v1.2.3 · UP TO DATE · TAP", model.sub)
+        assertEquals(ReleaseInfo(installed, publishedAt), model.releaseInfo)
     }
 
     @Test
