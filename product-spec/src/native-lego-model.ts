@@ -47,12 +47,12 @@ export interface LegoContract {
 
 export interface LegoConfigRef { readonly id: string }
 
-export interface LegoPort<Id extends string = string, Contract extends string = string> {
+export interface LegoPort<Id extends string = string, Contract extends LegoContract = LegoContract> {
   readonly id: Id;
   readonly contract: Contract;
 }
 
-export function port<const Id extends string, const Contract extends string>(
+export function port<const Id extends string, const Contract extends LegoContract>(
   id: Id,
   contract: Contract,
 ): LegoPort<Id, Contract> {
@@ -107,12 +107,12 @@ export function mount<const Id extends string, const Spec extends LegoSpec>(
   return { id, lego, config };
 }
 
-export type InputRefsForContract<Mounts extends readonly ProductLegoMount[], Contract extends string> =
+export type InputRefsForContract<Mounts extends readonly ProductLegoMount[], ContractId extends string> =
   Mounts[number] extends infer Mount
     ? Mount extends ProductLegoMount
       ? Mount["lego"]["inputs"][number] extends infer Input
         ? Input extends LegoPort
-          ? Input["contract"] extends Contract ? `${Mount["id"]}.${Input["id"]}` : never
+          ? Input["contract"]["id"] extends ContractId ? `${Mount["id"]}.${Input["id"]}` : never
           : never
         : never
       : never
@@ -148,25 +148,30 @@ export type CompatibleConnection<Mounts extends readonly ProductLegoMount[]> =
         ? Output extends LegoPort
           ? ProductPortConnection<
               `${Mount["id"]}.${Output["id"]}`,
-              InputRefsForContract<Mounts, Output["contract"]>
+              InputRefsForContract<Mounts, Output["contract"]["id"]>
             >
           : never
         : never
       : never
     : never;
 
-export interface ProductLegoConfig<Mounts extends readonly ProductLegoMount[] = readonly ProductLegoMount[]> {
+export interface ProductLegoDeclaration<Mounts extends readonly ProductLegoMount[] = readonly ProductLegoMount[]> {
   readonly id: string;
-  readonly contracts: readonly LegoContract[];
   readonly configs: readonly LegoConfigRef[];
   readonly mounts: Mounts;
   readonly wiring: readonly CompatibleConnection<Mounts>[];
 }
 
+export interface ProductLegoConfig<Mounts extends readonly ProductLegoMount[] = readonly ProductLegoMount[]>
+  extends ProductLegoDeclaration<Mounts> {
+  /** Derived from mounted LegoSpec ports; products never repeat contract schemas. */
+  readonly contracts: readonly LegoContract[];
+}
+
 /** Validate reusable LegoSpecs and the product's port-to-port composition. */
 export function defineProductLegoConfig<
   const Mounts extends readonly ProductLegoMount[],
->(product: Omit<ProductLegoConfig<Mounts>, "wiring"> & {
+>(product: Omit<ProductLegoDeclaration<Mounts>, "wiring"> & {
   readonly wiring: readonly CompatibleConnection<NoInfer<Mounts>>[];
 }): ProductLegoConfig<Mounts> {
   return validateProductLegoConfig(product);
@@ -180,19 +185,17 @@ export function defineProductLegoConfig<
  */
 export function validateProductLegoConfig<
   const Mounts extends readonly ProductLegoMount[],
->(product: Omit<ProductLegoConfig<Mounts>, "wiring"> & {
+>(product: Omit<ProductLegoDeclaration<Mounts>, "wiring"> & {
   readonly wiring: readonly CompatibleConnection<NoInfer<Mounts>>[];
 }, externalInputs: ReadonlySet<string> = new Set(), externalOutputs: ReadonlySet<string> = new Set()): ProductLegoConfig<Mounts> {
   requireWireId(product.id, "product Lego config");
-  requireUnique(product.contracts.map(({ id }) => id), "contract");
   requireUnique(product.configs.map(({ id }) => id), "config");
   requireUnique(product.mounts.map(({ id }) => id), "mount");
 
-  const contracts = new Set(product.contracts.map(({ id }) => id));
+  const contracts = new Map<string, LegoContract>();
   const configs = new Set(product.configs.map(({ id }) => id));
   const inputs = new Map<string, string>();
   const outputs = new Map<string, string>();
-  for (const contract of product.contracts) validateContract(contract);
   for (const config of product.configs) requireWireId(config.id, "config");
   for (const item of product.mounts) {
     requireWireId(item.id, "mount");
@@ -200,8 +203,14 @@ export function validateProductLegoConfig<
       requireIdentifier(name, `config key in '${item.id}'`);
       if (!configs.has(id)) throw new Error(`mount '${item.id}' uses unknown config '${id}'`);
     }
-    for (const input of item.lego.inputs) addPort(inputs, item.id, input, contracts);
-    for (const output of item.lego.outputs) addPort(outputs, item.id, output, contracts);
+    for (const input of item.lego.inputs) {
+      registerContract(contracts, input.contract);
+      addPort(inputs, item.id, input);
+    }
+    for (const output of item.lego.outputs) {
+      registerContract(contracts, output.contract);
+      addPort(outputs, item.id, output);
+    }
   }
 
   const connectedInputs = new Set<string>();
@@ -232,7 +241,7 @@ export function validateProductLegoConfig<
   requireAllConnected(inputs, connectedInputs, "input");
   requireAllConnected(outputs, connectedOutputs, "output");
   requireAcyclic(graph);
-  return product;
+  return { ...product, contracts: [...contracts.values()] };
 }
 
 function validateContract(contract: LegoContract): void {
@@ -250,7 +259,7 @@ function validatePorts(ports: readonly LegoPort[], owner: string): void {
   requireUnique(ports.map(({ id }) => id), owner);
   ports.forEach(({ id, contract }) => {
     requireIdentifier(id, owner);
-    requireWireId(contract, `${owner} contract`);
+    validateContract(contract);
   });
 }
 
@@ -258,10 +267,29 @@ function addPort(
   target: Map<string, string>,
   mountId: string,
   item: LegoPort,
-  contracts: ReadonlySet<string>,
 ): void {
-  if (!contracts.has(item.contract)) throw new Error(`mount '${mountId}' uses unknown contract '${item.contract}'`);
-  target.set(`${mountId}.${item.id}`, item.contract);
+  target.set(`${mountId}.${item.id}`, item.contract.id);
+}
+
+function registerContract(target: Map<string, LegoContract>, contract: LegoContract): void {
+  const existing = target.get(contract.id);
+  if (existing !== undefined && contractFingerprint(existing) !== contractFingerprint(contract)) {
+    throw new Error(`contract '${contract.id}' has conflicting schemas`);
+  }
+  if (existing === undefined) target.set(contract.id, contract);
+}
+
+function contractFingerprint(contract: LegoContract): string {
+  return JSON.stringify({
+    kind: contract.kind,
+    fields: contract.fields.map((item) => ({
+      name: item.name,
+      value: typeof item.value === "string" ? item.value : { ref: item.value.ref },
+      unit: item.unit ?? null,
+      nullable: item.nullable,
+      clockDomain: item.clockDomain,
+    })),
+  });
 }
 
 function requireAllConnected(
