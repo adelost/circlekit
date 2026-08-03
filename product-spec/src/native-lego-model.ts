@@ -246,7 +246,9 @@ export function validateProductLegoConfig<
 
 function validateContract(contract: LegoContract): void {
   requireWireId(contract.id, "contract");
-  if (contract.fields.length === 0) throw new Error(`contract '${contract.id}' has no fields`);
+  if (contract.fields.length === 0 && contract.kind !== "event") {
+    throw new Error(`contract '${contract.id}' has no fields`);
+  }
   requireUnique(contract.fields.map(({ name }) => name), `field in '${contract.id}'`);
   for (const item of contract.fields) {
     requireIdentifier(item.name, `field in '${contract.id}'`);

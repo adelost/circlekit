@@ -26,7 +26,7 @@ const statusContract = {
 const actionContract = {
   id: "fixture.action",
   kind: "event",
-  fields: [field("requested", "boolean")],
+  fields: [],
 } as const;
 const source = defineLegoSpec({
   id: "fixture.source",
