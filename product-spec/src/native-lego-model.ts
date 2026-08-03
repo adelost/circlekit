@@ -51,17 +51,29 @@ export interface LegoConfigField {
   readonly name: string;
   readonly value: LegoPrimitive;
   readonly unit?: string;
+  readonly min?: number;
+  readonly positive?: boolean;
+  readonly gteField?: string;
+}
+
+export interface LegoConfigFieldOptions extends Pick<LegoFieldOptions, "unit"> {
+  readonly min?: number;
+  readonly positive?: boolean;
+  readonly gteField?: string;
 }
 
 export function configField(
   name: string,
   value: LegoPrimitive,
-  options: Pick<LegoFieldOptions, "unit"> = {},
+  options: LegoConfigFieldOptions = {},
 ): LegoConfigField {
   return {
     name,
     value,
     ...(options.unit === undefined ? {} : { unit: options.unit }),
+    ...(options.min === undefined ? {} : { min: options.min }),
+    ...(options.positive === undefined ? {} : { positive: options.positive }),
+    ...(options.gteField === undefined ? {} : { gteField: options.gteField }),
   };
 }
 
@@ -303,9 +315,30 @@ function validateConfigInputs(inputs: readonly LegoConfigInput[], owner: string)
   for (const input of inputs) {
     requireIdentifier(input.id, `${owner} config input`);
     requireUnique(input.fields.map(({ name }) => name), `field in ${owner} config input '${input.id}'`);
+    const fields = new Map(input.fields.map((item) => [item.name, item]));
     for (const item of input.fields) {
       requireIdentifier(item.name, `field in ${owner} config input '${input.id}'`);
       if (item.unit !== undefined) requireWireId(item.unit, `unit in ${owner} config input '${input.id}'`);
+      const numeric = item.value === "integer" || item.value === "number";
+      if ((item.min !== undefined || item.positive !== undefined || item.gteField !== undefined) && !numeric) {
+        throw new Error(`constraints on ${owner} config field '${item.name}' require a numeric type`);
+      }
+      if (item.min !== undefined && !Number.isFinite(item.min)) {
+        throw new Error(`minimum on ${owner} config field '${item.name}' must be finite`);
+      }
+      if (item.positive !== undefined && item.positive !== true) {
+        throw new Error(`positive constraint on ${owner} config field '${item.name}' must be true or omitted`);
+      }
+      if (item.gteField !== undefined) {
+        requireIdentifier(item.gteField, `gteField on ${owner} config field '${item.name}'`);
+        const compared = fields.get(item.gteField);
+        if (compared === undefined || (compared.value !== "integer" && compared.value !== "number")) {
+          throw new Error(`gteField on ${owner} config field '${item.name}' must reference a numeric sibling`);
+        }
+        if (item.gteField === item.name) {
+          throw new Error(`gteField on ${owner} config field '${item.name}' cannot reference itself`);
+        }
+      }
     }
   }
 }
@@ -332,6 +365,16 @@ function validateConfigValues(
       : item.value === "integer" ? typeof value === "number" && Number.isSafeInteger(value)
       : typeof value === "number" && Number.isFinite(value);
     if (!valid) throw new Error(`config '${config.id}' field '${name}' must be ${item.value}`);
+    if (typeof value !== "number") continue;
+    if (item.min !== undefined && value < item.min) {
+      throw new Error(`config '${config.id}' field '${name}' must be at least ${item.min}`);
+    }
+    if (item.positive === true && value <= 0) {
+      throw new Error(`config '${config.id}' field '${name}' must be positive`);
+    }
+    if (item.gteField !== undefined && value < (values[item.gteField] as number)) {
+      throw new Error(`config '${config.id}' field '${name}' must be at least field '${item.gteField}'`);
+    }
   }
 }
 
