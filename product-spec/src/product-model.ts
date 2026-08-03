@@ -7,7 +7,11 @@ import {
   type ProductOutputPortRef,
   validateProductLegoConfig,
 } from "./native-lego-model.js";
-import type { ComponentSpec, ScreenComponentFamilyRef } from "./component-tree-model.js";
+import type {
+  ComponentSpec,
+  PortableSurfaceClass,
+  ScreenComponentFamilyRef,
+} from "./component-tree-model.js";
 import {
   definePalette,
   definePortableAssetCatalog,
@@ -31,10 +35,13 @@ export interface ArtifactProfile<
   Id extends string = string,
   RendererRef extends string = string,
   Capability extends string = string,
+  ScreenRef extends string = string,
 > {
   readonly id: Id;
   readonly rendererRefs: readonly RendererRef[];
   readonly requiredCapabilities: readonly Capability[];
+  readonly entryScreen: ScreenRef;
+  readonly serves: readonly PortableSurfaceClass[];
 }
 
 export interface UiPortRefs<InputRef extends string = string, OutputRef extends string = string> {
@@ -64,13 +71,19 @@ export interface ProductDeclaration<
   Capability extends string,
   ArtifactId extends string,
   PaletteVariant extends PortablePaletteVariant,
+  Families extends readonly ScreenComponentFamilyRef[],
 > {
   readonly id: string;
   readonly rendererBindings: readonly RendererBinding<RendererId, Capability>[];
-  readonly artifacts: readonly ArtifactProfile<ArtifactId, RendererId, Capability>[];
+  readonly artifacts: readonly ArtifactProfile<
+    ArtifactId,
+    RendererId,
+    Capability,
+    NoInfer<Families[number]["screen"]>
+  >[];
   readonly legos: ProductLegoDeclaration<Mounts>;
   readonly componentCatalog: readonly ComponentSpec[];
-  readonly componentFamilies: readonly ScreenComponentFamilyRef[];
+  readonly componentFamilies: Families;
   readonly palette: ProductPalette<PaletteVariant>;
   readonly assetCatalogRef: PortableAssetCatalogRef;
   readonly iconRefs: readonly ProductIconRef<PaletteTokenRef<PaletteVariant>, ArtifactId>[];
@@ -103,8 +116,9 @@ export function defineProduct<
   const Capability extends string,
   const ArtifactId extends string,
   const PaletteVariant extends PortablePaletteVariant,
+  const Families extends readonly ScreenComponentFamilyRef[],
 >(
-  declaration: ProductDeclaration<Mounts, RendererId, Capability, ArtifactId, PaletteVariant>,
+  declaration: ProductDeclaration<Mounts, RendererId, Capability, ArtifactId, PaletteVariant, Families>,
   assetCatalog: PortableAssetCatalog,
 ): ProductIr {
   requireWireId(declaration.id, "product");
@@ -175,8 +189,17 @@ export function defineProduct<
   for (const artifact of declaration.artifacts) {
     requireWireId(artifact.id, "artifact profile");
     if (artifact.rendererRefs.length === 0) throw new Error(`artifact '${artifact.id}' has no renderer`);
+    if (artifact.serves.length === 0) throw new Error(`artifact '${artifact.id}' serves no surface`);
     requireUnique(artifact.rendererRefs, `renderer in artifact '${artifact.id}'`);
     requireUnique(artifact.requiredCapabilities, `capability in artifact '${artifact.id}'`);
+    requireUnique(artifact.serves, `surface in artifact '${artifact.id}'`);
+    const entry = declaration.componentFamilies.find(({ screen }) => screen === artifact.entryScreen);
+    if (entry === undefined) throw new Error(`artifact '${artifact.id}' uses missing entry screen '${artifact.entryScreen}'`);
+    for (const surface of artifact.serves) {
+      if (!entry.family.trees.some((tree) => tree.surface === surface)) {
+        throw new Error(`artifact '${artifact.id}' entry screen '${artifact.entryScreen}' has no '${surface}' tree`);
+      }
+    }
     for (const rendererRef of artifact.rendererRefs) {
       const renderer = rendererById.get(rendererRef);
       if (renderer === undefined) throw new Error(`artifact '${artifact.id}' uses missing renderer '${rendererRef}'`);

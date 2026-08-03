@@ -2,13 +2,15 @@ import { readFileSync, writeFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { RING_ICON_ASSETS } from "../dist/src/ring-icon-assets.js";
-import { DEFAULT_COMPOSITE_ICON_STYLES, DEFAULT_RING_ICON_ACCENTS } from "./ring-icon-native-styles.mjs";
+import { CIRCLEKIT_STYLE } from "../dist/src/circle-style.js";
+import { DEFAULT_COMPOSITE_ICON_STYLES } from "./ring-icon-native-styles.mjs";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
 const designkit = resolve(root, "designkit/src/main/java/com/adelost/designkit/ui");
 const outputs = new Map([
   [resolve(designkit, "RingIcons.kt"), emitRingIcons()],
   [resolve(designkit, "RingIconPortableCatalog.kt"), emitCatalog()],
+  [resolve(designkit, "CircleStyleTokens.kt"), emitCircleStyle()],
 ]);
 const check = process.argv.includes("--check");
 let drift = false;
@@ -64,8 +66,6 @@ function emitRingIcons() {
 }
 
 function emitCatalog() {
-  const accents = Object.entries(DEFAULT_RING_ICON_ACCENTS).map(([id, accent]) =>
-    `    ${kotlinString(id)} to CircleAccent.${constant(accent)},`).join("\n");
   const icons = RING_ICON_ASSETS.map((icon) => `    RingIcons.${pascal(icon.id)},`).join("\n");
   const composites = RING_ICON_ASSETS.filter(({ layers }) => layers !== undefined).map((icon) => {
     const style = DEFAULT_COMPOSITE_ICON_STYLES[icon.id];
@@ -78,9 +78,18 @@ function emitCatalog() {
   }).join("\n");
   return `// GENERATED from circlekit-assets/src/ring-icon-assets.ts - do not edit.\n` +
 `package com.adelost.designkit.ui\n\n` +
-`internal val PORTABLE_RING_ICON_ACCENTS: Map<String, CircleAccent> = mapOf(\n${accents}\n)\n\n` +
 `internal val PORTABLE_RING_ICON_CATALOG = listOf(\n${icons}\n)\n\n` +
 `internal val PORTABLE_COMPOSITE_ICON_STYLES: Map<String, CircleIconStyle> by lazy { mapOf(\n${composites}\n) }\n`;
+}
+
+function emitCircleStyle() {
+  const entries = Object.entries(CIRCLEKIT_STYLE).map(([id, hex]) =>
+    `    val ${pascal(id)} = Color(0xFF${hex.slice(1).toUpperCase()})`).join("\n");
+  return `// GENERATED from circlekit-assets/src/circle-style.ts - do not edit.\n` +
+`package com.adelost.designkit.ui\n\n` +
+`import androidx.compose.ui.graphics.Color\n\n` +
+`/** Opinionated cross-product chrome. Semantic product colour lives in ProductPalette. */\n` +
+`object CircleStyleTokens {\n${entries}\n}\n`;
 }
 
 function kotlinString(value) {

@@ -4,15 +4,11 @@ import androidx.compose.runtime.Immutable
 import androidx.compose.ui.graphics.vector.ImageVector
 
 /**
- * One semantic home for RingIcons. Rows may override a colour when live state
- * is more important, but ordinary menus get a recognizable colour without
- * screen-specific conditionals.
+ * One semantic home for RingIcons. Ordinary actions stay warm-white; product
+ * or framework components opt into colour only when it carries meaning.
  */
-internal val ICON_ACCENTS: Map<String, CircleAccent> = PORTABLE_RING_ICON_ACCENTS
-
 /** THE enumerable icon registry: the ICONS gallery renders exactly this
- * list, and IconCatalogTest pins it 1:1 against [ICON_ACCENTS] — an icon
- * outside the catalog does not exist for product UI (Mattias 2026-07-21:
+ * list — an icon outside the catalog does not exist for product UI (Mattias 2026-07-21:
  * "man får bara använda ikoner från icons ... någon datadriven referens"). */
 val RING_ICON_CATALOG: List<ImageVector> = PORTABLE_RING_ICON_CATALOG
 
@@ -27,8 +23,8 @@ val LocalCircleIconSetStyle = androidx.compose.runtime.staticCompositionLocalOf 
 fun circleIconVariant(icon: ImageVector, style: CircleIconSetStyle): ImageVector =
     if (style == CircleIconSetStyle.OUTLINE) RING_ICON_OUTLINE_BY_NAME[icon.name] ?: icon else icon
 
-fun ringIconAccent(icon: ImageVector?): CircleAccent =
-    icon?.name?.let(ICON_ACCENTS::get) ?: CircleAccent.NEUTRAL
+@Suppress("UNUSED_PARAMETER")
+fun ringIconAccent(icon: ImageVector?): CircleAccent = CircleAccent.NEUTRAL
 
 /** A composable glyph is a stack of vectors sharing the same 24x24 viewport. */
 @Immutable
@@ -78,11 +74,11 @@ enum class CircleWeatherSymbol { UNKNOWN, CLEAR, PARTLY_CLOUDY, CLOUDY, FOG, RAI
 /** Every weather surface consumes these same centrally coloured glyphs. */
 fun circleWeatherIconStyle(symbol: CircleWeatherSymbol): CircleIconStyle = when (symbol) {
     CircleWeatherSymbol.UNKNOWN -> singleStyle(RingIcons.Cloud, CircleAccent.NEUTRAL)
-    CircleWeatherSymbol.CLEAR -> ringIconStyle(RingIcons.Sun)
+    CircleWeatherSymbol.CLEAR -> singleStyle(RingIcons.Sun, CircleAccent.SUN)
     CircleWeatherSymbol.PARTLY_CLOUDY -> ringIconStyle(RingIcons.CloudSun)
-    CircleWeatherSymbol.CLOUDY -> ringIconStyle(RingIcons.Cloud)
-    CircleWeatherSymbol.FOG -> ringIconStyle(RingIcons.Fog)
+    CircleWeatherSymbol.CLOUDY -> singleStyle(RingIcons.Cloud, CircleAccent.CLOUD)
+    CircleWeatherSymbol.FOG -> singleStyle(RingIcons.Fog, CircleAccent.CLOUD)
     CircleWeatherSymbol.RAIN -> ringIconStyle(RingIcons.Rain)
-    CircleWeatherSymbol.SNOW -> ringIconStyle(RingIcons.Snow)
+    CircleWeatherSymbol.SNOW -> singleStyle(RingIcons.Snow, CircleAccent.COLD)
     CircleWeatherSymbol.STORM -> ringIconStyle(RingIcons.Storm)
 }

@@ -21,6 +21,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.wear.compose.material.Text
+import com.adelost.designkit.ui.CircleStyleTokens
 import com.adelost.designkit.ui.GraphiteTokens
 import com.adelost.designkit.ui.RingIcons
 import com.adelost.designkit.ui.RingTokens
@@ -77,7 +78,7 @@ fun RingTextComposer(
                 if (next.length <= spec.maxLength) spec.onValueChange(next)
             },
             enabled = spec.enabled,
-            cursorBrush = SolidColor(GraphiteTokens.Primary),
+            cursorBrush = SolidColor(CircleStyleTokens.Action),
             textStyle = TextStyle(
                 color = RingTokens.Ink,
                 fontSize = design.rowTitleSize,

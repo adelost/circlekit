@@ -111,8 +111,8 @@ function fixture(overrides: Record<string, unknown> = {}) {
       { id: "renderer.wear", capabilities: ["ui.menu"] },
     ],
     artifacts: [
-      { id: "phone", rendererRefs: ["renderer.phone"], requiredCapabilities: ["ui.menu"] },
-      { id: "wear", rendererRefs: ["renderer.wear"], requiredCapabilities: ["ui.menu"] },
+      { id: "phone", rendererRefs: ["renderer.phone"], requiredCapabilities: ["ui.menu"], entryScreen: "MAIN", serves: ["compact", "wide"] },
+      { id: "wear", rendererRefs: ["renderer.wear"], requiredCapabilities: ["ui.menu"], entryScreen: "MAIN", serves: ["round"] },
     ],
     legos: {
       id: "fixture.graph",
@@ -170,12 +170,27 @@ test("one ProductSpec compiles two artifact profiles and deterministic outputs",
 test("graph, capability and port failures stop before emission", () => {
   assert.throws(() => fixture({
     artifacts: [
-      { id: "phone", rendererRefs: ["renderer.phone"], requiredCapabilities: ["ui.missing"] },
-      { id: "wear", rendererRefs: ["renderer.wear"], requiredCapabilities: ["ui.menu"] },
+      { id: "phone", rendererRefs: ["renderer.phone"], requiredCapabilities: ["ui.missing"], entryScreen: "MAIN", serves: ["compact", "wide"] },
+      { id: "wear", rendererRefs: ["renderer.wear"], requiredCapabilities: ["ui.menu"], entryScreen: "MAIN", serves: ["round"] },
     ],
   }), /lacks capability 'ui.missing'/);
 
   assert.throws(() => fixture({ ui: [] }), /orphan input port 'ui.controller.trigger'/);
+
+  assert.throws(() => fixture({
+    artifacts: [{
+      id: "phone", rendererRefs: ["renderer.phone"], requiredCapabilities: ["ui.menu"],
+      entryScreen: "MISSING", serves: ["compact"],
+    }],
+    iconRefs: [],
+  }), /uses missing entry screen 'MISSING'/);
+  assert.throws(() => fixture({
+    artifacts: [{
+      id: "phone", rendererRefs: ["renderer.phone"], requiredCapabilities: ["ui.menu"],
+      entryScreen: "MAIN", serves: ["other"],
+    }],
+    iconRefs: [],
+  }), /has no 'other' tree/);
 
   assert.throws(() => fixture({
     componentCatalog: [...componentCatalog, { id: "fixture.orphan" }],
@@ -195,7 +210,7 @@ test("graph, capability and port failures stop before emission", () => {
   assert.throws(() => defineProduct({
     id: "loop",
     rendererBindings: [{ id: "renderer.test", capabilities: [] }],
-    artifacts: [{ id: "test", rendererRefs: ["renderer.test"], requiredCapabilities: [] }],
+    artifacts: [{ id: "test", rendererRefs: ["renderer.test"], requiredCapabilities: [], entryScreen: "MAIN", serves: ["round"] }],
     legos: {
       id: "loop.graph",
       configs: [],
@@ -205,8 +220,8 @@ test("graph, capability and port failures stop before emission", () => {
         { from: "loop.second.output", to: "loop.first.input" },
       ],
     },
-    componentCatalog: [],
-    componentFamilies: [],
+    componentCatalog,
+    componentFamilies,
     ...visualDeclarationWithoutIcons,
     ui: [],
   }, assetCatalog), /wiring cycle/);
@@ -224,15 +239,15 @@ test("graph, capability and port failures stop before emission", () => {
   assert.throws(() => defineProduct({
     id: "contract-conflict",
     rendererBindings: [{ id: "renderer.test", capabilities: [] }],
-    artifacts: [{ id: "test", rendererRefs: ["renderer.test"], requiredCapabilities: [] }],
+    artifacts: [{ id: "test", rendererRefs: ["renderer.test"], requiredCapabilities: [], entryScreen: "MAIN", serves: ["round"] }],
     legos: {
       id: "contract-conflict.graph",
       configs: [],
       mounts: [mount("source.first", source), mount("source.second", conflictingSource)],
       wiring: [],
     },
-    componentCatalog: [],
-    componentFamilies: [],
+    componentCatalog,
+    componentFamilies,
     ...visualDeclarationWithoutIcons,
     ui: [
       { id: "first", kind: "component-entry", artifacts: ["test"], requiredCapabilities: [], ports: { state: "source.first.status" } },

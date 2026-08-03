@@ -22,7 +22,7 @@ export interface PortablePaletteVariant {
   readonly id: string;
   readonly identity: Readonly<Record<string, string>>;
   readonly categories: readonly Readonly<{ id: string; hex: string; meaning: string }>[];
-  readonly status: Readonly<Record<"ok" | "caution" | "danger", string>>;
+  readonly status: Readonly<Record<string, string>>;
   readonly ramps: readonly PortableRamp[];
 }
 
