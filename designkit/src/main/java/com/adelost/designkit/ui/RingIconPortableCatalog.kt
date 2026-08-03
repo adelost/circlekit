@@ -1,4 +1,4 @@
-// GENERATED from product-spec/src/ring-icon-assets.ts - do not edit.
+// GENERATED from circlekit-assets/src/ring-icon-assets.ts - do not edit.
 package com.adelost.designkit.ui
 
 internal val PORTABLE_RING_ICON_ACCENTS: Map<String, CircleAccent> = mapOf(

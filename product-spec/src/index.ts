@@ -3,5 +3,4 @@ export * from "./invariant-model.js";
 export * from "./native-lego-model.js";
 export * from "./output-manifest.js";
 export * from "./product-model.js";
-export * from "./ring-icon-assets.js";
 export * from "./visual-model.js";

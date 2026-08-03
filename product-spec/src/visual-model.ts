@@ -1,5 +1,3 @@
-export type PortableRampKind = "safety-envelope" | "magnitude";
-
 export interface PortableRampBand {
   readonly id: string;
   readonly upTo: number;
@@ -14,29 +12,28 @@ export interface PortableRampBand {
 
 export interface PortableRamp {
   readonly id: string;
-  readonly kind: PortableRampKind;
+  readonly kind: "safety-envelope" | "magnitude";
   readonly unit: string;
   readonly bands: readonly PortableRampBand[];
 }
 
-export interface PortableThemeCategory {
+/** Product-owned semantic colour data. Chrome, typography and spacing stay in CircleKit. */
+export interface PortablePaletteVariant {
   readonly id: string;
-  readonly hex: string;
-  readonly meaning: string;
-}
-
-export interface PortableThemeSpec {
-  readonly id: string;
-  readonly chrome: Readonly<{
-    surface: string;
-    action: string;
-    actionMuted: string;
-  }>;
-  readonly neutrals: Readonly<Record<string, string>>;
-  readonly categories: readonly PortableThemeCategory[];
+  readonly identity: Readonly<Record<string, string>>;
+  readonly categories: readonly Readonly<{ id: string; hex: string; meaning: string }>[];
   readonly status: Readonly<Record<"ok" | "caution" | "danger", string>>;
   readonly ramps: readonly PortableRamp[];
 }
+
+export interface ProductPalette<Variant extends PortablePaletteVariant = PortablePaletteVariant> {
+  readonly variants: readonly Variant[];
+}
+
+export type PaletteTokenRef<Variant extends PortablePaletteVariant> =
+  | `identity.${Extract<keyof Variant["identity"], string>}`
+  | `category.${Variant["categories"][number]["id"]}`
+  | `status.${Extract<keyof Variant["status"], string>}`;
 
 export type PortableVectorPath = Readonly<{
   kind: "fill";
@@ -48,113 +45,153 @@ export type PortableVectorPath = Readonly<{
   strokeWidth: number;
 }>;
 
-export interface PortableVectorLayer {
-  readonly assetRef: string;
-  readonly accent: string;
-}
-
-export interface PortableIconAsset {
+export interface PortableVectorAsset {
   readonly id: string;
-  readonly accent: string;
   readonly viewport: Readonly<{ width: number; height: number }>;
   readonly paths: readonly PortableVectorPath[];
-  readonly layers?: readonly PortableVectorLayer[];
+  readonly layers?: readonly Readonly<{ slot: string; assetRef: string }>[];
 }
 
-export interface ProductVisuals {
-  readonly themes: readonly PortableThemeSpec[];
-  readonly icons: readonly PortableIconAsset[];
+/** Shared immutable geometry catalog. Product IR stores only its id/version reference. */
+export interface PortableAssetCatalog {
+  readonly id: string;
+  readonly version: string;
+  readonly icons: readonly PortableVectorAsset[];
 }
 
-export function defineThemeCatalog<const Themes extends readonly PortableThemeSpec[]>(
-  themes: Themes,
-): Themes {
-  if (themes.length === 0) throw new Error("theme catalog is empty");
-  requireUnique(themes.map(({ id }) => id), "theme id");
-  themes.forEach(validateTheme);
-  const [first, ...rest] = themes;
-  const shape = (theme: PortableThemeSpec) => JSON.stringify(theme.ramps.map((ramp) => ({
-    id: ramp.id,
-    kind: ramp.kind,
-    unit: ramp.unit,
-    bands: ramp.bands.map((band) => ({
-      id: band.id,
-      upTo: band.upTo,
-      ruleEdge: band.ruleEdge,
-      label: band.label,
-      hueDeg: band.hueDeg,
-      solid: Boolean(band.solid),
-    })),
+export interface PortableAssetCatalogRef {
+  readonly id: string;
+  readonly version: string;
+}
+
+export interface ProductIconRef<
+  Accent extends string = string,
+  ArtifactRef extends string = string,
+> {
+  readonly id: string;
+  readonly assetRef: string;
+  /** Omitted means CircleKit's warm-white action token. */
+  readonly accent?: Accent;
+  readonly layers?: readonly Readonly<{ slot: string; accent: Accent }>[];
+  readonly artifacts: readonly ArtifactRef[];
+}
+
+/** Independent native/plugin attestation. It is not product-authored data. */
+export interface ProductIconRendererBinding {
+  readonly iconRef: string;
+  readonly assetRef: string;
+  readonly rendererRef: string;
+  readonly accent?: string;
+  readonly layers?: readonly Readonly<{ slot: string; accent: string }>[];
+}
+
+export function definePalette<const Variants extends readonly PortablePaletteVariant[]>(
+  variants: Variants,
+): ProductPalette<Variants[number]> {
+  if (variants.length === 0) throw new Error("palette is empty");
+  requireUnique(variants.map(({ id }) => id), "palette variant id");
+  variants.forEach(validateVariant);
+  const [first, ...rest] = variants;
+  const shape = (variant: PortablePaletteVariant) => JSON.stringify(variant.ramps.map((ramp) => ({
+    id: ramp.id, kind: ramp.kind, unit: ramp.unit,
+    bands: ramp.bands.map(({ id, upTo, ruleEdge, label, hueDeg, solid }) =>
+      ({ id, upTo, ruleEdge, label, hueDeg, solid: Boolean(solid) })),
   })));
-  const fixed = (theme: PortableThemeSpec) => JSON.stringify({
-    chrome: theme.chrome,
-    neutrals: theme.neutrals,
-    categories: theme.categories,
-    status: theme.status,
+  const fixed = (variant: PortablePaletteVariant) => JSON.stringify({
+    identity: variant.identity, categories: variant.categories, status: variant.status,
   });
   const expectedShape = shape(first!);
   const expectedFixed = fixed(first!);
-  for (const theme of rest) {
-    if (shape(theme) !== expectedShape) {
-      throw new Error(`theme '${theme.id}' changes ramp structure`);
-    }
-    if (fixed(theme) !== expectedFixed) {
-      throw new Error(`theme '${theme.id}' changes fixed visual channels`);
-    }
+  for (const variant of rest) {
+    if (shape(variant) !== expectedShape) throw new Error(`palette '${variant.id}' changes ramp structure`);
+    if (fixed(variant) !== expectedFixed) throw new Error(`palette '${variant.id}' changes fixed semantic tokens`);
   }
-  return themes;
+  return { variants };
 }
 
-export function definePortableIconCatalog<const Icons extends readonly PortableIconAsset[]>(
-  icons: Icons,
-): Icons {
-  if (icons.length === 0) throw new Error("icon catalog is empty");
-  requireUnique(icons.map(({ id }) => id), "icon id");
-  const ids = new Set(icons.map(({ id }) => id));
-  for (const icon of icons) {
-    requireWireId(icon.id, "icon");
-    requireWireId(icon.accent, `icon '${icon.id}' accent`);
-    if (icon.viewport.width <= 0 || icon.viewport.height <= 0) {
-      throw new Error(`icon '${icon.id}' has an invalid viewport`);
+export function definePortableAssetCatalog<const Catalog extends PortableAssetCatalog>(
+  catalog: Catalog,
+): Catalog {
+  requireWireId(catalog.id, "asset catalog");
+  if (catalog.version.trim() === "") throw new Error("asset catalog version is empty");
+  requireUnique(catalog.icons.map(({ id }) => id), "icon asset id");
+  const ids = new Set(catalog.icons.map(({ id }) => id));
+  for (const icon of catalog.icons) {
+    requireWireId(icon.id, "icon asset");
+    if (icon.viewport.width <= 0 || icon.viewport.height <= 0 || icon.paths.length === 0) {
+      throw new Error(`icon asset '${icon.id}' is incomplete`);
     }
-    if (icon.paths.length === 0) throw new Error(`icon '${icon.id}' has no path data`);
     for (const path of icon.paths) {
-      if (path.pathData.trim() === "") throw new Error(`icon '${icon.id}' has blank path data`);
+      if (path.pathData.trim() === "") throw new Error(`icon asset '${icon.id}' has blank path data`);
       if (path.kind === "stroke" && path.strokeWidth <= 0) {
-        throw new Error(`icon '${icon.id}' has an invalid stroke width`);
+        throw new Error(`icon asset '${icon.id}' has invalid stroke width`);
       }
     }
     for (const layer of icon.layers ?? []) {
-      requireWireId(layer.accent, `icon '${icon.id}' layer accent`);
-      if (!ids.has(layer.assetRef)) {
-        throw new Error(`icon '${icon.id}' uses missing layer asset '${layer.assetRef}'`);
-      }
+      requireWireId(layer.slot, `layer slot in icon asset '${icon.id}'`);
+      if (!ids.has(layer.assetRef)) throw new Error(`icon asset '${icon.id}' uses missing layer '${layer.assetRef}'`);
     }
   }
-  return icons;
+  return catalog;
 }
 
-function validateTheme(theme: PortableThemeSpec): void {
-  requireWireId(theme.id, "theme");
-  requireUnique(theme.categories.map(({ id }) => id), `category in theme '${theme.id}'`);
-  requireUnique(theme.ramps.map(({ id }) => id), `ramp in theme '${theme.id}'`);
-  for (const category of theme.categories) {
-    requireWireId(category.id, `category in theme '${theme.id}'`);
-    requireHex(category.hex, `category '${category.id}'`);
-  }
-  Object.entries({ ...theme.chrome, ...theme.neutrals, ...theme.status })
-    .forEach(([id, value]) => requireHex(value, `theme token '${id}'`));
-  for (const ramp of theme.ramps) {
-    requireWireId(ramp.id, `ramp in theme '${theme.id}'`);
-    if (ramp.unit.trim() === "" || ramp.bands.length === 0) {
-      throw new Error(`ramp '${ramp.id}' is incomplete`);
+export function validateProductIconRendererBindings(
+  product: {
+    readonly artifacts: readonly { id: string; rendererRefs: readonly string[] }[];
+    readonly iconRefs: readonly ProductIconRef[];
+  },
+  bindings: readonly ProductIconRendererBinding[],
+): void {
+  const artifacts = new Map(product.artifacts.map((artifact) => [artifact.id, artifact]));
+  const expected = new Map<string, string>();
+  for (const icon of product.iconRefs) {
+    for (const artifactRef of icon.artifacts) {
+      const artifact = artifacts.get(artifactRef);
+      if (artifact === undefined) throw new Error(`icon '${icon.id}' uses missing artifact '${artifactRef}'`);
+      const bindingValue = JSON.stringify({ assetRef: icon.assetRef, accent: icon.accent, layers: icon.layers ?? [] });
+      for (const rendererRef of artifact.rendererRefs) expected.set(`${icon.id}\u0000${rendererRef}`, bindingValue);
     }
+  }
+  const actual = new Map<string, string>();
+  for (const binding of bindings) {
+    const key = `${binding.iconRef}\u0000${binding.rendererRef}`;
+    if (actual.has(key)) throw new Error(`duplicate renderer binding for icon '${binding.iconRef}'`);
+    actual.set(key, JSON.stringify({ assetRef: binding.assetRef, accent: binding.accent, layers: binding.layers ?? [] }));
+  }
+  for (const [key, expectedBinding] of expected) {
+    const iconRef = key.split("\u0000")[0]!;
+    const actualBinding = actual.get(key);
+    if (actualBinding === undefined) throw new Error(`missing renderer binding for icon '${iconRef}'`);
+    if (actualBinding !== expectedBinding) throw new Error(`renderer binding for icon '${iconRef}' does not match product semantics`);
+  }
+  for (const key of actual.keys()) {
+    if (!expected.has(key)) throw new Error(`orphan renderer binding for icon '${key.split("\u0000")[0]}'`);
+  }
+}
+
+export function paletteTokenIds(palette: ProductPalette): ReadonlySet<string> {
+  const variant = palette.variants[0]!;
+  return new Set([
+    ...Object.keys(variant.identity).map((id) => `identity.${id}`),
+    ...variant.categories.map(({ id }) => `category.${id}`),
+    ...Object.keys(variant.status).map((id) => `status.${id}`),
+  ]);
+}
+
+function validateVariant(variant: PortablePaletteVariant): void {
+  requireWireId(variant.id, "palette variant");
+  requireUnique(variant.categories.map(({ id }) => id), `category in palette '${variant.id}'`);
+  requireUnique(variant.ramps.map(({ id }) => id), `ramp in palette '${variant.id}'`);
+  Object.entries(variant.identity).forEach(([id, value]) => { requireWireId(id, "identity token"); requireHex(value, id); });
+  variant.categories.forEach(({ id, hex }) => { requireWireId(id, "palette category"); requireHex(hex, id); });
+  Object.entries(variant.status).forEach(([id, value]) => requireHex(value, id));
+  for (const ramp of variant.ramps) {
+    requireWireId(ramp.id, "palette ramp");
+    if (ramp.unit.trim() === "" || ramp.bands.length === 0) throw new Error(`ramp '${ramp.id}' is incomplete`);
     requireUnique(ramp.bands.map(({ id }) => id), `band in ramp '${ramp.id}'`);
     ramp.bands.forEach((band, index) => {
-      requireWireId(band.id, `band in ramp '${ramp.id}'`);
-      if (index > 0 && band.upTo <= ramp.bands[index - 1]!.upTo) {
-        throw new Error(`ramp '${ramp.id}' band '${band.id}' does not advance`);
-      }
+      requireWireId(band.id, "palette band");
+      if (index > 0 && band.upTo <= ramp.bands[index - 1]!.upTo) throw new Error(`ramp '${ramp.id}' does not advance`);
     });
   }
 }

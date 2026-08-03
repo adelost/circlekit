@@ -8,15 +8,16 @@ import {
   checkOutputManifest,
   defineScreenComponentFamilyRegistry,
   defineLegoSpec,
-  definePortableIconCatalog,
+  definePalette,
+  definePortableAssetCatalog,
   defineProduct,
-  defineThemeCatalog,
   field,
   logOutputManifest,
   mount,
   PORTABLE_SURFACE_CLASSES,
   port,
   productJsonEmitter,
+  validateProductIconRendererBindings,
   writeOutputManifest,
 } from "../src/index.js";
 
@@ -70,10 +71,9 @@ const componentFamilies = defineScreenComponentFamilyRegistry(componentCatalog, 
     })),
   },
 }] as const);
-const themes = defineThemeCatalog([{
+const paletteVariant = {
   id: "default",
-  chrome: { surface: "#000000", action: "#ffffff", actionMuted: "#aaaaaa" },
-  neutrals: { line: "#222222" },
+  identity: { primary: "#ffffff" },
   categories: [{ id: "sky", hex: "#55aadd", meaning: "sky context" }],
   status: { ok: "#55aa55", caution: "#ddaa33", danger: "#dd5555" },
   ramps: [{
@@ -85,13 +85,23 @@ const themes = defineThemeCatalog([{
       lightness: 0.86, lightnessTravel: 0.2, chromaMax: 0.185, label: "NORMAL",
     }],
   }],
-}] as const);
-const icons = definePortableIconCatalog([{
-  id: "check",
-  accent: "positive",
-  viewport: { width: 24, height: 24 },
-  paths: [{ kind: "stroke", pathData: "M20 6L9 17l-5 -5", strokeWidth: 3.2 }],
-}] as const);
+} as const;
+const palette = definePalette([paletteVariant] as const);
+const assetCatalog = definePortableAssetCatalog({
+  id: "circlekit",
+  version: "0.3.25",
+  icons: [{
+    id: "check",
+    viewport: { width: 24, height: 24 },
+    paths: [{ kind: "stroke", pathData: "M20 6L9 17l-5 -5", strokeWidth: 3.2 }],
+  }],
+} as const);
+const visualDeclaration = {
+  palette,
+  assetCatalogRef: { id: assetCatalog.id, version: assetCatalog.version },
+  iconRefs: [{ id: "status.check", assetRef: "check", accent: "status.ok", artifacts: ["phone", "wear"] }],
+} as const;
+const visualDeclarationWithoutIcons = { ...visualDeclaration, iconRefs: [] } as const;
 
 function fixture(overrides: Record<string, unknown> = {}) {
   return defineProduct({
@@ -112,7 +122,7 @@ function fixture(overrides: Record<string, unknown> = {}) {
     },
     componentCatalog,
     componentFamilies,
-    visuals: { themes, icons },
+    ...visualDeclaration,
     ui: [{
       id: "menu.control",
       kind: "menu-entry",
@@ -121,7 +131,7 @@ function fixture(overrides: Record<string, unknown> = {}) {
       ports: { state: "ui.controller.state", action: "ui.controller.trigger" },
     }],
     ...overrides,
-  });
+  }, assetCatalog);
 }
 
 test("one ProductSpec compiles two artifact profiles and deterministic outputs", async () => {
@@ -129,6 +139,10 @@ test("one ProductSpec compiles two artifact profiles and deterministic outputs",
   assert.equal(product.legos.mounts.length, 2);
   assert.deepEqual(product.legos.contracts, [statusContract, actionContract]);
   assert.deepEqual(product.artifacts.map(({ id }) => id), ["phone", "wear"]);
+  validateProductIconRendererBindings(product, [
+    { iconRef: "status.check", assetRef: "check", accent: "status.ok", rendererRef: "renderer.phone" },
+    { iconRef: "status.check", assetRef: "check", accent: "status.ok", rendererRef: "renderer.wear" },
+  ]);
 
   const first = buildOutputManifest(product, [productJsonEmitter("fixture/product.json")], ["fixture"]);
   const second = buildOutputManifest(product, [productJsonEmitter("fixture/product.json")], ["fixture"]);
@@ -149,7 +163,10 @@ test("one ProductSpec compiles two artifact profiles and deterministic outputs",
 
 test("graph, capability and port failures stop before emission", () => {
   assert.throws(() => fixture({
-    artifacts: [{ id: "phone", rendererRefs: ["renderer.phone"], requiredCapabilities: ["ui.missing"] }],
+    artifacts: [
+      { id: "phone", rendererRefs: ["renderer.phone"], requiredCapabilities: ["ui.missing"] },
+      { id: "wear", rendererRefs: ["renderer.wear"], requiredCapabilities: ["ui.menu"] },
+    ],
   }), /lacks capability 'ui.missing'/);
 
   assert.throws(() => fixture({ ui: [] }), /orphan input port 'ui.controller.trigger'/);
@@ -184,9 +201,9 @@ test("graph, capability and port failures stop before emission", () => {
     },
     componentCatalog: [],
     componentFamilies: [],
-    visuals: { themes, icons },
+    ...visualDeclarationWithoutIcons,
     ui: [],
-  }), /wiring cycle/);
+  }, assetCatalog), /wiring cycle/);
 
   const conflictingStatusContract = {
     id: statusContract.id,
@@ -210,12 +227,12 @@ test("graph, capability and port failures stop before emission", () => {
     },
     componentCatalog: [],
     componentFamilies: [],
-    visuals: { themes, icons },
+    ...visualDeclarationWithoutIcons,
     ui: [
       { id: "first", kind: "component-entry", artifacts: ["test"], requiredCapabilities: [], ports: { state: "source.first.status" } },
       { id: "second", kind: "component-entry", artifacts: ["test"], requiredCapabilities: [], ports: { state: "source.second.status" } },
     ],
-  }), /contract 'fixture.status' has conflicting schemas/);
+  }, assetCatalog), /contract 'fixture.status' has conflicting schemas/);
 
   assert.throws(() => defineScreenComponentFamilyRegistry([], [{
     screen: "MAIN",
@@ -228,11 +245,27 @@ test("graph, capability and port failures stop before emission", () => {
     },
   }]), /uses unknown component 'not.in.catalog'/);
 
-  assert.throws(() => definePortableIconCatalog([{
-    ...icons[0], paths: [{ kind: "fill", pathData: "", fillRule: "nonzero" }],
-  }]), /blank path data/);
+  assert.throws(() => fixture({
+    iconRefs: [{ ...visualDeclaration.iconRefs[0], assetRef: "missing" }],
+  }), /uses missing asset 'missing'/);
+  assert.throws(() => fixture({
+    iconRefs: [{ ...visualDeclaration.iconRefs[0], accent: "status.unknown" }],
+  }), /uses missing palette token 'status.unknown'/);
+  assert.throws(() => validateProductIconRendererBindings(fixture(), [
+    { iconRef: "status.check", assetRef: "check", accent: "status.ok", rendererRef: "renderer.phone" },
+  ]), /missing renderer binding/);
+  assert.throws(() => validateProductIconRendererBindings(fixture(), [
+    { iconRef: "status.check", assetRef: "check", accent: "status.ok", rendererRef: "renderer.phone" },
+    { iconRef: "status.check", assetRef: "check", accent: "status.ok", rendererRef: "renderer.wear" },
+    { iconRef: "status.orphan", assetRef: "check", accent: "status.ok", rendererRef: "renderer.phone" },
+  ]), /orphan renderer binding/);
 
-  assert.throws(() => defineThemeCatalog([{
-    ...themes[0], status: { ...themes[0].status, danger: "red" },
+  assert.throws(() => definePortableAssetCatalog({
+    ...assetCatalog,
+    icons: [{ ...assetCatalog.icons[0], paths: [{ kind: "fill", pathData: "", fillRule: "nonzero" }] }],
+  }), /blank path data/);
+
+  assert.throws(() => definePalette([{
+    ...paletteVariant, status: { ...paletteVariant.status, danger: "red" },
   }]), /invalid colour/);
 });
