@@ -32,7 +32,7 @@ const source = defineLegoSpec({
   id: "fixture.source",
   role: "source",
   inputs: [],
-  outputs: [port("status", statusContract.id)],
+  outputs: [port("status", statusContract)],
   runtime: {
     stateOwner: "none",
     lifetime: "process",
@@ -45,8 +45,8 @@ const source = defineLegoSpec({
 const controller = defineLegoSpec({
   id: "fixture.controller",
   role: "adapter",
-  inputs: [port("sourceState", statusContract.id), port("trigger", actionContract.id)],
-  outputs: [port("state", statusContract.id)],
+  inputs: [port("sourceState", statusContract), port("trigger", actionContract)],
+  outputs: [port("state", statusContract)],
   runtime: {
     stateOwner: "instance",
     lifetime: "instance",
@@ -82,7 +82,6 @@ function fixture(overrides: Record<string, unknown> = {}) {
     ],
     legos: {
       id: "fixture.graph",
-      contracts: [statusContract, actionContract],
       configs: [],
       mounts,
       wiring: [{ from: "domain.source.status", to: "ui.controller.sourceState" }],
@@ -103,6 +102,7 @@ function fixture(overrides: Record<string, unknown> = {}) {
 test("one ProductSpec compiles two artifact profiles and deterministic outputs", async () => {
   const product = fixture();
   assert.equal(product.legos.mounts.length, 2);
+  assert.deepEqual(product.legos.contracts, [statusContract, actionContract]);
   assert.deepEqual(product.artifacts.map(({ id }) => id), ["phone", "wear"]);
 
   const first = buildOutputManifest(product, [productJsonEmitter("fixture/product.json")], ["fixture"]);
@@ -132,8 +132,8 @@ test("graph, capability and port failures stop before emission", () => {
   const loop = defineLegoSpec({
     id: "fixture.loop",
     role: "adapter",
-    inputs: [port("input", statusContract.id)],
-    outputs: [port("output", statusContract.id)],
+    inputs: [port("input", statusContract)],
+    outputs: [port("output", statusContract)],
     runtime: {
       stateOwner: "none", lifetime: "call", durability: "transient",
       clockDomain: "none", contextInputs: [], effects: [],
@@ -146,7 +146,6 @@ test("graph, capability and port failures stop before emission", () => {
     artifacts: [{ id: "test", rendererRefs: ["renderer.test"], requiredCapabilities: [] }],
     legos: {
       id: "loop.graph",
-      contracts: [statusContract],
       configs: [],
       mounts: loopMounts,
       wiring: [
@@ -158,6 +157,34 @@ test("graph, capability and port failures stop before emission", () => {
     componentFamilies: [],
     ui: [],
   }), /wiring cycle/);
+
+  const conflictingStatusContract = {
+    id: statusContract.id,
+    kind: "state",
+    fields: [field("label", "string")],
+  } as const;
+  const conflictingSource = defineLegoSpec({
+    ...source,
+    id: "fixture.conflicting-source",
+    outputs: [port("status", conflictingStatusContract)],
+  } as const);
+  assert.throws(() => defineProduct({
+    id: "contract-conflict",
+    rendererBindings: [{ id: "renderer.test", capabilities: [] }],
+    artifacts: [{ id: "test", rendererRefs: ["renderer.test"], requiredCapabilities: [] }],
+    legos: {
+      id: "contract-conflict.graph",
+      configs: [],
+      mounts: [mount("source.first", source), mount("source.second", conflictingSource)],
+      wiring: [],
+    },
+    componentCatalog: [],
+    componentFamilies: [],
+    ui: [
+      { id: "first", kind: "component-entry", artifacts: ["test"], requiredCapabilities: [], ports: { state: "source.first.status" } },
+      { id: "second", kind: "component-entry", artifacts: ["test"], requiredCapabilities: [], ports: { state: "source.second.status" } },
+    ],
+  }), /contract 'fixture.status' has conflicting schemas/);
 
   assert.throws(() => defineScreenComponentFamilyRegistry([], [{
     screen: "MAIN",

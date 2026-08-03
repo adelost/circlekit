@@ -1,8 +1,8 @@
 import {
-  type CompatibleConnection,
   type LegoContract,
   type ProductInputPortRef,
   type ProductLegoConfig,
+  type ProductLegoDeclaration,
   type ProductLegoMount,
   type ProductOutputPortRef,
   validateProductLegoConfig,
@@ -45,14 +45,6 @@ export interface ProductUiEntry<
   readonly artifacts: readonly ArtifactRef[];
   readonly requiredCapabilities: readonly Capability[];
   readonly ports: UiPortRefs<InputRef, OutputRef>;
-}
-
-export interface ProductLegoDeclaration<Mounts extends readonly ProductLegoMount[]> {
-  readonly id: string;
-  readonly contracts: readonly LegoContract[];
-  readonly configs: readonly { readonly id: string }[];
-  readonly mounts: Mounts;
-  readonly wiring: readonly CompatibleConnection<Mounts>[];
 }
 
 export interface ProductDeclaration<
@@ -139,7 +131,6 @@ export function defineProduct<
   const externalInputs = new Set<string>();
   const externalOutputs = new Set<string>();
   const contractByPort = contractMap(declaration.legos.mounts);
-  const contractById = new Map(declaration.legos.contracts.map((item) => [item.id, item]));
   for (const entry of declaration.ui) {
     requireWireId(entry.id, "UI entry");
     if (entry.artifacts.length === 0) throw new Error(`UI entry '${entry.id}' has no artifact`);
@@ -160,8 +151,7 @@ export function defineProduct<
     if (refs.length === 0) throw new Error(`UI entry '${entry.id}' has no port reference`);
     for (const [role, ref] of Object.entries(entry.ports)) {
       if (ref === undefined) continue;
-      const contractId = contractByPort.get(ref);
-      const contract = contractId === undefined ? undefined : contractById.get(contractId);
+      const contract = contractByPort.get(ref);
       if (contract === undefined) throw new Error(`UI entry '${entry.id}' uses missing ${role} port '${ref}'`);
       if (role === "action") {
         if (externalInputs.has(ref)) throw new Error(`input port '${ref}' is produced by two UI entries`);
@@ -195,8 +185,8 @@ export function defineProduct<
   };
 }
 
-function contractMap(mounts: readonly ProductLegoMount[]): ReadonlyMap<string, string> {
-  const result = new Map<string, string>();
+function contractMap(mounts: readonly ProductLegoMount[]): ReadonlyMap<string, LegoContract> {
+  const result = new Map<string, LegoContract>();
   for (const mount of mounts) {
     for (const item of mount.lego.inputs) result.set(`${mount.id}.${item.id}`, item.contract);
     for (const item of mount.lego.outputs) result.set(`${mount.id}.${item.id}`, item.contract);
