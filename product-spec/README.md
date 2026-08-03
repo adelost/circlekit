@@ -7,3 +7,7 @@ manifest mechanics.
 
 The package contains no product names or native Kotlin/Swift/Monkey C symbols.
 Native emitters and bindings remain in their platform repositories.
+
+Reusable LegoSpecs may declare typed `configInputs` with field names, primitive
+types and units. ProductConfig supplies the concrete values; compilation
+rejects missing, extra or wrongly typed values before emission.

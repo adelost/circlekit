@@ -6,11 +6,14 @@ import test from "node:test";
 import {
   buildOutputManifest,
   checkOutputManifest,
+  configField,
+  configInput,
   defineScreenComponentFamilyRegistry,
   defineLegoSpec,
   definePalette,
   definePortableAssetCatalog,
   defineProduct,
+  defineProductLegoConfig,
   field,
   logOutputManifest,
   mount,
@@ -136,7 +139,7 @@ function fixture(overrides: Record<string, unknown> = {}) {
 
 test("one ProductSpec compiles two artifact profiles and deterministic outputs", async () => {
   const product = fixture();
-  assert.equal(product.schemaVersion, 2);
+  assert.equal(product.schemaVersion, 3);
   assert.equal(product.legos.mounts.length, 2);
   assert.deepEqual(product.legos.contracts, [statusContract, actionContract]);
   assert.deepEqual(product.artifacts.map(({ id }) => id), ["phone", "wear"]);
@@ -183,6 +186,33 @@ test("graph, capability and port failures stop before emission", () => {
   }), /lacks capability 'ui.missing'/);
 
   assert.throws(() => fixture({ ui: [] }), /orphan input port 'ui.controller.trigger'/);
+
+  const configured = defineLegoSpec({
+    id: "fixture.configured",
+    role: "consumer",
+    inputs: [],
+    outputs: [],
+    configInputs: [configInput("policy", [
+      configField("windowMs", "integer", { unit: "si.millisecond" }),
+      configField("spreadM", "number", { unit: "si.metre" }),
+    ])],
+    runtime: {
+      stateOwner: "none", lifetime: "call", durability: "transient",
+      clockDomain: "none", contextInputs: [], effects: [],
+    },
+  } as const);
+  assert.doesNotThrow(() => defineProductLegoConfig({
+    id: "configured",
+    configs: [{ id: "fixture.policy", values: { windowMs: 10_000, spreadM: 2 } }],
+    mounts: [mount("configured.consumer", configured, { policy: "fixture.policy" })],
+    wiring: [],
+  }));
+  assert.throws(() => defineProductLegoConfig({
+    id: "configured",
+    configs: [{ id: "fixture.policy", values: { windowMs: "ten", spreadM: 2 } }],
+    mounts: [mount("configured.consumer", configured, { policy: "fixture.policy" })],
+    wiring: [],
+  }), /field 'windowMs' must be integer/);
 
   assert.throws(() => fixture({
     artifacts: [{
