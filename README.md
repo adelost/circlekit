@@ -9,11 +9,14 @@ Shared Android foundations used by Skyvw and Agentmux Link.
 - `servicekit`: bounded telemetry used by the shared modules.
 - `product-spec`: product-neutral TypeScript authoring, validation and output
   manifests, published as the versioned `@v1d/product-spec` npm tarball.
+- `showcase-product`: CircleKit-owned, data-only Showcase ProductConfig. Its
+  one generated descriptor drives both Android Showcase hosts.
 
 Consumers pin released Maven artifacts. Product data and business logic stay
 in their owning applications; CircleKit owns rendering and update mechanics.
 TypeScript consumers pin the immutable product-spec tarball from the same
-CircleKit version; app declarations never move into this repository.
+CircleKit version; every app declaration remains in its product's owning
+repository.
 
 The stable `com.adelost.*` package namespaces describe the five library
 modules. Since `0.2.0`, shared types and functions use the product-neutral
@@ -24,6 +27,10 @@ The non-published `showcase-catalog`, `showcase-phone`, and `showcase-wear`
 modules form an installable component laboratory over the same source. Debug
 builds expose named, side-effect-safe navigation through
 `tools/showcase-probe.sh`; release builds do not register the probe receiver.
+Regenerate or check its shared product descriptor with `npm run generate` or
+`npm run check-generated` from `showcase-product/`. Those commands write,
+check and log one ProductSpec output manifest containing the deterministic IR
+JSON and typed Kotlin descriptor.
 
 Build installable release hosts from one exact source revision with:
 

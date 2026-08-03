@@ -48,7 +48,7 @@ class ShowcaseMediaStateTest {
 
     @Test
     fun `round text projection delegates to the platform port`() = runBlocking {
-        val session = ShowcaseSession()
+        val session = ShowcaseSession(ShowcaseArtifactProfile.PHONE_FULL_UI)
         session.open(ShowcaseCaseId("input.text"), ShowcaseScenarioId("empty"))
         val port = RingTextEntryPort { _, onResult -> onResult("platform text") }
         val presentation = ShowcasePresentations.selected(

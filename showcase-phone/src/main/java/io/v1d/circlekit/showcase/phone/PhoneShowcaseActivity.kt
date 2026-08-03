@@ -21,6 +21,7 @@ import io.v1d.circlekit.showcase.catalog.CircleKitShowcase
 import io.v1d.circlekit.showcase.catalog.SHOWCASE_PROBE_ACTION
 import io.v1d.circlekit.showcase.catalog.SHOWCASE_PROBE_LOG_TAG
 import io.v1d.circlekit.showcase.catalog.ShowcaseProbeCommand
+import io.v1d.circlekit.showcase.catalog.ShowcaseArtifactProfile
 import io.v1d.circlekit.showcase.catalog.ShowcaseDevPort
 import io.v1d.circlekit.showcase.catalog.ShowcaseHostController
 import io.v1d.circlekit.showcase.catalog.ShowcaseReleaseHost
@@ -31,7 +32,7 @@ import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.cancel
 
 class PhoneShowcaseActivity : ComponentActivity() {
-    private val session = ShowcaseSession()
+    private val session = ShowcaseSession(ShowcaseArtifactProfile.PHONE_FULL_UI)
     private val runtimeScope = MainScope()
     private val host by lazy {
         ShowcaseHostController(this, isWatchDevice = false) { orientation ->

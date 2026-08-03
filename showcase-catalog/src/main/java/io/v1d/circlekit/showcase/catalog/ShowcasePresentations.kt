@@ -47,15 +47,15 @@ object ShowcasePresentations {
             requireNotNull(destination.caseId),
             requireNotNull(destination.scenarioId),
         ) ?: error("Showcase destination was validated before selection")
-        return when (pair.first.id.value) {
-            "input.text" -> if (surface == CircleSurfaceClass.ROUND) {
+        return when (ShowcaseNativeBindings.requireComponent(pair.first.id.value).renderer) {
+            ShowcaseNativeRenderer.TEXT -> if (surface == CircleSurfaceClass.ROUND) {
                 ShowcasePresentation.Screen(textEntryRows(pair.second, session.media, textEntryPort))
             } else {
                 ShowcasePresentation.Component(ShowcaseComponentKind.TEXT)
             }
-            "control.press-ring" -> ShowcasePresentation.Component(ShowcaseComponentKind.PRESS)
-            "media.capture" -> ShowcasePresentation.Component(ShowcaseComponentKind.CAPTURE)
-            "media.playback" -> ShowcasePresentation.Component(ShowcaseComponentKind.PLAYBACK)
+            ShowcaseNativeRenderer.PRESS -> ShowcasePresentation.Component(ShowcaseComponentKind.PRESS)
+            ShowcaseNativeRenderer.CAPTURE -> ShowcasePresentation.Component(ShowcaseComponentKind.CAPTURE)
+            ShowcaseNativeRenderer.PLAYBACK -> ShowcasePresentation.Component(ShowcaseComponentKind.PLAYBACK)
             else -> ShowcasePresentation.Screen(ShowcaseScreens.selectedScreen(destination, session))
         }
     }

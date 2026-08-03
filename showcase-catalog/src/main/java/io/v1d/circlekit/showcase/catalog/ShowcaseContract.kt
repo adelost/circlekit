@@ -1,7 +1,5 @@
 package io.v1d.circlekit.showcase.catalog
 
-import androidx.compose.ui.graphics.vector.ImageVector
-import com.adelost.designkit.ui.RingIcons
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -18,27 +16,6 @@ value class ShowcaseScenarioId(val value: String)
 @JvmInline
 value class ShowcaseActionId(val value: String)
 
-enum class ShowcaseFamily { FOUNDATIONS, ATOMS, CONTROLS, INPUT, MEDIA, TEMPLATES, FLOWS }
-
-/** One reciprocal vocabulary for the public visual families exercised here. */
-enum class ShowcaseComponentFamily {
-    COLORS,
-    GEOMETRY,
-    ICON_ACTION,
-    ACTION_ROW,
-    CHOICE_ROW,
-    ADJUSTMENT,
-    PROGRESS,
-    PRESS_ACTION,
-    TEXT_ENTRY,
-    AUDIO_CAPTURE,
-    AUDIO_PLAYBACK,
-    SCREEN_TEMPLATES,
-    SOURCE_HEALTH,
-    UPDATE_FLOW,
-    SERVICE_STATUS,
-}
-
 data class ShowcaseScenario(
     val id: ShowcaseScenarioId,
     val label: String,
@@ -47,236 +24,16 @@ data class ShowcaseScenario(
 data class ShowcaseCase(
     val id: ShowcaseCaseId,
     val family: ShowcaseFamily,
-    val componentFamily: ShowcaseComponentFamily,
     val title: String,
-    val icon: ImageVector,
+    val iconId: String,
     val scenarios: List<ShowcaseScenario>,
 )
 
-object ShowcaseManifest {
-    val cases: List<ShowcaseCase> = listOf(
-        ShowcaseCase(
-            id = ShowcaseCaseId("foundation.colors"),
-            family = ShowcaseFamily.FOUNDATIONS,
-            componentFamily = ShowcaseComponentFamily.COLORS,
-            title = "COLORS",
-            icon = RingIcons.Palette,
-            scenarios = listOf(
-                ShowcaseScenario(ShowcaseScenarioId("sea-glass"), "SEA GLASS"),
-                ShowcaseScenario(ShowcaseScenarioId("flat-cyan"), "FLAT CYAN"),
-                ShowcaseScenario(ShowcaseScenarioId("muted"), "MUTED"),
-                ShowcaseScenario(ShowcaseScenarioId("high-contrast"), "HIGH CONTRAST"),
-            ),
-        ),
-        ShowcaseCase(
-            id = ShowcaseCaseId("foundation.geometry"),
-            family = ShowcaseFamily.FOUNDATIONS,
-            componentFamily = ShowcaseComponentFamily.GEOMETRY,
-            title = "GEOMETRY",
-            icon = RingIcons.Grid,
-            scenarios = listOf(
-                ShowcaseScenario(ShowcaseScenarioId("round-192"), "ROUND 192"),
-                ShowcaseScenario(ShowcaseScenarioId("phone-compact"), "PHONE COMPACT"),
-                ShowcaseScenario(ShowcaseScenarioId("phone-wide"), "PHONE WIDE"),
-                ShowcaseScenario(ShowcaseScenarioId("chrome-x"), "X @ 9"),
-                ShowcaseScenario(ShowcaseScenarioId("chrome-x-gear"), "X + GEAR"),
-            ),
-        ),
-        ShowcaseCase(
-            id = ShowcaseCaseId("atom.icon-action"),
-            family = ShowcaseFamily.ATOMS,
-            componentFamily = ShowcaseComponentFamily.ICON_ACTION,
-            title = "ACTIONS",
-            icon = RingIcons.Watch,
-            scenarios = listOf(
-                ShowcaseScenario(ShowcaseScenarioId("idle"), "IDLE"),
-                ShowcaseScenario(ShowcaseScenarioId("active"), "ACTIVE"),
-                ShowcaseScenario(ShowcaseScenarioId("immediate"), "IMMEDIATE"),
-                ShowcaseScenario(ShowcaseScenarioId("deliberate"), "DELIBERATE"),
-                ShowcaseScenario(ShowcaseScenarioId("disabled"), "DISABLED"),
-            ),
-        ),
-        ShowcaseCase(
-            id = ShowcaseCaseId("control.action-row"),
-            family = ShowcaseFamily.CONTROLS,
-            componentFamily = ShowcaseComponentFamily.ACTION_ROW,
-            title = "ACTION ROW",
-            icon = RingIcons.TouchdownRun,
-            scenarios = listOf(
-                ShowcaseScenario(ShowcaseScenarioId("immediate"), "IMMEDIATE"),
-                ShowcaseScenario(ShowcaseScenarioId("deliberate"), "DELIBERATE"),
-                ShowcaseScenario(ShowcaseScenarioId("confirm"), "CONFIRM"),
-                ShowcaseScenario(ShowcaseScenarioId("recoverable"), "RECOVERABLE"),
-                ShowcaseScenario(ShowcaseScenarioId("blocked"), "BLOCKED"),
-                ShowcaseScenario(ShowcaseScenarioId("failure"), "FAILURE + RETRY"),
-            ),
-        ),
-        ShowcaseCase(
-            id = ShowcaseCaseId("control.choice-row"),
-            family = ShowcaseFamily.CONTROLS,
-            componentFamily = ShowcaseComponentFamily.CHOICE_ROW,
-            title = "CHOICES",
-            icon = RingIcons.Grid,
-            scenarios = listOf(
-                ShowcaseScenario(ShowcaseScenarioId("off"), "TOGGLE OFF"),
-                ShowcaseScenario(ShowcaseScenarioId("on"), "TOGGLE ON"),
-                ShowcaseScenario(ShowcaseScenarioId("two"), "TWO OPTIONS"),
-                ShowcaseScenario(ShowcaseScenarioId("first"), "SEVEN · FIRST"),
-                ShowcaseScenario(ShowcaseScenarioId("middle"), "SEVEN · MIDDLE"),
-                ShowcaseScenario(ShowcaseScenarioId("last"), "SEVEN · LAST"),
-            ),
-        ),
-        ShowcaseCase(
-            id = ShowcaseCaseId("control.adjustment"),
-            family = ShowcaseFamily.CONTROLS,
-            componentFamily = ShowcaseComponentFamily.ADJUSTMENT,
-            title = "ADJUST",
-            icon = RingIcons.Sliders,
-            scenarios = listOf(
-                ShowcaseScenario(ShowcaseScenarioId("minimum"), "MINIMUM"),
-                ShowcaseScenario(ShowcaseScenarioId("middle"), "MIDDLE"),
-                ShowcaseScenario(ShowcaseScenarioId("maximum"), "MAXIMUM"),
-                ShowcaseScenario(ShowcaseScenarioId("deliberate"), "DELIBERATE STEPS"),
-            ),
-        ),
-        ShowcaseCase(
-            id = ShowcaseCaseId("control.progress"),
-            family = ShowcaseFamily.CONTROLS,
-            componentFamily = ShowcaseComponentFamily.PROGRESS,
-            title = "PROGRESS",
-            icon = RingIcons.Download,
-            scenarios = listOf(
-                ShowcaseScenario(ShowcaseScenarioId("none"), "NONE"),
-                ShowcaseScenario(ShowcaseScenarioId("indeterminate"), "INDETERMINATE"),
-                ShowcaseScenario(ShowcaseScenarioId("empty"), "0 PERCENT"),
-                ShowcaseScenario(ShowcaseScenarioId("half"), "50 PERCENT"),
-                ShowcaseScenario(ShowcaseScenarioId("complete"), "100 PERCENT"),
-                ShowcaseScenario(ShowcaseScenarioId("failed"), "FAILURE + RETRY"),
-            ),
-        ),
-        ShowcaseCase(
-            id = ShowcaseCaseId("control.press-ring"),
-            family = ShowcaseFamily.CONTROLS,
-            componentFamily = ShowcaseComponentFamily.PRESS_ACTION,
-            title = "PRESS",
-            icon = RingIcons.Record,
-            scenarios = listOf(
-                ShowcaseScenario(ShowcaseScenarioId("idle"), "IDLE"),
-                ShowcaseScenario(ShowcaseScenarioId("recording"), "RECORDING"),
-                ShowcaseScenario(ShowcaseScenarioId("disabled"), "DISABLED"),
-                ShowcaseScenario(ShowcaseScenarioId("failed"), "FAILED + RETRY"),
-            ),
-        ),
-        ShowcaseCase(
-            id = ShowcaseCaseId("input.text"),
-            family = ShowcaseFamily.INPUT,
-            componentFamily = ShowcaseComponentFamily.TEXT_ENTRY,
-            title = "TEXT",
-            icon = RingIcons.Pencil,
-            scenarios = listOf(
-                ShowcaseScenario(ShowcaseScenarioId("empty"), "EMPTY"),
-                ShowcaseScenario(ShowcaseScenarioId("filled"), "FILLED"),
-                ShowcaseScenario(ShowcaseScenarioId("max"), "MAX LENGTH"),
-                ShowcaseScenario(ShowcaseScenarioId("disabled"), "DISABLED"),
-            ),
-        ),
-        ShowcaseCase(
-            id = ShowcaseCaseId("media.capture"),
-            family = ShowcaseFamily.MEDIA,
-            componentFamily = ShowcaseComponentFamily.AUDIO_CAPTURE,
-            title = "WAVEFORM",
-            icon = RingIcons.Record,
-            scenarios = listOf(
-                ShowcaseScenario(ShowcaseScenarioId("silent"), "NO SAMPLES"),
-                ShowcaseScenario(ShowcaseScenarioId("active"), "ACTIVE"),
-                ShowcaseScenario(ShowcaseScenarioId("long"), "LONG DURATION"),
-            ),
-        ),
-        ShowcaseCase(
-            id = ShowcaseCaseId("media.playback"),
-            family = ShowcaseFamily.MEDIA,
-            componentFamily = ShowcaseComponentFamily.AUDIO_PLAYBACK,
-            title = "PLAYBACK",
-            icon = RingIcons.Play,
-            scenarios = listOf(
-                ShowcaseScenario(ShowcaseScenarioId("ready"), "READY"),
-                ShowcaseScenario(ShowcaseScenarioId("playing"), "PLAYING"),
-                ShowcaseScenario(ShowcaseScenarioId("paused"), "PAUSED"),
-                ShowcaseScenario(ShowcaseScenarioId("complete"), "COMPLETE"),
-                ShowcaseScenario(ShowcaseScenarioId("failed"), "FAILED"),
-            ),
-        ),
-        ShowcaseCase(
-            id = ShowcaseCaseId("template.screens"),
-            family = ShowcaseFamily.TEMPLATES,
-            componentFamily = ShowcaseComponentFamily.SCREEN_TEMPLATES,
-            title = "SCREENS",
-            icon = RingIcons.Layers,
-            scenarios = listOf(
-                ShowcaseScenario(ShowcaseScenarioId("hub"), "HUB"),
-                ShowcaseScenario(ShowcaseScenarioId("detail"), "DETAIL"),
-                ShowcaseScenario(ShowcaseScenarioId("launcher"), "LAUNCHER"),
-                ShowcaseScenario(ShowcaseScenarioId("rows"), "ROWS"),
-                ShowcaseScenario(ShowcaseScenarioId("adjustment"), "ADJUSTMENT"),
-                ShowcaseScenario(ShowcaseScenarioId("color-picker"), "COLOR PICKER"),
-                ShowcaseScenario(ShowcaseScenarioId("dial-preview"), "DIAL PREVIEW"),
-                ShowcaseScenario(ShowcaseScenarioId("empty"), "EMPTY CONTENT"),
-                ShowcaseScenario(ShowcaseScenarioId("max-capacity"), "MAX CAPACITY"),
-                ShowcaseScenario(ShowcaseScenarioId("long-content"), "LONG CONTENT"),
-            ),
-        ),
-        ShowcaseCase(
-            id = ShowcaseCaseId("flow.source"),
-            family = ShowcaseFamily.FLOWS,
-            componentFamily = ShowcaseComponentFamily.SOURCE_HEALTH,
-            title = "SOURCE",
-            icon = RingIcons.Wifi,
-            scenarios = listOf(
-                ShowcaseScenario(ShowcaseScenarioId("off"), "OFF"),
-                ShowcaseScenario(ShowcaseScenarioId("loading"), "LOADING"),
-                ShowcaseScenario(ShowcaseScenarioId("fresh"), "FRESH"),
-                ShowcaseScenario(ShowcaseScenarioId("aging"), "AGING"),
-                ShowcaseScenario(ShowcaseScenarioId("partial"), "PARTIAL"),
-                ShowcaseScenario(ShowcaseScenarioId("broken"), "BROKEN"),
-            ),
-        ),
-        ShowcaseCase(
-            id = ShowcaseCaseId("flow.update"),
-            family = ShowcaseFamily.FLOWS,
-            componentFamily = ShowcaseComponentFamily.UPDATE_FLOW,
-            title = "UPDATE",
-            icon = RingIcons.Download,
-            scenarios = listOf(
-                ShowcaseScenario(ShowcaseScenarioId("checking"), "CHECKING"),
-                ShowcaseScenario(ShowcaseScenarioId("available"), "AVAILABLE"),
-                ShowcaseScenario(ShowcaseScenarioId("downloading"), "DOWNLOADING"),
-                ShowcaseScenario(ShowcaseScenarioId("ready"), "READY"),
-                ShowcaseScenario(ShowcaseScenarioId("failed"), "FAILED"),
-            ),
-        ),
-        ShowcaseCase(
-            id = ShowcaseCaseId("flow.service"),
-            family = ShowcaseFamily.FLOWS,
-            componentFamily = ShowcaseComponentFamily.SERVICE_STATUS,
-            title = "SERVICE",
-            icon = RingIcons.Wrench,
-            scenarios = listOf(
-                ShowcaseScenario(ShowcaseScenarioId("idle"), "IDLE"),
-                ShowcaseScenario(ShowcaseScenarioId("active"), "ACTIVE"),
-                ShowcaseScenario(ShowcaseScenarioId("success"), "SUCCESS"),
-                ShowcaseScenario(ShowcaseScenarioId("failed"), "FAILED"),
-                ShowcaseScenario(ShowcaseScenarioId("cache"), "CACHE"),
-            ),
-        ),
-    )
-
-    fun find(caseId: ShowcaseCaseId): ShowcaseCase? = cases.find { it.id == caseId }
-
-    fun find(caseId: ShowcaseCaseId, scenarioId: ShowcaseScenarioId): Pair<ShowcaseCase, ShowcaseScenario>? {
-        val case = find(caseId) ?: return null
-        return case to (case.scenarios.find { it.id == scenarioId } ?: return null)
-    }
-}
+data class ShowcaseComponentTree(
+    val screenId: String,
+    val surface: String,
+    val componentIds: List<String>,
+)
 
 data class ShowcaseDestination(
     val caseId: ShowcaseCaseId? = null,
@@ -332,7 +89,9 @@ data class ShowcaseSnapshot(
     val playbackState: String,
 )
 
-class ShowcaseSession {
+class ShowcaseSession(
+    val artifactProfile: ShowcaseArtifactProfile,
+) {
     private val mutableDestination = MutableStateFlow(ShowcaseDestination())
     private val mutableIconActionActive = MutableStateFlow(false)
     private var surface: String = "UNKNOWN"
@@ -343,6 +102,11 @@ class ShowcaseSession {
 
     val destination: StateFlow<ShowcaseDestination> = mutableDestination.asStateFlow()
     val iconActionActive: StateFlow<Boolean> = mutableIconActionActive.asStateFlow()
+
+    init {
+        require(artifactProfile.id in ShowcaseManifest.profiles)
+        ShowcaseNativeBindings.requireProfile(artifactProfile.id)
+    }
 
     fun open(caseId: ShowcaseCaseId, scenarioId: ShowcaseScenarioId): Boolean {
         if (ShowcaseManifest.find(caseId, scenarioId) == null) return false

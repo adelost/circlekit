@@ -1,0 +1,36 @@
+{
+  "stage": "native-export",
+  "schemaVersion": 1,
+  "sourceFile": "showcase-catalog/src/main/java/io/v1d/circlekit/showcase/catalog/ShowcaseNativeBindings.kt",
+  "components": [
+    { "componentId": "foundation.colors", "rendererId": "colors", "profiles": ["phone-full-ui", "wear-full-ui"] },
+    { "componentId": "foundation.geometry", "rendererId": "geometry", "profiles": ["phone-full-ui", "wear-full-ui"] },
+    { "componentId": "atom.icon-action", "rendererId": "icon-actions", "profiles": ["phone-full-ui", "wear-full-ui"] },
+    { "componentId": "control.action-row", "rendererId": "action-rows", "profiles": ["phone-full-ui", "wear-full-ui"] },
+    { "componentId": "control.choice-row", "rendererId": "choice-rows", "profiles": ["phone-full-ui", "wear-full-ui"] },
+    { "componentId": "control.adjustment", "rendererId": "adjustment", "profiles": ["phone-full-ui", "wear-full-ui"] },
+    { "componentId": "control.progress", "rendererId": "progress", "profiles": ["phone-full-ui", "wear-full-ui"] },
+    { "componentId": "control.press-ring", "rendererId": "press", "profiles": ["phone-full-ui", "wear-full-ui"] },
+    { "componentId": "input.text", "rendererId": "text", "profiles": ["phone-full-ui", "wear-full-ui"] },
+    { "componentId": "media.capture", "rendererId": "capture", "profiles": ["phone-full-ui", "wear-full-ui"] },
+    { "componentId": "media.playback", "rendererId": "playback", "profiles": ["phone-full-ui", "wear-full-ui"] },
+    { "componentId": "template.screens", "rendererId": "screen-templates", "profiles": ["phone-full-ui", "wear-full-ui"] },
+    { "componentId": "flow.source", "rendererId": "source", "profiles": ["phone-full-ui", "wear-full-ui"] },
+    { "componentId": "flow.update", "rendererId": "update", "profiles": ["phone-full-ui", "wear-full-ui"] },
+    { "componentId": "flow.service", "rendererId": "service", "profiles": ["phone-full-ui", "wear-full-ui"] }
+  ],
+  "icons": [
+    { "iconId": "palette", "nativeSymbol": "RingIcons.Palette" },
+    { "iconId": "grid", "nativeSymbol": "RingIcons.Grid" },
+    { "iconId": "touchdown-run", "nativeSymbol": "RingIcons.TouchdownRun" },
+    { "iconId": "pencil", "nativeSymbol": "RingIcons.Pencil" },
+    { "iconId": "play", "nativeSymbol": "RingIcons.Play" },
+    { "iconId": "layers", "nativeSymbol": "RingIcons.Layers" },
+    { "iconId": "wifi", "nativeSymbol": "RingIcons.Wifi" },
+    { "iconId": "watch", "nativeSymbol": "RingIcons.Watch" },
+    { "iconId": "sliders", "nativeSymbol": "RingIcons.Sliders" },
+    { "iconId": "download", "nativeSymbol": "RingIcons.Download" },
+    { "iconId": "record", "nativeSymbol": "RingIcons.Record" },
+    { "iconId": "wrench", "nativeSymbol": "RingIcons.Wrench" }
+  ]
+}

@@ -25,7 +25,7 @@ object ShowcaseScreens {
         gridRole = MenuGridRole.COMPONENT_GALLERY,
         entries = ShowcaseFamily.entries.map { family ->
             LaunchSpec(
-                icon = family.icon,
+                icon = ShowcaseNativeBindings.requireIcon(family.iconId),
                 label = family.menuLabel,
                 open = { familyScreen(family, session) },
             )
@@ -44,28 +44,32 @@ object ShowcaseScreens {
             requireNotNull(destination.caseId),
             requireNotNull(destination.scenarioId),
         ) ?: error("Showcase destination was validated before selection")
-        return when (pair.first.id.value) {
-            "foundation.colors" -> colors(pair.second)
-            "foundation.geometry" -> geometry(pair.second)
-            "atom.icon-action" -> iconActions(pair.second, session)
-            "control.action-row" -> ShowcaseInteractionScreens.actionRows(pair.second, session.interaction)
-            "control.choice-row" -> ShowcaseInteractionScreens.choiceRows(pair.second, session.interaction)
-            "control.adjustment" -> ShowcaseInteractionScreens.adjustmentRows(pair.second, session.interaction)
-            "control.progress" -> ShowcaseInteractionScreens.progressRows(pair.second, session.interaction)
-            "template.screens" -> ShowcaseTemplateFixtures.screen(pair.second, session)
-            "flow.source" -> ShowcaseFlowScreens.source(session.flows)
-            "flow.update" -> ShowcaseFlowScreens.update(session.flows)
-            "flow.service" -> ShowcaseFlowScreens.service(session.flows)
-            else -> error("No presentation for ${pair.first.id.value}")
+        return when (ShowcaseNativeBindings.requireComponent(pair.first.id.value).renderer) {
+            ShowcaseNativeRenderer.COLORS -> colors(pair.second)
+            ShowcaseNativeRenderer.GEOMETRY -> geometry(pair.second)
+            ShowcaseNativeRenderer.ICON_ACTIONS -> iconActions(pair.second, session)
+            ShowcaseNativeRenderer.ACTION_ROWS -> ShowcaseInteractionScreens.actionRows(pair.second, session.interaction)
+            ShowcaseNativeRenderer.CHOICE_ROWS -> ShowcaseInteractionScreens.choiceRows(pair.second, session.interaction)
+            ShowcaseNativeRenderer.ADJUSTMENT -> ShowcaseInteractionScreens.adjustmentRows(pair.second, session.interaction)
+            ShowcaseNativeRenderer.PROGRESS -> ShowcaseInteractionScreens.progressRows(pair.second, session.interaction)
+            ShowcaseNativeRenderer.SCREEN_TEMPLATES -> ShowcaseTemplateFixtures.screen(pair.second, session)
+            ShowcaseNativeRenderer.SOURCE -> ShowcaseFlowScreens.source(session.flows)
+            ShowcaseNativeRenderer.UPDATE -> ShowcaseFlowScreens.update(session.flows)
+            ShowcaseNativeRenderer.SERVICE -> ShowcaseFlowScreens.service(session.flows)
+            ShowcaseNativeRenderer.PRESS,
+            ShowcaseNativeRenderer.TEXT,
+            ShowcaseNativeRenderer.CAPTURE,
+            ShowcaseNativeRenderer.PLAYBACK,
+            -> error("Component renderer ${pair.first.id.value} is not a RingScreen")
         }
     }
 
     private fun familyScreen(family: ShowcaseFamily, session: ShowcaseSession): RingScreen = RingScreen.Launcher(
-        title = family.label,
+        title = family.title,
         gridRole = MenuGridRole.COMPONENT_GALLERY,
         entries = ShowcaseManifest.cases.filter { it.family == family }.map { case ->
             LaunchSpec(
-                icon = case.icon,
+                icon = ShowcaseNativeBindings.requireIcon(case.iconId),
                 label = case.title,
                 open = { scenarios(case, session) },
             )
@@ -90,7 +94,7 @@ object ShowcaseScreens {
                     key = "${case.id.value}/${scenario.id.value}",
                     title = scenario.label,
                     sub = scenario.id.value.uppercase(),
-                    icon = case.icon,
+                    icon = ShowcaseNativeBindings.requireIcon(case.iconId),
                     onTap = { session.open(case.id, scenario.id) },
                 )
             },
@@ -215,35 +219,6 @@ object ShowcaseScreens {
         )
     }
 }
-
-private val ShowcaseFamily.label: String
-    get() = when (this) {
-        ShowcaseFamily.FOUNDATIONS -> "FOUNDATIONS"
-        ShowcaseFamily.ATOMS -> "ATOMS"
-        ShowcaseFamily.CONTROLS -> "CONTROLS"
-        ShowcaseFamily.INPUT -> "INPUT"
-        ShowcaseFamily.MEDIA -> "MEDIA"
-        ShowcaseFamily.TEMPLATES -> "TEMPLATES"
-        ShowcaseFamily.FLOWS -> "FLOWS"
-    }
-
-/** Short face labels are data; full family names remain the page titles. */
-private val ShowcaseFamily.menuLabel: String
-    get() = when (this) {
-        ShowcaseFamily.FOUNDATIONS -> "TOKENS"
-        else -> label
-    }
-
-private val ShowcaseFamily.icon: androidx.compose.ui.graphics.vector.ImageVector
-    get() = when (this) {
-        ShowcaseFamily.FOUNDATIONS -> RingIcons.Palette
-        ShowcaseFamily.ATOMS -> RingIcons.Grid
-        ShowcaseFamily.CONTROLS -> RingIcons.TouchdownRun
-        ShowcaseFamily.INPUT -> RingIcons.Pencil
-        ShowcaseFamily.MEDIA -> RingIcons.Play
-        ShowcaseFamily.TEMPLATES -> RingIcons.Layers
-        ShowcaseFamily.FLOWS -> RingIcons.Wifi
-    }
 
 private fun CircleSurfaceClass.icon() = when (this) {
     CircleSurfaceClass.ROUND -> RingIcons.Watch

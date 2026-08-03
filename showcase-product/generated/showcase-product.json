@@ -1,0 +1,1394 @@
+{
+  "artifacts": [
+    {
+      "id": "phone-full-ui",
+      "rendererRefs": [
+        "android-phone-compose"
+      ],
+      "requiredCapabilities": [
+        "ui.menu",
+        "ui.navigation",
+        "ui.component-tree"
+      ]
+    },
+    {
+      "id": "wear-full-ui",
+      "rendererRefs": [
+        "android-wear-compose"
+      ],
+      "requiredCapabilities": [
+        "ui.menu",
+        "ui.navigation",
+        "ui.component-tree"
+      ]
+    }
+  ],
+  "componentCatalog": [
+    {
+      "id": "foundation.colors"
+    },
+    {
+      "id": "foundation.geometry"
+    },
+    {
+      "id": "atom.icon-action"
+    },
+    {
+      "id": "control.action-row"
+    },
+    {
+      "id": "control.choice-row"
+    },
+    {
+      "id": "control.adjustment"
+    },
+    {
+      "id": "control.progress"
+    },
+    {
+      "id": "control.press-ring"
+    },
+    {
+      "id": "input.text"
+    },
+    {
+      "id": "media.capture"
+    },
+    {
+      "id": "media.playback"
+    },
+    {
+      "id": "template.screens"
+    },
+    {
+      "id": "flow.source"
+    },
+    {
+      "id": "flow.update"
+    },
+    {
+      "id": "flow.service"
+    }
+  ],
+  "componentFamilies": [
+    {
+      "family": {
+        "id": "showcase.foundations",
+        "trees": [
+          {
+            "mounts": [
+              {
+                "capacity": null,
+                "component": "foundation.colors",
+                "id": "foundation.colors",
+                "order": 0,
+                "priority": 0,
+                "region": "face",
+                "requirement": {
+                  "kind": "required"
+                }
+              },
+              {
+                "capacity": null,
+                "component": "foundation.geometry",
+                "id": "foundation.geometry",
+                "order": 1,
+                "priority": 0,
+                "region": "face",
+                "requirement": {
+                  "kind": "required"
+                }
+              }
+            ],
+            "surface": "round"
+          },
+          {
+            "mounts": [
+              {
+                "capacity": null,
+                "component": "foundation.colors",
+                "id": "foundation.colors",
+                "order": 0,
+                "priority": 0,
+                "region": "content",
+                "requirement": {
+                  "kind": "required"
+                }
+              },
+              {
+                "capacity": null,
+                "component": "foundation.geometry",
+                "id": "foundation.geometry",
+                "order": 1,
+                "priority": 0,
+                "region": "content",
+                "requirement": {
+                  "kind": "required"
+                }
+              }
+            ],
+            "surface": "compact"
+          },
+          {
+            "mounts": [
+              {
+                "capacity": null,
+                "component": "foundation.colors",
+                "id": "foundation.colors",
+                "order": 0,
+                "priority": 0,
+                "region": "content",
+                "requirement": {
+                  "kind": "required"
+                }
+              },
+              {
+                "capacity": null,
+                "component": "foundation.geometry",
+                "id": "foundation.geometry",
+                "order": 1,
+                "priority": 0,
+                "region": "content",
+                "requirement": {
+                  "kind": "required"
+                }
+              }
+            ],
+            "surface": "wide"
+          }
+        ]
+      },
+      "screen": "section.foundations"
+    },
+    {
+      "family": {
+        "id": "showcase.atoms",
+        "trees": [
+          {
+            "mounts": [
+              {
+                "capacity": null,
+                "component": "atom.icon-action",
+                "id": "atom.icon-action",
+                "order": 0,
+                "priority": 0,
+                "region": "face",
+                "requirement": {
+                  "kind": "required"
+                }
+              }
+            ],
+            "surface": "round"
+          },
+          {
+            "mounts": [
+              {
+                "capacity": null,
+                "component": "atom.icon-action",
+                "id": "atom.icon-action",
+                "order": 0,
+                "priority": 0,
+                "region": "content",
+                "requirement": {
+                  "kind": "required"
+                }
+              }
+            ],
+            "surface": "compact"
+          },
+          {
+            "mounts": [
+              {
+                "capacity": null,
+                "component": "atom.icon-action",
+                "id": "atom.icon-action",
+                "order": 0,
+                "priority": 0,
+                "region": "content",
+                "requirement": {
+                  "kind": "required"
+                }
+              }
+            ],
+            "surface": "wide"
+          }
+        ]
+      },
+      "screen": "section.atoms"
+    },
+    {
+      "family": {
+        "id": "showcase.controls",
+        "trees": [
+          {
+            "mounts": [
+              {
+                "capacity": null,
+                "component": "control.action-row",
+                "id": "control.action-row",
+                "order": 0,
+                "priority": 0,
+                "region": "face",
+                "requirement": {
+                  "kind": "required"
+                }
+              },
+              {
+                "capacity": null,
+                "component": "control.choice-row",
+                "id": "control.choice-row",
+                "order": 1,
+                "priority": 0,
+                "region": "face",
+                "requirement": {
+                  "kind": "required"
+                }
+              },
+              {
+                "capacity": null,
+                "component": "control.adjustment",
+                "id": "control.adjustment",
+                "order": 2,
+                "priority": 0,
+                "region": "face",
+                "requirement": {
+                  "kind": "required"
+                }
+              },
+              {
+                "capacity": null,
+                "component": "control.progress",
+                "id": "control.progress",
+                "order": 3,
+                "priority": 0,
+                "region": "face",
+                "requirement": {
+                  "kind": "required"
+                }
+              },
+              {
+                "capacity": null,
+                "component": "control.press-ring",
+                "id": "control.press-ring",
+                "order": 4,
+                "priority": 0,
+                "region": "face",
+                "requirement": {
+                  "kind": "required"
+                }
+              }
+            ],
+            "surface": "round"
+          },
+          {
+            "mounts": [
+              {
+                "capacity": null,
+                "component": "control.action-row",
+                "id": "control.action-row",
+                "order": 0,
+                "priority": 0,
+                "region": "content",
+                "requirement": {
+                  "kind": "required"
+                }
+              },
+              {
+                "capacity": null,
+                "component": "control.choice-row",
+                "id": "control.choice-row",
+                "order": 1,
+                "priority": 0,
+                "region": "content",
+                "requirement": {
+                  "kind": "required"
+                }
+              },
+              {
+                "capacity": null,
+                "component": "control.adjustment",
+                "id": "control.adjustment",
+                "order": 2,
+                "priority": 0,
+                "region": "content",
+                "requirement": {
+                  "kind": "required"
+                }
+              },
+              {
+                "capacity": null,
+                "component": "control.progress",
+                "id": "control.progress",
+                "order": 3,
+                "priority": 0,
+                "region": "content",
+                "requirement": {
+                  "kind": "required"
+                }
+              },
+              {
+                "capacity": null,
+                "component": "control.press-ring",
+                "id": "control.press-ring",
+                "order": 4,
+                "priority": 0,
+                "region": "content",
+                "requirement": {
+                  "kind": "required"
+                }
+              }
+            ],
+            "surface": "compact"
+          },
+          {
+            "mounts": [
+              {
+                "capacity": null,
+                "component": "control.action-row",
+                "id": "control.action-row",
+                "order": 0,
+                "priority": 0,
+                "region": "content",
+                "requirement": {
+                  "kind": "required"
+                }
+              },
+              {
+                "capacity": null,
+                "component": "control.choice-row",
+                "id": "control.choice-row",
+                "order": 1,
+                "priority": 0,
+                "region": "content",
+                "requirement": {
+                  "kind": "required"
+                }
+              },
+              {
+                "capacity": null,
+                "component": "control.adjustment",
+                "id": "control.adjustment",
+                "order": 2,
+                "priority": 0,
+                "region": "content",
+                "requirement": {
+                  "kind": "required"
+                }
+              },
+              {
+                "capacity": null,
+                "component": "control.progress",
+                "id": "control.progress",
+                "order": 3,
+                "priority": 0,
+                "region": "content",
+                "requirement": {
+                  "kind": "required"
+                }
+              },
+              {
+                "capacity": null,
+                "component": "control.press-ring",
+                "id": "control.press-ring",
+                "order": 4,
+                "priority": 0,
+                "region": "content",
+                "requirement": {
+                  "kind": "required"
+                }
+              }
+            ],
+            "surface": "wide"
+          }
+        ]
+      },
+      "screen": "section.controls"
+    },
+    {
+      "family": {
+        "id": "showcase.input",
+        "trees": [
+          {
+            "mounts": [
+              {
+                "capacity": null,
+                "component": "input.text",
+                "id": "input.text",
+                "order": 0,
+                "priority": 0,
+                "region": "face",
+                "requirement": {
+                  "kind": "required"
+                }
+              }
+            ],
+            "surface": "round"
+          },
+          {
+            "mounts": [
+              {
+                "capacity": null,
+                "component": "input.text",
+                "id": "input.text",
+                "order": 0,
+                "priority": 0,
+                "region": "content",
+                "requirement": {
+                  "kind": "required"
+                }
+              }
+            ],
+            "surface": "compact"
+          },
+          {
+            "mounts": [
+              {
+                "capacity": null,
+                "component": "input.text",
+                "id": "input.text",
+                "order": 0,
+                "priority": 0,
+                "region": "content",
+                "requirement": {
+                  "kind": "required"
+                }
+              }
+            ],
+            "surface": "wide"
+          }
+        ]
+      },
+      "screen": "section.input"
+    },
+    {
+      "family": {
+        "id": "showcase.media",
+        "trees": [
+          {
+            "mounts": [
+              {
+                "capacity": null,
+                "component": "media.capture",
+                "id": "media.capture",
+                "order": 0,
+                "priority": 0,
+                "region": "face",
+                "requirement": {
+                  "kind": "required"
+                }
+              },
+              {
+                "capacity": null,
+                "component": "media.playback",
+                "id": "media.playback",
+                "order": 1,
+                "priority": 0,
+                "region": "face",
+                "requirement": {
+                  "kind": "required"
+                }
+              }
+            ],
+            "surface": "round"
+          },
+          {
+            "mounts": [
+              {
+                "capacity": null,
+                "component": "media.capture",
+                "id": "media.capture",
+                "order": 0,
+                "priority": 0,
+                "region": "content",
+                "requirement": {
+                  "kind": "required"
+                }
+              },
+              {
+                "capacity": null,
+                "component": "media.playback",
+                "id": "media.playback",
+                "order": 1,
+                "priority": 0,
+                "region": "content",
+                "requirement": {
+                  "kind": "required"
+                }
+              }
+            ],
+            "surface": "compact"
+          },
+          {
+            "mounts": [
+              {
+                "capacity": null,
+                "component": "media.capture",
+                "id": "media.capture",
+                "order": 0,
+                "priority": 0,
+                "region": "content",
+                "requirement": {
+                  "kind": "required"
+                }
+              },
+              {
+                "capacity": null,
+                "component": "media.playback",
+                "id": "media.playback",
+                "order": 1,
+                "priority": 0,
+                "region": "content",
+                "requirement": {
+                  "kind": "required"
+                }
+              }
+            ],
+            "surface": "wide"
+          }
+        ]
+      },
+      "screen": "section.media"
+    },
+    {
+      "family": {
+        "id": "showcase.templates",
+        "trees": [
+          {
+            "mounts": [
+              {
+                "capacity": null,
+                "component": "template.screens",
+                "id": "template.screens",
+                "order": 0,
+                "priority": 0,
+                "region": "face",
+                "requirement": {
+                  "kind": "required"
+                }
+              }
+            ],
+            "surface": "round"
+          },
+          {
+            "mounts": [
+              {
+                "capacity": null,
+                "component": "template.screens",
+                "id": "template.screens",
+                "order": 0,
+                "priority": 0,
+                "region": "content",
+                "requirement": {
+                  "kind": "required"
+                }
+              }
+            ],
+            "surface": "compact"
+          },
+          {
+            "mounts": [
+              {
+                "capacity": null,
+                "component": "template.screens",
+                "id": "template.screens",
+                "order": 0,
+                "priority": 0,
+                "region": "content",
+                "requirement": {
+                  "kind": "required"
+                }
+              }
+            ],
+            "surface": "wide"
+          }
+        ]
+      },
+      "screen": "section.templates"
+    },
+    {
+      "family": {
+        "id": "showcase.flows",
+        "trees": [
+          {
+            "mounts": [
+              {
+                "capacity": null,
+                "component": "flow.source",
+                "id": "flow.source",
+                "order": 0,
+                "priority": 0,
+                "region": "face",
+                "requirement": {
+                  "kind": "required"
+                }
+              },
+              {
+                "capacity": null,
+                "component": "flow.update",
+                "id": "flow.update",
+                "order": 1,
+                "priority": 0,
+                "region": "face",
+                "requirement": {
+                  "kind": "required"
+                }
+              },
+              {
+                "capacity": null,
+                "component": "flow.service",
+                "id": "flow.service",
+                "order": 2,
+                "priority": 0,
+                "region": "face",
+                "requirement": {
+                  "kind": "required"
+                }
+              }
+            ],
+            "surface": "round"
+          },
+          {
+            "mounts": [
+              {
+                "capacity": null,
+                "component": "flow.source",
+                "id": "flow.source",
+                "order": 0,
+                "priority": 0,
+                "region": "content",
+                "requirement": {
+                  "kind": "required"
+                }
+              },
+              {
+                "capacity": null,
+                "component": "flow.update",
+                "id": "flow.update",
+                "order": 1,
+                "priority": 0,
+                "region": "content",
+                "requirement": {
+                  "kind": "required"
+                }
+              },
+              {
+                "capacity": null,
+                "component": "flow.service",
+                "id": "flow.service",
+                "order": 2,
+                "priority": 0,
+                "region": "content",
+                "requirement": {
+                  "kind": "required"
+                }
+              }
+            ],
+            "surface": "compact"
+          },
+          {
+            "mounts": [
+              {
+                "capacity": null,
+                "component": "flow.source",
+                "id": "flow.source",
+                "order": 0,
+                "priority": 0,
+                "region": "content",
+                "requirement": {
+                  "kind": "required"
+                }
+              },
+              {
+                "capacity": null,
+                "component": "flow.update",
+                "id": "flow.update",
+                "order": 1,
+                "priority": 0,
+                "region": "content",
+                "requirement": {
+                  "kind": "required"
+                }
+              },
+              {
+                "capacity": null,
+                "component": "flow.service",
+                "id": "flow.service",
+                "order": 2,
+                "priority": 0,
+                "region": "content",
+                "requirement": {
+                  "kind": "required"
+                }
+              }
+            ],
+            "surface": "wide"
+          }
+        ]
+      },
+      "screen": "section.flows"
+    }
+  ],
+  "id": "circlekit-showcase",
+  "kind": "product-spec-ir",
+  "legos": {
+    "configs": [],
+    "contracts": [
+      {
+        "fields": [
+          {
+            "clockDomain": "none",
+            "name": "revision",
+            "nullable": false,
+            "value": "integer"
+          }
+        ],
+        "id": "showcase.catalog-state",
+        "kind": "snapshot"
+      },
+      {
+        "fields": [
+          {
+            "clockDomain": "none",
+            "name": "route",
+            "nullable": false,
+            "value": "string"
+          }
+        ],
+        "id": "showcase.navigation-action",
+        "kind": "event"
+      },
+      {
+        "fields": [
+          {
+            "clockDomain": "none",
+            "name": "route",
+            "nullable": false,
+            "value": "string"
+          }
+        ],
+        "id": "showcase.navigation-state",
+        "kind": "state"
+      }
+    ],
+    "id": "circlekit-showcase.graph",
+    "mounts": [
+      {
+        "config": {},
+        "id": "catalog",
+        "lego": {
+          "id": "showcase.catalog-source",
+          "inputs": [],
+          "outputs": [
+            {
+              "contract": {
+                "fields": [
+                  {
+                    "clockDomain": "none",
+                    "name": "revision",
+                    "nullable": false,
+                    "value": "integer"
+                  }
+                ],
+                "id": "showcase.catalog-state",
+                "kind": "snapshot"
+              },
+              "id": "catalog"
+            }
+          ],
+          "role": "source",
+          "runtime": {
+            "clockDomain": "none",
+            "contextInputs": [],
+            "durability": "transient",
+            "effects": [],
+            "lifetime": "process",
+            "stateOwner": "none"
+          }
+        }
+      },
+      {
+        "config": {},
+        "id": "navigation",
+        "lego": {
+          "id": "showcase.navigation-controller",
+          "inputs": [
+            {
+              "contract": {
+                "fields": [
+                  {
+                    "clockDomain": "none",
+                    "name": "route",
+                    "nullable": false,
+                    "value": "string"
+                  }
+                ],
+                "id": "showcase.navigation-action",
+                "kind": "event"
+              },
+              "id": "open"
+            }
+          ],
+          "outputs": [
+            {
+              "contract": {
+                "fields": [
+                  {
+                    "clockDomain": "none",
+                    "name": "route",
+                    "nullable": false,
+                    "value": "string"
+                  }
+                ],
+                "id": "showcase.navigation-state",
+                "kind": "state"
+              },
+              "id": "destination"
+            }
+          ],
+          "role": "adapter",
+          "runtime": {
+            "clockDomain": "none",
+            "contextInputs": [],
+            "durability": "transient",
+            "effects": [],
+            "lifetime": "instance",
+            "stateOwner": "instance"
+          }
+        }
+      }
+    ],
+    "wiring": []
+  },
+  "productSpecVersion": "0.3.24",
+  "rendererBindings": [
+    {
+      "capabilities": [
+        "ui.menu",
+        "ui.navigation",
+        "ui.component-tree"
+      ],
+      "id": "android-phone-compose"
+    },
+    {
+      "capabilities": [
+        "ui.menu",
+        "ui.navigation",
+        "ui.component-tree"
+      ],
+      "id": "android-wear-compose"
+    }
+  ],
+  "schemaVersion": 1,
+  "showcase": {
+    "cases": [
+      {
+        "iconId": "palette",
+        "id": "foundation.colors",
+        "scenarios": [
+          {
+            "id": "sea-glass",
+            "label": "SEA GLASS"
+          },
+          {
+            "id": "flat-cyan",
+            "label": "FLAT CYAN"
+          },
+          {
+            "id": "muted",
+            "label": "MUTED"
+          },
+          {
+            "id": "high-contrast",
+            "label": "HIGH CONTRAST"
+          }
+        ],
+        "section": "foundations",
+        "title": "COLORS"
+      },
+      {
+        "iconId": "grid",
+        "id": "foundation.geometry",
+        "scenarios": [
+          {
+            "id": "round-192",
+            "label": "ROUND 192"
+          },
+          {
+            "id": "phone-compact",
+            "label": "PHONE COMPACT"
+          },
+          {
+            "id": "phone-wide",
+            "label": "PHONE WIDE"
+          },
+          {
+            "id": "chrome-x",
+            "label": "X @ 9"
+          },
+          {
+            "id": "chrome-x-gear",
+            "label": "X + GEAR"
+          }
+        ],
+        "section": "foundations",
+        "title": "GEOMETRY"
+      },
+      {
+        "iconId": "watch",
+        "id": "atom.icon-action",
+        "scenarios": [
+          {
+            "id": "idle",
+            "label": "IDLE"
+          },
+          {
+            "id": "active",
+            "label": "ACTIVE"
+          },
+          {
+            "id": "immediate",
+            "label": "IMMEDIATE"
+          },
+          {
+            "id": "deliberate",
+            "label": "DELIBERATE"
+          },
+          {
+            "id": "disabled",
+            "label": "DISABLED"
+          }
+        ],
+        "section": "atoms",
+        "title": "ACTIONS"
+      },
+      {
+        "iconId": "touchdown-run",
+        "id": "control.action-row",
+        "scenarios": [
+          {
+            "id": "immediate",
+            "label": "IMMEDIATE"
+          },
+          {
+            "id": "deliberate",
+            "label": "DELIBERATE"
+          },
+          {
+            "id": "confirm",
+            "label": "CONFIRM"
+          },
+          {
+            "id": "recoverable",
+            "label": "RECOVERABLE"
+          },
+          {
+            "id": "blocked",
+            "label": "BLOCKED"
+          },
+          {
+            "id": "failure",
+            "label": "FAILURE + RETRY"
+          }
+        ],
+        "section": "controls",
+        "title": "ACTION ROW"
+      },
+      {
+        "iconId": "grid",
+        "id": "control.choice-row",
+        "scenarios": [
+          {
+            "id": "off",
+            "label": "TOGGLE OFF"
+          },
+          {
+            "id": "on",
+            "label": "TOGGLE ON"
+          },
+          {
+            "id": "two",
+            "label": "TWO OPTIONS"
+          },
+          {
+            "id": "first",
+            "label": "SEVEN · FIRST"
+          },
+          {
+            "id": "middle",
+            "label": "SEVEN · MIDDLE"
+          },
+          {
+            "id": "last",
+            "label": "SEVEN · LAST"
+          }
+        ],
+        "section": "controls",
+        "title": "CHOICES"
+      },
+      {
+        "iconId": "sliders",
+        "id": "control.adjustment",
+        "scenarios": [
+          {
+            "id": "minimum",
+            "label": "MINIMUM"
+          },
+          {
+            "id": "middle",
+            "label": "MIDDLE"
+          },
+          {
+            "id": "maximum",
+            "label": "MAXIMUM"
+          },
+          {
+            "id": "deliberate",
+            "label": "DELIBERATE STEPS"
+          }
+        ],
+        "section": "controls",
+        "title": "ADJUST"
+      },
+      {
+        "iconId": "download",
+        "id": "control.progress",
+        "scenarios": [
+          {
+            "id": "none",
+            "label": "NONE"
+          },
+          {
+            "id": "indeterminate",
+            "label": "INDETERMINATE"
+          },
+          {
+            "id": "empty",
+            "label": "0 PERCENT"
+          },
+          {
+            "id": "half",
+            "label": "50 PERCENT"
+          },
+          {
+            "id": "complete",
+            "label": "100 PERCENT"
+          },
+          {
+            "id": "failed",
+            "label": "FAILURE + RETRY"
+          }
+        ],
+        "section": "controls",
+        "title": "PROGRESS"
+      },
+      {
+        "iconId": "record",
+        "id": "control.press-ring",
+        "scenarios": [
+          {
+            "id": "idle",
+            "label": "IDLE"
+          },
+          {
+            "id": "recording",
+            "label": "RECORDING"
+          },
+          {
+            "id": "disabled",
+            "label": "DISABLED"
+          },
+          {
+            "id": "failed",
+            "label": "FAILED + RETRY"
+          }
+        ],
+        "section": "controls",
+        "title": "PRESS"
+      },
+      {
+        "iconId": "pencil",
+        "id": "input.text",
+        "scenarios": [
+          {
+            "id": "empty",
+            "label": "EMPTY"
+          },
+          {
+            "id": "filled",
+            "label": "FILLED"
+          },
+          {
+            "id": "max",
+            "label": "MAX LENGTH"
+          },
+          {
+            "id": "disabled",
+            "label": "DISABLED"
+          }
+        ],
+        "section": "input",
+        "title": "TEXT"
+      },
+      {
+        "iconId": "record",
+        "id": "media.capture",
+        "scenarios": [
+          {
+            "id": "silent",
+            "label": "NO SAMPLES"
+          },
+          {
+            "id": "active",
+            "label": "ACTIVE"
+          },
+          {
+            "id": "long",
+            "label": "LONG DURATION"
+          }
+        ],
+        "section": "media",
+        "title": "WAVEFORM"
+      },
+      {
+        "iconId": "play",
+        "id": "media.playback",
+        "scenarios": [
+          {
+            "id": "ready",
+            "label": "READY"
+          },
+          {
+            "id": "playing",
+            "label": "PLAYING"
+          },
+          {
+            "id": "paused",
+            "label": "PAUSED"
+          },
+          {
+            "id": "complete",
+            "label": "COMPLETE"
+          },
+          {
+            "id": "failed",
+            "label": "FAILED"
+          }
+        ],
+        "section": "media",
+        "title": "PLAYBACK"
+      },
+      {
+        "iconId": "layers",
+        "id": "template.screens",
+        "scenarios": [
+          {
+            "id": "hub",
+            "label": "HUB"
+          },
+          {
+            "id": "detail",
+            "label": "DETAIL"
+          },
+          {
+            "id": "launcher",
+            "label": "LAUNCHER"
+          },
+          {
+            "id": "rows",
+            "label": "ROWS"
+          },
+          {
+            "id": "adjustment",
+            "label": "ADJUSTMENT"
+          },
+          {
+            "id": "color-picker",
+            "label": "COLOR PICKER"
+          },
+          {
+            "id": "dial-preview",
+            "label": "DIAL PREVIEW"
+          },
+          {
+            "id": "empty",
+            "label": "EMPTY CONTENT"
+          },
+          {
+            "id": "max-capacity",
+            "label": "MAX CAPACITY"
+          },
+          {
+            "id": "long-content",
+            "label": "LONG CONTENT"
+          }
+        ],
+        "section": "templates",
+        "title": "SCREENS"
+      },
+      {
+        "iconId": "wifi",
+        "id": "flow.source",
+        "scenarios": [
+          {
+            "id": "off",
+            "label": "OFF"
+          },
+          {
+            "id": "loading",
+            "label": "LOADING"
+          },
+          {
+            "id": "fresh",
+            "label": "FRESH"
+          },
+          {
+            "id": "aging",
+            "label": "AGING"
+          },
+          {
+            "id": "partial",
+            "label": "PARTIAL"
+          },
+          {
+            "id": "broken",
+            "label": "BROKEN"
+          }
+        ],
+        "section": "flows",
+        "title": "SOURCE"
+      },
+      {
+        "iconId": "download",
+        "id": "flow.update",
+        "scenarios": [
+          {
+            "id": "checking",
+            "label": "CHECKING"
+          },
+          {
+            "id": "available",
+            "label": "AVAILABLE"
+          },
+          {
+            "id": "downloading",
+            "label": "DOWNLOADING"
+          },
+          {
+            "id": "ready",
+            "label": "READY"
+          },
+          {
+            "id": "failed",
+            "label": "FAILED"
+          }
+        ],
+        "section": "flows",
+        "title": "UPDATE"
+      },
+      {
+        "iconId": "wrench",
+        "id": "flow.service",
+        "scenarios": [
+          {
+            "id": "idle",
+            "label": "IDLE"
+          },
+          {
+            "id": "active",
+            "label": "ACTIVE"
+          },
+          {
+            "id": "success",
+            "label": "SUCCESS"
+          },
+          {
+            "id": "failed",
+            "label": "FAILED"
+          },
+          {
+            "id": "cache",
+            "label": "CACHE"
+          }
+        ],
+        "section": "flows",
+        "title": "SERVICE"
+      }
+    ],
+    "sections": [
+      {
+        "iconId": "palette",
+        "id": "foundations",
+        "menuLabel": "TOKENS",
+        "title": "FOUNDATIONS"
+      },
+      {
+        "iconId": "grid",
+        "id": "atoms",
+        "menuLabel": "ATOMS",
+        "title": "ATOMS"
+      },
+      {
+        "iconId": "touchdown-run",
+        "id": "controls",
+        "menuLabel": "CONTROLS",
+        "title": "CONTROLS"
+      },
+      {
+        "iconId": "pencil",
+        "id": "input",
+        "menuLabel": "INPUT",
+        "title": "INPUT"
+      },
+      {
+        "iconId": "play",
+        "id": "media",
+        "menuLabel": "MEDIA",
+        "title": "MEDIA"
+      },
+      {
+        "iconId": "layers",
+        "id": "templates",
+        "menuLabel": "TEMPLATES",
+        "title": "TEMPLATES"
+      },
+      {
+        "iconId": "wifi",
+        "id": "flows",
+        "menuLabel": "FLOWS",
+        "title": "FLOWS"
+      }
+    ]
+  },
+  "ui": [
+    {
+      "artifacts": [
+        "phone-full-ui",
+        "wear-full-ui"
+      ],
+      "id": "showcase.menu",
+      "kind": "menu-entry",
+      "ports": {
+        "action": "navigation.open",
+        "state": "catalog.catalog"
+      },
+      "requiredCapabilities": [
+        "ui.menu",
+        "ui.navigation"
+      ]
+    },
+    {
+      "artifacts": [
+        "phone-full-ui",
+        "wear-full-ui"
+      ],
+      "id": "showcase.component",
+      "kind": "component-entry",
+      "ports": {
+        "state": "navigation.destination"
+      },
+      "requiredCapabilities": [
+        "ui.component-tree"
+      ]
+    }
+  ]
+}
