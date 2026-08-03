@@ -11,6 +11,7 @@ import {
 import { CIRCLEKIT_ASSET_CATALOG, CIRCLEKIT_STYLE } from "@v1d/circlekit-assets";
 import { showcaseKotlinEmitter } from "./emit-kotlin.js";
 import { showcaseSwiftEmitter } from "./emit-swift.js";
+import { showcaseGarminEmitter } from "./emit-monkeyc.js";
 import { decodeShowcaseNativeRegistry } from "./native-registry.js";
 import { compileCircleKitShowcaseProduct } from "./product.js";
 
@@ -21,6 +22,7 @@ const productSpecPackagePath = resolve(packageRoot, "node_modules/@v1d/product-s
 const jsonPath = "showcase-product/generated/showcase-product.json";
 const kotlinPath = "showcase-catalog/src/main/java/io/v1d/circlekit/showcase/catalog/generated/GeneratedShowcaseProduct.kt";
 const swiftPath = "showcase-iphone/Sources/Generated/GeneratedShowcaseProduct.swift";
+const garminPath = "showcase-garmin/source/GeneratedCircleKitShowcase.mc";
 const check = process.argv.includes("--check");
 
 const registry = decodeShowcaseNativeRegistry(JSON.parse(await readFile(registryPath, "utf8")));
@@ -36,8 +38,9 @@ const manifest = buildOutputManifest(
       { id: "apple-iphone-swiftui", surfaces: ["compact", "wide"] },
       { id: "apple-watchos-swiftui", surfaces: ["round"] },
     ], CIRCLEKIT_ASSET_CATALOG, CIRCLEKIT_STYLE),
+    showcaseGarminEmitter(garminPath),
   ],
-  [jsonPath, kotlinPath, swiftPath],
+  [jsonPath, kotlinPath, swiftPath, garminPath],
 );
 
 if (check) {
