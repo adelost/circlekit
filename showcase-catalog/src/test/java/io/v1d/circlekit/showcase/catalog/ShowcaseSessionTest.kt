@@ -10,7 +10,7 @@ import com.adelost.designkit.ui.CircleHostPreviewState
 class ShowcaseSessionTest {
     @Test
     fun `host presentation changes cannot mutate product destination or state`() {
-        val session = ShowcaseSession()
+        val session = ShowcaseSession(ShowcaseArtifactProfile.PHONE_FULL_UI)
         session.open(ShowcaseCaseId("control.choice-row"), ShowcaseScenarioId("middle"))
         val destination = session.destination.value
         val choice = session.interaction.choiceIndex.value
@@ -23,7 +23,7 @@ class ShowcaseSessionTest {
 
     @Test
     fun `probe opens named scenario and invokes only safe action ids`() {
-        val session = ShowcaseSession()
+        val session = ShowcaseSession(ShowcaseArtifactProfile.PHONE_FULL_UI)
 
         assertTrue(
             session.handle(
@@ -54,7 +54,7 @@ class ShowcaseSessionTest {
 
     @Test
     fun `named interaction actions mutate only deterministic showcase state`() {
-        val session = ShowcaseSession()
+        val session = ShowcaseSession(ShowcaseArtifactProfile.PHONE_FULL_UI)
 
         assertTrue(session.open(ShowcaseCaseId("control.choice-row"), ShowcaseScenarioId("middle")))
         assertEquals(3, session.interaction.choiceIndex.value)
@@ -74,7 +74,7 @@ class ShowcaseSessionTest {
 
     @Test
     fun `recoverable availability has an action while blocked stays blocked`() {
-        val session = ShowcaseSession()
+        val session = ShowcaseSession(ShowcaseArtifactProfile.PHONE_FULL_UI)
 
         session.open(ShowcaseCaseId("control.action-row"), ShowcaseScenarioId("recoverable"))
         assertEquals(ShowcaseAvailability.RECOVERABLE, session.interaction.availability.value)
@@ -87,7 +87,7 @@ class ShowcaseSessionTest {
 
     @Test
     fun `invalid destination is refused without changing state`() {
-        val session = ShowcaseSession()
+        val session = ShowcaseSession(ShowcaseArtifactProfile.PHONE_FULL_UI)
 
         assertFalse(
             session.handle(
@@ -103,7 +103,7 @@ class ShowcaseSessionTest {
 
     @Test
     fun `back is delegated to current navigation owner`() {
-        val session = ShowcaseSession()
+        val session = ShowcaseSession(ShowcaseArtifactProfile.PHONE_FULL_UI)
         var calls = 0
         session.attachNavigationBack {
             calls += 1

@@ -70,7 +70,7 @@ class ShowcaseFlowScreensTest {
 
     @Test
     fun `empty max and long content stay in normal RingScreen data`() = runBlocking {
-        val session = ShowcaseSession()
+        val session = ShowcaseSession(ShowcaseArtifactProfile.PHONE_FULL_UI)
         val caseId = ShowcaseCaseId("template.screens")
 
         fun screen(id: String): RingScreen = ShowcaseTemplateFixtures.screen(

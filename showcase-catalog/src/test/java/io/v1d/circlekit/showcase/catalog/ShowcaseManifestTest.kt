@@ -6,18 +6,14 @@ import org.junit.Test
 
 class ShowcaseManifestTest {
     @Test
-    fun `manifest and registry coverage are reciprocal`() {
+    fun `generated manifest and independent native bindings are reciprocal`() {
         assertEquals(
             ShowcaseFamily.entries.toSet(),
             ShowcaseManifest.cases.map(ShowcaseCase::family).toSet(),
         )
         assertEquals(
-            ShowcaseComponentFamily.entries.toSet(),
-            ShowcaseManifest.cases.map(ShowcaseCase::componentFamily).toSet(),
-        )
-        assertEquals(
-            ShowcaseManifest.cases.size,
-            ShowcaseManifest.cases.map(ShowcaseCase::componentFamily).distinct().size,
+            ShowcaseManifest.cases.map { it.id.value }.toSet(),
+            ShowcaseNativeBindings.components.map { it.componentId }.toSet(),
         )
         assertEquals(
             ShowcaseManifest.cases.size,
@@ -32,11 +28,24 @@ class ShowcaseManifestTest {
             assertTrue(case.id.value.matches(Regex("[a-z0-9.-]+")))
             assertTrue(case.scenarios.all { it.id.value.matches(Regex("[a-z0-9.-]+")) })
         }
+        assertEquals(
+            setOf(SHOWCASE_PHONE_PROFILE, SHOWCASE_WEAR_PROFILE),
+            ShowcaseManifest.profiles,
+        )
+        assertTrue(
+            ShowcaseNativeBindings.components.all { it.profiles == ShowcaseManifest.profiles },
+        )
+        assertEquals(
+            ShowcaseFamily.entries.flatMap { family ->
+                listOf("round", "compact", "wide").map { surface -> "section.${family.id}/$surface" }
+            }.toSet(),
+            ShowcaseManifest.componentTrees.map { "${it.screenId}/${it.surface}" }.toSet(),
+        )
     }
 
     @Test
     fun `every declared scenario resolves through the production presentation seam`() {
-        val session = ShowcaseSession()
+        val session = ShowcaseSession(ShowcaseArtifactProfile.PHONE_FULL_UI)
 
         ShowcaseManifest.cases.forEach { case ->
             case.scenarios.forEach { scenario ->
@@ -53,7 +62,7 @@ class ShowcaseManifestTest {
 
     @Test
     fun `all seven RingScreen cases are represented and exhaustively classified`() {
-        val session = ShowcaseSession()
+        val session = ShowcaseSession(ShowcaseArtifactProfile.PHONE_FULL_UI)
         val declared = requireNotNull(ShowcaseManifest.find(ShowcaseCaseId("template.screens")))
             .scenarios
             .map { it.id.value }
@@ -70,7 +79,9 @@ class ShowcaseManifestTest {
 
     @Test
     fun `root groups every declared family through the normal launcher grammar`() {
-        val root = ShowcaseScreens.root(ShowcaseSession()) as com.adelost.ringkit.ui.RingScreen.Launcher
+        val root = ShowcaseScreens.root(
+            ShowcaseSession(ShowcaseArtifactProfile.PHONE_FULL_UI),
+        ) as com.adelost.ringkit.ui.RingScreen.Launcher
 
         assertEquals(ShowcaseFamily.entries.size, root.entries.size)
         assertEquals("TOKENS", root.entries.first().label)
