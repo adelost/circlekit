@@ -6,6 +6,7 @@ enum class ShowcaseArtifactProfile(val id: String) {
     WEAR_FULL_UI("wear-full-ui"),
     IPHONE_FULL_UI("iphone-full-ui"),
     WATCHOS_FULL_UI("watchos-full-ui"),
+    GARMIN_LIMITED_UI("garmin-limited-ui"),
 }
 
 enum class ShowcaseFamily(
@@ -252,6 +253,9 @@ object ShowcaseManifest {
         ShowcaseComponentTree("section.flows", "round", listOf("flow.source", "flow.update", "flow.service")),
         ShowcaseComponentTree("section.flows", "compact", listOf("flow.source", "flow.update", "flow.service")),
         ShowcaseComponentTree("section.flows", "wide", listOf("flow.source", "flow.update", "flow.service")),
+        ShowcaseComponentTree("artifact.garmin-limited-ui", "round", listOf("control.progress")),
+        ShowcaseComponentTree("artifact.garmin-limited-ui", "compact", listOf("control.progress")),
+        ShowcaseComponentTree("artifact.garmin-limited-ui", "wide", listOf("control.progress")),
     )
 
     fun find(caseId: ShowcaseCaseId): ShowcaseCase? = cases.find { it.id == caseId }

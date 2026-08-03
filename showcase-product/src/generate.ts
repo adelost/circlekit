@@ -38,7 +38,7 @@ const manifest = buildOutputManifest(
       { id: "apple-iphone-swiftui", surfaces: ["compact", "wide"] },
       { id: "apple-watchos-swiftui", surfaces: ["round"] },
     ], CIRCLEKIT_ASSET_CATALOG, CIRCLEKIT_STYLE),
-    showcaseGarminEmitter(garminPath),
+    showcaseGarminEmitter(garminPath, CIRCLEKIT_STYLE),
   ],
   [jsonPath, kotlinPath, swiftPath, garminPath],
 );

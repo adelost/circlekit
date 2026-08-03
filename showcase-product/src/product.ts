@@ -14,10 +14,14 @@ import { showcaseCases, showcaseSections } from "./catalog.js";
 import type { ShowcaseNativeRegistry } from "./native-registry.js";
 
 const SHOWCASE_ANDROID_ARTIFACT_PROFILES = ["phone-full-ui", "wear-full-ui"] as const;
-export const SHOWCASE_ARTIFACT_PROFILES = [
+const SHOWCASE_FULL_UI_ARTIFACT_PROFILES = [
   ...SHOWCASE_ANDROID_ARTIFACT_PROFILES,
   "iphone-full-ui",
   "watchos-full-ui",
+] as const;
+export const SHOWCASE_ARTIFACT_PROFILES = [
+  ...SHOWCASE_FULL_UI_ARTIFACT_PROFILES,
+  "garmin-limited-ui",
 ] as const;
 
 const showcasePalette = { variants: [] } as const;
@@ -71,21 +75,33 @@ export const showcaseComponentCatalog = defineComponentCatalog(
 
 export const showcaseComponentFamilies = defineScreenComponentFamilyRegistry(
   showcaseComponentCatalog,
-  showcaseSections.map((section) => ({
-    screen: `section.${section.id}`,
-    family: {
-      id: `showcase.${section.id}`,
-      trees: PORTABLE_SURFACE_CLASSES.map((surface) => ({
-        surface,
-        mounts: showcaseCases
-          .filter(({ section: candidate }) => candidate === section.id)
-          .map(({ id }) => ({
-            component: id,
-            region: surface === "round" ? "face" : "content",
-          })),
-      })),
+  [
+    ...showcaseSections.map((section) => ({
+      screen: `section.${section.id}`,
+      family: {
+        id: `showcase.${section.id}`,
+        trees: PORTABLE_SURFACE_CLASSES.map((surface) => ({
+          surface,
+          mounts: showcaseCases
+            .filter(({ section: candidate }) => candidate === section.id)
+            .map(({ id }) => ({
+              component: id,
+              region: surface === "round" ? "face" : "content",
+            })),
+        })),
+      },
+    })),
+    {
+      screen: "artifact.garmin-limited-ui",
+      family: {
+        id: "showcase.garmin-limited-ui",
+        trees: PORTABLE_SURFACE_CLASSES.map((surface) => ({
+          surface,
+          mounts: [{ component: "control.progress", region: surface === "round" ? "face" : "content" }],
+        })),
+      },
     },
-  })),
+  ],
 );
 
 const baseProduct = defineProduct({
@@ -106,6 +122,10 @@ const baseProduct = defineProduct({
     {
       id: "apple-watchos-swiftui",
       capabilities: ["ui.menu", "ui.navigation", "ui.component-tree"],
+    },
+    {
+      id: "garmin-connectiq-monkeyc",
+      capabilities: ["ui.component-tree"],
     },
   ],
   artifacts: [
@@ -137,6 +157,13 @@ const baseProduct = defineProduct({
       entryScreen: "section.foundations",
       serves: ["round"],
     },
+    {
+      id: "garmin-limited-ui",
+      rendererRefs: ["garmin-connectiq-monkeyc"],
+      requiredCapabilities: ["ui.component-tree"],
+      entryScreen: "artifact.garmin-limited-ui",
+      serves: ["round"],
+    },
   ],
   legos: {
     id: "circlekit-showcase.graph",
@@ -157,13 +184,15 @@ const baseProduct = defineProduct({
   ])].map((assetRef) => ({
     id: `showcase.${assetRef}`,
     assetRef,
-    artifacts: SHOWCASE_ARTIFACT_PROFILES,
+    artifacts: assetRef === "download"
+      ? SHOWCASE_ARTIFACT_PROFILES
+      : SHOWCASE_FULL_UI_ARTIFACT_PROFILES,
   })),
   ui: [
     {
       id: "showcase.menu",
       kind: "menu-entry",
-      artifacts: SHOWCASE_ARTIFACT_PROFILES,
+      artifacts: SHOWCASE_FULL_UI_ARTIFACT_PROFILES,
       requiredCapabilities: ["ui.menu", "ui.navigation"],
       ports: { state: "catalog.catalog", action: "navigation.open" },
     },

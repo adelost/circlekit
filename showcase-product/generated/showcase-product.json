@@ -61,6 +61,19 @@
       "serves": [
         "round"
       ]
+    },
+    {
+      "entryScreen": "artifact.garmin-limited-ui",
+      "id": "garmin-limited-ui",
+      "rendererRefs": [
+        "garmin-connectiq-monkeyc"
+      ],
+      "requiredCapabilities": [
+        "ui.component-tree"
+      ],
+      "serves": [
+        "round"
+      ]
     }
   ],
   "assetCatalogRef": {
@@ -770,6 +783,62 @@
         ]
       },
       "screen": "section.flows"
+    },
+    {
+      "family": {
+        "id": "showcase.garmin-limited-ui",
+        "trees": [
+          {
+            "mounts": [
+              {
+                "capacity": null,
+                "component": "control.progress",
+                "id": "control.progress",
+                "order": 0,
+                "priority": 0,
+                "region": "face",
+                "requirement": {
+                  "kind": "required"
+                }
+              }
+            ],
+            "surface": "round"
+          },
+          {
+            "mounts": [
+              {
+                "capacity": null,
+                "component": "control.progress",
+                "id": "control.progress",
+                "order": 0,
+                "priority": 0,
+                "region": "content",
+                "requirement": {
+                  "kind": "required"
+                }
+              }
+            ],
+            "surface": "compact"
+          },
+          {
+            "mounts": [
+              {
+                "capacity": null,
+                "component": "control.progress",
+                "id": "control.progress",
+                "order": 0,
+                "priority": 0,
+                "region": "content",
+                "requirement": {
+                  "kind": "required"
+                }
+              }
+            ],
+            "surface": "wide"
+          }
+        ]
+      },
+      "screen": "artifact.garmin-limited-ui"
     }
   ],
   "iconRefs": [
@@ -868,7 +937,8 @@
         "phone-full-ui",
         "wear-full-ui",
         "iphone-full-ui",
-        "watchos-full-ui"
+        "watchos-full-ui",
+        "garmin-limited-ui"
       ],
       "assetRef": "download",
       "id": "showcase.download"
@@ -1061,6 +1131,12 @@
         "ui.component-tree"
       ],
       "id": "apple-watchos-swiftui"
+    },
+    {
+      "capabilities": [
+        "ui.component-tree"
+      ],
+      "id": "garmin-connectiq-monkeyc"
     }
   ],
   "schemaVersion": 2,
@@ -1568,7 +1644,8 @@
         "phone-full-ui",
         "wear-full-ui",
         "iphone-full-ui",
-        "watchos-full-ui"
+        "watchos-full-ui",
+        "garmin-limited-ui"
       ],
       "id": "showcase.component",
       "kind": "component-entry",

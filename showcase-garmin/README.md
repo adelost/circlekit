@@ -1,22 +1,17 @@
-# CircleKit Showcase Garmin checkpoint
+# CircleKit Showcase on Garmin
 
-This is a **non-mergeable SVW-0087 checkpoint**. It proves that the Connect IQ
-compiler, simulator and native limited renderer work, but the current emitter
-still selects `section.controls`, `control.progress`, `half` and `sea-glass`
-locally. It therefore does not yet prove that a declared Showcase artifact
-drives Garmin from the same ProductConfig.
+The `garmin-limited-ui` artifact is part of the same Showcase ProductConfig as
+Android and Apple. Its renderer, entry screen and surface select a one-component
+ROUND tree. The Monkey C emitter reads that tree, its first declared scenario,
+the artifact-scoped icon ref and the optional ProductSpec palette directly from
+the compiled ProductIr. An empty product palette explicitly inherits the shared
+CircleKit style.
 
-The current ProductSpec `ArtifactProfile` declares renderer references and
-capabilities, while `ProductUiEntry` declares artifact and port references.
-Neither owns a screen/component/surface/scenario/palette selection, and a
-component family is not bound to an artifact. Until that product-owned
-selection exists, moving the Showcase config cannot move the Garmin output
-without editing `emit-monkeyc.ts`.
-
-The renderer checkpoint still establishes the intended platform boundary: a
-segmented ring, primitive glyphs and Garmin MIP colours are native concerns.
-The final emitter must only attest renderer capabilities and read every
-selection reference from the compiled artifact.
+The plugin only attests what the native proof can render: ROUND, the progress
+component and the download icon. Moving the artifact to an unsupported tree or
+removing its icon binding fails generation instead of silently selecting local
+fallback data. The segmented ring, primitive glyph and Garmin colour
+quantisation remain native level-2 approximations.
 
 ## Local smoke
 
@@ -33,11 +28,9 @@ monkeydo showcase-garmin/bin/circlekit-showcase.prg fenix7pro
 
 - Monkey C can consume generated constants and render a native approximation;
   it does not execute the TypeScript DSL or load JSON at runtime.
-- Product component/scenario/palette/icon identities survive unchanged, while
-  colour quantisation and glyph geometry remain native renderer concerns.
-- The current product IR carries semantic palette and icon references, not a
-  portable raster/vector payload. This proof therefore validates level-2
-  semantic parity, not pixel parity.
+- Product artifact/screen/surface/component/scenario/palette/icon identities
+  survive unchanged, while colour quantisation and glyph geometry remain native
+  renderer concerns. This validates level-2 semantic parity, not pixel parity.
 - The local mirrored device definition lacks its system font files, so the
   proof uses a tiny native 5x7 renderer. This is a spike constraint, not a new
   ProductSpec feature.
