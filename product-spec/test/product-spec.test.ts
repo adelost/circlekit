@@ -194,7 +194,7 @@ test("graph, capability and port failures stop before emission", () => {
     outputs: [],
     configInputs: [configInput("policy", [
       configField("windowMs", "integer", { unit: "si.millisecond" }),
-      configField("spreadM", "number", { unit: "si.metre" }),
+      configField("spreadM", "number", { unit: "si.meter" }),
     ])],
     runtime: {
       stateOwner: "none", lifetime: "call", durability: "transient",
