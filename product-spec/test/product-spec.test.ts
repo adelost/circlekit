@@ -139,7 +139,7 @@ function fixture(overrides: Record<string, unknown> = {}) {
 
 test("one ProductSpec compiles two artifact profiles and deterministic outputs", async () => {
   const product = fixture();
-  assert.equal(product.schemaVersion, 3);
+  assert.equal(product.schemaVersion, 4);
   assert.equal(product.legos.mounts.length, 2);
   assert.deepEqual(product.legos.contracts, [statusContract, actionContract]);
   assert.deepEqual(product.artifacts.map(({ id }) => id), ["phone", "wear"]);
@@ -193,8 +193,11 @@ test("graph, capability and port failures stop before emission", () => {
     inputs: [],
     outputs: [],
     configInputs: [configInput("policy", [
-      configField("windowMs", "integer", { unit: "si.millisecond" }),
-      configField("spreadM", "number", { unit: "si.meter" }),
+      configField("windowMs", "integer", { unit: "si.millisecond", positive: true }),
+      configField("unverifiedWindowMs", "integer", {
+        unit: "si.millisecond", gteField: "windowMs",
+      }),
+      configField("spreadM", "number", { unit: "si.meter", min: 0 }),
     ])],
     runtime: {
       stateOwner: "none", lifetime: "call", durability: "transient",
@@ -203,16 +206,40 @@ test("graph, capability and port failures stop before emission", () => {
   } as const);
   assert.doesNotThrow(() => defineProductLegoConfig({
     id: "configured",
-    configs: [{ id: "fixture.policy", values: { windowMs: 10_000, spreadM: 2 } }],
+    configs: [{
+      id: "fixture.policy",
+      values: { windowMs: 10_000, unverifiedWindowMs: 20_000, spreadM: 2 },
+    }],
     mounts: [mount("configured.consumer", configured, { policy: "fixture.policy" })],
     wiring: [],
   }));
   assert.throws(() => defineProductLegoConfig({
     id: "configured",
-    configs: [{ id: "fixture.policy", values: { windowMs: "ten", spreadM: 2 } }],
+    configs: [{
+      id: "fixture.policy",
+      values: { windowMs: "ten", unverifiedWindowMs: 20_000, spreadM: 2 },
+    }],
     mounts: [mount("configured.consumer", configured, { policy: "fixture.policy" })],
     wiring: [],
   }), /field 'windowMs' must be integer/);
+  assert.throws(() => defineProductLegoConfig({
+    id: "configured",
+    configs: [{
+      id: "fixture.policy",
+      values: { windowMs: -1, unverifiedWindowMs: 20_000, spreadM: 2 },
+    }],
+    mounts: [mount("configured.consumer", configured, { policy: "fixture.policy" })],
+    wiring: [],
+  }), /field 'windowMs' must be positive/);
+  assert.throws(() => defineProductLegoConfig({
+    id: "configured",
+    configs: [{
+      id: "fixture.policy",
+      values: { windowMs: 10_000, unverifiedWindowMs: 9_999, spreadM: 2 },
+    }],
+    mounts: [mount("configured.consumer", configured, { policy: "fixture.policy" })],
+    wiring: [],
+  }), /field 'unverifiedWindowMs' must be at least field 'windowMs'/);
 
   assert.throws(() => fixture({
     artifacts: [{
