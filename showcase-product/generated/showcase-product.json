@@ -30,6 +30,37 @@
       "serves": [
         "round"
       ]
+    },
+    {
+      "entryScreen": "section.foundations",
+      "id": "iphone-full-ui",
+      "rendererRefs": [
+        "apple-iphone-swiftui"
+      ],
+      "requiredCapabilities": [
+        "ui.menu",
+        "ui.navigation",
+        "ui.component-tree"
+      ],
+      "serves": [
+        "compact",
+        "wide"
+      ]
+    },
+    {
+      "entryScreen": "section.foundations",
+      "id": "watchos-full-ui",
+      "rendererRefs": [
+        "apple-watchos-swiftui"
+      ],
+      "requiredCapabilities": [
+        "ui.menu",
+        "ui.navigation",
+        "ui.component-tree"
+      ],
+      "serves": [
+        "round"
+      ]
     }
   ],
   "assetCatalogRef": {
@@ -745,7 +776,9 @@
     {
       "artifacts": [
         "phone-full-ui",
-        "wear-full-ui"
+        "wear-full-ui",
+        "iphone-full-ui",
+        "watchos-full-ui"
       ],
       "assetRef": "palette",
       "id": "showcase.palette"
@@ -753,7 +786,9 @@
     {
       "artifacts": [
         "phone-full-ui",
-        "wear-full-ui"
+        "wear-full-ui",
+        "iphone-full-ui",
+        "watchos-full-ui"
       ],
       "assetRef": "grid",
       "id": "showcase.grid"
@@ -761,7 +796,9 @@
     {
       "artifacts": [
         "phone-full-ui",
-        "wear-full-ui"
+        "wear-full-ui",
+        "iphone-full-ui",
+        "watchos-full-ui"
       ],
       "assetRef": "touchdown-run",
       "id": "showcase.touchdown-run"
@@ -769,7 +806,9 @@
     {
       "artifacts": [
         "phone-full-ui",
-        "wear-full-ui"
+        "wear-full-ui",
+        "iphone-full-ui",
+        "watchos-full-ui"
       ],
       "assetRef": "pencil",
       "id": "showcase.pencil"
@@ -777,7 +816,9 @@
     {
       "artifacts": [
         "phone-full-ui",
-        "wear-full-ui"
+        "wear-full-ui",
+        "iphone-full-ui",
+        "watchos-full-ui"
       ],
       "assetRef": "play",
       "id": "showcase.play"
@@ -785,7 +826,9 @@
     {
       "artifacts": [
         "phone-full-ui",
-        "wear-full-ui"
+        "wear-full-ui",
+        "iphone-full-ui",
+        "watchos-full-ui"
       ],
       "assetRef": "layers",
       "id": "showcase.layers"
@@ -793,7 +836,9 @@
     {
       "artifacts": [
         "phone-full-ui",
-        "wear-full-ui"
+        "wear-full-ui",
+        "iphone-full-ui",
+        "watchos-full-ui"
       ],
       "assetRef": "wifi",
       "id": "showcase.wifi"
@@ -801,7 +846,9 @@
     {
       "artifacts": [
         "phone-full-ui",
-        "wear-full-ui"
+        "wear-full-ui",
+        "iphone-full-ui",
+        "watchos-full-ui"
       ],
       "assetRef": "watch",
       "id": "showcase.watch"
@@ -809,7 +856,9 @@
     {
       "artifacts": [
         "phone-full-ui",
-        "wear-full-ui"
+        "wear-full-ui",
+        "iphone-full-ui",
+        "watchos-full-ui"
       ],
       "assetRef": "sliders",
       "id": "showcase.sliders"
@@ -817,7 +866,9 @@
     {
       "artifacts": [
         "phone-full-ui",
-        "wear-full-ui"
+        "wear-full-ui",
+        "iphone-full-ui",
+        "watchos-full-ui"
       ],
       "assetRef": "download",
       "id": "showcase.download"
@@ -825,7 +876,9 @@
     {
       "artifacts": [
         "phone-full-ui",
-        "wear-full-ui"
+        "wear-full-ui",
+        "iphone-full-ui",
+        "watchos-full-ui"
       ],
       "assetRef": "record",
       "id": "showcase.record"
@@ -833,7 +886,9 @@
     {
       "artifacts": [
         "phone-full-ui",
-        "wear-full-ui"
+        "wear-full-ui",
+        "iphone-full-ui",
+        "watchos-full-ui"
       ],
       "assetRef": "wrench",
       "id": "showcase.wrench"
@@ -990,6 +1045,22 @@
         "ui.component-tree"
       ],
       "id": "android-wear-compose"
+    },
+    {
+      "capabilities": [
+        "ui.menu",
+        "ui.navigation",
+        "ui.component-tree"
+      ],
+      "id": "apple-iphone-swiftui"
+    },
+    {
+      "capabilities": [
+        "ui.menu",
+        "ui.navigation",
+        "ui.component-tree"
+      ],
+      "id": "apple-watchos-swiftui"
     }
   ],
   "schemaVersion": 2,
@@ -1477,7 +1548,9 @@
     {
       "artifacts": [
         "phone-full-ui",
-        "wear-full-ui"
+        "wear-full-ui",
+        "iphone-full-ui",
+        "watchos-full-ui"
       ],
       "id": "showcase.menu",
       "kind": "menu-entry",
@@ -1493,7 +1566,9 @@
     {
       "artifacts": [
         "phone-full-ui",
-        "wear-full-ui"
+        "wear-full-ui",
+        "iphone-full-ui",
+        "watchos-full-ui"
       ],
       "id": "showcase.component",
       "kind": "component-entry",

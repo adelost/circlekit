@@ -4,6 +4,8 @@ package io.v1d.circlekit.showcase.catalog
 enum class ShowcaseArtifactProfile(val id: String) {
     PHONE_FULL_UI("phone-full-ui"),
     WEAR_FULL_UI("wear-full-ui"),
+    IPHONE_FULL_UI("iphone-full-ui"),
+    WATCHOS_FULL_UI("watchos-full-ui"),
 }
 
 enum class ShowcaseFamily(
