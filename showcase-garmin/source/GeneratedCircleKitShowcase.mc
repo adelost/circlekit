@@ -24,4 +24,10 @@ module GeneratedCircleKitShowcase {
     const COLOR_MUTED = 0xA4A49F;
     const COLOR_FAINT = 0x727579;
     const COLOR_LINE = 0x232527;
+    const COLOR_ICON = 0xF1EFE9;
+    const ICON_VIEWPORT_WIDTH = 24;
+    const ICON_VIEWPORT_HEIGHT = 24;
+    var ICON_FILL_PATHS = [[[10.2, 3.5], [13.8, 3.5], [13.8, 9.5], [16.6, 9.5], [12, 15.5], [7.4, 9.5], [10.2, 9.5]]];
+    var ICON_STROKE_PATHS = [[[4.5, 19.5], [19.5, 19.5]]];
+    var ICON_STROKE_WIDTHS = [2.8];
 }

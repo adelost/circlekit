@@ -13,6 +13,11 @@ removing its icon binding fails generation instead of silently selecting local
 fallback data. The segmented ring, primitive glyph and Garmin colour
 quantisation remain native level-2 approximations.
 
+The in-app product icon is generated from the selected CircleKit asset's exact
+SVG path data; Monkey C owns only scaling and rasterization. `launcher_icon.svg`
+is an explicitly native, unbranded simulator-shell icon and makes no ProductSpec
+identity claim.
+
 ## Local smoke
 
 ```sh

@@ -55,7 +55,9 @@ test("one compiled ProductSpec owns Android, Apple and Garmin Showcase structure
       { id: "apple-iphone-swiftui", surfaces: ["compact", "wide"] },
       { id: "apple-watchos-swiftui", surfaces: ["round"] },
     ], CIRCLEKIT_ASSET_CATALOG, CIRCLEKIT_STYLE),
-    showcaseGarminEmitter("generated/GeneratedCircleKitShowcase.mc", CIRCLEKIT_STYLE),
+    showcaseGarminEmitter(
+      "generated/GeneratedCircleKitShowcase.mc", CIRCLEKIT_ASSET_CATALOG, CIRCLEKIT_STYLE,
+    ),
   ], ["generated"]);
   const second = buildOutputManifest(product, [
     productJsonEmitter("generated/showcase-product.json"),
@@ -64,7 +66,9 @@ test("one compiled ProductSpec owns Android, Apple and Garmin Showcase structure
       { id: "apple-iphone-swiftui", surfaces: ["compact", "wide"] },
       { id: "apple-watchos-swiftui", surfaces: ["round"] },
     ], CIRCLEKIT_ASSET_CATALOG, CIRCLEKIT_STYLE),
-    showcaseGarminEmitter("generated/GeneratedCircleKitShowcase.mc", CIRCLEKIT_STYLE),
+    showcaseGarminEmitter(
+      "generated/GeneratedCircleKitShowcase.mc", CIRCLEKIT_ASSET_CATALOG, CIRCLEKIT_STYLE,
+    ),
   ], ["generated"]);
   assert.deepEqual(first, second);
 
@@ -77,7 +81,9 @@ test("one compiled ProductSpec owns Android, Apple and Garmin Showcase structure
     artifacts: product.artifacts.filter(({ id }) => id !== "watchos-full-ui"),
   }), /apple-watchos-swiftui.*exactly one artifact, found 0/);
 
-  const garmin = showcaseGarminEmitter("generated/GeneratedCircleKitShowcase.mc", CIRCLEKIT_STYLE);
+  const garmin = showcaseGarminEmitter(
+    "generated/GeneratedCircleKitShowcase.mc", CIRCLEKIT_ASSET_CATALOG, CIRCLEKIT_STYLE,
+  );
   assert.throws(() => garmin.emit({
     ...product,
     artifacts: product.artifacts.filter(({ id }) => id !== "garmin-limited-ui"),

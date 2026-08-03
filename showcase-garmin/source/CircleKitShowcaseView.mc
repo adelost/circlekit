@@ -24,7 +24,7 @@ class CircleKitShowcaseView extends WatchUi.View {
         PixelText.draw(dc, centreX, 91, GeneratedCircleKitShowcase.COMPONENT_LABEL, 2);
         dc.setColor(GeneratedCircleKitShowcase.COLOR_ACTION, Graphics.COLOR_TRANSPARENT);
         PixelText.draw(dc, centreX, 119, GeneratedCircleKitShowcase.SCENARIO_LABEL, 2);
-        drawDownloadIcon(dc, centreX, 154);
+        drawProductIcon(dc, centreX, 151);
 
         dc.setColor(GeneratedCircleKitShowcase.COLOR_FAINT, Graphics.COLOR_TRANSPARENT);
         PixelText.draw(dc, centreX, 195, GeneratedCircleKitShowcase.COMPONENT_ID_LABEL, 1);
@@ -59,12 +59,42 @@ class CircleKitShowcaseView extends WatchUi.View {
         }
     }
 
-    private function drawDownloadIcon(dc, centreX, top) {
-        dc.setColor(GeneratedCircleKitShowcase.COLOR_ACTION, Graphics.COLOR_TRANSPARENT);
-        dc.setPenWidth(4);
-        dc.drawLine(centreX, top, centreX, top + 17);
-        dc.drawLine(centreX, top + 17, centreX - 7, top + 10);
-        dc.drawLine(centreX, top + 17, centreX + 7, top + 10);
-        dc.drawLine(centreX - 11, top + 23, centreX + 11, top + 23);
+    private function drawProductIcon(dc, centreX, top) {
+        var size = 28.0;
+        var scale = size / GeneratedCircleKitShowcase.ICON_VIEWPORT_WIDTH;
+        var left = centreX - (size / 2.0);
+        dc.setColor(GeneratedCircleKitShowcase.COLOR_ICON, Graphics.COLOR_TRANSPARENT);
+
+        for (var fillIndex = 0;
+                fillIndex < GeneratedCircleKitShowcase.ICON_FILL_PATHS.size();
+                fillIndex += 1) {
+            var sourceFill = GeneratedCircleKitShowcase.ICON_FILL_PATHS[fillIndex];
+            var fillPoints = [];
+            for (var pointIndex = 0; pointIndex < sourceFill.size(); pointIndex += 1) {
+                var point = sourceFill[pointIndex];
+                fillPoints.add([
+                    (left + (point[0] * scale)).toNumber(),
+                    (top + (point[1] * scale)).toNumber()
+                ]);
+            }
+            dc.fillPolygon(fillPoints);
+        }
+
+        for (var strokeIndex = 0;
+                strokeIndex < GeneratedCircleKitShowcase.ICON_STROKE_PATHS.size();
+                strokeIndex += 1) {
+            var sourceStroke = GeneratedCircleKitShowcase.ICON_STROKE_PATHS[strokeIndex];
+            dc.setPenWidth((GeneratedCircleKitShowcase.ICON_STROKE_WIDTHS[strokeIndex] * scale).toNumber());
+            for (var lineIndex = 1; lineIndex < sourceStroke.size(); lineIndex += 1) {
+                var from = sourceStroke[lineIndex - 1];
+                var to = sourceStroke[lineIndex];
+                dc.drawLine(
+                    (left + (from[0] * scale)).toNumber(),
+                    (top + (from[1] * scale)).toNumber(),
+                    (left + (to[0] * scale)).toNumber(),
+                    (top + (to[1] * scale)).toNumber()
+                );
+            }
+        }
     }
 }
