@@ -6,6 +6,19 @@ export type LegoDurability = "transient" | "durable";
 export type LegoClockDomain = "none" | "monotonic" | "wall";
 
 export interface LegoValueRef { readonly ref: string }
+export interface LegoFiniteValueRef<Id extends string = string> extends LegoValueRef {
+  readonly finite: true;
+  readonly ref: Id;
+}
+export interface LegoFiniteValueDeclaration<
+  Id extends string = string,
+  Value extends string = string,
+> {
+  readonly id: Id;
+  readonly values: readonly Value[];
+}
+export type FiniteValueOf<Declaration extends LegoFiniteValueDeclaration> =
+  Declaration["values"][number];
 export interface LegoFieldOptions {
   readonly unit?: string;
   readonly nullable?: boolean;
@@ -23,6 +36,22 @@ export interface LegoField {
 export function valueRef(ref: string): LegoValueRef {
   requireWireId(ref, "value ref");
   return { ref };
+}
+
+export function finiteValueRef<const Id extends string>(ref: Id): LegoFiniteValueRef<Id> {
+  requireWireId(ref, "finite value ref");
+  return { ref, finite: true };
+}
+
+export function finiteValues<const Id extends string, const Value extends string>(
+  id: Id,
+  values: readonly Value[],
+): LegoFiniteValueDeclaration<Id, Value> {
+  requireWireId(id, "finite value declaration");
+  if (values.length === 0) throw new Error(`finite value declaration '${id}' has no values`);
+  requireUnique(values, `value in finite declaration '${id}'`);
+  values.forEach((value) => requireWireId(value, `value in finite declaration '${id}'`));
+  return { id, values };
 }
 
 export function field(
@@ -420,7 +449,10 @@ function contractFingerprint(contract: LegoContract): string {
     kind: contract.kind,
     fields: contract.fields.map((item) => ({
       name: item.name,
-      value: typeof item.value === "string" ? item.value : { ref: item.value.ref },
+      value: typeof item.value === "string" ? item.value : {
+        ref: item.value.ref,
+        finite: "finite" in item.value && item.value.finite === true,
+      },
       unit: item.unit ?? null,
       nullable: item.nullable,
       clockDomain: item.clockDomain,

@@ -15,6 +15,8 @@ import {
   defineProduct,
   defineProductLegoConfig,
   field,
+  finiteValueRef,
+  finiteValues,
   logOutputManifest,
   mount,
   PORTABLE_SURFACE_CLASSES,
@@ -27,7 +29,7 @@ import {
 const statusContract = {
   id: "fixture.status",
   kind: "state",
-  fields: [field("active", "boolean")],
+  fields: [field("active", "boolean"), field("phase", finiteValueRef("fixture.phase"))],
 } as const;
 const actionContract = {
   id: "fixture.action",
@@ -123,6 +125,7 @@ function fixture(overrides: Record<string, unknown> = {}) {
       mounts,
       wiring: [{ from: "domain.source.status", to: "ui.controller.sourceState" }],
     },
+    finiteValues: [finiteValues("fixture.phase", ["idle", "active"])],
     componentCatalog,
     componentFamilies,
     ...visualDeclaration,
@@ -139,7 +142,7 @@ function fixture(overrides: Record<string, unknown> = {}) {
 
 test("one ProductSpec compiles two artifact profiles and deterministic outputs", async () => {
   const product = fixture();
-  assert.equal(product.schemaVersion, 4);
+  assert.equal(product.schemaVersion, 5);
   assert.equal(product.legos.mounts.length, 2);
   assert.deepEqual(product.legos.contracts, [statusContract, actionContract]);
   assert.deepEqual(product.artifacts.map(({ id }) => id), ["phone", "wear"]);
@@ -186,6 +189,13 @@ test("graph, capability and port failures stop before emission", () => {
   }), /lacks capability 'ui.missing'/);
 
   assert.throws(() => fixture({ ui: [] }), /orphan input port 'ui.controller.trigger'/);
+  assert.throws(() => fixture({ finiteValues: [] }), /uses unknown finite value 'fixture.phase'/);
+  assert.throws(() => fixture({
+    finiteValues: [
+      finiteValues("fixture.phase", ["idle", "active"]),
+      finiteValues("fixture.orphan", ["unknown"]),
+    ],
+  }), /orphan finite value declaration 'fixture.orphan'/);
 
   const configured = defineLegoSpec({
     id: "fixture.configured",
@@ -284,6 +294,7 @@ test("graph, capability and port failures stop before emission", () => {
         { from: "loop.second.output", to: "loop.first.input" },
       ],
     },
+    finiteValues: [finiteValues("fixture.phase", ["idle", "active"])],
     componentCatalog,
     componentFamilies,
     ...visualDeclarationWithoutIcons,
@@ -310,6 +321,7 @@ test("graph, capability and port failures stop before emission", () => {
       mounts: [mount("source.first", source), mount("source.second", conflictingSource)],
       wiring: [],
     },
+    finiteValues: [finiteValues("fixture.phase", ["idle", "active"])],
     componentCatalog,
     componentFamilies,
     ...visualDeclarationWithoutIcons,

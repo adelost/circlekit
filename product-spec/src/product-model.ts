@@ -1,4 +1,6 @@
 import {
+  type LegoFiniteValueDeclaration,
+  type LegoFiniteValueRef,
   type LegoContract,
   type ProductInputPortRef,
   type ProductLegoConfig,
@@ -24,7 +26,7 @@ import {
   type ProductPalette,
 } from "./visual-model.js";
 
-export const PRODUCT_SPEC_SCHEMA_VERSION = 4 as const;
+export const PRODUCT_SPEC_SCHEMA_VERSION = 5 as const;
 
 export interface RendererBinding<Id extends string = string, Capability extends string = string> {
   readonly id: Id;
@@ -82,6 +84,7 @@ export interface ProductDeclaration<
     NoInfer<Families[number]["screen"]>
   >[];
   readonly legos: ProductLegoDeclaration<Mounts>;
+  readonly finiteValues: readonly LegoFiniteValueDeclaration[];
   readonly componentCatalog: readonly ComponentSpec[];
   readonly componentFamilies: Families;
   readonly palette: ProductPalette<PaletteVariant>;
@@ -102,6 +105,7 @@ export interface ProductIr {
   readonly rendererBindings: readonly RendererBinding[];
   readonly artifacts: readonly ArtifactProfile[];
   readonly legos: ProductLegoConfig;
+  readonly finiteValues: readonly LegoFiniteValueDeclaration[];
   readonly componentCatalog: readonly ComponentSpec[];
   readonly componentFamilies: readonly ScreenComponentFamilyRef[];
   readonly palette: ProductPalette;
@@ -125,6 +129,7 @@ export function defineProduct<
   requireUnique(declaration.rendererBindings.map(({ id }) => id), "renderer binding");
   requireUnique(declaration.artifacts.map(({ id }) => id), "artifact profile");
   requireUnique(declaration.ui.map(({ id }) => id), "UI entry");
+  validateFiniteValues(declaration);
   requireUnique(declaration.componentCatalog.map(({ id }) => id), "component id");
   requireUnique(declaration.componentFamilies.map(({ screen }) => screen), "component-family screen");
   requireUnique(declaration.componentFamilies.map(({ family }) => family.id), "component-family ref");
@@ -262,6 +267,7 @@ export function defineProduct<
     rendererBindings: declaration.rendererBindings,
     artifacts: declaration.artifacts,
     legos,
+    finiteValues: declaration.finiteValues,
     componentCatalog: declaration.componentCatalog,
     componentFamilies: declaration.componentFamilies,
     palette: declaration.palette,
@@ -269,6 +275,39 @@ export function defineProduct<
     iconRefs: declaration.iconRefs,
     ui: declaration.ui,
   };
+}
+
+function validateFiniteValues(declaration: {
+  readonly finiteValues: readonly LegoFiniteValueDeclaration[];
+  readonly legos: ProductLegoDeclaration;
+}): void {
+  const catalog = new Map<string, LegoFiniteValueDeclaration>();
+  for (const item of declaration.finiteValues) {
+    requireWireId(item.id, "finite value declaration");
+    if (catalog.has(item.id)) throw new Error(`duplicate finite value declaration '${item.id}'`);
+    if (item.values.length === 0) throw new Error(`finite value declaration '${item.id}' has no values`);
+    requireUnique(item.values, `value in finite declaration '${item.id}'`);
+    item.values.forEach((value) => requireWireId(value, `value in finite declaration '${item.id}'`));
+    catalog.set(item.id, item);
+  }
+  const used = new Set<string>();
+  for (const mount of declaration.legos.mounts) {
+    for (const port of [...mount.lego.inputs, ...mount.lego.outputs]) {
+      for (const field of port.contract.fields) {
+        if (!isFiniteValueRef(field.value)) continue;
+        if (!catalog.has(field.value.ref)) {
+          throw new Error(`contract '${port.contract.id}' uses unknown finite value '${field.value.ref}'`);
+        }
+        used.add(field.value.ref);
+      }
+    }
+  }
+  const orphan = [...catalog.keys()].filter((id) => !used.has(id));
+  if (orphan.length > 0) throw new Error(`orphan finite value declaration '${orphan.join("', '")}'`);
+}
+
+function isFiniteValueRef(value: LegoContract["fields"][number]["value"]): value is LegoFiniteValueRef {
+  return typeof value !== "string" && "finite" in value && value.finite === true;
 }
 
 function contractMap(mounts: readonly ProductLegoMount[]): ReadonlyMap<string, LegoContract> {

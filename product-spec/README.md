@@ -11,3 +11,8 @@ Native emitters and bindings remain in their platform repositories.
 Reusable LegoSpecs may declare typed `configInputs` with field names, primitive
 types and units. ProductConfig supplies the concrete values; compilation
 rejects missing, extra or wrongly typed values before emission.
+
+Finite service values use `finiteValueRef` and a product-owned `finiteValues`
+catalog. The catalog is emitted in Product IR, while opaque record/list types
+continue to use `valueRef`. Compilation rejects both unknown finite references
+and catalog declarations that no mounted contract consumes.
