@@ -11,6 +11,8 @@ Shared Android foundations used by Skyvw and Agentmux Link.
   manifests, published as the versioned `@v1d/product-spec` npm tarball.
 - `showcase-product`: CircleKit-owned, data-only Showcase ProductConfig. Its
   one generated descriptor drives both Android Showcase hosts.
+- `circlekit-assets`: CircleKit-owned portable vector geometry, published as
+  the separately referenced `@v1d/circlekit-assets` npm tarball.
 
 Consumers pin released Maven artifacts. Product data and business logic stay
 in their owning applications; CircleKit owns rendering and update mechanics.

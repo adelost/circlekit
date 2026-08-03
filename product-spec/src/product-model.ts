@@ -7,9 +7,24 @@ import {
   type ProductOutputPortRef,
   validateProductLegoConfig,
 } from "./native-lego-model.js";
-import type { ComponentSpec, ScreenComponentFamilyRef } from "./component-tree-model.js";
+import type {
+  ComponentSpec,
+  PortableSurfaceClass,
+  ScreenComponentFamilyRef,
+} from "./component-tree-model.js";
+import {
+  definePalette,
+  definePortableAssetCatalog,
+  paletteTokenIds,
+  type PaletteTokenRef,
+  type PortableAssetCatalog,
+  type PortableAssetCatalogRef,
+  type PortablePaletteVariant,
+  type ProductIconRef,
+  type ProductPalette,
+} from "./visual-model.js";
 
-export const PRODUCT_SPEC_SCHEMA_VERSION = 1 as const;
+export const PRODUCT_SPEC_SCHEMA_VERSION = 2 as const;
 
 export interface RendererBinding<Id extends string = string, Capability extends string = string> {
   readonly id: Id;
@@ -20,10 +35,13 @@ export interface ArtifactProfile<
   Id extends string = string,
   RendererRef extends string = string,
   Capability extends string = string,
+  ScreenRef extends string = string,
 > {
   readonly id: Id;
   readonly rendererRefs: readonly RendererRef[];
   readonly requiredCapabilities: readonly Capability[];
+  readonly entryScreen: ScreenRef;
+  readonly serves: readonly PortableSurfaceClass[];
 }
 
 export interface UiPortRefs<InputRef extends string = string, OutputRef extends string = string> {
@@ -52,13 +70,23 @@ export interface ProductDeclaration<
   RendererId extends string,
   Capability extends string,
   ArtifactId extends string,
+  PaletteVariant extends PortablePaletteVariant,
+  Families extends readonly ScreenComponentFamilyRef[],
 > {
   readonly id: string;
   readonly rendererBindings: readonly RendererBinding<RendererId, Capability>[];
-  readonly artifacts: readonly ArtifactProfile<ArtifactId, RendererId, Capability>[];
+  readonly artifacts: readonly ArtifactProfile<
+    ArtifactId,
+    RendererId,
+    Capability,
+    NoInfer<Families[number]["screen"]>
+  >[];
   readonly legos: ProductLegoDeclaration<Mounts>;
   readonly componentCatalog: readonly ComponentSpec[];
-  readonly componentFamilies: readonly ScreenComponentFamilyRef[];
+  readonly componentFamilies: Families;
+  readonly palette: ProductPalette<PaletteVariant>;
+  readonly assetCatalogRef: PortableAssetCatalogRef;
+  readonly iconRefs: readonly ProductIconRef<PaletteTokenRef<PaletteVariant>, ArtifactId>[];
   readonly ui: readonly ProductUiEntry<
     ProductInputPortRef<Mounts>,
     ProductOutputPortRef<Mounts>,
@@ -76,6 +104,9 @@ export interface ProductIr {
   readonly legos: ProductLegoConfig;
   readonly componentCatalog: readonly ComponentSpec[];
   readonly componentFamilies: readonly ScreenComponentFamilyRef[];
+  readonly palette: ProductPalette;
+  readonly assetCatalogRef: PortableAssetCatalogRef;
+  readonly iconRefs: readonly ProductIconRef[];
   readonly ui: readonly ProductUiEntry[];
 }
 
@@ -84,7 +115,12 @@ export function defineProduct<
   const RendererId extends string,
   const Capability extends string,
   const ArtifactId extends string,
->(declaration: ProductDeclaration<Mounts, RendererId, Capability, ArtifactId>): ProductIr {
+  const PaletteVariant extends PortablePaletteVariant,
+  const Families extends readonly ScreenComponentFamilyRef[],
+>(
+  declaration: ProductDeclaration<Mounts, RendererId, Capability, ArtifactId, PaletteVariant, Families>,
+  assetCatalog: PortableAssetCatalog,
+): ProductIr {
   requireWireId(declaration.id, "product");
   requireUnique(declaration.rendererBindings.map(({ id }) => id), "renderer binding");
   requireUnique(declaration.artifacts.map(({ id }) => id), "artifact profile");
@@ -92,6 +128,33 @@ export function defineProduct<
   requireUnique(declaration.componentCatalog.map(({ id }) => id), "component id");
   requireUnique(declaration.componentFamilies.map(({ screen }) => screen), "component-family screen");
   requireUnique(declaration.componentFamilies.map(({ family }) => family.id), "component-family ref");
+  definePalette(declaration.palette.variants);
+  definePortableAssetCatalog(assetCatalog);
+  if (declaration.assetCatalogRef.id !== assetCatalog.id || declaration.assetCatalogRef.version !== assetCatalog.version) {
+    throw new Error(`asset catalog reference '${declaration.assetCatalogRef.id}@${declaration.assetCatalogRef.version}' does not match '${assetCatalog.id}@${assetCatalog.version}'`);
+  }
+  requireUnique(declaration.iconRefs.map(({ id }) => id), "product icon ref");
+  const assetsById = new Map(assetCatalog.icons.map((asset) => [asset.id, asset]));
+  const paletteTokens = paletteTokenIds(declaration.palette);
+  for (const icon of declaration.iconRefs) {
+    requireWireId(icon.id, "product icon ref");
+    const asset = assetsById.get(icon.assetRef);
+    if (asset === undefined) throw new Error(`product icon '${icon.id}' uses missing asset '${icon.assetRef}'`);
+    if (icon.accent !== undefined && !paletteTokens.has(icon.accent)) {
+      throw new Error(`product icon '${icon.id}' uses missing palette token '${icon.accent}'`);
+    }
+    const expectedLayerSlots = (asset.layers ?? []).map(({ slot }) => slot);
+    const actualLayerSlots = (icon.layers ?? []).map(({ slot }) => slot);
+    requireUnique(actualLayerSlots, `layer slot in product icon '${icon.id}'`);
+    for (const layer of icon.layers ?? []) {
+      if (!paletteTokens.has(layer.accent)) throw new Error(`product icon '${icon.id}' layer '${layer.slot}' uses missing palette token '${layer.accent}'`);
+    }
+    if (JSON.stringify(actualLayerSlots) !== JSON.stringify(expectedLayerSlots)) {
+      throw new Error(`product icon '${icon.id}' must bind exact layer slots [${expectedLayerSlots.join(", ")}]`);
+    }
+    if (icon.artifacts.length === 0) throw new Error(`product icon '${icon.id}' has no artifact`);
+    requireUnique(icon.artifacts, `artifact in product icon '${icon.id}'`);
+  }
   const declaredComponents = new Set(declaration.componentCatalog.map(({ id }) => id));
   const usedComponents = new Set<string>();
   for (const { screen, family } of declaration.componentFamilies) {
@@ -118,11 +181,25 @@ export function defineProduct<
   }
 
   const artifactById = new Map(declaration.artifacts.map((item) => [item.id, item]));
+  for (const icon of declaration.iconRefs) {
+    for (const artifactRef of icon.artifacts) {
+      if (!artifactById.has(artifactRef)) throw new Error(`product icon '${icon.id}' uses missing artifact '${artifactRef}'`);
+    }
+  }
   for (const artifact of declaration.artifacts) {
     requireWireId(artifact.id, "artifact profile");
     if (artifact.rendererRefs.length === 0) throw new Error(`artifact '${artifact.id}' has no renderer`);
+    if (artifact.serves.length === 0) throw new Error(`artifact '${artifact.id}' serves no surface`);
     requireUnique(artifact.rendererRefs, `renderer in artifact '${artifact.id}'`);
     requireUnique(artifact.requiredCapabilities, `capability in artifact '${artifact.id}'`);
+    requireUnique(artifact.serves, `surface in artifact '${artifact.id}'`);
+    const entry = declaration.componentFamilies.find(({ screen }) => screen === artifact.entryScreen);
+    if (entry === undefined) throw new Error(`artifact '${artifact.id}' uses missing entry screen '${artifact.entryScreen}'`);
+    for (const surface of artifact.serves) {
+      if (!entry.family.trees.some((tree) => tree.surface === surface)) {
+        throw new Error(`artifact '${artifact.id}' entry screen '${artifact.entryScreen}' has no '${surface}' tree`);
+      }
+    }
     for (const rendererRef of artifact.rendererRefs) {
       const renderer = rendererById.get(rendererRef);
       if (renderer === undefined) throw new Error(`artifact '${artifact.id}' uses missing renderer '${rendererRef}'`);
@@ -187,6 +264,9 @@ export function defineProduct<
     legos,
     componentCatalog: declaration.componentCatalog,
     componentFamilies: declaration.componentFamilies,
+    palette: declaration.palette,
+    assetCatalogRef: declaration.assetCatalogRef,
+    iconRefs: declaration.iconRefs,
     ui: declaration.ui,
   };
 }

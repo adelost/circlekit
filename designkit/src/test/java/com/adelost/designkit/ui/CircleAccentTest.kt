@@ -23,31 +23,11 @@ class CircleAccentTest {
     }
 
     @Test
-    fun `ring icon catalog owns recognizable defaults`() {
-        assertEquals(CircleAccent.SUN, ringIconAccent(RingIcons.Sun))
-        assertEquals(CircleAccent.SKY, ringIconAccent(RingIcons.Map))
-        assertEquals(CircleAccent.ACHIEVEMENT, ringIconAccent(RingIcons.Book))
-        assertEquals(CircleAccent.DANGER, ringIconAccent(RingIcons.Storm))
-        assertEquals(CircleAccent.DANGER, ringIconAccent(RingIcons.Trash))
-        assertEquals(CircleAccent.POSITIVE, ringIconAccent(RingIcons.Check))
-        assertEquals(CircleAccent.CAUTION, ringIconAccent(RingIcons.Warning))
-        assertEquals(CircleAccent.VIOLET, ringIconAccent(RingIcons.Pencil))
-        assertEquals(CircleAccent.NEUTRAL, ringIconAccent(null))
-    }
-
-    @Test
-    fun `jump debrief icons get semantic colour from the shared catalog`() {
-        assertEquals(CircleAccent.SKY, ringIconAccent(RingIcons.GroundTrack))
-        assertEquals(CircleAccent.VIOLET, ringIconAccent(RingIcons.SpatialPath))
-        assertEquals(CircleAccent.RAIN, ringIconAccent(RingIcons.SinkRate))
-        assertEquals(CircleAccent.POSITIVE, ringIconAccent(RingIcons.GpsPoints))
-        assertEquals(CircleAccent.CAUTION, ringIconAccent(RingIcons.GpsBreak))
-        assertEquals(CircleAccent.POSITIVE, ringIconAccent(RingIcons.TouchdownRun))
-        assertEquals(CircleAccent.RAIN, ringIconAccent(RingIcons.TouchdownSink))
-        assertEquals(CircleAccent.SKY, ringIconAccent(RingIcons.Yaw))
-        assertEquals(CircleAccent.ACHIEVEMENT, ringIconAccent(RingIcons.Pitch))
-        assertEquals(CircleAccent.VIOLET, ringIconAccent(RingIcons.Roll))
-        assertEquals(CircleAccent.CAUTION, ringIconAccent(RingIcons.RotationRate))
+    fun `generic icon catalog defaults to warm-white neutral actions`() {
+        RING_ICON_CATALOG.forEach { icon ->
+            assertEquals(icon.name, CircleAccent.NEUTRAL, ringIconAccent(icon))
+        }
+        assertEquals(CircleStyleTokens.Action, circleAccentColor(CircleAccent.NEUTRAL))
     }
 
     @Test

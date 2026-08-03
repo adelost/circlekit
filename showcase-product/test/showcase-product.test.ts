@@ -28,6 +28,7 @@ async function productSpecVersion(): Promise<string> {
 
 test("one compiled ProductSpec owns Phone and Wear Showcase structure", async () => {
   const product = compileCircleKitShowcaseProduct(await registry(), await productSpecVersion());
+  assert.equal(product.schemaVersion, 2);
   assert.deepEqual(product.artifacts.map(({ id }) => id), SHOWCASE_ARTIFACT_PROFILES);
   assert.equal(product.showcase.sections.length, 7);
   assert.equal(product.showcase.cases.length, 15);

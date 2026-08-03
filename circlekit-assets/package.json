@@ -1,11 +1,10 @@
 {
-  "name": "@v1d/product-spec",
+  "name": "@v1d/circlekit-assets",
   "version": "0.3.25",
-  "description": "Product-neutral typed authoring and compiler core for v1d applications",
+  "description": "Portable immutable CircleKit asset catalog",
   "type": "module",
   "files": [
-    "dist/src",
-    "README.md"
+    "dist/src"
   ],
   "exports": {
     ".": {
@@ -16,8 +15,9 @@
   "scripts": {
     "clean": "node -e \"require('node:fs').rmSync('dist',{recursive:true,force:true})\"",
     "build": "npm run clean && tsc -p tsconfig.json",
-    "test": "npm run build && node --test dist/test/*.test.js",
-    "pack:release": "npm run test && npm pack"
+    "generate:designkit": "npm run build && node scripts/generate-ring-icons.mjs",
+    "check:designkit": "npm run build && node scripts/generate-ring-icons.mjs --check",
+    "pack:release": "npm run check:designkit && npm pack"
   },
   "devDependencies": {
     "@types/node": "^24.3.0",

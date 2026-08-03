@@ -1,6 +1,7 @@
 {
   "artifacts": [
     {
+      "entryScreen": "section.foundations",
       "id": "phone-full-ui",
       "rendererRefs": [
         "android-phone-compose"
@@ -9,9 +10,14 @@
         "ui.menu",
         "ui.navigation",
         "ui.component-tree"
+      ],
+      "serves": [
+        "compact",
+        "wide"
       ]
     },
     {
+      "entryScreen": "section.foundations",
       "id": "wear-full-ui",
       "rendererRefs": [
         "android-wear-compose"
@@ -20,9 +26,16 @@
         "ui.menu",
         "ui.navigation",
         "ui.component-tree"
+      ],
+      "serves": [
+        "round"
       ]
     }
   ],
+  "assetCatalogRef": {
+    "id": "circlekit",
+    "version": "0.3.25"
+  },
   "componentCatalog": [
     {
       "id": "foundation.colors"
@@ -728,6 +741,104 @@
       "screen": "section.flows"
     }
   ],
+  "iconRefs": [
+    {
+      "artifacts": [
+        "phone-full-ui",
+        "wear-full-ui"
+      ],
+      "assetRef": "palette",
+      "id": "showcase.palette"
+    },
+    {
+      "artifacts": [
+        "phone-full-ui",
+        "wear-full-ui"
+      ],
+      "assetRef": "grid",
+      "id": "showcase.grid"
+    },
+    {
+      "artifacts": [
+        "phone-full-ui",
+        "wear-full-ui"
+      ],
+      "assetRef": "touchdown-run",
+      "id": "showcase.touchdown-run"
+    },
+    {
+      "artifacts": [
+        "phone-full-ui",
+        "wear-full-ui"
+      ],
+      "assetRef": "pencil",
+      "id": "showcase.pencil"
+    },
+    {
+      "artifacts": [
+        "phone-full-ui",
+        "wear-full-ui"
+      ],
+      "assetRef": "play",
+      "id": "showcase.play"
+    },
+    {
+      "artifacts": [
+        "phone-full-ui",
+        "wear-full-ui"
+      ],
+      "assetRef": "layers",
+      "id": "showcase.layers"
+    },
+    {
+      "artifacts": [
+        "phone-full-ui",
+        "wear-full-ui"
+      ],
+      "assetRef": "wifi",
+      "id": "showcase.wifi"
+    },
+    {
+      "artifacts": [
+        "phone-full-ui",
+        "wear-full-ui"
+      ],
+      "assetRef": "watch",
+      "id": "showcase.watch"
+    },
+    {
+      "artifacts": [
+        "phone-full-ui",
+        "wear-full-ui"
+      ],
+      "assetRef": "sliders",
+      "id": "showcase.sliders"
+    },
+    {
+      "artifacts": [
+        "phone-full-ui",
+        "wear-full-ui"
+      ],
+      "assetRef": "download",
+      "id": "showcase.download"
+    },
+    {
+      "artifacts": [
+        "phone-full-ui",
+        "wear-full-ui"
+      ],
+      "assetRef": "record",
+      "id": "showcase.record"
+    },
+    {
+      "artifacts": [
+        "phone-full-ui",
+        "wear-full-ui"
+      ],
+      "assetRef": "wrench",
+      "id": "showcase.wrench"
+    }
+  ],
   "id": "circlekit-showcase",
   "kind": "product-spec-ir",
   "legos": {
@@ -859,7 +970,10 @@
     ],
     "wiring": []
   },
-  "productSpecVersion": "0.3.24",
+  "palette": {
+    "variants": []
+  },
+  "productSpecVersion": "0.3.25",
   "rendererBindings": [
     {
       "capabilities": [
@@ -878,7 +992,7 @@
       "id": "android-wear-compose"
     }
   ],
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "showcase": {
     "cases": [
       {

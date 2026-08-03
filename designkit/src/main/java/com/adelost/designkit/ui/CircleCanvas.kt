@@ -2,7 +2,6 @@ package com.adelost.designkit.ui
 
 import androidx.compose.foundation.background
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 
 /**
  * THE canvas. Every Circle surface — instrument, menu, detail — is drawn on
@@ -18,11 +17,11 @@ import androidx.compose.ui.graphics.Color
  * The two modifier names below stay because they say WHICH surface a caller
  * is painting; they are aliases of one decision and cannot diverge.
  */
-private val CIRCLE_CANVAS = Color.Black
+private val CIRCLE_CANVAS = CircleStyleTokens.Surface
 
 fun Modifier.circleMenuCanvas(): Modifier = background(CIRCLE_CANVAS)
 
 fun Modifier.circleInstrumentCanvas(): Modifier = background(CIRCLE_CANVAS)
 
 /** Callers that need the pigment itself rather than a background modifier. */
-fun circleCanvasColor(): Color = CIRCLE_CANVAS
+fun circleCanvasColor() = CIRCLE_CANVAS

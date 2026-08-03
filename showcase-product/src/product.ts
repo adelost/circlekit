@@ -9,10 +9,13 @@ import {
   port,
   type ProductIr,
 } from "@v1d/product-spec";
+import { CIRCLEKIT_ASSET_CATALOG } from "@v1d/circlekit-assets";
 import { showcaseCases, showcaseSections } from "./catalog.js";
 import type { ShowcaseNativeRegistry } from "./native-registry.js";
 
 export const SHOWCASE_ARTIFACT_PROFILES = ["phone-full-ui", "wear-full-ui"] as const;
+
+const showcasePalette = { variants: [] } as const;
 
 const catalogState = {
   id: "showcase.catalog-state",
@@ -97,11 +100,15 @@ const baseProduct = defineProduct({
       id: "phone-full-ui",
       rendererRefs: ["android-phone-compose"],
       requiredCapabilities: ["ui.menu", "ui.navigation", "ui.component-tree"],
+      entryScreen: "section.foundations",
+      serves: ["compact", "wide"],
     },
     {
       id: "wear-full-ui",
       rendererRefs: ["android-wear-compose"],
       requiredCapabilities: ["ui.menu", "ui.navigation", "ui.component-tree"],
+      entryScreen: "section.foundations",
+      serves: ["round"],
     },
   ],
   legos: {
@@ -112,6 +119,19 @@ const baseProduct = defineProduct({
   },
   componentCatalog: showcaseComponentCatalog,
   componentFamilies: showcaseComponentFamilies,
+  palette: showcasePalette,
+  assetCatalogRef: {
+    id: CIRCLEKIT_ASSET_CATALOG.id,
+    version: CIRCLEKIT_ASSET_CATALOG.version,
+  },
+  iconRefs: [...new Set([
+    ...showcaseSections.map(({ iconId }) => iconId),
+    ...showcaseCases.map(({ iconId }) => iconId),
+  ])].map((assetRef) => ({
+    id: `showcase.${assetRef}`,
+    assetRef,
+    artifacts: SHOWCASE_ARTIFACT_PROFILES,
+  })),
   ui: [
     {
       id: "showcase.menu",
@@ -128,7 +148,7 @@ const baseProduct = defineProduct({
       ports: { state: "navigation.destination" },
     },
   ],
-});
+}, CIRCLEKIT_ASSET_CATALOG);
 
 export interface CircleKitShowcaseProductIr extends ProductIr {
   readonly productSpecVersion: string;
