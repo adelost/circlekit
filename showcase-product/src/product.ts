@@ -13,7 +13,12 @@ import { CIRCLEKIT_ASSET_CATALOG } from "@v1d/circlekit-assets";
 import { showcaseCases, showcaseSections } from "./catalog.js";
 import type { ShowcaseNativeRegistry } from "./native-registry.js";
 
-export const SHOWCASE_ARTIFACT_PROFILES = ["phone-full-ui", "wear-full-ui"] as const;
+const SHOWCASE_ANDROID_ARTIFACT_PROFILES = ["phone-full-ui", "wear-full-ui"] as const;
+export const SHOWCASE_ARTIFACT_PROFILES = [
+  ...SHOWCASE_ANDROID_ARTIFACT_PROFILES,
+  "iphone-full-ui",
+  "watchos-full-ui",
+] as const;
 
 const showcasePalette = { variants: [] } as const;
 
@@ -94,6 +99,14 @@ const baseProduct = defineProduct({
       id: "android-wear-compose",
       capabilities: ["ui.menu", "ui.navigation", "ui.component-tree"],
     },
+    {
+      id: "apple-iphone-swiftui",
+      capabilities: ["ui.menu", "ui.navigation", "ui.component-tree"],
+    },
+    {
+      id: "apple-watchos-swiftui",
+      capabilities: ["ui.menu", "ui.navigation", "ui.component-tree"],
+    },
   ],
   artifacts: [
     {
@@ -106,6 +119,20 @@ const baseProduct = defineProduct({
     {
       id: "wear-full-ui",
       rendererRefs: ["android-wear-compose"],
+      requiredCapabilities: ["ui.menu", "ui.navigation", "ui.component-tree"],
+      entryScreen: "section.foundations",
+      serves: ["round"],
+    },
+    {
+      id: "iphone-full-ui",
+      rendererRefs: ["apple-iphone-swiftui"],
+      requiredCapabilities: ["ui.menu", "ui.navigation", "ui.component-tree"],
+      entryScreen: "section.foundations",
+      serves: ["compact", "wide"],
+    },
+    {
+      id: "watchos-full-ui",
+      rendererRefs: ["apple-watchos-swiftui"],
       requiredCapabilities: ["ui.menu", "ui.navigation", "ui.component-tree"],
       entryScreen: "section.foundations",
       serves: ["round"],
@@ -194,7 +221,7 @@ function requireNativeParity(registry: ShowcaseNativeRegistry): void {
   const nativeComponents = new Set(registry.components.map(({ componentId }) => componentId));
   requireExactSet(declaredComponents, nativeComponents, "component/native binding");
 
-  const profiles = new Set<string>(SHOWCASE_ARTIFACT_PROFILES);
+  const profiles = new Set<string>(SHOWCASE_ANDROID_ARTIFACT_PROFILES);
   for (const binding of registry.components) {
     requireUnique(binding.profiles, `profile in native component '${binding.componentId}'`);
     requireExactSet(profiles, new Set(binding.profiles), `profile in native component '${binding.componentId}'`);

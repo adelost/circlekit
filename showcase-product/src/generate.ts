@@ -8,7 +8,9 @@ import {
   productJsonEmitter,
   writeOutputManifest,
 } from "@v1d/product-spec";
+import { CIRCLEKIT_ASSET_CATALOG, CIRCLEKIT_STYLE } from "@v1d/circlekit-assets";
 import { showcaseKotlinEmitter } from "./emit-kotlin.js";
+import { showcaseSwiftEmitter } from "./emit-swift.js";
 import { decodeShowcaseNativeRegistry } from "./native-registry.js";
 import { compileCircleKitShowcaseProduct } from "./product.js";
 
@@ -18,6 +20,7 @@ const registryPath = resolve(packageRoot, "native-registry/showcase.json");
 const productSpecPackagePath = resolve(packageRoot, "node_modules/@v1d/product-spec/package.json");
 const jsonPath = "showcase-product/generated/showcase-product.json";
 const kotlinPath = "showcase-catalog/src/main/java/io/v1d/circlekit/showcase/catalog/generated/GeneratedShowcaseProduct.kt";
+const swiftPath = "showcase-iphone/Sources/Generated/GeneratedShowcaseProduct.swift";
 const check = process.argv.includes("--check");
 
 const registry = decodeShowcaseNativeRegistry(JSON.parse(await readFile(registryPath, "utf8")));
@@ -26,8 +29,15 @@ if (typeof productSpecPackage.version !== "string") throw new Error("Installed @
 const product = compileCircleKitShowcaseProduct(registry, productSpecPackage.version);
 const manifest = buildOutputManifest(
   product,
-  [productJsonEmitter(jsonPath), showcaseKotlinEmitter(kotlinPath)],
-  [jsonPath, kotlinPath],
+  [
+    productJsonEmitter(jsonPath),
+    showcaseKotlinEmitter(kotlinPath),
+    showcaseSwiftEmitter(swiftPath, [
+      { id: "apple-iphone-swiftui", surfaces: ["compact", "wide"] },
+      { id: "apple-watchos-swiftui", surfaces: ["round"] },
+    ], CIRCLEKIT_ASSET_CATALOG, CIRCLEKIT_STYLE),
+  ],
+  [jsonPath, kotlinPath, swiftPath],
 );
 
 if (check) {
