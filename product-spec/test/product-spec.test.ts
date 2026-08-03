@@ -140,8 +140,8 @@ test("one ProductSpec compiles two artifact profiles and deterministic outputs",
   assert.deepEqual(product.legos.contracts, [statusContract, actionContract]);
   assert.deepEqual(product.artifacts.map(({ id }) => id), ["phone", "wear"]);
   validateProductIconRendererBindings(product, [
-    { iconRef: "status.check", assetRef: "check", accent: "status.ok", rendererRef: "renderer.phone" },
-    { iconRef: "status.check", assetRef: "check", accent: "status.ok", rendererRef: "renderer.wear" },
+    { iconRef: "status.check", assetRef: "check", rendererRef: "renderer.phone" },
+    { iconRef: "status.check", assetRef: "check", rendererRef: "renderer.wear" },
   ]);
 
   const first = buildOutputManifest(product, [productJsonEmitter("fixture/product.json")], ["fixture"]);
@@ -149,6 +149,12 @@ test("one ProductSpec compiles two artifact profiles and deterministic outputs",
   assert.deepEqual(first, second);
   assert.equal(logOutputManifest(first), "product-json\tfixture/product.json");
   assert.match(first.artifacts[0]!.content, /"kind": "product-spec-ir"/);
+  const recoloured = fixture({
+    iconRefs: [{ ...visualDeclaration.iconRefs[0], accent: "status.caution" }],
+  });
+  const recolouredOutput = buildOutputManifest(recoloured, [productJsonEmitter("fixture/product.json")], ["fixture"]);
+  assert.notEqual(recolouredOutput.artifacts[0]!.content, first.artifacts[0]!.content);
+  assert.match(recolouredOutput.artifacts[0]!.content, /"accent": "status.caution"/);
 
   const root = await mkdtemp(resolve(tmpdir(), "product-spec-output-"));
   try {
@@ -252,12 +258,12 @@ test("graph, capability and port failures stop before emission", () => {
     iconRefs: [{ ...visualDeclaration.iconRefs[0], accent: "status.unknown" }],
   }), /uses missing palette token 'status.unknown'/);
   assert.throws(() => validateProductIconRendererBindings(fixture(), [
-    { iconRef: "status.check", assetRef: "check", accent: "status.ok", rendererRef: "renderer.phone" },
+    { iconRef: "status.check", assetRef: "check", rendererRef: "renderer.phone" },
   ]), /missing renderer binding/);
   assert.throws(() => validateProductIconRendererBindings(fixture(), [
-    { iconRef: "status.check", assetRef: "check", accent: "status.ok", rendererRef: "renderer.phone" },
-    { iconRef: "status.check", assetRef: "check", accent: "status.ok", rendererRef: "renderer.wear" },
-    { iconRef: "status.orphan", assetRef: "check", accent: "status.ok", rendererRef: "renderer.phone" },
+    { iconRef: "status.check", assetRef: "check", rendererRef: "renderer.phone" },
+    { iconRef: "status.check", assetRef: "check", rendererRef: "renderer.wear" },
+    { iconRef: "status.orphan", assetRef: "check", rendererRef: "renderer.phone" },
   ]), /orphan renderer binding/);
 
   assert.throws(() => definePortableAssetCatalog({

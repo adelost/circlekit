@@ -81,8 +81,6 @@ export interface ProductIconRendererBinding {
   readonly iconRef: string;
   readonly assetRef: string;
   readonly rendererRef: string;
-  readonly accent?: string;
-  readonly layers?: readonly Readonly<{ slot: string; accent: string }>[];
 }
 
 export function definePalette<const Variants extends readonly PortablePaletteVariant[]>(
@@ -148,21 +146,20 @@ export function validateProductIconRendererBindings(
     for (const artifactRef of icon.artifacts) {
       const artifact = artifacts.get(artifactRef);
       if (artifact === undefined) throw new Error(`icon '${icon.id}' uses missing artifact '${artifactRef}'`);
-      const bindingValue = JSON.stringify({ assetRef: icon.assetRef, accent: icon.accent, layers: icon.layers ?? [] });
-      for (const rendererRef of artifact.rendererRefs) expected.set(`${icon.id}\u0000${rendererRef}`, bindingValue);
+      for (const rendererRef of artifact.rendererRefs) expected.set(`${icon.id}\u0000${rendererRef}`, icon.assetRef);
     }
   }
   const actual = new Map<string, string>();
   for (const binding of bindings) {
     const key = `${binding.iconRef}\u0000${binding.rendererRef}`;
     if (actual.has(key)) throw new Error(`duplicate renderer binding for icon '${binding.iconRef}'`);
-    actual.set(key, JSON.stringify({ assetRef: binding.assetRef, accent: binding.accent, layers: binding.layers ?? [] }));
+    actual.set(key, binding.assetRef);
   }
-  for (const [key, expectedBinding] of expected) {
+  for (const [key, expectedAsset] of expected) {
     const iconRef = key.split("\u0000")[0]!;
-    const actualBinding = actual.get(key);
-    if (actualBinding === undefined) throw new Error(`missing renderer binding for icon '${iconRef}'`);
-    if (actualBinding !== expectedBinding) throw new Error(`renderer binding for icon '${iconRef}' does not match product semantics`);
+    const actualAsset = actual.get(key);
+    if (actualAsset === undefined) throw new Error(`missing renderer binding for icon '${iconRef}'`);
+    if (actualAsset !== expectedAsset) throw new Error(`renderer binding for icon '${iconRef}' uses '${actualAsset}', expected '${expectedAsset}'`);
   }
   for (const key of actual.keys()) {
     if (!expected.has(key)) throw new Error(`orphan renderer binding for icon '${key.split("\u0000")[0]}'`);
