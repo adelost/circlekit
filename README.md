@@ -7,9 +7,13 @@ Shared Android foundations used by Skyvw and Agentmux Link.
 - `releasekit`: update state, download, APK verification and install flow.
 - `releasekit-ui`: canonical ReleaseKit rows for Phone and round Wear hosts.
 - `servicekit`: bounded telemetry used by the shared modules.
+- `product-spec`: product-neutral TypeScript authoring, validation and output
+  manifests, published as the versioned `@v1d/product-spec` npm tarball.
 
 Consumers pin released Maven artifacts. Product data and business logic stay
 in their owning applications; CircleKit owns rendering and update mechanics.
+TypeScript consumers pin the immutable product-spec tarball from the same
+CircleKit version; app declarations never move into this repository.
 
 The stable `com.adelost.*` package namespaces describe the five library
 modules. Since `0.2.0`, shared types and functions use the product-neutral
