@@ -31,13 +31,13 @@ struct ShowcaseRootView: View {
                     .padding(.vertical, metrics.verticalPadding)
                     .frame(maxWidth: .infinity)
                 }
-                .background(Color.black)
+                .background(GeneratedShowcaseProduct.colors.surface)
             }
             .navigationDestination(for: GeneratedShowcaseComponentId.self) { id in
                 ShowcaseComponentScreen(component: environment.catalog.component(id))
             }
         }
-        .tint(GeneratedShowcaseProduct.palette.accent)
+        .tint(GeneratedShowcaseProduct.colors.accent)
         .preferredColorScheme(.dark)
     }
 }
@@ -52,7 +52,7 @@ private struct ShowcaseHeader: View {
                 .font(.system(size: 25, weight: .black, design: .rounded))
             Text("\(artifact.id.rawValue.uppercased()) · \(surface.rawValue.uppercased())")
                 .font(.system(size: 11, weight: .semibold, design: .monospaced))
-                .foregroundStyle(.secondary)
+                .foregroundStyle(GeneratedShowcaseProduct.colors.muted)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(.bottom, 8)
@@ -67,31 +67,31 @@ private struct ShowcaseMenuRow: View {
     var body: some View {
         HStack(spacing: 14) {
             Circle()
-                .stroke(GeneratedShowcaseProduct.palette.accent, lineWidth: 2)
+                .stroke(GeneratedShowcaseProduct.colors.accent, lineWidth: 2)
                 .frame(width: 42, height: 42)
                 .overlay {
-                    ShowcaseVectorIcon(asset: icon, color: GeneratedShowcaseProduct.palette.accent)
+                    ShowcaseVectorIcon(asset: icon, color: GeneratedShowcaseProduct.colors.accent)
                         .padding(10)
                 }
             VStack(alignment: .leading, spacing: 3) {
                 Text(component.title)
                     .font(.system(size: 16, weight: .bold, design: .rounded))
-                    .foregroundStyle(.white)
+                    .foregroundStyle(GeneratedShowcaseProduct.colors.action)
                 Text(component.scenarios.first?.label ?? component.id.rawValue)
                     .font(.system(size: 11, weight: .medium, design: .monospaced))
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(GeneratedShowcaseProduct.colors.muted)
             }
             Spacer(minLength: 8)
             Image(systemName: "chevron.right")
                 .font(.system(size: 13, weight: .bold))
-                .foregroundStyle(GeneratedShowcaseProduct.palette.accent)
+                .foregroundStyle(GeneratedShowcaseProduct.colors.accent)
         }
         .padding(.horizontal, 16)
         .frame(minHeight: metrics.rowHeight)
-        .background(Color.black)
+        .background(GeneratedShowcaseProduct.colors.surface)
         .overlay {
             RoundedRectangle(cornerRadius: 18, style: .continuous)
-                .stroke(Color.white.opacity(0.24), lineWidth: 1)
+                .stroke(GeneratedShowcaseProduct.colors.line, lineWidth: 1)
         }
         .contentShape(Rectangle())
     }
@@ -105,12 +105,12 @@ private struct ShowcaseComponentScreen: View {
         ScrollView {
             VStack(spacing: 22) {
                 Circle()
-                    .stroke(GeneratedShowcaseProduct.palette.accent.opacity(0.28), lineWidth: 12)
+                    .stroke(GeneratedShowcaseProduct.colors.accent.opacity(0.28), lineWidth: 12)
                     .overlay {
                         Circle()
                             .trim(from: 0, to: progress)
                             .stroke(
-                                GeneratedShowcaseProduct.palette.accent,
+                                GeneratedShowcaseProduct.colors.accent,
                                 style: StrokeStyle(lineWidth: 12, lineCap: .round)
                             )
                             .rotationEffect(.degrees(-90))
@@ -122,7 +122,7 @@ private struct ShowcaseComponentScreen: View {
                                 .font(.system(size: 19, weight: .black, design: .rounded))
                             Text(selectedScenario.label)
                                 .font(.system(size: 10, weight: .semibold, design: .monospaced))
-                                .foregroundStyle(GeneratedShowcaseProduct.palette.accent)
+                                .foregroundStyle(GeneratedShowcaseProduct.colors.accent)
                         }
                         .multilineTextAlignment(.center)
                         .padding(26)
@@ -138,7 +138,7 @@ private struct ShowcaseComponentScreen: View {
             .padding(24)
             .frame(maxWidth: .infinity)
         }
-        .background(Color.black)
+        .background(GeneratedShowcaseProduct.colors.surface)
         .navigationTitle(component.title)
     }
 

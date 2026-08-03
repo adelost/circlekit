@@ -20,12 +20,43 @@ struct ShowcasePaletteToken: Identifiable, Hashable {
 }
 
 struct ShowcasePalette: Hashable {
-    let id: String
+    let id: String?
     let tokens: [ShowcasePaletteToken]
 
-    var accent: Color {
+    func accent(fallback: Color) -> Color {
         let token = tokens.first(where: { $0.kind == .category }) ?? tokens.first
-        return Color(hex: token?.hex ?? "#ffffff")
+        return token.map { Color(hex: $0.hex) } ?? fallback
+    }
+}
+
+struct ShowcaseStyle: Hashable {
+    let surfaceHex: String
+    let actionHex: String
+    let actionMutedHex: String
+    let faintHex: String
+    let lineHex: String
+}
+
+struct ShowcaseResolvedColors {
+    let surface: Color
+    let action: Color
+    let muted: Color
+    let faint: Color
+    let line: Color
+    let accent: Color
+}
+
+extension GeneratedShowcaseProduct {
+    static var colors: ShowcaseResolvedColors {
+        let action = Color(hex: style.actionHex)
+        return ShowcaseResolvedColors(
+            surface: Color(hex: style.surfaceHex),
+            action: action,
+            muted: Color(hex: style.actionMutedHex),
+            faint: Color(hex: style.faintHex),
+            line: Color(hex: style.lineHex),
+            accent: palette.accent(fallback: action)
+        )
     }
 }
 

@@ -1,4 +1,4 @@
-import type { ProductEmitterPlugin, ProductIr } from "@v1d/product-spec";
+import type { PortablePaletteVariant, ProductEmitterPlugin, ProductIr } from "@v1d/product-spec";
 import { parseSvgPath, type NormalizedPathCommand } from "./parse-svg-path.js";
 import type { CircleKitShowcaseProductIr } from "./product.js";
 
@@ -12,12 +12,12 @@ interface SwiftArtifact {
   readonly rendererRefs: readonly string[];
   readonly requiredCapabilities: readonly string[];
   readonly entryScreen: string;
-  readonly serves: readonly string[];
+  readonly serves: readonly ("round" | "compact" | "wide")[];
 }
 
 interface SwiftRendererSupport {
   readonly id: string;
-  readonly surfaces: readonly string[];
+  readonly surfaces: readonly ("round" | "compact" | "wide")[];
 }
 
 interface SelectedSwiftArtifact {
@@ -36,22 +36,23 @@ interface SwiftAssetCatalog {
   }>[];
 }
 
+interface SwiftStyle {
+  readonly surface: string;
+  readonly action: string;
+  readonly actionMuted: string;
+  readonly faint: string;
+  readonly line: string;
+}
+
 interface SwiftIconRef {
   readonly id: string;
   readonly assetRef: string;
   readonly artifacts: readonly string[];
 }
 
-interface SwiftPaletteVariant {
-  readonly id: string;
-  readonly identity: Readonly<Record<string, string>>;
-  readonly categories: readonly Readonly<{ id: string; hex: string; meaning: string }>[];
-  readonly status: Readonly<Record<string, string>>;
-}
-
 interface SwiftReadyShowcaseProduct extends CircleKitShowcaseProductIr {
   readonly artifacts: readonly SwiftArtifact[];
-  readonly palette: { readonly variants: readonly SwiftPaletteVariant[] };
+  readonly palette: { readonly variants: readonly PortablePaletteVariant[] };
   readonly assetCatalogRef: { readonly id: string; readonly version: string };
   readonly iconRefs: readonly SwiftIconRef[];
 }
@@ -60,6 +61,7 @@ export function showcaseSwiftEmitter(
   path: string,
   renderers: readonly SwiftRendererSupport[],
   assetCatalog: SwiftAssetCatalog,
+  style: SwiftStyle,
 ): ProductEmitterPlugin {
   return {
     id: "showcase-swiftui",
@@ -70,7 +72,7 @@ export function showcaseSwiftEmitter(
         id: "showcase-swiftui",
         path,
         mediaType: "text/x-swift",
-        content: emitSwift(showcase, artifacts, assetCatalog),
+        content: emitSwift(showcase, artifacts, assetCatalog, style),
       }];
     },
   };
@@ -82,11 +84,11 @@ function requireSwiftReadyShowcase(product: ProductIr): SwiftReadyShowcaseProduc
   }
   const candidate = product as CircleKitShowcaseProductIr & {
     readonly artifacts: readonly Partial<SwiftArtifact>[];
-    readonly palette?: { readonly variants?: readonly SwiftPaletteVariant[] };
+    readonly palette?: { readonly variants?: readonly PortablePaletteVariant[] };
     readonly assetCatalogRef?: { readonly id?: unknown; readonly version?: unknown };
     readonly iconRefs?: readonly SwiftIconRef[];
   };
-  if (candidate.palette?.variants === undefined || candidate.palette.variants.length === 0) {
+  if (candidate.palette?.variants === undefined) {
     throw new Error("Showcase Swift emitter requires ProductSpec palette data");
   }
   for (const artifact of candidate.artifacts) {
@@ -132,6 +134,7 @@ function emitSwift(
   product: SwiftReadyShowcaseProduct,
   selections: readonly SelectedSwiftArtifact[],
   assetCatalog: SwiftAssetCatalog,
+  style: SwiftStyle,
 ): string {
   if (product.assetCatalogRef.id !== assetCatalog.id || product.assetCatalogRef.version !== assetCatalog.version) {
     throw new Error(`Showcase SwiftUI asset catalog mismatch '${assetCatalog.id}@${assetCatalog.version}'`);
@@ -151,12 +154,12 @@ function emitSwift(
     if (component === undefined) throw new Error(`Showcase SwiftUI tree uses missing case '${id}'`);
     return component;
   });
-  const palette = product.palette.variants[0]!;
+  const palette = product.palette.variants[0];
   const mountIds = product.legos.mounts.map(({ id }) => id);
   const portIds = unique(product.ui.flatMap(({ ports }) => Object.values(ports).filter(isString)));
   const artifactIds = selections.map(({ artifact }) => artifact.id);
-  const iconRefs = components.map((component) => {
-    const ref = product.iconRefs.find(({ id }) => id === component.iconId);
+  const componentBindings = components.map((component) => {
+    const ref = product.iconRefs.find(({ assetRef }) => assetRef === component.iconId);
     if (ref === undefined) throw new Error(`Showcase SwiftUI component '${component.id}' lacks icon ref '${component.iconId}'`);
     const usedBy = selections.map(({ artifact }) => artifact).filter(({ id }) => trees.some(({ artifact, tree }) =>
       artifact.id === id && tree.mounts.some(({ component: id }) => id === component.id)));
@@ -164,10 +167,10 @@ function emitSwift(
     if (missingArtifact !== undefined) {
       throw new Error(`Showcase SwiftUI icon '${ref.id}' does not serve '${missingArtifact.id}'`);
     }
-    return ref;
+    return { component, ref };
   });
-  const icons = unique(iconRefs.map(({ id }) => id)).map((id) => {
-    const ref = iconRefs.find((candidate) => candidate.id === id)!;
+  const icons = unique(componentBindings.map(({ ref }) => ref.id)).map((id) => {
+    const ref = componentBindings.find(({ ref }) => ref.id === id)!.ref;
     const asset = assetCatalog.icons.find(({ id: assetId }) => assetId === ref.assetRef);
     if (asset === undefined) throw new Error(`Showcase SwiftUI icon '${id}' uses missing asset '${ref.assetRef}'`);
     return { ref, asset };
@@ -211,17 +214,24 @@ ${selections.map(({ artifact, rendererId }) => `        ShowcaseArtifact(
             surfaces: [${artifact.serves.map((surface) => `.${swiftCase(surface)}`).join(", ")}]
         )`).join(",\n")}
     ]
+    static let style = ShowcaseStyle(
+        surfaceHex: ${swiftString(style.surface)},
+        actionHex: ${swiftString(style.action)},
+        actionMutedHex: ${swiftString(style.actionMuted)},
+        faintHex: ${swiftString(style.faint)},
+        lineHex: ${swiftString(style.line)}
+    )
     static let palette = ShowcasePalette(
-        id: ${swiftString(palette.id)},
+        id: ${palette === undefined ? "nil" : swiftString(palette.id)},
         tokens: [
-${emitPaletteTokens(palette)}
+${palette === undefined ? "" : emitPaletteTokens(palette)}
         ]
     )
     static let components: [ShowcaseComponent] = [
-${components.map((component) => `        ShowcaseComponent(
+${componentBindings.map(({ component, ref }) => `        ShowcaseComponent(
             id: .${swiftCase(component.id)},
             title: ${swiftString(component.title)},
-            iconId: ${swiftString(component.iconId)},
+            iconId: ${swiftString(ref.id)},
             scenarios: [${component.scenarios.map((scenario) => `ShowcaseScenario(id: ${swiftString(scenario.id)}, label: ${swiftString(scenario.label)})`).join(", ")}]
         )`).join(",\n")}
     ]
@@ -277,7 +287,7 @@ function emitPathCommand(command: NormalizedPathCommand): string {
   }
 }
 
-function emitPaletteTokens(palette: SwiftPaletteVariant): string {
+function emitPaletteTokens(palette: PortablePaletteVariant): string {
   const tokens = [
     ...Object.entries(palette.identity).map(([id, hex]) => ({ id: `identity.${id}`, kind: "identity", hex })),
     ...palette.categories.map(({ id, hex }) => ({ id: `category.${id}`, kind: "category", hex })),
