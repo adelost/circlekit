@@ -24,7 +24,7 @@ import {
   type ProductPalette,
 } from "./visual-model.js";
 
-export const PRODUCT_SPEC_SCHEMA_VERSION = 1 as const;
+export const PRODUCT_SPEC_SCHEMA_VERSION = 2 as const;
 
 export interface RendererBinding<Id extends string = string, Capability extends string = string> {
   readonly id: Id;

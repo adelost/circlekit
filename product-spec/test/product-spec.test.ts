@@ -136,6 +136,7 @@ function fixture(overrides: Record<string, unknown> = {}) {
 
 test("one ProductSpec compiles two artifact profiles and deterministic outputs", async () => {
   const product = fixture();
+  assert.equal(product.schemaVersion, 2);
   assert.equal(product.legos.mounts.length, 2);
   assert.deepEqual(product.legos.contracts, [statusContract, actionContract]);
   assert.deepEqual(product.artifacts.map(({ id }) => id), ["phone", "wear"]);
