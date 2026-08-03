@@ -82,8 +82,8 @@ private struct ShowcaseMenuRow: View {
                     .foregroundStyle(GeneratedShowcaseProduct.colors.muted)
             }
             Spacer(minLength: 8)
-            Image(systemName: "chevron.right")
-                .font(.system(size: 13, weight: .bold))
+            Text("›")
+                .font(.system(size: 20, weight: .bold, design: .rounded))
                 .foregroundStyle(GeneratedShowcaseProduct.colors.accent)
         }
         .padding(.horizontal, 16)
