@@ -45,7 +45,42 @@ export interface LegoContract {
   readonly fields: readonly LegoField[];
 }
 
-export interface LegoConfigRef { readonly id: string }
+export type LegoConfigValue = boolean | number | string;
+
+export interface LegoConfigField {
+  readonly name: string;
+  readonly value: LegoPrimitive;
+  readonly unit?: string;
+}
+
+export function configField(
+  name: string,
+  value: LegoPrimitive,
+  options: Pick<LegoFieldOptions, "unit"> = {},
+): LegoConfigField {
+  return {
+    name,
+    value,
+    ...(options.unit === undefined ? {} : { unit: options.unit }),
+  };
+}
+
+export interface LegoConfigInput<Id extends string = string> {
+  readonly id: Id;
+  readonly fields: readonly LegoConfigField[];
+}
+
+export function configInput<const Id extends string>(
+  id: Id,
+  fields: readonly LegoConfigField[] = [],
+): LegoConfigInput<Id> {
+  return { id, fields };
+}
+
+export interface LegoConfigRef {
+  readonly id: string;
+  readonly values?: Readonly<Record<string, LegoConfigValue>>;
+}
 
 export interface LegoPort<Id extends string = string, Contract extends LegoContract = LegoContract> {
   readonly id: Id;
@@ -73,6 +108,7 @@ export interface LegoSpec {
   readonly role: LegoRole;
   readonly inputs: readonly LegoPort[];
   readonly outputs: readonly LegoPort[];
+  readonly configInputs?: readonly LegoConfigInput[];
   readonly runtime: LegoRuntimeSpec;
 }
 
@@ -80,6 +116,7 @@ export function defineLegoSpec<const T extends LegoSpec>(spec: T): T {
   requireWireId(spec.id, "LegoSpec");
   validatePorts(spec.inputs, `${spec.id} input`);
   validatePorts(spec.outputs, `${spec.id} output`);
+  validateConfigInputs(spec.configInputs ?? [], spec.id);
   requireUnique(spec.runtime.contextInputs, `${spec.id} context input`);
   requireUnique(spec.runtime.effects, `${spec.id} effect`);
   spec.runtime.contextInputs.forEach((id) => requireWireId(id, `${spec.id} context input`));
@@ -193,15 +230,30 @@ export function validateProductLegoConfig<
   requireUnique(product.mounts.map(({ id }) => id), "mount");
 
   const contracts = new Map<string, LegoContract>();
-  const configs = new Set(product.configs.map(({ id }) => id));
+  const configs = new Map(product.configs.map((config) => [config.id, config]));
+  const usedConfigs = new Set<string>();
   const inputs = new Map<string, string>();
   const outputs = new Map<string, string>();
-  for (const config of product.configs) requireWireId(config.id, "config");
+  for (const config of product.configs) {
+    requireWireId(config.id, "config");
+    for (const name of Object.keys(config.values ?? {})) {
+      requireIdentifier(name, `field in config '${config.id}'`);
+    }
+  }
   for (const item of product.mounts) {
     requireWireId(item.id, "mount");
+    const configInputs = new Map((item.lego.configInputs ?? []).map((input) => [input.id, input]));
     for (const [name, id] of Object.entries(item.config)) {
       requireIdentifier(name, `config key in '${item.id}'`);
-      if (!configs.has(id)) throw new Error(`mount '${item.id}' uses unknown config '${id}'`);
+      const input = configInputs.get(name);
+      if (input === undefined) throw new Error(`mount '${item.id}' uses undeclared config input '${name}'`);
+      const config = configs.get(id);
+      if (config === undefined) throw new Error(`mount '${item.id}' uses unknown config '${id}'`);
+      validateConfigValues(item.id, input, config);
+      usedConfigs.add(id);
+    }
+    for (const input of configInputs.values()) {
+      if (!(input.id in item.config)) throw new Error(`mount '${item.id}' is missing config input '${input.id}'`);
     }
     for (const input of item.lego.inputs) {
       registerContract(contracts, input.contract);
@@ -212,6 +264,8 @@ export function validateProductLegoConfig<
       addPort(outputs, item.id, output);
     }
   }
+  const orphanConfigs = [...configs.keys()].filter((id) => !usedConfigs.has(id));
+  if (orphanConfigs.length > 0) throw new Error(`orphan config '${orphanConfigs.join("', '")}'`);
 
   const connectedInputs = new Set<string>();
   const connectedOutputs = new Set<string>();
@@ -242,6 +296,43 @@ export function validateProductLegoConfig<
   requireAllConnected(outputs, connectedOutputs, "output");
   requireAcyclic(graph);
   return { ...product, contracts: [...contracts.values()] };
+}
+
+function validateConfigInputs(inputs: readonly LegoConfigInput[], owner: string): void {
+  requireUnique(inputs.map(({ id }) => id), `${owner} config input`);
+  for (const input of inputs) {
+    requireIdentifier(input.id, `${owner} config input`);
+    requireUnique(input.fields.map(({ name }) => name), `field in ${owner} config input '${input.id}'`);
+    for (const item of input.fields) {
+      requireIdentifier(item.name, `field in ${owner} config input '${input.id}'`);
+      if (item.unit !== undefined) requireWireId(item.unit, `unit in ${owner} config input '${input.id}'`);
+    }
+  }
+}
+
+function validateConfigValues(
+  mountId: string,
+  input: LegoConfigInput,
+  config: LegoConfigRef,
+): void {
+  const values = config.values ?? {};
+  const fields = new Map(input.fields.map((item) => [item.name, item]));
+  const missing = [...fields.keys()].filter((name) => !(name in values));
+  const extra = Object.keys(values).filter((name) => !fields.has(name));
+  if (missing.length > 0) {
+    throw new Error(`config '${config.id}' for mount '${mountId}' is missing field '${missing.join("', '")}'`);
+  }
+  if (extra.length > 0) {
+    throw new Error(`config '${config.id}' for mount '${mountId}' has undeclared field '${extra.join("', '")}'`);
+  }
+  for (const [name, item] of fields) {
+    const value = values[name];
+    const valid = item.value === "boolean" ? typeof value === "boolean"
+      : item.value === "string" ? typeof value === "string"
+      : item.value === "integer" ? typeof value === "number" && Number.isSafeInteger(value)
+      : typeof value === "number" && Number.isFinite(value);
+    if (!valid) throw new Error(`config '${config.id}' field '${name}' must be ${item.value}`);
+  }
 }
 
 function validateContract(contract: LegoContract): void {
