@@ -4,7 +4,7 @@
   "description": "Product-neutral typed authoring and compiler core for v1d applications",
   "type": "module",
   "files": [
-    "dist",
+    "dist/src",
     "README.md"
   ],
   "exports": {

@@ -12,6 +12,8 @@ MODE="${2:-}"
 MODULES=(designkit ringkit releasekit releasekit-ui servicekit)
 EXTENSIONS=(aar pom module)
 CHECKSUM_SUFFIXES=("" .md5 .sha1 .sha256 .sha512)
+PRODUCT_SPEC_DIR="$REPO_ROOT/product-spec"
+PRODUCT_SPEC_REMOTE_ROOT="$REMOTE_REPOSITORY/npm/v1d/product-spec"
 
 if [[ ! "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
   echo "usage: scripts/publish-maven.sh X.Y.Z [--prepare-only]" >&2
@@ -28,6 +30,11 @@ if ! git -C "$REPO_ROOT" diff --quiet ||
 fi
 
 source_sha="$(git -C "$REPO_ROOT" rev-parse HEAD)"
+product_spec_version="$(node -p "require('$PRODUCT_SPEC_DIR/package.json').version")"
+if [[ "$product_spec_version" != "$VERSION" ]]; then
+  echo "publish-maven: product-spec version $product_spec_version must equal CircleKit $VERSION" >&2
+  exit 1
+fi
 mkdir -p "$REPO_ROOT/build"
 stage="$(mktemp -d "$REPO_ROOT/build/circlekit-maven-stage.XXXXXX")"
 new_repository="$stage/new"
@@ -42,6 +49,60 @@ for module in "${MODULES[@]}"; do
     exit 1
   fi
 done
+product_spec_candidate="$PRODUCT_SPEC_REMOTE_ROOT/$VERSION/v1d-product-spec-$VERSION.tgz"
+product_spec_candidate_status="$(curl -sS -o /dev/null -w '%{http_code}' "$product_spec_candidate")"
+if [[ "$product_spec_candidate_status" != 404 ]]; then
+  echo "publish-maven: refusing immutable product-spec $VERSION (HTTP $product_spec_candidate_status)" >&2
+  exit 1
+fi
+
+npm_root="$cumulative_repository/npm/v1d/product-spec"
+mkdir -p "$npm_root"
+npm_versions_file="$stage/product-spec-versions.json"
+npm_metadata_status="$(curl -sS -o "$npm_versions_file" -w '%{http_code}' "$PRODUCT_SPEC_REMOTE_ROOT/versions.json")"
+declare -a previous_npm_versions=()
+if [[ "$npm_metadata_status" == 200 ]]; then
+  while IFS= read -r previous; do
+    [[ -n "$previous" ]] && previous_npm_versions+=("$previous")
+  done < <(node -e 'for (const v of JSON.parse(require("fs").readFileSync(process.argv[1], "utf8")).versions) console.log(v)' "$npm_versions_file")
+elif [[ "$npm_metadata_status" != 404 ]]; then
+  echo "publish-maven: product-spec metadata fetch failed (HTTP $npm_metadata_status)" >&2
+  exit 1
+fi
+for previous in "${previous_npm_versions[@]}"; do
+  [[ "$previous" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || {
+    echo "publish-maven: unsafe product-spec version: $previous" >&2
+    exit 1
+  }
+  previous_dir="$npm_root/$previous"
+  mkdir -p "$previous_dir"
+  previous_tarball="v1d-product-spec-$previous.tgz"
+  curl -fsSL "$PRODUCT_SPEC_REMOTE_ROOT/$previous/$previous_tarball" -o "$previous_dir/$previous_tarball"
+  curl -fsSL "$PRODUCT_SPEC_REMOTE_ROOT/$previous/$previous_tarball.sha256" -o "$previous_dir/$previous_tarball.sha256"
+  expected="$(tr -d '\r\n ' < "$previous_dir/$previous_tarball.sha256")"
+  actual="$(sha256sum "$previous_dir/$previous_tarball" | cut -d' ' -f1)"
+  [[ "$actual" == "$expected" ]] || {
+    echo "publish-maven: product-spec checksum mismatch for $previous" >&2
+    exit 1
+  }
+done
+
+product_spec_target="$npm_root/$VERSION"
+mkdir -p "$product_spec_target"
+npm ci --prefix "$PRODUCT_SPEC_DIR"
+npm test --prefix "$PRODUCT_SPEC_DIR"
+npm pack "$PRODUCT_SPEC_DIR" --pack-destination "$product_spec_target" >/dev/null
+product_spec_tarball="$product_spec_target/v1d-product-spec-$VERSION.tgz"
+[[ -s "$product_spec_tarball" ]] || {
+  echo "publish-maven: missing packed product-spec $product_spec_tarball" >&2
+  exit 1
+}
+sha256sum "$product_spec_tarball" | cut -d' ' -f1 > "$product_spec_tarball.sha256"
+node -e '
+  const fs = require("fs");
+  const versions = process.argv.slice(2).sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
+  fs.writeFileSync(process.argv[1], JSON.stringify({ latest: versions.at(-1), versions }, null, 2) + "\n");
+' "$npm_root/versions.json" "${previous_npm_versions[@]}" "$VERSION"
 
 "$REPO_ROOT/gradlew" \
   "-PcirclekitVersion=$VERSION" \
@@ -172,4 +233,16 @@ for module in "${MODULES[@]}"; do
     }
   done
 done
+product_spec_url="$PRODUCT_SPEC_REMOTE_ROOT/$VERSION/v1d-product-spec-$VERSION.tgz"
+product_spec_status=000
+for attempt in {1..15}; do
+  product_spec_status="$(curl -sS -o /dev/null -w '%{http_code}' "$product_spec_url")"
+  [[ "$product_spec_status" == 200 ]] && break
+  sleep 2
+done
+[[ "$product_spec_status" == 200 ]] || {
+  echo "publish-maven: product-spec is not reachable after 30 s: $product_spec_url (HTTP $product_spec_status)" >&2
+  exit 1
+}
 echo "publish-maven: published CircleKit $VERSION from $source_sha"
+echo "publish-maven: published @v1d/product-spec $VERSION at $product_spec_url"
