@@ -1,14 +1,21 @@
 import assert from "node:assert/strict";
+import { mkdtemp, rm, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { resolve } from "node:path";
 import test from "node:test";
 import {
   buildOutputManifest,
+  checkOutputManifest,
+  defineScreenComponentFamilyRegistry,
   defineLegoSpec,
   defineProduct,
   field,
   logOutputManifest,
   mount,
+  PORTABLE_SURFACE_CLASSES,
   port,
   productJsonEmitter,
+  writeOutputManifest,
 } from "../src/index.js";
 
 const statusContract = {
@@ -50,6 +57,17 @@ const controller = defineLegoSpec({
   },
 } as const);
 const mounts = [mount("domain.source", source), mount("ui.controller", controller)] as const;
+const componentCatalog = [{ id: "fixture.control" }] as const;
+const componentFamilies = defineScreenComponentFamilyRegistry(componentCatalog, [{
+  screen: "MAIN",
+  family: {
+    id: "fixture.main",
+    trees: PORTABLE_SURFACE_CLASSES.map((surface) => ({
+      surface,
+      mounts: [{ component: "fixture.control", region: "primary" }],
+    })),
+  },
+}] as const);
 
 function fixture(overrides: Record<string, unknown> = {}) {
   return defineProduct({
@@ -69,6 +87,8 @@ function fixture(overrides: Record<string, unknown> = {}) {
       mounts,
       wiring: [{ from: "domain.source.status", to: "ui.controller.sourceState" }],
     },
+    componentCatalog,
+    componentFamilies,
     ui: [{
       id: "menu.control",
       kind: "menu-entry",
@@ -80,16 +100,26 @@ function fixture(overrides: Record<string, unknown> = {}) {
   });
 }
 
-test("one ProductSpec compiles two artifact profiles and deterministic outputs", () => {
+test("one ProductSpec compiles two artifact profiles and deterministic outputs", async () => {
   const product = fixture();
   assert.equal(product.legos.mounts.length, 2);
   assert.deepEqual(product.artifacts.map(({ id }) => id), ["phone", "wear"]);
 
-  const first = buildOutputManifest(product, [productJsonEmitter("fixture/product.json")]);
-  const second = buildOutputManifest(product, [productJsonEmitter("fixture/product.json")]);
+  const first = buildOutputManifest(product, [productJsonEmitter("fixture/product.json")], ["fixture"]);
+  const second = buildOutputManifest(product, [productJsonEmitter("fixture/product.json")], ["fixture"]);
   assert.deepEqual(first, second);
   assert.equal(logOutputManifest(first), "product-json\tfixture/product.json");
   assert.match(first.artifacts[0]!.content, /"kind": "product-spec-ir"/);
+
+  const root = await mkdtemp(resolve(tmpdir(), "product-spec-output-"));
+  try {
+    await writeOutputManifest(root, first);
+    assert.deepEqual(await checkOutputManifest(root, first), []);
+    await writeFile(resolve(root, "fixture/rogue.kt"), "stale", "utf8");
+    assert.deepEqual(await checkOutputManifest(root, first), ["fixture/rogue.kt"]);
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
 });
 
 test("graph, capability and port failures stop before emission", () => {
@@ -124,6 +154,19 @@ test("graph, capability and port failures stop before emission", () => {
         { from: "loop.second.output", to: "loop.first.input" },
       ],
     },
+    componentCatalog: [],
+    componentFamilies: [],
     ui: [],
   }), /wiring cycle/);
+
+  assert.throws(() => defineScreenComponentFamilyRegistry([], [{
+    screen: "MAIN",
+    family: {
+      id: "missing.component",
+      trees: PORTABLE_SURFACE_CLASSES.map((surface) => ({
+        surface,
+        mounts: [{ component: "not.in.catalog", region: "primary" }],
+      })),
+    },
+  }]), /uses unknown component 'not.in.catalog'/);
 });

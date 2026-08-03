@@ -7,6 +7,7 @@ import {
   type ProductOutputPortRef,
   validateProductLegoConfig,
 } from "./native-lego-model.js";
+import type { ComponentSpec, ScreenComponentFamilyRef } from "./component-tree-model.js";
 
 export const PRODUCT_SPEC_SCHEMA_VERSION = 1 as const;
 
@@ -64,6 +65,8 @@ export interface ProductDeclaration<
   readonly rendererBindings: readonly RendererBinding<RendererId, Capability>[];
   readonly artifacts: readonly ArtifactProfile<ArtifactId, RendererId, Capability>[];
   readonly legos: ProductLegoDeclaration<Mounts>;
+  readonly componentCatalog: readonly ComponentSpec[];
+  readonly componentFamilies: readonly ScreenComponentFamilyRef[];
   readonly ui: readonly ProductUiEntry<
     ProductInputPortRef<Mounts>,
     ProductOutputPortRef<Mounts>,
@@ -79,6 +82,8 @@ export interface ProductIr {
   readonly rendererBindings: readonly RendererBinding[];
   readonly artifacts: readonly ArtifactProfile[];
   readonly legos: ProductLegoConfig;
+  readonly componentCatalog: readonly ComponentSpec[];
+  readonly componentFamilies: readonly ScreenComponentFamilyRef[];
   readonly ui: readonly ProductUiEntry[];
 }
 
@@ -92,6 +97,20 @@ export function defineProduct<
   requireUnique(declaration.rendererBindings.map(({ id }) => id), "renderer binding");
   requireUnique(declaration.artifacts.map(({ id }) => id), "artifact profile");
   requireUnique(declaration.ui.map(({ id }) => id), "UI entry");
+  requireUnique(declaration.componentCatalog.map(({ id }) => id), "component id");
+  requireUnique(declaration.componentFamilies.map(({ screen }) => screen), "component-family screen");
+  requireUnique(declaration.componentFamilies.map(({ family }) => family.id), "component-family ref");
+  const declaredComponents = new Set(declaration.componentCatalog.map(({ id }) => id));
+  for (const { screen, family } of declaration.componentFamilies) {
+    if (screen.trim() === "") throw new Error("component-family screen is empty");
+    for (const tree of family.trees) {
+      for (const item of tree.mounts) {
+        if (!declaredComponents.has(item.component)) {
+          throw new Error(`component family '${family.id}' uses missing component '${item.component}'`);
+        }
+      }
+    }
+  }
 
   const rendererById = new Map(declaration.rendererBindings.map((item) => [item.id, item]));
   for (const renderer of declaration.rendererBindings) {
@@ -170,6 +189,8 @@ export function defineProduct<
     rendererBindings: declaration.rendererBindings,
     artifacts: declaration.artifacts,
     legos,
+    componentCatalog: declaration.componentCatalog,
+    componentFamilies: declaration.componentFamilies,
     ui: declaration.ui,
   };
 }

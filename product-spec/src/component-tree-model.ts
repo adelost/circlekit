@@ -116,6 +116,7 @@ export function defineSurfaceFamily(
 
 /** One product route owns at most one portable component family. */
 export function defineScreenComponentFamilyRegistry<ScreenRef extends string>(
+  catalog: readonly ComponentSpec[],
   entries: readonly {
     readonly screen: ScreenRef;
     readonly family: SurfaceFamilyDeclaration;
@@ -123,10 +124,7 @@ export function defineScreenComponentFamilyRegistry<ScreenRef extends string>(
 ): readonly ScreenComponentFamilyRef<ScreenRef>[] {
   requireUnique(entries.map(({ screen }) => screen), "component-family screen");
   requireUnique(entries.map(({ family }) => family.id), "component-family ref");
-  const componentIds = [...new Set(entries.flatMap(({ family }) =>
-    family.trees.flatMap(({ mounts }) => mounts.map(({ component }) => component))
-  ))];
-  const catalog = componentIds.map((id) => ({ id }));
+  defineComponentCatalog(catalog);
   return entries.map(({ screen, family }) => ({
     screen,
     family: defineSurfaceFamily(catalog, family),
