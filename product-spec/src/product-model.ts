@@ -93,15 +93,21 @@ export function defineProduct<
   requireUnique(declaration.componentFamilies.map(({ screen }) => screen), "component-family screen");
   requireUnique(declaration.componentFamilies.map(({ family }) => family.id), "component-family ref");
   const declaredComponents = new Set(declaration.componentCatalog.map(({ id }) => id));
+  const usedComponents = new Set<string>();
   for (const { screen, family } of declaration.componentFamilies) {
     if (screen.trim() === "") throw new Error("component-family screen is empty");
     for (const tree of family.trees) {
       for (const item of tree.mounts) {
+        usedComponents.add(item.component);
         if (!declaredComponents.has(item.component)) {
           throw new Error(`component family '${family.id}' uses missing component '${item.component}'`);
         }
       }
     }
+  }
+  const orphanComponents = [...declaredComponents].filter((id) => !usedComponents.has(id));
+  if (orphanComponents.length > 0) {
+    throw new Error(`product has orphan component '${orphanComponents.join("', '")}'`);
   }
 
   const rendererById = new Map(declaration.rendererBindings.map((item) => [item.id, item]));
