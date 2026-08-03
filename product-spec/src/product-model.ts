@@ -8,6 +8,11 @@ import {
   validateProductLegoConfig,
 } from "./native-lego-model.js";
 import type { ComponentSpec, ScreenComponentFamilyRef } from "./component-tree-model.js";
+import {
+  definePortableIconCatalog,
+  defineThemeCatalog,
+  type ProductVisuals,
+} from "./visual-model.js";
 
 export const PRODUCT_SPEC_SCHEMA_VERSION = 1 as const;
 
@@ -59,6 +64,7 @@ export interface ProductDeclaration<
   readonly legos: ProductLegoDeclaration<Mounts>;
   readonly componentCatalog: readonly ComponentSpec[];
   readonly componentFamilies: readonly ScreenComponentFamilyRef[];
+  readonly visuals: ProductVisuals;
   readonly ui: readonly ProductUiEntry<
     ProductInputPortRef<Mounts>,
     ProductOutputPortRef<Mounts>,
@@ -76,6 +82,7 @@ export interface ProductIr {
   readonly legos: ProductLegoConfig;
   readonly componentCatalog: readonly ComponentSpec[];
   readonly componentFamilies: readonly ScreenComponentFamilyRef[];
+  readonly visuals: ProductVisuals;
   readonly ui: readonly ProductUiEntry[];
 }
 
@@ -92,6 +99,8 @@ export function defineProduct<
   requireUnique(declaration.componentCatalog.map(({ id }) => id), "component id");
   requireUnique(declaration.componentFamilies.map(({ screen }) => screen), "component-family screen");
   requireUnique(declaration.componentFamilies.map(({ family }) => family.id), "component-family ref");
+  defineThemeCatalog(declaration.visuals.themes);
+  definePortableIconCatalog(declaration.visuals.icons);
   const declaredComponents = new Set(declaration.componentCatalog.map(({ id }) => id));
   const usedComponents = new Set<string>();
   for (const { screen, family } of declaration.componentFamilies) {
@@ -187,6 +196,7 @@ export function defineProduct<
     legos,
     componentCatalog: declaration.componentCatalog,
     componentFamilies: declaration.componentFamilies,
+    visuals: declaration.visuals,
     ui: declaration.ui,
   };
 }

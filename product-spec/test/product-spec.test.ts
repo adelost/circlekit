@@ -8,7 +8,9 @@ import {
   checkOutputManifest,
   defineScreenComponentFamilyRegistry,
   defineLegoSpec,
+  definePortableIconCatalog,
   defineProduct,
+  defineThemeCatalog,
   field,
   logOutputManifest,
   mount,
@@ -68,6 +70,28 @@ const componentFamilies = defineScreenComponentFamilyRegistry(componentCatalog, 
     })),
   },
 }] as const);
+const themes = defineThemeCatalog([{
+  id: "default",
+  chrome: { surface: "#000000", action: "#ffffff", actionMuted: "#aaaaaa" },
+  neutrals: { line: "#222222" },
+  categories: [{ id: "sky", hex: "#55aadd", meaning: "sky context" }],
+  status: { ok: "#55aa55", caution: "#ddaa33", danger: "#dd5555" },
+  ramps: [{
+    id: "wind",
+    kind: "safety-envelope",
+    unit: "m/s",
+    bands: [{
+      id: "normal", upTo: 8, ruleEdge: true, hueDeg: 157,
+      lightness: 0.86, lightnessTravel: 0.2, chromaMax: 0.185, label: "NORMAL",
+    }],
+  }],
+}] as const);
+const icons = definePortableIconCatalog([{
+  id: "check",
+  accent: "positive",
+  viewport: { width: 24, height: 24 },
+  paths: [{ kind: "stroke", pathData: "M20 6L9 17l-5 -5", strokeWidth: 3.2 }],
+}] as const);
 
 function fixture(overrides: Record<string, unknown> = {}) {
   return defineProduct({
@@ -88,6 +112,7 @@ function fixture(overrides: Record<string, unknown> = {}) {
     },
     componentCatalog,
     componentFamilies,
+    visuals: { themes, icons },
     ui: [{
       id: "menu.control",
       kind: "menu-entry",
@@ -159,6 +184,7 @@ test("graph, capability and port failures stop before emission", () => {
     },
     componentCatalog: [],
     componentFamilies: [],
+    visuals: { themes, icons },
     ui: [],
   }), /wiring cycle/);
 
@@ -184,6 +210,7 @@ test("graph, capability and port failures stop before emission", () => {
     },
     componentCatalog: [],
     componentFamilies: [],
+    visuals: { themes, icons },
     ui: [
       { id: "first", kind: "component-entry", artifacts: ["test"], requiredCapabilities: [], ports: { state: "source.first.status" } },
       { id: "second", kind: "component-entry", artifacts: ["test"], requiredCapabilities: [], ports: { state: "source.second.status" } },
@@ -200,4 +227,12 @@ test("graph, capability and port failures stop before emission", () => {
       })),
     },
   }]), /uses unknown component 'not.in.catalog'/);
+
+  assert.throws(() => definePortableIconCatalog([{
+    ...icons[0], paths: [{ kind: "fill", pathData: "", fillRule: "nonzero" }],
+  }]), /blank path data/);
+
+  assert.throws(() => defineThemeCatalog([{
+    ...themes[0], status: { ...themes[0].status, danger: "red" },
+  }]), /invalid colour/);
 });

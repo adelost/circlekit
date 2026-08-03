@@ -1,6 +1,6 @@
 {
   "name": "@v1d/product-spec",
-  "version": "0.3.24",
+  "version": "0.3.25",
   "description": "Product-neutral typed authoring and compiler core for v1d applications",
   "type": "module",
   "files": [
@@ -16,6 +16,8 @@
   "scripts": {
     "clean": "node -e \"require('node:fs').rmSync('dist',{recursive:true,force:true})\"",
     "build": "npm run clean && tsc -p tsconfig.json",
+    "generate:designkit": "npm run build && node scripts/generate-ring-icons.mjs",
+    "check:designkit": "npm run build && node scripts/generate-ring-icons.mjs --check",
     "test": "npm run build && node --test dist/test/*.test.js",
     "pack:release": "npm run test && npm pack"
   },
