@@ -86,7 +86,9 @@ export interface ProductIconRendererBinding {
 export function definePalette<const Variants extends readonly PortablePaletteVariant[]>(
   variants: Variants,
 ): ProductPalette<Variants[number]> {
-  if (variants.length === 0) throw new Error("palette is empty");
+  // A product without additional semantic pigment inherits CircleKit style.
+  // Empty is data, not a fake "default" palette variant.
+  if (variants.length === 0) return { variants };
   requireUnique(variants.map(({ id }) => id), "palette variant id");
   variants.forEach(validateVariant);
   const [first, ...rest] = variants;
@@ -167,7 +169,8 @@ export function validateProductIconRendererBindings(
 }
 
 export function paletteTokenIds(palette: ProductPalette): ReadonlySet<string> {
-  const variant = palette.variants[0]!;
+  const variant = palette.variants[0];
+  if (variant === undefined) return new Set();
   return new Set([
     ...Object.keys(variant.identity).map((id) => `identity.${id}`),
     ...variant.categories.map(({ id }) => `category.${id}`),

@@ -971,15 +971,7 @@
     "wiring": []
   },
   "palette": {
-    "variants": [
-      {
-        "categories": [],
-        "id": "circlekit",
-        "identity": {},
-        "ramps": [],
-        "status": {}
-      }
-    ]
+    "variants": []
   },
   "productSpecVersion": "0.3.25",
   "rendererBindings": [

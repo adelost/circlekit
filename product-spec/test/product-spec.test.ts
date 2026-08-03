@@ -169,6 +169,12 @@ test("one ProductSpec compiles two artifact profiles and deterministic outputs",
 });
 
 test("graph, capability and port failures stop before emission", () => {
+  assert.doesNotThrow(() => fixture({ palette: { variants: [] }, iconRefs: [] }));
+  assert.throws(() => fixture({
+    palette: { variants: [] },
+    iconRefs: [{ ...visualDeclaration.iconRefs[0], accent: "status.caution" }],
+  }), /uses missing palette token/);
+
   assert.throws(() => fixture({
     artifacts: [
       { id: "phone", rendererRefs: ["renderer.phone"], requiredCapabilities: ["ui.missing"], entryScreen: "MAIN", serves: ["compact", "wide"] },

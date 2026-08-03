@@ -2,7 +2,6 @@ import {
   PORTABLE_SURFACE_CLASSES,
   defineComponentCatalog,
   defineLegoSpec,
-  definePalette,
   defineProduct,
   defineScreenComponentFamilyRegistry,
   field,
@@ -16,13 +15,7 @@ import type { ShowcaseNativeRegistry } from "./native-registry.js";
 
 export const SHOWCASE_ARTIFACT_PROFILES = ["phone-full-ui", "wear-full-ui"] as const;
 
-const showcasePalette = definePalette([{
-  id: "circlekit",
-  identity: {},
-  categories: [],
-  status: {},
-  ramps: [],
-}] as const);
+const showcasePalette = { variants: [] } as const;
 
 const catalogState = {
   id: "showcase.catalog-state",
