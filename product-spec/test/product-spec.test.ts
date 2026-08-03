@@ -129,6 +129,10 @@ test("graph, capability and port failures stop before emission", () => {
 
   assert.throws(() => fixture({ ui: [] }), /orphan input port 'ui.controller.trigger'/);
 
+  assert.throws(() => fixture({
+    componentCatalog: [...componentCatalog, { id: "fixture.orphan" }],
+  }), /orphan component 'fixture.orphan'/);
+
   const loop = defineLegoSpec({
     id: "fixture.loop",
     role: "adapter",

@@ -125,10 +125,22 @@ export function defineScreenComponentFamilyRegistry<ScreenRef extends string>(
   requireUnique(entries.map(({ screen }) => screen), "component-family screen");
   requireUnique(entries.map(({ family }) => family.id), "component-family ref");
   defineComponentCatalog(catalog);
-  return entries.map(({ screen, family }) => ({
+  const registry = entries.map(({ screen, family }) => ({
     screen,
     family: defineSurfaceFamily(catalog, family),
   }));
+  requireExactCatalog(
+    catalog,
+    registry.flatMap(({ family }) => family.trees.flatMap(({ mounts }) => mounts.map(({ component }) => component))),
+    "component registry",
+  );
+  return registry;
+}
+
+function requireExactCatalog(catalog: readonly ComponentSpec[], used: readonly string[], owner: string): void {
+  const usedIds = new Set(used);
+  const orphan = catalog.map(({ id }) => id).filter((id) => !usedIds.has(id));
+  if (orphan.length > 0) throw new Error(`${owner} has orphan component '${orphan.join("', '")}'`);
 }
 
 function requireWireId(value: string, owner: string): void {
