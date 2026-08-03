@@ -3,7 +3,7 @@
     <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
     <application
         android:label="CircleKit Showcase"
-        android:theme="@style/Theme.CircleKitShowcase">
+        android:theme="@style/Theme.CircleKitShowcase.Phone">
         <activity
             android:name=".PhoneShowcaseActivity"
             android:configChanges="orientation|screenSize|smallestScreenSize"
