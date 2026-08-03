@@ -58,7 +58,7 @@ stage_npm_package() {
   local package_dir="$1" slug="$2" tarball_prefix="$3" gate="$4"
   local remote_root="$REMOTE_REPOSITORY/npm/v1d/$slug"
   local candidate="$remote_root/$VERSION/$tarball_prefix-$VERSION.tgz"
-  local status metadata_status previous expected actual
+  local status metadata_status checksum_status previous expected actual
   status="$(curl -sS -o /dev/null -w '%{http_code}' "$candidate")"
   [[ "$status" == 404 ]] || {
     echo "publish-maven: refusing immutable $slug $VERSION (HTTP $status)" >&2
@@ -83,10 +83,18 @@ stage_npm_package() {
     local previous_dir="$npm_root/$previous" previous_tarball="$tarball_prefix-$previous.tgz"
     mkdir -p "$previous_dir"
     curl -fsSL "$remote_root/$previous/$previous_tarball" -o "$previous_dir/$previous_tarball"
-    curl -fsSL "$remote_root/$previous/$previous_tarball.sha256" -o "$previous_dir/$previous_tarball.sha256"
-    expected="$(tr -d '\r\n ' < "$previous_dir/$previous_tarball.sha256")"
     actual="$(sha256sum "$previous_dir/$previous_tarball" | cut -d' ' -f1)"
-    [[ "$actual" == "$expected" ]] || { echo "publish-maven: $slug checksum mismatch for $previous" >&2; exit 1; }
+    checksum_status="$(curl -sS -o "$previous_dir/$previous_tarball.sha256" -w '%{http_code}' \
+      "$remote_root/$previous/$previous_tarball.sha256")"
+    if [[ "$checksum_status" == 200 ]]; then
+      expected="$(tr -d '\r\n ' < "$previous_dir/$previous_tarball.sha256")"
+      [[ "$actual" == "$expected" ]] || { echo "publish-maven: $slug checksum mismatch for $previous" >&2; exit 1; }
+    elif [[ "$checksum_status" == 404 ]]; then
+      printf '%s\n' "$actual" > "$previous_dir/$previous_tarball.sha256"
+    else
+      echo "publish-maven: $slug checksum fetch failed for $previous (HTTP $checksum_status)" >&2
+      exit 1
+    fi
   done
 
   local target="$npm_root/$VERSION" tarball="$npm_root/$VERSION/$tarball_prefix-$VERSION.tgz"
