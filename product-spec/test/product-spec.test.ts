@@ -11,6 +11,7 @@ import {
   configField,
   configInput,
   defineScreenComponentFamilyRegistry,
+  decodeNativeBindingManifest,
   productArtifactConformance,
   productArtifactHostCoverage,
   defineLegoSpec,
@@ -508,4 +509,39 @@ test("an omitted manifest section is reported, not skipped and not flooded", () 
     ["finiteValues", "profiles", "services"],
   );
   assert.equal(findings.filter((item) => item.direction === "missing").length, 0);
+});
+
+// The decoder each product used to own. Failures have to name the field, because the
+// alternative is the shape error surfacing as "undefined is not iterable" three
+// functions downstream, in code that never touched the file.
+test("a manifest that is not a compiled export is refused by name", () => {
+  assert.throws(
+    () => decodeNativeBindingManifest({ ...conformingManifest, stage: "draft" }),
+    /stage 'draft' is not a compiled native export/,
+  );
+  assert.throws(
+    () => decodeNativeBindingManifest({ ...conformingManifest, schemaVersion: 1 }),
+    /schema 1 is unsupported/,
+  );
+  assert.throws(
+    () => decodeNativeBindingManifest({ ...conformingManifest, icons: [{ iconId: "check" }] }),
+    /icon 0 nativeSymbol must be a nonblank string/,
+  );
+});
+
+test("decoding keeps an omitted section omitted rather than defaulting it to none", () => {
+  const partial = { ...conformingManifest } as Record<string, unknown>;
+  delete partial.services;
+  const decoded = decodeNativeBindingManifest(partial);
+  assert.equal(decoded.services, undefined);
+  assert.deepEqual(
+    productArtifactConformance(fixture(), decoded)
+      .filter(({ axis }) => axis === "service-port")
+      .map(({ direction }) => direction),
+    ["unasserted"],
+  );
+});
+
+test("a decoded conforming manifest still conforms", () => {
+  assert.deepEqual(productArtifactConformance(fixture(), decodeNativeBindingManifest(conformingManifest)), []);
 });
