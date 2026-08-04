@@ -2,6 +2,7 @@ import { readFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import {
+  decodeNativeBindingManifest,
   buildOutputManifest,
   checkOutputManifest,
   logOutputManifest,
@@ -12,7 +13,6 @@ import { CIRCLEKIT_ASSET_CATALOG, CIRCLEKIT_STYLE } from "@v1d/circlekit-assets"
 import { showcaseKotlinEmitter } from "./emit-kotlin.js";
 import { showcaseSwiftEmitter } from "./emit-swift.js";
 import { showcaseGarminEmitter } from "./emit-monkeyc.js";
-import { decodeShowcaseNativeRegistry } from "./native-registry.js";
 import { compileCircleKitShowcaseProduct } from "./product.js";
 
 const packageRoot = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
@@ -25,7 +25,7 @@ const swiftPath = "showcase-iphone/Sources/Generated/GeneratedShowcaseProduct.sw
 const garminPath = "showcase-garmin/source/GeneratedCircleKitShowcase.mc";
 const check = process.argv.includes("--check");
 
-const registry = decodeShowcaseNativeRegistry(JSON.parse(await readFile(registryPath, "utf8")));
+const registry = decodeNativeBindingManifest(JSON.parse(await readFile(registryPath, "utf8")));
 const productSpecPackage = JSON.parse(await readFile(productSpecPackagePath, "utf8")) as { version?: unknown };
 if (typeof productSpecPackage.version !== "string") throw new Error("Installed @v1d/product-spec has no version");
 const product = compileCircleKitShowcaseProduct(registry, productSpecPackage.version);

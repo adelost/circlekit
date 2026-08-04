@@ -42,11 +42,19 @@ data class ShowcaseNativeIconBinding(
  * snapshot and rejects missing, orphan or profile-drifted bindings.
  */
 object ShowcaseNativeBindings {
-    const val SCHEMA_VERSION = 1
+    const val SCHEMA_VERSION = 2
     const val SOURCE_FILE =
         "showcase-catalog/src/main/java/io/v1d/circlekit/showcase/catalog/ShowcaseNativeBindings.kt"
 
     private val bothProfiles = setOf(SHOWCASE_PHONE_PROFILE, SHOWCASE_WEAR_PROFILE)
+
+    /**
+     * The artifact profiles THIS host renders, which is two of the product's five.
+     * The iPhone, watchOS and Garmin artifacts belong to other hosts, and saying so
+     * out loud is what lets a shared comparison tell "another host's job" apart from
+     * "nobody renders this".
+     */
+    val profiles: Set<String> = bothProfiles
 
     val components: List<ShowcaseNativeComponentBinding> = listOf(
         component("foundation.colors", ShowcaseNativeRenderer.COLORS),

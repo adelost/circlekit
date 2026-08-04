@@ -2,12 +2,16 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import test from "node:test";
-import { buildOutputManifest, productJsonEmitter } from "@v1d/product-spec";
+import {
+  decodeNativeBindingManifest,
+  PRODUCT_SPEC_SCHEMA_VERSION,
+  buildOutputManifest,
+  productJsonEmitter,
+} from "@v1d/product-spec";
 import { showcaseKotlinEmitter } from "../src/emit-kotlin.js";
 import { CIRCLEKIT_ASSET_CATALOG, CIRCLEKIT_STYLE } from "@v1d/circlekit-assets";
 import { showcaseGarminEmitter } from "../src/emit-monkeyc.js";
 import { showcaseSwiftEmitter } from "../src/emit-swift.js";
-import { decodeShowcaseNativeRegistry } from "../src/native-registry.js";
 import {
   SHOWCASE_ARTIFACT_PROFILES,
   compileCircleKitShowcaseProduct,
@@ -16,7 +20,7 @@ import {
 const root = resolve(import.meta.dirname, "../..");
 
 async function registry() {
-  return decodeShowcaseNativeRegistry(JSON.parse(
+  return decodeNativeBindingManifest(JSON.parse(
     await readFile(resolve(root, "native-registry/showcase.json"), "utf8"),
   ));
 }
@@ -31,7 +35,10 @@ async function productSpecVersion(): Promise<string> {
 
 test("one compiled ProductSpec owns Android, Apple and Garmin Showcase structure", async () => {
   const product = compileCircleKitShowcaseProduct(await registry(), await productSpecVersion());
-  assert.equal(product.schemaVersion, 2);
+  // Read from the package rather than pinned to a literal: a hardcoded number goes
+  // stale on every schema bump and only ever proves which version was current the
+  // day the test was written.
+  assert.equal(product.schemaVersion, PRODUCT_SPEC_SCHEMA_VERSION);
   assert.deepEqual(product.artifacts.map(({ id }) => id), SHOWCASE_ARTIFACT_PROFILES);
   assert.equal(product.showcase.sections.length, 7);
   assert.equal(product.showcase.cases.length, 15);
@@ -96,15 +103,15 @@ test("native component, profile and icon drift stops before emission", async () 
   assert.throws(() => compileCircleKitShowcaseProduct({
     ...actual,
     components: actual.components.slice(1),
-  }, version), /component\/native binding missing/);
+  }, version), /\[component\/missing\] component 'foundation\.colors'/);
   assert.throws(() => compileCircleKitShowcaseProduct({
     ...actual,
     components: actual.components.map((binding, index) => index === 0
       ? { ...binding, profiles: ["phone-full-ui"] }
       : binding),
-  }, version), /profile in native component.*missing/);
+  }, version), /renders on \[phone-full-ui\], but Showcase demonstrates every component/);
   assert.throws(() => compileCircleKitShowcaseProduct({
     ...actual,
     icons: [...actual.icons, { iconId: "orphan", nativeSymbol: "RingIcons.Orphan" }],
-  }, version), /icon\/native binding orphan/);
+  }, version), /\[icon\/orphan\] icon asset 'orphan'/);
 });

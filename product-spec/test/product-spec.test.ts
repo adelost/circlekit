@@ -11,7 +11,9 @@ import {
   configField,
   configInput,
   defineScreenComponentFamilyRegistry,
+  decodeNativeBindingManifest,
   productArtifactConformance,
+  productArtifactHostCoverage,
   defineLegoSpec,
   definePalette,
   definePortableAssetCatalog,
@@ -409,8 +411,11 @@ const AXIS_MUTATIONS: readonly {
   change: (draft: NativeBindingManifest) => NativeBindingManifest;
 }[] = [
   {
-    axis: "artifact", direction: "missing", subject: "wear",
-    change: (d) => ({ ...d, profiles: ["phone"] }),
+    // Orphan, not missing. A manifest describes ONE host, so a profile it omits is
+    // another host's job; a profile it invents is a coverage claim with nothing behind
+    // it. See productArtifactHostCoverage for the question this direction cannot ask.
+    axis: "artifact", direction: "orphan", subject: "toaster",
+    change: (d) => ({ ...d, profiles: [...d.profiles!, "toaster"] }),
   },
   {
     axis: "service-port", direction: "orphan", subject: "ui.controller.invented",
@@ -455,9 +460,37 @@ for (const { axis, direction, subject, change } of AXIS_MUTATIONS) {
 
 test("the hard gate names every axis at once", () => {
   assert.throws(
-    () => assertProductArtifactConformance(fixture(), mutate((d) => ({ ...d, profiles: [], icons: [] }))),
-    /artifact\/missing[\s\S]*icon\/missing/,
+    () => assertProductArtifactConformance(
+      fixture(),
+      mutate((d) => ({ ...d, profiles: [...d.profiles!, "toaster"], icons: [] })),
+    ),
+    /artifact\/orphan[\s\S]*icon\/missing/,
   );
+});
+
+// The direction the per-host axis gave up. CircleKit Showcase declares five artifacts
+// across four hosts, so no single manifest can answer "does every artifact have a
+// renderer" -- but dropping the question would let a product declare an artifact nobody
+// ships and have every per-host run still come back clean.
+test("an artifact no host binds is reported once, over the set of manifests", () => {
+  const android = { ...conformingManifest, profiles: ["phone"] };
+  assert.deepEqual(
+    productArtifactHostCoverage(fixture(), [android]).map(({ axis, direction, subject }) =>
+      ({ axis, direction, subject })),
+    [{ axis: "artifact", direction: "missing", subject: "wear" }],
+  );
+  const wear = { ...conformingManifest, profiles: ["wear"] };
+  assert.deepEqual(productArtifactHostCoverage(fixture(), [android, wear]), []);
+});
+
+test("host coverage refuses to measure through a manifest that declares no profiles", () => {
+  const silent = { ...conformingManifest } as Record<string, unknown>;
+  delete silent.profiles;
+  const findings = productArtifactHostCoverage(
+    fixture(),
+    [silent as unknown as NativeBindingManifest],
+  );
+  assert.deepEqual(findings.map(({ direction }) => direction), ["unasserted"]);
 });
 
 // CircleKit Showcase ships a manifest with only components and icons. The first
@@ -476,4 +509,39 @@ test("an omitted manifest section is reported, not skipped and not flooded", () 
     ["finiteValues", "profiles", "services"],
   );
   assert.equal(findings.filter((item) => item.direction === "missing").length, 0);
+});
+
+// The decoder each product used to own. Failures have to name the field, because the
+// alternative is the shape error surfacing as "undefined is not iterable" three
+// functions downstream, in code that never touched the file.
+test("a manifest that is not a compiled export is refused by name", () => {
+  assert.throws(
+    () => decodeNativeBindingManifest({ ...conformingManifest, stage: "draft" }),
+    /stage 'draft' is not a compiled native export/,
+  );
+  assert.throws(
+    () => decodeNativeBindingManifest({ ...conformingManifest, schemaVersion: 1 }),
+    /schema 1 is unsupported/,
+  );
+  assert.throws(
+    () => decodeNativeBindingManifest({ ...conformingManifest, icons: [{ iconId: "check" }] }),
+    /icon 0 nativeSymbol must be a nonblank string/,
+  );
+});
+
+test("decoding keeps an omitted section omitted rather than defaulting it to none", () => {
+  const partial = { ...conformingManifest } as Record<string, unknown>;
+  delete partial.services;
+  const decoded = decodeNativeBindingManifest(partial);
+  assert.equal(decoded.services, undefined);
+  assert.deepEqual(
+    productArtifactConformance(fixture(), decoded)
+      .filter(({ axis }) => axis === "service-port")
+      .map(({ direction }) => direction),
+    ["unasserted"],
+  );
+});
+
+test("a decoded conforming manifest still conforms", () => {
+  assert.deepEqual(productArtifactConformance(fixture(), decodeNativeBindingManifest(conformingManifest)), []);
 });

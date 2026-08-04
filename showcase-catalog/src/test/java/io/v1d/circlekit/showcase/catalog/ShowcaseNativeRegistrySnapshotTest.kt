@@ -39,17 +39,25 @@ class ShowcaseNativeRegistrySnapshotTest {
         val icons = ShowcaseNativeBindings.icons.joinToString(",\n") { binding ->
             "    { \"iconId\": ${binding.iconId.json()}, \"nativeSymbol\": ${binding.nativeSymbol.json()} }"
         }
+        val hostProfiles = ShowcaseNativeBindings.profiles.sorted().joinToString(", ") { it.json() }
+        // Services and finite values are declared EMPTY, not omitted. Showcase demonstrates
+        // components; it runs no domain service and owns no closed value space. An omitted
+        // section means "not checked", which is a different claim from "binds none", and only
+        // one of them is true here.
         return """
             |{
             |  "stage": "native-export",
             |  "schemaVersion": ${ShowcaseNativeBindings.SCHEMA_VERSION},
             |  "sourceFile": ${ShowcaseNativeBindings.SOURCE_FILE.json()},
+            |  "profiles": [$hostProfiles],
             |  "components": [
             |$components
             |  ],
             |  "icons": [
             |$icons
-            |  ]
+            |  ],
+            |  "services": [],
+            |  "finiteValues": []
             |}
         """.trimMargin() + "\n"
     }

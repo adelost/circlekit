@@ -1,7 +1,8 @@
 {
   "stage": "native-export",
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "sourceFile": "showcase-catalog/src/main/java/io/v1d/circlekit/showcase/catalog/ShowcaseNativeBindings.kt",
+  "profiles": ["phone-full-ui", "wear-full-ui"],
   "components": [
     { "componentId": "foundation.colors", "rendererId": "colors", "profiles": ["phone-full-ui", "wear-full-ui"] },
     { "componentId": "foundation.geometry", "rendererId": "geometry", "profiles": ["phone-full-ui", "wear-full-ui"] },
@@ -32,5 +33,7 @@
     { "iconId": "download", "nativeSymbol": "RingIcons.Download" },
     { "iconId": "record", "nativeSymbol": "RingIcons.Record" },
     { "iconId": "wrench", "nativeSymbol": "RingIcons.Wrench" }
-  ]
+  ],
+  "services": [],
+  "finiteValues": []
 }
