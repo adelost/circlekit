@@ -199,17 +199,34 @@ export function productArtifactConformance(
     "icon asset",
   ));
 
-  // The service-port axis is UNASSERTED until its ref form is settled against a
-  // second product. Link names ports RELATIVE to their service — serviceId
-  // "navigation" with inputPorts ["open"] — while this helper builds fully
-  // qualified "mount.port" refs. Comparing them flags every Link port as an
-  // orphan, which is the same wall of false findings the renderer axis produced.
+  // Measured against Link, not assumed: its ten lego mount ids and its ten
+  // manifest serviceIds are the SAME set, and its navigation lego declares
+  // port("open")/port("destination") — exactly the bare names the manifest
+  // carries. So a manifest port is service-relative and qualifies as
+  // `serviceId.port`, which is the mount-qualified ref this graph uses.
   //
-  // The likely rule is `${serviceId}.${port}`, but that assumes serviceId equals
-  // the lego mount id, and I have not measured Link's mount ids. One unverified
-  // assumption is what shipped three defects in 0.3.30; this one waits for
-  // evidence instead of shipping a check that is wrong by construction.
-  out.push(unasserted("service-port", "port ref form unsettled"));
+  // A serviceId with no matching mount is reported rather than silently
+  // qualifying into a ref that cannot match anything.
+  const { inputs, outputs } = portRefs(ir);
+  const mountIds = new Set(irSection(ir.legos?.mounts).map(({ id }) => id));
+  for (const service of manifest.services ?? []) {
+    if (!mountIds.has(service.serviceId)) {
+      out.push(finding("service-port", "orphan", service.serviceId,
+        `service '${service.serviceId}' has no lego mount, so its ports cannot be resolved`));
+      continue;
+    }
+    for (const [port, declared, side] of [
+      ...service.inputPorts.map((p) => [p, inputs, "input"] as const),
+      ...service.outputPorts.map((p) => [p, outputs, "output"] as const),
+    ]) {
+      const ref = `${service.serviceId}.${port}`;
+      if (!declared.has(ref)) {
+        out.push(finding("service-port", "orphan", ref,
+          `service '${service.serviceId}' binds ${side} port '${port}', which its lego does not declare`));
+      }
+    }
+  }
+  if (manifest.services === undefined) out.push(unasserted("service-port", "services"));
 
   // Two-way parity on the value space itself, not just its name: a native enum
   // that gained or lost a case is exactly the drift finite values exist to stop.

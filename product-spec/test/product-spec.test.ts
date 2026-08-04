@@ -381,11 +381,11 @@ const conformingManifest: NativeBindingManifest = {
   ],
   icons: [{ iconId: "check", nativeSymbol: "Check" }],
   services: [{
-    serviceId: "fixture.controller",
+    serviceId: "ui.controller",
     nativePortId: "ControllerPorts",
     profiles: ["phone", "wear"],
-    inputPorts: ["ui.controller.sourceState", "ui.controller.trigger"],
-    outputPorts: ["domain.source.status", "ui.controller.state"],
+    inputPorts: ["sourceState", "trigger"],
+    outputPorts: ["state"],
   }],
   finiteValues: [{ id: "fixture.phase", values: ["idle", "active"] }],
 };
@@ -394,10 +394,9 @@ const mutate = (
   change: (draft: NativeBindingManifest) => NativeBindingManifest,
 ): NativeBindingManifest => change(structuredClone(conformingManifest) as NativeBindingManifest);
 
-test("a conforming manifest reports only the axes that are unasserted", () => {
+test("a conforming native manifest reports nothing", () => {
   const findings = productArtifactConformance(fixture(), conformingManifest);
-  assert.deepEqual(findings.map(({ axis, direction }) => `${axis}/${direction}`),
-    ["service-port/unasserted"]);
+  assert.deepEqual(findings.map(({ axis, direction }) => `${axis}/${direction}`), []);
 });
 
 // One mutation per axis. Each asserts the axis AND direction it is supposed to
@@ -412,6 +411,11 @@ const AXIS_MUTATIONS: readonly {
   {
     axis: "artifact", direction: "missing", subject: "wear",
     change: (d) => ({ ...d, profiles: ["phone"] }),
+  },
+  {
+    axis: "service-port", direction: "orphan", subject: "ui.controller.invented",
+    change: (d) => ({ ...d, services: [{ ...d.services![0]!, serviceId: "ui.controller",
+      inputPorts: [...d.services![0]!.inputPorts, "invented"] }] }),
   },
   {
     axis: "component", direction: "mismatch", subject: "fixture.control@phone",
@@ -469,7 +473,7 @@ test("an omitted manifest section is reported, not skipped and not flooded", () 
 
   assert.deepEqual(
     findings.filter((item) => item.direction === "unasserted").map(({ subject }) => subject).sort(),
-    ["finiteValues", "port ref form unsettled", "profiles"],
+    ["finiteValues", "profiles", "services"],
   );
   assert.equal(findings.filter((item) => item.direction === "missing").length, 0);
 });
