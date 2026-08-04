@@ -412,8 +412,11 @@ const AXIS_MUTATIONS: readonly {
     change: (d) => ({ ...d, profiles: ["phone"] }),
   },
   {
-    axis: "renderer", direction: "missing", subject: "renderer.wear",
-    change: (d) => ({ ...d, components: [d.components[0]!] }),
+    axis: "component", direction: "mismatch", subject: "fixture.control@phone",
+    change: (d) => ({
+      ...d,
+      components: [...d.components, { componentId: "fixture.control", rendererId: "renderer.phone", profiles: ["phone"] }],
+    }),
   },
   {
     axis: "component", direction: "orphan", subject: "fixture.ghost",
