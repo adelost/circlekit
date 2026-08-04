@@ -199,30 +199,17 @@ export function productArtifactConformance(
     "icon asset",
   ));
 
-  const { inputs, outputs } = portRefs(ir);
-  if (manifest.services === undefined) out.push(unasserted("service-port", "services"));
-  for (const service of manifest.services ?? []) {
-    for (const port of service.inputPorts) {
-      if (!inputs.has(port)) {
-        out.push(finding(
-          "service-port",
-          "orphan",
-          port,
-          `service '${service.serviceId}' binds input port '${port}', which no mounted lego declares`,
-        ));
-      }
-    }
-    for (const port of service.outputPorts) {
-      if (!outputs.has(port)) {
-        out.push(finding(
-          "service-port",
-          "orphan",
-          port,
-          `service '${service.serviceId}' binds output port '${port}', which no mounted lego declares`,
-        ));
-      }
-    }
-  }
+  // The service-port axis is UNASSERTED until its ref form is settled against a
+  // second product. Link names ports RELATIVE to their service — serviceId
+  // "navigation" with inputPorts ["open"] — while this helper builds fully
+  // qualified "mount.port" refs. Comparing them flags every Link port as an
+  // orphan, which is the same wall of false findings the renderer axis produced.
+  //
+  // The likely rule is `${serviceId}.${port}`, but that assumes serviceId equals
+  // the lego mount id, and I have not measured Link's mount ids. One unverified
+  // assumption is what shipped three defects in 0.3.30; this one waits for
+  // evidence instead of shipping a check that is wrong by construction.
+  out.push(unasserted("service-port", "port ref form unsettled"));
 
   // Two-way parity on the value space itself, not just its name: a native enum
   // that gained or lost a case is exactly the drift finite values exist to stop.
