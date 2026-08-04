@@ -44,7 +44,6 @@ export interface NativeBindingManifest {
  */
 export type ConformanceAxis =
   | "artifact"
-  | "renderer"
   | "component"
   | "icon"
   | "service-port"
@@ -140,21 +139,34 @@ export function productArtifactConformance(
   if (manifest.profiles === undefined) out.push(unasserted("artifact", "profiles"));
   else out.push(...compareIds("artifact", artifactIds, manifest.profiles, "artifact profile"));
 
-  // A renderer that binds nothing is as wrong as a component that binds nowhere:
-  // it means the product still advertises a host that stopped rendering.
-  out.push(...compareIds(
-    "renderer",
-    irSection(ir.rendererBindings).map(({ id }) => id),
-    manifest.components.map(({ rendererId }) => rendererId),
-    "renderer",
-  ));
-
   out.push(...compareIds(
     "component",
     irSection(ir.componentCatalog).map(({ id }) => id),
     manifest.components.map(({ componentId }) => componentId),
     "component",
   ));
+
+  // No `renderer` axis. It is tempting to match components[].rendererId against
+  // the product's rendererBindings, and the first version did — but they name
+  // different things. The manifest names a component's native implementation
+  // ("capture", "colors"); rendererBindings names a platform
+  // ("android-phone-compose"). Comparing them produced five false `missing` and a
+  // wall of false `orphan` against CircleKit Showcase. The fixture used one name
+  // for both concepts, which is precisely why it stayed green.
+  //
+  // What the manifest CAN prove is that no component is bound twice for one
+  // profile, which is a real defect and unrepresentable in the IR.
+  const boundOnce = new Set<string>();
+  for (const component of manifest.components) {
+    for (const profile of component.profiles ?? []) {
+      const key = `${component.componentId}@${profile}`;
+      if (boundOnce.has(key)) {
+        out.push(finding("component", "mismatch", key,
+          `component '${component.componentId}' is bound twice for profile '${profile}'`));
+      }
+      boundOnce.add(key);
+    }
+  }
 
   // A native binding may not invent a profile the product never declared, or the
   // manifest silently claims coverage on a host that does not exist.
@@ -171,6 +183,13 @@ export function productArtifactConformance(
     }
   }
 
+  // KNOWN DEFECT, deliberately not guessed at: CircleKit Showcase's manifest
+  // keys icons by ASSET ref ("palette") while the IR keys them by PRODUCT ref
+  // ("showcase.palette"), so this reports all twelve as missing. That is the same
+  // shape of mistake the renderer axis had. One real product is not enough
+  // evidence to pick the general rule, and Link's convention is unverified, so
+  // this stays as-is and stays flagged rather than being quietly widened to
+  // match on either field — which would hide a genuine mismatch.
   out.push(...compareIds(
     "icon",
     irSection(ir.iconRefs).map(({ id }) => id),
