@@ -28,18 +28,35 @@ class ShowcaseManifestTest {
             assertTrue(case.id.value.matches(Regex("[a-z0-9.-]+")))
             assertTrue(case.scenarios.all { it.id.value.matches(Regex("[a-z0-9.-]+")) })
         }
+        // The product declares five artifact profiles across four hosts; THIS host renders
+        // two of them. Asserting the product's set equals the Android pair was true only
+        // while Showcase was Android-only, and it has been red since the iPhone, watchOS and
+        // Garmin artifacts landed. They are two different facts, so they get two assertions:
+        // the host renders exactly its pair, and its pair is part of what the product
+        // declares. Collapsing them is what made a passing assertion impossible.
         assertEquals(
             setOf(SHOWCASE_PHONE_PROFILE, SHOWCASE_WEAR_PROFILE),
-            ShowcaseManifest.profiles,
+            ShowcaseNativeBindings.profiles,
+        )
+        assertTrue(ShowcaseManifest.profiles.containsAll(ShowcaseNativeBindings.profiles))
+        assertTrue(
+            ShowcaseNativeBindings.components.all { it.profiles == ShowcaseNativeBindings.profiles },
+        )
+        // Derived, not hand-listed. The old expectation enumerated exactly the seven
+        // section screens, so the Garmin artifact family made it red the day it landed and
+        // any future family would do the same. What actually matters is total surface
+        // coverage: every screen the product declares a tree for carries all three, and
+        // every section has one. A new family extends the set instead of breaking it.
+        val surfacesByScreen = ShowcaseManifest.componentTrees
+            .groupBy { it.screenId }
+            .mapValues { (_, trees) -> trees.map { it.surface }.toSet() }
+        assertTrue(
+            "screens missing a surface: $surfacesByScreen",
+            surfacesByScreen.values.all { it == setOf("round", "compact", "wide") },
         )
         assertTrue(
-            ShowcaseNativeBindings.components.all { it.profiles == ShowcaseManifest.profiles },
-        )
-        assertEquals(
-            ShowcaseFamily.entries.flatMap { family ->
-                listOf("round", "compact", "wide").map { surface -> "section.${family.id}/$surface" }
-            }.toSet(),
-            ShowcaseManifest.componentTrees.map { "${it.screenId}/${it.surface}" }.toSet(),
+            ShowcaseFamily.entries.map { "section.${it.id}" }
+                .all(surfacesByScreen::containsKey),
         )
     }
 

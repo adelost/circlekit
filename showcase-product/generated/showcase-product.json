@@ -841,6 +841,7 @@
       "screen": "artifact.garmin-limited-ui"
     }
   ],
+  "finiteValues": [],
   "iconRefs": [
     {
       "artifacts": [
@@ -1098,7 +1099,7 @@
   "palette": {
     "variants": []
   },
-  "productSpecVersion": "0.3.25",
+  "productSpecVersion": "0.3.31",
   "rendererBindings": [
     {
       "capabilities": [
@@ -1139,7 +1140,7 @@
       "id": "garmin-connectiq-monkeyc"
     }
   ],
-  "schemaVersion": 2,
+  "schemaVersion": 5,
   "showcase": {
     "cases": [
       {

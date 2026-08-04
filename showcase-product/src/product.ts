@@ -7,11 +7,12 @@ import {
   field,
   mount,
   port,
+  assertProductArtifactConformance,
+  type NativeBindingManifest,
   type ProductIr,
 } from "@v1d/product-spec";
 import { CIRCLEKIT_ASSET_CATALOG } from "@v1d/circlekit-assets";
 import { showcaseCases, showcaseSections } from "./catalog.js";
-import type { ShowcaseNativeRegistry } from "./native-registry.js";
 
 const SHOWCASE_ANDROID_ARTIFACT_PROFILES = ["phone-full-ui", "wear-full-ui"] as const;
 const SHOWCASE_FULL_UI_ARTIFACT_PROFILES = [
@@ -171,6 +172,11 @@ const baseProduct = defineProduct({
     mounts,
     wiring: [],
   },
+  // Showcase demonstrates components, not domain state, so it owns no closed value
+  // space. The field is required rather than optional so that "none" is something a
+  // product says out loud: an omitted section reads as coverage to anything that
+  // compares this declaration against a native binding manifest.
+  finiteValues: [],
   componentCatalog: showcaseComponentCatalog,
   componentFamilies: showcaseComponentFamilies,
   palette: showcasePalette,
@@ -215,17 +221,50 @@ export interface CircleKitShowcaseProductIr extends ProductIr {
 }
 
 export function compileCircleKitShowcaseProduct(
-  registry: ShowcaseNativeRegistry,
+  manifest: NativeBindingManifest,
   productSpecVersion: string,
 ): CircleKitShowcaseProductIr {
   requireCatalogSound();
-  requireNativeParity(registry);
   if (productSpecVersion.trim() === "") throw new Error("ProductSpec package version is blank");
-  return {
+  const ir: CircleKitShowcaseProductIr = {
     ...baseProduct,
     productSpecVersion,
     showcase: { sections: showcaseSections, cases: showcaseCases },
   };
+  // Conformance runs on the COMPILED ir, not on the catalog it was built from. The
+  // local version compared showcaseCases against the manifest directly, which meant a
+  // defect introduced between the catalog and the compiled product was invisible to
+  // the very check meant to catch it.
+  assertProductArtifactConformance(ir, manifest);
+  requireEveryComponentOnEveryAndroidProfile(manifest);
+  return ir;
+}
+
+/**
+ * A Showcase product rule, deliberately NOT a conformance axis.
+ *
+ * Showcase exists to demonstrate every component on every Android form factor, so a
+ * component bound to only one of them is a hole in the demo. Conformance cannot check
+ * this for anyone: the component catalog records ids, not which artifacts a component
+ * belongs to, so there is nothing product-side to compare a subset against.
+ *
+ * Kept local rather than dropped. The shared helper replacing the old parity function
+ * covers product-to-manifest agreement, and this covers a rule only this product has.
+ */
+function requireEveryComponentOnEveryAndroidProfile(manifest: NativeBindingManifest): void {
+  const expected = [...SHOWCASE_ANDROID_ARTIFACT_PROFILES].sort().join(", ");
+  for (const { componentId, profiles } of manifest.components) {
+    if (new Set(profiles).size !== profiles.length) {
+      throw new Error(`native component '${componentId}' repeats a profile`);
+    }
+    const actual = [...profiles].sort().join(", ");
+    if (actual !== expected) {
+      throw new Error(
+        `native component '${componentId}' renders on [${actual}], ` +
+        `but Showcase demonstrates every component on [${expected}]`,
+      );
+    }
+  }
 }
 
 function requireCatalogSound(): void {
@@ -243,33 +282,7 @@ function requireCatalogSound(): void {
   }
 }
 
-function requireNativeParity(registry: ShowcaseNativeRegistry): void {
-  requireUnique(registry.components.map(({ componentId }) => componentId), "native component id");
-  requireUnique(registry.icons.map(({ iconId }) => iconId), "native icon id");
-  const declaredComponents = new Set(showcaseCases.map(({ id }) => id));
-  const nativeComponents = new Set(registry.components.map(({ componentId }) => componentId));
-  requireExactSet(declaredComponents, nativeComponents, "component/native binding");
 
-  const profiles = new Set<string>(SHOWCASE_ANDROID_ARTIFACT_PROFILES);
-  for (const binding of registry.components) {
-    requireUnique(binding.profiles, `profile in native component '${binding.componentId}'`);
-    requireExactSet(profiles, new Set(binding.profiles), `profile in native component '${binding.componentId}'`);
-  }
-
-  const declaredIcons = new Set([
-    ...showcaseSections.map(({ iconId }) => iconId),
-    ...showcaseCases.map(({ iconId }) => iconId),
-  ]);
-  const nativeIcons = new Set(registry.icons.map(({ iconId }) => iconId));
-  requireExactSet(declaredIcons, nativeIcons, "icon/native binding");
-}
-
-function requireExactSet(left: ReadonlySet<string>, right: ReadonlySet<string>, owner: string): void {
-  const missing = [...left].filter((id) => !right.has(id));
-  const orphan = [...right].filter((id) => !left.has(id));
-  if (missing.length > 0) throw new Error(`${owner} missing '${missing.join("', '")}'`);
-  if (orphan.length > 0) throw new Error(`${owner} orphan '${orphan.join("', '")}'`);
-}
 
 function requireUnique(values: readonly string[], owner: string): void {
   if (new Set(values).size !== values.length) throw new Error(`duplicate ${owner}`);

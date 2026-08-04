@@ -30,7 +30,7 @@ enum GeneratedShowcasePortId: String, CaseIterable, Hashable {
 
 enum GeneratedShowcaseProduct {
     static let productId = "circlekit-showcase"
-    static let productSpecVersion = "0.3.25"
+    static let productSpecVersion = "0.3.31"
     static let artifacts: [ShowcaseArtifact] = [
         ShowcaseArtifact(
             id: .iphoneFullUi,
