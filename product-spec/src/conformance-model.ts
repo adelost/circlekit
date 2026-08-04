@@ -183,18 +183,20 @@ export function productArtifactConformance(
     }
   }
 
-  // KNOWN DEFECT, deliberately not guessed at: CircleKit Showcase's manifest
-  // keys icons by ASSET ref ("palette") while the IR keys them by PRODUCT ref
-  // ("showcase.palette"), so this reports all twelve as missing. That is the same
-  // shape of mistake the renderer axis had. One real product is not enough
-  // evidence to pick the general rule, and Link's convention is unverified, so
-  // this stays as-is and stays flagged rather than being quietly widened to
-  // match on either field — which would hide a genuine mismatch.
+  // Both Link and CircleKit Showcase key manifest icons by ASSET ref ("gear",
+  // "palette"), not by product icon ref ("route.settings", "showcase.palette").
+  // Two products agreeing is enough to fix the rule; one was not, which is why
+  // this stayed flagged for a round instead of being guessed.
+  //
+  // Compare the DISTINCT asset set, because a product may point several icon refs
+  // at one asset — Link uses "gear" for both route.settings and
+  // action.open-settings. Comparing per icon ref would report a false orphan for
+  // every reuse.
   out.push(...compareIds(
     "icon",
-    irSection(ir.iconRefs).map(({ id }) => id),
+    new Set(irSection(ir.iconRefs).map(({ assetRef }) => assetRef)),
     manifest.icons.map(({ iconId }) => iconId),
-    "product icon",
+    "icon asset",
   ));
 
   const { inputs, outputs } = portRefs(ir);
