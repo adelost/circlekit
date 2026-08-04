@@ -430,7 +430,7 @@ const AXIS_MUTATIONS: readonly {
     axis: "service-port", direction: "orphan", subject: "ui.controller.invented",
     change: (d) => ({
       ...d,
-      services: [{ ...d.services[0]!, inputPorts: [...d.services[0]!.inputPorts, "ui.controller.invented"] }],
+      services: [{ ...d.services![0]!, inputPorts: [...d.services![0]!.inputPorts, "ui.controller.invented"] }],
     }),
   },
   {
@@ -456,4 +456,22 @@ test("the hard gate names every axis at once", () => {
     () => assertProductArtifactConformance(fixture(), mutate((d) => ({ ...d, profiles: [], icons: [] }))),
     /artifact\/missing[\s\S]*icon\/missing/,
   );
+});
+
+// CircleKit Showcase ships a manifest with only components and icons. The first
+// version of this helper crashed on it ("manifest.services is not iterable") and
+// would have called all five artifacts missing. An omitted section is unasserted,
+// and it must say so rather than pass quietly or flood.
+test("an omitted manifest section is reported, not skipped and not flooded", () => {
+  const partial = { ...conformingManifest } as Record<string, unknown>;
+  delete partial.profiles;
+  delete partial.services;
+  delete partial.finiteValues;
+  const findings = productArtifactConformance(fixture(), partial as unknown as NativeBindingManifest);
+
+  assert.deepEqual(
+    findings.filter((item) => item.direction === "unasserted").map(({ subject }) => subject).sort(),
+    ["finiteValues", "profiles", "services"],
+  );
+  assert.equal(findings.filter((item) => item.direction === "missing").length, 0);
 });

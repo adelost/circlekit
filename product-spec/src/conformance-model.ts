@@ -20,21 +20,21 @@ export interface NativeBindingManifest {
   readonly schemaVersion: typeof NATIVE_BINDING_MANIFEST_SCHEMA_VERSION;
   readonly sourceFile: string;
   /** Artifact profile ids this host actually renders. */
-  readonly profiles: readonly string[];
+  readonly profiles?: readonly string[];
   readonly components: readonly {
     readonly componentId: string;
     readonly rendererId: string;
     readonly profiles: readonly string[];
   }[];
   readonly icons: readonly { readonly iconId: string; readonly nativeSymbol: string }[];
-  readonly services: readonly {
+  readonly services?: readonly {
     readonly serviceId: string;
     readonly nativePortId: string;
     readonly profiles: readonly string[];
     readonly inputPorts: readonly string[];
     readonly outputPorts: readonly string[];
   }[];
-  readonly finiteValues: readonly { readonly id: string; readonly values: readonly string[] }[];
+  readonly finiteValues?: readonly { readonly id: string; readonly values: readonly string[] }[];
 }
 
 /**
@@ -54,8 +54,10 @@ export type ConformanceAxis =
  * `missing` — the product declares it and native does not bind it.
  * `orphan`  — native binds it and the product does not declare it.
  * `mismatch` — both sides know it and disagree about its content.
+ * `unasserted` — the manifest omits this section entirely, so the axis was not
+ *   checked. Reported rather than skipped: silence here reads as coverage.
  */
-export type ConformanceDirection = "missing" | "orphan" | "mismatch";
+export type ConformanceDirection = "missing" | "orphan" | "mismatch" | "unasserted";
 
 export interface ConformanceFinding {
   readonly axis: ConformanceAxis;
@@ -94,11 +96,19 @@ function compareIds(
   return out;
 }
 
+/**
+ * The IR side needs the same defence as the manifest side. CircleKit Showcase
+ * compiles an IR with no finiteValues at all — the product predates them — and
+ * reading it as an array crashed. A section the PRODUCT omits is unasserted for
+ * the same reason a section the manifest omits is.
+ */
+const irSection = <T,>(value: readonly T[] | undefined): readonly T[] => value ?? [];
+
 /** Every mounted lego port, as the `mount.port` refs wiring and native bindings use. */
 function portRefs(ir: ProductIr): { inputs: Set<string>; outputs: Set<string> } {
   const inputs = new Set<string>();
   const outputs = new Set<string>();
-  for (const mount of ir.legos.mounts) {
+  for (const mount of irSection(ir.legos?.mounts)) {
     for (const port of mount.lego.inputs) inputs.add(`${mount.id}.${port.id}`);
     for (const port of mount.lego.outputs) outputs.add(`${mount.id}.${port.id}`);
   }
@@ -116,22 +126,32 @@ export function productArtifactConformance(
   manifest: NativeBindingManifest,
 ): readonly ConformanceFinding[] {
   const out: ConformanceFinding[] = [];
-  const artifactIds = new Set(ir.artifacts.map(({ id }) => id));
+  const artifactIds = new Set(irSection(ir.artifacts).map(({ id }) => id));
 
-  out.push(...compareIds("artifact", artifactIds, manifest.profiles, "artifact profile"));
+  // Manifests differ by product: CircleKit Showcase declares components and icons
+  // and nothing else, while Link declares all five sections. An absent section is
+  // neither "conforms" nor "everything is missing" -- both lie. It is UNASSERTED,
+  // and it says so in one line, because a silently skipped axis reads as coverage
+  // and a flood of false `missing` reads as breakage.
+  const unasserted = (axis: ConformanceAxis, section: string): ConformanceFinding =>
+    finding(axis, "unasserted", section,
+      `manifest declares no '${section}' section, so the ${axis} axis is not checked here`);
+
+  if (manifest.profiles === undefined) out.push(unasserted("artifact", "profiles"));
+  else out.push(...compareIds("artifact", artifactIds, manifest.profiles, "artifact profile"));
 
   // A renderer that binds nothing is as wrong as a component that binds nowhere:
   // it means the product still advertises a host that stopped rendering.
   out.push(...compareIds(
     "renderer",
-    ir.rendererBindings.map(({ id }) => id),
+    irSection(ir.rendererBindings).map(({ id }) => id),
     manifest.components.map(({ rendererId }) => rendererId),
     "renderer",
   ));
 
   out.push(...compareIds(
     "component",
-    ir.componentCatalog.map(({ id }) => id),
+    irSection(ir.componentCatalog).map(({ id }) => id),
     manifest.components.map(({ componentId }) => componentId),
     "component",
   ));
@@ -139,7 +159,7 @@ export function productArtifactConformance(
   // A native binding may not invent a profile the product never declared, or the
   // manifest silently claims coverage on a host that does not exist.
   for (const component of manifest.components) {
-    for (const profile of component.profiles) {
+    for (const profile of component.profiles ?? []) {
       if (!artifactIds.has(profile)) {
         out.push(finding(
           "component",
@@ -153,13 +173,14 @@ export function productArtifactConformance(
 
   out.push(...compareIds(
     "icon",
-    ir.iconRefs.map(({ id }) => id),
+    irSection(ir.iconRefs).map(({ id }) => id),
     manifest.icons.map(({ iconId }) => iconId),
     "product icon",
   ));
 
   const { inputs, outputs } = portRefs(ir);
-  for (const service of manifest.services) {
+  if (manifest.services === undefined) out.push(unasserted("service-port", "services"));
+  for (const service of manifest.services ?? []) {
     for (const port of service.inputPorts) {
       if (!inputs.has(port)) {
         out.push(finding(
@@ -184,9 +205,11 @@ export function productArtifactConformance(
 
   // Two-way parity on the value space itself, not just its name: a native enum
   // that gained or lost a case is exactly the drift finite values exist to stop.
-  const declaredValues = new Map(ir.finiteValues.map(({ id, values }) => [id, [...values].sort()]));
-  const boundValues = new Map(manifest.finiteValues.map(({ id, values }) => [id, [...values].sort()]));
-  out.push(...compareIds("finite-value", declaredValues.keys(), boundValues.keys(), "finite value"));
+  const declaredValues = new Map(irSection(ir.finiteValues).map(({ id, values }) => [id, [...values].sort()]));
+  const boundValues = new Map((manifest.finiteValues ?? []).map(({ id, values }) => [id, [...values].sort()]));
+  if (ir.finiteValues === undefined) out.push(unasserted("finite-value", "product finiteValues"));
+  else if (manifest.finiteValues === undefined) out.push(unasserted("finite-value", "finiteValues"));
+  else out.push(...compareIds("finite-value", declaredValues.keys(), boundValues.keys(), "finite value"));
   for (const [id, declared] of [...declaredValues].sort(([a], [b]) => a.localeCompare(b))) {
     const bound = boundValues.get(id);
     if (bound !== undefined && JSON.stringify(declared) !== JSON.stringify(bound)) {
