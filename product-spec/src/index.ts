@@ -1,3 +1,4 @@
+export * from "./conformance-model.js";
 export * from "./component-tree-model.js";
 export * from "./invariant-model.js";
 export * from "./native-lego-model.js";
