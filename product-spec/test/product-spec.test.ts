@@ -379,7 +379,7 @@ const conformingManifest: NativeBindingManifest = {
     { componentId: "fixture.control", rendererId: "renderer.phone", profiles: ["phone"] },
     { componentId: "fixture.control", rendererId: "renderer.wear", profiles: ["wear"] },
   ],
-  icons: [{ iconId: "status.check", nativeSymbol: "Check" }],
+  icons: [{ iconId: "check", nativeSymbol: "Check" }],
   services: [{
     serviceId: "fixture.controller",
     nativePortId: "ControllerPorts",
@@ -426,7 +426,7 @@ const AXIS_MUTATIONS: readonly {
     }),
   },
   {
-    axis: "icon", direction: "missing", subject: "status.check",
+    axis: "icon", direction: "missing", subject: "check",
     change: (d) => ({ ...d, icons: [] }),
   },
   {
