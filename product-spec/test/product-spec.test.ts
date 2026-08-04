@@ -3,12 +3,15 @@ import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { resolve } from "node:path";
 import test from "node:test";
+import type { ConformanceAxis, ConformanceDirection, NativeBindingManifest } from "../src/conformance-model.js";
 import {
+  assertProductArtifactConformance,
   buildOutputManifest,
   checkOutputManifest,
   configField,
   configInput,
   defineScreenComponentFamilyRegistry,
+  productArtifactConformance,
   defineLegoSpec,
   definePalette,
   definePortableAssetCatalog,
@@ -365,4 +368,92 @@ test("graph, capability and port failures stop before emission", () => {
   assert.throws(() => definePalette([{
     ...paletteVariant, status: { ...paletteVariant.status, danger: "red" },
   }]), /invalid colour/);
+});
+
+const conformingManifest: NativeBindingManifest = {
+  stage: "native-export",
+  schemaVersion: 2,
+  sourceFile: "fixture/NativeBindings.kt",
+  profiles: ["phone", "wear"],
+  components: [
+    { componentId: "fixture.control", rendererId: "renderer.phone", profiles: ["phone"] },
+    { componentId: "fixture.control", rendererId: "renderer.wear", profiles: ["wear"] },
+  ],
+  icons: [{ iconId: "status.check", nativeSymbol: "Check" }],
+  services: [{
+    serviceId: "fixture.controller",
+    nativePortId: "ControllerPorts",
+    profiles: ["phone", "wear"],
+    inputPorts: ["ui.controller.sourceState", "ui.controller.trigger"],
+    outputPorts: ["domain.source.status", "ui.controller.state"],
+  }],
+  finiteValues: [{ id: "fixture.phase", values: ["idle", "active"] }],
+};
+
+const mutate = (
+  change: (draft: NativeBindingManifest) => NativeBindingManifest,
+): NativeBindingManifest => change(structuredClone(conformingManifest) as NativeBindingManifest);
+
+test("a conforming native manifest reports nothing", () => {
+  assert.deepEqual(productArtifactConformance(fixture(), conformingManifest), []);
+});
+
+// One mutation per axis. Each asserts the axis AND direction it is supposed to
+// break, so a mutation cannot pass by failing for some unrelated reason -- the
+// mistake that lets a mutation test certify a check it never exercised.
+const AXIS_MUTATIONS: readonly {
+  axis: ConformanceAxis;
+  direction: ConformanceDirection;
+  subject: string;
+  change: (draft: NativeBindingManifest) => NativeBindingManifest;
+}[] = [
+  {
+    axis: "artifact", direction: "missing", subject: "wear",
+    change: (d) => ({ ...d, profiles: ["phone"] }),
+  },
+  {
+    axis: "renderer", direction: "missing", subject: "renderer.wear",
+    change: (d) => ({ ...d, components: [d.components[0]!] }),
+  },
+  {
+    axis: "component", direction: "orphan", subject: "fixture.ghost",
+    change: (d) => ({
+      ...d,
+      components: [...d.components, { componentId: "fixture.ghost", rendererId: "renderer.phone", profiles: ["phone"] }],
+    }),
+  },
+  {
+    axis: "icon", direction: "missing", subject: "status.check",
+    change: (d) => ({ ...d, icons: [] }),
+  },
+  {
+    axis: "service-port", direction: "orphan", subject: "ui.controller.invented",
+    change: (d) => ({
+      ...d,
+      services: [{ ...d.services[0]!, inputPorts: [...d.services[0]!.inputPorts, "ui.controller.invented"] }],
+    }),
+  },
+  {
+    axis: "finite-value", direction: "mismatch", subject: "fixture.phase",
+    change: (d) => ({ ...d, finiteValues: [{ id: "fixture.phase", values: ["idle"] }] }),
+  },
+];
+
+for (const { axis, direction, subject, change } of AXIS_MUTATIONS) {
+  test(`conformance catches a ${direction} ${axis}`, () => {
+    const findings = productArtifactConformance(fixture(), mutate(change));
+    const match = findings.find((item) => item.axis === axis && item.direction === direction);
+    assert.ok(
+      match !== undefined,
+      `expected a ${axis}/${direction} finding, got ${JSON.stringify(findings)}`,
+    );
+    assert.equal(match.subject, subject);
+  });
+}
+
+test("the hard gate names every axis at once", () => {
+  assert.throws(
+    () => assertProductArtifactConformance(fixture(), mutate((d) => ({ ...d, profiles: [], icons: [] }))),
+    /artifact\/missing[\s\S]*icon\/missing/,
+  );
 });
