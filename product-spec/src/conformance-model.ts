@@ -136,8 +136,28 @@ export function productArtifactConformance(
     finding(axis, "unasserted", section,
       `manifest declares no '${section}' section, so the ${axis} axis is not checked here`);
 
+  // ONE DIRECTION ONLY, and the asymmetry is the point. A manifest describes one host,
+  // so a profile it does not bind is not a defect: CircleKit Showcase declares five
+  // artifacts across four hosts, and its Android manifest legitimately renders two of
+  // them. Comparing both directions reported the iPhone, watchOS and Garmin artifacts as
+  // missing from Android, which is not a finding, it is the architecture.
+  //
+  // The reverse is a real defect and stays: a host claiming an artifact the product never
+  // declared is a manifest asserting coverage of something that does not exist.
+  //
+  // Skyvw hid this for a round because it is a single-host product: one apk that picks
+  // its profile at runtime, so its manifest legitimately carries every artifact.
+  // "Which artifacts has no host at all" is a question about the SET of manifests, not
+  // about any one of them, and [productArtifactHostCoverage] is where it is asked.
   if (manifest.profiles === undefined) out.push(unasserted("artifact", "profiles"));
-  else out.push(...compareIds("artifact", artifactIds, manifest.profiles, "artifact profile"));
+  else {
+    for (const profile of [...new Set(manifest.profiles)].sort()) {
+      if (!artifactIds.has(profile)) {
+        out.push(finding("artifact", "orphan", profile,
+          `artifact profile '${profile}' is bound natively but the product does not declare it`));
+      }
+    }
+  }
 
   out.push(...compareIds(
     "component",
@@ -248,6 +268,33 @@ export function productArtifactConformance(
   }
 
   return out;
+}
+
+/**
+ * Which declared artifacts no host binds at all.
+ *
+ * [productArtifactConformance] deliberately cannot answer this: it sees one manifest, and
+ * an artifact absent from one host is normal. Dropping the question entirely would be the
+ * worse failure, because then a product could declare an artifact nobody renders and every
+ * per-host run would still come back empty. Ask it once, over every host the product ships.
+ */
+export function productArtifactHostCoverage(
+  ir: ProductIr,
+  manifests: readonly NativeBindingManifest[],
+): readonly ConformanceFinding[] {
+  const unasserted = manifests.filter(({ profiles }) => profiles === undefined);
+  if (unasserted.length > 0) {
+    return unasserted.map((manifest) => finding("artifact", "unasserted", manifest.sourceFile,
+      `manifest '${manifest.sourceFile}' declares no 'profiles' section, so host coverage ` +
+      "cannot be measured for any artifact"));
+  }
+  const bound = new Set(manifests.flatMap(({ profiles }) => [...(profiles ?? [])]));
+  return irSection(ir.artifacts)
+    .map(({ id }) => id)
+    .filter((id) => !bound.has(id))
+    .sort()
+    .map((id) => finding("artifact", "missing", id,
+      `artifact '${id}' is declared but no host manifest binds it`));
 }
 
 /** Throw one error naming every disagreement, for callers that want a hard gate. */
