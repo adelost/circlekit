@@ -394,8 +394,10 @@ const mutate = (
   change: (draft: NativeBindingManifest) => NativeBindingManifest,
 ): NativeBindingManifest => change(structuredClone(conformingManifest) as NativeBindingManifest);
 
-test("a conforming native manifest reports nothing", () => {
-  assert.deepEqual(productArtifactConformance(fixture(), conformingManifest), []);
+test("a conforming manifest reports only the axes that are unasserted", () => {
+  const findings = productArtifactConformance(fixture(), conformingManifest);
+  assert.deepEqual(findings.map(({ axis, direction }) => `${axis}/${direction}`),
+    ["service-port/unasserted"]);
 });
 
 // One mutation per axis. Each asserts the axis AND direction it is supposed to
@@ -428,13 +430,6 @@ const AXIS_MUTATIONS: readonly {
   {
     axis: "icon", direction: "missing", subject: "check",
     change: (d) => ({ ...d, icons: [] }),
-  },
-  {
-    axis: "service-port", direction: "orphan", subject: "ui.controller.invented",
-    change: (d) => ({
-      ...d,
-      services: [{ ...d.services![0]!, inputPorts: [...d.services![0]!.inputPorts, "ui.controller.invented"] }],
-    }),
   },
   {
     axis: "finite-value", direction: "mismatch", subject: "fixture.phase",
@@ -474,7 +469,7 @@ test("an omitted manifest section is reported, not skipped and not flooded", () 
 
   assert.deepEqual(
     findings.filter((item) => item.direction === "unasserted").map(({ subject }) => subject).sort(),
-    ["finiteValues", "profiles", "services"],
+    ["finiteValues", "port ref form unsettled", "profiles"],
   );
   assert.equal(findings.filter((item) => item.direction === "missing").length, 0);
 });
