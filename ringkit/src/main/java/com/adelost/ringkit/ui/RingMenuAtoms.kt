@@ -245,6 +245,9 @@ fun RingRow(
                 sub = sub,
                 icon = icon,
                 ringActive = ringActive,
+                // A hold row is defined by having something to confirm; the
+                // require above is what proves it, and the ring says so.
+                affordance = CircleRowAffordance.of(confirm),
                 accent = accent,
                 semanticColor = semanticColor,
                 leading = leading,
