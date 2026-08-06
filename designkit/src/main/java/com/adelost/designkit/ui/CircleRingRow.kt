@@ -110,6 +110,10 @@ fun CircleRingRow(
             sub = sub,
             icon = icon,
             ringActive = ringActive,
+            // Read off the same action that decides whether anything happens
+            // when the row is pressed, so the ring cannot promise a gesture
+            // this row does not have.
+            affordance = CircleRowAffordance.of(onTap),
             accent = accent,
             semanticColor = semanticColor,
             leading = leading,
@@ -130,6 +134,9 @@ fun CircleRingRowContent(
     sub: String,
     icon: ImageVector?,
     ringActive: Boolean?,
+    /** No default: see [CircleRowAffordance]. Every renderer states what its
+     *  row can do by handing over the action, and the ring follows. */
+    affordance: CircleRowAffordance,
     accent: CircleAccent = ringIconAccent(icon),
     semanticColor: Color? = null,
     leading: (@Composable () -> Unit)?,
@@ -163,6 +170,7 @@ fun CircleRingRowContent(
                 icon = icon,
                 centerValue = centerValue,
                 active = ringActive,
+                affordance = affordance,
                 accent = accent,
                 semanticColor = semanticColor,
                 phoneDesign = phoneDesign,
@@ -263,6 +271,7 @@ private fun CircleRowLeadingRing(
     icon: ImageVector?,
     centerValue: String?,
     active: Boolean?,
+    affordance: CircleRowAffordance,
     accent: CircleAccent,
     semanticColor: Color?,
     phoneDesign: PhoneSurfaceDesign?,
@@ -275,11 +284,17 @@ private fun CircleRowLeadingRing(
     // strength — the RING alone carries state, neutral unless the toggle
     // is ON. One shared contour renderer, so a row ring can never weigh
     // differently from a launcher or home ring again.
+    //
+    // A reading keeps the icon and keeps the SIZE — the list's titles still
+    // line up down a straight edge, and nothing moves when a row's action
+    // appears or goes away. Only the circle is withheld, because only the
+    // circle was making a promise (see [CircleRowAffordance]).
+    val contour = circleRowRingContour(affordance, active, activeContour)
     Box(
         modifier = Modifier
             .size(phoneDesign?.rowIconDiameter ?: MenuDesign.iconRingDiameter)
             .clip(CircleShape)
-            .circleRingContour(if (active == true) activeContour else MenuDesign.ringNeutral)
+            .then(contour?.let { Modifier.circleRingContour(it) } ?: Modifier)
             .circleProgressContour(
                 feedbackSweep.takeIf { it > 0f },
                 color = progressContour,
