@@ -76,25 +76,47 @@ data class DisplayUnitPreferences(
         }
     }
 
-    fun formatDistance(metres: Float): MeasurementText = when (distance) {
-        DistanceDisplayUnit.METRIC -> when {
-            abs(metres) >= 10f * METRES_PER_KILOMETRE ->
-                MeasurementText(decimal(metres / METRES_PER_KILOMETRE, 0), "km")
-            abs(metres) >= METRES_PER_KILOMETRE ->
-                MeasurementText(decimal(metres / METRES_PER_KILOMETRE, 1), "km")
-            else -> MeasurementText(metres.roundToInt().toString(), "m")
-        }
-        DistanceDisplayUnit.IMPERIAL -> {
-            val feet = metres * METRES_TO_FEET
-            when {
-                abs(metres) >= 10f * METRES_PER_MILE ->
-                    MeasurementText(decimal(metres / METRES_PER_MILE, 0), "mi")
-                abs(metres) >= METRES_PER_MILE ->
-                    MeasurementText(decimal(metres / METRES_PER_MILE, 1), "mi")
-                else -> MeasurementText(feet.roundToInt().toString(), "ft")
+    /**
+     * Horizontal distance, graduating to km/miles once the metre form gets long.
+     *
+     * [longFormDecimals] governs ONLY that graduated form. Null keeps the
+     * adaptive ladder every existing caller renders today — one decimal from a
+     * kilometre, none past ten — so passing nothing is byte-for-byte what it
+     * always was. A host that wants a steadier reading, rather than one whose
+     * precision drops as the number grows, states the decimals it wants.
+     *
+     * The metre/foot form takes no decimals at any setting: a tenth of a metre
+     * is below what a horizontal fix resolves, and "850.00 m" would be four
+     * digits of confidence nobody measured.
+     */
+    fun formatDistance(metres: Float, longFormDecimals: Int? = null): MeasurementText =
+        when (distance) {
+            DistanceDisplayUnit.METRIC -> when {
+                abs(metres) >= 10f * METRES_PER_KILOMETRE -> MeasurementText(
+                    decimal(metres / METRES_PER_KILOMETRE, longFormDecimals ?: 0),
+                    "km",
+                )
+                abs(metres) >= METRES_PER_KILOMETRE -> MeasurementText(
+                    decimal(metres / METRES_PER_KILOMETRE, longFormDecimals ?: 1),
+                    "km",
+                )
+                else -> MeasurementText(metres.roundToInt().toString(), "m")
+            }
+            DistanceDisplayUnit.IMPERIAL -> {
+                val feet = metres * METRES_TO_FEET
+                when {
+                    abs(metres) >= 10f * METRES_PER_MILE -> MeasurementText(
+                        decimal(metres / METRES_PER_MILE, longFormDecimals ?: 0),
+                        "mi",
+                    )
+                    abs(metres) >= METRES_PER_MILE -> MeasurementText(
+                        decimal(metres / METRES_PER_MILE, longFormDecimals ?: 1),
+                        "mi",
+                    )
+                    else -> MeasurementText(feet.roundToInt().toString(), "ft")
+                }
             }
         }
-    }
 
     fun formatVerticalSpeed(metresPerSecond: Float, decimals: Int = 1): MeasurementText =
         formatSpeedSi(metresPerSecond, decimals)
