@@ -14,7 +14,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.vector.ImageVector
-import kotlinx.coroutines.delay
 
 /**
  * The one centre-screen acknowledgement model for every action atom.
@@ -38,6 +37,21 @@ data class CircleActionCue(
     val value: String? = null,
     /** One sentence: what it does, and what its states mean. */
     val hint: String? = null,
+    /**
+     * This cue must survive the publisher going quiet, and the HOST owns how
+     * long it stays.
+     *
+     * A cue published while a finger is down is refreshed continuously, so it
+     * needs no protection: it lives as long as the press. A cue published
+     * BECAUSE the press ended has the opposite problem — the very event that
+     * creates it also restarts the publisher, and the restart's "nothing to
+     * show" arrives right behind it. Whichever order those two land in, an
+     * unprotected cue loses.
+     *
+     * [confirmed] already earned that protection for committed actions. This
+     * says the same thing for an answer that was never an action.
+     */
+    val lingers: Boolean = false,
 ) {
     init {
         require(label.isNotBlank()) { "Action cue needs a visible label" }
@@ -75,8 +89,7 @@ val LocalCircleActionCuePublisher =
     staticCompositionLocalOf<(CircleActionCueEvent) -> Unit> { {} }
 
 /**
- * Whether a press that ended before its hold completed should EXPLAIN the
- * control it touched.
+ * The cue for a press that ended before its hold could complete.
  *
  * A deliberate control does nothing until the hold finishes, so a short press
  * is already safe — and that safety was the whole point (Mattias 2026-07-27:
@@ -85,22 +98,34 @@ val LocalCircleActionCuePublisher =
  * opposite — "en info knapp ... som kanske syns en liten stund efter att man
  * duttar på något". A tap is how people ask what something is.
  *
- * So an abandoned press becomes a QUESTION rather than a failure: the same cue
- * the hold shows, for the same reading window, with nothing executed. The
- * cancel semantics are untouched — the action still does not fire.
+ * So an abandoned press becomes a QUESTION rather than a failure: the same
+ * words the hold shows, with nothing executed. [CircleActionCue.confirmed]
+ * stays false because nothing happened, and progress stays zero because the
+ * ring filled nothing. It [CircleActionCue.lingers] because the release that
+ * creates it also restarts the publisher behind it.
  *
- * [armed] means this control had actually begun a hold; without it every
- * composition that starts unpressed would announce itself. [hasSomethingToSay]
- * keeps a control with neither state nor sentence silent, because an empty
- * card explains nothing and costs the face.
+ * Null when the control has neither a state nor a sentence: an empty card
+ * explains nothing and costs the whole face.
  */
-internal fun explainsAbandonedPress(
-    timing: CircleActionTiming,
-    pressed: Boolean,
-    armed: Boolean,
-    hasSomethingToSay: Boolean,
-): Boolean =
-    !pressed && armed && hasSomethingToSay && timing == CircleActionTiming.DELIBERATE
+internal fun abandonedPressCue(
+    icon: ImageVector,
+    label: String,
+    value: String?,
+    hint: String?,
+): CircleActionCue? =
+    if (value == null && hint == null) {
+        null
+    } else {
+        CircleActionCue(
+            icon = icon,
+            label = label,
+            progress = 0f,
+            confirmed = false,
+            value = value,
+            hint = hint,
+            lingers = true,
+        )
+    }
 
 /**
  * What the centre cue should do for one press state — as DATA, so the state
@@ -122,13 +147,6 @@ internal sealed interface CircleCuePlan {
     /** Sweep 0..1 across the hold, publishing as it fills. */
     data object Sweep : CircleCuePlan
 
-    /**
-     * A press that ended before it could act. Publish, hold it long enough to
-     * READ, then clear — nothing was executed, so nothing closed, so this one
-     * can own its own clock.
-     */
-    data class Explain(val cue: CircleActionCue, val dwellMs: Long) : CircleCuePlan
-
     /** Nothing to say. */
     data object Clear : CircleCuePlan
 }
@@ -140,7 +158,6 @@ internal fun circleCuePlan(
     hint: String?,
     timing: CircleActionTiming,
     pressed: Boolean,
-    armed: Boolean,
     confirmed: Boolean,
     determinateProgress: Float?,
 ): CircleCuePlan {
@@ -151,16 +168,6 @@ internal fun circleCuePlan(
         determinateProgress != null ->
             CircleCuePlan.Show(cue(determinateProgress, isConfirmed = false))
         pressed && timing == CircleActionTiming.DELIBERATE -> CircleCuePlan.Sweep
-        explainsAbandonedPress(
-            timing = timing,
-            pressed = pressed,
-            armed = armed,
-            hasSomethingToSay = value != null || hint != null,
-        ) -> CircleCuePlan.Explain(
-            // Nothing fired, so the ring is honestly empty.
-            cue = cue(progress = 0f, isConfirmed = false),
-            dwellMs = MenuDesign.hintReadingMs,
-        )
         else -> CircleCuePlan.Clear
     }
 }
@@ -200,8 +207,6 @@ fun rememberCircleActionCueController(
     val controller = remember { CircleActionCueController() }
     val explain = hint?.takeIf { it.isNotBlank() }
     val state = stateValue?.takeIf { it.isNotBlank() }
-    /** This control began a hold, so its release is an answer to something. */
-    var armed by remember { mutableStateOf(false) }
 
     LaunchedEffect(
         icon,
@@ -222,13 +227,11 @@ fun rememberCircleActionCueController(
             hint = explain,
             timing = timing,
             pressed = pressed,
-            armed = armed,
             confirmed = controller.confirmed,
             determinateProgress = determinateProgress,
         )
         when (plan) {
             is CircleCuePlan.Settle -> {
-                armed = false
                 publish(CircleActionCueEvent(owner, plan.cue))
                 // The HOST owns the dwell from here (see CenterHoldHost): a
                 // row that closes its own menu is gone before any timer of its
@@ -241,35 +244,41 @@ fun rememberCircleActionCueController(
             is CircleCuePlan.Show -> publish(CircleActionCueEvent(owner, plan.cue))
 
             CircleCuePlan.Sweep -> {
-                armed = true
-                animate(
-                    initialValue = 0f,
-                    targetValue = 1f,
-                    animationSpec = tween(
-                        durationMillis = holdDurationMs.toInt(),
-                        easing = LinearEasing,
-                    ),
-                ) { value, _ ->
-                    publish(
-                        CircleActionCueEvent(
-                            owner,
-                            CircleActionCue(icon, label, value, false, state, explain),
+                var completed = false
+                try {
+                    animate(
+                        initialValue = 0f,
+                        targetValue = 1f,
+                        animationSpec = tween(
+                            durationMillis = holdDurationMs.toInt(),
+                            easing = LinearEasing,
                         ),
-                    )
+                    ) { value, _ ->
+                        publish(
+                            CircleActionCueEvent(
+                                owner,
+                                CircleActionCue(icon, label, value, false, state, explain),
+                            ),
+                        )
+                    }
+                    completed = true
+                } finally {
+                    // The lift that ends this hold is the SAME event that
+                    // restarts this effect, so the answer has to be published
+                    // from inside the press that was abandoned -- there is no
+                    // later run that could know a hold was interrupted without
+                    // a second piece of state for the restart to race.
+                    // [publish] does not suspend, so a cancelled coroutine can
+                    // still deliver it; the cue lingers and the host times it.
+                    if (!completed) {
+                        abandonedPressCue(icon, label, state, explain)?.let {
+                            publish(CircleActionCueEvent(owner, it))
+                        }
+                    }
                 }
             }
 
-            is CircleCuePlan.Explain -> {
-                armed = false
-                publish(CircleActionCueEvent(owner, plan.cue))
-                delay(plan.dwellMs)
-                publish(CircleActionCueEvent(owner, null))
-            }
-
-            CircleCuePlan.Clear -> {
-                armed = false
-                publish(CircleActionCueEvent(owner, null))
-            }
+            CircleCuePlan.Clear -> publish(CircleActionCueEvent(owner, null))
         }
     }
     DisposableEffect(owner, publish) {
