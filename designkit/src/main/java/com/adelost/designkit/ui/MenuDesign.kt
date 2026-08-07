@@ -128,6 +128,22 @@ object MenuDesign {
      */
     const val hintMaxChars: Int = 90
 
+    /** Glanced UI copy, read at arm's length on a watch face. */
+    private const val hintReadCharsPerSecond: Float = 30f
+
+    /**
+     * How long a cue that carries a SENTENCE needs to stay up, DERIVED from
+     * the budget that sentence is written to rather than picked.
+     *
+     * [actionExplainMs] is the dwell for a new VALUE — a word you recognise
+     * rather than read. A worst-case [hintMaxChars] hint is a different amount
+     * of reading, and sizing both with one number means either the value feels
+     * sticky or the sentence disappears half-read. This moves with the budget:
+     * widen the hint and the window widens with it.
+     */
+    const val hintReadingMs: Long =
+        (hintMaxChars / hintReadCharsPerSecond * 1_000f).toLong()
+
     /** Fail at the authoring seam instead of shipping a truncated option. */
     fun requireMenuOptionLabel(label: String, owner: String) {
         require(label.length <= menuOptionLabelMaxChars) {
