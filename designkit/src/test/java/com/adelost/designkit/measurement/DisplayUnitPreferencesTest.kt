@@ -87,4 +87,44 @@ class DisplayUnitPreferencesTest {
             DisplayUnitPreferences.fromStoredNames("FEET", null),
         )
     }
+
+    @Test
+    fun `the default distance ladder is untouched by the precision parameter`() {
+        // EVERY existing caller in every product passes nothing. If this drifts,
+        // Agentmux Link and Showcase render differently for a change neither
+        // asked for.
+        val metric = DisplayUnitPreferences()
+        val imperial = DisplayUnitPreferences(distance = DistanceDisplayUnit.IMPERIAL)
+
+        assertEquals("850 m", metric.formatDistance(850f).spaced())
+        assertEquals("1.5 km", metric.formatDistance(1_520f).spaced())
+        assertEquals("12 km", metric.formatDistance(12_340f).spaced())
+        assertEquals("328 ft", imperial.formatDistance(100f).spaced())
+        assertEquals("1.0 mi", imperial.formatDistance(1_609.344f).spaced())
+    }
+
+    @Test
+    fun `a host may state the decimals its long form keeps`() {
+        // Mattias 2026-08-06 on the distance readout: "kanske distans skulle
+        // visa distans pa nagot smart satt med antingen meter eller kilometer
+        // om det blir langt ... och da kanske att den bara kan visa tva
+        // decimaltal." The metre/km graduation already existed; the steady
+        // precision did not.
+        val metric = DisplayUnitPreferences()
+
+        assertEquals("1.52 km", metric.formatDistance(1_520f, longFormDecimals = 2).spaced())
+        assertEquals("12.34 km", metric.formatDistance(12_340f, longFormDecimals = 2).spaced())
+        assertEquals("2 km", metric.formatDistance(1_520f, longFormDecimals = 0).spaced())
+    }
+
+    @Test
+    fun `the metre form takes no decimals at any setting`() {
+        // A tenth of a metre is below what a horizontal fix resolves, so the
+        // parameter must not leak into the short form as "850.00 m".
+        val metric = DisplayUnitPreferences()
+        val imperial = DisplayUnitPreferences(distance = DistanceDisplayUnit.IMPERIAL)
+
+        assertEquals("850 m", metric.formatDistance(850f, longFormDecimals = 2).spaced())
+        assertEquals("328 ft", imperial.formatDistance(100f, longFormDecimals = 2).spaced())
+    }
 }
