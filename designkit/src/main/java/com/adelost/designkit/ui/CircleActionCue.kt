@@ -74,6 +74,97 @@ data class CircleActionCueEvent(
 val LocalCircleActionCuePublisher =
     staticCompositionLocalOf<(CircleActionCueEvent) -> Unit> { {} }
 
+/**
+ * Whether a press that ended before its hold completed should EXPLAIN the
+ * control it touched.
+ *
+ * A deliberate control does nothing until the hold finishes, so a short press
+ * is already safe — and that safety was the whole point (Mattias 2026-07-27:
+ * releasing early cancels). What it was not is ANSWERABLE: the row went quiet,
+ * and silence reads the same as broken. Mattias 2026-08-06 asked for the
+ * opposite — "en info knapp ... som kanske syns en liten stund efter att man
+ * duttar på något". A tap is how people ask what something is.
+ *
+ * So an abandoned press becomes a QUESTION rather than a failure: the same cue
+ * the hold shows, for the same reading window, with nothing executed. The
+ * cancel semantics are untouched — the action still does not fire.
+ *
+ * [armed] means this control had actually begun a hold; without it every
+ * composition that starts unpressed would announce itself. [hasSomethingToSay]
+ * keeps a control with neither state nor sentence silent, because an empty
+ * card explains nothing and costs the face.
+ */
+internal fun explainsAbandonedPress(
+    timing: CircleActionTiming,
+    pressed: Boolean,
+    armed: Boolean,
+    hasSomethingToSay: Boolean,
+): Boolean =
+    !pressed && armed && hasSomethingToSay && timing == CircleActionTiming.DELIBERATE
+
+/**
+ * What the centre cue should do for one press state — as DATA, so the state
+ * machine can be read and tested without a Compose harness.
+ *
+ * The decision used to live inside the effect that performs it, which is why a
+ * whole interaction could go missing without a single test noticing: the ones
+ * that existed asserted the SHAPE of a cue somebody handed them, never that
+ * pressing a row produces one. A sealed plan makes the effect exhaustive, so
+ * removing a case is a compile error rather than a silent surface.
+ */
+internal sealed interface CircleCuePlan {
+    /** Committed. The HOST owns the dwell; a row that closes on tap is gone. */
+    data class Settle(val cue: CircleActionCue) : CircleCuePlan
+
+    /** Externally driven progress, published as given. */
+    data class Show(val cue: CircleActionCue) : CircleCuePlan
+
+    /** Sweep 0..1 across the hold, publishing as it fills. */
+    data object Sweep : CircleCuePlan
+
+    /**
+     * A press that ended before it could act. Publish, hold it long enough to
+     * READ, then clear — nothing was executed, so nothing closed, so this one
+     * can own its own clock.
+     */
+    data class Explain(val cue: CircleActionCue, val dwellMs: Long) : CircleCuePlan
+
+    /** Nothing to say. */
+    data object Clear : CircleCuePlan
+}
+
+internal fun circleCuePlan(
+    icon: ImageVector,
+    label: String,
+    value: String?,
+    hint: String?,
+    timing: CircleActionTiming,
+    pressed: Boolean,
+    armed: Boolean,
+    confirmed: Boolean,
+    determinateProgress: Float?,
+): CircleCuePlan {
+    fun cue(progress: Float, isConfirmed: Boolean) =
+        CircleActionCue(icon, label, progress, isConfirmed, value, hint)
+    return when {
+        confirmed -> CircleCuePlan.Settle(cue(progress = 1f, isConfirmed = true))
+        determinateProgress != null ->
+            CircleCuePlan.Show(cue(determinateProgress, isConfirmed = false))
+        pressed && timing == CircleActionTiming.DELIBERATE -> CircleCuePlan.Sweep
+        explainsAbandonedPress(
+            timing = timing,
+            pressed = pressed,
+            armed = armed,
+            hasSomethingToSay = value != null || hint != null,
+        ) -> CircleCuePlan.Explain(
+            // Nothing fired, so the ring is honestly empty.
+            cue = cue(progress = 0f, isConfirmed = false),
+            dwellMs = MenuDesign.hintReadingMs,
+        )
+        else -> CircleCuePlan.Clear
+    }
+}
+
 @Stable
 class CircleActionCueController internal constructor() {
     internal var confirmed by mutableStateOf(false)
@@ -109,6 +200,8 @@ fun rememberCircleActionCueController(
     val controller = remember { CircleActionCueController() }
     val explain = hint?.takeIf { it.isNotBlank() }
     val state = stateValue?.takeIf { it.isNotBlank() }
+    /** This control began a hold, so its release is an answer to something. */
+    var armed by remember { mutableStateOf(false) }
 
     LaunchedEffect(
         icon,
@@ -122,13 +215,21 @@ fun rememberCircleActionCueController(
         controller.confirmed,
         publish,
     ) {
-        fun cue(progress: Float, confirmed: Boolean) =
-            CircleActionCue(icon, label, progress, confirmed, state, explain)
-
-        when {
-            controller.confirmed -> {
-                val settled = cue(progress = 1f, confirmed = true)
-                publish(CircleActionCueEvent(owner, settled))
+        val plan = circleCuePlan(
+            icon = icon,
+            label = label,
+            value = state,
+            hint = explain,
+            timing = timing,
+            pressed = pressed,
+            armed = armed,
+            confirmed = controller.confirmed,
+            determinateProgress = determinateProgress,
+        )
+        when (plan) {
+            is CircleCuePlan.Settle -> {
+                armed = false
+                publish(CircleActionCueEvent(owner, plan.cue))
                 // The HOST owns the dwell from here (see CenterHoldHost): a
                 // row that closes its own menu is gone before any timer of its
                 // own could finish, so keeping the clock here cancelled the
@@ -137,11 +238,10 @@ fun rememberCircleActionCueController(
                 controller.confirmed = false
             }
 
-            determinateProgress != null -> publish(
-                CircleActionCueEvent(owner, cue(determinateProgress, confirmed = false)),
-            )
+            is CircleCuePlan.Show -> publish(CircleActionCueEvent(owner, plan.cue))
 
-            pressed && timing == CircleActionTiming.DELIBERATE -> {
+            CircleCuePlan.Sweep -> {
+                armed = true
                 animate(
                     initialValue = 0f,
                     targetValue = 1f,
@@ -150,11 +250,26 @@ fun rememberCircleActionCueController(
                         easing = LinearEasing,
                     ),
                 ) { value, _ ->
-                    publish(CircleActionCueEvent(owner, cue(value, confirmed = false)))
+                    publish(
+                        CircleActionCueEvent(
+                            owner,
+                            CircleActionCue(icon, label, value, false, state, explain),
+                        ),
+                    )
                 }
             }
 
-            else -> publish(CircleActionCueEvent(owner, null))
+            is CircleCuePlan.Explain -> {
+                armed = false
+                publish(CircleActionCueEvent(owner, plan.cue))
+                delay(plan.dwellMs)
+                publish(CircleActionCueEvent(owner, null))
+            }
+
+            CircleCuePlan.Clear -> {
+                armed = false
+                publish(CircleActionCueEvent(owner, null))
+            }
         }
     }
     DisposableEffect(owner, publish) {
