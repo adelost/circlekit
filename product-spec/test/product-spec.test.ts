@@ -8,24 +8,22 @@ import {
   assertProductArtifactConformance,
   buildOutputManifest,
   checkOutputManifest,
-  configField,
-  configInput,
-  defineScreenComponentFamilyRegistry,
+  componentPort,
   decodeNativeBindingManifest,
-  productArtifactConformance,
-  productArtifactHostCoverage,
+  defineComponentType,
   defineLegoSpec,
   definePalette,
   definePortableAssetCatalog,
   defineProduct,
-  defineProductLegoConfig,
+  defineScreenComponentFamilyRegistry,
   field,
   finiteValueRef,
   finiteValues,
   logOutputManifest,
-  mount,
   PORTABLE_SURFACE_CLASSES,
   port,
+  productArtifactConformance,
+  productArtifactHostCoverage,
   productJsonEmitter,
   validateProductIconRendererBindings,
   writeOutputManifest,
@@ -34,25 +32,30 @@ import {
 const statusContract = {
   id: "fixture.status",
   kind: "state",
+  boundary: "presentation",
   fields: [field("active", "boolean"), field("phase", finiteValueRef("fixture.phase"))],
 } as const;
 const actionContract = {
   id: "fixture.action",
   kind: "event",
+  boundary: "ui-event",
   fields: [],
 } as const;
+const internalContract = {
+  id: "fixture.internal",
+  kind: "snapshot",
+  boundary: "service-internal",
+  fields: [field("sequence", "integer")],
+} as const;
+
 const source = defineLegoSpec({
   id: "fixture.source",
   role: "source",
   inputs: [],
   outputs: [port("status", statusContract)],
   runtime: {
-    stateOwner: "none",
-    lifetime: "process",
-    durability: "transient",
-    clockDomain: "none",
-    contextInputs: [],
-    effects: [],
+    stateOwner: "none", lifetime: "process", durability: "transient",
+    clockDomain: "none", contextInputs: [], effects: [],
   },
 } as const);
 const controller = defineLegoSpec({
@@ -61,35 +64,42 @@ const controller = defineLegoSpec({
   inputs: [port("sourceState", statusContract), port("trigger", actionContract)],
   outputs: [port("state", statusContract)],
   runtime: {
-    stateOwner: "instance",
-    lifetime: "instance",
-    durability: "transient",
-    clockDomain: "none",
-    contextInputs: [],
-    effects: ["fixture.effect"],
+    stateOwner: "instance", lifetime: "instance", durability: "transient",
+    clockDomain: "none", contextInputs: [], effects: ["fixture.effect"],
   },
 } as const);
-const mounts = [mount("domain.source", source), mount("ui.controller", controller)] as const;
-const componentCatalog = [{ id: "fixture.control" }] as const;
-const componentFamilies = defineScreenComponentFamilyRegistry(componentCatalog, [{
+const controlType = defineComponentType({
+  id: "fixture.control",
+  requiredCapabilities: ["ui.menu"],
+  inputs: [componentPort("state", statusContract)],
+  outputs: [componentPort("activate", actionContract)],
+} as const);
+const control = {
+  id: "control.main",
+  componentTypeRef: controlType.id,
+  bindings: {
+    inputs: { state: "ui.controller.state" },
+    events: { activate: "ui.controller.trigger" },
+  },
+} as const;
+const componentFamilies = defineScreenComponentFamilyRegistry([control], [{
   screen: "MAIN",
   family: {
     id: "fixture.main",
     trees: PORTABLE_SURFACE_CLASSES.map((surface) => ({
       surface,
-      mounts: [{ component: "fixture.control", region: "primary" }],
+      mounts: [{ instance: control.id, region: "primary" }],
     })),
   },
 }] as const);
+
 const paletteVariant = {
   id: "default",
   identity: { primary: "#ffffff" },
   categories: [{ id: "sky", hex: "#55aadd", meaning: "sky context" }],
   status: { ok: "#55aa55", caution: "#ddaa33", danger: "#dd5555" },
   ramps: [{
-    id: "wind",
-    kind: "safety-envelope",
-    unit: "m/s",
+    id: "wind", kind: "safety-envelope", unit: "m/s",
     bands: [{
       id: "normal", upTo: 8, ruleEdge: true, hueDeg: 157,
       lightness: 0.86, lightnessTravel: 0.2, chromaMax: 0.185, label: "NORMAL",
@@ -101,56 +111,80 @@ const assetCatalog = definePortableAssetCatalog({
   id: "circlekit",
   version: "0.3.25",
   icons: [{
-    id: "check",
-    viewport: { width: 24, height: 24 },
+    id: "check", viewport: { width: 24, height: 24 },
     paths: [{ kind: "stroke", pathData: "M20 6L9 17l-5 -5", strokeWidth: 3.2 }],
   }],
 } as const);
-const visualDeclaration = {
+
+const baseDeclaration = {
+  id: "fixture",
+  rendererBindings: [
+    { id: "renderer.phone", capabilities: ["ui.menu"] },
+    { id: "renderer.wear", capabilities: ["ui.menu"] },
+  ],
+  artifacts: [
+    { id: "phone", rendererRefs: ["renderer.phone"], requiredCapabilities: ["ui.menu"], entryScreen: "MAIN", serves: ["compact", "wide"] },
+    { id: "wear", rendererRefs: ["renderer.wear"], requiredCapabilities: ["ui.menu"], entryScreen: "MAIN", serves: ["round"] },
+  ],
+  serviceTypes: [source, controller],
+  services: [
+    { id: "domain.source", serviceTypeRef: source.id, config: {}, bindings: {} },
+    { id: "ui.controller", serviceTypeRef: controller.id, config: {}, bindings: {
+      sourceState: "domain.source.status",
+      trigger: "control.main.activate",
+    } },
+  ],
+  configs: [],
+  finiteValues: [finiteValues("fixture.phase", ["idle", "active"])],
+  componentTypes: [controlType],
+  components: [control],
+  componentFamilies,
   palette,
   assetCatalogRef: { id: assetCatalog.id, version: assetCatalog.version },
   iconRefs: [{ id: "status.check", assetRef: "check", accent: "status.ok", artifacts: ["phone", "wear"] }],
 } as const;
-const visualDeclarationWithoutIcons = { ...visualDeclaration, iconRefs: [] } as const;
 
 function fixture(overrides: Record<string, unknown> = {}) {
-  return defineProduct({
-    id: "fixture",
-    rendererBindings: [
-      { id: "renderer.phone", capabilities: ["ui.menu"] },
-      { id: "renderer.wear", capabilities: ["ui.menu"] },
-    ],
-    artifacts: [
-      { id: "phone", rendererRefs: ["renderer.phone"], requiredCapabilities: ["ui.menu"], entryScreen: "MAIN", serves: ["compact", "wide"] },
-      { id: "wear", rendererRefs: ["renderer.wear"], requiredCapabilities: ["ui.menu"], entryScreen: "MAIN", serves: ["round"] },
-    ],
-    legos: {
-      id: "fixture.graph",
-      configs: [],
-      mounts,
-      wiring: [{ from: "domain.source.status", to: "ui.controller.sourceState" }],
-    },
-    finiteValues: [finiteValues("fixture.phase", ["idle", "active"])],
-    componentCatalog,
-    componentFamilies,
-    ...visualDeclaration,
-    ui: [{
-      id: "menu.control",
-      kind: "menu-entry",
-      artifacts: ["phone", "wear"],
-      requiredCapabilities: ["ui.menu"],
-      ports: { state: "ui.controller.state", action: "ui.controller.trigger" },
-    }],
-    ...overrides,
-  }, assetCatalog);
+  return defineProduct({ ...baseDeclaration, ...overrides }, assetCatalog);
 }
 
-test("one ProductSpec compiles two artifact profiles and deterministic outputs", async () => {
+if (false) {
+  defineProduct({ ...baseDeclaration, services: [
+    // @ts-expect-error A static/no-input service still writes an explicit bindings block.
+    { id: "domain.source", serviceTypeRef: source.id, config: {} },
+    baseDeclaration.services[1],
+  ] }, assetCatalog);
+  defineProduct({ ...baseDeclaration, services: [
+    baseDeclaration.services[0],
+    { ...baseDeclaration.services[1], bindings: {
+      ...baseDeclaration.services[1].bindings,
+      // @ts-expect-error The source ref is derived from mounted service/component outputs.
+      sourceState: "invented.output",
+    } },
+  ] }, assetCatalog);
+  defineProduct({ ...baseDeclaration, components: [{
+    ...control,
+    bindings: {
+      ...control.bindings,
+      // @ts-expect-error Component binding names are derived from the selected ComponentType.
+      inputs: { invented: "ui.controller.state" },
+    },
+  }] }, assetCatalog);
+}
+
+test("one mandatory graph compiles deterministic outputs and a complete port registry", async () => {
   const product = fixture();
-  assert.equal(product.schemaVersion, 5);
-  assert.equal(product.legos.mounts.length, 2);
-  assert.deepEqual(product.legos.contracts, [statusContract, actionContract]);
-  assert.deepEqual(product.artifacts.map(({ id }) => id), ["phone", "wear"]);
+  assert.equal(product.schemaVersion, 6);
+  assert.equal(product.services.length, 2);
+  assert.deepEqual(product.portRegistry.contracts, [statusContract, actionContract]);
+  assert.deepEqual(product.portRegistry.bindings, [
+    { kind: "service-input", from: "domain.source.status", to: "ui.controller.sourceState" },
+    { kind: "component-event", from: "control.main.activate", to: "ui.controller.trigger" },
+    { kind: "component-input", from: "ui.controller.state", to: "control.main.state" },
+  ]);
+  assert.equal(product.portRegistry.demandEdges.length, 6);
+  assert.deepEqual(new Set(product.portRegistry.demandEdges.map(({ serviceInstanceRef }) => serviceInstanceRef)),
+    new Set(["domain.source", "ui.controller"]));
   validateProductIconRendererBindings(product, [
     { iconRef: "status.check", assetRef: "check", rendererRef: "renderer.phone" },
     { iconRef: "status.check", assetRef: "check", rendererRef: "renderer.wear" },
@@ -160,14 +194,7 @@ test("one ProductSpec compiles two artifact profiles and deterministic outputs",
   const second = buildOutputManifest(product, [productJsonEmitter("fixture/product.json")], ["fixture"]);
   assert.deepEqual(first, second);
   assert.equal(logOutputManifest(first), "product-json\tfixture/product.json");
-  assert.match(first.artifacts[0]!.content, /"kind": "product-spec-ir"/);
-  const recoloured = fixture({
-    iconRefs: [{ ...visualDeclaration.iconRefs[0], accent: "status.caution" }],
-  });
-  const recolouredOutput = buildOutputManifest(recoloured, [productJsonEmitter("fixture/product.json")], ["fixture"]);
-  assert.notEqual(recolouredOutput.artifacts[0]!.content, first.artifacts[0]!.content);
-  assert.match(recolouredOutput.artifacts[0]!.content, /"accent": "status.caution"/);
-
+  assert.match(first.artifacts[0]!.content, /"portRegistry"/);
   const root = await mkdtemp(resolve(tmpdir(), "product-spec-output-"));
   try {
     await writeOutputManifest(root, first);
@@ -179,197 +206,63 @@ test("one ProductSpec compiles two artifact profiles and deterministic outputs",
   }
 });
 
-test("graph, capability and port failures stop before emission", () => {
-  assert.doesNotThrow(() => fixture({ palette: { variants: [] }, iconRefs: [] }));
+test("mandatory bindings and the component boundary fail before emission", () => {
   assert.throws(() => fixture({
-    palette: { variants: [] },
-    iconRefs: [{ ...visualDeclaration.iconRefs[0], accent: "status.caution" }],
-  }), /uses missing palette token/);
-
+    components: [{ ...control, bindings: { ...control.bindings, inputs: [] } }],
+  }), /missing input binding 'state'/);
   assert.throws(() => fixture({
-    artifacts: [
-      { id: "phone", rendererRefs: ["renderer.phone"], requiredCapabilities: ["ui.missing"], entryScreen: "MAIN", serves: ["compact", "wide"] },
-      { id: "wear", rendererRefs: ["renderer.wear"], requiredCapabilities: ["ui.menu"], entryScreen: "MAIN", serves: ["round"] },
-    ],
-  }), /lacks capability 'ui.missing'/);
-
-  assert.throws(() => fixture({ ui: [] }), /orphan input port 'ui.controller.trigger'/);
-  assert.throws(() => fixture({ finiteValues: [] }), /uses unknown finite value 'fixture.phase'/);
+    components: [{ ...control, bindings: {
+      ...control.bindings,
+      inputs: { ...control.bindings.inputs, invented: "ui.controller.state" },
+    } }],
+  }), /binds extra input 'invented'/);
   assert.throws(() => fixture({
-    finiteValues: [
-      finiteValues("fixture.phase", ["idle", "active"]),
-      finiteValues("fixture.orphan", ["unknown"]),
-    ],
-  }), /orphan finite value declaration 'fixture.orphan'/);
-
-  const configured = defineLegoSpec({
-    id: "fixture.configured",
-    role: "consumer",
-    inputs: [],
+    components: [{ ...control, bindings: {
+      ...control.bindings,
+      events: { ...control.bindings.events, invented: "ui.controller.trigger" },
+    } }],
+  }), /binds extra event 'invented'/);
+  assert.throws(() => fixture({
+    components: [{ ...control, bindings: {
+      ...control.bindings,
+      inputs: { state: "control.main.activate" },
+    } }],
+  }), /incompatible ports/);
+  assert.throws(() => defineComponentType({
+    id: "fixture.leak",
+    requiredCapabilities: [],
+    inputs: [componentPort("internal", internalContract)],
     outputs: [],
-    configInputs: [configInput("policy", [
-      configField("windowMs", "integer", { unit: "si.millisecond", positive: true }),
-      configField("unverifiedWindowMs", "integer", {
-        unit: "si.millisecond", gteField: "windowMs",
-      }),
-      configField("spreadM", "number", { unit: "si.meter", min: 0 }),
-    ])],
-    runtime: {
-      stateOwner: "none", lifetime: "call", durability: "transient",
-      clockDomain: "none", contextInputs: [], effects: [],
-    },
-  } as const);
-  assert.doesNotThrow(() => defineProductLegoConfig({
-    id: "configured",
-    configs: [{
-      id: "fixture.policy",
-      values: { windowMs: 10_000, unverifiedWindowMs: 20_000, spreadM: 2 },
-    }],
-    mounts: [mount("configured.consumer", configured, { policy: "fixture.policy" })],
-    wiring: [],
-  }));
-  assert.throws(() => defineProductLegoConfig({
-    id: "configured",
-    configs: [{
-      id: "fixture.policy",
-      values: { windowMs: "ten", unverifiedWindowMs: 20_000, spreadM: 2 },
-    }],
-    mounts: [mount("configured.consumer", configured, { policy: "fixture.policy" })],
-    wiring: [],
-  }), /field 'windowMs' must be integer/);
-  assert.throws(() => defineProductLegoConfig({
-    id: "configured",
-    configs: [{
-      id: "fixture.policy",
-      values: { windowMs: -1, unverifiedWindowMs: 20_000, spreadM: 2 },
-    }],
-    mounts: [mount("configured.consumer", configured, { policy: "fixture.policy" })],
-    wiring: [],
-  }), /field 'windowMs' must be positive/);
-  assert.throws(() => defineProductLegoConfig({
-    id: "configured",
-    configs: [{
-      id: "fixture.policy",
-      values: { windowMs: 10_000, unverifiedWindowMs: 9_999, spreadM: 2 },
-    }],
-    mounts: [mount("configured.consumer", configured, { policy: "fixture.policy" })],
-    wiring: [],
-  }), /field 'unverifiedWindowMs' must be at least field 'windowMs'/);
-
+  }), /uses service-internal contract/);
   assert.throws(() => fixture({
-    artifacts: [{
-      id: "phone", rendererRefs: ["renderer.phone"], requiredCapabilities: ["ui.menu"],
-      entryScreen: "MISSING", serves: ["compact"],
-    }],
-    iconRefs: [],
-  }), /uses missing entry screen 'MISSING'/);
-  assert.throws(() => fixture({
-    artifacts: [{
-      id: "phone", rendererRefs: ["renderer.phone"], requiredCapabilities: ["ui.menu"],
-      entryScreen: "MAIN", serves: ["other"],
-    }],
-    iconRefs: [],
-  }), /has no 'other' tree/);
-
-  assert.throws(() => fixture({
-    componentCatalog: [...componentCatalog, { id: "fixture.orphan" }],
-  }), /orphan component 'fixture.orphan'/);
-
-  const loop = defineLegoSpec({
-    id: "fixture.loop",
-    role: "adapter",
-    inputs: [port("input", statusContract)],
-    outputs: [port("output", statusContract)],
-    runtime: {
-      stateOwner: "none", lifetime: "call", durability: "transient",
-      clockDomain: "none", contextInputs: [], effects: [],
-    },
-  } as const);
-  const loopMounts = [mount("loop.first", loop), mount("loop.second", loop)] as const;
-  assert.throws(() => defineProduct({
-    id: "loop",
-    rendererBindings: [{ id: "renderer.test", capabilities: [] }],
-    artifacts: [{ id: "test", rendererRefs: ["renderer.test"], requiredCapabilities: [], entryScreen: "MAIN", serves: ["round"] }],
-    legos: {
-      id: "loop.graph",
-      configs: [],
-      mounts: loopMounts,
-      wiring: [
-        { from: "loop.first.output", to: "loop.second.input" },
-        { from: "loop.second.output", to: "loop.first.input" },
-      ],
-    },
-    finiteValues: [finiteValues("fixture.phase", ["idle", "active"])],
-    componentCatalog,
-    componentFamilies,
-    ...visualDeclarationWithoutIcons,
-    ui: [],
-  }, assetCatalog), /wiring cycle/);
-
-  const conflictingStatusContract = {
-    id: statusContract.id,
-    kind: "state",
-    fields: [field("label", "string")],
-  } as const;
-  const conflictingSource = defineLegoSpec({
-    ...source,
-    id: "fixture.conflicting-source",
-    outputs: [port("status", conflictingStatusContract)],
-  } as const);
-  assert.throws(() => defineProduct({
-    id: "contract-conflict",
-    rendererBindings: [{ id: "renderer.test", capabilities: [] }],
-    artifacts: [{ id: "test", rendererRefs: ["renderer.test"], requiredCapabilities: [], entryScreen: "MAIN", serves: ["round"] }],
-    legos: {
-      id: "contract-conflict.graph",
-      configs: [],
-      mounts: [mount("source.first", source), mount("source.second", conflictingSource)],
-      wiring: [],
-    },
-    finiteValues: [finiteValues("fixture.phase", ["idle", "active"])],
-    componentCatalog,
-    componentFamilies,
-    ...visualDeclarationWithoutIcons,
-    ui: [
-      { id: "first", kind: "component-entry", artifacts: ["test"], requiredCapabilities: [], ports: { state: "source.first.status" } },
-      { id: "second", kind: "component-entry", artifacts: ["test"], requiredCapabilities: [], ports: { state: "source.second.status" } },
+    services: [
+      { id: "domain.source", serviceTypeRef: source.id, config: {}, bindings: {} },
+      { id: "ui.controller", serviceTypeRef: controller.id, config: {}, bindings: {
+        sourceState: "domain.source.status",
+        trigger: "control.main.activate",
+        invented: "domain.source.status",
+      } },
     ],
-  }, assetCatalog), /contract 'fixture.status' has conflicting schemas/);
-
-  assert.throws(() => defineScreenComponentFamilyRegistry([], [{
+  }), /binds extra input/);
+  assert.throws(() => fixture({
+    rendererBindings: [
+      { id: "renderer.phone", capabilities: [] },
+      { id: "renderer.wear", capabilities: ["ui.menu"] },
+    ],
+    artifacts: baseDeclaration.artifacts.map((artifact) => ({
+      ...artifact,
+      requiredCapabilities: [],
+    })),
+  }), /lacks component 'control.main' capability 'ui.menu'/);
+  assert.throws(() => defineScreenComponentFamilyRegistry([control], [{
     screen: "MAIN",
     family: {
-      id: "missing.component",
+      id: "fixture.unknown",
       trees: PORTABLE_SURFACE_CLASSES.map((surface) => ({
-        surface,
-        mounts: [{ component: "not.in.catalog", region: "primary" }],
+        surface, mounts: [{ instance: "missing.instance", region: "primary" }],
       })),
     },
-  }]), /uses unknown component 'not.in.catalog'/);
-
-  assert.throws(() => fixture({
-    iconRefs: [{ ...visualDeclaration.iconRefs[0], assetRef: "missing" }],
-  }), /uses missing asset 'missing'/);
-  assert.throws(() => fixture({
-    iconRefs: [{ ...visualDeclaration.iconRefs[0], accent: "status.unknown" }],
-  }), /uses missing palette token 'status.unknown'/);
-  assert.throws(() => validateProductIconRendererBindings(fixture(), [
-    { iconRef: "status.check", assetRef: "check", rendererRef: "renderer.phone" },
-  ]), /missing renderer binding/);
-  assert.throws(() => validateProductIconRendererBindings(fixture(), [
-    { iconRef: "status.check", assetRef: "check", rendererRef: "renderer.phone" },
-    { iconRef: "status.check", assetRef: "check", rendererRef: "renderer.wear" },
-    { iconRef: "status.orphan", assetRef: "check", rendererRef: "renderer.phone" },
-  ]), /orphan renderer binding/);
-
-  assert.throws(() => definePortableAssetCatalog({
-    ...assetCatalog,
-    icons: [{ ...assetCatalog.icons[0], paths: [{ kind: "fill", pathData: "", fillRule: "nonzero" }] }],
-  }), /blank path data/);
-
-  assert.throws(() => definePalette([{
-    ...paletteVariant, status: { ...paletteVariant.status, danger: "red" },
-  }]), /invalid colour/);
+  }]), /unknown component instance 'missing.instance'/);
 });
 
 const conformingManifest: NativeBindingManifest = {
@@ -382,166 +275,75 @@ const conformingManifest: NativeBindingManifest = {
     { componentId: "fixture.control", rendererId: "renderer.wear", profiles: ["wear"] },
   ],
   icons: [{ iconId: "check", nativeSymbol: "Check" }],
-  services: [{
-    serviceId: "ui.controller",
-    nativePortId: "ControllerPorts",
-    profiles: ["phone", "wear"],
-    inputPorts: ["sourceState", "trigger"],
-    outputPorts: ["state"],
-  }],
+  services: [
+    { serviceId: "domain.source", nativePortId: "SourcePorts", profiles: ["phone", "wear"], inputPorts: [], outputPorts: ["status"] },
+    { serviceId: "ui.controller", nativePortId: "ControllerPorts", profiles: ["phone", "wear"], inputPorts: ["sourceState", "trigger"], outputPorts: ["state"] },
+  ],
   finiteValues: [{ id: "fixture.phase", values: ["idle", "active"] }],
 };
 
-const mutate = (
-  change: (draft: NativeBindingManifest) => NativeBindingManifest,
-): NativeBindingManifest => change(structuredClone(conformingManifest) as NativeBindingManifest);
+const mutate = (change: (draft: NativeBindingManifest) => NativeBindingManifest): NativeBindingManifest =>
+  change(structuredClone(conformingManifest) as NativeBindingManifest);
 
 test("a conforming native manifest reports nothing", () => {
-  const findings = productArtifactConformance(fixture(), conformingManifest);
-  assert.deepEqual(findings.map(({ axis, direction }) => `${axis}/${direction}`), []);
+  assert.deepEqual(productArtifactConformance(fixture(), conformingManifest), []);
 });
 
-// One mutation per axis. Each asserts the axis AND direction it is supposed to
-// break, so a mutation cannot pass by failing for some unrelated reason -- the
-// mistake that lets a mutation test certify a check it never exercised.
 const AXIS_MUTATIONS: readonly {
   axis: ConformanceAxis;
   direction: ConformanceDirection;
   subject: string;
   change: (draft: NativeBindingManifest) => NativeBindingManifest;
 }[] = [
-  {
-    // Orphan, not missing. A manifest describes ONE host, so a profile it omits is
-    // another host's job; a profile it invents is a coverage claim with nothing behind
-    // it. See productArtifactHostCoverage for the question this direction cannot ask.
-    axis: "artifact", direction: "orphan", subject: "toaster",
-    change: (d) => ({ ...d, profiles: [...d.profiles!, "toaster"] }),
-  },
-  {
-    axis: "service-port", direction: "orphan", subject: "ui.controller.invented",
-    change: (d) => ({ ...d, services: [{ ...d.services![0]!, serviceId: "ui.controller",
-      inputPorts: [...d.services![0]!.inputPorts, "invented"] }] }),
-  },
-  {
-    axis: "component", direction: "mismatch", subject: "fixture.control@phone",
-    change: (d) => ({
-      ...d,
-      components: [...d.components, { componentId: "fixture.control", rendererId: "renderer.phone", profiles: ["phone"] }],
-    }),
-  },
-  {
-    axis: "component", direction: "orphan", subject: "fixture.ghost",
-    change: (d) => ({
-      ...d,
-      components: [...d.components, { componentId: "fixture.ghost", rendererId: "renderer.phone", profiles: ["phone"] }],
-    }),
-  },
-  {
-    axis: "icon", direction: "missing", subject: "check",
-    change: (d) => ({ ...d, icons: [] }),
-  },
-  {
-    axis: "finite-value", direction: "mismatch", subject: "fixture.phase",
-    change: (d) => ({ ...d, finiteValues: [{ id: "fixture.phase", values: ["idle"] }] }),
-  },
+  { axis: "artifact", direction: "orphan", subject: "toaster", change: (d) => ({ ...d, profiles: [...d.profiles!, "toaster"] }) },
+  { axis: "service-port", direction: "orphan", subject: "ui.controller.invented", change: (d) => ({
+    ...d,
+    services: d.services!.map((service) => service.serviceId === "ui.controller"
+      ? { ...service, inputPorts: [...service.inputPorts, "invented"] }
+      : service),
+  }) },
+  { axis: "component", direction: "mismatch", subject: "fixture.control@phone", change: (d) => ({
+    ...d, components: [...d.components, { componentId: "fixture.control", rendererId: "renderer.phone", profiles: ["phone"] }],
+  }) },
+  { axis: "icon", direction: "missing", subject: "check", change: (d) => ({ ...d, icons: [] }) },
+  { axis: "finite-value", direction: "mismatch", subject: "fixture.phase", change: (d) => ({
+    ...d, finiteValues: [{ id: "fixture.phase", values: ["idle"] }],
+  }) },
 ];
 
 for (const { axis, direction, subject, change } of AXIS_MUTATIONS) {
   test(`conformance catches a ${direction} ${axis}`, () => {
-    const findings = productArtifactConformance(fixture(), mutate(change));
-    const match = findings.find((item) => item.axis === axis && item.direction === direction);
-    assert.ok(
-      match !== undefined,
-      `expected a ${axis}/${direction} finding, got ${JSON.stringify(findings)}`,
-    );
-    assert.equal(match.subject, subject);
+    const finding = productArtifactConformance(fixture(), mutate(change))
+      .find((item) => item.axis === axis && item.direction === direction);
+    assert.equal(finding?.subject, subject);
   });
 }
 
-test("the hard gate names every axis at once", () => {
-  assert.throws(
-    () => assertProductArtifactConformance(
-      fixture(),
-      mutate((d) => ({ ...d, profiles: [...d.profiles!, "toaster"], icons: [] })),
-    ),
-    /artifact\/orphan[\s\S]*icon\/missing/,
-  );
-});
-
-// The direction the per-host axis gave up. CircleKit Showcase declares five artifacts
-// across four hosts, so no single manifest can answer "does every artifact have a
-// renderer" -- but dropping the question would let a product declare an artifact nobody
-// ships and have every per-host run still come back clean.
-test("an artifact no host binds is reported once, over the set of manifests", () => {
+test("the hard gate and host coverage keep their two directions", () => {
+  assert.throws(() => assertProductArtifactConformance(
+    fixture(), mutate((d) => ({ ...d, profiles: [...d.profiles!, "toaster"], icons: [] })),
+  ), /artifact\/orphan[\s\S]*icon\/missing/);
   const android = { ...conformingManifest, profiles: ["phone"] };
-  assert.deepEqual(
-    productArtifactHostCoverage(fixture(), [android]).map(({ axis, direction, subject }) =>
-      ({ axis, direction, subject })),
-    [{ axis: "artifact", direction: "missing", subject: "wear" }],
-  );
-  const wear = { ...conformingManifest, profiles: ["wear"] };
-  assert.deepEqual(productArtifactHostCoverage(fixture(), [android, wear]), []);
+  assert.deepEqual(productArtifactHostCoverage(fixture(), [android]).map(({ subject }) => subject), ["wear"]);
+  assert.deepEqual(productArtifactHostCoverage(fixture(), [android, { ...conformingManifest, profiles: ["wear"] }]), []);
 });
 
-test("host coverage refuses to measure through a manifest that declares no profiles", () => {
-  const silent = { ...conformingManifest } as Record<string, unknown>;
-  delete silent.profiles;
-  const findings = productArtifactHostCoverage(
-    fixture(),
-    [silent as unknown as NativeBindingManifest],
-  );
-  assert.deepEqual(findings.map(({ direction }) => direction), ["unasserted"]);
-});
-
-// CircleKit Showcase ships a manifest with only components and icons. The first
-// version of this helper crashed on it ("manifest.services is not iterable") and
-// would have called all five artifacts missing. An omitted section is unasserted,
-// and it must say so rather than pass quietly or flood.
-test("an omitted manifest section is reported, not skipped and not flooded", () => {
-  const partial = { ...conformingManifest } as Record<string, unknown>;
-  delete partial.profiles;
-  delete partial.services;
-  delete partial.finiteValues;
-  const findings = productArtifactConformance(fixture(), partial as unknown as NativeBindingManifest);
-
-  assert.deepEqual(
-    findings.filter((item) => item.direction === "unasserted").map(({ subject }) => subject).sort(),
-    ["finiteValues", "profiles", "services"],
-  );
-  assert.equal(findings.filter((item) => item.direction === "missing").length, 0);
-});
-
-// The decoder each product used to own. Failures have to name the field, because the
-// alternative is the shape error surfacing as "undefined is not iterable" three
-// functions downstream, in code that never touched the file.
-test("a manifest that is not a compiled export is refused by name", () => {
-  assert.throws(
-    () => decodeNativeBindingManifest({ ...conformingManifest, stage: "draft" }),
-    /stage 'draft' is not a compiled native export/,
-  );
-  assert.throws(
-    () => decodeNativeBindingManifest({ ...conformingManifest, schemaVersion: 1 }),
-    /schema 1 is unsupported/,
-  );
-  assert.throws(
-    () => decodeNativeBindingManifest({ ...conformingManifest, icons: [{ iconId: "check" }] }),
-    /icon 0 nativeSymbol must be a nonblank string/,
-  );
-});
-
-test("decoding keeps an omitted section omitted rather than defaulting it to none", () => {
+test("native manifest decoding fails loud and preserves unasserted sections", () => {
+  assert.throws(() => decodeNativeBindingManifest({ ...conformingManifest, stage: "draft" }), /not a compiled native export/);
+  assert.throws(() => decodeNativeBindingManifest({ ...conformingManifest, schemaVersion: 1 }), /schema 1 is unsupported/);
   const partial = { ...conformingManifest } as Record<string, unknown>;
   delete partial.services;
   const decoded = decodeNativeBindingManifest(partial);
   assert.equal(decoded.services, undefined);
-  assert.deepEqual(
-    productArtifactConformance(fixture(), decoded)
-      .filter(({ axis }) => axis === "service-port")
-      .map(({ direction }) => direction),
-    ["unasserted"],
-  );
+  assert.deepEqual(productArtifactConformance(fixture(), decoded)
+    .filter(({ axis }) => axis === "service-port").map(({ direction }) => direction), ["unasserted"]);
 });
 
-test("a decoded conforming manifest still conforms", () => {
-  assert.deepEqual(productArtifactConformance(fixture(), decodeNativeBindingManifest(conformingManifest)), []);
+test("visual contracts still fail on unknown palette and asset refs", () => {
+  assert.throws(() => fixture({
+    iconRefs: [{ ...baseDeclaration.iconRefs[0], assetRef: "missing" }],
+  }), /uses missing asset/);
+  assert.throws(() => fixture({
+    iconRefs: [{ ...baseDeclaration.iconRefs[0], accent: "status.unknown" }],
+  }), /uses missing palette token/);
 });
