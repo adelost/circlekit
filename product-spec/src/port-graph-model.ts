@@ -17,6 +17,7 @@ import {
   validateServiceConfig,
   type LegoConfigRef,
   type LegoContract,
+  type LegoPortPurpose,
   type LegoSpec,
 } from "./native-lego-model.js";
 
@@ -34,12 +35,14 @@ export interface PortRegistryEntry {
   readonly contractRef: string;
   readonly boundary: LegoContract["boundary"];
   readonly required: boolean;
+  readonly purpose: LegoPortPurpose;
 }
 
 export interface PortBindingIr {
   readonly kind: PortBindingKind;
   readonly from: string;
   readonly to: string;
+  readonly purpose: LegoPortPurpose;
 }
 
 export interface MountedComponentScope {
@@ -138,6 +141,7 @@ export function compileProductGraph(input: {
           contractRef: item.contract.id,
           boundary: item.contract.boundary,
           required: true,
+          purpose: item.purpose,
         };
         servicePorts.push(entry);
         (direction === "input" ? inputs : outputs).set(entry.ref, entry);
@@ -172,6 +176,7 @@ export function compileProductGraph(input: {
           contractRef: item.contract.id,
           boundary: item.contract.boundary,
           required: item.required,
+          purpose: "data",
         };
         componentPorts.push(entry);
         (direction === "input" ? inputs : outputs).set(entry.ref, entry);
@@ -252,13 +257,14 @@ export function compileProductGraph(input: {
     const target = inputs.get(to);
     if (source === undefined) throw new Error(`unknown output port '${from}'`);
     if (target === undefined) throw new Error(`unknown input port '${to}'`);
-    if (source.contractRef !== target.contractRef || source.boundary !== target.boundary) {
+    if (source.contractRef !== target.contractRef || source.boundary !== target.boundary
+        || source.purpose !== target.purpose) {
       throw new Error(`incompatible ports '${from}' and '${to}'`);
     }
     if (boundInputs.has(to)) throw new Error(`input port '${to}' is bound twice`);
     boundInputs.add(to);
     usedOutputs.add(from);
-    bindings.push({ kind, from, to });
+    bindings.push({ kind, from, to, purpose: target.purpose });
   }
 }
 
@@ -296,9 +302,11 @@ function deriveDemandEdges(
     const fromOwner = binding.from.slice(0, binding.from.lastIndexOf("."));
     const toOwner = binding.to.slice(0, binding.to.lastIndexOf("."));
     if (services.has(toOwner) && services.has(fromOwner)) {
-      const set = incomingByOwner.get(toOwner) ?? new Set<string>();
-      set.add(fromOwner);
-      incomingByOwner.set(toOwner, set);
+      const demandedOwner = binding.purpose === "demand" ? fromOwner : toOwner;
+      const dependencyOwner = binding.purpose === "demand" ? toOwner : fromOwner;
+      const set = incomingByOwner.get(demandedOwner) ?? new Set<string>();
+      set.add(dependencyOwner);
+      incomingByOwner.set(demandedOwner, set);
     }
     if (components.has(toOwner) && services.has(fromOwner)) {
       const set = directByComponent.get(toOwner) ?? new Set<string>();
