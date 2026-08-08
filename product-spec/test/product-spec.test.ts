@@ -10,6 +10,7 @@ import {
   checkOutputManifest,
   compileProductGraph,
   componentPort,
+  contextPort,
   demandPort,
   decodeNativeBindingManifest,
   defineComponentType,
@@ -54,6 +55,12 @@ const demandContract = {
   kind: "event",
   boundary: "service-internal",
   fields: [],
+} as const;
+const contextContract = {
+  id: "fixture.context",
+  kind: "state",
+  boundary: "service-internal",
+  fields: [field("mode", "string")],
 } as const;
 
 const source = defineLegoSpec({
@@ -312,6 +319,78 @@ test("demand ports propagate activation forward without becoming data dependenci
     }],
   }), /incompatible ports/);
   assert.throws(() => demandPort("invalid", statusContract), /service-internal event contract/);
+});
+
+test("context ports are optional typed data and never contribute activation", () => {
+  const contextSource = defineLegoSpec({
+    id: "fixture.context-source",
+    role: "policy",
+    inputs: [],
+    outputs: [contextPort("policy", contextContract)],
+    runtime: {
+      stateOwner: "instance", lifetime: "process", durability: "transient",
+      clockDomain: "none", contextInputs: [], effects: [],
+    },
+  } as const);
+  const contextualSource = defineLegoSpec({
+    id: "fixture.contextual-source",
+    role: "source",
+    inputs: [contextPort("context", contextContract)],
+    outputs: [port("status", statusContract)],
+    runtime: {
+      stateOwner: "instance", lifetime: "process", durability: "transient",
+      clockDomain: "none", contextInputs: [], effects: [],
+    },
+  } as const);
+  const displayType = defineComponentType({
+    id: "fixture.context-display",
+    requiredCapabilities: [],
+    inputs: [componentPort("state", statusContract)],
+    outputs: [],
+  } as const);
+  const graph = compileProductGraph({
+    serviceTypes: [contextSource, contextualSource],
+    services: [
+      { id: "context.source", serviceTypeRef: contextSource.id, config: {}, bindings: {}, demandSources: ["app-active"] },
+      { id: "contextual.source", serviceTypeRef: contextualSource.id, config: {}, bindings: {
+        context: "context.source.policy",
+      }, demandSources: [] },
+    ],
+    configs: [], componentTypes: [displayType],
+    components: [{
+      id: "context.display", componentTypeRef: displayType.id,
+      bindings: { inputs: { state: "contextual.source.status" }, events: {} },
+    }],
+    mountedScopes: [{
+      artifactRef: "phone", screenRef: "MAIN", surface: "compact",
+      mountRef: "context.display", componentInstanceRef: "context.display",
+    }],
+  });
+  assert.deepEqual(graph.portRegistry.bindings[0], {
+    kind: "service-input", from: "context.source.policy", to: "contextual.source.context", purpose: "context",
+  });
+  assert.deepEqual(graph.portRegistry.demandEdges.filter(({ kind }) => kind === "component-mount")
+    .map(({ serviceInstanceRef }) => serviceInstanceRef), ["contextual.source"]);
+  assert.equal(graph.portRegistry.servicePorts.find(({ ref }) => ref === "contextual.source.context")?.required, false);
+
+  const withoutContextBinding = compileProductGraph({
+    serviceTypes: [contextualSource],
+    services: [{
+      id: "contextual.source", serviceTypeRef: contextualSource.id,
+      config: {}, bindings: {}, demandSources: [],
+    }],
+    configs: [], componentTypes: [displayType],
+    components: [{
+      id: "context.display", componentTypeRef: displayType.id,
+      bindings: { inputs: { state: "contextual.source.status" }, events: {} },
+    }],
+    mountedScopes: [{
+      artifactRef: "phone", screenRef: "MAIN", surface: "compact",
+      mountRef: "context.display", componentInstanceRef: "context.display",
+    }],
+  });
+  assert.equal(withoutContextBinding.portRegistry.bindings.length, 1);
+  assert.throws(() => contextPort("invalid", actionContract), /non-event service-internal contract/);
 });
 
 test("mandatory bindings and the component boundary fail before emission", () => {

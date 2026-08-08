@@ -1,5 +1,5 @@
 import type { ComponentPort, ComponentType, ProductComponentInstance } from "./component-tree-model.js";
-import type { LegoSpec } from "./native-lego-model.js";
+import type { LegoPortPurpose, LegoSpec } from "./native-lego-model.js";
 
 export const PRODUCT_LIFECYCLE_DEMAND_SOURCES = ["app-active", "session-active"] as const;
 export type ProductLifecycleDemandSource = (typeof PRODUCT_LIFECYCLE_DEMAND_SOURCES)[number];
@@ -19,9 +19,14 @@ type ServiceOutputRefForInstance<
   ServiceTypes extends readonly LegoSpec[],
   Instance,
   ContractId extends string,
+  Purpose extends LegoPortPurpose,
 > = Instance extends { readonly id: infer Id extends string; readonly serviceTypeRef: infer TypeRef extends string }
   ? TypeById<ServiceTypes, TypeRef>["outputs"][number] extends infer Port
-    ? Port extends { readonly id: infer PortId extends string; readonly contract: { readonly id: ContractId } }
+    ? Port extends {
+      readonly id: infer PortId extends string;
+      readonly contract: { readonly id: ContractId };
+      readonly purpose: Purpose;
+    }
       ? `${Id}.${PortId}`
       : never
     : never
@@ -45,12 +50,15 @@ export type ProductOutputPortRef<
   ComponentTypes extends readonly ComponentType[],
   Components extends readonly ProductComponentInstance[],
   ContractId extends string,
+  Purpose extends LegoPortPurpose = LegoPortPurpose,
 > =
   (Services[number] extends infer Instance
-    ? ServiceOutputRefForInstance<ServiceTypes, Instance, ContractId>
+    ? ServiceOutputRefForInstance<ServiceTypes, Instance, ContractId, Purpose>
     : never)
-  | (Components[number] extends infer Instance
-    ? ComponentOutputRefForInstance<ComponentTypes, Instance, ContractId>
+  | (Purpose extends "data"
+    ? Components[number] extends infer Instance
+      ? ComponentOutputRefForInstance<ComponentTypes, Instance, ContractId>
+      : never
     : never);
 
 type ServiceInputRefForInstance<
@@ -74,6 +82,28 @@ export type ProductInputPortRef<
   : never;
 
 type EmptyBindings = Readonly<Record<string, never>>;
+type ServiceBindingMap<
+  Ports,
+  Optional extends boolean,
+  ServiceTypes extends readonly LegoSpec[],
+  Services extends readonly ProductServiceInstance[],
+  ComponentTypes extends readonly ComponentType[],
+  Components extends readonly ProductComponentInstance[],
+> = {
+  readonly [Port in Ports as Port extends {
+    readonly id: infer Id extends string;
+    readonly purpose: infer Purpose extends LegoPortPurpose;
+  } ? Optional extends true
+    ? Purpose extends "context" ? Id : never
+    : Purpose extends "context" ? never : Id
+  : never]: Port extends {
+    readonly contract: { readonly id: infer ContractId extends string };
+    readonly purpose: infer Purpose extends LegoPortPurpose;
+  }
+    ? ProductOutputPortRef<ServiceTypes, Services, ComponentTypes, Components, ContractId, Purpose>
+    : never;
+};
+
 type ServiceBindings<
   ServiceTypes extends readonly LegoSpec[],
   Services extends readonly ProductServiceInstance[],
@@ -82,12 +112,10 @@ type ServiceBindings<
   Instance,
 > = Instance extends { readonly serviceTypeRef: infer TypeRef extends string }
   ? TypeById<ServiceTypes, TypeRef>["inputs"][number] extends infer Ports
-    ? [Ports] extends [never] ? EmptyBindings : {
-      readonly [Port in Ports as Port extends { readonly id: infer Id extends string } ? Id : never]:
-        Port extends { readonly contract: { readonly id: infer ContractId extends string } }
-          ? ProductOutputPortRef<ServiceTypes, Services, ComponentTypes, Components, ContractId>
-          : never;
-    }
+    ? [Ports] extends [never]
+      ? EmptyBindings
+      : ServiceBindingMap<Ports, false, ServiceTypes, Services, ComponentTypes, Components>
+        & Partial<ServiceBindingMap<Ports, true, ServiceTypes, Services, ComponentTypes, Components>>
     : never
   : never;
 

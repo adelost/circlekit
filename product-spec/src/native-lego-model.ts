@@ -125,7 +125,7 @@ export interface LegoConfigRef {
   readonly values?: Readonly<Record<string, LegoConfigValue>>;
 }
 
-export type LegoPortPurpose = "data" | "demand";
+export type LegoPortPurpose = "data" | "demand" | "context";
 
 export interface LegoPort<
   Id extends string = string,
@@ -153,6 +153,17 @@ export function demandPort<const Id extends string, const Contract extends LegoC
     throw new Error(`demand port '${id}' must use a service-internal event contract`);
   }
   return { id, contract, purpose: "demand" };
+}
+
+/** Optional policy/cadence context which never contributes activation. */
+export function contextPort<const Id extends string, const Contract extends LegoContract>(
+  id: Id,
+  contract: Contract,
+): LegoPort<Id, Contract, "context"> {
+  if (contract.boundary !== "service-internal" || contract.kind === "event") {
+    throw new Error(`context port '${id}' must use a non-event service-internal contract`);
+  }
+  return { id, contract, purpose: "context" };
 }
 
 export interface LegoRuntimeSpec {
