@@ -16,9 +16,31 @@ Shared Android foundations used by Skyvw and Agentmux Link.
 
 Consumers pin released Maven artifacts. Product data and business logic stay
 in their owning applications; CircleKit owns rendering and update mechanics.
-TypeScript consumers pin the immutable product-spec tarball from the same
-CircleKit version; every app declaration remains in its product's owning
-repository.
+TypeScript consumers pin an immutable `@v1d/product-spec` version on its own
+semver axis; every app declaration remains in its product's owning repository.
+`@v1d/circlekit-assets` follows the Maven/design-system axis because its paths
+are consumed by DesignKit. ProductSpec does not.
+
+## Local-first publication
+
+Both release axes publish cumulative snapshots to the same Pages project, so
+neither command may remove historical npm or Maven payloads:
+
+```bash
+# Pure TypeScript: tests and packs ProductSpec; never invokes Gradle or AAR publication.
+scripts/publish-product-spec.sh X.Y.Z --prepare-only
+scripts/publish-product-spec.sh X.Y.Z
+
+# Android/design-system axis: publishes the five AARs plus circlekit-assets.
+scripts/publish-maven.sh X.Y.Z --prepare-only
+scripts/publish-maven.sh X.Y.Z
+```
+
+Each command requires a clean tracked worktree and an exact matching version
+in only the package it owns. `--prepare-only` reconstructs and checksum-verifies
+the complete remote snapshot without deploying it. It also permits an already
+published version only when a freshly packed tarball is byte-identical, which
+is the safe smoke path when no new release is warranted.
 
 The stable `com.adelost.*` package namespaces describe the five library
 modules. Since `0.2.0`, shared types and functions use the product-neutral
