@@ -10,6 +10,7 @@ import {
   checkOutputManifest,
   compileProductGraph,
   componentPort,
+  demandPort,
   decodeNativeBindingManifest,
   defineComponentType,
   defineLegoSpec,
@@ -47,6 +48,12 @@ const internalContract = {
   kind: "snapshot",
   boundary: "service-internal",
   fields: [field("sequence", "integer")],
+} as const;
+const demandContract = {
+  id: "fixture.demand",
+  kind: "event",
+  boundary: "service-internal",
+  fields: [],
 } as const;
 
 const source = defineLegoSpec({
@@ -196,9 +203,9 @@ test("one mandatory graph compiles deterministic outputs and a complete port reg
   assert.equal(product.services.length, 2);
   assert.deepEqual(product.portRegistry.contracts, [statusContract, actionContract]);
   assert.deepEqual(product.portRegistry.bindings, [
-    { kind: "service-input", from: "domain.source.status", to: "ui.controller.sourceState" },
-    { kind: "component-event", from: "control.main.activate", to: "ui.controller.trigger" },
-    { kind: "component-input", from: "ui.controller.state", to: "control.main.state" },
+    { kind: "service-input", from: "domain.source.status", to: "ui.controller.sourceState", purpose: "data" },
+    { kind: "component-event", from: "control.main.activate", to: "ui.controller.trigger", purpose: "data" },
+    { kind: "component-input", from: "ui.controller.state", to: "control.main.state", purpose: "data" },
   ]);
   assert.equal(product.portRegistry.demandEdges.length, 6);
   assert.deepEqual(new Set(product.portRegistry.demandEdges.map(({ serviceInstanceRef }) => serviceInstanceRef)),
@@ -222,6 +229,89 @@ test("one mandatory graph compiles deterministic outputs and a complete port reg
   } finally {
     await rm(root, { recursive: true, force: true });
   }
+});
+
+test("demand ports propagate activation forward without becoming data dependencies", () => {
+  const demandRoot = defineLegoSpec({
+    id: "fixture.demand-root",
+    role: "policy",
+    inputs: [],
+    outputs: [demandPort("activate", demandContract)],
+    runtime: {
+      stateOwner: "none", lifetime: "process", durability: "transient",
+      clockDomain: "none", contextInputs: [], effects: [],
+    },
+  } as const);
+  const demandedSource = defineLegoSpec({
+    id: "fixture.demanded-source",
+    role: "source",
+    inputs: [demandPort("demand", demandContract)],
+    outputs: [port("status", statusContract)],
+    runtime: {
+      stateOwner: "instance", lifetime: "process", durability: "transient",
+      clockDomain: "none", contextInputs: [], effects: [],
+    },
+  } as const);
+  const displayType = defineComponentType({
+    id: "fixture.display",
+    requiredCapabilities: [],
+    inputs: [componentPort("state", statusContract)],
+    outputs: [],
+  } as const);
+  const graph = compileProductGraph({
+    serviceTypes: [demandRoot, demandedSource],
+    services: [
+      { id: "demand.root", serviceTypeRef: demandRoot.id, config: {}, bindings: {}, demandSources: ["app-active"] },
+      { id: "demanded.source", serviceTypeRef: demandedSource.id, config: {}, bindings: {
+        demand: "demand.root.activate",
+      }, demandSources: [] },
+    ],
+    configs: [],
+    componentTypes: [displayType],
+    components: [{
+      id: "display.main",
+      componentTypeRef: displayType.id,
+      bindings: { inputs: { state: "demanded.source.status" }, events: {} },
+    }],
+    mountedScopes: [{
+      artifactRef: "phone", screenRef: "MAIN", surface: "compact",
+      mountRef: "display.main", componentInstanceRef: "display.main",
+    }],
+  });
+  assert.deepEqual(graph.portRegistry.bindings[0], {
+    kind: "service-input",
+    from: "demand.root.activate",
+    to: "demanded.source.demand",
+    purpose: "demand",
+  });
+  assert.deepEqual(graph.portRegistry.demandEdges.filter(({ kind }) => kind === "component-mount")
+    .map(({ serviceInstanceRef }) => serviceInstanceRef), ["demanded.source"]);
+  assert.deepEqual(new Set(graph.portRegistry.demandEdges.filter(({ kind }) => kind === "lifecycle")
+    .map(({ serviceInstanceRef }) => serviceInstanceRef)), new Set(["demand.root", "demanded.source"]));
+  const dataTarget = defineLegoSpec({
+    ...demandedSource,
+    id: "fixture.data-target",
+    inputs: [port("demand", demandContract)],
+  } as const);
+  assert.throws(() => compileProductGraph({
+    serviceTypes: [demandRoot, dataTarget],
+    services: [
+      { id: "demand.root", serviceTypeRef: demandRoot.id, config: {}, bindings: {}, demandSources: ["app-active"] },
+      { id: "data.target", serviceTypeRef: dataTarget.id, config: {}, bindings: {
+        demand: "demand.root.activate",
+      }, demandSources: [] },
+    ],
+    configs: [], componentTypes: [displayType],
+    components: [{
+      id: "display.main", componentTypeRef: displayType.id,
+      bindings: { inputs: { state: "data.target.status" }, events: {} },
+    }],
+    mountedScopes: [{
+      artifactRef: "phone", screenRef: "MAIN", surface: "compact",
+      mountRef: "display.main", componentInstanceRef: "display.main",
+    }],
+  }), /incompatible ports/);
+  assert.throws(() => demandPort("invalid", statusContract), /service-internal event contract/);
 });
 
 test("mandatory bindings and the component boundary fail before emission", () => {

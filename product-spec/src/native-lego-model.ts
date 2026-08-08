@@ -125,16 +125,34 @@ export interface LegoConfigRef {
   readonly values?: Readonly<Record<string, LegoConfigValue>>;
 }
 
-export interface LegoPort<Id extends string = string, Contract extends LegoContract = LegoContract> {
+export type LegoPortPurpose = "data" | "demand";
+
+export interface LegoPort<
+  Id extends string = string,
+  Contract extends LegoContract = LegoContract,
+  Purpose extends LegoPortPurpose = LegoPortPurpose,
+> {
   readonly id: Id;
   readonly contract: Contract;
+  readonly purpose: Purpose;
 }
 
 export function port<const Id extends string, const Contract extends LegoContract>(
   id: Id,
   contract: Contract,
-): LegoPort<Id, Contract> {
-  return { id, contract };
+): LegoPort<Id, Contract, "data"> {
+  return { id, contract, purpose: "data" };
+}
+
+/** A control edge which contributes activation but never data dependency. */
+export function demandPort<const Id extends string, const Contract extends LegoContract>(
+  id: Id,
+  contract: Contract,
+): LegoPort<Id, Contract, "demand"> {
+  if (contract.boundary !== "service-internal" || contract.kind !== "event") {
+    throw new Error(`demand port '${id}' must use a service-internal event contract`);
+  }
+  return { id, contract, purpose: "demand" };
 }
 
 export interface LegoRuntimeSpec {
