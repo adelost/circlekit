@@ -42,6 +42,8 @@ test("one compiled ProductSpec owns Android, Apple and Garmin Showcase structure
   assert.deepEqual(product.artifacts.map(({ id }) => id), SHOWCASE_ARTIFACT_PROFILES);
   assert.equal(product.showcase.sections.length, 7);
   assert.equal(product.showcase.cases.length, 15);
+  assert.equal(product.serviceTypes.length, 2);
+  assert.equal(product.services.length, 2);
   assert.equal(product.componentTypes.length, product.showcase.cases.length);
   assert.equal(product.components.length, product.showcase.cases.length);
   assert.equal(product.componentFamilies.length, product.showcase.sections.length + 1);
@@ -55,6 +57,23 @@ test("one compiled ProductSpec owns Android, Apple and Garmin Showcase structure
   for (const family of product.componentFamilies) {
     assert.deepEqual(family.family.trees.map(({ surface }) => surface), ["round", "compact", "wide"]);
   }
+  assert.deepEqual(
+    Object.fromEntries(SHOWCASE_ARTIFACT_PROFILES.map((artifact) => [
+      artifact,
+      product.artifactScopes.filter(({ artifactRef }) => artifactRef === artifact).length,
+    ])),
+    {
+      "phone-full-ui": 14,
+      "wear-full-ui": 7,
+      "iphone-full-ui": 14,
+      "watchos-full-ui": 7,
+      "garmin-limited-ui": 1,
+    },
+  );
+  assert.equal(product.portRegistry.servicePorts.length, 17);
+  assert.equal(product.portRegistry.componentPorts.length, 45);
+  assert.equal(product.portRegistry.bindings.length, 45);
+  assert.equal(product.portRegistry.demandEdges.length, 0);
 
   const first = buildOutputManifest(product, [
     productJsonEmitter("generated/showcase-product.json"),
@@ -84,6 +103,10 @@ test("one compiled ProductSpec owns Android, Apple and Garmin Showcase structure
     { id: "apple-iphone-swiftui", surfaces: ["compact", "wide"] },
     { id: "apple-watchos-swiftui", surfaces: ["round"] },
   ], CIRCLEKIT_ASSET_CATALOG, CIRCLEKIT_STYLE);
+  const swiftSource = swift.emit(product)[0]!.content;
+  for (const section of ["foundations", "atoms", "controls", "input", "media", "templates", "flows"]) {
+    assert.match(swiftSource, new RegExp(`screenId: "section\\.${section}"`, "u"));
+  }
   assert.throws(() => swift.emit({
     ...product,
     artifacts: product.artifacts.filter(({ id }) => id !== "watchos-full-ui"),
@@ -96,6 +119,10 @@ test("one compiled ProductSpec owns Android, Apple and Garmin Showcase structure
     ...product,
     artifacts: product.artifacts.filter(({ id }) => id !== "garmin-limited-ui"),
   }), /garmin-connectiq-monkeyc.*exactly one artifact, found 0/);
+  assert.throws(() => garmin.emit({
+    ...product,
+    artifactScopes: product.artifactScopes.filter(({ artifactRef }) => artifactRef !== "garmin-limited-ui"),
+  }), /must expose one entry scope, found 0/);
 });
 
 test("native component, profile and icon drift stops before emission", async () => {
@@ -115,4 +142,10 @@ test("native component, profile and icon drift stops before emission", async () 
     ...actual,
     icons: [...actual.icons, { iconId: "orphan", nativeSymbol: "RingIcons.Orphan" }],
   }, version), /\[icon\/orphan\] icon asset 'orphan'/);
+  assert.throws(() => compileCircleKitShowcaseProduct({
+    ...actual,
+    services: actual.services?.map((service) => service.serviceId === "navigation"
+      ? { ...service, inputPorts: service.inputPorts.slice(1) }
+      : service),
+  }, version), /native service 'navigation' ports differ/);
 });
