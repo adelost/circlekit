@@ -4,5 +4,6 @@ export * from "./invariant-model.js";
 export * from "./native-lego-model.js";
 export * from "./output-manifest.js";
 export * from "./port-graph-model.js";
+export * from "./product-instance-model.js";
 export * from "./product-model.js";
 export * from "./visual-model.js";

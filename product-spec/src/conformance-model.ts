@@ -157,12 +157,20 @@ export function productArtifactConformance(
     }
   }
 
-  out.push(...compareIds(
-    "component",
-    irSection(ir.componentTypes).map(({ id }) => id),
-    manifest.components.map(({ componentId }) => componentId),
-    "component",
-  ));
+  const componentTypeByInstance = new Map(ir.components.map((item) => [item.id, item.componentTypeRef]));
+  const declaredComponentBindings = new Set<string>();
+  for (const scope of ir.artifactScopes) {
+    for (const mount of scope.includedMounts) {
+      const componentType = componentTypeByInstance.get(mount.componentInstanceRef);
+      if (componentType === undefined) {
+        throw new Error(`artifact scope uses missing component instance '${mount.componentInstanceRef}'`);
+      }
+      declaredComponentBindings.add(`${componentType}@${scope.artifactRef}`);
+    }
+  }
+  const nativeComponentBindings = manifest.components.flatMap(({ componentId, profiles }) =>
+    profiles.map((profile) => `${componentId}@${profile}`));
+  out.push(...compareIds("component", declaredComponentBindings, nativeComponentBindings, "component binding"));
 
   // No `renderer` axis. It is tempting to match components[].rendererId against
   // the product's rendererBindings, and the first version did — but they name

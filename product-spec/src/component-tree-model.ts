@@ -153,10 +153,10 @@ export interface ScreenComponentFamilyRef<ScreenRef extends string = string, Fam
   readonly family: Family;
 }
 
-export function defineSurfaceFamily(
-  instances: readonly ProductComponentInstance[],
-  family: SurfaceFamilyDeclaration,
-): SurfaceFamily {
+export function defineSurfaceFamily<const Instances extends readonly ProductComponentInstance[]>(
+  instances: Instances,
+  family: SurfaceFamilyDeclaration<Instances[number]["id"]>,
+): SurfaceFamily<Instances[number]["id"]> {
   requireWireId(family.id, "surface family id");
   requireUnique(family.trees.map(({ surface }) => surface), `${family.id} surface`);
   const surfaces = new Set(family.trees.map(({ surface }) => surface));
@@ -196,10 +196,16 @@ export function defineSurfaceFamily(
   return { id: family.id, trees };
 }
 
-export function defineScreenComponentFamilyRegistry<ScreenRef extends string>(
-  instances: readonly ProductComponentInstance[],
-  entries: readonly { readonly screen: ScreenRef; readonly family: SurfaceFamilyDeclaration }[],
-): readonly ScreenComponentFamilyRef<ScreenRef>[] {
+export function defineScreenComponentFamilyRegistry<
+  const Instances extends readonly ProductComponentInstance[],
+  ScreenRef extends string,
+>(
+  instances: Instances,
+  entries: readonly {
+    readonly screen: ScreenRef;
+    readonly family: SurfaceFamilyDeclaration<Instances[number]["id"]>;
+  }[],
+): readonly ScreenComponentFamilyRef<ScreenRef, SurfaceFamily<Instances[number]["id"]>>[] {
   requireUnique(entries.map(({ screen }) => screen), "component-family screen");
   requireUnique(entries.map(({ family }) => family.id), "component-family ref");
   const registry = entries.map(({ screen, family }) => ({ screen, family: defineSurfaceFamily(instances, family) }));

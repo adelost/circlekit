@@ -8,6 +8,7 @@ import {
   assertProductArtifactConformance,
   buildOutputManifest,
   checkOutputManifest,
+  compileProductGraph,
   componentPort,
   decodeNativeBindingManifest,
   defineComponentType,
@@ -68,6 +69,16 @@ const controller = defineLegoSpec({
     clockDomain: "none", contextInputs: [], effects: ["fixture.effect"],
   },
 } as const);
+const background = defineLegoSpec({
+  id: "fixture.background",
+  role: "consumer",
+  inputs: [port("status", statusContract)],
+  outputs: [],
+  runtime: {
+    stateOwner: "instance", lifetime: "instance", durability: "transient",
+    clockDomain: "none", contextInputs: [], effects: [],
+  },
+} as const);
 const controlType = defineComponentType({
   id: "fixture.control",
   requiredCapabilities: ["ui.menu"],
@@ -123,13 +134,13 @@ const baseDeclaration = {
     { id: "renderer.wear", capabilities: ["ui.menu"] },
   ],
   artifacts: [
-    { id: "phone", rendererRefs: ["renderer.phone"], requiredCapabilities: ["ui.menu"], entryScreen: "MAIN", serves: ["compact", "wide"] },
-    { id: "wear", rendererRefs: ["renderer.wear"], requiredCapabilities: ["ui.menu"], entryScreen: "MAIN", serves: ["round"] },
+    { id: "phone", rendererRefs: ["renderer.phone"], requiredCapabilities: ["ui.menu"], entryScreen: "MAIN", screenRefs: ["MAIN"], serves: ["compact", "wide"] },
+    { id: "wear", rendererRefs: ["renderer.wear"], requiredCapabilities: ["ui.menu"], entryScreen: "MAIN", screenRefs: ["MAIN"], serves: ["round"] },
   ],
   serviceTypes: [source, controller],
   services: [
-    { id: "domain.source", serviceTypeRef: source.id, config: {}, bindings: {} },
-    { id: "ui.controller", serviceTypeRef: controller.id, config: {}, bindings: {
+    { id: "domain.source", serviceTypeRef: source.id, config: {}, bindings: {}, demandSources: [] },
+    { id: "ui.controller", serviceTypeRef: controller.id, config: {}, demandSources: [], bindings: {
       sourceState: "domain.source.status",
       trigger: "control.main.activate",
     } },
@@ -151,8 +162,15 @@ function fixture(overrides: Record<string, unknown> = {}) {
 if (false) {
   defineProduct({ ...baseDeclaration, services: [
     // @ts-expect-error A static/no-input service still writes an explicit bindings block.
-    { id: "domain.source", serviceTypeRef: source.id, config: {} },
+    { id: "domain.source", serviceTypeRef: source.id, config: {}, demandSources: [] },
     baseDeclaration.services[1],
+  ] }, assetCatalog);
+  defineProduct({ ...baseDeclaration, services: [
+    baseDeclaration.services[0],
+    // @ts-expect-error Every required service input has an exact binding.
+    { ...baseDeclaration.services[1], bindings: {
+      trigger: "control.main.activate",
+    } },
   ] }, assetCatalog);
   defineProduct({ ...baseDeclaration, services: [
     baseDeclaration.services[0],
@@ -236,8 +254,8 @@ test("mandatory bindings and the component boundary fail before emission", () =>
   }), /uses service-internal contract/);
   assert.throws(() => fixture({
     services: [
-      { id: "domain.source", serviceTypeRef: source.id, config: {}, bindings: {} },
-      { id: "ui.controller", serviceTypeRef: controller.id, config: {}, bindings: {
+      { id: "domain.source", serviceTypeRef: source.id, config: {}, bindings: {}, demandSources: [] },
+      { id: "ui.controller", serviceTypeRef: controller.id, config: {}, demandSources: [], bindings: {
         sourceState: "domain.source.status",
         trigger: "control.main.activate",
         invented: "domain.source.status",
@@ -253,16 +271,129 @@ test("mandatory bindings and the component boundary fail before emission", () =>
       ...artifact,
       requiredCapabilities: [],
     })),
-  }), /lacks component 'control.main' capability 'ui.menu'/);
+  }), /lacks required component 'control.main' capability 'ui.menu'/);
   assert.throws(() => defineScreenComponentFamilyRegistry([control], [{
     screen: "MAIN",
     family: {
       id: "fixture.unknown",
+      // @ts-expect-error The mount ref is derived from the declared component instances.
       trees: PORTABLE_SURFACE_CLASSES.map((surface) => ({
         surface, mounts: [{ instance: "missing.instance", region: "primary" }],
       })),
     },
   }]), /unknown component instance 'missing.instance'/);
+
+  const optionalType = defineComponentType({
+    id: "fixture.optional",
+    requiredCapabilities: ["ui.optional"],
+    inputs: [],
+    outputs: [],
+  } as const);
+  const optional = {
+    id: "control.optional",
+    componentTypeRef: optionalType.id,
+    bindings: { inputs: {}, events: {} },
+  } as const;
+  const detailsType = defineComponentType({
+    id: "fixture.details",
+    requiredCapabilities: ["ui.details"],
+    inputs: [],
+    outputs: [],
+  } as const);
+  const details = {
+    id: "details.main",
+    componentTypeRef: detailsType.id,
+    bindings: { inputs: {}, events: {} },
+  } as const;
+  const optionalFamilies = defineScreenComponentFamilyRegistry([control, optional, details], [
+    {
+      screen: "MAIN",
+      family: {
+        id: "fixture.main",
+        trees: PORTABLE_SURFACE_CLASSES.map((surface) => ({
+          surface,
+          mounts: [
+            { instance: control.id, region: "primary" },
+            { instance: optional.id, region: "supporting", requirement: { kind: "optional", fallback: "omit" } },
+          ],
+        })),
+      },
+    },
+    {
+      screen: "DETAILS",
+      family: {
+        id: "fixture.details",
+        trees: PORTABLE_SURFACE_CLASSES.map((surface) => ({
+          surface,
+          mounts: [{ instance: details.id, region: "primary" }],
+        })),
+      },
+    },
+  ] as const);
+  const scoped = fixture({
+    rendererBindings: [
+      { id: "renderer.phone", capabilities: ["ui.menu"] },
+      { id: "renderer.wear", capabilities: ["ui.menu", "ui.optional", "ui.details"] },
+    ],
+    artifacts: [
+      { ...baseDeclaration.artifacts[0], screenRefs: ["MAIN"] },
+      { ...baseDeclaration.artifacts[1], screenRefs: ["MAIN", "DETAILS"] },
+    ],
+    componentTypes: [controlType, optionalType, detailsType],
+    components: [control, optional, details],
+    componentFamilies: optionalFamilies,
+  });
+  assert.deepEqual(scoped.artifactScopes
+    .filter(({ artifactRef }) => artifactRef === "phone")
+    .flatMap(({ omittedMounts }) => omittedMounts.map(({ mountRef }) => mountRef)),
+  ["control.optional", "control.optional"]);
+  assert.deepEqual(scoped.artifactScopes
+    .filter(({ artifactRef }) => artifactRef === "wear")
+    .flatMap(({ includedMounts }) => includedMounts.map(({ mountRef }) => mountRef)),
+  ["control.main", "control.optional", "details.main"]);
+  assert.deepEqual(scoped.artifactScopes
+    .filter(({ artifactRef }) => artifactRef === "phone")
+    .map(({ screenRef }) => screenRef),
+  ["MAIN", "MAIN"]);
+  const componentFindings = productArtifactConformance(scoped, {
+    ...conformingManifest,
+    components: [
+      { componentId: "fixture.control", rendererId: "control", profiles: ["phone", "wear"] },
+      { componentId: "fixture.optional", rendererId: "optional", profiles: ["wear"] },
+      { componentId: "fixture.details", rendererId: "details", profiles: ["wear"] },
+    ],
+  }).filter(({ axis }) => axis === "component");
+  assert.deepEqual(componentFindings, []);
+});
+
+test("a no-UI lifecycle lease demands its service and upstream producers", () => {
+  const graph = compileProductGraph({
+    serviceTypes: [source, background],
+    services: [
+      { id: "domain.source", serviceTypeRef: source.id, config: {}, bindings: {}, demandSources: [] },
+      {
+        id: "session.background",
+        serviceTypeRef: background.id,
+        config: {},
+        bindings: { status: "domain.source.status" },
+        demandSources: ["session-active"],
+      },
+    ],
+    configs: [],
+    componentTypes: [],
+    components: [],
+    mountedScopes: [],
+  });
+  assert.deepEqual(graph.portRegistry.demandEdges, [
+    {
+      kind: "lifecycle", source: "session-active", rootServiceInstanceRef: "session.background",
+      serviceInstanceRef: "domain.source",
+    },
+    {
+      kind: "lifecycle", source: "session-active", rootServiceInstanceRef: "session.background",
+      serviceInstanceRef: "session.background",
+    },
+  ]);
 });
 
 const conformingManifest: NativeBindingManifest = {
@@ -286,7 +417,9 @@ const mutate = (change: (draft: NativeBindingManifest) => NativeBindingManifest)
   change(structuredClone(conformingManifest) as NativeBindingManifest);
 
 test("a conforming native manifest reports nothing", () => {
-  assert.deepEqual(productArtifactConformance(fixture(), conformingManifest), []);
+  const product = fixture();
+  assert.equal(product.artifactScopes.filter(({ artifactRef }) => artifactRef === "phone").length, 2);
+  assert.deepEqual(productArtifactConformance(product, conformingManifest), []);
 });
 
 const AXIS_MUTATIONS: readonly {

@@ -1,8 +1,12 @@
 import type {
-  ComponentPort,
   ComponentType,
   ProductComponentInstance,
 } from "./component-tree-model.js";
+import {
+  PRODUCT_LIFECYCLE_DEMAND_SOURCES,
+  type ProductLifecycleDemandSource,
+  type ProductServiceInstance,
+} from "./product-instance-model.js";
 import {
   defineLegoSpec,
   registerContract,
@@ -15,167 +19,6 @@ import {
   type LegoContract,
   type LegoSpec,
 } from "./native-lego-model.js";
-
-export interface ProductServiceInstance<Id extends string = string, TypeRef extends string = string> {
-  readonly id: Id;
-  readonly serviceTypeRef: TypeRef;
-  readonly config: Readonly<Record<string, string>>;
-  readonly bindings: Readonly<Record<string, string>>;
-}
-
-type TypeById<Types extends readonly { readonly id: string }[], Id extends string> =
-  Extract<Types[number], { readonly id: Id }>;
-
-type ServiceOutputRefForInstance<
-  ServiceTypes extends readonly LegoSpec[],
-  Instance,
-  ContractId extends string,
-> = Instance extends { readonly id: infer Id extends string; readonly serviceTypeRef: infer TypeRef extends string }
-  ? TypeById<ServiceTypes, TypeRef>["outputs"][number] extends infer Port
-    ? Port extends { readonly id: infer PortId extends string; readonly contract: { readonly id: ContractId } }
-      ? `${Id}.${PortId}`
-      : never
-    : never
-  : never;
-
-type ComponentOutputRefForInstance<
-  ComponentTypes extends readonly ComponentType[],
-  Instance,
-  ContractId extends string,
-> = Instance extends { readonly id: infer Id extends string; readonly componentTypeRef: infer TypeRef extends string }
-  ? TypeById<ComponentTypes, TypeRef>["outputs"][number] extends infer Port
-    ? Port extends { readonly id: infer PortId extends string; readonly contract: { readonly id: ContractId } }
-      ? `${Id}.${PortId}`
-      : never
-    : never
-  : never;
-
-export type ProductOutputPortRef<
-  ServiceTypes extends readonly LegoSpec[],
-  Services extends readonly ProductServiceInstance[],
-  ComponentTypes extends readonly ComponentType[],
-  Components extends readonly ProductComponentInstance[],
-  ContractId extends string,
-> =
-  (Services[number] extends infer Instance
-    ? ServiceOutputRefForInstance<ServiceTypes, Instance, ContractId>
-    : never)
-  | (Components[number] extends infer Instance
-    ? ComponentOutputRefForInstance<ComponentTypes, Instance, ContractId>
-    : never);
-
-type ServiceInputRefForInstance<
-  ServiceTypes extends readonly LegoSpec[],
-  Instance,
-  ContractId extends string,
-> = Instance extends { readonly id: infer Id extends string; readonly serviceTypeRef: infer TypeRef extends string }
-  ? TypeById<ServiceTypes, TypeRef>["inputs"][number] extends infer Port
-    ? Port extends { readonly id: infer PortId extends string; readonly contract: { readonly id: ContractId } }
-      ? `${Id}.${PortId}`
-      : never
-    : never
-  : never;
-
-export type ProductInputPortRef<
-  ServiceTypes extends readonly LegoSpec[],
-  Services extends readonly ProductServiceInstance[],
-  ContractId extends string,
-> = Services[number] extends infer Instance
-  ? ServiceInputRefForInstance<ServiceTypes, Instance, ContractId>
-  : never;
-
-type EmptyBindings = Readonly<Record<string, never>>;
-type ServiceBindings<
-  ServiceTypes extends readonly LegoSpec[],
-  Services extends readonly ProductServiceInstance[],
-  ComponentTypes extends readonly ComponentType[],
-  Components extends readonly ProductComponentInstance[],
-  Instance,
-> = Instance extends { readonly serviceTypeRef: infer TypeRef extends string }
-  ? TypeById<ServiceTypes, TypeRef>["inputs"][number] extends infer Ports
-    ? [Ports] extends [never] ? EmptyBindings : {
-      readonly [Port in Ports as Port extends { readonly id: infer Id extends string } ? Id : never]:
-        Port extends { readonly contract: { readonly id: infer ContractId extends string } }
-          ? ProductOutputPortRef<ServiceTypes, Services, ComponentTypes, Components, ContractId>
-          : never;
-    }
-    : never
-  : never;
-
-type RequiredComponentBindings<
-  Ports,
-  RefKind extends "input" | "event",
-  ServiceTypes extends readonly LegoSpec[],
-  Services extends readonly ProductServiceInstance[],
-  ComponentTypes extends readonly ComponentType[],
-  Components extends readonly ProductComponentInstance[],
-> = {
-  readonly [Port in Ports as Port extends ComponentPort<infer Id>
-    ? Port["required"] extends false ? never : Id
-    : never]: Port extends ComponentPort<string, infer Contract>
-      ? RefKind extends "input"
-        ? ProductOutputPortRef<ServiceTypes, Services, ComponentTypes, Components, Contract["id"]>
-        : ProductInputPortRef<ServiceTypes, Services, Contract["id"]>
-      : never;
-};
-
-type OptionalComponentBindings<
-  Ports,
-  RefKind extends "input" | "event",
-  ServiceTypes extends readonly LegoSpec[],
-  Services extends readonly ProductServiceInstance[],
-  ComponentTypes extends readonly ComponentType[],
-  Components extends readonly ProductComponentInstance[],
-> = {
-  readonly [Port in Ports as Port extends ComponentPort<infer Id>
-    ? Port["required"] extends false ? Id : never
-    : never]?: Port extends ComponentPort<string, infer Contract>
-      ? RefKind extends "input"
-        ? ProductOutputPortRef<ServiceTypes, Services, ComponentTypes, Components, Contract["id"]>
-        : ProductInputPortRef<ServiceTypes, Services, Contract["id"]>
-      : never;
-};
-
-type ComponentBindings<
-  ServiceTypes extends readonly LegoSpec[],
-  Services extends readonly ProductServiceInstance[],
-  ComponentTypes extends readonly ComponentType[],
-  Components extends readonly ProductComponentInstance[],
-  Instance,
-> = Instance extends { readonly componentTypeRef: infer TypeRef extends string }
-  ? TypeById<ComponentTypes, TypeRef> extends infer Type extends ComponentType
-    ? {
-      readonly inputs: RequiredComponentBindings<Type["inputs"][number], "input", ServiceTypes, Services, ComponentTypes, Components>
-        & OptionalComponentBindings<Type["inputs"][number], "input", ServiceTypes, Services, ComponentTypes, Components>;
-      readonly events: RequiredComponentBindings<Type["outputs"][number], "event", ServiceTypes, Services, ComponentTypes, Components>
-        & OptionalComponentBindings<Type["outputs"][number], "event", ServiceTypes, Services, ComponentTypes, Components>;
-    }
-    : never
-  : never;
-
-export type ExactServiceInstances<
-  ServiceTypes extends readonly LegoSpec[],
-  Services extends readonly ProductServiceInstance[],
-  ComponentTypes extends readonly ComponentType[],
-  Components extends readonly ProductComponentInstance[],
-> = { readonly [Index in keyof Services]: Services[Index] extends ProductServiceInstance<infer Id, infer TypeRef>
-  ? ProductServiceInstance<Id, TypeRef> & {
-    readonly serviceTypeRef: TypeRef & ServiceTypes[number]["id"];
-    readonly bindings: ServiceBindings<ServiceTypes, Services, ComponentTypes, Components, Services[Index]>;
-  }
-  : never };
-
-export type ExactComponentInstances<
-  ServiceTypes extends readonly LegoSpec[],
-  Services extends readonly ProductServiceInstance[],
-  ComponentTypes extends readonly ComponentType[],
-  Components extends readonly ProductComponentInstance[],
-> = { readonly [Index in keyof Components]: Components[Index] extends ProductComponentInstance<infer Id, infer TypeRef>
-  ? ProductComponentInstance<Id, TypeRef> & {
-    readonly componentTypeRef: TypeRef & ComponentTypes[number]["id"];
-    readonly bindings: ComponentBindings<ServiceTypes, Services, ComponentTypes, Components, Components[Index]>;
-  }
-  : never };
 
 export type PortOwnerKind = "service" | "component";
 export type PortDirection = "input" | "output";
@@ -207,9 +50,17 @@ export interface MountedComponentScope {
   readonly componentInstanceRef: string;
 }
 
-export interface ProductDemandEdge extends MountedComponentScope {
-  readonly serviceInstanceRef: string;
-}
+export type ProductDemandEdge =
+  | (MountedComponentScope & {
+    readonly kind: "component-mount";
+    readonly serviceInstanceRef: string;
+  })
+  | {
+    readonly kind: "lifecycle";
+    readonly source: ProductLifecycleDemandSource;
+    readonly rootServiceInstanceRef: string;
+    readonly serviceInstanceRef: string;
+  };
 
 export interface ProductPortRegistry {
   readonly contracts: readonly LegoContract[];
@@ -265,6 +116,12 @@ export function compileProductGraph(input: {
 
   for (const instance of input.services) {
     requireWireId(instance.id, "service instance");
+    requireUnique(instance.demandSources, `lifecycle demand source in service '${instance.id}'`);
+    for (const source of instance.demandSources) {
+      if (!PRODUCT_LIFECYCLE_DEMAND_SOURCES.includes(source)) {
+        throw new Error(`service '${instance.id}' uses unknown lifecycle demand source '${String(source)}'`);
+      }
+    }
     const spec = serviceTypes.get(instance.serviceTypeRef);
     if (spec === undefined) throw new Error(`service '${instance.id}' uses unknown service type '${instance.serviceTypeRef}'`);
     validateServiceConfig(instance.id, spec, instance.config, configs).forEach((id) => usedConfigs.add(id));
@@ -298,6 +155,12 @@ export function compileProductGraph(input: {
         registerContract(contracts, item.contract);
         if (item.contract.boundary === "service-internal") {
           throw new Error(`component '${instance.id}' ${direction} '${item.id}' uses service-internal contract '${item.contract.id}'`);
+        }
+        if (direction === "input" && (item.contract.boundary !== "presentation" || item.contract.kind === "event")) {
+          throw new Error(`component '${instance.id}' input '${item.id}' must use a presentation contract`);
+        }
+        if (direction === "output" && (item.contract.boundary !== "ui-event" || item.contract.kind !== "event")) {
+          throw new Error(`component '${instance.id}' output '${item.id}' must use a ui-event contract`);
         }
         const entry: PortRegistryEntry = {
           ref: `${instance.id}.${item.id}`,
@@ -364,7 +227,7 @@ export function compileProductGraph(input: {
   const mountedIds = new Set(input.mountedScopes.map(({ componentInstanceRef }) => componentInstanceRef));
   const orphanComponents = input.components.map(({ id }) => id).filter((id) => !mountedIds.has(id));
   if (orphanComponents.length > 0) throw new Error(`orphan component instance '${orphanComponents.join("', '")}'`);
-  const demandEdges = deriveDemandEdges(input.mountedScopes, bindings, serviceById, componentById);
+  const demandEdges = deriveDemandEdges(input.mountedScopes, input.services, bindings, serviceById, componentById);
   const demandedServices = new Set(demandEdges.map(({ serviceInstanceRef }) => serviceInstanceRef));
   const orphanServices = input.services.map(({ id }) => id).filter((id) => !demandedServices.has(id));
   if (orphanServices.length > 0) throw new Error(`orphan service instance '${orphanServices.join("', '")}'`);
@@ -422,6 +285,7 @@ function requireAcyclic(services: readonly ProductServiceInstance[], bindings: r
 
 function deriveDemandEdges(
   scopes: readonly MountedComponentScope[],
+  serviceInstances: readonly ProductServiceInstance[],
   bindings: readonly PortBindingIr[],
   services: ReadonlyMap<string, ProductServiceInstance>,
   components: ReadonlyMap<string, ProductComponentInstance>,
@@ -456,7 +320,28 @@ function deriveDemandEdges(
       incomingByOwner.get(id)?.forEach(visit);
     };
     directByComponent.get(scope.componentInstanceRef)?.forEach(visit);
-    for (const serviceInstanceRef of [...demanded].sort()) result.push({ ...scope, serviceInstanceRef });
+    for (const serviceInstanceRef of [...demanded].sort()) {
+      result.push({ kind: "component-mount", ...scope, serviceInstanceRef });
+    }
+  }
+  for (const root of serviceInstances) {
+    for (const source of root.demandSources) {
+      const demanded = new Set<string>();
+      const visit = (id: string): void => {
+        if (demanded.has(id)) return;
+        demanded.add(id);
+        incomingByOwner.get(id)?.forEach(visit);
+      };
+      visit(root.id);
+      for (const serviceInstanceRef of [...demanded].sort()) {
+        result.push({
+          kind: "lifecycle",
+          source,
+          rootServiceInstanceRef: root.id,
+          serviceInstanceRef,
+        });
+      }
+    }
   }
   return result;
 }

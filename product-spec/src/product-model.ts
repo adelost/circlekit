@@ -6,12 +6,14 @@ import type {
 } from "./component-tree-model.js";
 import {
   compileProductGraph,
-  type ExactComponentInstances,
-  type ExactServiceInstances,
   type MountedComponentScope,
   type ProductPortRegistry,
-  type ProductServiceInstance,
 } from "./port-graph-model.js";
+import type {
+  ExactComponentInstances,
+  ExactServiceInstances,
+  ProductServiceInstance,
+} from "./product-instance-model.js";
 import {
   requireUnique,
   requireWireId,
@@ -50,7 +52,24 @@ export interface ArtifactProfile<
   readonly rendererRefs: readonly RendererRef[];
   readonly requiredCapabilities: readonly Capability[];
   readonly entryScreen: ScreenRef;
+  readonly screenRefs: readonly ScreenRef[];
   readonly serves: readonly PortableSurfaceClass[];
+}
+
+export interface ProductArtifactMountScope {
+  readonly artifactRef: string;
+  readonly screenRef: string;
+  readonly surface: PortableSurfaceClass;
+  readonly includedMounts: readonly {
+    readonly mountRef: string;
+    readonly componentInstanceRef: string;
+  }[];
+  readonly omittedMounts: readonly {
+    readonly mountRef: string;
+    readonly componentInstanceRef: string;
+    readonly reason: "missing-capability";
+    readonly capabilities: readonly string[];
+  }[];
 }
 
 export interface ProductDeclaration<
@@ -89,6 +108,7 @@ export interface ProductIr {
   readonly componentTypes: readonly ComponentType[];
   readonly components: readonly ProductComponentInstance[];
   readonly componentFamilies: readonly ScreenComponentFamilyRef[];
+  readonly artifactScopes: readonly ProductArtifactMountScope[];
   readonly portRegistry: ProductPortRegistry;
   readonly palette: ProductPalette;
   readonly assetCatalogRef: PortableAssetCatalogRef;
@@ -125,6 +145,7 @@ export function defineProduct<
   const componentById = new Map(declaration.components.map((item) => [item.id, item]));
   const componentTypeById = new Map(declaration.componentTypes.map((item) => [item.id, item]));
   const mountedScopes: MountedComponentScope[] = [];
+  const artifactScopes: ProductArtifactMountScope[] = [];
 
   for (const artifact of declaration.artifacts) {
     requireWireId(artifact.id, "artifact profile");
@@ -133,6 +154,11 @@ export function defineProduct<
     requireUnique(artifact.rendererRefs, `renderer in artifact '${artifact.id}'`);
     requireUnique(artifact.requiredCapabilities, `capability in artifact '${artifact.id}'`);
     requireUnique(artifact.serves, `surface in artifact '${artifact.id}'`);
+    requireUnique(artifact.screenRefs, `screen in artifact '${artifact.id}'`);
+    if (artifact.screenRefs.length === 0) throw new Error(`artifact '${artifact.id}' selects no screen`);
+    if (!artifact.screenRefs.includes(artifact.entryScreen)) {
+      throw new Error(`artifact '${artifact.id}' entry screen '${artifact.entryScreen}' is not selected`);
+    }
     const entry = familyByScreen.get(artifact.entryScreen);
     if (entry === undefined) throw new Error(`artifact '${artifact.id}' uses missing entry screen '${artifact.entryScreen}'`);
     for (const surface of artifact.serves) {
@@ -152,8 +178,13 @@ export function defineProduct<
         }
       }
     }
-    for (const { screen, family } of declaration.componentFamilies) {
+    for (const screen of artifact.screenRefs) {
+      const selected = familyByScreen.get(screen);
+      if (selected === undefined) throw new Error(`artifact '${artifact.id}' selects missing screen '${screen}'`);
+      const { family } = selected;
       for (const tree of family.trees.filter(({ surface }) => artifact.serves.includes(surface))) {
+        const includedMounts: ProductArtifactMountScope["includedMounts"][number][] = [];
+        const omittedMounts: ProductArtifactMountScope["omittedMounts"][number][] = [];
         for (const mount of tree.mounts) {
           const component = componentById.get(mount.instance);
           if (component === undefined) {
@@ -163,15 +194,23 @@ export function defineProduct<
           if (type === undefined) {
             throw new Error(`component '${component.id}' uses unknown component type '${component.componentTypeRef}'`);
           }
-          for (const capability of type.requiredCapabilities) {
-            for (const renderer of artifactRenderers) {
-              if (!renderer.capabilities.includes(capability)) {
-                throw new Error(
-                  `artifact '${artifact.id}' renderer '${renderer.id}' lacks component '${component.id}' capability '${capability}'`,
-                );
-              }
+          const missingCapabilities = type.requiredCapabilities.filter((capability) =>
+            artifactRenderers.some((renderer) => !renderer.capabilities.includes(capability)));
+          if (missingCapabilities.length > 0) {
+            if (mount.requirement.kind === "required") {
+              throw new Error(
+                `artifact '${artifact.id}' lacks required component '${component.id}' capability '${missingCapabilities.join("', '")}'`,
+              );
             }
+            omittedMounts.push({
+              mountRef: mount.id,
+              componentInstanceRef: component.id,
+              reason: "missing-capability",
+              capabilities: missingCapabilities,
+            });
+            continue;
           }
+          includedMounts.push({ mountRef: mount.id, componentInstanceRef: component.id });
           mountedScopes.push({
             artifactRef: artifact.id,
             screenRef: screen,
@@ -180,6 +219,13 @@ export function defineProduct<
             componentInstanceRef: component.id,
           });
         }
+        artifactScopes.push({
+          artifactRef: artifact.id,
+          screenRef: screen,
+          surface: tree.surface,
+          includedMounts,
+          omittedMounts,
+        });
       }
     }
   }
@@ -210,6 +256,7 @@ export function defineProduct<
     componentTypes: graph.componentTypes,
     components: graph.components,
     componentFamilies: declaration.componentFamilies,
+    artifactScopes,
     portRegistry: graph.portRegistry,
     palette: declaration.palette,
     assetCatalogRef: declaration.assetCatalogRef,
