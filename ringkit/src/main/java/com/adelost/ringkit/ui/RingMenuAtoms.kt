@@ -206,6 +206,8 @@ fun RingRow(
     actionHoldMs: Long = actionTiming.holdMs,
     /** One sentence about what this row does; read out by the centre cue. */
     hint: String = "",
+    /** Optional verb rendered with the transient information card. */
+    infoAction: CircleActionCueInfoAction? = null,
 ) {
     if (holdToConfirm) {
         val confirm = requireNotNull(onTap) { "A hold row requires an action" }
@@ -221,6 +223,7 @@ fun RingRow(
                 determinateProgress = holdProgress,
                 stateValue = sub.takeIf { it.isNotBlank() },
                 hint = hint.takeIf { it.isNotBlank() },
+                infoAction = infoAction,
             )
         } else {
             null
@@ -278,6 +281,7 @@ fun RingRow(
         actionTiming = actionTiming,
         actionHoldMs = actionHoldMs,
         hint = hint,
+        infoAction = infoAction,
         // DERIVED, not passed: a row with no tap cannot publish its title to
         // the centre cue, so an ellipsis there is the last word rather than a
         // summary. Reading it off the row's own data means no caller can

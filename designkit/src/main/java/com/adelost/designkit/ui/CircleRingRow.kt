@@ -46,6 +46,8 @@ fun CircleRingRow(
     actionHoldMs: Long = actionTiming.holdMs,
     /** One sentence about what this row does; read out by the centre cue. */
     hint: String = "",
+    /** Optional verb rendered with the transient information card. */
+    infoAction: CircleActionCueInfoAction? = null,
     /**
      * Let the row grow to fit its words instead of ellipsising them.
      *
@@ -75,6 +77,7 @@ fun CircleRingRow(
             // having to keep the list in view behind the overlay.
             stateValue = sub.takeIf { it.isNotBlank() },
             hint = hint.takeIf { it.isNotBlank() },
+            infoAction = infoAction,
         )
     } else {
         null

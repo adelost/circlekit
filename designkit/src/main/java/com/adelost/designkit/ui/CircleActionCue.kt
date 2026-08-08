@@ -38,6 +38,13 @@ data class CircleActionCue(
     /** One sentence: what it does, and what its states mean. */
     val hint: String? = null,
     /**
+     * Optional action belonging to the explanation, not to the row itself.
+     * The first consumer is RESET TO DEFAULT: the option keeps its ordinary
+     * tap meaning, while the short-lived information card may offer the
+     * explicit escape hatch declared by the product catalogue.
+     */
+    val infoAction: CircleActionCueInfoAction? = null,
+    /**
      * This cue must survive the publisher going quiet, and the HOST owns how
      * long it stays.
      *
@@ -64,6 +71,9 @@ data class CircleActionCue(
         require(hint == null || hint.isNotBlank()) {
             "Action cue hint is either a real sentence or absent, never blank"
         }
+        require(infoAction == null || hint != null) {
+            "An action cue info action needs explanatory copy to live beside"
+        }
     }
 
     /**
@@ -77,6 +87,17 @@ data class CircleActionCue(
         } else {
             MenuDesign.actionConfirmationMs
         }
+}
+
+/** One optional verb in the transient explanation card. */
+@Stable
+class CircleActionCueInfoAction(
+    val label: String,
+    val onInvoke: () -> Unit,
+) {
+    init {
+        require(label.isNotBlank()) { "Action cue info action needs a visible label" }
+    }
 }
 
 /** Owner identity makes clear events safe when many idle buttons compose. */
@@ -112,6 +133,7 @@ internal fun abandonedPressCue(
     label: String,
     value: String?,
     hint: String?,
+    infoAction: CircleActionCueInfoAction? = null,
 ): CircleActionCue? =
     if (value == null && hint == null) {
         null
@@ -123,6 +145,7 @@ internal fun abandonedPressCue(
             confirmed = false,
             value = value,
             hint = hint,
+            infoAction = infoAction,
             lingers = true,
         )
     }
@@ -156,13 +179,14 @@ internal fun circleCuePlan(
     label: String,
     value: String?,
     hint: String?,
+    infoAction: CircleActionCueInfoAction? = null,
     timing: CircleActionTiming,
     pressed: Boolean,
     confirmed: Boolean,
     determinateProgress: Float?,
 ): CircleCuePlan {
     fun cue(progress: Float, isConfirmed: Boolean) =
-        CircleActionCue(icon, label, progress, isConfirmed, value, hint)
+        CircleActionCue(icon, label, progress, isConfirmed, value, hint, infoAction)
     return when {
         confirmed -> CircleCuePlan.Settle(cue(progress = 1f, isConfirmed = true))
         determinateProgress != null ->
@@ -197,6 +221,8 @@ fun rememberCircleActionCueController(
     stateValue: String? = null,
     /** One sentence about what it does. Rendered in the same two moments. */
     hint: String? = null,
+    /** Optional verb rendered only with the transient explanation. */
+    infoAction: CircleActionCueInfoAction? = null,
 ): CircleActionCueController {
     require(holdDurationMs >= 0L) { "Action cue hold duration cannot be negative" }
     require(determinateProgress == null || determinateProgress.isFinite() && determinateProgress in 0f..1f) {
@@ -217,6 +243,7 @@ fun rememberCircleActionCueController(
         determinateProgress,
         state,
         explain,
+        infoAction,
         controller.confirmed,
         publish,
     ) {
@@ -225,6 +252,7 @@ fun rememberCircleActionCueController(
             label = label,
             value = state,
             hint = explain,
+            infoAction = infoAction,
             timing = timing,
             pressed = pressed,
             confirmed = controller.confirmed,
@@ -257,7 +285,7 @@ fun rememberCircleActionCueController(
                         publish(
                             CircleActionCueEvent(
                                 owner,
-                                CircleActionCue(icon, label, value, false, state, explain),
+                                CircleActionCue(icon, label, value, false, state, explain, infoAction),
                             ),
                         )
                     }
@@ -271,7 +299,7 @@ fun rememberCircleActionCueController(
                     // [publish] does not suspend, so a cancelled coroutine can
                     // still deliver it; the cue lingers and the host times it.
                     if (!completed) {
-                        abandonedPressCue(icon, label, state, explain)?.let {
+                        abandonedPressCue(icon, label, state, explain, infoAction)?.let {
                             publish(CircleActionCueEvent(owner, it))
                         }
                     }

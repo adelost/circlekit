@@ -313,6 +313,8 @@ fun RingChoiceRow(
     actionTiming: CircleActionTiming = CircleActionTiming.DELIBERATE,
     /** One sentence about what this row does; read out by the centre cue. */
     hint: String = "",
+    /** Optional verb rendered with the transient information card. */
+    infoAction: CircleActionCueInfoAction? = null,
 ) {
     val active = choiceIsActive(options, selected, role)
     val choiceState = circleChoiceState(options, selected)
@@ -326,6 +328,7 @@ fun RingChoiceRow(
         actionTiming = actionTiming,
         actionHoldMs = holdMs,
         hint = hint,
+        infoAction = infoAction,
         trailing = {
             CircleChoiceIndicator(
                 state = choiceState,

@@ -33,11 +33,29 @@ class CircleActionCueTest {
      */
     @Test
     fun `an abandoned press answers with the words the hold would have shown`() {
-        val cue = abandonedPressCue(RingIcons.Gauge, "DIAL DIRECTION", "CLOCK", HINT)
+        var reset = false
+        val action = CircleActionCueInfoAction("RESET TO DEFAULT") { reset = true }
+        val cue = abandonedPressCue(RingIcons.Gauge, "DIAL DIRECTION", "CLOCK", HINT, action)
 
         assertEquals(HINT, cue?.hint)
         assertEquals("CLOCK", cue?.value)
         assertEquals("DIAL DIRECTION", cue?.label)
+        assertEquals("RESET TO DEFAULT", cue?.infoAction?.label)
+        cue?.infoAction?.onInvoke?.invoke()
+        assertTrue(reset)
+    }
+
+    @Test
+    fun `an info action cannot float without an explanation`() {
+        assertThrows(IllegalArgumentException::class.java) {
+            CircleActionCue(
+                RingIcons.Gauge,
+                "DIAL DIRECTION",
+                progress = 0f,
+                confirmed = false,
+                infoAction = CircleActionCueInfoAction("RESET TO DEFAULT") {},
+            )
+        }
     }
 
     /** Cancel still cancels: the whole point of releasing early (2026-07-27). */
