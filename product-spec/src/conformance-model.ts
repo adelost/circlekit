@@ -105,12 +105,10 @@ const irSection = <T,>(value: readonly T[] | undefined): readonly T[] => value ?
 
 /** Every mounted lego port, as the `mount.port` refs wiring and native bindings use. */
 function portRefs(ir: ProductIr): { inputs: Set<string>; outputs: Set<string> } {
-  const inputs = new Set<string>();
-  const outputs = new Set<string>();
-  for (const mount of irSection(ir.legos?.mounts)) {
-    for (const port of mount.lego.inputs) inputs.add(`${mount.id}.${port.id}`);
-    for (const port of mount.lego.outputs) outputs.add(`${mount.id}.${port.id}`);
-  }
+  const inputs = new Set(ir.portRegistry.servicePorts
+    .filter(({ direction }) => direction === "input").map(({ ref }) => ref));
+  const outputs = new Set(ir.portRegistry.servicePorts
+    .filter(({ direction }) => direction === "output").map(({ ref }) => ref));
   return { inputs, outputs };
 }
 
@@ -159,12 +157,20 @@ export function productArtifactConformance(
     }
   }
 
-  out.push(...compareIds(
-    "component",
-    irSection(ir.componentCatalog).map(({ id }) => id),
-    manifest.components.map(({ componentId }) => componentId),
-    "component",
-  ));
+  const componentTypeByInstance = new Map(ir.components.map((item) => [item.id, item.componentTypeRef]));
+  const declaredComponentBindings = new Set<string>();
+  for (const scope of ir.artifactScopes) {
+    for (const mount of scope.includedMounts) {
+      const componentType = componentTypeByInstance.get(mount.componentInstanceRef);
+      if (componentType === undefined) {
+        throw new Error(`artifact scope uses missing component instance '${mount.componentInstanceRef}'`);
+      }
+      declaredComponentBindings.add(`${componentType}@${scope.artifactRef}`);
+    }
+  }
+  const nativeComponentBindings = manifest.components.flatMap(({ componentId, profiles }) =>
+    profiles.map((profile) => `${componentId}@${profile}`));
+  out.push(...compareIds("component", declaredComponentBindings, nativeComponentBindings, "component binding"));
 
   // No `renderer` axis. It is tempting to match components[].rendererId against
   // the product's rendererBindings, and the first version did — but they name
@@ -228,7 +234,7 @@ export function productArtifactConformance(
   // A serviceId with no matching mount is reported rather than silently
   // qualifying into a ref that cannot match anything.
   const { inputs, outputs } = portRefs(ir);
-  const mountIds = new Set(irSection(ir.legos?.mounts).map(({ id }) => id));
+  const mountIds = new Set(irSection(ir.services).map(({ id }) => id));
   for (const service of manifest.services ?? []) {
     if (!mountIds.has(service.serviceId)) {
       out.push(finding("service-port", "orphan", service.serviceId,
