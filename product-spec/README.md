@@ -26,3 +26,18 @@ same graph rather than bypassing it through native surface lists.
 Each artifact selects its screens from the product's typed component-family
 catalog. Required mounts must be supported by its renderer, while an optional
 `omit` mount is recorded as an explicit artifact-scope outcome in Product IR.
+
+## Release
+
+`@v1d/product-spec` has its own semver and does not require a CircleKit Maven
+version. From a clean exact source revision:
+
+```bash
+scripts/publish-product-spec.sh X.Y.Z --prepare-only
+scripts/publish-product-spec.sh X.Y.Z
+```
+
+The first command is the normal proof: it runs only this package's tests,
+packs it, reconstructs the cumulative Pages snapshot and verifies historical
+npm/Maven checksums without invoking Gradle. Omit `--prepare-only` only when
+`product-spec/package.json` intentionally names a new immutable version.
