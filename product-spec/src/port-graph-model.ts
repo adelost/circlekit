@@ -140,7 +140,7 @@ export function compileProductGraph(input: {
           direction,
           contractRef: item.contract.id,
           boundary: item.contract.boundary,
-          required: true,
+          required: direction === "output" || item.purpose !== "context",
           purpose: item.purpose,
         };
         servicePorts.push(entry);
@@ -198,7 +198,8 @@ export function compileProductGraph(input: {
       const sourceOwner = from.slice(0, from.lastIndexOf("."));
       bind(componentById.has(sourceOwner) ? "component-event" : "service-input", from, `${instance.id}.${port}`);
     }
-    const missing = spec.inputs.map(({ id }) => id).filter((id) => !(id in instance.bindings));
+    const missing = spec.inputs.filter(({ purpose }) => purpose !== "context")
+      .map(({ id }) => id).filter((id) => !(id in instance.bindings));
     if (missing.length > 0) throw new Error(`service '${instance.id}' is missing input binding '${missing.join("', '")}'`);
   }
 
@@ -301,7 +302,7 @@ function deriveDemandEdges(
   for (const binding of bindings) {
     const fromOwner = binding.from.slice(0, binding.from.lastIndexOf("."));
     const toOwner = binding.to.slice(0, binding.to.lastIndexOf("."));
-    if (services.has(toOwner) && services.has(fromOwner)) {
+    if (services.has(toOwner) && services.has(fromOwner) && binding.purpose !== "context") {
       const demandedOwner = binding.purpose === "demand" ? fromOwner : toOwner;
       const dependencyOwner = binding.purpose === "demand" ? toOwner : fromOwner;
       const set = incomingByOwner.get(demandedOwner) ?? new Set<string>();
