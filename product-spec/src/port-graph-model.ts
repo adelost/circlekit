@@ -57,12 +57,14 @@ export type ProductDemandEdge =
   | (MountedComponentScope & {
     readonly kind: "component-mount";
     readonly serviceInstanceRef: string;
+    readonly targetPortRef: string;
   })
   | {
     readonly kind: "lifecycle";
     readonly source: ProductLifecycleDemandSource;
     readonly rootServiceInstanceRef: string;
     readonly serviceInstanceRef: string;
+    readonly targetPortRef: string;
   };
 
 export interface ProductPortRegistry {
@@ -116,17 +118,35 @@ export function compileProductGraph(input: {
   const outputs = new Map<string, PortRegistryEntry>();
   const serviceById = new Map(input.services.map((item) => [item.id, item]));
   const componentById = new Map(input.components.map((item) => [item.id, item]));
+  const demandPortByService = new Map<string, string>();
 
   for (const instance of input.services) {
     requireWireId(instance.id, "service instance");
-    requireUnique(instance.demandSources, `lifecycle demand source in service '${instance.id}'`);
-    for (const source of instance.demandSources) {
+    const spec = serviceTypes.get(instance.serviceTypeRef);
+    if (spec === undefined) throw new Error(`service '${instance.id}' uses unknown service type '${instance.serviceTypeRef}'`);
+    const demandInputs = spec.inputs.filter(({ purpose }) => purpose === "demand");
+    if (demandInputs.length > 1) {
+      throw new Error(`service '${instance.id}' declares ambiguous demand inputs (found ${demandInputs.length})`);
+    }
+    if (demandInputs.length === 1) {
+      if (instance.activation.kind !== "leased") {
+        throw new Error(`service '${instance.id}' declares a demand input and must use leased activation`);
+      }
+      if (instance.activation.port !== demandInputs[0]!.id) {
+        throw new Error(
+          `service '${instance.id}' activation targets '${instance.activation.port}', expected '${demandInputs[0]!.id}'`,
+        );
+      }
+      demandPortByService.set(instance.id, `${instance.id}.${demandInputs[0]!.id}`);
+    } else if (instance.activation.kind !== "lifetime") {
+      throw new Error(`service '${instance.id}' has no demand input and must use lifetime activation`);
+    }
+    requireUnique(instance.activation.lifecycleSources, `lifecycle demand source in service '${instance.id}'`);
+    for (const source of instance.activation.lifecycleSources) {
       if (!PRODUCT_LIFECYCLE_DEMAND_SOURCES.includes(source)) {
         throw new Error(`service '${instance.id}' uses unknown lifecycle demand source '${String(source)}'`);
       }
     }
-    const spec = serviceTypes.get(instance.serviceTypeRef);
-    if (spec === undefined) throw new Error(`service '${instance.id}' uses unknown service type '${instance.serviceTypeRef}'`);
     validateServiceConfig(instance.id, spec, instance.config, configs).forEach((id) => usedConfigs.add(id));
     for (const [direction, ports] of [["input", spec.inputs], ["output", spec.outputs]] as const) {
       for (const item of ports) {
@@ -198,7 +218,7 @@ export function compileProductGraph(input: {
       const sourceOwner = from.slice(0, from.lastIndexOf("."));
       bind(componentById.has(sourceOwner) ? "component-event" : "service-input", from, `${instance.id}.${port}`);
     }
-    const missing = spec.inputs.filter(({ purpose }) => purpose !== "context")
+    const missing = spec.inputs.filter(({ purpose }) => purpose === "data")
       .map(({ id }) => id).filter((id) => !(id in instance.bindings));
     if (missing.length > 0) throw new Error(`service '${instance.id}' is missing input binding '${missing.join("', '")}'`);
   }
@@ -233,9 +253,16 @@ export function compileProductGraph(input: {
   const mountedIds = new Set(input.mountedScopes.map(({ componentInstanceRef }) => componentInstanceRef));
   const orphanComponents = input.components.map(({ id }) => id).filter((id) => !mountedIds.has(id));
   if (orphanComponents.length > 0) throw new Error(`orphan component instance '${orphanComponents.join("', '")}'`);
-  const demandEdges = deriveDemandEdges(input.mountedScopes, input.services, bindings, serviceById, componentById);
+  const demandEdges = deriveDemandEdges(
+    input.mountedScopes,
+    input.services,
+    bindings,
+    serviceById,
+    componentById,
+    demandPortByService,
+  );
   const demandedServices = new Set(demandEdges.map(({ serviceInstanceRef }) => serviceInstanceRef));
-  const orphanServices = input.services.map(({ id }) => id).filter((id) => !demandedServices.has(id));
+  const orphanServices = [...demandPortByService.keys()].filter((id) => !demandedServices.has(id));
   if (orphanServices.length > 0) throw new Error(`orphan service instance '${orphanServices.join("', '")}'`);
 
   return {
@@ -296,6 +323,7 @@ function deriveDemandEdges(
   bindings: readonly PortBindingIr[],
   services: ReadonlyMap<string, ProductServiceInstance>,
   components: ReadonlyMap<string, ProductComponentInstance>,
+  demandPortByService: ReadonlyMap<string, string>,
 ): ProductDemandEdge[] {
   const incomingByOwner = new Map<string, Set<string>>();
   const directByComponent = new Map<string, Set<string>>();
@@ -322,32 +350,45 @@ function deriveDemandEdges(
   }
   const result: ProductDemandEdge[] = [];
   for (const scope of scopes) {
+    const visited = new Set<string>();
     const demanded = new Set<string>();
     const visit = (id: string): void => {
-      if (demanded.has(id)) return;
-      demanded.add(id);
+      if (visited.has(id)) return;
+      visited.add(id);
+      if (demandPortByService.has(id)) demanded.add(id);
       incomingByOwner.get(id)?.forEach(visit);
     };
     directByComponent.get(scope.componentInstanceRef)?.forEach(visit);
     for (const serviceInstanceRef of [...demanded].sort()) {
-      result.push({ kind: "component-mount", ...scope, serviceInstanceRef });
+      result.push({
+        kind: "component-mount",
+        ...scope,
+        serviceInstanceRef,
+        targetPortRef: demandPortByService.get(serviceInstanceRef)!,
+      });
     }
   }
   for (const root of serviceInstances) {
-    for (const source of root.demandSources) {
+    for (const source of root.activation.lifecycleSources) {
+      const visited = new Set<string>();
       const demanded = new Set<string>();
       const visit = (id: string): void => {
-        if (demanded.has(id)) return;
-        demanded.add(id);
+        if (visited.has(id)) return;
+        visited.add(id);
+        if (demandPortByService.has(id)) demanded.add(id);
         incomingByOwner.get(id)?.forEach(visit);
       };
       visit(root.id);
+      if (demanded.size === 0) {
+        throw new Error(`service '${root.id}' lifecycle source '${source}' reaches no leased service`);
+      }
       for (const serviceInstanceRef of [...demanded].sort()) {
         result.push({
           kind: "lifecycle",
           source,
           rootServiceInstanceRef: root.id,
           serviceInstanceRef,
+          targetPortRef: demandPortByService.get(serviceInstanceRef)!,
         });
       }
     }

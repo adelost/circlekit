@@ -4,12 +4,27 @@ import type { LegoPortPurpose, LegoSpec } from "./native-lego-model.js";
 export const PRODUCT_LIFECYCLE_DEMAND_SOURCES = ["app-active", "session-active"] as const;
 export type ProductLifecycleDemandSource = (typeof PRODUCT_LIFECYCLE_DEMAND_SOURCES)[number];
 
+export interface ProductLeasedServiceActivation<PortId extends string = string> {
+  readonly kind: "leased";
+  readonly port: PortId;
+  readonly lifecycleSources: readonly ProductLifecycleDemandSource[];
+}
+
+export interface ProductLifetimeServiceActivation {
+  readonly kind: "lifetime";
+  readonly lifecycleSources: readonly ProductLifecycleDemandSource[];
+}
+
+export type ProductServiceActivation<PortId extends string = string> =
+  | ProductLeasedServiceActivation<PortId>
+  | ProductLifetimeServiceActivation;
+
 export interface ProductServiceInstance<Id extends string = string, TypeRef extends string = string> {
   readonly id: Id;
   readonly serviceTypeRef: TypeRef;
   readonly config: Readonly<Record<string, string>>;
   readonly bindings: Readonly<Record<string, string>>;
-  readonly demandSources: readonly ProductLifecycleDemandSource[];
+  readonly activation: ProductServiceActivation;
 }
 
 type TypeById<Types extends readonly { readonly id: string }[], Id extends string> =
@@ -94,8 +109,8 @@ type ServiceBindingMap<
     readonly id: infer Id extends string;
     readonly purpose: infer Purpose extends LegoPortPurpose;
   } ? Optional extends true
-    ? Purpose extends "context" ? Id : never
-    : Purpose extends "context" ? never : Id
+    ? Purpose extends "context" | "demand" ? Id : never
+    : Purpose extends "data" ? Id : never
   : never]: Port extends {
     readonly contract: { readonly id: infer ContractId extends string };
     readonly purpose: infer Purpose extends LegoPortPurpose;
@@ -118,6 +133,22 @@ type ServiceBindings<
         & Partial<ServiceBindingMap<Ports, true, ServiceTypes, Services, ComponentTypes, Components>>
     : never
   : never;
+
+type ServiceDemandPortId<
+  ServiceTypes extends readonly LegoSpec[],
+  Instance,
+> = Instance extends { readonly serviceTypeRef: infer TypeRef extends string }
+  ? Extract<TypeById<ServiceTypes, TypeRef>["inputs"][number], { readonly purpose: "demand" }> extends infer Port
+    ? Port extends { readonly id: infer Id extends string } ? Id : never
+    : never
+  : never;
+
+type ServiceActivation<
+  ServiceTypes extends readonly LegoSpec[],
+  Instance,
+> = [ServiceDemandPortId<ServiceTypes, Instance>] extends [never]
+  ? ProductLifetimeServiceActivation
+  : ProductLeasedServiceActivation<ServiceDemandPortId<ServiceTypes, Instance>>;
 
 type ComponentBindingMap<
   Ports,
@@ -160,9 +191,10 @@ export type ExactServiceInstances<
   ComponentTypes extends readonly ComponentType[],
   Components extends readonly ProductComponentInstance[],
 > = { readonly [Index in keyof Services]: Services[Index] extends ProductServiceInstance<infer Id, infer TypeRef>
-  ? ProductServiceInstance<Id, TypeRef> & {
+  ? Omit<ProductServiceInstance<Id, TypeRef>, "bindings" | "activation"> & {
     readonly serviceTypeRef: TypeRef & ServiceTypes[number]["id"];
     readonly bindings: ServiceBindings<ServiceTypes, Services, ComponentTypes, Components, Services[Index]>;
+    readonly activation: ServiceActivation<ServiceTypes, Services[Index]>;
   }
   : never };
 

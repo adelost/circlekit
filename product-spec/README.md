@@ -23,6 +23,15 @@ closed port registry and rejects missing, extra, incompatible, internal or
 orphan edges before emission. App- and session-lifecycle demand enters that
 same graph rather than bypassing it through native surface lists.
 
+Every service instance selects one structural activation form. A `leased`
+instance names the selected LegoSpec's single `purpose: "demand"` input and
+may list closed `app-active` or `session-active` lifecycle sources. A
+`lifetime` instance has no demand input and is never activated itself, though
+its data dependencies may lead to leased services. Mounted components,
+explicit demand bindings and lifecycle roots all traverse the same data graph;
+the emitted demand edge names the reached leased input as `targetPortRef`.
+Lifecycle declarations whose closure reaches no leased service are rejected.
+
 Each artifact selects its screens from the product's typed component-family
 catalog. Required mounts must be supported by its renderer, while an optional
 `omit` mount is recorded as an explicit artifact-scope outcome in Product IR.
