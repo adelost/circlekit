@@ -56,4 +56,26 @@ class RingActionCueHostTest {
         assertFalse(ringCueReceiptStillCurrent(pressingAgain, owner, receipt))
         assertSame(nextPress, pressingAgain.cue)
     }
+
+    @Test
+    fun abandonedExplanationSurvivesItsPublishingControl() {
+        val owner = Any()
+        val cue = CircleActionCue(
+            RingIcons.Record,
+            "TALK",
+            progress = 0f,
+            confirmed = false,
+            value = "OFF",
+            hint = "Enables spoken altitude cues.",
+            lingers = true,
+        )
+        val settled = nextRingCueHostState(
+            RingCueHostState(),
+            CircleActionCueEvent(owner, cue),
+        )
+
+        assertSame(cue, nextRingCueHostState(settled, CircleActionCueEvent(owner, null)).cue)
+        assertSame(owner, settled.settledOwner)
+        assertTrue(ringCueReceiptStillCurrent(settled, owner, cue))
+    }
 }

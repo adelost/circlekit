@@ -358,6 +358,7 @@ internal fun RowsScreen(
                             semanticColor = row.semanticColor,
                             onTap = link.onTap,
                             hint = row.hint,
+                            infoAction = row.infoAction,
                             modifier = rowModifier,
                         )
                     }
@@ -374,6 +375,7 @@ internal fun RowsScreen(
                             holdMs = interaction.holdMs,
                             actionTiming = interaction.timing,
                             hint = row.hint,
+                            infoAction = row.infoAction,
                             modifier = rowModifier,
                         )
                     }
@@ -390,6 +392,7 @@ internal fun RowsScreen(
                         centerValue = row.centerValue,
                         actionTiming = row.actionTiming,
                         hint = row.hint,
+                        infoAction = row.infoAction,
                         modifier = rowModifier,
                     )
                 }

@@ -49,7 +49,7 @@ internal fun nextRingCueHostState(
         cue != null -> RingCueHostState(
             cue = cue,
             owner = event.owner,
-            settledOwner = event.owner.takeIf { cue.confirmed } ?: current.settledOwner,
+            settledOwner = event.owner.takeIf { cue.confirmed || cue.lingers } ?: current.settledOwner,
         )
         current.settledOwner === event.owner -> current
         current.owner === event.owner -> RingCueHostState(settledOwner = current.settledOwner)
@@ -65,7 +65,7 @@ internal fun ringCueReceiptStillCurrent(
 ): Boolean = current.settledOwner === scheduledOwner &&
     current.owner === scheduledOwner &&
     current.cue == scheduledCue &&
-    current.cue.confirmed
+    (current.cue.confirmed || current.cue.lingers)
 
 /**
  * One host for CircleKit action progress on rectangular and round surfaces.
@@ -81,7 +81,7 @@ fun RingActionCueHost(
     val publish = remember {
         { event: CircleActionCueEvent -> state = nextRingCueHostState(state, event) }
     }
-    val settledCue = state.cue?.takeIf { it.confirmed }
+    val settledCue = state.cue?.takeIf { it.confirmed || it.lingers }
     LaunchedEffect(state.settledOwner, settledCue) {
         val scheduledOwner = state.settledOwner ?: return@LaunchedEffect
         val scheduledCue = settledCue ?: return@LaunchedEffect

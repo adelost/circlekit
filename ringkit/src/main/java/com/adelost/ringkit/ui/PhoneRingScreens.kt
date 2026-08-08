@@ -297,6 +297,7 @@ private fun PhoneRowsScreen(
                         semanticColor = row.semanticColor,
                         onTap = link.onTap,
                         hint = row.hint,
+                        infoAction = row.infoAction,
                         modifier = rowModifier,
                     )
                 }
@@ -313,6 +314,7 @@ private fun PhoneRowsScreen(
                         holdMs = interaction.holdMs,
                         actionTiming = interaction.timing,
                         hint = row.hint,
+                        infoAction = row.infoAction,
                         modifier = rowModifier,
                     )
                 }
@@ -329,6 +331,7 @@ private fun PhoneRowsScreen(
                     centerValue = row.centerValue,
                     actionTiming = row.actionTiming,
                     hint = row.hint,
+                    infoAction = row.infoAction,
                     modifier = rowModifier,
                 )
             }

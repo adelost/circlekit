@@ -257,6 +257,8 @@ data class RowSpec(
     /** Optional product-semantic colour for the row's value/icon (for
      * altitude alarm bands, health states, etc.). */
     val semanticColor: Color? = null,
+    /** Optional verb shown only inside the transient information card. */
+    val infoAction: CircleActionCueInfoAction? = null,
     /** Null is a passive information/status row, with no touch affordance. */
     val onTap: (() -> Unit)? = null,
     /** Optional asynchronous work rendered through the shared label sweep.

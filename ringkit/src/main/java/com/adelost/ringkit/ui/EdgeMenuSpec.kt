@@ -43,6 +43,8 @@ class EdgeMenuOption(
      * renames itself instead of naming its question (Mattias 2026-07-27).
      */
     val value: String? = null,
+    /** Optional verb shown only inside the transient information card. */
+    val infoAction: com.adelost.designkit.ui.CircleActionCueInfoAction? = null,
     /** Apply the action and return to the spatial surface immediately. */
     val closeOnTap: Boolean = false,
     val timing: CircleActionTiming = CircleActionTiming.DELIBERATE,
