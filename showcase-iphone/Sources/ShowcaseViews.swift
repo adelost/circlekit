@@ -9,21 +9,25 @@ struct ShowcaseRootView: View {
         NavigationStack(path: $navigation.path) {
             GeometryReader { geometry in
                 let preferredSurface = ShowcaseNativePlatform.preferredSurface(width: geometry.size.width)
-                let tree = environment.catalog.tree(preferredSurface: preferredSurface)
-                let metrics = ShowcaseLayoutMetrics(surface: tree.surface)
+                let trees = environment.catalog.trees(preferredSurface: preferredSurface)
+                let surface = trees[0].surface
+                let metrics = ShowcaseLayoutMetrics(surface: surface)
                 ScrollView {
                     LazyVStack(spacing: metrics.rowSpacing) {
-                        ShowcaseHeader(artifact: environment.catalog.artifact, surface: tree.surface)
-                        ForEach(tree.mounts.sorted(by: { $0.order < $1.order })) { mount in
-                            let component = environment.catalog.component(mount.componentId)
-                            Button { navigation.open(component.id) } label: {
-                                ShowcaseMenuRow(
-                                    component: component,
-                                    icon: environment.catalog.icon(component.iconId),
-                                    metrics: metrics
-                                )
+                        ShowcaseHeader(artifact: environment.catalog.artifact, surface: surface)
+                        ForEach(trees, id: \.screenId) { tree in
+                            ShowcaseSectionHeader(screenId: tree.screenId)
+                            ForEach(tree.mounts.sorted(by: { $0.order < $1.order })) { mount in
+                                let component = environment.catalog.component(mount.componentId)
+                                Button { navigation.open(component.id) } label: {
+                                    ShowcaseMenuRow(
+                                        component: component,
+                                        icon: environment.catalog.icon(component.iconId),
+                                        metrics: metrics
+                                    )
+                                }
+                                .buttonStyle(.plain)
                             }
-                            .buttonStyle(.plain)
                         }
                     }
                     .frame(maxWidth: metrics.contentWidth)
@@ -39,6 +43,18 @@ struct ShowcaseRootView: View {
         }
         .tint(GeneratedShowcaseProduct.colors.accent)
         .preferredColorScheme(.dark)
+    }
+}
+
+private struct ShowcaseSectionHeader: View {
+    let screenId: String
+
+    var body: some View {
+        Text(screenId.replacingOccurrences(of: "section.", with: "").uppercased())
+            .font(.system(size: 11, weight: .bold, design: .monospaced))
+            .foregroundStyle(GeneratedShowcaseProduct.colors.muted)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.top, 8)
     }
 }
 

@@ -1,6 +1,7 @@
 package io.v1d.circlekit.showcase.catalog
 
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -42,22 +43,27 @@ class ShowcaseManifestTest {
         assertTrue(
             ShowcaseNativeBindings.components.all { it.profiles == ShowcaseNativeBindings.profiles },
         )
-        // Derived, not hand-listed. The old expectation enumerated exactly the seven
-        // section screens, so the Garmin artifact family made it red the day it landed and
-        // any future family would do the same. What actually matters is total surface
-        // coverage: every screen the product declares a tree for carries all three, and
-        // every section has one. A new family extends the set instead of breaking it.
+        assertEquals(
+            ShowcaseManifest.services.map { it.id }.toSet(),
+            ShowcaseNativeBindings.services.map { it.serviceId }.toSet(),
+        )
+        assertSame(ShowcaseManifest.ports, ShowcaseProductInspectorRegistry.ports)
+        assertSame(ShowcaseManifest.bindings, ShowcaseProductInspectorRegistry.bindings)
+
+        // Artifact scopes, not the raw three-surface authoring families, are what hosts consume.
         val surfacesByScreen = ShowcaseManifest.componentTrees
-            .groupBy { it.screenId }
+            .groupBy { it.artifactProfileId to it.screenId }
             .mapValues { (_, trees) -> trees.map { it.surface }.toSet() }
-        assertTrue(
-            "screens missing a surface: $surfacesByScreen",
-            surfacesByScreen.values.all { it == setOf("round", "compact", "wide") },
-        )
-        assertTrue(
-            ShowcaseFamily.entries.map { "section.${it.id}" }
-                .all(surfacesByScreen::containsKey),
-        )
+        ShowcaseManifest.artifactScreens.forEach { (profile, screens) ->
+            val expected = if (profile in setOf(SHOWCASE_PHONE_PROFILE, "iphone-full-ui")) {
+                setOf("compact", "wide")
+            } else {
+                setOf("round")
+            }
+            screens.forEach { screen ->
+                assertEquals("$profile/$screen", expected, surfacesByScreen[profile to screen])
+            }
+        }
     }
 
     @Test

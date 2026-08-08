@@ -1,16 +1,16 @@
 # CircleKit Showcase on Garmin
 
 The `garmin-limited-ui` artifact is part of the same Showcase ProductConfig as
-Android and Apple. Its renderer, entry screen and surface select a one-component
-ROUND tree. The Monkey C emitter reads that tree, its first declared scenario,
-the artifact-scoped icon ref and the optional ProductSpec palette directly from
-the compiled ProductIr. An empty product palette explicitly inherits the shared
-CircleKit style.
+Android and Apple. Its ProductSpec `artifactScopes` select one component on one
+ROUND screen. The Monkey C emitter reads that compiled scope, its first declared
+scenario, the artifact-scoped icon ref and the optional palette directly from
+the Product IR. It owns no parallel component or icon selection list. An empty
+product palette explicitly inherits the shared CircleKit style.
 
-The plugin only attests what the native proof can render: ROUND, the progress
-component and the download icon. Moving the artifact to an unsupported tree or
-removing its icon binding fails generation instead of silently selecting local
-fallback data. The segmented ring, primitive glyph and Garmin colour
+The native proof renders the one scope the product gives it. Removing the scope,
+moving it to an unsupported surface or removing its icon binding fails
+generation instead of selecting local fallback data. The segmented ring,
+primitive glyph and Garmin colour
 quantisation remain native level-2 approximations.
 
 The in-app product icon is generated from the selected CircleKit asset's exact

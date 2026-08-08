@@ -39,11 +39,16 @@ class ShowcaseNativeRegistrySnapshotTest {
         val icons = ShowcaseNativeBindings.icons.joinToString(",\n") { binding ->
             "    { \"iconId\": ${binding.iconId.json()}, \"nativeSymbol\": ${binding.nativeSymbol.json()} }"
         }
+        val services = ShowcaseNativeBindings.services.joinToString(",\n") { binding ->
+            val profiles = binding.profiles.joinToString(", ") { it.json() }
+            val inputs = binding.inputPorts.joinToString(", ") { it.json() }
+            val outputs = binding.outputPorts.joinToString(", ") { it.json() }
+            "    { \"serviceId\": ${binding.serviceId.json()}, \"nativePortId\": ${binding.nativePortId.json()}, " +
+                "\"profiles\": [$profiles], \"inputPorts\": [$inputs], \"outputPorts\": [$outputs] }"
+        }
         val hostProfiles = ShowcaseNativeBindings.profiles.sorted().joinToString(", ") { it.json() }
-        // Services and finite values are declared EMPTY, not omitted. Showcase demonstrates
-        // components; it runs no domain service and owns no closed value space. An omitted
-        // section means "not checked", which is a different claim from "binds none", and only
-        // one of them is true here.
+        // Finite values are declared EMPTY, not omitted. An omitted section means "not
+        // checked", which is a different claim from "binds none".
         return """
             |{
             |  "stage": "native-export",
@@ -56,7 +61,9 @@ class ShowcaseNativeRegistrySnapshotTest {
             |  "icons": [
             |$icons
             |  ],
-            |  "services": [],
+            |  "services": [
+            |$services
+            |  ],
             |  "finiteValues": []
             |}
         """.trimMargin() + "\n"

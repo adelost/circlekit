@@ -30,9 +30,45 @@ data class ShowcaseCase(
 )
 
 data class ShowcaseComponentTree(
+    val artifactProfileId: String,
     val screenId: String,
     val surface: String,
     val componentIds: List<String>,
+)
+
+data class ShowcaseServiceDescriptor(
+    val id: String,
+    val typeRef: String,
+)
+
+data class ShowcaseProductPort(
+    val ref: String,
+    val ownerKind: String,
+    val ownerId: String,
+    val typeRef: String,
+    val portId: String,
+    val direction: String,
+    val contractRef: String,
+    val boundary: String,
+    val required: Boolean,
+    val purpose: String,
+)
+
+data class ShowcasePortBinding(
+    val kind: String,
+    val from: String,
+    val to: String,
+    val purpose: String,
+)
+
+data class ShowcaseDemandEdge(
+    val kind: String,
+    val artifactRef: String?,
+    val screenRef: String?,
+    val surface: String?,
+    val componentInstanceRef: String?,
+    val serviceInstanceRef: String,
+    val targetPortRef: String,
 )
 
 data class ShowcaseDestination(
@@ -109,7 +145,12 @@ class ShowcaseSession(
     }
 
     fun open(caseId: ShowcaseCaseId, scenarioId: ShowcaseScenarioId): Boolean {
-        if (ShowcaseManifest.find(caseId, scenarioId) == null) return false
+        val available = ShowcaseCatalogRuntime.screensFor(artifactProfile.id).any { screen ->
+            caseId.value in ShowcaseCatalogRuntime.componentIds(artifactProfile.id, screen)
+        }
+        if (!available) return false
+        if (ShowcaseCatalogRuntime.find(caseId, scenarioId) == null) return false
+        ShowcaseProductInspectorRegistry.requireOpenTarget(caseId)
         interaction.prepare(caseId, scenarioId)
         media.prepare(caseId, scenarioId)
         flows.prepare(caseId, scenarioId)

@@ -5,12 +5,12 @@ This is a non-shipping SwiftUI portability proof for iPhone and watchOS. The gen
 CircleKit Showcase ProductSpec and output manifest as the Android hosts.
 
 The TypeScript emitter chooses the artifact served by each native SwiftUI
-renderer binding. Their entry screens, supported surfaces, component
-identity/order, default palette, scenarios, ports and native Lego mounts all
-come from compiled product data. Swift owns only responsive layout, rendering
-and exhaustive native implementations for the generated Lego mount IDs. Icon
-geometry comes from the injected CircleKit asset catalog; no SF Symbol mapping
-duplicates the product icons.
+renderer binding, then emits every compiled `artifactScope` for that artifact.
+Entry screens, selected screens, supported surfaces, component identity/order,
+palette, scenarios, service types and typed port bindings all come from the same
+Product IR. Swift owns responsive layout and rendering; it has no component
+selection list or duplicate product graph. Icon geometry comes from the injected
+CircleKit asset catalog; no SF Symbol mapping duplicates the product icons.
 
 On a Mac with Xcode and XcodeGen:
 

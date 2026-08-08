@@ -11,6 +11,7 @@ import com.adelost.ringkit.ui.RowSpec
 import com.adelost.ringkit.ui.circleHostPreviewScreen
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flowOf
 
 data class ShowcaseUpdatePort(
     val currentVersionName: String,
@@ -32,6 +33,7 @@ internal object ShowcaseDevScreens {
         gridRole = com.adelost.designkit.ui.MenuGridRole.SETTINGS,
         entries = listOf(
             LaunchSpec(RingIcons.Phone, "HOST", open = { circleHostPreviewScreen(port.host) }),
+            LaunchSpec(RingIcons.Wrench, "GRAPH", open = ::productGraph),
             LaunchSpec(RingIcons.Download, "UPDATE", open = { update(port.update) }),
         ),
     )
@@ -58,5 +60,27 @@ internal object ShowcaseDevScreens {
                 onInstall = port.onInstall,
             )
         },
+    )
+
+    private fun productGraph(): RingScreen = RingScreen.Rows(
+        title = "PRODUCT GRAPH",
+        items = flowOf(
+            ShowcaseProductInspectorRegistry.services.map { service ->
+                val portCount = ShowcaseProductInspectorRegistry.ports.count { it.ownerId == service.id }
+                RowSpec(
+                    key = "service.${service.id}",
+                    title = service.id.uppercase(),
+                    sub = "${service.typeRef} · $portCount PORTS",
+                    icon = RingIcons.Wrench,
+                )
+            } + ShowcaseProductInspectorRegistry.ports.map { port ->
+                RowSpec(
+                    key = "port.${port.ref}",
+                    title = port.ref.uppercase(),
+                    sub = "${port.direction.uppercase()} · ${port.contractRef}",
+                    icon = if (port.ownerKind == "component") RingIcons.Grid else RingIcons.Wifi,
+                )
+            },
+        ),
     )
 }

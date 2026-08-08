@@ -17,6 +17,7 @@ export interface ShowcaseScenarioDeclaration {
 
 export interface ShowcaseCaseDeclaration {
   readonly id: string;
+  readonly openPort: string;
   readonly section: ShowcaseSectionId;
   readonly title: string;
   readonly iconId: string;
@@ -25,7 +26,7 @@ export interface ShowcaseCaseDeclaration {
 
 export const showcaseCases = [
   {
-    id: "foundation.colors", section: "foundations", title: "COLORS", iconId: "palette",
+    id: "foundation.colors", openPort: "foundationColors", section: "foundations", title: "COLORS", iconId: "palette",
     scenarios: [
       { id: "sea-glass", label: "SEA GLASS" },
       { id: "flat-cyan", label: "FLAT CYAN" },
@@ -34,7 +35,7 @@ export const showcaseCases = [
     ],
   },
   {
-    id: "foundation.geometry", section: "foundations", title: "GEOMETRY", iconId: "grid",
+    id: "foundation.geometry", openPort: "foundationGeometry", section: "foundations", title: "GEOMETRY", iconId: "grid",
     scenarios: [
       { id: "round-192", label: "ROUND 192" },
       { id: "phone-compact", label: "PHONE COMPACT" },
@@ -44,7 +45,7 @@ export const showcaseCases = [
     ],
   },
   {
-    id: "atom.icon-action", section: "atoms", title: "ACTIONS", iconId: "watch",
+    id: "atom.icon-action", openPort: "atomIconAction", section: "atoms", title: "ACTIONS", iconId: "watch",
     scenarios: [
       { id: "idle", label: "IDLE" },
       { id: "active", label: "ACTIVE" },
@@ -54,7 +55,7 @@ export const showcaseCases = [
     ],
   },
   {
-    id: "control.action-row", section: "controls", title: "ACTION ROW", iconId: "touchdown-run",
+    id: "control.action-row", openPort: "controlActionRow", section: "controls", title: "ACTION ROW", iconId: "touchdown-run",
     scenarios: [
       { id: "immediate", label: "IMMEDIATE" },
       { id: "deliberate", label: "DELIBERATE" },
@@ -65,7 +66,7 @@ export const showcaseCases = [
     ],
   },
   {
-    id: "control.choice-row", section: "controls", title: "CHOICES", iconId: "grid",
+    id: "control.choice-row", openPort: "controlChoiceRow", section: "controls", title: "CHOICES", iconId: "grid",
     scenarios: [
       { id: "off", label: "TOGGLE OFF" },
       { id: "on", label: "TOGGLE ON" },
@@ -76,7 +77,7 @@ export const showcaseCases = [
     ],
   },
   {
-    id: "control.adjustment", section: "controls", title: "ADJUST", iconId: "sliders",
+    id: "control.adjustment", openPort: "controlAdjustment", section: "controls", title: "ADJUST", iconId: "sliders",
     scenarios: [
       { id: "minimum", label: "MINIMUM" },
       { id: "middle", label: "MIDDLE" },
@@ -85,7 +86,7 @@ export const showcaseCases = [
     ],
   },
   {
-    id: "control.progress", section: "controls", title: "PROGRESS", iconId: "download",
+    id: "control.progress", openPort: "controlProgress", section: "controls", title: "PROGRESS", iconId: "download",
     scenarios: [
       { id: "none", label: "NONE" },
       { id: "indeterminate", label: "INDETERMINATE" },
@@ -96,7 +97,7 @@ export const showcaseCases = [
     ],
   },
   {
-    id: "control.press-ring", section: "controls", title: "PRESS", iconId: "record",
+    id: "control.press-ring", openPort: "controlPressRing", section: "controls", title: "PRESS", iconId: "record",
     scenarios: [
       { id: "idle", label: "IDLE" },
       { id: "recording", label: "RECORDING" },
@@ -105,7 +106,7 @@ export const showcaseCases = [
     ],
   },
   {
-    id: "input.text", section: "input", title: "TEXT", iconId: "pencil",
+    id: "input.text", openPort: "inputText", section: "input", title: "TEXT", iconId: "pencil",
     scenarios: [
       { id: "empty", label: "EMPTY" },
       { id: "filled", label: "FILLED" },
@@ -114,7 +115,7 @@ export const showcaseCases = [
     ],
   },
   {
-    id: "media.capture", section: "media", title: "WAVEFORM", iconId: "record",
+    id: "media.capture", openPort: "mediaCapture", section: "media", title: "WAVEFORM", iconId: "record",
     scenarios: [
       { id: "silent", label: "NO SAMPLES" },
       { id: "active", label: "ACTIVE" },
@@ -122,7 +123,7 @@ export const showcaseCases = [
     ],
   },
   {
-    id: "media.playback", section: "media", title: "PLAYBACK", iconId: "play",
+    id: "media.playback", openPort: "mediaPlayback", section: "media", title: "PLAYBACK", iconId: "play",
     scenarios: [
       { id: "ready", label: "READY" },
       { id: "playing", label: "PLAYING" },
@@ -132,7 +133,7 @@ export const showcaseCases = [
     ],
   },
   {
-    id: "template.screens", section: "templates", title: "SCREENS", iconId: "layers",
+    id: "template.screens", openPort: "templateScreens", section: "templates", title: "SCREENS", iconId: "layers",
     scenarios: [
       { id: "hub", label: "HUB" },
       { id: "detail", label: "DETAIL" },
@@ -147,7 +148,7 @@ export const showcaseCases = [
     ],
   },
   {
-    id: "flow.source", section: "flows", title: "SOURCE", iconId: "wifi",
+    id: "flow.source", openPort: "flowSource", section: "flows", title: "SOURCE", iconId: "wifi",
     scenarios: [
       { id: "off", label: "OFF" },
       { id: "loading", label: "LOADING" },
@@ -158,7 +159,7 @@ export const showcaseCases = [
     ],
   },
   {
-    id: "flow.update", section: "flows", title: "UPDATE", iconId: "download",
+    id: "flow.update", openPort: "flowUpdate", section: "flows", title: "UPDATE", iconId: "download",
     scenarios: [
       { id: "checking", label: "CHECKING" },
       { id: "available", label: "AVAILABLE" },
@@ -168,7 +169,7 @@ export const showcaseCases = [
     ],
   },
   {
-    id: "flow.service", section: "flows", title: "SERVICE", iconId: "wrench",
+    id: "flow.service", openPort: "flowService", section: "flows", title: "SERVICE", iconId: "wrench",
     scenarios: [
       { id: "idle", label: "IDLE" },
       { id: "active", label: "ACTIVE" },

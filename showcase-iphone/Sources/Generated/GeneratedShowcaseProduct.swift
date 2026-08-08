@@ -15,33 +15,107 @@ enum GeneratedShowcaseArtifactId: String, CaseIterable, Hashable {
 enum GeneratedShowcaseComponentId: String, CaseIterable, Hashable {
     case foundationColors = "foundation.colors"
     case foundationGeometry = "foundation.geometry"
+    case atomIconAction = "atom.icon-action"
+    case controlActionRow = "control.action-row"
+    case controlChoiceRow = "control.choice-row"
+    case controlAdjustment = "control.adjustment"
+    case controlProgress = "control.progress"
+    case controlPressRing = "control.press-ring"
+    case inputText = "input.text"
+    case mediaCapture = "media.capture"
+    case mediaPlayback = "media.playback"
+    case templateScreens = "template.screens"
+    case flowSource = "flow.source"
+    case flowUpdate = "flow.update"
+    case flowService = "flow.service"
 }
 
-enum GeneratedShowcaseNativeMountId: String, CaseIterable, Hashable {
+enum GeneratedShowcaseServiceId: String, CaseIterable, Hashable {
     case catalog = "catalog"
     case navigation = "navigation"
 }
 
 enum GeneratedShowcasePortId: String, CaseIterable, Hashable {
     case catalogCatalog = "catalog.catalog"
-    case navigationOpen = "navigation.open"
+    case navigationFoundationColors = "navigation.foundationColors"
+    case navigationFoundationGeometry = "navigation.foundationGeometry"
+    case navigationAtomIconAction = "navigation.atomIconAction"
+    case navigationControlActionRow = "navigation.controlActionRow"
+    case navigationControlChoiceRow = "navigation.controlChoiceRow"
+    case navigationControlAdjustment = "navigation.controlAdjustment"
+    case navigationControlProgress = "navigation.controlProgress"
+    case navigationControlPressRing = "navigation.controlPressRing"
+    case navigationInputText = "navigation.inputText"
+    case navigationMediaCapture = "navigation.mediaCapture"
+    case navigationMediaPlayback = "navigation.mediaPlayback"
+    case navigationTemplateScreens = "navigation.templateScreens"
+    case navigationFlowSource = "navigation.flowSource"
+    case navigationFlowUpdate = "navigation.flowUpdate"
+    case navigationFlowService = "navigation.flowService"
     case navigationDestination = "navigation.destination"
+    case foundationColorsCatalog = "foundation.colors.catalog"
+    case foundationColorsNavigation = "foundation.colors.navigation"
+    case foundationColorsOpen = "foundation.colors.open"
+    case foundationGeometryCatalog = "foundation.geometry.catalog"
+    case foundationGeometryNavigation = "foundation.geometry.navigation"
+    case foundationGeometryOpen = "foundation.geometry.open"
+    case atomIconActionCatalog = "atom.icon-action.catalog"
+    case atomIconActionNavigation = "atom.icon-action.navigation"
+    case atomIconActionOpen = "atom.icon-action.open"
+    case controlActionRowCatalog = "control.action-row.catalog"
+    case controlActionRowNavigation = "control.action-row.navigation"
+    case controlActionRowOpen = "control.action-row.open"
+    case controlChoiceRowCatalog = "control.choice-row.catalog"
+    case controlChoiceRowNavigation = "control.choice-row.navigation"
+    case controlChoiceRowOpen = "control.choice-row.open"
+    case controlAdjustmentCatalog = "control.adjustment.catalog"
+    case controlAdjustmentNavigation = "control.adjustment.navigation"
+    case controlAdjustmentOpen = "control.adjustment.open"
+    case controlProgressCatalog = "control.progress.catalog"
+    case controlProgressNavigation = "control.progress.navigation"
+    case controlProgressOpen = "control.progress.open"
+    case controlPressRingCatalog = "control.press-ring.catalog"
+    case controlPressRingNavigation = "control.press-ring.navigation"
+    case controlPressRingOpen = "control.press-ring.open"
+    case inputTextCatalog = "input.text.catalog"
+    case inputTextNavigation = "input.text.navigation"
+    case inputTextOpen = "input.text.open"
+    case mediaCaptureCatalog = "media.capture.catalog"
+    case mediaCaptureNavigation = "media.capture.navigation"
+    case mediaCaptureOpen = "media.capture.open"
+    case mediaPlaybackCatalog = "media.playback.catalog"
+    case mediaPlaybackNavigation = "media.playback.navigation"
+    case mediaPlaybackOpen = "media.playback.open"
+    case templateScreensCatalog = "template.screens.catalog"
+    case templateScreensNavigation = "template.screens.navigation"
+    case templateScreensOpen = "template.screens.open"
+    case flowSourceCatalog = "flow.source.catalog"
+    case flowSourceNavigation = "flow.source.navigation"
+    case flowSourceOpen = "flow.source.open"
+    case flowUpdateCatalog = "flow.update.catalog"
+    case flowUpdateNavigation = "flow.update.navigation"
+    case flowUpdateOpen = "flow.update.open"
+    case flowServiceCatalog = "flow.service.catalog"
+    case flowServiceNavigation = "flow.service.navigation"
+    case flowServiceOpen = "flow.service.open"
 }
 
 enum GeneratedShowcaseProduct {
     static let productId = "circlekit-showcase"
-    static let productSpecVersion = "0.3.31"
+    static let productSpecVersion = "0.3.41"
     static let artifacts: [ShowcaseArtifact] = [
         ShowcaseArtifact(
             id: .iphoneFullUi,
             rendererId: "apple-iphone-swiftui",
             entryScreen: "section.foundations",
+            screenRefs: ["section.foundations", "section.atoms", "section.controls", "section.input", "section.media", "section.templates", "section.flows"],
             surfaces: [.compact, .wide]
         ),
         ShowcaseArtifact(
             id: .watchosFullUi,
             rendererId: "apple-watchos-swiftui",
             entryScreen: "section.foundations",
+            screenRefs: ["section.foundations", "section.atoms", "section.controls", "section.input", "section.media", "section.templates", "section.flows"],
             surfaces: [.round]
         )
     ]
@@ -70,11 +144,90 @@ enum GeneratedShowcaseProduct {
             title: "GEOMETRY",
             iconId: "showcase.grid",
             scenarios: [ShowcaseScenario(id: "round-192", label: "ROUND 192"), ShowcaseScenario(id: "phone-compact", label: "PHONE COMPACT"), ShowcaseScenario(id: "phone-wide", label: "PHONE WIDE"), ShowcaseScenario(id: "chrome-x", label: "X @ 9"), ShowcaseScenario(id: "chrome-x-gear", label: "X + GEAR")]
+        ),
+        ShowcaseComponent(
+            id: .atomIconAction,
+            title: "ACTIONS",
+            iconId: "showcase.watch",
+            scenarios: [ShowcaseScenario(id: "idle", label: "IDLE"), ShowcaseScenario(id: "active", label: "ACTIVE"), ShowcaseScenario(id: "immediate", label: "IMMEDIATE"), ShowcaseScenario(id: "deliberate", label: "DELIBERATE"), ShowcaseScenario(id: "disabled", label: "DISABLED")]
+        ),
+        ShowcaseComponent(
+            id: .controlActionRow,
+            title: "ACTION ROW",
+            iconId: "showcase.touchdown-run",
+            scenarios: [ShowcaseScenario(id: "immediate", label: "IMMEDIATE"), ShowcaseScenario(id: "deliberate", label: "DELIBERATE"), ShowcaseScenario(id: "confirm", label: "CONFIRM"), ShowcaseScenario(id: "recoverable", label: "RECOVERABLE"), ShowcaseScenario(id: "blocked", label: "BLOCKED"), ShowcaseScenario(id: "failure", label: "FAILURE + RETRY")]
+        ),
+        ShowcaseComponent(
+            id: .controlChoiceRow,
+            title: "CHOICES",
+            iconId: "showcase.grid",
+            scenarios: [ShowcaseScenario(id: "off", label: "TOGGLE OFF"), ShowcaseScenario(id: "on", label: "TOGGLE ON"), ShowcaseScenario(id: "two", label: "TWO OPTIONS"), ShowcaseScenario(id: "first", label: "SEVEN · FIRST"), ShowcaseScenario(id: "middle", label: "SEVEN · MIDDLE"), ShowcaseScenario(id: "last", label: "SEVEN · LAST")]
+        ),
+        ShowcaseComponent(
+            id: .controlAdjustment,
+            title: "ADJUST",
+            iconId: "showcase.sliders",
+            scenarios: [ShowcaseScenario(id: "minimum", label: "MINIMUM"), ShowcaseScenario(id: "middle", label: "MIDDLE"), ShowcaseScenario(id: "maximum", label: "MAXIMUM"), ShowcaseScenario(id: "deliberate", label: "DELIBERATE STEPS")]
+        ),
+        ShowcaseComponent(
+            id: .controlProgress,
+            title: "PROGRESS",
+            iconId: "showcase.download",
+            scenarios: [ShowcaseScenario(id: "none", label: "NONE"), ShowcaseScenario(id: "indeterminate", label: "INDETERMINATE"), ShowcaseScenario(id: "empty", label: "0 PERCENT"), ShowcaseScenario(id: "half", label: "50 PERCENT"), ShowcaseScenario(id: "complete", label: "100 PERCENT"), ShowcaseScenario(id: "failed", label: "FAILURE + RETRY")]
+        ),
+        ShowcaseComponent(
+            id: .controlPressRing,
+            title: "PRESS",
+            iconId: "showcase.record",
+            scenarios: [ShowcaseScenario(id: "idle", label: "IDLE"), ShowcaseScenario(id: "recording", label: "RECORDING"), ShowcaseScenario(id: "disabled", label: "DISABLED"), ShowcaseScenario(id: "failed", label: "FAILED + RETRY")]
+        ),
+        ShowcaseComponent(
+            id: .inputText,
+            title: "TEXT",
+            iconId: "showcase.pencil",
+            scenarios: [ShowcaseScenario(id: "empty", label: "EMPTY"), ShowcaseScenario(id: "filled", label: "FILLED"), ShowcaseScenario(id: "max", label: "MAX LENGTH"), ShowcaseScenario(id: "disabled", label: "DISABLED")]
+        ),
+        ShowcaseComponent(
+            id: .mediaCapture,
+            title: "WAVEFORM",
+            iconId: "showcase.record",
+            scenarios: [ShowcaseScenario(id: "silent", label: "NO SAMPLES"), ShowcaseScenario(id: "active", label: "ACTIVE"), ShowcaseScenario(id: "long", label: "LONG DURATION")]
+        ),
+        ShowcaseComponent(
+            id: .mediaPlayback,
+            title: "PLAYBACK",
+            iconId: "showcase.play",
+            scenarios: [ShowcaseScenario(id: "ready", label: "READY"), ShowcaseScenario(id: "playing", label: "PLAYING"), ShowcaseScenario(id: "paused", label: "PAUSED"), ShowcaseScenario(id: "complete", label: "COMPLETE"), ShowcaseScenario(id: "failed", label: "FAILED")]
+        ),
+        ShowcaseComponent(
+            id: .templateScreens,
+            title: "SCREENS",
+            iconId: "showcase.layers",
+            scenarios: [ShowcaseScenario(id: "hub", label: "HUB"), ShowcaseScenario(id: "detail", label: "DETAIL"), ShowcaseScenario(id: "launcher", label: "LAUNCHER"), ShowcaseScenario(id: "rows", label: "ROWS"), ShowcaseScenario(id: "adjustment", label: "ADJUSTMENT"), ShowcaseScenario(id: "color-picker", label: "COLOR PICKER"), ShowcaseScenario(id: "dial-preview", label: "DIAL PREVIEW"), ShowcaseScenario(id: "empty", label: "EMPTY CONTENT"), ShowcaseScenario(id: "max-capacity", label: "MAX CAPACITY"), ShowcaseScenario(id: "long-content", label: "LONG CONTENT")]
+        ),
+        ShowcaseComponent(
+            id: .flowSource,
+            title: "SOURCE",
+            iconId: "showcase.wifi",
+            scenarios: [ShowcaseScenario(id: "off", label: "OFF"), ShowcaseScenario(id: "loading", label: "LOADING"), ShowcaseScenario(id: "fresh", label: "FRESH"), ShowcaseScenario(id: "aging", label: "AGING"), ShowcaseScenario(id: "partial", label: "PARTIAL"), ShowcaseScenario(id: "broken", label: "BROKEN")]
+        ),
+        ShowcaseComponent(
+            id: .flowUpdate,
+            title: "UPDATE",
+            iconId: "showcase.download",
+            scenarios: [ShowcaseScenario(id: "checking", label: "CHECKING"), ShowcaseScenario(id: "available", label: "AVAILABLE"), ShowcaseScenario(id: "downloading", label: "DOWNLOADING"), ShowcaseScenario(id: "ready", label: "READY"), ShowcaseScenario(id: "failed", label: "FAILED")]
+        ),
+        ShowcaseComponent(
+            id: .flowService,
+            title: "SERVICE",
+            iconId: "showcase.wrench",
+            scenarios: [ShowcaseScenario(id: "idle", label: "IDLE"), ShowcaseScenario(id: "active", label: "ACTIVE"), ShowcaseScenario(id: "success", label: "SUCCESS"), ShowcaseScenario(id: "failed", label: "FAILED"), ShowcaseScenario(id: "cache", label: "CACHE")]
         )
     ]
     static let trees: [ShowcaseTree] = [
         ShowcaseTree(
             artifactId: .iphoneFullUi,
+            screenId: "section.foundations",
             surface: .compact,
             mounts: [
                 ShowcaseComponentMount(id: "foundation.colors", componentId: .foundationColors, region: "content", order: 0),
@@ -83,6 +236,7 @@ enum GeneratedShowcaseProduct {
         ),
         ShowcaseTree(
             artifactId: .iphoneFullUi,
+            screenId: "section.foundations",
             surface: .wide,
             mounts: [
                 ShowcaseComponentMount(id: "foundation.colors", componentId: .foundationColors, region: "content", order: 0),
@@ -90,11 +244,177 @@ enum GeneratedShowcaseProduct {
             ]
         ),
         ShowcaseTree(
+            artifactId: .iphoneFullUi,
+            screenId: "section.atoms",
+            surface: .compact,
+            mounts: [
+                ShowcaseComponentMount(id: "atom.icon-action", componentId: .atomIconAction, region: "content", order: 0)
+            ]
+        ),
+        ShowcaseTree(
+            artifactId: .iphoneFullUi,
+            screenId: "section.atoms",
+            surface: .wide,
+            mounts: [
+                ShowcaseComponentMount(id: "atom.icon-action", componentId: .atomIconAction, region: "content", order: 0)
+            ]
+        ),
+        ShowcaseTree(
+            artifactId: .iphoneFullUi,
+            screenId: "section.controls",
+            surface: .compact,
+            mounts: [
+                ShowcaseComponentMount(id: "control.action-row", componentId: .controlActionRow, region: "content", order: 0),
+                ShowcaseComponentMount(id: "control.choice-row", componentId: .controlChoiceRow, region: "content", order: 1),
+                ShowcaseComponentMount(id: "control.adjustment", componentId: .controlAdjustment, region: "content", order: 2),
+                ShowcaseComponentMount(id: "control.progress", componentId: .controlProgress, region: "content", order: 3),
+                ShowcaseComponentMount(id: "control.press-ring", componentId: .controlPressRing, region: "content", order: 4)
+            ]
+        ),
+        ShowcaseTree(
+            artifactId: .iphoneFullUi,
+            screenId: "section.controls",
+            surface: .wide,
+            mounts: [
+                ShowcaseComponentMount(id: "control.action-row", componentId: .controlActionRow, region: "content", order: 0),
+                ShowcaseComponentMount(id: "control.choice-row", componentId: .controlChoiceRow, region: "content", order: 1),
+                ShowcaseComponentMount(id: "control.adjustment", componentId: .controlAdjustment, region: "content", order: 2),
+                ShowcaseComponentMount(id: "control.progress", componentId: .controlProgress, region: "content", order: 3),
+                ShowcaseComponentMount(id: "control.press-ring", componentId: .controlPressRing, region: "content", order: 4)
+            ]
+        ),
+        ShowcaseTree(
+            artifactId: .iphoneFullUi,
+            screenId: "section.input",
+            surface: .compact,
+            mounts: [
+                ShowcaseComponentMount(id: "input.text", componentId: .inputText, region: "content", order: 0)
+            ]
+        ),
+        ShowcaseTree(
+            artifactId: .iphoneFullUi,
+            screenId: "section.input",
+            surface: .wide,
+            mounts: [
+                ShowcaseComponentMount(id: "input.text", componentId: .inputText, region: "content", order: 0)
+            ]
+        ),
+        ShowcaseTree(
+            artifactId: .iphoneFullUi,
+            screenId: "section.media",
+            surface: .compact,
+            mounts: [
+                ShowcaseComponentMount(id: "media.capture", componentId: .mediaCapture, region: "content", order: 0),
+                ShowcaseComponentMount(id: "media.playback", componentId: .mediaPlayback, region: "content", order: 1)
+            ]
+        ),
+        ShowcaseTree(
+            artifactId: .iphoneFullUi,
+            screenId: "section.media",
+            surface: .wide,
+            mounts: [
+                ShowcaseComponentMount(id: "media.capture", componentId: .mediaCapture, region: "content", order: 0),
+                ShowcaseComponentMount(id: "media.playback", componentId: .mediaPlayback, region: "content", order: 1)
+            ]
+        ),
+        ShowcaseTree(
+            artifactId: .iphoneFullUi,
+            screenId: "section.templates",
+            surface: .compact,
+            mounts: [
+                ShowcaseComponentMount(id: "template.screens", componentId: .templateScreens, region: "content", order: 0)
+            ]
+        ),
+        ShowcaseTree(
+            artifactId: .iphoneFullUi,
+            screenId: "section.templates",
+            surface: .wide,
+            mounts: [
+                ShowcaseComponentMount(id: "template.screens", componentId: .templateScreens, region: "content", order: 0)
+            ]
+        ),
+        ShowcaseTree(
+            artifactId: .iphoneFullUi,
+            screenId: "section.flows",
+            surface: .compact,
+            mounts: [
+                ShowcaseComponentMount(id: "flow.source", componentId: .flowSource, region: "content", order: 0),
+                ShowcaseComponentMount(id: "flow.update", componentId: .flowUpdate, region: "content", order: 1),
+                ShowcaseComponentMount(id: "flow.service", componentId: .flowService, region: "content", order: 2)
+            ]
+        ),
+        ShowcaseTree(
+            artifactId: .iphoneFullUi,
+            screenId: "section.flows",
+            surface: .wide,
+            mounts: [
+                ShowcaseComponentMount(id: "flow.source", componentId: .flowSource, region: "content", order: 0),
+                ShowcaseComponentMount(id: "flow.update", componentId: .flowUpdate, region: "content", order: 1),
+                ShowcaseComponentMount(id: "flow.service", componentId: .flowService, region: "content", order: 2)
+            ]
+        ),
+        ShowcaseTree(
             artifactId: .watchosFullUi,
+            screenId: "section.foundations",
             surface: .round,
             mounts: [
                 ShowcaseComponentMount(id: "foundation.colors", componentId: .foundationColors, region: "face", order: 0),
                 ShowcaseComponentMount(id: "foundation.geometry", componentId: .foundationGeometry, region: "face", order: 1)
+            ]
+        ),
+        ShowcaseTree(
+            artifactId: .watchosFullUi,
+            screenId: "section.atoms",
+            surface: .round,
+            mounts: [
+                ShowcaseComponentMount(id: "atom.icon-action", componentId: .atomIconAction, region: "face", order: 0)
+            ]
+        ),
+        ShowcaseTree(
+            artifactId: .watchosFullUi,
+            screenId: "section.controls",
+            surface: .round,
+            mounts: [
+                ShowcaseComponentMount(id: "control.action-row", componentId: .controlActionRow, region: "face", order: 0),
+                ShowcaseComponentMount(id: "control.choice-row", componentId: .controlChoiceRow, region: "face", order: 1),
+                ShowcaseComponentMount(id: "control.adjustment", componentId: .controlAdjustment, region: "face", order: 2),
+                ShowcaseComponentMount(id: "control.progress", componentId: .controlProgress, region: "face", order: 3),
+                ShowcaseComponentMount(id: "control.press-ring", componentId: .controlPressRing, region: "face", order: 4)
+            ]
+        ),
+        ShowcaseTree(
+            artifactId: .watchosFullUi,
+            screenId: "section.input",
+            surface: .round,
+            mounts: [
+                ShowcaseComponentMount(id: "input.text", componentId: .inputText, region: "face", order: 0)
+            ]
+        ),
+        ShowcaseTree(
+            artifactId: .watchosFullUi,
+            screenId: "section.media",
+            surface: .round,
+            mounts: [
+                ShowcaseComponentMount(id: "media.capture", componentId: .mediaCapture, region: "face", order: 0),
+                ShowcaseComponentMount(id: "media.playback", componentId: .mediaPlayback, region: "face", order: 1)
+            ]
+        ),
+        ShowcaseTree(
+            artifactId: .watchosFullUi,
+            screenId: "section.templates",
+            surface: .round,
+            mounts: [
+                ShowcaseComponentMount(id: "template.screens", componentId: .templateScreens, region: "face", order: 0)
+            ]
+        ),
+        ShowcaseTree(
+            artifactId: .watchosFullUi,
+            screenId: "section.flows",
+            surface: .round,
+            mounts: [
+                ShowcaseComponentMount(id: "flow.source", componentId: .flowSource, region: "face", order: 0),
+                ShowcaseComponentMount(id: "flow.update", componentId: .flowUpdate, region: "face", order: 1),
+                ShowcaseComponentMount(id: "flow.service", componentId: .flowService, region: "face", order: 2)
             ]
         )
     ]
@@ -168,14 +488,277 @@ enum GeneratedShowcaseProduct {
                     .close
                 ])
             ]
+        ),
+        ShowcaseIconAsset(
+            id: "showcase.watch",
+            viewportWidth: 24.0,
+            viewportHeight: 24.0,
+            paths: [
+                ShowcaseIconPath(style: ShowcaseIconPathStyle.fill(evenOdd: false), commands: [
+                    .move(x: 12.0, y: 6.4),
+                    .arc(radiusX: 5.6, radiusY: 5.6, rotation: 0.0, largeArc: true, sweep: false, x: 12.001, y: 6.4),
+                    .close
+                ]),
+                ShowcaseIconPath(style: ShowcaseIconPathStyle.fill(evenOdd: false), commands: [
+                    .move(x: 9.0, y: 2.5),
+                    .line(x: 15.0, y: 2.5),
+                    .line(x: 14.4, y: 5.7),
+                    .line(x: 9.600000000000001, y: 5.7),
+                    .close
+                ]),
+                ShowcaseIconPath(style: ShowcaseIconPathStyle.fill(evenOdd: false), commands: [
+                    .move(x: 9.0, y: 21.5),
+                    .line(x: 15.0, y: 21.5),
+                    .line(x: 14.4, y: 18.3),
+                    .line(x: 9.600000000000001, y: 18.3),
+                    .close
+                ])
+            ]
+        ),
+        ShowcaseIconAsset(
+            id: "showcase.touchdown-run",
+            viewportWidth: 24.0,
+            viewportHeight: 24.0,
+            paths: [
+                ShowcaseIconPath(style: ShowcaseIconPathStyle.stroke(width: 2.8), commands: [
+                    .move(x: 4.0, y: 19.5),
+                    .line(x: 20.0, y: 19.5)
+                ]),
+                ShowcaseIconPath(style: ShowcaseIconPathStyle.stroke(width: 2.8), commands: [
+                    .move(x: 4.5, y: 13.5),
+                    .line(x: 17.5, y: 13.5)
+                ]),
+                ShowcaseIconPath(style: ShowcaseIconPathStyle.stroke(width: 2.8), commands: [
+                    .move(x: 14.0, y: 10.0),
+                    .line(x: 17.5, y: 13.5),
+                    .line(x: 14.0, y: 17.0)
+                ])
+            ]
+        ),
+        ShowcaseIconAsset(
+            id: "showcase.sliders",
+            viewportWidth: 24.0,
+            viewportHeight: 24.0,
+            paths: [
+                ShowcaseIconPath(style: ShowcaseIconPathStyle.fill(evenOdd: false), commands: [
+                    .move(x: 9.5, y: 5.3),
+                    .arc(radiusX: 2.2, radiusY: 2.2, rotation: 0.0, largeArc: true, sweep: false, x: 9.501, y: 5.3),
+                    .close
+                ]),
+                ShowcaseIconPath(style: ShowcaseIconPathStyle.fill(evenOdd: false), commands: [
+                    .move(x: 15.0, y: 9.8),
+                    .arc(radiusX: 2.2, radiusY: 2.2, rotation: 0.0, largeArc: true, sweep: false, x: 15.001, y: 9.8),
+                    .close
+                ]),
+                ShowcaseIconPath(style: ShowcaseIconPathStyle.fill(evenOdd: false), commands: [
+                    .move(x: 7.5, y: 14.3),
+                    .arc(radiusX: 2.2, radiusY: 2.2, rotation: 0.0, largeArc: true, sweep: false, x: 7.501, y: 14.3),
+                    .close
+                ]),
+                ShowcaseIconPath(style: ShowcaseIconPathStyle.stroke(width: 2.8), commands: [
+                    .move(x: 4.0, y: 7.5),
+                    .line(x: 20.0, y: 7.5)
+                ]),
+                ShowcaseIconPath(style: ShowcaseIconPathStyle.stroke(width: 2.8), commands: [
+                    .move(x: 4.0, y: 12.0),
+                    .line(x: 20.0, y: 12.0)
+                ]),
+                ShowcaseIconPath(style: ShowcaseIconPathStyle.stroke(width: 2.8), commands: [
+                    .move(x: 4.0, y: 16.5),
+                    .line(x: 20.0, y: 16.5)
+                ])
+            ]
+        ),
+        ShowcaseIconAsset(
+            id: "showcase.download",
+            viewportWidth: 24.0,
+            viewportHeight: 24.0,
+            paths: [
+                ShowcaseIconPath(style: ShowcaseIconPathStyle.fill(evenOdd: false), commands: [
+                    .move(x: 10.2, y: 3.5),
+                    .line(x: 13.799999999999999, y: 3.5),
+                    .line(x: 13.799999999999999, y: 9.5),
+                    .line(x: 16.599999999999998, y: 9.5),
+                    .line(x: 12.0, y: 15.5),
+                    .line(x: 7.4, y: 9.5),
+                    .line(x: 10.2, y: 9.5),
+                    .close
+                ]),
+                ShowcaseIconPath(style: ShowcaseIconPathStyle.stroke(width: 2.8), commands: [
+                    .move(x: 4.5, y: 19.5),
+                    .line(x: 19.5, y: 19.5)
+                ])
+            ]
+        ),
+        ShowcaseIconAsset(
+            id: "showcase.record",
+            viewportWidth: 24.0,
+            viewportHeight: 24.0,
+            paths: [
+                ShowcaseIconPath(style: ShowcaseIconPathStyle.fill(evenOdd: false), commands: [
+                    .move(x: 12.0, y: 7.4),
+                    .arc(radiusX: 4.6, radiusY: 4.6, rotation: 0.0, largeArc: true, sweep: false, x: 12.001, y: 7.4),
+                    .close
+                ]),
+                ShowcaseIconPath(style: ShowcaseIconPathStyle.stroke(width: 2.8), commands: [
+                    .move(x: 12.0, y: 3.4),
+                    .arc(radiusX: 8.6, radiusY: 8.6, rotation: 0.0, largeArc: true, sweep: false, x: 12.001, y: 3.4),
+                    .close
+                ])
+            ]
+        ),
+        ShowcaseIconAsset(
+            id: "showcase.pencil",
+            viewportWidth: 24.0,
+            viewportHeight: 24.0,
+            paths: [
+                ShowcaseIconPath(style: ShowcaseIconPathStyle.fill(evenOdd: true), commands: [
+                    .move(x: 14.5, y: 4.3),
+                    .line(x: 19.7, y: 9.5),
+                    .line(x: 8.6, y: 20.6),
+                    .line(x: 2.8, y: 22.0),
+                    .line(x: 4.199999999999999, y: 16.2),
+                    .close,
+                    .move(x: 12.9, y: 6.6),
+                    .line(x: 17.4, y: 11.1),
+                    .line(x: 16.5, y: 12.0),
+                    .line(x: 12.0, y: 7.5),
+                    .close
+                ])
+            ]
+        ),
+        ShowcaseIconAsset(
+            id: "showcase.play",
+            viewportWidth: 24.0,
+            viewportHeight: 24.0,
+            paths: [
+                ShowcaseIconPath(style: ShowcaseIconPathStyle.fill(evenOdd: false), commands: [
+                    .move(x: 8.2, y: 5.1),
+                    .arc(radiusX: 1.0, radiusY: 1.0, rotation: 0.0, largeArc: false, sweep: true, x: 9.7, y: 4.199999999999999),
+                    .line(x: 19.9, y: 11.1),
+                    .arc(radiusX: 1.0, radiusY: 1.0, rotation: 0.0, largeArc: false, sweep: true, x: 19.9, y: 12.9),
+                    .line(x: 9.7, y: 19.8),
+                    .arc(radiusX: 1.0, radiusY: 1.0, rotation: 0.0, largeArc: false, sweep: true, x: 8.2, y: 18.900000000000002),
+                    .close
+                ])
+            ]
+        ),
+        ShowcaseIconAsset(
+            id: "showcase.layers",
+            viewportWidth: 24.0,
+            viewportHeight: 24.0,
+            paths: [
+                ShowcaseIconPath(style: ShowcaseIconPathStyle.fill(evenOdd: false), commands: [
+                    .move(x: 12.0, y: 3.0),
+                    .line(x: 21.0, y: 7.5),
+                    .line(x: 12.0, y: 12.0),
+                    .line(x: 3.0, y: 7.5),
+                    .close
+                ]),
+                ShowcaseIconPath(style: ShowcaseIconPathStyle.stroke(width: 2.6), commands: [
+                    .move(x: 4.5, y: 12.5),
+                    .line(x: 12.0, y: 16.2),
+                    .line(x: 19.5, y: 12.5)
+                ]),
+                ShowcaseIconPath(style: ShowcaseIconPathStyle.stroke(width: 2.6), commands: [
+                    .move(x: 4.5, y: 16.5),
+                    .line(x: 12.0, y: 20.2),
+                    .line(x: 19.5, y: 16.5)
+                ])
+            ]
+        ),
+        ShowcaseIconAsset(
+            id: "showcase.wifi",
+            viewportWidth: 24.0,
+            viewportHeight: 24.0,
+            paths: [
+                ShowcaseIconPath(style: ShowcaseIconPathStyle.fill(evenOdd: false), commands: [
+                    .move(x: 12.0, y: 17.8),
+                    .arc(radiusX: 1.9, radiusY: 1.9, rotation: 0.0, largeArc: true, sweep: false, x: 12.001, y: 17.8),
+                    .close
+                ]),
+                ShowcaseIconPath(style: ShowcaseIconPathStyle.stroke(width: 3.0), commands: [
+                    .move(x: 2.5, y: 9.3),
+                    .arc(radiusX: 14.5, radiusY: 14.5, rotation: 0.0, largeArc: false, sweep: true, x: 21.5, y: 9.3)
+                ]),
+                ShowcaseIconPath(style: ShowcaseIconPathStyle.stroke(width: 3.0), commands: [
+                    .move(x: 5.5, y: 13.0),
+                    .arc(radiusX: 10.0, radiusY: 10.0, rotation: 0.0, largeArc: false, sweep: true, x: 18.5, y: 13.0)
+                ]),
+                ShowcaseIconPath(style: ShowcaseIconPathStyle.stroke(width: 3.0), commands: [
+                    .move(x: 8.7, y: 16.6),
+                    .arc(radiusX: 5.0, radiusY: 5.0, rotation: 0.0, largeArc: false, sweep: true, x: 15.299999999999999, y: 16.6)
+                ])
+            ]
+        ),
+        ShowcaseIconAsset(
+            id: "showcase.wrench",
+            viewportWidth: 24.0,
+            viewportHeight: 24.0,
+            paths: [
+                ShowcaseIconPath(style: ShowcaseIconPathStyle.fill(evenOdd: false), commands: [
+                    .move(x: 15.4, y: 5.6),
+                    .arc(radiusX: 4.4, radiusY: 4.4, rotation: 0.0, largeArc: false, sweep: false, x: 9.600000000000001, y: 11.2),
+                    .line(x: 4.0, y: 16.8),
+                    .arc(radiusX: 2.1, radiusY: 2.1, rotation: 0.0, largeArc: false, sweep: false, x: 7.0, y: 19.8),
+                    .line(x: 12.6, y: 14.200000000000001),
+                    .arc(radiusX: 4.4, radiusY: 4.4, rotation: 0.0, largeArc: false, sweep: false, x: 18.2, y: 8.400000000000002),
+                    .line(x: 15.2, y: 11.400000000000002),
+                    .line(x: 12.6, y: 8.800000000000002),
+                    .close
+                ])
+            ]
         )
     ]
-    static let nativeMounts: [ShowcaseNativeMount] = [
-        ShowcaseNativeMount(id: .catalog, legoSpecId: "showcase.catalog-source"),
-        ShowcaseNativeMount(id: .navigation, legoSpecId: "showcase.navigation-controller")
+    static let services: [ShowcaseService] = [
+        ShowcaseService(id: .catalog, typeRef: "showcase.catalog-source"),
+        ShowcaseService(id: .navigation, typeRef: "showcase.navigation-controller")
     ]
-    static let uiBindings: [ShowcaseUiBinding] = [
-        ShowcaseUiBinding(id: "showcase.menu", kind: "menu-entry", ports: ["state": .catalogCatalog, "action": .navigationOpen]),
-        ShowcaseUiBinding(id: "showcase.component", kind: "component-entry", ports: ["state": .navigationDestination])
+    static let portBindings: [ShowcasePortBinding] = [
+        ShowcasePortBinding(kind: "component-event", from: .foundationColorsOpen, to: .navigationFoundationColors, purpose: "data"),
+        ShowcasePortBinding(kind: "component-event", from: .foundationGeometryOpen, to: .navigationFoundationGeometry, purpose: "data"),
+        ShowcasePortBinding(kind: "component-event", from: .atomIconActionOpen, to: .navigationAtomIconAction, purpose: "data"),
+        ShowcasePortBinding(kind: "component-event", from: .controlActionRowOpen, to: .navigationControlActionRow, purpose: "data"),
+        ShowcasePortBinding(kind: "component-event", from: .controlChoiceRowOpen, to: .navigationControlChoiceRow, purpose: "data"),
+        ShowcasePortBinding(kind: "component-event", from: .controlAdjustmentOpen, to: .navigationControlAdjustment, purpose: "data"),
+        ShowcasePortBinding(kind: "component-event", from: .controlProgressOpen, to: .navigationControlProgress, purpose: "data"),
+        ShowcasePortBinding(kind: "component-event", from: .controlPressRingOpen, to: .navigationControlPressRing, purpose: "data"),
+        ShowcasePortBinding(kind: "component-event", from: .inputTextOpen, to: .navigationInputText, purpose: "data"),
+        ShowcasePortBinding(kind: "component-event", from: .mediaCaptureOpen, to: .navigationMediaCapture, purpose: "data"),
+        ShowcasePortBinding(kind: "component-event", from: .mediaPlaybackOpen, to: .navigationMediaPlayback, purpose: "data"),
+        ShowcasePortBinding(kind: "component-event", from: .templateScreensOpen, to: .navigationTemplateScreens, purpose: "data"),
+        ShowcasePortBinding(kind: "component-event", from: .flowSourceOpen, to: .navigationFlowSource, purpose: "data"),
+        ShowcasePortBinding(kind: "component-event", from: .flowUpdateOpen, to: .navigationFlowUpdate, purpose: "data"),
+        ShowcasePortBinding(kind: "component-event", from: .flowServiceOpen, to: .navigationFlowService, purpose: "data"),
+        ShowcasePortBinding(kind: "component-input", from: .catalogCatalog, to: .foundationColorsCatalog, purpose: "data"),
+        ShowcasePortBinding(kind: "component-input", from: .navigationDestination, to: .foundationColorsNavigation, purpose: "data"),
+        ShowcasePortBinding(kind: "component-input", from: .catalogCatalog, to: .foundationGeometryCatalog, purpose: "data"),
+        ShowcasePortBinding(kind: "component-input", from: .navigationDestination, to: .foundationGeometryNavigation, purpose: "data"),
+        ShowcasePortBinding(kind: "component-input", from: .catalogCatalog, to: .atomIconActionCatalog, purpose: "data"),
+        ShowcasePortBinding(kind: "component-input", from: .navigationDestination, to: .atomIconActionNavigation, purpose: "data"),
+        ShowcasePortBinding(kind: "component-input", from: .catalogCatalog, to: .controlActionRowCatalog, purpose: "data"),
+        ShowcasePortBinding(kind: "component-input", from: .navigationDestination, to: .controlActionRowNavigation, purpose: "data"),
+        ShowcasePortBinding(kind: "component-input", from: .catalogCatalog, to: .controlChoiceRowCatalog, purpose: "data"),
+        ShowcasePortBinding(kind: "component-input", from: .navigationDestination, to: .controlChoiceRowNavigation, purpose: "data"),
+        ShowcasePortBinding(kind: "component-input", from: .catalogCatalog, to: .controlAdjustmentCatalog, purpose: "data"),
+        ShowcasePortBinding(kind: "component-input", from: .navigationDestination, to: .controlAdjustmentNavigation, purpose: "data"),
+        ShowcasePortBinding(kind: "component-input", from: .catalogCatalog, to: .controlProgressCatalog, purpose: "data"),
+        ShowcasePortBinding(kind: "component-input", from: .navigationDestination, to: .controlProgressNavigation, purpose: "data"),
+        ShowcasePortBinding(kind: "component-input", from: .catalogCatalog, to: .controlPressRingCatalog, purpose: "data"),
+        ShowcasePortBinding(kind: "component-input", from: .navigationDestination, to: .controlPressRingNavigation, purpose: "data"),
+        ShowcasePortBinding(kind: "component-input", from: .catalogCatalog, to: .inputTextCatalog, purpose: "data"),
+        ShowcasePortBinding(kind: "component-input", from: .navigationDestination, to: .inputTextNavigation, purpose: "data"),
+        ShowcasePortBinding(kind: "component-input", from: .catalogCatalog, to: .mediaCaptureCatalog, purpose: "data"),
+        ShowcasePortBinding(kind: "component-input", from: .navigationDestination, to: .mediaCaptureNavigation, purpose: "data"),
+        ShowcasePortBinding(kind: "component-input", from: .catalogCatalog, to: .mediaPlaybackCatalog, purpose: "data"),
+        ShowcasePortBinding(kind: "component-input", from: .navigationDestination, to: .mediaPlaybackNavigation, purpose: "data"),
+        ShowcasePortBinding(kind: "component-input", from: .catalogCatalog, to: .templateScreensCatalog, purpose: "data"),
+        ShowcasePortBinding(kind: "component-input", from: .navigationDestination, to: .templateScreensNavigation, purpose: "data"),
+        ShowcasePortBinding(kind: "component-input", from: .catalogCatalog, to: .flowSourceCatalog, purpose: "data"),
+        ShowcasePortBinding(kind: "component-input", from: .navigationDestination, to: .flowSourceNavigation, purpose: "data"),
+        ShowcasePortBinding(kind: "component-input", from: .catalogCatalog, to: .flowUpdateCatalog, purpose: "data"),
+        ShowcasePortBinding(kind: "component-input", from: .navigationDestination, to: .flowUpdateNavigation, purpose: "data"),
+        ShowcasePortBinding(kind: "component-input", from: .catalogCatalog, to: .flowServiceCatalog, purpose: "data"),
+        ShowcasePortBinding(kind: "component-input", from: .navigationDestination, to: .flowServiceNavigation, purpose: "data")
     ]
 }
