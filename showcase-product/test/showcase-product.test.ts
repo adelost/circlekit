@@ -42,7 +42,8 @@ test("one compiled ProductSpec owns Android, Apple and Garmin Showcase structure
   assert.deepEqual(product.artifacts.map(({ id }) => id), SHOWCASE_ARTIFACT_PROFILES);
   assert.equal(product.showcase.sections.length, 7);
   assert.equal(product.showcase.cases.length, 15);
-  assert.equal(product.componentCatalog.length, product.showcase.cases.length);
+  assert.equal(product.componentTypes.length, product.showcase.cases.length);
+  assert.equal(product.components.length, product.showcase.cases.length);
   assert.equal(product.componentFamilies.length, product.showcase.sections.length + 1);
   assert.deepEqual(product.artifacts.map(({ id, serves }) => ({ id, serves })), [
     { id: "phone-full-ui", serves: ["compact", "wide"] },
@@ -103,7 +104,7 @@ test("native component, profile and icon drift stops before emission", async () 
   assert.throws(() => compileCircleKitShowcaseProduct({
     ...actual,
     components: actual.components.slice(1),
-  }, version), /\[component\/missing\] component 'foundation\.colors'/);
+  }, version), /\[component\/missing\] component binding 'foundation\.colors@phone-full-ui'/);
   assert.throws(() => compileCircleKitShowcaseProduct({
     ...actual,
     components: actual.components.map((binding, index) => index === 0

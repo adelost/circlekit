@@ -4,6 +4,7 @@ struct ShowcaseArtifact: Hashable {
     let id: GeneratedShowcaseArtifactId
     let rendererId: String
     let entryScreen: String
+    let screenRefs: [String]
     let surfaces: [GeneratedShowcaseSurface]
 }
 
@@ -81,6 +82,7 @@ struct ShowcaseComponentMount: Identifiable, Hashable {
 
 struct ShowcaseTree: Hashable {
     let artifactId: GeneratedShowcaseArtifactId
+    let screenId: String
     let surface: GeneratedShowcaseSurface
     let mounts: [ShowcaseComponentMount]
 }
@@ -119,15 +121,16 @@ struct ShowcaseIconAsset: Identifiable, Hashable {
     let paths: [ShowcaseIconPath]
 }
 
-struct ShowcaseNativeMount: Hashable {
-    let id: GeneratedShowcaseNativeMountId
-    let legoSpecId: String
+struct ShowcaseService: Hashable {
+    let id: GeneratedShowcaseServiceId
+    let typeRef: String
 }
 
-struct ShowcaseUiBinding: Hashable {
-    let id: String
+struct ShowcasePortBinding: Hashable {
     let kind: String
-    let ports: [String: GeneratedShowcasePortId]
+    let from: GeneratedShowcasePortId
+    let to: GeneratedShowcasePortId
+    let purpose: String
 }
 
 extension Color {

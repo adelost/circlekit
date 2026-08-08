@@ -6,15 +6,11 @@ const GARMIN_CAPABILITIES = new Set(["ui.component-tree"]);
 const GARMIN_NATIVE_SUPPORT: GarminRendererSupport = {
   id: "garmin-connectiq-monkeyc",
   surfaces: ["round"],
-  componentIds: ["control.progress"],
-  iconRefs: ["showcase.download"],
 };
 
 interface GarminRendererSupport {
   readonly id: string;
   readonly surfaces: readonly ("round" | "compact" | "wide")[];
-  readonly componentIds: readonly string[];
-  readonly iconRefs: readonly string[];
 }
 
 interface GarminStyle {
@@ -112,29 +108,34 @@ function selectLimitedUi(
   }
 
   const surface = artifact.serves[0]!;
-  const family = product.componentFamilies.find(({ screen }) => screen === artifact.entryScreen);
-  const tree = family?.family.trees.find((candidate) => candidate.surface === surface);
-  if (tree === undefined) throw new Error(`Showcase Garmin entry '${artifact.entryScreen}' lacks '${surface}' tree`);
-  if (tree.mounts.length !== 1) {
-    throw new Error(`Showcase Garmin limited UI requires exactly one mounted component, found ${tree.mounts.length}`);
+  const scopes = product.artifactScopes.filter((scope) =>
+    scope.artifactRef === artifact.id && scope.screenRef === artifact.entryScreen && scope.surface === surface);
+  if (scopes.length !== 1) {
+    throw new Error(`Showcase Garmin artifact '${artifact.id}' must expose one entry scope, found ${scopes.length}`);
   }
-  const mount = tree.mounts[0]!;
-  if (!support.componentIds.includes(mount.component)) {
-    throw new Error(`Showcase Garmin has no native renderer for component '${mount.component}'`);
+  const scope = scopes[0]!;
+  if (scope.includedMounts.length !== 1 || scope.omittedMounts.length !== 0) {
+    throw new Error(
+      `Showcase Garmin limited UI requires exactly one included component, found ${scope.includedMounts.length}`,
+    );
+  }
+  const included = scope.includedMounts[0]!;
+  const family = product.componentFamilies.find(({ screen }) => screen === scope.screenRef);
+  const tree = family?.family.trees.find((candidate) => candidate.surface === scope.surface);
+  const mount = tree?.mounts.find(({ id }) => id === included.mountRef);
+  if (mount === undefined || mount.instance !== included.componentInstanceRef) {
+    throw new Error(`Showcase Garmin scope mount '${included.mountRef}' does not resolve its component`);
   }
 
-  const component = product.showcase.cases.find(({ id }) => id === mount.component);
+  const component = product.showcase.cases.find(({ id }) => id === included.componentInstanceRef);
   const scenario = component?.scenarios[0];
   if (component === undefined || scenario === undefined) {
-    throw new Error(`Showcase Garmin component '${mount.component}' has no default scenario`);
+    throw new Error(`Showcase Garmin component '${included.componentInstanceRef}' has no default scenario`);
   }
   const icon = product.iconRefs.find(({ assetRef, artifacts: refs }) =>
     assetRef === component.iconId && refs.includes(artifact.id));
   if (icon === undefined) {
-    throw new Error(`Showcase Garmin component '${mount.component}' lacks an icon ref for '${artifact.id}'`);
-  }
-  if (!support.iconRefs.includes(icon.id)) {
-    throw new Error(`Showcase Garmin has no native renderer for icon '${icon.id}'`);
+    throw new Error(`Showcase Garmin component '${component.id}' lacks an icon ref for '${artifact.id}'`);
   }
   if (product.assetCatalogRef.id !== assetCatalog.id || product.assetCatalogRef.version !== assetCatalog.version) {
     throw new Error(`Showcase Garmin asset catalog mismatch '${assetCatalog.id}@${assetCatalog.version}'`);
@@ -150,9 +151,9 @@ function selectLimitedUi(
   return {
     artifactId: artifact.id,
     rendererId: renderer.id,
-    screenId: artifact.entryScreen,
+    screenId: scope.screenRef,
     surface,
-    componentId: mount.component,
+    componentId: included.componentInstanceRef,
     componentLabel: component.title,
     componentOrder: mount.order,
     scenarioId: scenario.id,

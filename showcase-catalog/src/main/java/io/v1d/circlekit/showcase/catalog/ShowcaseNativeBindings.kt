@@ -2,6 +2,7 @@ package io.v1d.circlekit.showcase.catalog
 
 import androidx.compose.ui.graphics.vector.ImageVector
 import com.adelost.designkit.ui.RingIcons
+import kotlin.reflect.KClass
 
 const val SHOWCASE_PHONE_PROFILE = "phone-full-ui"
 const val SHOWCASE_WEAR_PROFILE = "wear-full-ui"
@@ -35,6 +36,16 @@ data class ShowcaseNativeIconBinding(
     val nativeSymbol: String,
     val icon: ImageVector,
 )
+
+data class ShowcaseNativeServiceBinding(
+    val serviceId: String,
+    val nativeType: KClass<*>,
+    val profiles: Set<String>,
+    val inputPorts: List<String>,
+    val outputPorts: List<String>,
+) {
+    val nativePortId: String = requireNotNull(nativeType.qualifiedName)
+}
 
 /**
  * Handwritten Android binding truth. It deliberately has no dependency on
@@ -89,6 +100,39 @@ object ShowcaseNativeBindings {
         icon("wrench", "RingIcons.Wrench", RingIcons.Wrench),
     )
 
+    val services: List<ShowcaseNativeServiceBinding> = listOf(
+        ShowcaseNativeServiceBinding(
+            serviceId = "catalog",
+            nativeType = ShowcaseCatalogRuntime::class,
+            profiles = bothProfiles,
+            inputPorts = emptyList(),
+            outputPorts = listOf("catalog"),
+        ),
+        ShowcaseNativeServiceBinding(
+            serviceId = "navigation",
+            nativeType = ShowcaseSession::class,
+            profiles = bothProfiles,
+            inputPorts = listOf(
+                "foundationColors",
+                "foundationGeometry",
+                "atomIconAction",
+                "controlActionRow",
+                "controlChoiceRow",
+                "controlAdjustment",
+                "controlProgress",
+                "controlPressRing",
+                "inputText",
+                "mediaCapture",
+                "mediaPlayback",
+                "templateScreens",
+                "flowSource",
+                "flowUpdate",
+                "flowService",
+            ),
+            outputPorts = listOf("destination"),
+        ),
+    )
+
     fun requireComponent(componentId: String): ShowcaseNativeComponentBinding =
         requireNotNull(components.singleOrNull { it.componentId == componentId }) {
             "No native Showcase binding for $componentId"
@@ -102,6 +146,9 @@ object ShowcaseNativeBindings {
     fun requireProfile(profileId: String) {
         require(components.all { profileId in it.profiles }) {
             "Showcase profile $profileId is not bound for every component"
+        }
+        require(services.all { profileId in it.profiles }) {
+            "Showcase profile $profileId is not bound for every service"
         }
     }
 

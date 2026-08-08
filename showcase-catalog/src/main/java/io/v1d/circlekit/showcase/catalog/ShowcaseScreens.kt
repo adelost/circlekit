@@ -23,11 +23,12 @@ object ShowcaseScreens {
     fun root(session: ShowcaseSession, dev: ShowcaseDevPort? = null): RingScreen = RingScreen.Launcher(
         title = "CIRCLEKIT",
         gridRole = MenuGridRole.COMPONENT_GALLERY,
-        entries = ShowcaseFamily.entries.map { family ->
+        entries = ShowcaseCatalogRuntime.screensFor(session.artifactProfile.id).mapNotNull { screen ->
+            val family = ShowcaseFamily.entries.singleOrNull { screen == "section.${it.id}" } ?: return@mapNotNull null
             LaunchSpec(
                 icon = ShowcaseNativeBindings.requireIcon(family.iconId),
                 label = family.menuLabel,
-                open = { familyScreen(family, session) },
+                open = { familyScreen(screen, family, session) },
             )
         } + listOfNotNull(
             dev?.let { port ->
@@ -64,10 +65,15 @@ object ShowcaseScreens {
         }
     }
 
-    private fun familyScreen(family: ShowcaseFamily, session: ShowcaseSession): RingScreen = RingScreen.Launcher(
+    private fun familyScreen(
+        screen: String,
+        family: ShowcaseFamily,
+        session: ShowcaseSession,
+    ): RingScreen = RingScreen.Launcher(
         title = family.title,
         gridRole = MenuGridRole.COMPONENT_GALLERY,
-        entries = ShowcaseManifest.cases.filter { it.family == family }.map { case ->
+        entries = ShowcaseCatalogRuntime.componentIds(session.artifactProfile.id, screen).map { componentId ->
+            val case = requireNotNull(ShowcaseCatalogRuntime.find(ShowcaseCaseId(componentId)))
             LaunchSpec(
                 icon = ShowcaseNativeBindings.requireIcon(case.iconId),
                 label = case.title,

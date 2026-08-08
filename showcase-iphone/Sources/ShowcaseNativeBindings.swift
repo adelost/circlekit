@@ -1,16 +1,19 @@
 import Observation
 
 protocol ShowcaseNativeBinding {
-    var legoSpecId: String { get }
+    var serviceTypeRef: String { get }
 }
 
 struct ShowcaseCatalogSource: ShowcaseNativeBinding {
-    let legoSpecId: String
+    let serviceTypeRef: String
     let artifact: ShowcaseArtifact
 
-    func tree(preferredSurface: String) -> ShowcaseTree {
-        let trees = GeneratedShowcaseProduct.trees.filter { $0.artifactId == artifact.id }
-        return trees.first(where: { $0.surface.rawValue == preferredSurface }) ?? trees[0]
+    func trees(preferredSurface: String) -> [ShowcaseTree] {
+        let scoped = GeneratedShowcaseProduct.trees.filter {
+            $0.artifactId == artifact.id && $0.surface.rawValue == preferredSurface
+        }
+        precondition(!scoped.isEmpty, "Product IR has no artifact scope for the selected surface")
+        return artifact.screenRefs.compactMap { screen in scoped.first(where: { $0.screenId == screen }) }
     }
 
     func component(_ id: GeneratedShowcaseComponentId) -> ShowcaseComponent {
@@ -25,14 +28,22 @@ struct ShowcaseCatalogSource: ShowcaseNativeBinding {
 @MainActor
 @Observable
 final class ShowcaseNavigationController: ShowcaseNativeBinding {
-    let legoSpecId: String
+    let serviceTypeRef: String
     var path: [GeneratedShowcaseComponentId] = []
 
-    init(legoSpecId: String) {
-        self.legoSpecId = legoSpecId
+    init(serviceTypeRef: String) {
+        self.serviceTypeRef = serviceTypeRef
     }
 
     func open(_ componentId: GeneratedShowcaseComponentId) {
+        precondition(
+            GeneratedShowcaseProduct.portBindings.contains(where: {
+                $0.kind == "component-event" &&
+                    $0.from.rawValue == "\(componentId.rawValue).open" &&
+                    $0.to.rawValue.hasPrefix("navigation.")
+            }),
+            "Product IR has no navigation event binding for \(componentId.rawValue)"
+        )
         path.append(componentId)
     }
 }
@@ -47,14 +58,14 @@ final class ShowcaseNativeEnvironment {
         let artifact = GeneratedShowcaseProduct.artifacts.first(where: {
             $0.rendererId == ShowcaseNativePlatform.rendererId
         })!
-        let catalogMount = GeneratedShowcaseProduct.nativeMounts.first(where: { $0.id == .catalog })!
-        let navigationMount = GeneratedShowcaseProduct.nativeMounts.first(where: { $0.id == .navigation })!
-        catalog = ShowcaseCatalogSource(legoSpecId: catalogMount.legoSpecId, artifact: artifact)
-        navigation = ShowcaseNavigationController(legoSpecId: navigationMount.legoSpecId)
-        GeneratedShowcaseNativeMountId.allCases.forEach { _ = binding(for: $0) }
+        let catalogService = GeneratedShowcaseProduct.services.first(where: { $0.id == .catalog })!
+        let navigationService = GeneratedShowcaseProduct.services.first(where: { $0.id == .navigation })!
+        catalog = ShowcaseCatalogSource(serviceTypeRef: catalogService.typeRef, artifact: artifact)
+        navigation = ShowcaseNavigationController(serviceTypeRef: navigationService.typeRef)
+        GeneratedShowcaseServiceId.allCases.forEach { _ = binding(for: $0) }
     }
 
-    func binding(for id: GeneratedShowcaseNativeMountId) -> any ShowcaseNativeBinding {
+    func binding(for id: GeneratedShowcaseServiceId) -> any ShowcaseNativeBinding {
         switch id {
         case .catalog: catalog
         case .navigation: navigation

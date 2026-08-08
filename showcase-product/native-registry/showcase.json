@@ -34,6 +34,9 @@
     { "iconId": "record", "nativeSymbol": "RingIcons.Record" },
     { "iconId": "wrench", "nativeSymbol": "RingIcons.Wrench" }
   ],
-  "services": [],
+  "services": [
+    { "serviceId": "catalog", "nativePortId": "io.v1d.circlekit.showcase.catalog.ShowcaseCatalogRuntime", "profiles": ["phone-full-ui", "wear-full-ui"], "inputPorts": [], "outputPorts": ["catalog"] },
+    { "serviceId": "navigation", "nativePortId": "io.v1d.circlekit.showcase.catalog.ShowcaseSession", "profiles": ["phone-full-ui", "wear-full-ui"], "inputPorts": ["foundationColors", "foundationGeometry", "atomIconAction", "controlActionRow", "controlChoiceRow", "controlAdjustment", "controlProgress", "controlPressRing", "inputText", "mediaCapture", "mediaPlayback", "templateScreens", "flowSource", "flowUpdate", "flowService"], "outputPorts": ["destination"] }
+  ],
   "finiteValues": []
 }
