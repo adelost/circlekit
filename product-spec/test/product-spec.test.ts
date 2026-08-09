@@ -14,7 +14,7 @@ import {
   demandPort,
   decodeNativeBindingManifest,
   defineComponentType,
-  defineLegoSpec,
+  derive,
   definePalette,
   definePortableAssetCatalog,
   defineProduct,
@@ -28,6 +28,9 @@ import {
   productArtifactConformance,
   productArtifactHostCoverage,
   productJsonEmitter,
+  present,
+  service,
+  validateProductNodeType,
   validateProductIconRendererBindings,
   writeOutputManifest,
 } from "../src/index.js";
@@ -63,24 +66,22 @@ const contextContract = {
   fields: [field("mode", "string")],
 } as const;
 
-const source = defineLegoSpec({
+const source = service({
   id: "fixture.source",
-  role: "source",
   inputs: [demandPort("demand", demandContract)],
   outputs: [port("status", statusContract)],
   runtime: {
     stateOwner: "none", lifetime: "process", durability: "transient",
-    clockDomain: "none", contextInputs: [], effects: [],
+    clockDomain: "none", contextInputs: [], effects: ["fixture.source-read"],
   },
 } as const);
-const noDemandSource = defineLegoSpec({
+const noDemandSource = service({
   ...source,
   id: "fixture.no-demand-source",
   inputs: [],
 } as const);
-const controller = defineLegoSpec({
+const controller = service({
   id: "fixture.controller",
-  role: "adapter",
   inputs: [
     port("sourceState", statusContract),
     port("trigger", actionContract),
@@ -91,14 +92,22 @@ const controller = defineLegoSpec({
     clockDomain: "none", contextInputs: [], effects: ["fixture.effect"],
   },
 } as const);
-const background = defineLegoSpec({
+const projection = present({
+  id: "fixture.projection",
+  inputs: [port("state", statusContract)],
+  outputs: [port("model", statusContract)],
+  runtime: {
+    stateOwner: "instance", lifetime: "instance", durability: "transient",
+    clockDomain: "none", contextInputs: [], effects: [],
+  },
+} as const);
+const background = service({
   id: "fixture.background",
-  role: "consumer",
   inputs: [port("status", statusContract)],
   outputs: [],
   runtime: {
     stateOwner: "instance", lifetime: "instance", durability: "transient",
-    clockDomain: "none", contextInputs: [], effects: [],
+    clockDomain: "none", contextInputs: [], effects: ["fixture.background-write"],
   },
 } as const);
 const controlType = defineComponentType({
@@ -111,7 +120,7 @@ const control = {
   id: "control.main",
   componentTypeRef: controlType.id,
   bindings: {
-    inputs: { state: "ui.controller.state" },
+    inputs: { state: "ui.projection.model" },
     events: { activate: "ui.controller.trigger" },
   },
 } as const;
@@ -159,16 +168,19 @@ const baseDeclaration = {
     { id: "phone", rendererRefs: ["renderer.phone"], requiredCapabilities: ["ui.menu"], entryScreen: "MAIN", screenRefs: ["MAIN"], serves: ["compact", "wide"] },
     { id: "wear", rendererRefs: ["renderer.wear"], requiredCapabilities: ["ui.menu"], entryScreen: "MAIN", screenRefs: ["MAIN"], serves: ["round"] },
   ],
-  serviceTypes: [source, controller],
-  services: [
-    { id: "domain.source", serviceTypeRef: source.id, config: {}, bindings: {}, activation: {
+  nodeTypes: [source, controller, projection],
+  nodes: [
+    { id: "domain.source", nodeTypeRef: source.id, config: {}, bindings: {}, activation: {
       kind: "leased", port: "demand", lifecycleSources: [],
     } },
-    { id: "ui.controller", serviceTypeRef: controller.id, config: {}, activation: {
+    { id: "ui.controller", nodeTypeRef: controller.id, config: {}, activation: {
       kind: "lifetime", lifecycleSources: [],
     }, bindings: {
       sourceState: "domain.source.status",
       trigger: "control.main.activate",
+    } },
+    { id: "ui.projection", nodeTypeRef: projection.id, config: {}, bindings: {
+      state: "ui.controller.state",
     } },
   ],
   configs: [],
@@ -186,50 +198,92 @@ function fixture(overrides: Record<string, unknown> = {}) {
 }
 
 if (false) {
-  defineProduct({ ...baseDeclaration, services: [
-    baseDeclaration.services[0],
-    // @ts-expect-error Every required service input has an exact binding.
-    { ...baseDeclaration.services[1], bindings: {
+  defineProduct({ ...baseDeclaration, nodes: [
+    baseDeclaration.nodes[0],
+    // @ts-expect-error Every required node input has an exact binding.
+    { ...baseDeclaration.nodes[1], bindings: {
       trigger: "control.main.activate",
     } },
+    baseDeclaration.nodes[2],
   ] }, assetCatalog);
-  defineProduct({ ...baseDeclaration, services: [
-    baseDeclaration.services[0],
-    { ...baseDeclaration.services[1], bindings: {
-      ...baseDeclaration.services[1].bindings,
-      // @ts-expect-error The source ref is derived from mounted service/component outputs.
+  defineProduct({ ...baseDeclaration, nodes: [
+    baseDeclaration.nodes[0],
+    { ...baseDeclaration.nodes[1], bindings: {
+      ...baseDeclaration.nodes[1].bindings,
+      // @ts-expect-error The source ref is derived from declared node/component outputs.
       sourceState: "invented.output",
     } },
+    baseDeclaration.nodes[2],
   ] }, assetCatalog);
   defineProduct({ ...baseDeclaration, components: [{
     ...control,
     bindings: {
       ...control.bindings,
       // @ts-expect-error Component binding names are derived from the selected ComponentType.
-      inputs: { invented: "ui.controller.state" },
+      inputs: { invented: "ui.projection.model" },
     },
   }] }, assetCatalog);
-  defineProduct({ ...baseDeclaration, serviceTypes: [noDemandSource, controller], services: [
-    { id: "domain.source", serviceTypeRef: noDemandSource.id, config: {}, bindings: {}, activation: {
+  defineProduct({ ...baseDeclaration, nodeTypes: [noDemandSource, controller, projection], nodes: [
+    { id: "domain.source", nodeTypeRef: noDemandSource.id, config: {}, bindings: {}, activation: {
       // @ts-expect-error A service without a demand input is structurally lifetime, never leased.
       kind: "leased", port: "demand", lifecycleSources: ["app-active"],
     } },
-    baseDeclaration.services[1],
+    baseDeclaration.nodes[1],
+    baseDeclaration.nodes[2],
   ] }, assetCatalog);
+
+  // @ts-expect-error A service must prove that it owns at least one runtime effect.
+  service({ ...source, runtime: { ...source.runtime, effects: [] } } as const);
+  // @ts-expect-error A derive node cannot own an external effect.
+  derive({ ...projection, runtime: { ...projection.runtime, effects: ["fixture.effect"] } } as const);
 }
+
+test("service, derive and present are structurally distinct authoring kinds", () => {
+  assert.throws(() => validateProductNodeType({
+    ...source, kind: "service", runtime: { ...source.runtime, effects: [] },
+  }), /must declare at least one runtime effect/);
+  assert.throws(() => validateProductNodeType({
+    ...projection, kind: "derive", runtime: { ...projection.runtime, effects: ["fixture.effect"] },
+  }), /cannot declare runtime effects/);
+  assert.throws(() => present({
+    id: "fixture.invalid-presentation",
+    inputs: [], outputs: [port("internal", internalContract)],
+    runtime: {
+      stateOwner: "instance", lifetime: "instance", durability: "transient",
+      clockDomain: "none", contextInputs: [], effects: [],
+    },
+  } as const), /must use a presentation contract/);
+
+  assert.throws(() => fixture({
+    components: [{ ...control, bindings: {
+      ...control.bindings,
+      inputs: { state: "ui.controller.state" },
+    } }],
+  }), /service 'ui.controller' cannot feed component 'control.main' directly; add a final present node/);
+
+  assert.throws(() => fixture({
+    nodes: [
+      baseDeclaration.nodes[0],
+      baseDeclaration.nodes[1],
+      { id: "ui.first", nodeTypeRef: projection.id, config: {}, bindings: { state: "ui.controller.state" } },
+      { id: "ui.projection", nodeTypeRef: projection.id, config: {}, bindings: { state: "ui.first.model" } },
+    ],
+  }), /make 'ui.first' derive - only the final node before a component may be present/);
+});
 
 test("one mandatory graph compiles deterministic outputs and a complete port registry", async () => {
   const product = fixture();
-  assert.equal(product.schemaVersion, 6);
-  assert.equal(product.services.length, 2);
+  assert.equal(product.schemaVersion, 7);
+  assert.equal(product.nodes.length, 3);
   assert.deepEqual(product.portRegistry.contracts, [demandContract, statusContract, actionContract]);
   assert.deepEqual(product.portRegistry.bindings, [
-    { kind: "service-input", from: "domain.source.status", to: "ui.controller.sourceState", purpose: "data" },
+    { kind: "node-input", from: "domain.source.status", to: "ui.controller.sourceState", purpose: "data" },
     { kind: "component-event", from: "control.main.activate", to: "ui.controller.trigger", purpose: "data" },
-    { kind: "component-input", from: "ui.controller.state", to: "control.main.state", purpose: "data" },
+    { kind: "node-input", from: "ui.controller.state", to: "ui.projection.state", purpose: "data" },
+    { kind: "component-input", from: "ui.projection.model", to: "control.main.state", purpose: "data" },
   ]);
   assert.equal(product.portRegistry.demandEdges.length, 3);
-  assert.deepEqual(new Set(product.portRegistry.demandEdges.map(({ serviceInstanceRef }) => serviceInstanceRef)),
+  assert.deepEqual(new Set(product.portRegistry.demandEdges.map(({ nodeInstanceRef }) => nodeInstanceRef)),
     new Set(["domain.source"]));
   validateProductIconRendererBindings(product, [
     { iconRef: "status.check", assetRef: "check", rendererRef: "renderer.phone" },
@@ -253,23 +307,30 @@ test("one mandatory graph compiles deterministic outputs and a complete port reg
 });
 
 test("demand ports propagate activation forward without becoming data dependencies", () => {
-  const demandRoot = defineLegoSpec({
+  const demandRoot = service({
     id: "fixture.demand-root",
-    role: "policy",
     inputs: [],
     outputs: [demandPort("activate", demandContract)],
     runtime: {
       stateOwner: "none", lifetime: "process", durability: "transient",
-      clockDomain: "none", contextInputs: [], effects: [],
+      clockDomain: "none", contextInputs: [], effects: ["fixture.activation"],
     },
   } as const);
-  const demandedSource = defineLegoSpec({
+  const demandedSource = service({
     id: "fixture.demanded-source",
-    role: "source",
     inputs: [demandPort("demand", demandContract)],
     outputs: [port("status", statusContract)],
     runtime: {
       stateOwner: "instance", lifetime: "process", durability: "transient",
+      clockDomain: "none", contextInputs: [], effects: ["fixture.source-read"],
+    },
+  } as const);
+  const demandProjection = present({
+    id: "fixture.demand-projection",
+    inputs: [port("state", statusContract)],
+    outputs: [port("model", statusContract)],
+    runtime: {
+      stateOwner: "instance", lifetime: "instance", durability: "transient",
       clockDomain: "none", contextInputs: [], effects: [],
     },
   } as const);
@@ -280,21 +341,24 @@ test("demand ports propagate activation forward without becoming data dependenci
     outputs: [],
   } as const);
   const graph = compileProductGraph({
-    serviceTypes: [demandRoot, demandedSource],
-    services: [
-      { id: "demand.root", serviceTypeRef: demandRoot.id, config: {}, bindings: {}, activation: {
+    nodeTypes: [demandRoot, demandedSource, demandProjection],
+    nodes: [
+      { id: "demand.root", nodeTypeRef: demandRoot.id, config: {}, bindings: {}, activation: {
         kind: "lifetime", lifecycleSources: ["app-active"],
       } },
-      { id: "demanded.source", serviceTypeRef: demandedSource.id, config: {}, bindings: {
+      { id: "demanded.source", nodeTypeRef: demandedSource.id, config: {}, bindings: {
         demand: "demand.root.activate",
       }, activation: { kind: "leased", port: "demand", lifecycleSources: [] } },
+      { id: "demand.projection", nodeTypeRef: demandProjection.id, config: {}, bindings: {
+        state: "demanded.source.status",
+      } },
     ],
     configs: [],
     componentTypes: [displayType],
     components: [{
       id: "display.main",
       componentTypeRef: displayType.id,
-      bindings: { inputs: { state: "demanded.source.status" }, events: {} },
+      bindings: { inputs: { state: "demand.projection.model" }, events: {} },
     }],
     mountedScopes: [{
       artifactRef: "phone", screenRef: "MAIN", surface: "compact",
@@ -302,35 +366,38 @@ test("demand ports propagate activation forward without becoming data dependenci
     }],
   });
   assert.deepEqual(graph.portRegistry.bindings[0], {
-    kind: "service-input",
+    kind: "node-input",
     from: "demand.root.activate",
     to: "demanded.source.demand",
     purpose: "demand",
   });
   assert.deepEqual(graph.portRegistry.demandEdges.filter(({ kind }) => kind === "component-mount")
-    .map(({ serviceInstanceRef, targetPortRef }) => [serviceInstanceRef, targetPortRef]),
+    .map(({ nodeInstanceRef, targetPortRef }) => [nodeInstanceRef, targetPortRef]),
   [["demanded.source", "demanded.source.demand"]]);
   assert.deepEqual(new Set(graph.portRegistry.demandEdges.filter(({ kind }) => kind === "lifecycle")
-    .map(({ serviceInstanceRef }) => serviceInstanceRef)), new Set(["demanded.source"]));
-  const dataTarget = defineLegoSpec({
+    .map(({ nodeInstanceRef }) => nodeInstanceRef)), new Set(["demanded.source"]));
+  const dataTarget = service({
     ...demandedSource,
     id: "fixture.data-target",
     inputs: [demandPort("lifecycle", demandContract), port("demand", demandContract)],
   } as const);
   assert.throws(() => compileProductGraph({
-    serviceTypes: [demandRoot, dataTarget],
-    services: [
-      { id: "demand.root", serviceTypeRef: demandRoot.id, config: {}, bindings: {}, activation: {
+    nodeTypes: [demandRoot, dataTarget, demandProjection],
+    nodes: [
+      { id: "demand.root", nodeTypeRef: demandRoot.id, config: {}, bindings: {}, activation: {
         kind: "lifetime", lifecycleSources: ["app-active"],
       } },
-      { id: "data.target", serviceTypeRef: dataTarget.id, config: {}, bindings: {
+      { id: "data.target", nodeTypeRef: dataTarget.id, config: {}, bindings: {
         demand: "demand.root.activate",
       }, activation: { kind: "leased", port: "lifecycle", lifecycleSources: [] } },
+      { id: "demand.projection", nodeTypeRef: demandProjection.id, config: {}, bindings: {
+        state: "data.target.status",
+      } },
     ],
     configs: [], componentTypes: [displayType],
     components: [{
       id: "display.main", componentTypeRef: displayType.id,
-      bindings: { inputs: { state: "data.target.status" }, events: {} },
+      bindings: { inputs: { state: "demand.projection.model" }, events: {} },
     }],
     mountedScopes: [{
       artifactRef: "phone", screenRef: "MAIN", surface: "compact",
@@ -341,9 +408,8 @@ test("demand ports propagate activation forward without becoming data dependenci
 });
 
 test("context ports are optional typed data and never contribute activation", () => {
-  const contextSource = defineLegoSpec({
+  const contextSource = derive({
     id: "fixture.context-source",
-    role: "policy",
     inputs: [],
     outputs: [contextPort("policy", contextContract)],
     runtime: {
@@ -351,13 +417,21 @@ test("context ports are optional typed data and never contribute activation", ()
       clockDomain: "none", contextInputs: [], effects: [],
     },
   } as const);
-  const contextualSource = defineLegoSpec({
+  const contextualSource = service({
     id: "fixture.contextual-source",
-    role: "source",
     inputs: [demandPort("demand", demandContract), contextPort("context", contextContract)],
     outputs: [port("status", statusContract)],
     runtime: {
       stateOwner: "instance", lifetime: "process", durability: "transient",
+      clockDomain: "none", contextInputs: [], effects: ["fixture.source-read"],
+    },
+  } as const);
+  const contextProjection = present({
+    id: "fixture.context-projection",
+    inputs: [port("state", statusContract)],
+    outputs: [port("model", statusContract)],
+    runtime: {
+      stateOwner: "instance", lifetime: "instance", durability: "transient",
       clockDomain: "none", contextInputs: [], effects: [],
     },
   } as const);
@@ -368,19 +442,20 @@ test("context ports are optional typed data and never contribute activation", ()
     outputs: [],
   } as const);
   const graph = compileProductGraph({
-    serviceTypes: [contextSource, contextualSource],
-    services: [
-      { id: "context.source", serviceTypeRef: contextSource.id, config: {}, bindings: {}, activation: {
-        kind: "lifetime", lifecycleSources: [],
-      } },
-      { id: "contextual.source", serviceTypeRef: contextualSource.id, config: {}, bindings: {
+    nodeTypes: [contextSource, contextualSource, contextProjection],
+    nodes: [
+      { id: "context.source", nodeTypeRef: contextSource.id, config: {}, bindings: {} },
+      { id: "contextual.source", nodeTypeRef: contextualSource.id, config: {}, bindings: {
         context: "context.source.policy",
       }, activation: { kind: "leased", port: "demand", lifecycleSources: [] } },
+      { id: "context.projection", nodeTypeRef: contextProjection.id, config: {}, bindings: {
+        state: "contextual.source.status",
+      } },
     ],
     configs: [], componentTypes: [displayType],
     components: [{
       id: "context.display", componentTypeRef: displayType.id,
-      bindings: { inputs: { state: "contextual.source.status" }, events: {} },
+      bindings: { inputs: { state: "context.projection.model" }, events: {} },
     }],
     mountedScopes: [{
       artifactRef: "phone", screenRef: "MAIN", surface: "compact",
@@ -388,29 +463,33 @@ test("context ports are optional typed data and never contribute activation", ()
     }],
   });
   assert.deepEqual(graph.portRegistry.bindings[0], {
-    kind: "service-input", from: "context.source.policy", to: "contextual.source.context", purpose: "context",
+    kind: "node-input", from: "context.source.policy", to: "contextual.source.context", purpose: "context",
   });
   assert.deepEqual(graph.portRegistry.demandEdges.filter(({ kind }) => kind === "component-mount")
-    .map(({ serviceInstanceRef }) => serviceInstanceRef), ["contextual.source"]);
-  assert.equal(graph.portRegistry.servicePorts.find(({ ref }) => ref === "contextual.source.context")?.required, false);
+    .map(({ nodeInstanceRef }) => nodeInstanceRef), ["contextual.source"]);
+  assert.equal(graph.portRegistry.nodePorts.find(({ ref }) => ref === "contextual.source.context")?.required, false);
 
   const withoutContextBinding = compileProductGraph({
-    serviceTypes: [contextualSource],
-    services: [{
-      id: "contextual.source", serviceTypeRef: contextualSource.id,
+    nodeTypes: [contextualSource, contextProjection],
+    nodes: [{
+      id: "contextual.source", nodeTypeRef: contextualSource.id,
       config: {}, bindings: {}, activation: { kind: "leased", port: "demand", lifecycleSources: [] },
+    }, {
+      id: "context.projection", nodeTypeRef: contextProjection.id,
+      config: {}, bindings: { state: "contextual.source.status" },
     }],
     configs: [], componentTypes: [displayType],
     components: [{
       id: "context.display", componentTypeRef: displayType.id,
-      bindings: { inputs: { state: "contextual.source.status" }, events: {} },
+      bindings: { inputs: { state: "context.projection.model" }, events: {} },
     }],
     mountedScopes: [{
       artifactRef: "phone", screenRef: "MAIN", surface: "compact",
       mountRef: "context.display", componentInstanceRef: "context.display",
     }],
   });
-  assert.equal(withoutContextBinding.portRegistry.bindings.length, 1);
+  assert.equal(withoutContextBinding.portRegistry.bindings
+    .some(({ to }) => to === "contextual.source.context"), false);
   assert.throws(() => contextPort("invalid", actionContract), /non-event service-internal contract/);
 });
 
@@ -443,17 +522,18 @@ test("mandatory bindings and the component boundary fail before emission", () =>
     outputs: [],
   }), /uses service-internal contract/);
   assert.throws(() => fixture({
-    services: [
-      { id: "domain.source", serviceTypeRef: source.id, config: {}, bindings: {}, activation: {
+    nodes: [
+      { id: "domain.source", nodeTypeRef: source.id, config: {}, bindings: {}, activation: {
         kind: "leased", port: "demand", lifecycleSources: [],
       } },
-      { id: "ui.controller", serviceTypeRef: controller.id, config: {}, activation: {
+      { id: "ui.controller", nodeTypeRef: controller.id, config: {}, activation: {
         kind: "lifetime", lifecycleSources: [],
       }, bindings: {
         sourceState: "domain.source.status",
         trigger: "control.main.activate",
         invented: "domain.source.status",
       } },
+      baseDeclaration.nodes[2],
     ],
   }), /binds extra input/);
   assert.throws(() => fixture({
@@ -562,14 +642,14 @@ test("mandatory bindings and the component boundary fail before emission", () =>
 
 test("lifecycle demand crosses a lifetime origin and leases only its upstream target", () => {
   const graph = compileProductGraph({
-    serviceTypes: [source, background],
-    services: [
-      { id: "domain.source", serviceTypeRef: source.id, config: {}, bindings: {}, activation: {
+    nodeTypes: [source, background],
+    nodes: [
+      { id: "domain.source", nodeTypeRef: source.id, config: {}, bindings: {}, activation: {
         kind: "leased", port: "demand", lifecycleSources: [],
       } },
       {
         id: "session.background",
-        serviceTypeRef: background.id,
+        nodeTypeRef: background.id,
         config: {},
         bindings: { status: "domain.source.status" },
         activation: { kind: "lifetime", lifecycleSources: ["app-active", "session-active"] },
@@ -582,51 +662,50 @@ test("lifecycle demand crosses a lifetime origin and leases only its upstream ta
   });
   assert.deepEqual(graph.portRegistry.demandEdges, [
     {
-      kind: "lifecycle", source: "app-active", rootServiceInstanceRef: "session.background",
-      serviceInstanceRef: "domain.source",
+      kind: "lifecycle", source: "app-active", rootNodeInstanceRef: "session.background",
+      nodeInstanceRef: "domain.source",
       targetPortRef: "domain.source.demand",
     },
     {
-      kind: "lifecycle", source: "session-active", rootServiceInstanceRef: "session.background",
-      serviceInstanceRef: "domain.source",
+      kind: "lifecycle", source: "session-active", rootNodeInstanceRef: "session.background",
+      nodeInstanceRef: "domain.source",
       targetPortRef: "domain.source.demand",
     },
   ]);
-  const decorativeLifetime = defineLegoSpec({
+  const decorativeLifetime = service({
     id: "fixture.decorative-lifetime",
-    role: "adapter",
     inputs: [],
     outputs: [],
     runtime: {
       stateOwner: "none", lifetime: "process", durability: "transient",
-      clockDomain: "none", contextInputs: [], effects: [],
+      clockDomain: "none", contextInputs: [], effects: ["fixture.decorative"],
     },
   } as const);
   assert.throws(() => compileProductGraph({
-    serviceTypes: [decorativeLifetime],
-    services: [{
-      id: "decorative.lifetime", serviceTypeRef: decorativeLifetime.id, config: {}, bindings: {},
+    nodeTypes: [decorativeLifetime],
+    nodes: [{
+      id: "decorative.lifetime", nodeTypeRef: decorativeLifetime.id, config: {}, bindings: {},
       activation: { kind: "lifetime", lifecycleSources: ["app-active"] },
     }],
     configs: [], componentTypes: [], components: [], mountedScopes: [],
   }), /lifecycle source 'app-active' reaches no leased service/);
   assert.throws(() => compileProductGraph({
-    serviceTypes: [noDemandSource],
-    services: [{
-      id: "domain.source", serviceTypeRef: noDemandSource.id, config: {}, bindings: {},
+    nodeTypes: [noDemandSource],
+    nodes: [{
+      id: "domain.source", nodeTypeRef: noDemandSource.id, config: {}, bindings: {},
       activation: { kind: "leased", port: "demand", lifecycleSources: [] },
     }],
     configs: [], componentTypes: [], components: [], mountedScopes: [],
   }), /has no demand input and must use lifetime activation/);
-  const ambiguous = defineLegoSpec({
+  const ambiguous = service({
     ...source,
     id: "fixture.ambiguous-demand",
     inputs: [demandPort("first", demandContract), demandPort("second", demandContract)],
   } as const);
   assert.throws(() => compileProductGraph({
-    serviceTypes: [ambiguous],
-    services: [{
-      id: "domain.source", serviceTypeRef: ambiguous.id, config: {}, bindings: {},
+    nodeTypes: [ambiguous],
+    nodes: [{
+      id: "domain.source", nodeTypeRef: ambiguous.id, config: {}, bindings: {},
       activation: { kind: "leased", port: "first", lifecycleSources: ["app-active"] },
     }],
     configs: [], componentTypes: [], components: [], mountedScopes: [],
@@ -635,7 +714,7 @@ test("lifecycle demand crosses a lifetime origin and leases only its upstream ta
 
 const conformingManifest: NativeBindingManifest = {
   stage: "native-export",
-  schemaVersion: 2,
+  schemaVersion: 3,
   sourceFile: "fixture/NativeBindings.kt",
   profiles: ["phone", "wear"],
   components: [
@@ -643,9 +722,10 @@ const conformingManifest: NativeBindingManifest = {
     { componentId: "fixture.control", rendererId: "renderer.wear", profiles: ["wear"] },
   ],
   icons: [{ iconId: "check", nativeSymbol: "Check" }],
-  services: [
-    { serviceId: "domain.source", nativePortId: "SourcePorts", profiles: ["phone", "wear"], inputPorts: ["demand"], outputPorts: ["status"] },
-    { serviceId: "ui.controller", nativePortId: "ControllerPorts", profiles: ["phone", "wear"], inputPorts: ["sourceState", "trigger"], outputPorts: ["state"] },
+  nodes: [
+    { nodeId: "domain.source", nativePortId: "SourcePorts", profiles: ["phone", "wear"], inputPorts: ["demand"], outputPorts: ["status"] },
+    { nodeId: "ui.controller", nativePortId: "ControllerPorts", profiles: ["phone", "wear"], inputPorts: ["sourceState", "trigger"], outputPorts: ["state"] },
+    { nodeId: "ui.projection", nativePortId: "ProjectionPorts", profiles: ["phone", "wear"], inputPorts: ["state"], outputPorts: ["model"] },
   ],
   finiteValues: [{ id: "fixture.phase", values: ["idle", "active"] }],
 };
@@ -666,11 +746,11 @@ const AXIS_MUTATIONS: readonly {
   change: (draft: NativeBindingManifest) => NativeBindingManifest;
 }[] = [
   { axis: "artifact", direction: "orphan", subject: "toaster", change: (d) => ({ ...d, profiles: [...d.profiles!, "toaster"] }) },
-  { axis: "service-port", direction: "orphan", subject: "ui.controller.invented", change: (d) => ({
+  { axis: "node-port", direction: "orphan", subject: "ui.controller.invented", change: (d) => ({
     ...d,
-    services: d.services!.map((service) => service.serviceId === "ui.controller"
-      ? { ...service, inputPorts: [...service.inputPorts, "invented"] }
-      : service),
+    nodes: d.nodes!.map((node) => node.nodeId === "ui.controller"
+      ? { ...node, inputPorts: [...node.inputPorts, "invented"] }
+      : node),
   }) },
   { axis: "component", direction: "mismatch", subject: "fixture.control@phone", change: (d) => ({
     ...d, components: [...d.components, { componentId: "fixture.control", rendererId: "renderer.phone", profiles: ["phone"] }],
@@ -702,11 +782,11 @@ test("native manifest decoding fails loud and preserves unasserted sections", ()
   assert.throws(() => decodeNativeBindingManifest({ ...conformingManifest, stage: "draft" }), /not a compiled native export/);
   assert.throws(() => decodeNativeBindingManifest({ ...conformingManifest, schemaVersion: 1 }), /schema 1 is unsupported/);
   const partial = { ...conformingManifest } as Record<string, unknown>;
-  delete partial.services;
+  delete partial.nodes;
   const decoded = decodeNativeBindingManifest(partial);
-  assert.equal(decoded.services, undefined);
+  assert.equal(decoded.nodes, undefined);
   assert.deepEqual(productArtifactConformance(fixture(), decoded)
-    .filter(({ axis }) => axis === "service-port").map(({ direction }) => direction), ["unasserted"]);
+    .filter(({ axis }) => axis === "node-port").map(({ direction }) => direction), ["unasserted"]);
 });
 
 test("visual contracts still fail on unknown palette and asset refs", () => {

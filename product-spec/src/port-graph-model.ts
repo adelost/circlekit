@@ -5,25 +5,25 @@ import type {
 import {
   PRODUCT_LIFECYCLE_DEMAND_SOURCES,
   type ProductLifecycleDemandSource,
-  type ProductServiceInstance,
-} from "./product-instance-model.js";
+  type ProductNodeInstance,
+} from "./node-instance-model.js";
 import {
-  defineLegoSpec,
+  validateProductNodeType,
   registerContract,
   requireIdentifier,
   requireUnique,
   requireWireId,
   validateConfigCatalog,
-  validateServiceConfig,
+  validateNodeConfig,
   type LegoConfigRef,
   type LegoContract,
   type LegoPortPurpose,
-  type LegoSpec,
-} from "./native-lego-model.js";
+  type ProductNodeType,
+} from "./node-model.js";
 
-export type PortOwnerKind = "service" | "component";
+export type PortOwnerKind = "node" | "component";
 export type PortDirection = "input" | "output";
-export type PortBindingKind = "service-input" | "component-input" | "component-event";
+export type PortBindingKind = "node-input" | "component-input" | "component-event";
 
 export interface PortRegistryEntry {
   readonly ref: string;
@@ -56,28 +56,28 @@ export interface MountedComponentScope {
 export type ProductDemandEdge =
   | (MountedComponentScope & {
     readonly kind: "component-mount";
-    readonly serviceInstanceRef: string;
+    readonly nodeInstanceRef: string;
     readonly targetPortRef: string;
   })
   | {
     readonly kind: "lifecycle";
     readonly source: ProductLifecycleDemandSource;
-    readonly rootServiceInstanceRef: string;
-    readonly serviceInstanceRef: string;
+    readonly rootNodeInstanceRef: string;
+    readonly nodeInstanceRef: string;
     readonly targetPortRef: string;
   };
 
 export interface ProductPortRegistry {
   readonly contracts: readonly LegoContract[];
-  readonly servicePorts: readonly PortRegistryEntry[];
+  readonly nodePorts: readonly PortRegistryEntry[];
   readonly componentPorts: readonly PortRegistryEntry[];
   readonly bindings: readonly PortBindingIr[];
   readonly demandEdges: readonly ProductDemandEdge[];
 }
 
 export interface CompiledProductGraph {
-  readonly serviceTypes: readonly LegoSpec[];
-  readonly services: readonly ProductServiceInstance[];
+  readonly nodeTypes: readonly ProductNodeType[];
+  readonly nodes: readonly ProductNodeInstance[];
   readonly configs: readonly LegoConfigRef[];
   readonly componentTypes: readonly ComponentType[];
   readonly components: readonly ProductComponentInstance[];
@@ -85,77 +85,90 @@ export interface CompiledProductGraph {
 }
 
 export function compileProductGraph(input: {
-  readonly serviceTypes: readonly LegoSpec[];
-  readonly services: readonly ProductServiceInstance[];
+  readonly nodeTypes: readonly ProductNodeType[];
+  readonly nodes: readonly ProductNodeInstance[];
   readonly configs: readonly LegoConfigRef[];
   readonly componentTypes: readonly ComponentType[];
   readonly components: readonly ProductComponentInstance[];
   readonly mountedScopes: readonly MountedComponentScope[];
 }): CompiledProductGraph {
-  requireUnique(input.serviceTypes.map(({ id }) => id), "service type");
-  requireUnique(input.services.map(({ id }) => id), "service instance");
+  requireUnique(input.nodeTypes.map(({ id }) => id), "node type");
+  requireUnique(input.nodes.map(({ id }) => id), "node instance");
   requireUnique(input.componentTypes.map(({ id }) => id), "component type");
   requireUnique(input.components.map(({ id }) => id), "component instance");
   requireUnique(
-    [...input.services.map(({ id }) => id), ...input.components.map(({ id }) => id)],
+    [...input.nodes.map(({ id }) => id), ...input.components.map(({ id }) => id)],
     "product instance",
   );
 
   const contracts = new Map<string, LegoContract>();
-  const serviceTypes = new Map(input.serviceTypes.map((item) => [item.id, defineLegoSpec(item)]));
+  const nodeTypes = new Map(input.nodeTypes.map((item) => [item.id, validateProductNodeType(item)]));
   const componentTypes = new Map(input.componentTypes.map((item) => [item.id, item]));
-  const usedServiceTypes = new Set(input.services.map(({ serviceTypeRef }) => serviceTypeRef));
+  const usedNodeTypes = new Set(input.nodes.map(({ nodeTypeRef }) => nodeTypeRef));
   const usedComponentTypes = new Set(input.components.map(({ componentTypeRef }) => componentTypeRef));
-  const orphanServiceTypes = input.serviceTypes.map(({ id }) => id).filter((id) => !usedServiceTypes.has(id));
+  const orphanNodeTypes = input.nodeTypes.map(({ id }) => id).filter((id) => !usedNodeTypes.has(id));
   const orphanComponentTypes = input.componentTypes.map(({ id }) => id).filter((id) => !usedComponentTypes.has(id));
-  if (orphanServiceTypes.length > 0) throw new Error(`orphan service type '${orphanServiceTypes.join("', '")}'`);
+  if (orphanNodeTypes.length > 0) throw new Error(`orphan node type '${orphanNodeTypes.join("', '")}'`);
   if (orphanComponentTypes.length > 0) throw new Error(`orphan component type '${orphanComponentTypes.join("', '")}'`);
   const configs = validateConfigCatalog(input.configs);
   const usedConfigs = new Set<string>();
-  const servicePorts: PortRegistryEntry[] = [];
+  const nodePorts: PortRegistryEntry[] = [];
   const componentPorts: PortRegistryEntry[] = [];
   const inputs = new Map<string, PortRegistryEntry>();
   const outputs = new Map<string, PortRegistryEntry>();
-  const serviceById = new Map(input.services.map((item) => [item.id, item]));
+  const nodeById = new Map(input.nodes.map((item) => [item.id, item]));
   const componentById = new Map(input.components.map((item) => [item.id, item]));
-  const demandPortByService = new Map<string, string>();
+  const demandPortByNode = new Map<string, string>();
 
-  for (const instance of input.services) {
-    requireWireId(instance.id, "service instance");
-    const spec = serviceTypes.get(instance.serviceTypeRef);
-    if (spec === undefined) throw new Error(`service '${instance.id}' uses unknown service type '${instance.serviceTypeRef}'`);
+  for (const instance of input.nodes) {
+    requireWireId(instance.id, "node instance");
+    const spec = nodeTypes.get(instance.nodeTypeRef);
+    if (spec === undefined) throw new Error(`node '${instance.id}' uses unknown node type '${instance.nodeTypeRef}'`);
     const demandInputs = spec.inputs.filter(({ purpose }) => purpose === "demand");
-    if (demandInputs.length > 1) {
-      throw new Error(`service '${instance.id}' declares ambiguous demand inputs (found ${demandInputs.length})`);
+    const demandOutputs = spec.outputs.filter(({ purpose }) => purpose === "demand");
+    if (spec.kind !== "service" && demandInputs.length + demandOutputs.length > 0) {
+      throw new Error(`${spec.kind} '${instance.id}' cannot own demand ports; demand changes service lifecycle`);
     }
-    if (demandInputs.length === 1) {
-      if (instance.activation.kind !== "leased") {
+    if (spec.kind !== "service") {
+      if (instance.activation !== undefined) {
+        throw new Error(`${spec.kind} '${instance.id}' cannot declare activation`);
+      }
+    } else if (instance.activation === undefined) {
+      throw new Error(`service '${instance.id}' must declare activation`);
+    }
+    const activation = instance.activation;
+    if (demandInputs.length > 1) {
+      throw new Error(`node '${instance.id}' declares ambiguous demand inputs (found ${demandInputs.length})`);
+    }
+    if (spec.kind === "service" && demandInputs.length === 1) {
+      if (activation?.kind !== "leased") {
         throw new Error(`service '${instance.id}' declares a demand input and must use leased activation`);
       }
-      if (instance.activation.port !== demandInputs[0]!.id) {
+      if (activation.port !== demandInputs[0]!.id) {
         throw new Error(
-          `service '${instance.id}' activation targets '${instance.activation.port}', expected '${demandInputs[0]!.id}'`,
+          `service '${instance.id}' activation targets '${activation.port}', expected '${demandInputs[0]!.id}'`,
         );
       }
-      demandPortByService.set(instance.id, `${instance.id}.${demandInputs[0]!.id}`);
-    } else if (instance.activation.kind !== "lifetime") {
+      demandPortByNode.set(instance.id, `${instance.id}.${demandInputs[0]!.id}`);
+    } else if (spec.kind === "service" && activation?.kind !== "lifetime") {
       throw new Error(`service '${instance.id}' has no demand input and must use lifetime activation`);
     }
-    requireUnique(instance.activation.lifecycleSources, `lifecycle demand source in service '${instance.id}'`);
-    for (const source of instance.activation.lifecycleSources) {
+    const lifecycleSources = activation?.lifecycleSources ?? [];
+    requireUnique(lifecycleSources, `lifecycle demand source in service '${instance.id}'`);
+    for (const source of lifecycleSources) {
       if (!PRODUCT_LIFECYCLE_DEMAND_SOURCES.includes(source)) {
         throw new Error(`service '${instance.id}' uses unknown lifecycle demand source '${String(source)}'`);
       }
     }
-    validateServiceConfig(instance.id, spec, instance.config, configs).forEach((id) => usedConfigs.add(id));
+    validateNodeConfig(instance.id, spec, instance.config, configs).forEach((id) => usedConfigs.add(id));
     for (const [direction, ports] of [["input", spec.inputs], ["output", spec.outputs]] as const) {
       for (const item of ports) {
         registerContract(contracts, item.contract);
         const entry: PortRegistryEntry = {
           ref: `${instance.id}.${item.id}`,
-          ownerKind: "service",
+          ownerKind: "node",
           ownerId: instance.id,
-          typeRef: instance.serviceTypeRef,
+          typeRef: instance.nodeTypeRef,
           portId: item.id,
           direction,
           contractRef: item.contract.id,
@@ -163,7 +176,7 @@ export function compileProductGraph(input: {
           required: direction === "output" || item.purpose !== "context",
           purpose: item.purpose,
         };
-        servicePorts.push(entry);
+        nodePorts.push(entry);
         (direction === "input" ? inputs : outputs).set(entry.ref, entry);
       }
     }
@@ -210,17 +223,17 @@ export function compileProductGraph(input: {
   const boundInputs = new Set<string>();
   const usedOutputs = new Set<string>();
 
-  for (const instance of input.services) {
-    const spec = serviceTypes.get(instance.serviceTypeRef)!;
+  for (const instance of input.nodes) {
+    const spec = nodeTypes.get(instance.nodeTypeRef)!;
     const declared = new Set(spec.inputs.map(({ id }) => id));
     for (const [port, from] of Object.entries(instance.bindings)) {
-      if (!declared.has(port)) throw new Error(`service '${instance.id}' binds extra input '${port}'`);
+      if (!declared.has(port)) throw new Error(`node '${instance.id}' binds extra input '${port}'`);
       const sourceOwner = from.slice(0, from.lastIndexOf("."));
-      bind(componentById.has(sourceOwner) ? "component-event" : "service-input", from, `${instance.id}.${port}`);
+      bind(componentById.has(sourceOwner) ? "component-event" : "node-input", from, `${instance.id}.${port}`);
     }
     const missing = spec.inputs.filter(({ purpose }) => purpose === "data")
       .map(({ id }) => id).filter((id) => !(id in instance.bindings));
-    if (missing.length > 0) throw new Error(`service '${instance.id}' is missing input binding '${missing.join("', '")}'`);
+    if (missing.length > 0) throw new Error(`node '${instance.id}' is missing input binding '${missing.join("', '")}'`);
   }
 
   for (const instance of input.components) {
@@ -234,8 +247,8 @@ export function compileProductGraph(input: {
     for (const [port, to] of Object.entries(instance.bindings.events)) {
       if (!declaredOutputs.has(port)) throw new Error(`component '${instance.id}' binds extra event '${port}'`);
       const from = `${instance.id}.${port}`;
-      const serviceBinding = bindings.find((candidate) => candidate.from === from && candidate.to === to);
-      if (serviceBinding === undefined || serviceBinding.kind !== "component-event") {
+      const eventBinding = bindings.find((candidate) => candidate.from === from && candidate.to === to);
+      if (eventBinding === undefined || eventBinding.kind !== "component-event") {
         throw new Error(`component event '${from}' does not match service input binding '${to}'`);
       }
     }
@@ -249,31 +262,31 @@ export function compileProductGraph(input: {
 
   const orphanOutputs = [...outputs.values()].filter(({ required, ref }) => required && !usedOutputs.has(ref));
   if (orphanOutputs.length > 0) throw new Error(`orphan output port '${orphanOutputs.map(({ ref }) => ref).join("', '")}'`);
-  requireAcyclic(input.services, bindings);
+  requireAcyclic(input.nodes, bindings);
   const mountedIds = new Set(input.mountedScopes.map(({ componentInstanceRef }) => componentInstanceRef));
   const orphanComponents = input.components.map(({ id }) => id).filter((id) => !mountedIds.has(id));
   if (orphanComponents.length > 0) throw new Error(`orphan component instance '${orphanComponents.join("', '")}'`);
   const demandEdges = deriveDemandEdges(
     input.mountedScopes,
-    input.services,
+    input.nodes,
     bindings,
-    serviceById,
+    nodeById,
     componentById,
-    demandPortByService,
+    demandPortByNode,
   );
-  const demandedServices = new Set(demandEdges.map(({ serviceInstanceRef }) => serviceInstanceRef));
-  const orphanServices = [...demandPortByService.keys()].filter((id) => !demandedServices.has(id));
-  if (orphanServices.length > 0) throw new Error(`orphan service instance '${orphanServices.join("', '")}'`);
+  const demandedNodes = new Set(demandEdges.map(({ nodeInstanceRef }) => nodeInstanceRef));
+  const orphanNodes = [...demandPortByNode.keys()].filter((id) => !demandedNodes.has(id));
+  if (orphanNodes.length > 0) throw new Error(`orphan leased service '${orphanNodes.join("', '")}'`);
 
   return {
-    serviceTypes: input.serviceTypes,
-    services: input.services,
+    nodeTypes: input.nodeTypes,
+    nodes: input.nodes,
     configs: input.configs,
     componentTypes: input.componentTypes,
     components: input.components,
     portRegistry: {
       contracts: [...contracts.values()],
-      servicePorts,
+      nodePorts,
       componentPorts,
       bindings,
       demandEdges,
@@ -289,6 +302,27 @@ export function compileProductGraph(input: {
         || source.purpose !== target.purpose) {
       throw new Error(`incompatible ports '${from}' and '${to}'`);
     }
+    const sourceNode = source.ownerKind === "node"
+      ? nodeTypes.get(nodeById.get(source.ownerId)?.nodeTypeRef ?? "")
+      : undefined;
+    const targetNode = target.ownerKind === "node"
+      ? nodeTypes.get(nodeById.get(target.ownerId)?.nodeTypeRef ?? "")
+      : undefined;
+    if (target.ownerKind === "component" && sourceNode?.kind !== "present") {
+      throw new Error(
+        `${sourceNode?.kind ?? source.ownerKind} '${source.ownerId}' cannot feed component '${target.ownerId}' directly; ` +
+        "add a final present node",
+      );
+    }
+    if (sourceNode?.kind === "present" && target.ownerKind === "node") {
+      throw new Error(
+        `'${source.ownerId}' is present and feeds '${target.ownerId}' which is also a node; ` +
+        `make '${source.ownerId}' derive - only the final node before a component may be present`,
+      );
+    }
+    if (source.ownerKind === "component" && targetNode?.kind !== "service") {
+      throw new Error(`component event '${from}' must target a service input, not ${targetNode?.kind ?? target.ownerKind}`);
+    }
     if (boundInputs.has(to)) throw new Error(`input port '${to}' is bound twice`);
     boundInputs.add(to);
     usedOutputs.add(from);
@@ -296,8 +330,8 @@ export function compileProductGraph(input: {
   }
 }
 
-function requireAcyclic(services: readonly ProductServiceInstance[], bindings: readonly PortBindingIr[]): void {
-  const ids = new Set(services.map(({ id }) => id));
+function requireAcyclic(nodes: readonly ProductNodeInstance[], bindings: readonly PortBindingIr[]): void {
+  const ids = new Set(nodes.map(({ id }) => id));
   const graph = new Map([...ids].map((id) => [id, new Set<string>()]));
   for (const binding of bindings) {
     const from = binding.from.slice(0, binding.from.lastIndexOf("."));
@@ -307,7 +341,7 @@ function requireAcyclic(services: readonly ProductServiceInstance[], bindings: r
   const visiting = new Set<string>();
   const visited = new Set<string>();
   const visit = (id: string): void => {
-    if (visiting.has(id)) throw new Error(`service binding cycle reaches '${id}'`);
+    if (visiting.has(id)) throw new Error(`node binding cycle reaches '${id}'`);
     if (visited.has(id)) return;
     visiting.add(id);
     graph.get(id)?.forEach(visit);
@@ -319,30 +353,30 @@ function requireAcyclic(services: readonly ProductServiceInstance[], bindings: r
 
 function deriveDemandEdges(
   scopes: readonly MountedComponentScope[],
-  serviceInstances: readonly ProductServiceInstance[],
+  nodeInstances: readonly ProductNodeInstance[],
   bindings: readonly PortBindingIr[],
-  services: ReadonlyMap<string, ProductServiceInstance>,
+  nodes: ReadonlyMap<string, ProductNodeInstance>,
   components: ReadonlyMap<string, ProductComponentInstance>,
-  demandPortByService: ReadonlyMap<string, string>,
+  demandPortByNode: ReadonlyMap<string, string>,
 ): ProductDemandEdge[] {
   const incomingByOwner = new Map<string, Set<string>>();
   const directByComponent = new Map<string, Set<string>>();
   for (const binding of bindings) {
     const fromOwner = binding.from.slice(0, binding.from.lastIndexOf("."));
     const toOwner = binding.to.slice(0, binding.to.lastIndexOf("."));
-    if (services.has(toOwner) && services.has(fromOwner) && binding.purpose !== "context") {
+    if (nodes.has(toOwner) && nodes.has(fromOwner) && binding.purpose !== "context") {
       const demandedOwner = binding.purpose === "demand" ? fromOwner : toOwner;
       const dependencyOwner = binding.purpose === "demand" ? toOwner : fromOwner;
       const set = incomingByOwner.get(demandedOwner) ?? new Set<string>();
       set.add(dependencyOwner);
       incomingByOwner.set(demandedOwner, set);
     }
-    if (components.has(toOwner) && services.has(fromOwner)) {
+    if (components.has(toOwner) && nodes.has(fromOwner)) {
       const set = directByComponent.get(toOwner) ?? new Set<string>();
       set.add(fromOwner);
       directByComponent.set(toOwner, set);
     }
-    if (components.has(fromOwner) && services.has(toOwner)) {
+    if (components.has(fromOwner) && nodes.has(toOwner)) {
       const set = directByComponent.get(fromOwner) ?? new Set<string>();
       set.add(toOwner);
       directByComponent.set(fromOwner, set);
@@ -355,40 +389,40 @@ function deriveDemandEdges(
     const visit = (id: string): void => {
       if (visited.has(id)) return;
       visited.add(id);
-      if (demandPortByService.has(id)) demanded.add(id);
+      if (demandPortByNode.has(id)) demanded.add(id);
       incomingByOwner.get(id)?.forEach(visit);
     };
     directByComponent.get(scope.componentInstanceRef)?.forEach(visit);
-    for (const serviceInstanceRef of [...demanded].sort()) {
+    for (const nodeInstanceRef of [...demanded].sort()) {
       result.push({
         kind: "component-mount",
         ...scope,
-        serviceInstanceRef,
-        targetPortRef: demandPortByService.get(serviceInstanceRef)!,
+        nodeInstanceRef,
+        targetPortRef: demandPortByNode.get(nodeInstanceRef)!,
       });
     }
   }
-  for (const root of serviceInstances) {
-    for (const source of root.activation.lifecycleSources) {
+  for (const root of nodeInstances) {
+    for (const source of root.activation?.lifecycleSources ?? []) {
       const visited = new Set<string>();
       const demanded = new Set<string>();
       const visit = (id: string): void => {
         if (visited.has(id)) return;
         visited.add(id);
-        if (demandPortByService.has(id)) demanded.add(id);
+        if (demandPortByNode.has(id)) demanded.add(id);
         incomingByOwner.get(id)?.forEach(visit);
       };
       visit(root.id);
       if (demanded.size === 0) {
         throw new Error(`service '${root.id}' lifecycle source '${source}' reaches no leased service`);
       }
-      for (const serviceInstanceRef of [...demanded].sort()) {
+      for (const nodeInstanceRef of [...demanded].sort()) {
         result.push({
           kind: "lifecycle",
           source,
-          rootServiceInstanceRef: root.id,
-          serviceInstanceRef,
-          targetPortRef: demandPortByService.get(serviceInstanceRef)!,
+          rootNodeInstanceRef: root.id,
+          nodeInstanceRef,
+          targetPortRef: demandPortByNode.get(nodeInstanceRef)!,
         });
       }
     }

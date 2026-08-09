@@ -11,9 +11,9 @@ import {
 } from "./port-graph-model.js";
 import type {
   ExactComponentInstances,
-  ExactServiceInstances,
-  ProductServiceInstance,
-} from "./product-instance-model.js";
+  ExactNodeInstances,
+  ProductNodeInstance,
+} from "./node-instance-model.js";
 import {
   requireUnique,
   requireWireId,
@@ -21,8 +21,8 @@ import {
   type LegoContract,
   type LegoFiniteValueDeclaration,
   type LegoFiniteValueRef,
-  type LegoSpec,
-} from "./native-lego-model.js";
+  type ProductNodeType,
+} from "./node-model.js";
 import {
   definePalette,
   definePortableAssetCatalog,
@@ -35,7 +35,7 @@ import {
   type ProductPalette,
 } from "./visual-model.js";
 
-export const PRODUCT_SPEC_SCHEMA_VERSION = 6 as const;
+export const PRODUCT_SPEC_SCHEMA_VERSION = 7 as const;
 
 export interface RendererBinding<Id extends string = string, Capability extends string = string> {
   readonly id: Id;
@@ -75,20 +75,20 @@ export interface ProductArtifactMountScope {
 export interface ProductDeclaration<
   PaletteVariant extends PortablePaletteVariant = PortablePaletteVariant,
   Families extends readonly ScreenComponentFamilyRef[] = readonly ScreenComponentFamilyRef[],
-  ServiceTypes extends readonly LegoSpec[] = readonly LegoSpec[],
-  Services extends readonly ProductServiceInstance[] = readonly ProductServiceInstance[],
+  NodeTypes extends readonly ProductNodeType[] = readonly ProductNodeType[],
+  Nodes extends readonly ProductNodeInstance[] = readonly ProductNodeInstance[],
   ComponentTypes extends readonly ComponentType[] = readonly ComponentType[],
   Components extends readonly ProductComponentInstance[] = readonly ProductComponentInstance[],
 > {
   readonly id: string;
   readonly rendererBindings: readonly RendererBinding[];
   readonly artifacts: readonly ArtifactProfile<string, string, string, NoInfer<Families[number]["screen"]>>[];
-  readonly serviceTypes: ServiceTypes;
-  readonly services: Services & ExactServiceInstances<ServiceTypes, Services, ComponentTypes, Components>;
+  readonly nodeTypes: NodeTypes;
+  readonly nodes: Nodes & ExactNodeInstances<NodeTypes, Nodes, ComponentTypes, Components>;
   readonly configs: readonly LegoConfigRef[];
   readonly finiteValues: readonly LegoFiniteValueDeclaration[];
   readonly componentTypes: ComponentTypes;
-  readonly components: Components & ExactComponentInstances<ServiceTypes, Services, ComponentTypes, Components>;
+  readonly components: Components & ExactComponentInstances<NodeTypes, Nodes, ComponentTypes, Components>;
   readonly componentFamilies: Families;
   readonly palette: ProductPalette<PaletteVariant>;
   readonly assetCatalogRef: PortableAssetCatalogRef;
@@ -101,8 +101,8 @@ export interface ProductIr {
   readonly id: string;
   readonly rendererBindings: readonly RendererBinding[];
   readonly artifacts: readonly ArtifactProfile[];
-  readonly serviceTypes: readonly LegoSpec[];
-  readonly services: readonly ProductServiceInstance[];
+  readonly nodeTypes: readonly ProductNodeType[];
+  readonly nodes: readonly ProductNodeInstance[];
   readonly configs: readonly LegoConfigRef[];
   readonly finiteValues: readonly LegoFiniteValueDeclaration[];
   readonly componentTypes: readonly ComponentType[];
@@ -118,12 +118,12 @@ export interface ProductIr {
 export function defineProduct<
   const PaletteVariant extends PortablePaletteVariant,
   const Families extends readonly ScreenComponentFamilyRef[],
-  const ServiceTypes extends readonly LegoSpec[],
-  const Services extends readonly ProductServiceInstance[],
+  const NodeTypes extends readonly ProductNodeType[],
+  const Nodes extends readonly ProductNodeInstance[],
   const ComponentTypes extends readonly ComponentType[],
   const Components extends readonly ProductComponentInstance[],
 >(
-  declaration: ProductDeclaration<PaletteVariant, Families, ServiceTypes, Services, ComponentTypes, Components>,
+  declaration: ProductDeclaration<PaletteVariant, Families, NodeTypes, Nodes, ComponentTypes, Components>,
   assetCatalog: PortableAssetCatalog,
 ): ProductIr {
   requireWireId(declaration.id, "product");
@@ -131,7 +131,7 @@ export function defineProduct<
   requireUnique(declaration.artifacts.map(({ id }) => id), "artifact profile");
   requireUnique(declaration.componentFamilies.map(({ screen }) => screen), "component-family screen");
   requireUnique(declaration.componentFamilies.map(({ family }) => family.id), "component-family ref");
-  validateFiniteValues(declaration.finiteValues, declaration.serviceTypes, declaration.componentTypes);
+  validateFiniteValues(declaration.finiteValues, declaration.nodeTypes, declaration.componentTypes);
   validateVisuals(declaration, assetCatalog);
 
   const renderers = new Map(declaration.rendererBindings.map((item) => [item.id, item]));
@@ -236,8 +236,8 @@ export function defineProduct<
     }
   }
   const graph = compileProductGraph({
-    serviceTypes: declaration.serviceTypes,
-    services: declaration.services,
+    nodeTypes: declaration.nodeTypes,
+    nodes: declaration.nodes,
     configs: declaration.configs,
     componentTypes: declaration.componentTypes,
     components: declaration.components,
@@ -249,8 +249,8 @@ export function defineProduct<
     id: declaration.id,
     rendererBindings: declaration.rendererBindings,
     artifacts: declaration.artifacts,
-    serviceTypes: graph.serviceTypes,
-    services: graph.services,
+    nodeTypes: graph.nodeTypes,
+    nodes: graph.nodes,
     configs: graph.configs,
     finiteValues: declaration.finiteValues,
     componentTypes: graph.componentTypes,
@@ -304,7 +304,7 @@ function validateVisuals(
 
 function validateFiniteValues(
   declarations: readonly LegoFiniteValueDeclaration[],
-  services: readonly LegoSpec[],
+  nodes: readonly ProductNodeType[],
   components: readonly ComponentType[],
 ): void {
   const catalog = new Map<string, LegoFiniteValueDeclaration>();
@@ -317,7 +317,7 @@ function validateFiniteValues(
   }
   const used = new Set<string>();
   const contracts: LegoContract[] = [
-    ...services.flatMap((service) => [...service.inputs, ...service.outputs].map(({ contract }) => contract)),
+    ...nodes.flatMap((node) => [...node.inputs, ...node.outputs].map(({ contract }) => contract)),
     ...components.flatMap((component) => [...component.inputs, ...component.outputs].map(({ contract }) => contract)),
   ];
   for (const contract of contracts) {
