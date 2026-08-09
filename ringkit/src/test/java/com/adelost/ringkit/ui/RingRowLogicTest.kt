@@ -305,17 +305,18 @@ class RingRowLogicTest {
      */
     @Test
     fun `a rows list is safe for its whole band, with or without chrome`() {
+        val narrowFaceDp = 280f
         val titleBandBottom = (MenuDesign.roundTitleTopPadding + MenuDesign.roundTitleHeight).value
-        val bare = rowsListInsetDp(
-            viewportWidthDp = FACE_DP,
-            viewportHeightDp = FACE_DP,
+        val bare = rowsListInsetsDp(
+            viewportWidthDp = narrowFaceDp,
+            viewportHeightDp = narrowFaceDp,
             titleBandBottomDp = titleBandBottom,
             baseInsetDp = roundRowInsetH.value,
             reservedSlots = emptyList(),
         )
-        val withBack = rowsListInsetDp(
-            viewportWidthDp = FACE_DP,
-            viewportHeightDp = FACE_DP,
+        val withBack = rowsListInsetsDp(
+            viewportWidthDp = narrowFaceDp,
+            viewportHeightDp = narrowFaceDp,
             titleBandBottomDp = titleBandBottom,
             baseInsetDp = roundRowInsetH.value,
             reservedSlots = listOf(CircleChromeSlot.HOUR_9),
@@ -323,13 +324,19 @@ class RingRowLogicTest {
 
         // Mounting a button may only ever ask for MORE room, never be the
         // reason there is any.
-        assertTrue("$bare", bare > roundRowInsetH.value)
-        assertTrue("$bare vs $withBack", withBack >= bare)
+        assertTrue("$bare", bare.start.value > roundRowInsetH.value)
+        assertTrue("$bare vs $withBack", withBack.start >= bare.start)
+        assertEquals("circle-only rows stay symmetric", bare.start, bare.end)
+        assertEquals("X at nine must not tax the free right edge", bare.end, withBack.end)
+        assertTrue("X at nine claims only the left edge", withBack.start > withBack.end)
 
         // Self-consistency: the width this inset yields first fits the circle
         // at (or above) the band's top, so every row from there down to the
         // mirrored depth is inside the face.
-        val firstFitsAtDp = circleSafeTopInsetDp(FACE_DP, FACE_DP - 2 * bare)
+        val firstFitsAtDp = circleSafeTopInsetDp(
+            narrowFaceDp,
+            narrowFaceDp - bare.start.value - bare.end.value,
+        )
         assertTrue("$firstFitsAtDp <= $titleBandBottom", firstFitsAtDp <= titleBandBottom + 1f)
     }
 

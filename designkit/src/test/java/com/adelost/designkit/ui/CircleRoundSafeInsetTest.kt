@@ -82,6 +82,22 @@ class CircleRoundSafeInsetTest {
     }
 
     @Test
+    fun `one-sided chrome only charges the edge it occupies`() {
+        val left = roundSafeHorizontalInsetsDp(face, face, face / 2f, x9)
+        val right = roundSafeHorizontalInsetsDp(
+            face,
+            face,
+            face / 2f,
+            listOf(CircleChromeSlot.HOUR_3),
+        )
+
+        assertTrue(left.start > left.end)
+        assertEquals(0f, left.end, 0.001f)
+        assertEquals(left.start, right.end, 0.001f)
+        assertEquals(0f, right.start, 0.001f)
+    }
+
+    @Test
     fun `a degenerate viewport asks for nothing instead of crashing`() {
         assertEquals(0f, roundSafeInsetDp(0f, 0f, 0f, x9), 0.001f)
     }

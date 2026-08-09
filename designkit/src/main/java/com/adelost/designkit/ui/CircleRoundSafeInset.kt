@@ -3,7 +3,7 @@ package com.adelost.designkit.ui
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
@@ -46,6 +46,12 @@ enum class CircleChromeSlot(val angleFromTopDeg: Float) {
  */
 val LocalRoundChromeReservation = compositionLocalOf<List<CircleChromeSlot>> { emptyList() }
 
+/** Directional edge claims for content inside a round viewport. */
+data class CircleHorizontalInsetsDp(
+    val start: Float,
+    val end: Float,
+)
+
 /**
  * ONE answer to "how close to the edge may content sit at this height?".
  *
@@ -62,17 +68,43 @@ fun roundSafeInsetDp(
     reservedSlots: List<CircleChromeSlot>,
     buttonDiameterDp: Float = MenuDesign.watchActionRingDiameter.value,
     gapDp: Float = ROUND_SAFE_CONTENT_GAP_DP,
-): Float = maxOf(
-    roundChordInsetDp(viewportWidthDp, viewportHeightDp, contentCenterYDp),
-    roundChromeInsetDp(
+): Float = roundSafeHorizontalInsetsDp(
+    viewportWidthDp = viewportWidthDp,
+    viewportHeightDp = viewportHeightDp,
+    contentCenterYDp = contentCenterYDp,
+    reservedSlots = reservedSlots,
+    buttonDiameterDp = buttonDiameterDp,
+    gapDp = gapDp,
+).let { maxOf(it.start, it.end) }
+
+/**
+ * The exact start/end clearance at one height. The circle itself is symmetric;
+ * floating chrome is not. Mirroring X@9's left-side claim onto the free right
+ * edge made a narrow watch row pay for the same button twice and ellipsise copy
+ * that physically fit. Each edge now pays only for what is mounted there.
+ */
+fun roundSafeHorizontalInsetsDp(
+    viewportWidthDp: Float,
+    viewportHeightDp: Float,
+    contentCenterYDp: Float,
+    reservedSlots: List<CircleChromeSlot>,
+    buttonDiameterDp: Float = MenuDesign.watchActionRingDiameter.value,
+    gapDp: Float = ROUND_SAFE_CONTENT_GAP_DP,
+): CircleHorizontalInsetsDp {
+    val chord = roundChordInsetDp(viewportWidthDp, viewportHeightDp, contentCenterYDp)
+    val chrome = roundChromeHorizontalInsetsDp(
         viewportWidthDp = viewportWidthDp,
         viewportHeightDp = viewportHeightDp,
         contentCenterYDp = contentCenterYDp,
         reservedSlots = reservedSlots,
         buttonDiameterDp = buttonDiameterDp,
         gapDp = gapDp,
-    ),
-)
+    )
+    return CircleHorizontalInsetsDp(
+        start = maxOf(chord, chrome.start),
+        end = maxOf(chord, chrome.end),
+    )
+}
 
 /**
  * Half the chord of a circle at [distanceFromCenter] from its centre.
@@ -102,8 +134,8 @@ fun roundChordInsetDp(
 /**
  * The chrome's bite at this height: zero unless a reserved button overlaps the
  * content vertically, so a button at 6 o'clock cannot narrow a row at the top.
- * Symmetric by design — both edges give way equally, which keeps content
- * centred, and a round face reads symmetry as balance.
+ * Kept as a scalar compatibility answer for centred callers; directional row
+ * layout uses [roundChromeHorizontalInsetsDp].
  */
 fun roundChromeInsetDp(
     viewportWidthDp: Float,
@@ -112,25 +144,50 @@ fun roundChromeInsetDp(
     reservedSlots: List<CircleChromeSlot>,
     buttonDiameterDp: Float = MenuDesign.watchActionRingDiameter.value,
     gapDp: Float = ROUND_SAFE_CONTENT_GAP_DP,
-): Float {
-    if (viewportWidthDp <= 0f || viewportHeightDp <= 0f || reservedSlots.isEmpty()) return 0f
+): Float = roundChromeHorizontalInsetsDp(
+    viewportWidthDp = viewportWidthDp,
+    viewportHeightDp = viewportHeightDp,
+    contentCenterYDp = contentCenterYDp,
+    reservedSlots = reservedSlots,
+    buttonDiameterDp = buttonDiameterDp,
+    gapDp = gapDp,
+).let { maxOf(it.start, it.end) }
+
+/** The chrome claim split by the edge on which each mounted slot lives. */
+fun roundChromeHorizontalInsetsDp(
+    viewportWidthDp: Float,
+    viewportHeightDp: Float,
+    contentCenterYDp: Float,
+    reservedSlots: List<CircleChromeSlot>,
+    buttonDiameterDp: Float = MenuDesign.watchActionRingDiameter.value,
+    gapDp: Float = ROUND_SAFE_CONTENT_GAP_DP,
+): CircleHorizontalInsetsDp {
+    if (viewportWidthDp <= 0f || viewportHeightDp <= 0f || reservedSlots.isEmpty()) {
+        return CircleHorizontalInsetsDp(0f, 0f)
+    }
     val buttonRadiusDp = buttonDiameterDp / 2f
     val centerXDp = viewportWidthDp / 2f
     val centerYDp = viewportHeightDp / 2f
     val slotRadiusDp =
         minOf(viewportWidthDp, viewportHeightDp) / 2f * RadialChromeDesign.slotRadiusFraction
-    return reservedSlots.maxOf { slot ->
+    var start = 0f
+    var end = 0f
+    reservedSlots.forEach { slot ->
         val angleRad = Math.toRadians(slot.angleFromTopDeg.toDouble())
         val slotXDp = centerXDp + slotRadiusDp * sin(angleRad).toFloat()
         val slotYDp = centerYDp - slotRadiusDp * cos(angleRad).toFloat()
-        if (abs(contentCenterYDp - slotYDp) > buttonRadiusDp + gapDp) {
-            0f
-        } else if (slotXDp <= centerXDp) {
-            (slotXDp + buttonRadiusDp + gapDp).coerceAtLeast(0f)
-        } else {
-            (viewportWidthDp - (slotXDp - buttonRadiusDp - gapDp)).coerceAtLeast(0f)
+        if (abs(contentCenterYDp - slotYDp) <= buttonRadiusDp + gapDp) {
+            if (slotXDp <= centerXDp) {
+                start = maxOf(start, (slotXDp + buttonRadiusDp + gapDp).coerceAtLeast(0f))
+            } else {
+                end = maxOf(
+                    end,
+                    (viewportWidthDp - (slotXDp - buttonRadiusDp - gapDp)).coerceAtLeast(0f),
+                )
+            }
         }
     }
+    return CircleHorizontalInsetsDp(start, end)
 }
 
 /**
@@ -181,20 +238,24 @@ fun Modifier.roundSafeContentInset(
     } else {
         val reservedSlots = LocalRoundChromeReservation.current
         val density = LocalDensity.current.density
-        var extraInsetDp by remember(reservedSlots, baseInsetDp) { mutableFloatStateOf(0f) }
+        var extraInsets by remember(reservedSlots, baseInsetDp) {
+            mutableStateOf(CircleHorizontalInsetsDp(0f, 0f))
+        }
         this
             .onGloballyPositioned { coordinates ->
                 val root = coordinates.findRootCoordinates()
                 val topInRootPx = root.localPositionOf(coordinates, Offset.Zero).y
-                extraInsetDp = (
-                    roundSafeInsetDp(
-                        viewportWidthDp = root.size.width / density,
-                        viewportHeightDp = root.size.height / density,
-                        contentCenterYDp = (topInRootPx + coordinates.size.height / 2f) / density,
-                        reservedSlots = reservedSlots,
-                    ) - baseInsetDp
-                    ).coerceAtLeast(0f)
+                val safe = roundSafeHorizontalInsetsDp(
+                    viewportWidthDp = root.size.width / density,
+                    viewportHeightDp = root.size.height / density,
+                    contentCenterYDp = (topInRootPx + coordinates.size.height / 2f) / density,
+                    reservedSlots = reservedSlots,
+                )
+                extraInsets = CircleHorizontalInsetsDp(
+                    start = (safe.start - baseInsetDp).coerceAtLeast(0f),
+                    end = (safe.end - baseInsetDp).coerceAtLeast(0f),
+                )
             }
-            .padding(horizontal = extraInsetDp.dp)
+            .padding(start = extraInsets.start.dp, end = extraInsets.end.dp)
     }
 }
