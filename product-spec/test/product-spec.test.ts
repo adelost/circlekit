@@ -552,6 +552,144 @@ test("closed state authority rejects incomplete, invented and overlapping presen
     ],
   }), /at most one direct canonical input.*\(found 2\)/);
 
+  const availabilityStates = finiteValues("fixture.position-availability", ["missing", "available"]);
+  const availabilityContract = {
+    id: "fixture.position-presentation",
+    kind: "snapshot",
+    boundary: "presentation",
+    fields: [field("availability", finiteValueRef(availabilityStates.id))],
+  } as const;
+  const availabilityPresentation = defineStatePresentation(availabilityStates, {
+    id: "fixture.position-availability-signal",
+    fields: phasePresentation.fields,
+    cases: {
+      missing: { label: "MISSING", tone: "warn", hint: "No position" },
+      available: { label: "AVAILABLE", tone: "ok", hint: "Position ready" },
+    },
+  });
+  const availabilityDefinition = defineStateAuthority({
+    id: "fixture.position-availability-authority",
+    source: {
+      portRef: "position.presentation.state", contract: availabilityContract,
+      stateField: "availability", states: availabilityStates,
+    },
+    presentation: availabilityPresentation,
+  });
+  const descendantPhasePresentation = defineStatePresentation(fixturePhases, {
+    id: "fixture.descendant-phase-signal",
+    fields: phasePresentation.fields,
+    cases: {
+      idle: { label: "IDLE", tone: "muted", hint: "Waiting" },
+      active: { label: "ACTIVE", tone: "ok", hint: "Running" },
+    },
+  });
+  const descendantPhaseDefinition = defineStateAuthority({
+    id: "fixture.descendant-phase-authority",
+    source: {
+      portRef: "flight.runtime.state", contract: statusContract,
+      stateField: "phase", states: fixturePhases,
+    },
+    presentation: descendantPhasePresentation,
+  });
+  const positionPresentation = derive({
+    id: "fixture.position-presentation-node",
+    inputs: [port("raw", internalContract)],
+    outputs: [port("state", availabilityContract)],
+    runtime: {
+      stateOwner: "none", lifetime: "call", durability: "transient",
+      clockDomain: "none", contextInputs: [], effects: [],
+    },
+  } as const);
+  const flightPhase = derive({
+    id: "fixture.flight-phase-node",
+    inputs: [port("position", availabilityContract)],
+    outputs: [port("state", statusContract)],
+    runtime: {
+      stateOwner: "none", lifetime: "call", durability: "transient",
+      clockDomain: "none", contextInputs: [], effects: [],
+    },
+  } as const);
+  const independentProjection = present({
+    id: "fixture.independent-projection",
+    inputs: [
+      port("position", availabilityContract),
+      port("flight", statusContract),
+    ],
+    outputs: [port("model", statusContract)],
+    runtime: {
+      stateOwner: "none", lifetime: "call", durability: "transient",
+      clockDomain: "none", contextInputs: [], effects: [],
+    },
+  } as const);
+  const independentControlType = defineComponentType({
+    id: "fixture.independent-control",
+    requiredCapabilities: ["ui.menu"],
+    inputs: [
+      componentPort("model", statusContract),
+      componentPort("availabilityPresentation", availabilityPresentation.contract),
+      componentPort("phasePresentation", descendantPhasePresentation.contract),
+    ],
+    outputs: [],
+  } as const);
+  const independentControl = {
+    id: "control.independent",
+    componentTypeRef: independentControlType.id,
+    bindings: {
+      inputs: {
+        model: "ui.independent.model",
+        availabilityPresentation: availabilityDefinition.authority.adapter.outputPortRef,
+        phasePresentation: descendantPhaseDefinition.authority.adapter.outputPortRef,
+      },
+      events: {},
+    },
+  } as const;
+  const independentFamilies = defineScreenComponentFamilyRegistry([independentControl], [{
+    screen: "MAIN",
+    family: {
+      id: "fixture.independent-main",
+      trees: PORTABLE_SURFACE_CLASSES.map((surface) => ({
+        surface,
+        mounts: [{ instance: independentControl.id, region: "primary" }],
+      })),
+    },
+  }] as const);
+  const independentAxes = defineProduct({
+    ...baseDeclaration,
+    nodeTypes: [
+      source, positionPresentation, flightPhase,
+      availabilityDefinition.adapter.type, descendantPhaseDefinition.adapter.type,
+      independentProjection,
+    ],
+    nodes: [
+      baseDeclaration.nodes[0],
+      { id: "position.presentation", nodeTypeRef: positionPresentation.id, config: {}, bindings: {
+        raw: "domain.source.status",
+      } },
+      { id: "flight.runtime", nodeTypeRef: flightPhase.id, config: {}, bindings: {
+        position: "position.presentation.state",
+      } },
+      availabilityDefinition.adapter.node,
+      descendantPhaseDefinition.adapter.node,
+      { id: "ui.independent", nodeTypeRef: independentProjection.id, config: {}, bindings: {
+        position: "position.presentation.state",
+        flight: "flight.runtime.state",
+      } },
+    ],
+    finiteValues: [availabilityStates, fixturePhases],
+    stateAuthorities: [availabilityDefinition.authority, descendantPhaseDefinition.authority],
+    componentTypes: [independentControlType],
+    components: [independentControl],
+    componentFamilies: independentFamilies,
+  }, assetCatalog);
+  for (const authority of independentAxes.stateAuthorities) {
+    assert.equal(independentAxes.portRegistry.bindings.filter(({ to }) =>
+      to === authority.adapter.inputPortRef).length, 1);
+    assert.deepEqual(authority.presentation.consumers, [
+      `control.independent.${authority.id === availabilityDefinition.authority.id
+        ? "availabilityPresentation" : "phasePresentation"}`,
+    ]);
+  }
+
   const alternatePresentation = defineStatePresentation(alternatePhases, {
     id: "fixture.alternate-signal",
     fields: phasePresentation.fields,
@@ -1111,7 +1249,7 @@ test("lifecycle demand crosses a lifetime origin and leases only its upstream ta
 
 const conformingManifest: NativeBindingManifest = {
   stage: "native-export",
-  schemaVersion: 3,
+  schemaVersion: 4,
   sourceFile: "fixture/NativeBindings.kt",
   profiles: ["phone", "wear"],
   components: [
@@ -1123,6 +1261,13 @@ const conformingManifest: NativeBindingManifest = {
     { nodeId: "domain.source", nativePortId: "SourcePorts", profiles: ["phone", "wear"], inputPorts: ["demand"], outputPorts: ["status"] },
     { nodeId: "ui.controller", nativePortId: "ControllerPorts", profiles: ["phone", "wear"], inputPorts: ["sourceState", "trigger"], outputPorts: ["state"] },
     { nodeId: "ui.projection", nativePortId: "ProjectionPorts", profiles: ["phone", "wear"], inputPorts: ["state"], outputPorts: ["model"] },
+    {
+      nodeId: "fixture.phase-authority.presentation-adapter",
+      nativePortId: "FixturePhasePresentationAdapterPorts",
+      profiles: ["phone", "wear"],
+      inputPorts: ["state"],
+      outputPorts: ["presentation"],
+    },
   ],
   finiteValues: [{ id: "fixture.phase", values: ["idle", "active"] }],
 };
@@ -1143,10 +1288,45 @@ const AXIS_MUTATIONS: readonly {
   change: (draft: NativeBindingManifest) => NativeBindingManifest;
 }[] = [
   { axis: "artifact", direction: "orphan", subject: "toaster", change: (d) => ({ ...d, profiles: [...d.profiles!, "toaster"] }) },
+  { axis: "node-port", direction: "missing", subject: "ui.projection", change: (d) => ({
+    ...d,
+    nodes: d.nodes.filter((node) => node.nodeId !== "ui.projection"),
+  }) },
+  { axis: "node-port", direction: "orphan", subject: "native.orphan", change: (d) => ({
+    ...d,
+    nodes: [...d.nodes, {
+      nodeId: "native.orphan", nativePortId: "OrphanPorts", profiles: ["phone"],
+      inputPorts: [], outputPorts: [],
+    }],
+  }) },
+  { axis: "node-port", direction: "missing", subject: "ui.controller.sourceState", change: (d) => ({
+    ...d,
+    nodes: d.nodes.map((node) => node.nodeId === "ui.controller"
+      ? { ...node, inputPorts: node.inputPorts.filter((port) => port !== "sourceState") }
+      : node),
+  }) },
   { axis: "node-port", direction: "orphan", subject: "ui.controller.invented", change: (d) => ({
     ...d,
-    nodes: d.nodes!.map((node) => node.nodeId === "ui.controller"
+    nodes: d.nodes.map((node) => node.nodeId === "ui.controller"
       ? { ...node, inputPorts: [...node.inputPorts, "invented"] }
+      : node),
+  }) },
+  { axis: "node-port", direction: "missing", subject: "ui.controller.state", change: (d) => ({
+    ...d,
+    nodes: d.nodes.map((node) => node.nodeId === "ui.controller"
+      ? { ...node, outputPorts: node.outputPorts.filter((port) => port !== "state") }
+      : node),
+  }) },
+  { axis: "node-port", direction: "orphan", subject: "ui.controller.inventedOutput", change: (d) => ({
+    ...d,
+    nodes: d.nodes.map((node) => node.nodeId === "ui.controller"
+      ? { ...node, outputPorts: [...node.outputPorts, "inventedOutput"] }
+      : node),
+  }) },
+  { axis: "node-port", direction: "mismatch", subject: "ui.controller.state", change: (d) => ({
+    ...d,
+    nodes: d.nodes.map((node) => node.nodeId === "ui.controller"
+      ? { ...node, outputPorts: [...node.outputPorts, "state"] }
       : node),
   }) },
   { axis: "component", direction: "mismatch", subject: "fixture.control@phone", change: (d) => ({
@@ -1161,7 +1341,7 @@ const AXIS_MUTATIONS: readonly {
 for (const { axis, direction, subject, change } of AXIS_MUTATIONS) {
   test(`conformance catches a ${direction} ${axis}`, () => {
     const finding = productArtifactConformance(fixture(), mutate(change))
-      .find((item) => item.axis === axis && item.direction === direction);
+      .find((item) => item.axis === axis && item.direction === direction && item.subject === subject);
     assert.equal(finding?.subject, subject);
   });
 }
@@ -1175,15 +1355,12 @@ test("the hard gate and host coverage keep their two directions", () => {
   assert.deepEqual(productArtifactHostCoverage(fixture(), [android, { ...conformingManifest, profiles: ["wear"] }]), []);
 });
 
-test("native manifest decoding fails loud and preserves unasserted sections", () => {
+test("native manifest decoding fails loud and requires the node axis", () => {
   assert.throws(() => decodeNativeBindingManifest({ ...conformingManifest, stage: "draft" }), /not a compiled native export/);
   assert.throws(() => decodeNativeBindingManifest({ ...conformingManifest, schemaVersion: 1 }), /schema 1 is unsupported/);
   const partial = { ...conformingManifest } as Record<string, unknown>;
   delete partial.nodes;
-  const decoded = decodeNativeBindingManifest(partial);
-  assert.equal(decoded.nodes, undefined);
-  assert.deepEqual(productArtifactConformance(fixture(), decoded)
-    .filter(({ axis }) => axis === "node-port").map(({ direction }) => direction), ["unasserted"]);
+  assert.throws(() => decodeNativeBindingManifest(partial), /manifest nodes must be an array/);
 });
 
 test("visual contracts still fail on unknown palette and asset refs", () => {

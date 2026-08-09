@@ -13,7 +13,7 @@ import type { ProductIr } from "./product-model.js";
  * every axis in one pass instead of the first failure, and a test can assert the
  * axis and direction rather than that something threw.
  */
-export const NATIVE_BINDING_MANIFEST_SCHEMA_VERSION = 3 as const;
+export const NATIVE_BINDING_MANIFEST_SCHEMA_VERSION = 4 as const;
 
 export interface NativeBindingManifest {
   readonly stage: "native-export";
@@ -27,7 +27,11 @@ export interface NativeBindingManifest {
     readonly profiles: readonly string[];
   }[];
   readonly icons: readonly { readonly iconId: string; readonly nativeSymbol: string }[];
-  readonly nodes?: readonly {
+  /**
+   * Exact native node adapters for this host. A node with no ports still has
+   * one entry: omitting the section would turn the entire node/port axis off.
+   */
+  readonly nodes: readonly {
     readonly nodeId: string;
     readonly nativePortId: string;
     readonly profiles: readonly string[];
@@ -225,34 +229,41 @@ export function productArtifactConformance(
     "icon asset",
   ));
 
-  // Measured against Link, not assumed: its ten lego mount ids and its ten
-  // manifest nodeIds are the SAME set, and its navigation node declares
-  // port("open")/port("destination") — exactly the bare names the manifest
-  // carries. So a manifest port is node-relative and qualifies as
-  // `nodeId.port`, which is the instance-qualified ref this graph uses.
-  //
-  // A nodeId with no matching instance is reported rather than silently
-  // qualifying into a ref that cannot match anything.
+  // Native ports are node-relative. Qualifying them as `nodeId.port` gives the
+  // same stable refs as the compiled graph and lets one generic comparison
+  // prove both node identity and every input/output in both directions.
   const { inputs, outputs } = portRefs(ir);
-  const mountIds = new Set(irSection(ir.nodes).map(({ id }) => id));
-  for (const node of manifest.nodes ?? []) {
-    if (!mountIds.has(node.nodeId)) {
-      out.push(finding("node-port", "orphan", node.nodeId,
-        `node '${node.nodeId}' has no product instance, so its ports cannot be resolved`));
-      continue;
-    }
-    for (const [port, declared, side] of [
-      ...node.inputPorts.map((p) => [p, inputs, "input"] as const),
-      ...node.outputPorts.map((p) => [p, outputs, "output"] as const),
-    ]) {
+  const nativeInputs = manifest.nodes.flatMap(({ nodeId, inputPorts }) =>
+    inputPorts.map((port) => `${nodeId}.${port}`));
+  const nativeOutputs = manifest.nodes.flatMap(({ nodeId, outputPorts }) =>
+    outputPorts.map((port) => `${nodeId}.${port}`));
+  out.push(...compareIds(
+    "node-port",
+    irSection(ir.nodes).map(({ id }) => id),
+    manifest.nodes.map(({ nodeId }) => nodeId),
+    "node",
+  ));
+  for (const nodeId of duplicates(manifest.nodes.map(({ nodeId }) => nodeId))) {
+    out.push(finding("node-port", "mismatch", nodeId,
+      `node '${nodeId}' is bound more than once`));
+  }
+  out.push(...compareIds("node-port", inputs, nativeInputs, "node input port"));
+  out.push(...compareIds("node-port", outputs, nativeOutputs, "node output port"));
+
+  for (const node of manifest.nodes) {
+    const duplicateInputs = duplicates(node.inputPorts);
+    const duplicateOutputs = duplicates(node.outputPorts);
+    for (const port of duplicateInputs) {
       const ref = `${node.nodeId}.${port}`;
-      if (!declared.has(ref)) {
-        out.push(finding("node-port", "orphan", ref,
-          `node '${node.nodeId}' binds ${side} port '${port}', which its type does not declare`));
-      }
+      out.push(finding("node-port", "mismatch", ref,
+        `node input port '${ref}' is bound more than once`));
+    }
+    for (const port of duplicateOutputs) {
+      const ref = `${node.nodeId}.${port}`;
+      out.push(finding("node-port", "mismatch", ref,
+        `node output port '${ref}' is bound more than once`));
     }
   }
-  if (manifest.nodes === undefined) out.push(unasserted("node-port", "nodes"));
 
   // Two-way parity on the value space itself, not just its name: a native enum
   // that gained or lost a case is exactly the drift finite values exist to stop.
@@ -322,17 +333,15 @@ export function decodeNativeBindingManifest(raw: unknown): NativeBindingManifest
         nativeSymbol: requiredString(item.nativeSymbol, `icon ${index} nativeSymbol`),
       };
     }),
-    ...(root.nodes === undefined ? {} : {
-      nodes: list(root.nodes, "manifest nodes").map((value, index) => {
-        const item = record(value, `manifest node ${index}`);
-        return {
-          nodeId: requiredString(item.nodeId, `node ${index} nodeId`),
-          nativePortId: requiredString(item.nativePortId, `node ${index} nativePortId`),
-          profiles: stringList(item.profiles, `node ${index} profiles`),
-          inputPorts: stringList(item.inputPorts, `node ${index} inputPorts`),
-          outputPorts: stringList(item.outputPorts, `node ${index} outputPorts`),
-        };
-      }),
+    nodes: list(root.nodes, "manifest nodes").map((value, index) => {
+      const item = record(value, `manifest node ${index}`);
+      return {
+        nodeId: requiredString(item.nodeId, `node ${index} nodeId`),
+        nativePortId: requiredString(item.nativePortId, `node ${index} nativePortId`),
+        profiles: stringList(item.profiles, `node ${index} profiles`),
+        inputPorts: stringList(item.inputPorts, `node ${index} inputPorts`),
+        outputPorts: stringList(item.outputPorts, `node ${index} outputPorts`),
+      };
     }),
     ...(root.finiteValues === undefined ? {} : {
       finiteValues: list(root.finiteValues, "manifest finiteValues").map((value, index) => {
@@ -367,6 +376,16 @@ function requiredString(value: unknown, owner: string): string {
 
 function stringList(value: unknown, owner: string): readonly string[] {
   return list(value, owner).map((item, index) => requiredString(item, `${owner}[${index}]`));
+}
+
+function duplicates(values: readonly string[]): readonly string[] {
+  const seen = new Set<string>();
+  const repeated = new Set<string>();
+  for (const value of values) {
+    if (seen.has(value)) repeated.add(value);
+    seen.add(value);
+  }
+  return [...repeated].sort();
 }
 
 /**
