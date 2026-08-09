@@ -1550,8 +1550,8 @@
           "open": "navigation.foundationColors"
         },
         "inputs": {
-          "catalog": "catalog.catalog",
-          "navigation": "navigation.destination"
+          "catalog": "catalog.model",
+          "navigation": "navigation.presentation.model"
         }
       },
       "componentTypeRef": "foundation.colors",
@@ -1563,8 +1563,8 @@
           "open": "navigation.foundationGeometry"
         },
         "inputs": {
-          "catalog": "catalog.catalog",
-          "navigation": "navigation.destination"
+          "catalog": "catalog.model",
+          "navigation": "navigation.presentation.model"
         }
       },
       "componentTypeRef": "foundation.geometry",
@@ -1576,8 +1576,8 @@
           "open": "navigation.atomIconAction"
         },
         "inputs": {
-          "catalog": "catalog.catalog",
-          "navigation": "navigation.destination"
+          "catalog": "catalog.model",
+          "navigation": "navigation.presentation.model"
         }
       },
       "componentTypeRef": "atom.icon-action",
@@ -1589,8 +1589,8 @@
           "open": "navigation.controlActionRow"
         },
         "inputs": {
-          "catalog": "catalog.catalog",
-          "navigation": "navigation.destination"
+          "catalog": "catalog.model",
+          "navigation": "navigation.presentation.model"
         }
       },
       "componentTypeRef": "control.action-row",
@@ -1602,8 +1602,8 @@
           "open": "navigation.controlChoiceRow"
         },
         "inputs": {
-          "catalog": "catalog.catalog",
-          "navigation": "navigation.destination"
+          "catalog": "catalog.model",
+          "navigation": "navigation.presentation.model"
         }
       },
       "componentTypeRef": "control.choice-row",
@@ -1615,8 +1615,8 @@
           "open": "navigation.controlAdjustment"
         },
         "inputs": {
-          "catalog": "catalog.catalog",
-          "navigation": "navigation.destination"
+          "catalog": "catalog.model",
+          "navigation": "navigation.presentation.model"
         }
       },
       "componentTypeRef": "control.adjustment",
@@ -1628,8 +1628,8 @@
           "open": "navigation.controlProgress"
         },
         "inputs": {
-          "catalog": "catalog.catalog",
-          "navigation": "navigation.destination"
+          "catalog": "catalog.model",
+          "navigation": "navigation.presentation.model"
         }
       },
       "componentTypeRef": "control.progress",
@@ -1641,8 +1641,8 @@
           "open": "navigation.controlPressRing"
         },
         "inputs": {
-          "catalog": "catalog.catalog",
-          "navigation": "navigation.destination"
+          "catalog": "catalog.model",
+          "navigation": "navigation.presentation.model"
         }
       },
       "componentTypeRef": "control.press-ring",
@@ -1654,8 +1654,8 @@
           "open": "navigation.inputText"
         },
         "inputs": {
-          "catalog": "catalog.catalog",
-          "navigation": "navigation.destination"
+          "catalog": "catalog.model",
+          "navigation": "navigation.presentation.model"
         }
       },
       "componentTypeRef": "input.text",
@@ -1667,8 +1667,8 @@
           "open": "navigation.mediaCapture"
         },
         "inputs": {
-          "catalog": "catalog.catalog",
-          "navigation": "navigation.destination"
+          "catalog": "catalog.model",
+          "navigation": "navigation.presentation.model"
         }
       },
       "componentTypeRef": "media.capture",
@@ -1680,8 +1680,8 @@
           "open": "navigation.mediaPlayback"
         },
         "inputs": {
-          "catalog": "catalog.catalog",
-          "navigation": "navigation.destination"
+          "catalog": "catalog.model",
+          "navigation": "navigation.presentation.model"
         }
       },
       "componentTypeRef": "media.playback",
@@ -1693,8 +1693,8 @@
           "open": "navigation.templateScreens"
         },
         "inputs": {
-          "catalog": "catalog.catalog",
-          "navigation": "navigation.destination"
+          "catalog": "catalog.model",
+          "navigation": "navigation.presentation.model"
         }
       },
       "componentTypeRef": "template.screens",
@@ -1706,8 +1706,8 @@
           "open": "navigation.flowSource"
         },
         "inputs": {
-          "catalog": "catalog.catalog",
-          "navigation": "navigation.destination"
+          "catalog": "catalog.model",
+          "navigation": "navigation.presentation.model"
         }
       },
       "componentTypeRef": "flow.source",
@@ -1719,8 +1719,8 @@
           "open": "navigation.flowUpdate"
         },
         "inputs": {
-          "catalog": "catalog.catalog",
-          "navigation": "navigation.destination"
+          "catalog": "catalog.model",
+          "navigation": "navigation.presentation.model"
         }
       },
       "componentTypeRef": "flow.update",
@@ -1732,8 +1732,8 @@
           "open": "navigation.flowService"
         },
         "inputs": {
-          "catalog": "catalog.catalog",
-          "navigation": "navigation.destination"
+          "catalog": "catalog.model",
+          "navigation": "navigation.presentation.model"
         }
       },
       "componentTypeRef": "flow.service",
@@ -3204,6 +3204,546 @@
   ],
   "id": "circlekit-showcase",
   "kind": "product-spec-ir",
+  "nodes": [
+    {
+      "bindings": {},
+      "config": {},
+      "id": "catalog",
+      "nodeTypeRef": "showcase.catalog-presentation"
+    },
+    {
+      "activation": {
+        "kind": "lifetime",
+        "lifecycleSources": []
+      },
+      "bindings": {
+        "atomIconAction": "atom.icon-action.open",
+        "controlActionRow": "control.action-row.open",
+        "controlAdjustment": "control.adjustment.open",
+        "controlChoiceRow": "control.choice-row.open",
+        "controlPressRing": "control.press-ring.open",
+        "controlProgress": "control.progress.open",
+        "flowService": "flow.service.open",
+        "flowSource": "flow.source.open",
+        "flowUpdate": "flow.update.open",
+        "foundationColors": "foundation.colors.open",
+        "foundationGeometry": "foundation.geometry.open",
+        "inputText": "input.text.open",
+        "mediaCapture": "media.capture.open",
+        "mediaPlayback": "media.playback.open",
+        "templateScreens": "template.screens.open"
+      },
+      "config": {},
+      "id": "navigation",
+      "nodeTypeRef": "showcase.navigation-service"
+    },
+    {
+      "bindings": {
+        "destination": "navigation.destination"
+      },
+      "config": {},
+      "id": "navigation.presentation",
+      "nodeTypeRef": "showcase.navigation-presentation"
+    }
+  ],
+  "nodeTypes": [
+    {
+      "id": "showcase.catalog-presentation",
+      "inputs": [],
+      "kind": "present",
+      "outputs": [
+        {
+          "contract": {
+            "boundary": "presentation",
+            "fields": [
+              {
+                "clockDomain": "none",
+                "name": "revision",
+                "nullable": false,
+                "value": "integer"
+              },
+              {
+                "clockDomain": "none",
+                "name": "sections",
+                "nullable": false,
+                "value": {
+                  "ref": "showcase.section-list"
+                }
+              },
+              {
+                "clockDomain": "none",
+                "name": "cases",
+                "nullable": false,
+                "value": {
+                  "ref": "showcase.case-list"
+                }
+              }
+            ],
+            "id": "showcase.catalog-presentation",
+            "kind": "snapshot"
+          },
+          "id": "model",
+          "purpose": "data"
+        }
+      ],
+      "runtime": {
+        "clockDomain": "none",
+        "contextInputs": [],
+        "durability": "transient",
+        "effects": [],
+        "lifetime": "process",
+        "stateOwner": "none"
+      }
+    },
+    {
+      "id": "showcase.navigation-service",
+      "inputs": [
+        {
+          "contract": {
+            "boundary": "ui-event",
+            "fields": [
+              {
+                "clockDomain": "none",
+                "name": "caseId",
+                "nullable": false,
+                "value": "string"
+              },
+              {
+                "clockDomain": "none",
+                "name": "scenarioId",
+                "nullable": true,
+                "value": "string"
+              }
+            ],
+            "id": "showcase.open-action",
+            "kind": "event"
+          },
+          "id": "foundationColors",
+          "purpose": "data"
+        },
+        {
+          "contract": {
+            "boundary": "ui-event",
+            "fields": [
+              {
+                "clockDomain": "none",
+                "name": "caseId",
+                "nullable": false,
+                "value": "string"
+              },
+              {
+                "clockDomain": "none",
+                "name": "scenarioId",
+                "nullable": true,
+                "value": "string"
+              }
+            ],
+            "id": "showcase.open-action",
+            "kind": "event"
+          },
+          "id": "foundationGeometry",
+          "purpose": "data"
+        },
+        {
+          "contract": {
+            "boundary": "ui-event",
+            "fields": [
+              {
+                "clockDomain": "none",
+                "name": "caseId",
+                "nullable": false,
+                "value": "string"
+              },
+              {
+                "clockDomain": "none",
+                "name": "scenarioId",
+                "nullable": true,
+                "value": "string"
+              }
+            ],
+            "id": "showcase.open-action",
+            "kind": "event"
+          },
+          "id": "atomIconAction",
+          "purpose": "data"
+        },
+        {
+          "contract": {
+            "boundary": "ui-event",
+            "fields": [
+              {
+                "clockDomain": "none",
+                "name": "caseId",
+                "nullable": false,
+                "value": "string"
+              },
+              {
+                "clockDomain": "none",
+                "name": "scenarioId",
+                "nullable": true,
+                "value": "string"
+              }
+            ],
+            "id": "showcase.open-action",
+            "kind": "event"
+          },
+          "id": "controlActionRow",
+          "purpose": "data"
+        },
+        {
+          "contract": {
+            "boundary": "ui-event",
+            "fields": [
+              {
+                "clockDomain": "none",
+                "name": "caseId",
+                "nullable": false,
+                "value": "string"
+              },
+              {
+                "clockDomain": "none",
+                "name": "scenarioId",
+                "nullable": true,
+                "value": "string"
+              }
+            ],
+            "id": "showcase.open-action",
+            "kind": "event"
+          },
+          "id": "controlChoiceRow",
+          "purpose": "data"
+        },
+        {
+          "contract": {
+            "boundary": "ui-event",
+            "fields": [
+              {
+                "clockDomain": "none",
+                "name": "caseId",
+                "nullable": false,
+                "value": "string"
+              },
+              {
+                "clockDomain": "none",
+                "name": "scenarioId",
+                "nullable": true,
+                "value": "string"
+              }
+            ],
+            "id": "showcase.open-action",
+            "kind": "event"
+          },
+          "id": "controlAdjustment",
+          "purpose": "data"
+        },
+        {
+          "contract": {
+            "boundary": "ui-event",
+            "fields": [
+              {
+                "clockDomain": "none",
+                "name": "caseId",
+                "nullable": false,
+                "value": "string"
+              },
+              {
+                "clockDomain": "none",
+                "name": "scenarioId",
+                "nullable": true,
+                "value": "string"
+              }
+            ],
+            "id": "showcase.open-action",
+            "kind": "event"
+          },
+          "id": "controlProgress",
+          "purpose": "data"
+        },
+        {
+          "contract": {
+            "boundary": "ui-event",
+            "fields": [
+              {
+                "clockDomain": "none",
+                "name": "caseId",
+                "nullable": false,
+                "value": "string"
+              },
+              {
+                "clockDomain": "none",
+                "name": "scenarioId",
+                "nullable": true,
+                "value": "string"
+              }
+            ],
+            "id": "showcase.open-action",
+            "kind": "event"
+          },
+          "id": "controlPressRing",
+          "purpose": "data"
+        },
+        {
+          "contract": {
+            "boundary": "ui-event",
+            "fields": [
+              {
+                "clockDomain": "none",
+                "name": "caseId",
+                "nullable": false,
+                "value": "string"
+              },
+              {
+                "clockDomain": "none",
+                "name": "scenarioId",
+                "nullable": true,
+                "value": "string"
+              }
+            ],
+            "id": "showcase.open-action",
+            "kind": "event"
+          },
+          "id": "inputText",
+          "purpose": "data"
+        },
+        {
+          "contract": {
+            "boundary": "ui-event",
+            "fields": [
+              {
+                "clockDomain": "none",
+                "name": "caseId",
+                "nullable": false,
+                "value": "string"
+              },
+              {
+                "clockDomain": "none",
+                "name": "scenarioId",
+                "nullable": true,
+                "value": "string"
+              }
+            ],
+            "id": "showcase.open-action",
+            "kind": "event"
+          },
+          "id": "mediaCapture",
+          "purpose": "data"
+        },
+        {
+          "contract": {
+            "boundary": "ui-event",
+            "fields": [
+              {
+                "clockDomain": "none",
+                "name": "caseId",
+                "nullable": false,
+                "value": "string"
+              },
+              {
+                "clockDomain": "none",
+                "name": "scenarioId",
+                "nullable": true,
+                "value": "string"
+              }
+            ],
+            "id": "showcase.open-action",
+            "kind": "event"
+          },
+          "id": "mediaPlayback",
+          "purpose": "data"
+        },
+        {
+          "contract": {
+            "boundary": "ui-event",
+            "fields": [
+              {
+                "clockDomain": "none",
+                "name": "caseId",
+                "nullable": false,
+                "value": "string"
+              },
+              {
+                "clockDomain": "none",
+                "name": "scenarioId",
+                "nullable": true,
+                "value": "string"
+              }
+            ],
+            "id": "showcase.open-action",
+            "kind": "event"
+          },
+          "id": "templateScreens",
+          "purpose": "data"
+        },
+        {
+          "contract": {
+            "boundary": "ui-event",
+            "fields": [
+              {
+                "clockDomain": "none",
+                "name": "caseId",
+                "nullable": false,
+                "value": "string"
+              },
+              {
+                "clockDomain": "none",
+                "name": "scenarioId",
+                "nullable": true,
+                "value": "string"
+              }
+            ],
+            "id": "showcase.open-action",
+            "kind": "event"
+          },
+          "id": "flowSource",
+          "purpose": "data"
+        },
+        {
+          "contract": {
+            "boundary": "ui-event",
+            "fields": [
+              {
+                "clockDomain": "none",
+                "name": "caseId",
+                "nullable": false,
+                "value": "string"
+              },
+              {
+                "clockDomain": "none",
+                "name": "scenarioId",
+                "nullable": true,
+                "value": "string"
+              }
+            ],
+            "id": "showcase.open-action",
+            "kind": "event"
+          },
+          "id": "flowUpdate",
+          "purpose": "data"
+        },
+        {
+          "contract": {
+            "boundary": "ui-event",
+            "fields": [
+              {
+                "clockDomain": "none",
+                "name": "caseId",
+                "nullable": false,
+                "value": "string"
+              },
+              {
+                "clockDomain": "none",
+                "name": "scenarioId",
+                "nullable": true,
+                "value": "string"
+              }
+            ],
+            "id": "showcase.open-action",
+            "kind": "event"
+          },
+          "id": "flowService",
+          "purpose": "data"
+        }
+      ],
+      "kind": "service",
+      "outputs": [
+        {
+          "contract": {
+            "boundary": "presentation",
+            "fields": [
+              {
+                "clockDomain": "none",
+                "name": "caseId",
+                "nullable": true,
+                "value": "string"
+              },
+              {
+                "clockDomain": "none",
+                "name": "scenarioId",
+                "nullable": true,
+                "value": "string"
+              }
+            ],
+            "id": "showcase.navigation-presentation",
+            "kind": "state"
+          },
+          "id": "destination",
+          "purpose": "data"
+        }
+      ],
+      "runtime": {
+        "clockDomain": "none",
+        "contextInputs": [],
+        "durability": "transient",
+        "effects": [
+          "ui.navigation"
+        ],
+        "lifetime": "instance",
+        "stateOwner": "instance"
+      }
+    },
+    {
+      "id": "showcase.navigation-presentation",
+      "inputs": [
+        {
+          "contract": {
+            "boundary": "presentation",
+            "fields": [
+              {
+                "clockDomain": "none",
+                "name": "caseId",
+                "nullable": true,
+                "value": "string"
+              },
+              {
+                "clockDomain": "none",
+                "name": "scenarioId",
+                "nullable": true,
+                "value": "string"
+              }
+            ],
+            "id": "showcase.navigation-presentation",
+            "kind": "state"
+          },
+          "id": "destination",
+          "purpose": "data"
+        }
+      ],
+      "kind": "present",
+      "outputs": [
+        {
+          "contract": {
+            "boundary": "presentation",
+            "fields": [
+              {
+                "clockDomain": "none",
+                "name": "caseId",
+                "nullable": true,
+                "value": "string"
+              },
+              {
+                "clockDomain": "none",
+                "name": "scenarioId",
+                "nullable": true,
+                "value": "string"
+              }
+            ],
+            "id": "showcase.navigation-presentation",
+            "kind": "state"
+          },
+          "id": "model",
+          "purpose": "data"
+        }
+      ],
+      "runtime": {
+        "clockDomain": "none",
+        "contextInputs": [],
+        "durability": "transient",
+        "effects": [],
+        "lifetime": "instance",
+        "stateOwner": "none"
+      }
+    }
+  ],
   "palette": {
     "variants": []
   },
@@ -3300,181 +3840,187 @@
         "to": "navigation.flowService"
       },
       {
-        "from": "catalog.catalog",
+        "from": "navigation.destination",
+        "kind": "node-input",
+        "purpose": "data",
+        "to": "navigation.presentation.destination"
+      },
+      {
+        "from": "catalog.model",
         "kind": "component-input",
         "purpose": "data",
         "to": "foundation.colors.catalog"
       },
       {
-        "from": "navigation.destination",
+        "from": "navigation.presentation.model",
         "kind": "component-input",
         "purpose": "data",
         "to": "foundation.colors.navigation"
       },
       {
-        "from": "catalog.catalog",
+        "from": "catalog.model",
         "kind": "component-input",
         "purpose": "data",
         "to": "foundation.geometry.catalog"
       },
       {
-        "from": "navigation.destination",
+        "from": "navigation.presentation.model",
         "kind": "component-input",
         "purpose": "data",
         "to": "foundation.geometry.navigation"
       },
       {
-        "from": "catalog.catalog",
+        "from": "catalog.model",
         "kind": "component-input",
         "purpose": "data",
         "to": "atom.icon-action.catalog"
       },
       {
-        "from": "navigation.destination",
+        "from": "navigation.presentation.model",
         "kind": "component-input",
         "purpose": "data",
         "to": "atom.icon-action.navigation"
       },
       {
-        "from": "catalog.catalog",
+        "from": "catalog.model",
         "kind": "component-input",
         "purpose": "data",
         "to": "control.action-row.catalog"
       },
       {
-        "from": "navigation.destination",
+        "from": "navigation.presentation.model",
         "kind": "component-input",
         "purpose": "data",
         "to": "control.action-row.navigation"
       },
       {
-        "from": "catalog.catalog",
+        "from": "catalog.model",
         "kind": "component-input",
         "purpose": "data",
         "to": "control.choice-row.catalog"
       },
       {
-        "from": "navigation.destination",
+        "from": "navigation.presentation.model",
         "kind": "component-input",
         "purpose": "data",
         "to": "control.choice-row.navigation"
       },
       {
-        "from": "catalog.catalog",
+        "from": "catalog.model",
         "kind": "component-input",
         "purpose": "data",
         "to": "control.adjustment.catalog"
       },
       {
-        "from": "navigation.destination",
+        "from": "navigation.presentation.model",
         "kind": "component-input",
         "purpose": "data",
         "to": "control.adjustment.navigation"
       },
       {
-        "from": "catalog.catalog",
+        "from": "catalog.model",
         "kind": "component-input",
         "purpose": "data",
         "to": "control.progress.catalog"
       },
       {
-        "from": "navigation.destination",
+        "from": "navigation.presentation.model",
         "kind": "component-input",
         "purpose": "data",
         "to": "control.progress.navigation"
       },
       {
-        "from": "catalog.catalog",
+        "from": "catalog.model",
         "kind": "component-input",
         "purpose": "data",
         "to": "control.press-ring.catalog"
       },
       {
-        "from": "navigation.destination",
+        "from": "navigation.presentation.model",
         "kind": "component-input",
         "purpose": "data",
         "to": "control.press-ring.navigation"
       },
       {
-        "from": "catalog.catalog",
+        "from": "catalog.model",
         "kind": "component-input",
         "purpose": "data",
         "to": "input.text.catalog"
       },
       {
-        "from": "navigation.destination",
+        "from": "navigation.presentation.model",
         "kind": "component-input",
         "purpose": "data",
         "to": "input.text.navigation"
       },
       {
-        "from": "catalog.catalog",
+        "from": "catalog.model",
         "kind": "component-input",
         "purpose": "data",
         "to": "media.capture.catalog"
       },
       {
-        "from": "navigation.destination",
+        "from": "navigation.presentation.model",
         "kind": "component-input",
         "purpose": "data",
         "to": "media.capture.navigation"
       },
       {
-        "from": "catalog.catalog",
+        "from": "catalog.model",
         "kind": "component-input",
         "purpose": "data",
         "to": "media.playback.catalog"
       },
       {
-        "from": "navigation.destination",
+        "from": "navigation.presentation.model",
         "kind": "component-input",
         "purpose": "data",
         "to": "media.playback.navigation"
       },
       {
-        "from": "catalog.catalog",
+        "from": "catalog.model",
         "kind": "component-input",
         "purpose": "data",
         "to": "template.screens.catalog"
       },
       {
-        "from": "navigation.destination",
+        "from": "navigation.presentation.model",
         "kind": "component-input",
         "purpose": "data",
         "to": "template.screens.navigation"
       },
       {
-        "from": "catalog.catalog",
+        "from": "catalog.model",
         "kind": "component-input",
         "purpose": "data",
         "to": "flow.source.catalog"
       },
       {
-        "from": "navigation.destination",
+        "from": "navigation.presentation.model",
         "kind": "component-input",
         "purpose": "data",
         "to": "flow.source.navigation"
       },
       {
-        "from": "catalog.catalog",
+        "from": "catalog.model",
         "kind": "component-input",
         "purpose": "data",
         "to": "flow.update.catalog"
       },
       {
-        "from": "navigation.destination",
+        "from": "navigation.presentation.model",
         "kind": "component-input",
         "purpose": "data",
         "to": "flow.update.navigation"
       },
       {
-        "from": "catalog.catalog",
+        "from": "catalog.model",
         "kind": "component-input",
         "purpose": "data",
         "to": "flow.service.catalog"
       },
       {
-        "from": "navigation.destination",
+        "from": "navigation.presentation.model",
         "kind": "component-input",
         "purpose": "data",
         "to": "flow.service.navigation"
@@ -4092,214 +4638,238 @@
       }
     ],
     "demandEdges": [],
-    "servicePorts": [
+    "nodePorts": [
       {
         "boundary": "presentation",
         "contractRef": "showcase.catalog-presentation",
         "direction": "output",
         "ownerId": "catalog",
-        "ownerKind": "service",
-        "portId": "catalog",
+        "ownerKind": "node",
+        "portId": "model",
         "purpose": "data",
-        "ref": "catalog.catalog",
+        "ref": "catalog.model",
         "required": true,
-        "typeRef": "showcase.catalog-source"
+        "typeRef": "showcase.catalog-presentation"
       },
       {
         "boundary": "ui-event",
         "contractRef": "showcase.open-action",
         "direction": "input",
         "ownerId": "navigation",
-        "ownerKind": "service",
+        "ownerKind": "node",
         "portId": "foundationColors",
         "purpose": "data",
         "ref": "navigation.foundationColors",
         "required": true,
-        "typeRef": "showcase.navigation-controller"
+        "typeRef": "showcase.navigation-service"
       },
       {
         "boundary": "ui-event",
         "contractRef": "showcase.open-action",
         "direction": "input",
         "ownerId": "navigation",
-        "ownerKind": "service",
+        "ownerKind": "node",
         "portId": "foundationGeometry",
         "purpose": "data",
         "ref": "navigation.foundationGeometry",
         "required": true,
-        "typeRef": "showcase.navigation-controller"
+        "typeRef": "showcase.navigation-service"
       },
       {
         "boundary": "ui-event",
         "contractRef": "showcase.open-action",
         "direction": "input",
         "ownerId": "navigation",
-        "ownerKind": "service",
+        "ownerKind": "node",
         "portId": "atomIconAction",
         "purpose": "data",
         "ref": "navigation.atomIconAction",
         "required": true,
-        "typeRef": "showcase.navigation-controller"
+        "typeRef": "showcase.navigation-service"
       },
       {
         "boundary": "ui-event",
         "contractRef": "showcase.open-action",
         "direction": "input",
         "ownerId": "navigation",
-        "ownerKind": "service",
+        "ownerKind": "node",
         "portId": "controlActionRow",
         "purpose": "data",
         "ref": "navigation.controlActionRow",
         "required": true,
-        "typeRef": "showcase.navigation-controller"
+        "typeRef": "showcase.navigation-service"
       },
       {
         "boundary": "ui-event",
         "contractRef": "showcase.open-action",
         "direction": "input",
         "ownerId": "navigation",
-        "ownerKind": "service",
+        "ownerKind": "node",
         "portId": "controlChoiceRow",
         "purpose": "data",
         "ref": "navigation.controlChoiceRow",
         "required": true,
-        "typeRef": "showcase.navigation-controller"
+        "typeRef": "showcase.navigation-service"
       },
       {
         "boundary": "ui-event",
         "contractRef": "showcase.open-action",
         "direction": "input",
         "ownerId": "navigation",
-        "ownerKind": "service",
+        "ownerKind": "node",
         "portId": "controlAdjustment",
         "purpose": "data",
         "ref": "navigation.controlAdjustment",
         "required": true,
-        "typeRef": "showcase.navigation-controller"
+        "typeRef": "showcase.navigation-service"
       },
       {
         "boundary": "ui-event",
         "contractRef": "showcase.open-action",
         "direction": "input",
         "ownerId": "navigation",
-        "ownerKind": "service",
+        "ownerKind": "node",
         "portId": "controlProgress",
         "purpose": "data",
         "ref": "navigation.controlProgress",
         "required": true,
-        "typeRef": "showcase.navigation-controller"
+        "typeRef": "showcase.navigation-service"
       },
       {
         "boundary": "ui-event",
         "contractRef": "showcase.open-action",
         "direction": "input",
         "ownerId": "navigation",
-        "ownerKind": "service",
+        "ownerKind": "node",
         "portId": "controlPressRing",
         "purpose": "data",
         "ref": "navigation.controlPressRing",
         "required": true,
-        "typeRef": "showcase.navigation-controller"
+        "typeRef": "showcase.navigation-service"
       },
       {
         "boundary": "ui-event",
         "contractRef": "showcase.open-action",
         "direction": "input",
         "ownerId": "navigation",
-        "ownerKind": "service",
+        "ownerKind": "node",
         "portId": "inputText",
         "purpose": "data",
         "ref": "navigation.inputText",
         "required": true,
-        "typeRef": "showcase.navigation-controller"
+        "typeRef": "showcase.navigation-service"
       },
       {
         "boundary": "ui-event",
         "contractRef": "showcase.open-action",
         "direction": "input",
         "ownerId": "navigation",
-        "ownerKind": "service",
+        "ownerKind": "node",
         "portId": "mediaCapture",
         "purpose": "data",
         "ref": "navigation.mediaCapture",
         "required": true,
-        "typeRef": "showcase.navigation-controller"
+        "typeRef": "showcase.navigation-service"
       },
       {
         "boundary": "ui-event",
         "contractRef": "showcase.open-action",
         "direction": "input",
         "ownerId": "navigation",
-        "ownerKind": "service",
+        "ownerKind": "node",
         "portId": "mediaPlayback",
         "purpose": "data",
         "ref": "navigation.mediaPlayback",
         "required": true,
-        "typeRef": "showcase.navigation-controller"
+        "typeRef": "showcase.navigation-service"
       },
       {
         "boundary": "ui-event",
         "contractRef": "showcase.open-action",
         "direction": "input",
         "ownerId": "navigation",
-        "ownerKind": "service",
+        "ownerKind": "node",
         "portId": "templateScreens",
         "purpose": "data",
         "ref": "navigation.templateScreens",
         "required": true,
-        "typeRef": "showcase.navigation-controller"
+        "typeRef": "showcase.navigation-service"
       },
       {
         "boundary": "ui-event",
         "contractRef": "showcase.open-action",
         "direction": "input",
         "ownerId": "navigation",
-        "ownerKind": "service",
+        "ownerKind": "node",
         "portId": "flowSource",
         "purpose": "data",
         "ref": "navigation.flowSource",
         "required": true,
-        "typeRef": "showcase.navigation-controller"
+        "typeRef": "showcase.navigation-service"
       },
       {
         "boundary": "ui-event",
         "contractRef": "showcase.open-action",
         "direction": "input",
         "ownerId": "navigation",
-        "ownerKind": "service",
+        "ownerKind": "node",
         "portId": "flowUpdate",
         "purpose": "data",
         "ref": "navigation.flowUpdate",
         "required": true,
-        "typeRef": "showcase.navigation-controller"
+        "typeRef": "showcase.navigation-service"
       },
       {
         "boundary": "ui-event",
         "contractRef": "showcase.open-action",
         "direction": "input",
         "ownerId": "navigation",
-        "ownerKind": "service",
+        "ownerKind": "node",
         "portId": "flowService",
         "purpose": "data",
         "ref": "navigation.flowService",
         "required": true,
-        "typeRef": "showcase.navigation-controller"
+        "typeRef": "showcase.navigation-service"
       },
       {
         "boundary": "presentation",
         "contractRef": "showcase.navigation-presentation",
         "direction": "output",
         "ownerId": "navigation",
-        "ownerKind": "service",
+        "ownerKind": "node",
         "portId": "destination",
         "purpose": "data",
         "ref": "navigation.destination",
         "required": true,
-        "typeRef": "showcase.navigation-controller"
+        "typeRef": "showcase.navigation-service"
+      },
+      {
+        "boundary": "presentation",
+        "contractRef": "showcase.navigation-presentation",
+        "direction": "input",
+        "ownerId": "navigation.presentation",
+        "ownerKind": "node",
+        "portId": "destination",
+        "purpose": "data",
+        "ref": "navigation.presentation.destination",
+        "required": true,
+        "typeRef": "showcase.navigation-presentation"
+      },
+      {
+        "boundary": "presentation",
+        "contractRef": "showcase.navigation-presentation",
+        "direction": "output",
+        "ownerId": "navigation.presentation",
+        "ownerKind": "node",
+        "portId": "model",
+        "purpose": "data",
+        "ref": "navigation.presentation.model",
+        "required": true,
+        "typeRef": "showcase.navigation-presentation"
       }
     ]
   },
-  "productSpecVersion": "0.3.41",
+  "productSpecVersion": "0.3.42",
   "rendererBindings": [
     {
       "capabilities": [
@@ -4340,481 +4910,7 @@
       "id": "garmin-connectiq-monkeyc"
     }
   ],
-  "schemaVersion": 6,
-  "services": [
-    {
-      "activation": {
-        "kind": "lifetime",
-        "lifecycleSources": []
-      },
-      "bindings": {},
-      "config": {},
-      "id": "catalog",
-      "serviceTypeRef": "showcase.catalog-source"
-    },
-    {
-      "activation": {
-        "kind": "lifetime",
-        "lifecycleSources": []
-      },
-      "bindings": {
-        "atomIconAction": "atom.icon-action.open",
-        "controlActionRow": "control.action-row.open",
-        "controlAdjustment": "control.adjustment.open",
-        "controlChoiceRow": "control.choice-row.open",
-        "controlPressRing": "control.press-ring.open",
-        "controlProgress": "control.progress.open",
-        "flowService": "flow.service.open",
-        "flowSource": "flow.source.open",
-        "flowUpdate": "flow.update.open",
-        "foundationColors": "foundation.colors.open",
-        "foundationGeometry": "foundation.geometry.open",
-        "inputText": "input.text.open",
-        "mediaCapture": "media.capture.open",
-        "mediaPlayback": "media.playback.open",
-        "templateScreens": "template.screens.open"
-      },
-      "config": {},
-      "id": "navigation",
-      "serviceTypeRef": "showcase.navigation-controller"
-    }
-  ],
-  "serviceTypes": [
-    {
-      "id": "showcase.catalog-source",
-      "inputs": [],
-      "outputs": [
-        {
-          "contract": {
-            "boundary": "presentation",
-            "fields": [
-              {
-                "clockDomain": "none",
-                "name": "revision",
-                "nullable": false,
-                "value": "integer"
-              },
-              {
-                "clockDomain": "none",
-                "name": "sections",
-                "nullable": false,
-                "value": {
-                  "ref": "showcase.section-list"
-                }
-              },
-              {
-                "clockDomain": "none",
-                "name": "cases",
-                "nullable": false,
-                "value": {
-                  "ref": "showcase.case-list"
-                }
-              }
-            ],
-            "id": "showcase.catalog-presentation",
-            "kind": "snapshot"
-          },
-          "id": "catalog",
-          "purpose": "data"
-        }
-      ],
-      "role": "source",
-      "runtime": {
-        "clockDomain": "none",
-        "contextInputs": [],
-        "durability": "transient",
-        "effects": [],
-        "lifetime": "process",
-        "stateOwner": "none"
-      }
-    },
-    {
-      "id": "showcase.navigation-controller",
-      "inputs": [
-        {
-          "contract": {
-            "boundary": "ui-event",
-            "fields": [
-              {
-                "clockDomain": "none",
-                "name": "caseId",
-                "nullable": false,
-                "value": "string"
-              },
-              {
-                "clockDomain": "none",
-                "name": "scenarioId",
-                "nullable": true,
-                "value": "string"
-              }
-            ],
-            "id": "showcase.open-action",
-            "kind": "event"
-          },
-          "id": "foundationColors",
-          "purpose": "data"
-        },
-        {
-          "contract": {
-            "boundary": "ui-event",
-            "fields": [
-              {
-                "clockDomain": "none",
-                "name": "caseId",
-                "nullable": false,
-                "value": "string"
-              },
-              {
-                "clockDomain": "none",
-                "name": "scenarioId",
-                "nullable": true,
-                "value": "string"
-              }
-            ],
-            "id": "showcase.open-action",
-            "kind": "event"
-          },
-          "id": "foundationGeometry",
-          "purpose": "data"
-        },
-        {
-          "contract": {
-            "boundary": "ui-event",
-            "fields": [
-              {
-                "clockDomain": "none",
-                "name": "caseId",
-                "nullable": false,
-                "value": "string"
-              },
-              {
-                "clockDomain": "none",
-                "name": "scenarioId",
-                "nullable": true,
-                "value": "string"
-              }
-            ],
-            "id": "showcase.open-action",
-            "kind": "event"
-          },
-          "id": "atomIconAction",
-          "purpose": "data"
-        },
-        {
-          "contract": {
-            "boundary": "ui-event",
-            "fields": [
-              {
-                "clockDomain": "none",
-                "name": "caseId",
-                "nullable": false,
-                "value": "string"
-              },
-              {
-                "clockDomain": "none",
-                "name": "scenarioId",
-                "nullable": true,
-                "value": "string"
-              }
-            ],
-            "id": "showcase.open-action",
-            "kind": "event"
-          },
-          "id": "controlActionRow",
-          "purpose": "data"
-        },
-        {
-          "contract": {
-            "boundary": "ui-event",
-            "fields": [
-              {
-                "clockDomain": "none",
-                "name": "caseId",
-                "nullable": false,
-                "value": "string"
-              },
-              {
-                "clockDomain": "none",
-                "name": "scenarioId",
-                "nullable": true,
-                "value": "string"
-              }
-            ],
-            "id": "showcase.open-action",
-            "kind": "event"
-          },
-          "id": "controlChoiceRow",
-          "purpose": "data"
-        },
-        {
-          "contract": {
-            "boundary": "ui-event",
-            "fields": [
-              {
-                "clockDomain": "none",
-                "name": "caseId",
-                "nullable": false,
-                "value": "string"
-              },
-              {
-                "clockDomain": "none",
-                "name": "scenarioId",
-                "nullable": true,
-                "value": "string"
-              }
-            ],
-            "id": "showcase.open-action",
-            "kind": "event"
-          },
-          "id": "controlAdjustment",
-          "purpose": "data"
-        },
-        {
-          "contract": {
-            "boundary": "ui-event",
-            "fields": [
-              {
-                "clockDomain": "none",
-                "name": "caseId",
-                "nullable": false,
-                "value": "string"
-              },
-              {
-                "clockDomain": "none",
-                "name": "scenarioId",
-                "nullable": true,
-                "value": "string"
-              }
-            ],
-            "id": "showcase.open-action",
-            "kind": "event"
-          },
-          "id": "controlProgress",
-          "purpose": "data"
-        },
-        {
-          "contract": {
-            "boundary": "ui-event",
-            "fields": [
-              {
-                "clockDomain": "none",
-                "name": "caseId",
-                "nullable": false,
-                "value": "string"
-              },
-              {
-                "clockDomain": "none",
-                "name": "scenarioId",
-                "nullable": true,
-                "value": "string"
-              }
-            ],
-            "id": "showcase.open-action",
-            "kind": "event"
-          },
-          "id": "controlPressRing",
-          "purpose": "data"
-        },
-        {
-          "contract": {
-            "boundary": "ui-event",
-            "fields": [
-              {
-                "clockDomain": "none",
-                "name": "caseId",
-                "nullable": false,
-                "value": "string"
-              },
-              {
-                "clockDomain": "none",
-                "name": "scenarioId",
-                "nullable": true,
-                "value": "string"
-              }
-            ],
-            "id": "showcase.open-action",
-            "kind": "event"
-          },
-          "id": "inputText",
-          "purpose": "data"
-        },
-        {
-          "contract": {
-            "boundary": "ui-event",
-            "fields": [
-              {
-                "clockDomain": "none",
-                "name": "caseId",
-                "nullable": false,
-                "value": "string"
-              },
-              {
-                "clockDomain": "none",
-                "name": "scenarioId",
-                "nullable": true,
-                "value": "string"
-              }
-            ],
-            "id": "showcase.open-action",
-            "kind": "event"
-          },
-          "id": "mediaCapture",
-          "purpose": "data"
-        },
-        {
-          "contract": {
-            "boundary": "ui-event",
-            "fields": [
-              {
-                "clockDomain": "none",
-                "name": "caseId",
-                "nullable": false,
-                "value": "string"
-              },
-              {
-                "clockDomain": "none",
-                "name": "scenarioId",
-                "nullable": true,
-                "value": "string"
-              }
-            ],
-            "id": "showcase.open-action",
-            "kind": "event"
-          },
-          "id": "mediaPlayback",
-          "purpose": "data"
-        },
-        {
-          "contract": {
-            "boundary": "ui-event",
-            "fields": [
-              {
-                "clockDomain": "none",
-                "name": "caseId",
-                "nullable": false,
-                "value": "string"
-              },
-              {
-                "clockDomain": "none",
-                "name": "scenarioId",
-                "nullable": true,
-                "value": "string"
-              }
-            ],
-            "id": "showcase.open-action",
-            "kind": "event"
-          },
-          "id": "templateScreens",
-          "purpose": "data"
-        },
-        {
-          "contract": {
-            "boundary": "ui-event",
-            "fields": [
-              {
-                "clockDomain": "none",
-                "name": "caseId",
-                "nullable": false,
-                "value": "string"
-              },
-              {
-                "clockDomain": "none",
-                "name": "scenarioId",
-                "nullable": true,
-                "value": "string"
-              }
-            ],
-            "id": "showcase.open-action",
-            "kind": "event"
-          },
-          "id": "flowSource",
-          "purpose": "data"
-        },
-        {
-          "contract": {
-            "boundary": "ui-event",
-            "fields": [
-              {
-                "clockDomain": "none",
-                "name": "caseId",
-                "nullable": false,
-                "value": "string"
-              },
-              {
-                "clockDomain": "none",
-                "name": "scenarioId",
-                "nullable": true,
-                "value": "string"
-              }
-            ],
-            "id": "showcase.open-action",
-            "kind": "event"
-          },
-          "id": "flowUpdate",
-          "purpose": "data"
-        },
-        {
-          "contract": {
-            "boundary": "ui-event",
-            "fields": [
-              {
-                "clockDomain": "none",
-                "name": "caseId",
-                "nullable": false,
-                "value": "string"
-              },
-              {
-                "clockDomain": "none",
-                "name": "scenarioId",
-                "nullable": true,
-                "value": "string"
-              }
-            ],
-            "id": "showcase.open-action",
-            "kind": "event"
-          },
-          "id": "flowService",
-          "purpose": "data"
-        }
-      ],
-      "outputs": [
-        {
-          "contract": {
-            "boundary": "presentation",
-            "fields": [
-              {
-                "clockDomain": "none",
-                "name": "caseId",
-                "nullable": true,
-                "value": "string"
-              },
-              {
-                "clockDomain": "none",
-                "name": "scenarioId",
-                "nullable": true,
-                "value": "string"
-              }
-            ],
-            "id": "showcase.navigation-presentation",
-            "kind": "state"
-          },
-          "id": "destination",
-          "purpose": "data"
-        }
-      ],
-      "role": "adapter",
-      "runtime": {
-        "clockDomain": "none",
-        "contextInputs": [],
-        "durability": "transient",
-        "effects": [
-          "ui.navigation"
-        ],
-        "lifetime": "instance",
-        "stateOwner": "instance"
-      }
-    }
-  ],
+  "schemaVersion": 7,
   "showcase": {
     "cases": [
       {

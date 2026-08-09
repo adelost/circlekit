@@ -37,8 +37,8 @@ data class ShowcaseNativeIconBinding(
     val icon: ImageVector,
 )
 
-data class ShowcaseNativeServiceBinding(
-    val serviceId: String,
+data class ShowcaseNativeNodeBinding(
+    val nodeId: String,
     val nativeType: KClass<*>,
     val profiles: Set<String>,
     val inputPorts: List<String>,
@@ -53,7 +53,7 @@ data class ShowcaseNativeServiceBinding(
  * snapshot and rejects missing, orphan or profile-drifted bindings.
  */
 object ShowcaseNativeBindings {
-    const val SCHEMA_VERSION = 2
+    const val SCHEMA_VERSION = 3
     const val SOURCE_FILE =
         "showcase-catalog/src/main/java/io/v1d/circlekit/showcase/catalog/ShowcaseNativeBindings.kt"
 
@@ -100,16 +100,16 @@ object ShowcaseNativeBindings {
         icon("wrench", "RingIcons.Wrench", RingIcons.Wrench),
     )
 
-    val services: List<ShowcaseNativeServiceBinding> = listOf(
-        ShowcaseNativeServiceBinding(
-            serviceId = "catalog",
+    val nodes: List<ShowcaseNativeNodeBinding> = listOf(
+        ShowcaseNativeNodeBinding(
+            nodeId = "catalog",
             nativeType = ShowcaseCatalogRuntime::class,
             profiles = bothProfiles,
             inputPorts = emptyList(),
-            outputPorts = listOf("catalog"),
+            outputPorts = listOf("model"),
         ),
-        ShowcaseNativeServiceBinding(
-            serviceId = "navigation",
+        ShowcaseNativeNodeBinding(
+            nodeId = "navigation",
             nativeType = ShowcaseSession::class,
             profiles = bothProfiles,
             inputPorts = listOf(
@@ -131,6 +131,13 @@ object ShowcaseNativeBindings {
             ),
             outputPorts = listOf("destination"),
         ),
+        ShowcaseNativeNodeBinding(
+            nodeId = "navigation.presentation",
+            nativeType = ShowcaseSession::class,
+            profiles = bothProfiles,
+            inputPorts = listOf("destination"),
+            outputPorts = listOf("model"),
+        ),
     )
 
     fun requireComponent(componentId: String): ShowcaseNativeComponentBinding =
@@ -147,8 +154,8 @@ object ShowcaseNativeBindings {
         require(components.all { profileId in it.profiles }) {
             "Showcase profile $profileId is not bound for every component"
         }
-        require(services.all { profileId in it.profiles }) {
-            "Showcase profile $profileId is not bound for every service"
+        require(nodes.all { profileId in it.profiles }) {
+            "Showcase profile $profileId is not bound for every node"
         }
     }
 

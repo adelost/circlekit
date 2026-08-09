@@ -39,11 +39,11 @@ class ShowcaseNativeRegistrySnapshotTest {
         val icons = ShowcaseNativeBindings.icons.joinToString(",\n") { binding ->
             "    { \"iconId\": ${binding.iconId.json()}, \"nativeSymbol\": ${binding.nativeSymbol.json()} }"
         }
-        val services = ShowcaseNativeBindings.services.joinToString(",\n") { binding ->
+        val nodes = ShowcaseNativeBindings.nodes.joinToString(",\n") { binding ->
             val profiles = binding.profiles.joinToString(", ") { it.json() }
             val inputs = binding.inputPorts.joinToString(", ") { it.json() }
             val outputs = binding.outputPorts.joinToString(", ") { it.json() }
-            "    { \"serviceId\": ${binding.serviceId.json()}, \"nativePortId\": ${binding.nativePortId.json()}, " +
+            "    { \"nodeId\": ${binding.nodeId.json()}, \"nativePortId\": ${binding.nativePortId.json()}, " +
                 "\"profiles\": [$profiles], \"inputPorts\": [$inputs], \"outputPorts\": [$outputs] }"
         }
         val hostProfiles = ShowcaseNativeBindings.profiles.sorted().joinToString(", ") { it.json() }
@@ -61,8 +61,8 @@ class ShowcaseNativeRegistrySnapshotTest {
             |  "icons": [
             |$icons
             |  ],
-            |  "services": [
-            |$services
+            |  "nodes": [
+            |$nodes
             |  ],
             |  "finiteValues": []
             |}

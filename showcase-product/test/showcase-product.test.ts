@@ -42,8 +42,8 @@ test("one compiled ProductSpec owns Android, Apple and Garmin Showcase structure
   assert.deepEqual(product.artifacts.map(({ id }) => id), SHOWCASE_ARTIFACT_PROFILES);
   assert.equal(product.showcase.sections.length, 7);
   assert.equal(product.showcase.cases.length, 15);
-  assert.equal(product.serviceTypes.length, 2);
-  assert.equal(product.services.length, 2);
+  assert.deepEqual(product.nodeTypes.map(({ kind }) => kind), ["present", "service", "present"]);
+  assert.equal(product.nodes.length, 3);
   assert.equal(product.componentTypes.length, product.showcase.cases.length);
   assert.equal(product.components.length, product.showcase.cases.length);
   assert.equal(product.componentFamilies.length, product.showcase.sections.length + 1);
@@ -70,9 +70,9 @@ test("one compiled ProductSpec owns Android, Apple and Garmin Showcase structure
       "garmin-limited-ui": 1,
     },
   );
-  assert.equal(product.portRegistry.servicePorts.length, 17);
+  assert.equal(product.portRegistry.nodePorts.length, 19);
   assert.equal(product.portRegistry.componentPorts.length, 45);
-  assert.equal(product.portRegistry.bindings.length, 45);
+  assert.equal(product.portRegistry.bindings.length, 46);
   assert.equal(product.portRegistry.demandEdges.length, 0);
 
   const first = buildOutputManifest(product, [
@@ -144,8 +144,8 @@ test("native component, profile and icon drift stops before emission", async () 
   }, version), /\[icon\/orphan\] icon asset 'orphan'/);
   assert.throws(() => compileCircleKitShowcaseProduct({
     ...actual,
-    services: actual.services?.map((service) => service.serviceId === "navigation"
-      ? { ...service, inputPorts: service.inputPorts.slice(1) }
-      : service),
-  }, version), /native service 'navigation' ports differ/);
+    nodes: actual.nodes?.map((node) => node.nodeId === "navigation"
+      ? { ...node, inputPorts: node.inputPorts.slice(1) }
+      : node),
+  }, version), /native node 'navigation' ports differ/);
 });

@@ -1,11 +1,11 @@
 import Observation
 
 protocol ShowcaseNativeBinding {
-    var serviceTypeRef: String { get }
+    var nodeTypeRef: String { get }
 }
 
 struct ShowcaseCatalogSource: ShowcaseNativeBinding {
-    let serviceTypeRef: String
+    let nodeTypeRef: String
     let artifact: ShowcaseArtifact
 
     func trees(preferredSurface: String) -> [ShowcaseTree] {
@@ -28,11 +28,11 @@ struct ShowcaseCatalogSource: ShowcaseNativeBinding {
 @MainActor
 @Observable
 final class ShowcaseNavigationController: ShowcaseNativeBinding {
-    let serviceTypeRef: String
+    let nodeTypeRef: String
     var path: [GeneratedShowcaseComponentId] = []
 
-    init(serviceTypeRef: String) {
-        self.serviceTypeRef = serviceTypeRef
+    init(nodeTypeRef: String) {
+        self.nodeTypeRef = nodeTypeRef
     }
 
     func open(_ componentId: GeneratedShowcaseComponentId) {
@@ -58,17 +58,18 @@ final class ShowcaseNativeEnvironment {
         let artifact = GeneratedShowcaseProduct.artifacts.first(where: {
             $0.rendererId == ShowcaseNativePlatform.rendererId
         })!
-        let catalogService = GeneratedShowcaseProduct.services.first(where: { $0.id == .catalog })!
-        let navigationService = GeneratedShowcaseProduct.services.first(where: { $0.id == .navigation })!
-        catalog = ShowcaseCatalogSource(serviceTypeRef: catalogService.typeRef, artifact: artifact)
-        navigation = ShowcaseNavigationController(serviceTypeRef: navigationService.typeRef)
-        GeneratedShowcaseServiceId.allCases.forEach { _ = binding(for: $0) }
+        let catalogNode = GeneratedShowcaseProduct.nodes.first(where: { $0.id == .catalog })!
+        let navigationNode = GeneratedShowcaseProduct.nodes.first(where: { $0.id == .navigation })!
+        catalog = ShowcaseCatalogSource(nodeTypeRef: catalogNode.typeRef, artifact: artifact)
+        navigation = ShowcaseNavigationController(nodeTypeRef: navigationNode.typeRef)
+        GeneratedShowcaseNodeId.allCases.forEach { _ = binding(for: $0) }
     }
 
-    func binding(for id: GeneratedShowcaseServiceId) -> any ShowcaseNativeBinding {
+    func binding(for id: GeneratedShowcaseNodeId) -> any ShowcaseNativeBinding {
         switch id {
         case .catalog: catalog
         case .navigation: navigation
+        case .navigationPresentation: navigation
         }
     }
 }

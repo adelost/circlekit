@@ -30,13 +30,14 @@ enum GeneratedShowcaseComponentId: String, CaseIterable, Hashable {
     case flowService = "flow.service"
 }
 
-enum GeneratedShowcaseServiceId: String, CaseIterable, Hashable {
+enum GeneratedShowcaseNodeId: String, CaseIterable, Hashable {
     case catalog = "catalog"
     case navigation = "navigation"
+    case navigationPresentation = "navigation.presentation"
 }
 
 enum GeneratedShowcasePortId: String, CaseIterable, Hashable {
-    case catalogCatalog = "catalog.catalog"
+    case catalogModel = "catalog.model"
     case navigationFoundationColors = "navigation.foundationColors"
     case navigationFoundationGeometry = "navigation.foundationGeometry"
     case navigationAtomIconAction = "navigation.atomIconAction"
@@ -53,6 +54,8 @@ enum GeneratedShowcasePortId: String, CaseIterable, Hashable {
     case navigationFlowUpdate = "navigation.flowUpdate"
     case navigationFlowService = "navigation.flowService"
     case navigationDestination = "navigation.destination"
+    case navigationPresentationDestination = "navigation.presentation.destination"
+    case navigationPresentationModel = "navigation.presentation.model"
     case foundationColorsCatalog = "foundation.colors.catalog"
     case foundationColorsNavigation = "foundation.colors.navigation"
     case foundationColorsOpen = "foundation.colors.open"
@@ -102,7 +105,7 @@ enum GeneratedShowcasePortId: String, CaseIterable, Hashable {
 
 enum GeneratedShowcaseProduct {
     static let productId = "circlekit-showcase"
-    static let productSpecVersion = "0.3.41"
+    static let productSpecVersion = "0.3.42"
     static let artifacts: [ShowcaseArtifact] = [
         ShowcaseArtifact(
             id: .iphoneFullUi,
@@ -710,9 +713,10 @@ enum GeneratedShowcaseProduct {
             ]
         )
     ]
-    static let services: [ShowcaseService] = [
-        ShowcaseService(id: .catalog, typeRef: "showcase.catalog-source"),
-        ShowcaseService(id: .navigation, typeRef: "showcase.navigation-controller")
+    static let nodes: [ShowcaseNode] = [
+        ShowcaseNode(id: .catalog, typeRef: "showcase.catalog-presentation", kind: "present"),
+        ShowcaseNode(id: .navigation, typeRef: "showcase.navigation-service", kind: "service"),
+        ShowcaseNode(id: .navigationPresentation, typeRef: "showcase.navigation-presentation", kind: "present")
     ]
     static let portBindings: [ShowcasePortBinding] = [
         ShowcasePortBinding(kind: "component-event", from: .foundationColorsOpen, to: .navigationFoundationColors, purpose: "data"),
@@ -730,35 +734,36 @@ enum GeneratedShowcaseProduct {
         ShowcasePortBinding(kind: "component-event", from: .flowSourceOpen, to: .navigationFlowSource, purpose: "data"),
         ShowcasePortBinding(kind: "component-event", from: .flowUpdateOpen, to: .navigationFlowUpdate, purpose: "data"),
         ShowcasePortBinding(kind: "component-event", from: .flowServiceOpen, to: .navigationFlowService, purpose: "data"),
-        ShowcasePortBinding(kind: "component-input", from: .catalogCatalog, to: .foundationColorsCatalog, purpose: "data"),
-        ShowcasePortBinding(kind: "component-input", from: .navigationDestination, to: .foundationColorsNavigation, purpose: "data"),
-        ShowcasePortBinding(kind: "component-input", from: .catalogCatalog, to: .foundationGeometryCatalog, purpose: "data"),
-        ShowcasePortBinding(kind: "component-input", from: .navigationDestination, to: .foundationGeometryNavigation, purpose: "data"),
-        ShowcasePortBinding(kind: "component-input", from: .catalogCatalog, to: .atomIconActionCatalog, purpose: "data"),
-        ShowcasePortBinding(kind: "component-input", from: .navigationDestination, to: .atomIconActionNavigation, purpose: "data"),
-        ShowcasePortBinding(kind: "component-input", from: .catalogCatalog, to: .controlActionRowCatalog, purpose: "data"),
-        ShowcasePortBinding(kind: "component-input", from: .navigationDestination, to: .controlActionRowNavigation, purpose: "data"),
-        ShowcasePortBinding(kind: "component-input", from: .catalogCatalog, to: .controlChoiceRowCatalog, purpose: "data"),
-        ShowcasePortBinding(kind: "component-input", from: .navigationDestination, to: .controlChoiceRowNavigation, purpose: "data"),
-        ShowcasePortBinding(kind: "component-input", from: .catalogCatalog, to: .controlAdjustmentCatalog, purpose: "data"),
-        ShowcasePortBinding(kind: "component-input", from: .navigationDestination, to: .controlAdjustmentNavigation, purpose: "data"),
-        ShowcasePortBinding(kind: "component-input", from: .catalogCatalog, to: .controlProgressCatalog, purpose: "data"),
-        ShowcasePortBinding(kind: "component-input", from: .navigationDestination, to: .controlProgressNavigation, purpose: "data"),
-        ShowcasePortBinding(kind: "component-input", from: .catalogCatalog, to: .controlPressRingCatalog, purpose: "data"),
-        ShowcasePortBinding(kind: "component-input", from: .navigationDestination, to: .controlPressRingNavigation, purpose: "data"),
-        ShowcasePortBinding(kind: "component-input", from: .catalogCatalog, to: .inputTextCatalog, purpose: "data"),
-        ShowcasePortBinding(kind: "component-input", from: .navigationDestination, to: .inputTextNavigation, purpose: "data"),
-        ShowcasePortBinding(kind: "component-input", from: .catalogCatalog, to: .mediaCaptureCatalog, purpose: "data"),
-        ShowcasePortBinding(kind: "component-input", from: .navigationDestination, to: .mediaCaptureNavigation, purpose: "data"),
-        ShowcasePortBinding(kind: "component-input", from: .catalogCatalog, to: .mediaPlaybackCatalog, purpose: "data"),
-        ShowcasePortBinding(kind: "component-input", from: .navigationDestination, to: .mediaPlaybackNavigation, purpose: "data"),
-        ShowcasePortBinding(kind: "component-input", from: .catalogCatalog, to: .templateScreensCatalog, purpose: "data"),
-        ShowcasePortBinding(kind: "component-input", from: .navigationDestination, to: .templateScreensNavigation, purpose: "data"),
-        ShowcasePortBinding(kind: "component-input", from: .catalogCatalog, to: .flowSourceCatalog, purpose: "data"),
-        ShowcasePortBinding(kind: "component-input", from: .navigationDestination, to: .flowSourceNavigation, purpose: "data"),
-        ShowcasePortBinding(kind: "component-input", from: .catalogCatalog, to: .flowUpdateCatalog, purpose: "data"),
-        ShowcasePortBinding(kind: "component-input", from: .navigationDestination, to: .flowUpdateNavigation, purpose: "data"),
-        ShowcasePortBinding(kind: "component-input", from: .catalogCatalog, to: .flowServiceCatalog, purpose: "data"),
-        ShowcasePortBinding(kind: "component-input", from: .navigationDestination, to: .flowServiceNavigation, purpose: "data")
+        ShowcasePortBinding(kind: "node-input", from: .navigationDestination, to: .navigationPresentationDestination, purpose: "data"),
+        ShowcasePortBinding(kind: "component-input", from: .catalogModel, to: .foundationColorsCatalog, purpose: "data"),
+        ShowcasePortBinding(kind: "component-input", from: .navigationPresentationModel, to: .foundationColorsNavigation, purpose: "data"),
+        ShowcasePortBinding(kind: "component-input", from: .catalogModel, to: .foundationGeometryCatalog, purpose: "data"),
+        ShowcasePortBinding(kind: "component-input", from: .navigationPresentationModel, to: .foundationGeometryNavigation, purpose: "data"),
+        ShowcasePortBinding(kind: "component-input", from: .catalogModel, to: .atomIconActionCatalog, purpose: "data"),
+        ShowcasePortBinding(kind: "component-input", from: .navigationPresentationModel, to: .atomIconActionNavigation, purpose: "data"),
+        ShowcasePortBinding(kind: "component-input", from: .catalogModel, to: .controlActionRowCatalog, purpose: "data"),
+        ShowcasePortBinding(kind: "component-input", from: .navigationPresentationModel, to: .controlActionRowNavigation, purpose: "data"),
+        ShowcasePortBinding(kind: "component-input", from: .catalogModel, to: .controlChoiceRowCatalog, purpose: "data"),
+        ShowcasePortBinding(kind: "component-input", from: .navigationPresentationModel, to: .controlChoiceRowNavigation, purpose: "data"),
+        ShowcasePortBinding(kind: "component-input", from: .catalogModel, to: .controlAdjustmentCatalog, purpose: "data"),
+        ShowcasePortBinding(kind: "component-input", from: .navigationPresentationModel, to: .controlAdjustmentNavigation, purpose: "data"),
+        ShowcasePortBinding(kind: "component-input", from: .catalogModel, to: .controlProgressCatalog, purpose: "data"),
+        ShowcasePortBinding(kind: "component-input", from: .navigationPresentationModel, to: .controlProgressNavigation, purpose: "data"),
+        ShowcasePortBinding(kind: "component-input", from: .catalogModel, to: .controlPressRingCatalog, purpose: "data"),
+        ShowcasePortBinding(kind: "component-input", from: .navigationPresentationModel, to: .controlPressRingNavigation, purpose: "data"),
+        ShowcasePortBinding(kind: "component-input", from: .catalogModel, to: .inputTextCatalog, purpose: "data"),
+        ShowcasePortBinding(kind: "component-input", from: .navigationPresentationModel, to: .inputTextNavigation, purpose: "data"),
+        ShowcasePortBinding(kind: "component-input", from: .catalogModel, to: .mediaCaptureCatalog, purpose: "data"),
+        ShowcasePortBinding(kind: "component-input", from: .navigationPresentationModel, to: .mediaCaptureNavigation, purpose: "data"),
+        ShowcasePortBinding(kind: "component-input", from: .catalogModel, to: .mediaPlaybackCatalog, purpose: "data"),
+        ShowcasePortBinding(kind: "component-input", from: .navigationPresentationModel, to: .mediaPlaybackNavigation, purpose: "data"),
+        ShowcasePortBinding(kind: "component-input", from: .catalogModel, to: .templateScreensCatalog, purpose: "data"),
+        ShowcasePortBinding(kind: "component-input", from: .navigationPresentationModel, to: .templateScreensNavigation, purpose: "data"),
+        ShowcasePortBinding(kind: "component-input", from: .catalogModel, to: .flowSourceCatalog, purpose: "data"),
+        ShowcasePortBinding(kind: "component-input", from: .navigationPresentationModel, to: .flowSourceNavigation, purpose: "data"),
+        ShowcasePortBinding(kind: "component-input", from: .catalogModel, to: .flowUpdateCatalog, purpose: "data"),
+        ShowcasePortBinding(kind: "component-input", from: .navigationPresentationModel, to: .flowUpdateNavigation, purpose: "data"),
+        ShowcasePortBinding(kind: "component-input", from: .catalogModel, to: .flowServiceCatalog, purpose: "data"),
+        ShowcasePortBinding(kind: "component-input", from: .navigationPresentationModel, to: .flowServiceNavigation, purpose: "data")
     ]
 }

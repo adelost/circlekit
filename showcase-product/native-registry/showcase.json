@@ -1,6 +1,6 @@
 {
   "stage": "native-export",
-  "schemaVersion": 2,
+  "schemaVersion": 3,
   "sourceFile": "showcase-catalog/src/main/java/io/v1d/circlekit/showcase/catalog/ShowcaseNativeBindings.kt",
   "profiles": ["phone-full-ui", "wear-full-ui"],
   "components": [
@@ -34,9 +34,10 @@
     { "iconId": "record", "nativeSymbol": "RingIcons.Record" },
     { "iconId": "wrench", "nativeSymbol": "RingIcons.Wrench" }
   ],
-  "services": [
-    { "serviceId": "catalog", "nativePortId": "io.v1d.circlekit.showcase.catalog.ShowcaseCatalogRuntime", "profiles": ["phone-full-ui", "wear-full-ui"], "inputPorts": [], "outputPorts": ["catalog"] },
-    { "serviceId": "navigation", "nativePortId": "io.v1d.circlekit.showcase.catalog.ShowcaseSession", "profiles": ["phone-full-ui", "wear-full-ui"], "inputPorts": ["foundationColors", "foundationGeometry", "atomIconAction", "controlActionRow", "controlChoiceRow", "controlAdjustment", "controlProgress", "controlPressRing", "inputText", "mediaCapture", "mediaPlayback", "templateScreens", "flowSource", "flowUpdate", "flowService"], "outputPorts": ["destination"] }
+  "nodes": [
+    { "nodeId": "catalog", "nativePortId": "io.v1d.circlekit.showcase.catalog.ShowcaseCatalogRuntime", "profiles": ["phone-full-ui", "wear-full-ui"], "inputPorts": [], "outputPorts": ["model"] },
+    { "nodeId": "navigation", "nativePortId": "io.v1d.circlekit.showcase.catalog.ShowcaseSession", "profiles": ["phone-full-ui", "wear-full-ui"], "inputPorts": ["foundationColors", "foundationGeometry", "atomIconAction", "controlActionRow", "controlChoiceRow", "controlAdjustment", "controlProgress", "controlPressRing", "inputText", "mediaCapture", "mediaPlayback", "templateScreens", "flowSource", "flowUpdate", "flowService"], "outputPorts": ["destination"] },
+    { "nodeId": "navigation.presentation", "nativePortId": "io.v1d.circlekit.showcase.catalog.ShowcaseSession", "profiles": ["phone-full-ui", "wear-full-ui"], "inputPorts": ["destination"], "outputPorts": ["model"] }
   ],
   "finiteValues": []
 }

@@ -36,9 +36,10 @@ data class ShowcaseComponentTree(
     val componentIds: List<String>,
 )
 
-data class ShowcaseServiceDescriptor(
+data class ShowcaseNodeDescriptor(
     val id: String,
     val typeRef: String,
+    val kind: String,
 )
 
 data class ShowcaseProductPort(
@@ -67,7 +68,7 @@ data class ShowcaseDemandEdge(
     val screenRef: String?,
     val surface: String?,
     val componentInstanceRef: String?,
-    val serviceInstanceRef: String,
+    val nodeInstanceRef: String,
     val targetPortRef: String,
 )
 

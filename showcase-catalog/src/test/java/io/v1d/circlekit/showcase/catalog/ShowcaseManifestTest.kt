@@ -44,8 +44,8 @@ class ShowcaseManifestTest {
             ShowcaseNativeBindings.components.all { it.profiles == ShowcaseNativeBindings.profiles },
         )
         assertEquals(
-            ShowcaseManifest.services.map { it.id }.toSet(),
-            ShowcaseNativeBindings.services.map { it.serviceId }.toSet(),
+            ShowcaseManifest.nodes.map { it.id }.toSet(),
+            ShowcaseNativeBindings.nodes.map { it.nodeId }.toSet(),
         )
         assertSame(ShowcaseManifest.ports, ShowcaseProductInspectorRegistry.ports)
         assertSame(ShowcaseManifest.bindings, ShowcaseProductInspectorRegistry.bindings)

@@ -7,7 +7,7 @@ import { CIRCLEKIT_ASSET_CATALOG } from "@v1d/circlekit-assets";
 import { showcaseCases, showcaseSections } from "./catalog.js";
 import { showcaseComponentInstances, showcaseComponentTypes } from "./graph-components.js";
 import { SHOWCASE_SECTION_SCREENS, showcaseComponentFamilies } from "./graph-families.js";
-import { showcaseServices, showcaseServiceTypes } from "./graph-services.js";
+import { showcaseNodes, showcaseNodeTypes } from "./graph-nodes.js";
 
 const SHOWCASE_ANDROID_ARTIFACT_PROFILES = ["phone-full-ui", "wear-full-ui"] as const;
 const SHOWCASE_FULL_UI_ARTIFACT_PROFILES = [
@@ -88,8 +88,8 @@ const baseProduct = defineProduct({
       serves: ["round"],
     },
   ],
-  serviceTypes: showcaseServiceTypes,
-  services: showcaseServices,
+  nodeTypes: showcaseNodeTypes,
+  nodes: showcaseNodes,
   configs: [],
   // Showcase demonstrates components, not domain state, so it owns no closed value
   // space. The field is required rather than optional so that "none" is something a
@@ -141,7 +141,7 @@ export function compileCircleKitShowcaseProduct(
   // the very check meant to catch it.
   requireEveryComponentOnEveryAndroidProfile(manifest);
   requireNativeHostConformance(ir, manifest);
-  requireExactNativeServices(ir, manifest);
+  requireExactNativeNodes(ir, manifest);
   return ir;
 }
 
@@ -184,32 +184,32 @@ function requireNativeHostConformance(
   if (iconFindings.length > 0) throw new Error(iconFindings.join("\n"));
 }
 
-function requireExactNativeServices(
+function requireExactNativeNodes(
   product: CircleKitShowcaseProductIr,
   manifest: NativeBindingManifest,
 ): void {
-  if (manifest.services === undefined) throw new Error("Showcase native services are unasserted");
-  requireUnique(manifest.services.map(({ serviceId }) => serviceId), "native service binding");
-  const expectedIds = product.services.map(({ id }) => id).sort();
-  const actualIds = manifest.services.map(({ serviceId }) => serviceId).sort();
+  if (manifest.nodes === undefined) throw new Error("Showcase native nodes are unasserted");
+  requireUnique(manifest.nodes.map(({ nodeId }) => nodeId), "native node binding");
+  const expectedIds = product.nodes.map(({ id }) => id).sort();
+  const actualIds = manifest.nodes.map(({ nodeId }) => nodeId).sort();
   if (expectedIds.join(",") !== actualIds.join(",")) {
-    throw new Error(`Showcase native services differ: expected [${expectedIds}] actual [${actualIds}]`);
+    throw new Error(`Showcase native nodes differ: expected [${expectedIds}] actual [${actualIds}]`);
   }
   const expectedProfiles = [...SHOWCASE_ANDROID_ARTIFACT_PROFILES].sort().join(",");
-  for (const service of manifest.services) {
-    const actualProfiles = [...service.profiles].sort().join(",");
+  for (const node of manifest.nodes) {
+    const actualProfiles = [...node.profiles].sort().join(",");
     if (actualProfiles !== expectedProfiles) {
-      throw new Error(`Showcase native service '${service.serviceId}' has profiles [${actualProfiles}]`);
+      throw new Error(`Showcase native node '${node.nodeId}' has profiles [${actualProfiles}]`);
     }
-    const ports = product.portRegistry.servicePorts.filter(({ ownerId }) => ownerId === service.serviceId);
+    const ports = product.portRegistry.nodePorts.filter(({ ownerId }) => ownerId === node.nodeId);
     const expectedInputs = ports.filter(({ direction }) => direction === "input").map(({ portId }) => portId).sort();
     const expectedOutputs = ports.filter(({ direction }) => direction === "output").map(({ portId }) => portId).sort();
-    const actualInputs = [...service.inputPorts].sort();
-    const actualOutputs = [...service.outputPorts].sort();
+    const actualInputs = [...node.inputPorts].sort();
+    const actualOutputs = [...node.outputPorts].sort();
     if (expectedInputs.join(",") !== actualInputs.join(",") ||
         expectedOutputs.join(",") !== actualOutputs.join(",")) {
       throw new Error(
-        `Showcase native service '${service.serviceId}' ports differ: ` +
+        `Showcase native node '${node.nodeId}' ports differ: ` +
         `inputs [${actualInputs}] outputs [${actualOutputs}]`,
       );
     }

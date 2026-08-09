@@ -1,6 +1,6 @@
 package io.v1d.circlekit.showcase.catalog
 
-/** The native catalog service backed by the generated Product IR projection. */
+/** The native final presentation backed by the generated Product IR catalog. */
 object ShowcaseCatalogRuntime {
     fun find(caseId: ShowcaseCaseId): ShowcaseCase? = ShowcaseManifest.find(caseId)
 
