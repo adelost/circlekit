@@ -690,6 +690,116 @@ test("closed state authority rejects incomplete, invented and overlapping presen
     ]);
   }
 
+  const cacheStatsContract = {
+    id: "fixture.map-cache-stats",
+    kind: "snapshot",
+    boundary: "presentation",
+    fields: [field("entries", "integer")],
+  } as const;
+  const mapService = service({
+    id: "fixture.map-service",
+    inputs: [
+      demandPort("demand", demandContract),
+      port("guidance", availabilityContract),
+    ],
+    outputs: [port("cacheStats", cacheStatsContract)],
+    runtime: {
+      stateOwner: "instance", lifetime: "process", durability: "transient",
+      clockDomain: "none", contextInputs: [], effects: ["fixture.map-cache-read"],
+    },
+  } as const);
+  const positionProjection = present({
+    id: "fixture.position-projection",
+    inputs: [port("position", availabilityContract)],
+    outputs: [port("model", availabilityContract)],
+    runtime: {
+      stateOwner: "none", lifetime: "call", durability: "transient",
+      clockDomain: "none", contextInputs: [], effects: [],
+    },
+  } as const);
+  const settingsProjection = present({
+    id: "fixture.settings-projection",
+    inputs: [port("cacheStats", cacheStatsContract)],
+    outputs: [port("model", cacheStatsContract)],
+    runtime: {
+      stateOwner: "none", lifetime: "call", durability: "transient",
+      clockDomain: "none", contextInputs: [], effects: [],
+    },
+  } as const);
+  const positionControlType = defineComponentType({
+    id: "fixture.position-control",
+    requiredCapabilities: ["ui.menu"],
+    inputs: [
+      componentPort("model", availabilityContract),
+      componentPort("availabilityPresentation", availabilityPresentation.contract),
+    ],
+    outputs: [],
+  } as const);
+  const settingsControlType = defineComponentType({
+    id: "fixture.settings-control",
+    requiredCapabilities: ["ui.menu"],
+    inputs: [componentPort("model", cacheStatsContract)],
+    outputs: [],
+  } as const);
+  const positionControl = {
+    id: "control.position",
+    componentTypeRef: positionControlType.id,
+    bindings: { inputs: {
+      model: "ui.position.model",
+      availabilityPresentation: availabilityDefinition.authority.adapter.outputPortRef,
+    }, events: {} },
+  } as const;
+  const settingsControl = {
+    id: "control.settings",
+    componentTypeRef: settingsControlType.id,
+    bindings: { inputs: { model: "ui.settings.model" }, events: {} },
+  } as const;
+  const serviceBoundaryFamilies = defineScreenComponentFamilyRegistry(
+    [positionControl, settingsControl],
+    [{ screen: "MAIN", family: {
+      id: "fixture.service-boundary-main",
+      trees: PORTABLE_SURFACE_CLASSES.map((surface) => ({
+        surface,
+        mounts: [
+          { instance: positionControl.id, region: "primary" },
+          { instance: settingsControl.id, region: "secondary" },
+        ],
+      })),
+    } }] as const,
+  );
+  const serviceBoundary = defineProduct({
+    ...baseDeclaration,
+    nodeTypes: [
+      source, positionPresentation, availabilityDefinition.adapter.type,
+      mapService, positionProjection, settingsProjection,
+    ],
+    nodes: [
+      baseDeclaration.nodes[0],
+      { id: "position.presentation", nodeTypeRef: positionPresentation.id, config: {}, bindings: {
+        raw: "domain.source.status",
+      } },
+      availabilityDefinition.adapter.node,
+      { id: "map.service", nodeTypeRef: mapService.id, config: {}, bindings: {
+        guidance: "position.presentation.state",
+      }, activation: { kind: "leased", port: "demand", lifecycleSources: [] } },
+      { id: "ui.position", nodeTypeRef: positionProjection.id, config: {}, bindings: {
+        position: "position.presentation.state",
+      } },
+      { id: "ui.settings", nodeTypeRef: settingsProjection.id, config: {}, bindings: {
+        cacheStats: "map.service.cacheStats",
+      } },
+    ],
+    finiteValues: [availabilityStates],
+    stateAuthorities: [availabilityDefinition.authority],
+    componentTypes: [positionControlType, settingsControlType],
+    components: [positionControl, settingsControl],
+    componentFamilies: serviceBoundaryFamilies,
+  }, assetCatalog);
+  assert.deepEqual(serviceBoundary.stateAuthorities[0]?.presentation.consumers,
+    ["control.position.availabilityPresentation"]);
+  assert.equal(serviceBoundary.stateAuthorities[0]?.presentation.consumers.includes(
+    "control.settings.availabilityPresentation"), false);
+
   const alternatePresentation = defineStatePresentation(alternatePhases, {
     id: "fixture.alternate-signal",
     fields: phasePresentation.fields,
