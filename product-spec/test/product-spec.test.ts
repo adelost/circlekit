@@ -1111,7 +1111,7 @@ test("lifecycle demand crosses a lifetime origin and leases only its upstream ta
 
 const conformingManifest: NativeBindingManifest = {
   stage: "native-export",
-  schemaVersion: 3,
+  schemaVersion: 4,
   sourceFile: "fixture/NativeBindings.kt",
   profiles: ["phone", "wear"],
   components: [
@@ -1123,6 +1123,13 @@ const conformingManifest: NativeBindingManifest = {
     { nodeId: "domain.source", nativePortId: "SourcePorts", profiles: ["phone", "wear"], inputPorts: ["demand"], outputPorts: ["status"] },
     { nodeId: "ui.controller", nativePortId: "ControllerPorts", profiles: ["phone", "wear"], inputPorts: ["sourceState", "trigger"], outputPorts: ["state"] },
     { nodeId: "ui.projection", nativePortId: "ProjectionPorts", profiles: ["phone", "wear"], inputPorts: ["state"], outputPorts: ["model"] },
+    {
+      nodeId: "fixture.phase-authority.presentation-adapter",
+      nativePortId: "FixturePhasePresentationAdapterPorts",
+      profiles: ["phone", "wear"],
+      inputPorts: ["state"],
+      outputPorts: ["presentation"],
+    },
   ],
   finiteValues: [{ id: "fixture.phase", values: ["idle", "active"] }],
 };
@@ -1143,10 +1150,45 @@ const AXIS_MUTATIONS: readonly {
   change: (draft: NativeBindingManifest) => NativeBindingManifest;
 }[] = [
   { axis: "artifact", direction: "orphan", subject: "toaster", change: (d) => ({ ...d, profiles: [...d.profiles!, "toaster"] }) },
+  { axis: "node-port", direction: "missing", subject: "ui.projection", change: (d) => ({
+    ...d,
+    nodes: d.nodes.filter((node) => node.nodeId !== "ui.projection"),
+  }) },
+  { axis: "node-port", direction: "orphan", subject: "native.orphan", change: (d) => ({
+    ...d,
+    nodes: [...d.nodes, {
+      nodeId: "native.orphan", nativePortId: "OrphanPorts", profiles: ["phone"],
+      inputPorts: [], outputPorts: [],
+    }],
+  }) },
+  { axis: "node-port", direction: "missing", subject: "ui.controller.sourceState", change: (d) => ({
+    ...d,
+    nodes: d.nodes.map((node) => node.nodeId === "ui.controller"
+      ? { ...node, inputPorts: node.inputPorts.filter((port) => port !== "sourceState") }
+      : node),
+  }) },
   { axis: "node-port", direction: "orphan", subject: "ui.controller.invented", change: (d) => ({
     ...d,
-    nodes: d.nodes!.map((node) => node.nodeId === "ui.controller"
+    nodes: d.nodes.map((node) => node.nodeId === "ui.controller"
       ? { ...node, inputPorts: [...node.inputPorts, "invented"] }
+      : node),
+  }) },
+  { axis: "node-port", direction: "missing", subject: "ui.controller.state", change: (d) => ({
+    ...d,
+    nodes: d.nodes.map((node) => node.nodeId === "ui.controller"
+      ? { ...node, outputPorts: node.outputPorts.filter((port) => port !== "state") }
+      : node),
+  }) },
+  { axis: "node-port", direction: "orphan", subject: "ui.controller.inventedOutput", change: (d) => ({
+    ...d,
+    nodes: d.nodes.map((node) => node.nodeId === "ui.controller"
+      ? { ...node, outputPorts: [...node.outputPorts, "inventedOutput"] }
+      : node),
+  }) },
+  { axis: "node-port", direction: "mismatch", subject: "ui.controller.state", change: (d) => ({
+    ...d,
+    nodes: d.nodes.map((node) => node.nodeId === "ui.controller"
+      ? { ...node, outputPorts: [...node.outputPorts, "state"] }
       : node),
   }) },
   { axis: "component", direction: "mismatch", subject: "fixture.control@phone", change: (d) => ({
@@ -1161,7 +1203,7 @@ const AXIS_MUTATIONS: readonly {
 for (const { axis, direction, subject, change } of AXIS_MUTATIONS) {
   test(`conformance catches a ${direction} ${axis}`, () => {
     const finding = productArtifactConformance(fixture(), mutate(change))
-      .find((item) => item.axis === axis && item.direction === direction);
+      .find((item) => item.axis === axis && item.direction === direction && item.subject === subject);
     assert.equal(finding?.subject, subject);
   });
 }
@@ -1175,15 +1217,12 @@ test("the hard gate and host coverage keep their two directions", () => {
   assert.deepEqual(productArtifactHostCoverage(fixture(), [android, { ...conformingManifest, profiles: ["wear"] }]), []);
 });
 
-test("native manifest decoding fails loud and preserves unasserted sections", () => {
+test("native manifest decoding fails loud and requires the node axis", () => {
   assert.throws(() => decodeNativeBindingManifest({ ...conformingManifest, stage: "draft" }), /not a compiled native export/);
   assert.throws(() => decodeNativeBindingManifest({ ...conformingManifest, schemaVersion: 1 }), /schema 1 is unsupported/);
   const partial = { ...conformingManifest } as Record<string, unknown>;
   delete partial.nodes;
-  const decoded = decodeNativeBindingManifest(partial);
-  assert.equal(decoded.nodes, undefined);
-  assert.deepEqual(productArtifactConformance(fixture(), decoded)
-    .filter(({ axis }) => axis === "node-port").map(({ direction }) => direction), ["unasserted"]);
+  assert.throws(() => decodeNativeBindingManifest(partial), /manifest nodes must be an array/);
 });
 
 test("visual contracts still fail on unknown palette and asset refs", () => {
