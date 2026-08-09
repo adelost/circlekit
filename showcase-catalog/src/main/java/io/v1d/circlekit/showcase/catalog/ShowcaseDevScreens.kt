@@ -65,13 +65,13 @@ internal object ShowcaseDevScreens {
     private fun productGraph(): RingScreen = RingScreen.Rows(
         title = "PRODUCT GRAPH",
         items = flowOf(
-            ShowcaseProductInspectorRegistry.services.map { service ->
-                val portCount = ShowcaseProductInspectorRegistry.ports.count { it.ownerId == service.id }
+            ShowcaseProductInspectorRegistry.nodes.map { node ->
+                val portCount = ShowcaseProductInspectorRegistry.ports.count { it.ownerId == node.id }
                 RowSpec(
-                    key = "service.${service.id}",
-                    title = service.id.uppercase(),
-                    sub = "${service.typeRef} · $portCount PORTS",
-                    icon = RingIcons.Wrench,
+                    key = "node.${node.id}",
+                    title = node.id.uppercase(),
+                    sub = "${node.kind.uppercase()} · ${node.typeRef} · $portCount PORTS",
+                    icon = if (node.kind == "service") RingIcons.Wrench else RingIcons.Grid,
                 )
             } + ShowcaseProductInspectorRegistry.ports.map { port ->
                 RowSpec(

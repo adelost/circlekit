@@ -26,8 +26,8 @@ export const showcaseComponentInstances = showcaseCases.map(({ id, openPort }) =
   componentTypeRef: id,
   bindings: {
     inputs: {
-      catalog: "catalog.catalog" as const,
-      navigation: "navigation.destination" as const,
+      catalog: "catalog.model" as const,
+      navigation: "navigation.presentation.model" as const,
     },
     events: { open: `navigation.${openPort}` as `navigation.${typeof openPort}` },
   },

@@ -121,9 +121,10 @@ struct ShowcaseIconAsset: Identifiable, Hashable {
     let paths: [ShowcaseIconPath]
 }
 
-struct ShowcaseService: Hashable {
-    let id: GeneratedShowcaseServiceId
+struct ShowcaseNode: Hashable {
+    let id: GeneratedShowcaseNodeId
     let typeRef: String
+    let kind: String
 }
 
 struct ShowcasePortBinding: Hashable {
