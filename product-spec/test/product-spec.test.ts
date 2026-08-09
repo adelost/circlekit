@@ -1465,6 +1465,44 @@ test("the hard gate and host coverage keep their two directions", () => {
   assert.deepEqual(productArtifactHostCoverage(fixture(), [android, { ...conformingManifest, profiles: ["wear"] }]), []);
 });
 
+test("one host checks only its component profiles while host coverage checks the fleet", () => {
+  const renderers = [
+    ...baseDeclaration.rendererBindings,
+    { id: "renderer.iphone", capabilities: ["ui.menu"] },
+    { id: "renderer.watchos", capabilities: ["ui.menu"] },
+    { id: "renderer.garmin", capabilities: ["ui.menu"] },
+  ] as const;
+  const extraArtifacts = [
+    { id: "iphone", rendererRefs: ["renderer.iphone"], requiredCapabilities: ["ui.menu"], entryScreen: "MAIN", screenRefs: ["MAIN"], serves: ["compact"] },
+    { id: "watchos", rendererRefs: ["renderer.watchos"], requiredCapabilities: ["ui.menu"], entryScreen: "MAIN", screenRefs: ["MAIN"], serves: ["round"] },
+    { id: "garmin", rendererRefs: ["renderer.garmin"], requiredCapabilities: ["ui.menu"], entryScreen: "MAIN", screenRefs: ["MAIN"], serves: ["round"] },
+  ] as const;
+  const product = fixture({
+    rendererBindings: renderers,
+    artifacts: [...baseDeclaration.artifacts, ...extraArtifacts],
+    iconRefs: [{ ...baseDeclaration.iconRefs[0], artifacts: ["phone", "wear", "iphone", "watchos", "garmin"] }],
+  });
+  const android = conformingManifest;
+  const host = (sourceFile: string, profiles: readonly string[]): NativeBindingManifest => ({
+    ...conformingManifest,
+    sourceFile,
+    profiles,
+    components: [{ componentId: "fixture.control", rendererId: sourceFile, profiles }],
+    nodes: conformingManifest.nodes.map((node) => ({ ...node, profiles })),
+  });
+  const apple = host("fixture/AppleBindings.swift", ["iphone", "watchos"]);
+  const garmin = host("fixture/GarminBindings.mc", ["garmin"]);
+
+  assert.deepEqual(productArtifactConformance(product, android), []);
+  assert.deepEqual(productArtifactConformance(product, apple), []);
+  assert.deepEqual(productArtifactConformance(product, garmin), []);
+  assert.deepEqual(
+    productArtifactHostCoverage(product, [android]).map(({ subject }) => subject),
+    ["garmin", "iphone", "watchos"],
+  );
+  assert.deepEqual(productArtifactHostCoverage(product, [android, apple, garmin]), []);
+});
+
 test("native manifest decoding fails loud and requires the node axis", () => {
   assert.throws(() => decodeNativeBindingManifest({ ...conformingManifest, stage: "draft" }), /not a compiled native export/);
   assert.throws(() => decodeNativeBindingManifest({ ...conformingManifest, schemaVersion: 1 }), /schema 1 is unsupported/);
