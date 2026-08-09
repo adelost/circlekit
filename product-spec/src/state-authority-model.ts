@@ -1,10 +1,10 @@
 import type { ProductNodeInstance } from "./node-instance-model.js";
 import {
   contractFingerprint,
-  derive,
   field,
   finiteValueRef,
   port,
+  present,
   requireIdentifier,
   requireUnique,
   requireWireId,
@@ -15,36 +15,30 @@ import {
   type ProductNodeType,
 } from "./node-model.js";
 import type { CompiledProductGraph, PortBindingIr } from "./port-graph-model.js";
-
 export type StatePresentationFieldValue = LegoPrimitive | LegoFiniteValueDeclaration;
 export interface StatePresentationField<Name extends string = string,
   Value extends StatePresentationFieldValue = StatePresentationFieldValue> {
   readonly name: Name;
   readonly value: Value;
 }
-
 export function statePresentationField<const Name extends string, const Value extends StatePresentationFieldValue>(
   name: Name, value: Value,
 ): StatePresentationField<Name, Value> {
   requireIdentifier(name, "state presentation field");
   return { name, value };
 }
-
 type PresentationValue<Value extends StatePresentationFieldValue> =
   Value extends LegoFiniteValueDeclaration ? Value["values"][number]
     : Value extends "boolean" ? boolean
       : Value extends "integer" | "number" ? number
         : string;
-
 type PresentationPayload<Fields extends readonly StatePresentationField[]> = {
   readonly [Field in Fields[number] as Field["name"]]: PresentationValue<Field["value"]>;
 };
-
 type StateCases<
   States extends LegoFiniteValueDeclaration,
   Fields extends readonly StatePresentationField[],
 > = { readonly [State in States["values"][number]]: PresentationPayload<Fields> };
-
 type ExactPayload<Fields extends readonly StatePresentationField[], Payload> =
   Payload & Record<Exclude<keyof Payload, Fields[number]["name"]>, never>;
 
@@ -95,7 +89,7 @@ export function defineStatePresentation<
   const contract = {
     id: `${declaration.id}.payload` as `${Id}.payload`,
     kind: "snapshot",
-    boundary: "service-internal",
+    boundary: "presentation",
     fields: declaration.fields.map((item) => field(
       item.name,
       typeof item.value === "string" ? item.value : finiteValueRef(item.value.id),
@@ -136,9 +130,9 @@ export interface CompiledStateAuthority extends Omit<StateAuthority, "presentati
 type ContractFieldName<Contract extends LegoContract> = Contract["fields"][number]["name"];
 
 /**
- * Defines both the authority declaration and its executable presentation adapter.
- * Products add adapter.type/node to the same mandatory graph and bind adapter.output
- * into every reached present node. The compiler validates that totality.
+ * Defines both the authority declaration and its executable final presentation.
+ * Products add adapter.type/node to the mandatory graph and bind its presentation
+ * output directly into components; handwritten present nodes cannot intercept it.
  */
 export function defineStateAuthority<
   const Id extends string,
@@ -163,7 +157,7 @@ export function defineStateAuthority<
     "presentation",
     declaration.presentation.contract,
   );
-  const type = derive({
+  const type = present({
     id: nodeId,
     inputs: [stateInput],
     outputs: [presentationOutput],
@@ -208,9 +202,10 @@ export function compileStateAuthorities(
   const nodeTypeById = new Map(graph.nodeTypes.map((item) => [item.id, item]));
   const nodeById = new Map(graph.nodes.map((item) => [item.id, item]));
   const portByRef = new Map(graph.portRegistry.nodePorts.map((item) => [item.ref, item]));
-  const flowBindings = graph.portRegistry.bindings.filter(({ kind, purpose }) =>
-    kind === "node-input" && purpose === "data");
-  const upstreamByNode = groupOwners(flowBindings);
+  const dataBindings = graph.portRegistry.bindings.filter(({ purpose }) => purpose === "data");
+  const nodeBindings = dataBindings.filter(({ kind }) => kind === "node-input");
+  const componentBindings = dataBindings.filter(({ kind }) => kind === "component-input");
+  const upstreamByNode = groupOwners(nodeBindings);
   const outputsByNode = new Map<string, string[]>();
   for (const portEntry of graph.portRegistry.nodePorts.filter(({ direction }) => direction === "output")) {
     const refs = outputsByNode.get(portEntry.ownerId) ?? [];
@@ -218,21 +213,24 @@ export function compileStateAuthorities(
     outputsByNode.set(portEntry.ownerId, refs);
   }
   const targetsByOutput = new Map<string, Set<string>>();
-  for (const binding of flowBindings) {
+  for (const binding of nodeBindings) {
     const targets = targetsByOutput.get(binding.from) ?? new Set<string>();
     targets.add(ownerOf(binding.to));
     targetsByOutput.set(binding.from, targets);
   }
   const presentIds = new Set(graph.nodes.filter((node) =>
     nodeTypeById.get(node.nodeTypeRef)?.kind === "present").map(({ id }) => id));
+  const adapterIds = new Set(declarations.map(({ adapter }) => adapter.nodeInstanceRef));
+  const ordinaryPresentIds = new Set([...presentIds].filter((id) => !adapterIds.has(id)));
+  const componentIds = new Set(graph.portRegistry.componentPorts.map(({ ownerId }) => ownerId));
   const authorityByAxis = new Map(declarations.map((item) => [axisKey(item), item]));
   const generatedAdapterOutputs = new Set(declarations.map(({ adapter }) => adapter.outputPortRef));
   const eligibleAxes: { readonly portRef: string; readonly field: string; readonly stateRef: string }[] = [];
 
   for (const output of graph.portRegistry.nodePorts.filter(({ direction }) => direction === "output")) {
-    if (presentIds.has(output.ownerId) || generatedAdapterOutputs.has(output.ref) || !outputReachesPresent(output.ref)) continue;
+    if (presentIds.has(output.ownerId) || generatedAdapterOutputs.has(output.ref) || !componentTargets(output.ref).size) continue;
     const contract = contractById.get(output.contractRef);
-    if (contract?.kind !== "state") continue;
+    if (contract?.boundary !== "presentation" || contract.kind === "event") continue;
     for (const contractField of contract.fields) {
       if (!isFiniteValueRef(contractField.value)) continue;
       eligibleAxes.push({ portRef: output.ref, field: contractField.name, stateRef: contractField.value.ref });
@@ -249,53 +247,65 @@ export function compileStateAuthorities(
       throw new Error(`state authority '${authority.id}' does not own a UI-reaching closed state`);
     }
   }
-  rejectOverlappingAuthorities(declarations, upstreamByNode, presentTargetsForOutput);
-  const authorityPairs = new Map<string, ReadonlyMap<string, { readonly canonical: readonly PortBindingIr[]; readonly adapter: readonly PortBindingIr[] }>>();
-  for (const presentId of presentIds) {
-    const pairs = new Map<string, { readonly canonical: readonly PortBindingIr[]; readonly adapter: readonly PortBindingIr[] }>();
+  rejectOverlappingAuthorities(declarations, upstreamByNode, componentTargets);
+  for (const presentId of ordinaryPresentIds) {
     for (const authority of declarations) {
-      const canonical = flowBindings.filter(({ from, to }) =>
+      const direct = nodeBindings.filter(({ from, to }) =>
         from === authority.source.portRef && ownerOf(to) === presentId);
-      const adapter = flowBindings.filter(({ from, to }) =>
-        from === authority.adapter.outputPortRef && ownerOf(to) === presentId);
-      if (canonical.length > 1 || adapter.length > 1 || (canonical.length === 1) !== (adapter.length === 1)) {
+      if (direct.length > 1) {
         throw new Error(
-          `present '${presentId}' must bind state authority '${authority.id}' as exactly one canonical input ` +
-          `'${authority.source.portRef}' plus one generated adapter input '${authority.adapter.outputPortRef}' ` +
-          `(found ${canonical.length}/${adapter.length})`,
-        );
-      }
-      pairs.set(authority.id, { canonical, adapter });
-      if (presentTargetsForOutput(authority.source.portRef).has(presentId) && canonical.length !== 1) {
-        throw new Error(
-          `present '${presentId}' derives from state authority '${authority.id}' but does not consume its canonical state and adapter`,
+          `present '${presentId}' must bind at most one direct canonical input ` +
+          `'${authority.source.portRef}' (found ${direct.length})`,
         );
       }
     }
-    const upstreamOwners = lineage(presentId, upstreamByNode);
+  }
+  const authorityBindings = new Map<string, ReadonlyMap<string, readonly PortBindingIr[]>>();
+  for (const componentId of componentIds) {
+    const bindings = new Map<string, readonly PortBindingIr[]>();
+    for (const authority of declarations) {
+      const matches = componentBindings.filter(({ from, to }) =>
+        from === authority.adapter.outputPortRef && ownerOf(to) === componentId);
+      if (matches.length > 1) {
+        throw new Error(
+          `component '${componentId}' binds state presentation '${authority.adapter.outputPortRef}' ${matches.length} times`,
+        );
+      }
+      bindings.set(authority.id, matches);
+      if (componentTargets(authority.source.portRef, adapterIds).has(componentId) && matches.length !== 1) {
+        throw new Error(
+          `component '${componentId}' receives data derived from state authority '${authority.id}' ` +
+          `but does not consume its generated presentation '${authority.adapter.outputPortRef}'`,
+        );
+      }
+    }
+    const ordinarySources = componentBindings.filter(({ from, to }) =>
+      ownerOf(to) === componentId && ordinaryPresentIds.has(ownerOf(from)));
+    const upstreamOwners = new Set(ordinarySources.flatMap(({ from }) => [...lineage(ownerOf(from), upstreamByNode)]));
     for (const owner of new Set(declarations.map(({ source }) => ownerOf(source.portRef)))) {
       if (!upstreamOwners.has(owner)) continue;
       const candidates = declarations.filter(({ source }) => ownerOf(source.portRef) === owner);
-      if (!candidates.some(({ id }) => pairs.get(id)?.canonical.length === 1)) {
+      if (!candidates.some(({ id }) => bindings.get(id)?.length === 1)) {
         throw new Error(
-          `present '${presentId}' receives data from stateful owner '${owner}' but consumes none of its canonical state authorities`,
+          `component '${componentId}' receives presentation data from stateful owner '${owner}' ` +
+          "but consumes none of its generated state presentations",
         );
       }
     }
-    authorityPairs.set(presentId, pairs);
+    authorityBindings.set(componentId, bindings);
 
-    for (const output of graph.portRegistry.nodePorts.filter(({ ownerId, direction }) =>
-      ownerId === presentId && direction === "output")) {
+    for (const source of ordinarySources) {
+      const output = portByRef.get(source.from)!;
       const contract = contractById.get(output.contractRef);
       for (const contractField of contract?.fields ?? []) {
         if (!isFiniteValueRef(contractField.value)) continue;
         const stateRef = contractField.value.ref;
         const matching = declarations.filter(({ id, source }) =>
-          source.states.id === stateRef && pairs.get(id)?.canonical.length === 1);
+          source.states.id === stateRef && bindings.get(id)?.length === 1);
         if (matching.length !== 1) {
           throw new Error(
-            `present '${presentId}' output '${output.ref}#${contractField.name}' uses closed state ` +
-            `'${stateRef}' without exactly one bound canonical authority (found ${matching.length})`,
+            `component '${componentId}' receives '${output.ref}#${contractField.name}' closed state '${stateRef}' ` +
+            `without exactly one generated state presentation (found ${matching.length})`,
           );
         }
       }
@@ -320,7 +330,8 @@ export function compileStateAuthorities(
       throw new Error(`state authority '${authority.id}' contract '${contract.id}' does not match the compiled graph`);
     }
     const state = contract.fields.find(({ name }) => name === stateField);
-    if (contract.kind !== "state" || state === undefined || !isFiniteValueRef(state.value) || state.value.ref !== states.id) {
+    if (contract.boundary !== "presentation" || contract.kind === "event" || state === undefined ||
+        !isFiniteValueRef(state.value) || state.value.ref !== states.id) {
       throw new Error(`state authority '${authority.id}' field '${stateField}' must use finite state '${states.id}'`);
     }
     const declaredStates = finiteById.get(states.id);
@@ -333,12 +344,12 @@ export function compileStateAuthorities(
       );
     }
     validateStatePresentation(authority.presentation, states);
-    validateAdapter(authority, nodeById, nodeTypeById, portByRef, contractById, flowBindings);
+    validateAdapter(authority, nodeById, nodeTypeById, portByRef, contractById, nodeBindings);
 
     const consumers: string[] = [];
-    for (const presentId of presentIds) {
-      const pair = authorityPairs.get(presentId)?.get(authority.id);
-      if (pair?.adapter.length === 1) consumers.push(pair.adapter[0]!.to);
+    for (const componentId of componentIds) {
+      const bindings = authorityBindings.get(componentId)?.get(authority.id);
+      if (bindings?.length === 1) consumers.push(bindings[0]!.to);
     }
     if (consumers.length === 0) throw new Error(`state presentation '${authority.presentation.id}' has no consumer`);
     compiled.push({
@@ -348,26 +359,15 @@ export function compileStateAuthorities(
   }
   return compiled;
 
-  function outputReachesPresent(ref: string, seen = new Set<string>()): boolean {
-    if (seen.has(ref)) return false;
-    seen.add(ref);
-    for (const target of targetsByOutput.get(ref) ?? []) {
-      if (presentIds.has(target)) return true;
-      for (const output of outputsByNode.get(target) ?? []) {
-        if (outputReachesPresent(output, seen)) return true;
-      }
-    }
-    return false;
-  }
-
-  function presentTargetsForOutput(ref: string, seen = new Set<string>()): ReadonlySet<string> {
+  function componentTargets(ref: string, excludedNodes = new Set<string>(), seen = new Set<string>()): ReadonlySet<string> {
     if (seen.has(ref)) return new Set();
     seen.add(ref);
     const result = new Set<string>();
+    for (const binding of componentBindings.filter(({ from }) => from === ref)) result.add(ownerOf(binding.to));
     for (const target of targetsByOutput.get(ref) ?? []) {
-      if (presentIds.has(target)) result.add(target);
+      if (excludedNodes.has(target)) continue;
       for (const output of outputsByNode.get(target) ?? []) {
-        for (const presentId of presentTargetsForOutput(output, seen)) result.add(presentId);
+        for (const componentId of componentTargets(output, excludedNodes, seen)) result.add(componentId);
       }
     }
     return result;
@@ -384,7 +384,7 @@ function validateAdapter(
 ): void {
   const node = nodeById.get(authority.adapter.nodeInstanceRef);
   const type = node === undefined ? undefined : nodeTypeById.get(node.nodeTypeRef);
-  if (node === undefined || type?.kind !== "derive" || node.nodeTypeRef !== authority.adapter.nodeTypeRef) {
+  if (node === undefined || type?.kind !== "present" || node.nodeTypeRef !== authority.adapter.nodeTypeRef) {
     throw new Error(`state authority '${authority.id}' generated adapter is absent from the node graph`);
   }
   const input = portByRef.get(authority.adapter.inputPortRef);
@@ -442,7 +442,7 @@ function validatePayloadValue(
 function rejectOverlappingAuthorities(
   declarations: readonly StateAuthority[],
   upstreamByNode: ReadonlyMap<string, ReadonlySet<string>>,
-  presentTargetsForOutput: (ref: string) => ReadonlySet<string>,
+  componentTargetsForOutput: (ref: string) => ReadonlySet<string>,
 ): void {
   for (let leftIndex = 0; leftIndex < declarations.length; leftIndex += 1) {
     const left = declarations[leftIndex]!;
@@ -452,13 +452,13 @@ function rejectOverlappingAuthorities(
       if (leftOwner === rightOwner) continue;
       const lineageOverlaps = lineage(leftOwner, upstreamByNode).has(rightOwner) ||
         lineage(rightOwner, upstreamByNode).has(leftOwner);
-      const leftConsumers = presentTargetsForOutput(left.source.portRef);
-      const rightConsumers = presentTargetsForOutput(right.source.portRef);
-      const sharedPresent = [...leftConsumers].find((presentId) => rightConsumers.has(presentId));
-      if (lineageOverlaps && sharedPresent !== undefined) {
+      const leftConsumers = componentTargetsForOutput(left.source.portRef);
+      const rightConsumers = componentTargetsForOutput(right.source.portRef);
+      const sharedComponent = [...leftConsumers].find((id) => rightConsumers.has(id));
+      if (lineageOverlaps && sharedComponent !== undefined) {
         throw new Error(
           `state authorities '${left.id}' and '${right.id}' are competing ancestor/descendant state lineages ` +
-          `consumed by present '${sharedPresent}'`,
+          `consumed by component '${sharedComponent}'`,
         );
       }
     }

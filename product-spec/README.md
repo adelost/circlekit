@@ -44,16 +44,18 @@ finite discriminator field and finite value declaration; a service may own
 multiple independent state axes. `defineStatePresentation(...)` declares one
 required payload schema and an exhaustive case for every canonical state id,
 so it cannot invent a private tier, omit a state, or vary fields between cases.
-`defineStateAuthority(...)` also creates a real `derive(...)` adapter type and
-instance. Products add that adapter to the mandatory graph and each affected
-`present(...)` node consumes both the canonical state and the adapter output.
-The compiled IR therefore carries executable adapter wiring plus its exhaustive
-case data, not a parallel inspector-only registry.
+`defineStateAuthority(...)` also creates a final `present(...)` adapter type
+and instance. Its presentation-bound output is consumed directly by components;
+another handwritten presentation node cannot intercept it or re-author its
+copy. The compiled IR therefore carries executable adapter wiring plus its
+exhaustive case data, not a parallel inspector-only registry.
 
 Coverage is derived transitively from data bindings across service and derive
-nodes. Missing authorities, half- or duplicate-bound canonical/adapter pairs,
-and ancestor/descendant authorities consumed by the same presentation fail
-before Product IR is emitted, even if the competing state space was renamed.
+nodes. Every UI-reaching presentation-bound finite discriminator is eligible
+regardless of whether its author labeled the contract `state` or `snapshot`.
+Missing authorities, duplicate canonical reads, missing component bindings,
+and ancestor/descendant authorities consumed by the same component fail before
+Product IR is emitted, even if the competing state space was renamed.
 Independent sibling axes remain legal. `context` ports may tune services only;
 derive/present context inputs are rejected so a cadence hint cannot become a
 second UI truth. Products with no eligible closed state write
