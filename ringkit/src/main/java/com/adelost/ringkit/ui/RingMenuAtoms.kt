@@ -217,7 +217,7 @@ fun RingRow(
     require(!infoSelected || explanation != null) {
         "A selected info affordance needs declared explanatory copy"
     }
-    val rowModifier = modifier.selectRingRowInfoOnTouch(onInfoTouch.takeIf { explanation != null })
+    val rowModifier = modifier.selectRingInfoOnTouch(onInfoTouch.takeIf { explanation != null })
     val rowTrailing: (@Composable () -> Unit)? = if (infoSelected && explanation != null) {
         {
             Row(verticalAlignment = Alignment.CenterVertically) {

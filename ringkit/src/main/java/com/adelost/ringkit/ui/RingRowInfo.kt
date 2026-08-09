@@ -63,7 +63,7 @@ internal fun ringRowInfoPressCompletion(
 }
 
 /** Observes a down without consuming it, so the row keeps its original action. */
-internal fun Modifier.selectRingRowInfoOnTouch(onTouch: (() -> Unit)?): Modifier = composed {
+fun Modifier.selectRingInfoOnTouch(onTouch: (() -> Unit)?): Modifier = composed {
     if (onTouch == null) return@composed Modifier
     val latestTouch = rememberUpdatedState(onTouch)
     Modifier.pointerInput(Unit) {
@@ -110,6 +110,42 @@ private fun Modifier.openRingRowInfoOnHold(
  * icon itself completes its hold.
  */
 @Composable
+fun RingInfoButton(
+    contentDescription: String,
+    onOpen: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    var isPressed by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(false) }
+    val progress by animateFloatAsState(
+        targetValue = if (isPressed) 1f else 0f,
+        animationSpec = tween(
+            durationMillis = if (isPressed) MenuDesign.rowInfoHoldMs.toInt() else 0,
+            easing = LinearEasing,
+        ),
+        label = "ring-info-hold",
+    )
+    Box(
+        modifier = modifier
+            .size(MenuDesign.rowInfoDiameter)
+            .clip(CircleShape)
+            .circleRingContour(RingTokens.NeutralRing)
+            .circleProgressContour(progress.takeIf { it > 0f }, circleBrandColor())
+            .openRingRowInfoOnHold(
+                pressed = { isPressed = it },
+                onOpen = onOpen,
+            ),
+        contentAlignment = Alignment.Center,
+    ) {
+        CircleIcon(
+            imageVector = RingIcons.Info,
+            contentDescription = contentDescription,
+            tint = RingTokens.Dim,
+            modifier = Modifier.size(MenuDesign.rowInfoIconSize),
+        )
+    }
+}
+
+@Composable
 internal fun RingRowInfoButton(
     rowIcon: androidx.compose.ui.graphics.vector.ImageVector?,
     title: String,
@@ -120,15 +156,6 @@ internal fun RingRowInfoButton(
     require(hint.isNotBlank()) { "An info affordance needs declared explanatory copy" }
     val publish = LocalCircleActionCuePublisher.current
     val owner = remember { Any() }
-    var isPressed by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(false) }
-    val progress by animateFloatAsState(
-        targetValue = if (isPressed) 1f else 0f,
-        animationSpec = tween(
-            durationMillis = if (isPressed) MenuDesign.rowInfoHoldMs.toInt() else 0,
-            easing = LinearEasing,
-        ),
-        label = "row-info-hold",
-    )
     val cue = remember(rowIcon, title, value, hint, infoAction) {
         CircleActionCue(
             icon = rowIcon ?: RingIcons.Info,
@@ -141,23 +168,8 @@ internal fun RingRowInfoButton(
             lingers = true,
         )
     }
-    Box(
-        modifier = Modifier
-            .size(MenuDesign.rowInfoDiameter)
-            .clip(CircleShape)
-            .circleRingContour(RingTokens.NeutralRing)
-            .circleProgressContour(progress.takeIf { it > 0f }, circleBrandColor())
-            .openRingRowInfoOnHold(
-                pressed = { isPressed = it },
-                onOpen = { publish(CircleActionCueEvent(owner, cue)) },
-            ),
-        contentAlignment = Alignment.Center,
-    ) {
-        CircleIcon(
-            imageVector = RingIcons.Info,
-            contentDescription = "ABOUT $title",
-            tint = RingTokens.Dim,
-            modifier = Modifier.size(MenuDesign.rowInfoIconSize),
-        )
-    }
+    RingInfoButton(
+        contentDescription = "ABOUT $title",
+        onOpen = { publish(CircleActionCueEvent(owner, cue)) },
+    )
 }
