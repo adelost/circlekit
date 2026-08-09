@@ -306,17 +306,18 @@ internal fun RowsScreen(
         // deepest inset any of them needs, so the width is sized for the
         // whole row band. Measuring per row is right for a focus list whose
         // rows scale as they move, but here it only made the edge ripple —
-        // one row tucked in, its neighbour not. See [rowsListInsetDp].
-        val rowInset = rowsListInsetDp(
+        // one row tucked in, its neighbour not. The straight edges stay fixed,
+        // but a left-side X no longer steals the free right edge too.
+        val rowInsets = rowsListInsetsDp(
             viewportWidthDp = diameter.value,
             viewportHeightDp = maxHeight.value,
             titleBandBottomDp = (MenuDesign.roundTitleTopPadding + MenuDesign.roundTitleHeight).value,
             baseInsetDp = insets.start.value,
             reservedSlots = LocalRoundChromeReservation.current,
-        ).dp
+        )
         val safeTop = circleSafeTopInsetDp(
             diameterDp = diameter.value,
-            contentWidthDp = (maxWidth - rowInset * 2).value,
+            contentWidthDp = (maxWidth - rowInsets.start - rowInsets.end).value,
         ).dp
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
@@ -344,7 +345,7 @@ internal fun RowsScreen(
                 val rowModifier = Modifier
                     .fillMaxWidth()
                     .padding(top = 3.dp, bottom = 3.dp)
-                    .padding(start = rowInset, end = rowInset)
+                    .padding(start = rowInsets.start, end = rowInsets.end)
                 when (rowKind(row)) {
                     RowKind.ADJUSTMENT -> {
                         val link = adjustmentLinkRow(row) {

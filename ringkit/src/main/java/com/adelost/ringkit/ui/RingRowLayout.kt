@@ -6,6 +6,7 @@ import com.adelost.designkit.ui.CircleActionTiming
 import com.adelost.designkit.ui.CircleChoiceRole
 import com.adelost.designkit.ui.CircleChromeSlot
 import com.adelost.designkit.ui.roundChordInsetDp
+import com.adelost.designkit.ui.roundSafeHorizontalInsetsDp
 import com.adelost.designkit.ui.roundSafeInsetDp
 
 /**
@@ -144,24 +145,27 @@ internal fun adjustmentRowInsetDp(
  * mirror. Chrome can still ask for more — it can no longer be the only thing
  * asking.
  */
-internal fun rowsListInsetDp(
+internal fun rowsListInsetsDp(
     viewportWidthDp: Float,
     viewportHeightDp: Float,
     titleBandBottomDp: Float,
     baseInsetDp: Float,
     reservedSlots: List<CircleChromeSlot>,
-): Float = maxOf(
-    baseInsetDp,
-    roundChordInsetDp(
+): RingRowHorizontalInsets {
+    val chord = roundChordInsetDp(
         viewportWidthDp = viewportWidthDp,
         viewportHeightDp = viewportHeightDp,
         contentCenterYDp = titleBandBottomDp,
-    ),
-    roundSafeInsetDp(
+    )
+    val chrome = roundSafeHorizontalInsetsDp(
         viewportWidthDp = viewportWidthDp,
         viewportHeightDp = viewportHeightDp,
         // The chrome bites hardest beside the viewport centre, where X sits.
         contentCenterYDp = viewportHeightDp / 2f,
         reservedSlots = reservedSlots,
-    ),
-)
+    )
+    return RingRowHorizontalInsets(
+        start = maxOf(baseInsetDp, chord, chrome.start).dp,
+        end = maxOf(baseInsetDp, chord, chrome.end).dp,
+    )
+}
