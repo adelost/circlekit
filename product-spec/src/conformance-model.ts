@@ -163,7 +163,11 @@ export function productArtifactConformance(
 
   const componentTypeByInstance = new Map(ir.components.map((item) => [item.id, item.componentTypeRef]));
   const declaredComponentBindings = new Set<string>();
+  const hostProfiles = manifest.profiles === undefined
+    ? artifactIds
+    : new Set(manifest.profiles);
   for (const scope of ir.artifactScopes) {
+    if (!hostProfiles.has(scope.artifactRef)) continue;
     for (const mount of scope.includedMounts) {
       const componentType = componentTypeByInstance.get(mount.componentInstanceRef);
       if (componentType === undefined) {
