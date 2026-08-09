@@ -220,6 +220,8 @@ export function compileStateAuthorities(
   }
   const presentIds = new Set(graph.nodes.filter((node) =>
     nodeTypeById.get(node.nodeTypeRef)?.kind === "present").map(({ id }) => id));
+  const serviceIds = new Set(graph.nodes.filter((node) =>
+    nodeTypeById.get(node.nodeTypeRef)?.kind === "service").map(({ id }) => id));
   const adapterIds = new Set(declarations.map(({ adapter }) => adapter.nodeInstanceRef));
   const ordinaryPresentIds = new Set([...presentIds].filter((id) => !adapterIds.has(id)));
   const componentIds = new Set(graph.portRegistry.componentPorts.map(({ ownerId }) => ownerId));
@@ -247,7 +249,11 @@ export function compileStateAuthorities(
       throw new Error(`state authority '${authority.id}' does not own a UI-reaching closed state`);
     }
   }
-  rejectOverlappingAuthorities(declarations, upstreamByNode, componentTargets);
+  rejectOverlappingAuthorities(
+    declarations,
+    (nodeId) => canonicalLineage(nodeId, upstreamByNode, serviceIds),
+    componentTargets,
+  );
   for (const presentId of ordinaryPresentIds) {
     for (const authority of declarations) {
       const direct = nodeBindings.filter(({ from, to }) =>
@@ -281,7 +287,8 @@ export function compileStateAuthorities(
     }
     const ordinarySources = componentBindings.filter(({ from, to }) =>
       ownerOf(to) === componentId && ordinaryPresentIds.has(ownerOf(from)));
-    const upstreamOwners = new Set(ordinarySources.flatMap(({ from }) => [...lineage(ownerOf(from), upstreamByNode)]));
+    const upstreamOwners = new Set(ordinarySources.flatMap(({ from }) =>
+      [...canonicalLineage(ownerOf(from), upstreamByNode, serviceIds)]));
     for (const owner of new Set(declarations.map(({ source }) => ownerOf(source.portRef)))) {
       if (!upstreamOwners.has(owner)) continue;
       const candidates = declarations.filter(({ source }) => ownerOf(source.portRef) === owner);
@@ -366,6 +373,10 @@ export function compileStateAuthorities(
     for (const binding of componentBindings.filter(({ from }) => from === ref)) result.add(ownerOf(binding.to));
     for (const target of targetsByOutput.get(ref) ?? []) {
       if (excludedNodes.has(target)) continue;
+      // A service is a semantic re-authority boundary. Its outputs are not
+      // assumed to derive from every one of its inputs: any UI-reaching closed
+      // output is independently governed by the ordinary eligible-axis rule.
+      if (serviceIds.has(target)) continue;
       for (const output of outputsByNode.get(target) ?? []) {
         for (const componentId of componentTargets(output, excludedNodes, seen)) result.add(componentId);
       }
@@ -441,7 +452,7 @@ function validatePayloadValue(
 
 function rejectOverlappingAuthorities(
   declarations: readonly StateAuthority[],
-  upstreamByNode: ReadonlyMap<string, ReadonlySet<string>>,
+  lineageForNode: (nodeId: string) => ReadonlySet<string>,
   componentTargetsForOutput: (ref: string) => ReadonlySet<string>,
 ): void {
   for (let leftIndex = 0; leftIndex < declarations.length; leftIndex += 1) {
@@ -457,8 +468,8 @@ function rejectOverlappingAuthorities(
       const leftOwner = ownerOf(left.source.portRef);
       const rightOwner = ownerOf(right.source.portRef);
       if (leftOwner === rightOwner) continue;
-      const lineageOverlaps = lineage(leftOwner, upstreamByNode).has(rightOwner) ||
-        lineage(rightOwner, upstreamByNode).has(leftOwner);
+      const lineageOverlaps = lineageForNode(leftOwner).has(rightOwner) ||
+        lineageForNode(rightOwner).has(leftOwner);
       const leftConsumers = componentTargetsForOutput(left.source.portRef);
       const rightConsumers = componentTargetsForOutput(right.source.portRef);
       const sharedComponent = [...leftConsumers].find((id) => rightConsumers.has(id));
@@ -482,10 +493,22 @@ function groupOwners(bindings: readonly PortBindingIr[]): ReadonlyMap<string, Re
   return result;
 }
 
-function lineage(nodeId: string, upstream: ReadonlyMap<string, ReadonlySet<string>>, seen = new Set<string>()): Set<string> {
+/**
+ * Closed-state identity traverses pure derive/present nodes, but stops at a
+ * service. A service may consume one state axis while publishing an unrelated
+ * output; that output must declare its own authority if it exposes closed
+ * state to UI.
+ */
+function canonicalLineage(
+  nodeId: string,
+  upstream: ReadonlyMap<string, ReadonlySet<string>>,
+  serviceIds: ReadonlySet<string>,
+  seen = new Set<string>(),
+): Set<string> {
   if (seen.has(nodeId)) return seen;
   seen.add(nodeId);
-  for (const owner of upstream.get(nodeId) ?? []) lineage(owner, upstream, seen);
+  if (serviceIds.has(nodeId)) return seen;
+  for (const owner of upstream.get(nodeId) ?? []) canonicalLineage(owner, upstream, serviceIds, seen);
   return seen;
 }
 
