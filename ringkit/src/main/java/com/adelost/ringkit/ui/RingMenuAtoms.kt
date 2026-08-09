@@ -204,11 +204,37 @@ fun RingRow(
     centerValue: String? = null,
     actionTiming: CircleActionTiming = CircleActionTiming.DELIBERATE,
     actionHoldMs: Long = actionTiming.holdMs,
-    /** One sentence about what this row does; read out by the centre cue. */
+    /** One sentence opened only through the transient row-info affordance. */
     hint: String = "",
     /** Optional verb rendered with the transient information card. */
     infoAction: CircleActionCueInfoAction? = null,
+    /** Shared Rows-screen state: only the most recently touched row is true. */
+    infoSelected: Boolean = false,
+    /** Observes touch without replacing or delaying the row's real action. */
+    onInfoTouch: (() -> Unit)? = null,
 ) {
+    val explanation = hint.takeIf { it.isNotBlank() }
+    require(!infoSelected || explanation != null) {
+        "A selected info affordance needs declared explanatory copy"
+    }
+    val rowModifier = modifier.selectRingRowInfoOnTouch(onInfoTouch.takeIf { explanation != null })
+    val rowTrailing: (@Composable () -> Unit)? = if (infoSelected && explanation != null) {
+        {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                trailing?.invoke()
+                if (trailing != null) Spacer(Modifier.size(5.dp))
+                RingRowInfoButton(
+                    rowIcon = icon,
+                    title = title,
+                    value = sub,
+                    hint = explanation,
+                    infoAction = infoAction,
+                )
+            }
+        }
+    } else {
+        trailing
+    }
     if (holdToConfirm) {
         val confirm = requireNotNull(onTap) { "A hold row requires an action" }
         val brandColor = circleBrandColor()
@@ -222,8 +248,6 @@ fun RingRow(
                 holdDurationMs = holdMs,
                 determinateProgress = holdProgress,
                 stateValue = sub.takeIf { it.isNotBlank() },
-                hint = hint.takeIf { it.isNotBlank() },
-                infoAction = infoAction,
             )
         } else {
             null
@@ -237,7 +261,7 @@ fun RingRow(
             background = Color.Transparent,
             shape = RectangleShape,
             holdMs = holdMs,
-            modifier = modifier,
+            modifier = rowModifier,
             contentPaddingH = MenuDesign.rowPaddingH,
             contentPaddingV = MenuDesign.rowPaddingV,
             contentAlignment = Alignment.CenterStart,
@@ -254,7 +278,7 @@ fun RingRow(
                 accent = accent,
                 semanticColor = semanticColor,
                 leading = leading,
-                trailing = trailing,
+                trailing = rowTrailing,
                 labelProgress = labelProgress ?: holdProgress?.let {
                     CircleLabelProgress.Determinate(it.coerceIn(0f, 1f))
                 },
@@ -269,19 +293,17 @@ fun RingRow(
         sub = sub,
         onTap = onTap,
         icon = icon,
-        modifier = modifier,
+        modifier = rowModifier,
         onLongPress = onLongPress,
         ringActive = ringActive,
         accent = accent,
         semanticColor = semanticColor,
         labelProgress = labelProgress,
         leading = leading,
-        trailing = trailing,
+        trailing = rowTrailing,
         centerValue = centerValue,
         actionTiming = actionTiming,
         actionHoldMs = actionHoldMs,
-        hint = hint,
-        infoAction = infoAction,
         // DERIVED, not passed: a row with no tap cannot publish its title to
         // the centre cue, so an ellipsis there is the last word rather than a
         // summary. Reading it off the row's own data means no caller can

@@ -44,18 +44,14 @@ fun CircleRingRow(
     centerValue: String? = null,
     actionTiming: CircleActionTiming = CircleActionTiming.DELIBERATE,
     actionHoldMs: Long = actionTiming.holdMs,
-    /** One sentence about what this row does; read out by the centre cue. */
-    hint: String = "",
-    /** Optional verb rendered with the transient information card. */
-    infoAction: CircleActionCueInfoAction? = null,
     /**
      * Let the row grow to fit its words instead of ellipsising them.
      *
-     * For a row you can PRESS, one line is right: holding it publishes the
-     * whole title and value to the centre cue, so the list stays scannable and
-     * nothing is actually lost. A row you cannot press has no such second
-     * chance — and those are the ones carrying the longest text, because they
-     * exist to explain rather than to be operated. The SAFETY page read
+     * For a row you can PRESS, one line is right: its latest state is repeated
+     * by the action receipt and its declared hint remains available through
+     * the row's dedicated info affordance. A row you cannot press has no such
+     * action receipt — and those are the ones carrying the longest text,
+     * because they exist to explain rather than to be operated. The SAFETY page read
      * "SUPPLEMENTAR… / NOT A PRIMA…" with no way to see the rest.
      *
      * Height is free here precisely because there is no touch target to keep
@@ -73,11 +69,9 @@ fun CircleRingRow(
             pressed = feedback.pressed,
             holdDurationMs = actionHoldMs,
             // The row's own value line is already the honest state; the cue
-            // repeats it so a held row explains itself without the reader
-            // having to keep the list in view behind the overlay.
+            // repeats it in the action receipt without also smuggling the
+            // row's explanation into an ordinary press.
             stateValue = sub.takeIf { it.isNotBlank() },
-            hint = hint.takeIf { it.isNotBlank() },
-            infoAction = infoAction,
         )
     } else {
         null

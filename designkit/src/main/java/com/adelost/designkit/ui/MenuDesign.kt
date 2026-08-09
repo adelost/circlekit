@@ -29,6 +29,9 @@ object MenuDesign {
     val iconRingStroke: Dp = 1.5.dp
     val contourStroke: Dp = 1.dp
     val iconSize: Dp = 14.dp
+    /** Transient explanation affordance shown only on the last-touched row. */
+    val rowInfoDiameter: Dp = 22.dp
+    val rowInfoIconSize: Dp = 10.dp
     val rowCenterValueSize: TextUnit = 7.5.sp
     val iconTextGap: Dp = 8.dp
     val roundMediaContentWidth: Dp = 112.dp
@@ -90,6 +93,9 @@ object MenuDesign {
 
     /** Advancing a settings choice (RingChoiceRow and friends). */
     const val holdDeliberateMs: Long = 500L
+
+    /** The info icon is deliberately harder to open than an ordinary row. */
+    const val rowInfoHoldMs: Long = holdDeliberateMs
 
     /** Every plain action's short intent gate, via [circleSafeTap]. It remains
      * visibly different from an instant touch, without making navigation feel

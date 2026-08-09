@@ -23,6 +23,7 @@ internal val PORTABLE_RING_ICON_CATALOG = listOf(
     RingIcons.Refresh,
     RingIcons.Check,
     RingIcons.Warning,
+    RingIcons.Info,
     RingIcons.Clown,
     RingIcons.Trash,
     RingIcons.Target,

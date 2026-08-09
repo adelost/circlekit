@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.CircleShape
@@ -95,8 +96,70 @@ fun RingActionCueHost(
             content()
             state.cue?.let { cue ->
                 Box(Modifier.fillMaxSize().background(MenuDesign.actionCueScrim))
-                RingActionCue(cue)
+                when (ringCueSurface(cue)) {
+                    RingCueSurface.ACTION -> RingActionCue(cue)
+                    RingCueSurface.EXPLANATION -> RingExplanationCue(cue)
+                }
             }
+        }
+    }
+}
+
+internal enum class RingCueSurface { ACTION, EXPLANATION }
+
+/** Explanatory copy has one deliberate entry point and one shared renderer. */
+internal fun ringCueSurface(cue: CircleActionCue): RingCueSurface =
+    if (cue.hint == null) RingCueSurface.ACTION else RingCueSurface.EXPLANATION
+
+@Composable
+private fun RingExplanationCue(cue: CircleActionCue) {
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = Modifier.widthIn(max = 150.dp).padding(horizontal = 12.dp),
+    ) {
+        Icon(
+            imageVector = cue.icon,
+            contentDescription = cue.label,
+            tint = RingTokens.Ink,
+            modifier = Modifier.size(24.dp),
+        )
+        Text(
+            text = cue.label,
+            color = RingTokens.Ink,
+            fontSize = 11.sp,
+            fontWeight = FontWeight.Bold,
+            letterSpacing = 0.5.sp,
+            textAlign = TextAlign.Center,
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis,
+        )
+        cue.value?.let { value ->
+            Text(
+                text = value,
+                color = circleBrandColor(),
+                fontSize = 10.sp,
+                fontWeight = FontWeight.Bold,
+                textAlign = TextAlign.Center,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+        }
+        Text(
+            text = requireNotNull(cue.hint),
+            color = RingTokens.Dim,
+            fontSize = 9.sp,
+            textAlign = TextAlign.Center,
+            maxLines = 5,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.padding(top = 5.dp),
+        )
+        cue.infoAction?.let { action ->
+            HoldPill(
+                text = action.label,
+                onConfirm = action.onInvoke,
+                holdMs = MenuDesign.holdDeliberateMs,
+                modifier = Modifier.padding(top = 7.dp),
+            )
         }
     }
 }
