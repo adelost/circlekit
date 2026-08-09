@@ -552,6 +552,144 @@ test("closed state authority rejects incomplete, invented and overlapping presen
     ],
   }), /at most one direct canonical input.*\(found 2\)/);
 
+  const availabilityStates = finiteValues("fixture.position-availability", ["missing", "available"]);
+  const availabilityContract = {
+    id: "fixture.position-presentation",
+    kind: "snapshot",
+    boundary: "presentation",
+    fields: [field("availability", finiteValueRef(availabilityStates.id))],
+  } as const;
+  const availabilityPresentation = defineStatePresentation(availabilityStates, {
+    id: "fixture.position-availability-signal",
+    fields: phasePresentation.fields,
+    cases: {
+      missing: { label: "MISSING", tone: "warn", hint: "No position" },
+      available: { label: "AVAILABLE", tone: "ok", hint: "Position ready" },
+    },
+  });
+  const availabilityDefinition = defineStateAuthority({
+    id: "fixture.position-availability-authority",
+    source: {
+      portRef: "position.presentation.state", contract: availabilityContract,
+      stateField: "availability", states: availabilityStates,
+    },
+    presentation: availabilityPresentation,
+  });
+  const descendantPhasePresentation = defineStatePresentation(fixturePhases, {
+    id: "fixture.descendant-phase-signal",
+    fields: phasePresentation.fields,
+    cases: {
+      idle: { label: "IDLE", tone: "muted", hint: "Waiting" },
+      active: { label: "ACTIVE", tone: "ok", hint: "Running" },
+    },
+  });
+  const descendantPhaseDefinition = defineStateAuthority({
+    id: "fixture.descendant-phase-authority",
+    source: {
+      portRef: "flight.runtime.state", contract: statusContract,
+      stateField: "phase", states: fixturePhases,
+    },
+    presentation: descendantPhasePresentation,
+  });
+  const positionPresentation = derive({
+    id: "fixture.position-presentation-node",
+    inputs: [port("raw", internalContract)],
+    outputs: [port("state", availabilityContract)],
+    runtime: {
+      stateOwner: "none", lifetime: "call", durability: "transient",
+      clockDomain: "none", contextInputs: [], effects: [],
+    },
+  } as const);
+  const flightPhase = derive({
+    id: "fixture.flight-phase-node",
+    inputs: [port("position", availabilityContract)],
+    outputs: [port("state", statusContract)],
+    runtime: {
+      stateOwner: "none", lifetime: "call", durability: "transient",
+      clockDomain: "none", contextInputs: [], effects: [],
+    },
+  } as const);
+  const independentProjection = present({
+    id: "fixture.independent-projection",
+    inputs: [
+      port("position", availabilityContract),
+      port("flight", statusContract),
+    ],
+    outputs: [port("model", statusContract)],
+    runtime: {
+      stateOwner: "none", lifetime: "call", durability: "transient",
+      clockDomain: "none", contextInputs: [], effects: [],
+    },
+  } as const);
+  const independentControlType = defineComponentType({
+    id: "fixture.independent-control",
+    requiredCapabilities: ["ui.menu"],
+    inputs: [
+      componentPort("model", statusContract),
+      componentPort("availabilityPresentation", availabilityPresentation.contract),
+      componentPort("phasePresentation", descendantPhasePresentation.contract),
+    ],
+    outputs: [],
+  } as const);
+  const independentControl = {
+    id: "control.independent",
+    componentTypeRef: independentControlType.id,
+    bindings: {
+      inputs: {
+        model: "ui.independent.model",
+        availabilityPresentation: availabilityDefinition.authority.adapter.outputPortRef,
+        phasePresentation: descendantPhaseDefinition.authority.adapter.outputPortRef,
+      },
+      events: {},
+    },
+  } as const;
+  const independentFamilies = defineScreenComponentFamilyRegistry([independentControl], [{
+    screen: "MAIN",
+    family: {
+      id: "fixture.independent-main",
+      trees: PORTABLE_SURFACE_CLASSES.map((surface) => ({
+        surface,
+        mounts: [{ instance: independentControl.id, region: "primary" }],
+      })),
+    },
+  }] as const);
+  const independentAxes = defineProduct({
+    ...baseDeclaration,
+    nodeTypes: [
+      source, positionPresentation, flightPhase,
+      availabilityDefinition.adapter.type, descendantPhaseDefinition.adapter.type,
+      independentProjection,
+    ],
+    nodes: [
+      baseDeclaration.nodes[0],
+      { id: "position.presentation", nodeTypeRef: positionPresentation.id, config: {}, bindings: {
+        raw: "domain.source.status",
+      } },
+      { id: "flight.runtime", nodeTypeRef: flightPhase.id, config: {}, bindings: {
+        position: "position.presentation.state",
+      } },
+      availabilityDefinition.adapter.node,
+      descendantPhaseDefinition.adapter.node,
+      { id: "ui.independent", nodeTypeRef: independentProjection.id, config: {}, bindings: {
+        position: "position.presentation.state",
+        flight: "flight.runtime.state",
+      } },
+    ],
+    finiteValues: [availabilityStates, fixturePhases],
+    stateAuthorities: [availabilityDefinition.authority, descendantPhaseDefinition.authority],
+    componentTypes: [independentControlType],
+    components: [independentControl],
+    componentFamilies: independentFamilies,
+  }, assetCatalog);
+  for (const authority of independentAxes.stateAuthorities) {
+    assert.equal(independentAxes.portRegistry.bindings.filter(({ to }) =>
+      to === authority.adapter.inputPortRef).length, 1);
+    assert.deepEqual(authority.presentation.consumers, [
+      `control.independent.${authority.id === availabilityDefinition.authority.id
+        ? "availabilityPresentation" : "phasePresentation"}`,
+    ]);
+  }
+
   const alternatePresentation = defineStatePresentation(alternatePhases, {
     id: "fixture.alternate-signal",
     fields: phasePresentation.fields,

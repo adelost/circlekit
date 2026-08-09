@@ -392,8 +392,8 @@ function validateAdapter(
   if (input?.direction !== "input" || output?.direction !== "output") {
     throw new Error(`state authority '${authority.id}' generated adapter ports are absent from the node graph`);
   }
-  const inputBinding = bindings.find(({ to }) => to === authority.adapter.inputPortRef);
-  if (inputBinding?.from !== authority.source.portRef) {
+  const inputBindings = bindings.filter(({ to }) => to === authority.adapter.inputPortRef);
+  if (inputBindings.length !== 1 || inputBindings[0]?.from !== authority.source.portRef) {
     throw new Error(`state authority '${authority.id}' generated adapter does not read its canonical source`);
   }
   if (output.contractRef !== authority.presentation.contract.id ||
@@ -447,6 +447,13 @@ function rejectOverlappingAuthorities(
   for (let leftIndex = 0; leftIndex < declarations.length; leftIndex += 1) {
     const left = declarations[leftIndex]!;
     for (const right of declarations.slice(leftIndex + 1)) {
+      // Dependency is not identity. Position availability may feed flight phase
+      // and both axes may legitimately reach the same component. Competing
+      // lineage exists only when the finite space is reused or a descendant
+      // republishes the same named axis under a renamed finite space.
+      const sameAxis = left.source.states.id === right.source.states.id ||
+        left.source.stateField === right.source.stateField;
+      if (!sameAxis) continue;
       const leftOwner = ownerOf(left.source.portRef);
       const rightOwner = ownerOf(right.source.portRef);
       if (leftOwner === rightOwner) continue;
