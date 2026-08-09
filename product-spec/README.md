@@ -33,7 +33,34 @@ compilation rejects missing, extra or wrongly typed values before emission.
 Finite node values use `finiteValueRef` and a product-owned `finiteValues`
 catalog. The catalog is emitted in Product IR, while opaque record/list types
 continue to use `valueRef`. Compilation rejects both unknown finite references
-and catalog declarations that no mounted contract consumes.
+and catalog declarations that no mounted contract consumes. `finiteProduct`
+builds a typed cartesian state space from literal axes, and `mapFiniteCases`
+generates an exhaustive case object from it; products do not copy dozens of
+operation-by-data case ids by hand.
+
+Every UI-reaching closed state discriminator uses one
+`defineStateAuthority(...)`. Its source is an exact output port, contract,
+finite discriminator field and finite value declaration; a service may own
+multiple independent state axes. `defineStatePresentation(...)` declares one
+required payload schema and an exhaustive case for every canonical state id,
+so it cannot invent a private tier, omit a state, or vary fields between cases.
+`defineStateAuthority(...)` also creates a final `present(...)` adapter type
+and instance. Its presentation-bound output is consumed directly by components;
+another handwritten presentation node cannot intercept it or re-author its
+copy. The compiled IR therefore carries executable adapter wiring plus its
+exhaustive case data, not a parallel inspector-only registry.
+
+Coverage is derived transitively from data bindings across service and derive
+nodes. Every UI-reaching presentation-bound finite discriminator is eligible
+regardless of whether its author labeled the contract `state` or `snapshot`.
+Missing authorities, duplicate canonical reads, missing component bindings,
+and ancestor/descendant authorities consumed by the same component fail before
+Product IR is emitted, even if the competing state space was renamed.
+Independent sibling axes remain legal. `context` ports may tune services only;
+derive/present context inputs are rejected so a cadence hint cannot become a
+second UI truth. Products with no eligible closed state write
+`stateAuthorities: []` explicitly; that empty declaration cannot hide an
+eligible state because compilation derives eligibility from the graph.
 
 Reusable node and component types own named contracts. Product instances
 bind every required input and UI event explicitly; the compiler derives one

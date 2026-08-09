@@ -56,6 +56,36 @@ export function finiteValues<const Id extends string, const Value extends string
   return { id, values };
 }
 
+type FiniteProductValue<Axes extends readonly LegoFiniteValueDeclaration[]> =
+  Axes extends readonly [infer Head extends LegoFiniteValueDeclaration,
+    ...infer Tail extends readonly LegoFiniteValueDeclaration[]]
+    ? Tail extends readonly [] ? FiniteValueOf<Head> : `${FiniteValueOf<Head>}.${FiniteProductValue<Tail>}`
+    : never;
+
+/** Closed cartesian state ids, generated from literal axes rather than copied by hand. */
+export function finiteProduct<
+  const Id extends string,
+  const Axes extends readonly [LegoFiniteValueDeclaration, LegoFiniteValueDeclaration,
+    ...LegoFiniteValueDeclaration[]],
+>(id: Id, axes: Axes): LegoFiniteValueDeclaration<Id, FiniteProductValue<Axes>> {
+  requireUnique(axes.map(({ id: axisId }) => axisId), `axis in finite product '${id}'`);
+  let values: string[] = [""];
+  for (const axis of axes) {
+    values = values.flatMap((prefix) => axis.values.map((value) => prefix === "" ? value : `${prefix}.${value}`));
+  }
+  return finiteValues(id, values) as LegoFiniteValueDeclaration<Id, FiniteProductValue<Axes>>;
+}
+
+/** Exhaustive case data generated from every member of one closed declaration. */
+export function mapFiniteCases<
+  const Declaration extends LegoFiniteValueDeclaration,
+  const Payload,
+>(declaration: Declaration, map: (value: Declaration["values"][number]) => Payload):
+  Readonly<{ [Value in Declaration["values"][number]]: Payload }> {
+  return Object.fromEntries(declaration.values.map((value) => [value, map(value)])) as
+    Readonly<{ [Value in Declaration["values"][number]]: Payload }>;
+}
+
 export function field(
   name: string,
   value: LegoPrimitive | LegoValueRef,
@@ -229,6 +259,15 @@ export function validateProductNodeType<const T extends ProductNodeType>(spec: T
   }
   if (spec.kind !== "service" && spec.runtime.effects.length !== 0) {
     throw new Error(`${spec.kind} '${spec.id}' cannot declare runtime effects`);
+  }
+  if (spec.kind !== "service") {
+    const contextInputs = spec.inputs.filter(({ purpose }) => purpose === "context");
+    if (contextInputs.length > 0) {
+      throw new Error(
+        `${spec.kind} '${spec.id}' cannot consume context input '${contextInputs.map(({ id }) => id).join("', '")}'; ` +
+        "context may tune a service but cannot become derived or presented truth",
+      );
+    }
   }
   if (spec.kind === "present") {
     if (spec.outputs.length === 0) throw new Error(`present '${spec.id}' has no presentation output`);
