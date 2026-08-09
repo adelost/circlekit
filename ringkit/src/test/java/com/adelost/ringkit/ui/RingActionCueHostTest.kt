@@ -58,7 +58,7 @@ class RingActionCueHostTest {
     }
 
     @Test
-    fun abandonedExplanationSurvivesItsPublishingControl() {
+    fun deliberateInfoExplanationSurvivesItsPublishingControl() {
         val owner = Any()
         val cue = CircleActionCue(
             RingIcons.Record,
@@ -77,5 +77,13 @@ class RingActionCueHostTest {
         assertSame(cue, nextRingCueHostState(settled, CircleActionCueEvent(owner, null)).cue)
         assertSame(owner, settled.settledOwner)
         assertTrue(ringCueReceiptStillCurrent(settled, owner, cue))
+        assertSame(RingCueSurface.EXPLANATION, ringCueSurface(cue))
+    }
+
+    @Test
+    fun ordinaryActionCueCannotEnterTheExplanationRenderer() {
+        val cue = CircleActionCue(RingIcons.Record, "TALK", 0.4f, confirmed = false)
+
+        assertSame(RingCueSurface.ACTION, ringCueSurface(cue))
     }
 }

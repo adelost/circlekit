@@ -22,7 +22,10 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.State
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -274,6 +277,7 @@ private fun PhoneRowsScreen(
     back: (() -> Unit)?,
 ) {
     val rows: State<List<RowSpec>> = screen.items.collectAsState(initial = emptyList())
+    var infoSelection by remember(screen) { mutableStateOf(RingRowInfoSelection()) }
     val listState = remember(screen) { androidx.compose.foundation.lazy.LazyListState() }
     LazyColumn(
         state = listState,
@@ -283,6 +287,14 @@ private fun PhoneRowsScreen(
     ) {
         item("header") { PhoneScreenHeader(screen.title, back) }
         items(rows.value, key = RowSpec::key) { row ->
+            val infoSelected = infoSelection.selectedRowKey == row.key
+            val onInfoTouch = {
+                infoSelection = nextRingRowInfoSelection(
+                    current = infoSelection,
+                    touchedRowKey = row.key,
+                    hasExplanation = row.hint.isNotBlank(),
+                )
+            }
             val rowModifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp)
             when (rowKind(row)) {
                 RowKind.ADJUSTMENT -> {
@@ -298,6 +310,8 @@ private fun PhoneRowsScreen(
                         onTap = link.onTap,
                         hint = row.hint,
                         infoAction = row.infoAction,
+                        infoSelected = infoSelected,
+                        onInfoTouch = onInfoTouch,
                         modifier = rowModifier,
                     )
                 }
@@ -315,6 +329,8 @@ private fun PhoneRowsScreen(
                         actionTiming = interaction.timing,
                         hint = row.hint,
                         infoAction = row.infoAction,
+                        infoSelected = infoSelected,
+                        onInfoTouch = onInfoTouch,
                         modifier = rowModifier,
                     )
                 }
@@ -332,6 +348,8 @@ private fun PhoneRowsScreen(
                     actionTiming = row.actionTiming,
                     hint = row.hint,
                     infoAction = row.infoAction,
+                    infoSelected = infoSelected,
+                    onInfoTouch = onInfoTouch,
                     modifier = rowModifier,
                 )
             }

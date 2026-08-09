@@ -21,7 +21,10 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.State
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -288,6 +291,7 @@ internal fun RowsScreen(
     nav: RingNavigator,
 ) {
     val items: State<List<RowSpec>> = s.items.collectAsState(initial = emptyList())
+    var infoSelection by remember(s) { mutableStateOf(RingRowInfoSelection()) }
     // A pushed Rows screen is a new information surface. Reusing the previous
     // screen's scroll offset made nested pages open halfway down (AUDIO ->
     // ALARM HEIGHTS could hide BREAK-OFF and PULL entirely).
@@ -342,6 +346,14 @@ internal fun RowsScreen(
             ScreenTitle(s.title)
             Spacer(Modifier.height(maxOf(safeTop - MenuDesign.roundTitleTopPadding, 8.dp)))
             items.value.forEach { row ->
+                val infoSelected = infoSelection.selectedRowKey == row.key
+                val onInfoTouch = {
+                    infoSelection = nextRingRowInfoSelection(
+                        current = infoSelection,
+                        touchedRowKey = row.key,
+                        hasExplanation = row.hint.isNotBlank(),
+                    )
+                }
                 val rowModifier = Modifier
                     .fillMaxWidth()
                     .padding(top = 3.dp, bottom = 3.dp)
@@ -360,6 +372,8 @@ internal fun RowsScreen(
                             onTap = link.onTap,
                             hint = row.hint,
                             infoAction = row.infoAction,
+                            infoSelected = infoSelected,
+                            onInfoTouch = onInfoTouch,
                             modifier = rowModifier,
                         )
                     }
@@ -377,6 +391,8 @@ internal fun RowsScreen(
                             actionTiming = interaction.timing,
                             hint = row.hint,
                             infoAction = row.infoAction,
+                            infoSelected = infoSelected,
+                            onInfoTouch = onInfoTouch,
                             modifier = rowModifier,
                         )
                     }
@@ -394,6 +410,8 @@ internal fun RowsScreen(
                         actionTiming = row.actionTiming,
                         hint = row.hint,
                         infoAction = row.infoAction,
+                        infoSelected = infoSelected,
+                        onInfoTouch = onInfoTouch,
                         modifier = rowModifier,
                     )
                 }

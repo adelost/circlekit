@@ -1,7 +1,6 @@
 package com.adelost.designkit.ui
 
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertNull
 import org.junit.Assert.assertThrows
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -25,26 +24,6 @@ class CircleActionCueTest {
         }
     }
 
-    /**
-     * The one Mattias asked for (2026-08-06): "en info knapp ... som kanske
-     * syns en liten stund efter att man duttar på något". A deliberate row does
-     * nothing until the hold completes, so before this a tap was silent — and
-     * silence is indistinguishable from broken.
-     */
-    @Test
-    fun `an abandoned press answers with the words the hold would have shown`() {
-        var reset = false
-        val action = CircleActionCueInfoAction("RESET TO DEFAULT") { reset = true }
-        val cue = abandonedPressCue(RingIcons.Gauge, "DIAL DIRECTION", "CLOCK", HINT, action)
-
-        assertEquals(HINT, cue?.hint)
-        assertEquals("CLOCK", cue?.value)
-        assertEquals("DIAL DIRECTION", cue?.label)
-        assertEquals("RESET TO DEFAULT", cue?.infoAction?.label)
-        cue?.infoAction?.onInvoke?.invoke()
-        assertTrue(reset)
-    }
-
     @Test
     fun `an info action cannot float without an explanation`() {
         assertThrows(IllegalArgumentException::class.java) {
@@ -58,31 +37,19 @@ class CircleActionCueTest {
         }
     }
 
-    /** Cancel still cancels: the whole point of releasing early (2026-07-27). */
+    /** Cancel is silent: explanations now require the row's dedicated info control. */
     @Test
-    fun `an abandoned press never claims the action happened`() {
-        val cue = requireNotNull(abandonedPressCue(RingIcons.Gauge, "DIAL DIRECTION", "CLOCK", HINT))
-
-        assertEquals(false, cue.confirmed)
-        assertEquals(0f, cue.progress, 0f)
-    }
-
-    /**
-     * Without this the answer loses a race it cannot win: the lift that creates
-     * the cue also restarts the publisher, whose "nothing to show" lands right
-     * behind it. The host keeps a lingering cue exactly as it keeps a confirmed
-     * one.
-     */
-    @Test
-    fun `an abandoned press outlives the restart it triggers`() {
-        val cue = requireNotNull(abandonedPressCue(RingIcons.Gauge, "DIAL DIRECTION", "CLOCK", HINT))
-
-        assertTrue("a cue nobody protects is cleared before it can be read", cue.lingers)
+    fun `an abandoned row press publishes no explanation`() {
+        assertEquals(CircleCuePlan.Clear, plan(pressed = false))
     }
 
     @Test
-    fun `a control with neither state nor sentence stays silent`() {
-        assertNull(abandonedPressCue(RingIcons.Gauge, "SOMETHING", null, null))
+    fun `ordinary action receipts cannot carry explanatory copy`() {
+        val settled = plan(pressed = false, confirmed = true) as CircleCuePlan.Settle
+
+        assertEquals(null, settled.cue.hint)
+        assertEquals(null, settled.cue.infoAction)
+        assertEquals(false, settled.cue.lingers)
     }
 
     /** A cue published while the finger is down is refreshed; it needs no guard. */
@@ -130,14 +97,9 @@ class CircleActionCueTest {
         icon = RingIcons.Gauge,
         label = "DIAL DIRECTION",
         value = "CLOCK",
-        hint = HINT,
         timing = timing,
         pressed = pressed,
         confirmed = confirmed,
         determinateProgress = null,
     )
-
-    private companion object {
-        const val HINT = "Which way the altitude needle sweeps."
-    }
 }
