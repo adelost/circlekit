@@ -33,20 +33,32 @@ compilation rejects missing, extra or wrongly typed values before emission.
 Finite node values use `finiteValueRef` and a product-owned `finiteValues`
 catalog. The catalog is emitted in Product IR, while opaque record/list types
 continue to use `valueRef`. Compilation rejects both unknown finite references
-and catalog declarations that no mounted contract consumes.
+and catalog declarations that no mounted contract consumes. `finiteProduct`
+builds a typed cartesian state space from literal axes, and `mapFiniteCases`
+generates an exhaustive case object from it; products do not copy dozens of
+operation-by-data case ids by hand.
 
-Closed service status uses one `defineStateAuthority(...)` per node instance.
-Its source is an exact output port, contract, finite discriminator field and
-finite value declaration. `defineStatePresentation(...)` derives copy/tone or
-other product data from that same value declaration: its case keys are the
-canonical state ids, so a presentation cannot invent a private tier, collapse
-two states behind one identity, or omit a new state. The compiler derives every
-`present(...)` consumer transitively from the data graph and requires exactly
-one direct canonical-state input on each; products cannot maintain a coverage
-list. A UI-reaching finite service state with no authority, a second authority
-or presentation-state output from the same service, missing/extra cases and
-independent status wiring all fail before Product IR is emitted. Products with
-no eligible closed status authority write `stateAuthorities: []` explicitly.
+Every UI-reaching closed state discriminator uses one
+`defineStateAuthority(...)`. Its source is an exact output port, contract,
+finite discriminator field and finite value declaration; a service may own
+multiple independent state axes. `defineStatePresentation(...)` declares one
+required payload schema and an exhaustive case for every canonical state id,
+so it cannot invent a private tier, omit a state, or vary fields between cases.
+`defineStateAuthority(...)` also creates a real `derive(...)` adapter type and
+instance. Products add that adapter to the mandatory graph and each affected
+`present(...)` node consumes both the canonical state and the adapter output.
+The compiled IR therefore carries executable adapter wiring plus its exhaustive
+case data, not a parallel inspector-only registry.
+
+Coverage is derived transitively from data bindings across service and derive
+nodes. Missing authorities, half- or duplicate-bound canonical/adapter pairs,
+and ancestor/descendant authorities consumed by the same presentation fail
+before Product IR is emitted, even if the competing state space was renamed.
+Independent sibling axes remain legal. `context` ports may tune services only;
+derive/present context inputs are rejected so a cadence hint cannot become a
+second UI truth. Products with no eligible closed state write
+`stateAuthorities: []` explicitly; that empty declaration cannot hide an
+eligible state because compilation derives eligibility from the graph.
 
 Reusable node and component types own named contracts. Product instances
 bind every required input and UI event explicitly; the compiler derives one

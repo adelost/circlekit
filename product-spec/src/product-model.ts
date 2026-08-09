@@ -92,7 +92,7 @@ export interface ProductDeclaration<
   readonly nodes: Nodes & ExactNodeInstances<NodeTypes, Nodes, ComponentTypes, Components>;
   readonly configs: readonly LegoConfigRef[];
   readonly finiteValues: readonly LegoFiniteValueDeclaration[];
-  /** Canonical closed state sources and every presentation vocabulary derived from them. */
+  /** Canonical closed state axes plus their mandatory executable presentation adapters. */
   readonly stateAuthorities: readonly StateAuthority[];
   readonly componentTypes: ComponentTypes;
   readonly components: Components & ExactComponentInstances<NodeTypes, Nodes, ComponentTypes, Components>;

@@ -22,9 +22,11 @@ import {
   defineProduct,
   defineScreenComponentFamilyRegistry,
   field,
+  finiteProduct,
   finiteValueRef,
   finiteValues,
   logOutputManifest,
+  mapFiniteCases,
   PORTABLE_SURFACE_CLASSES,
   port,
   productArtifactConformance,
@@ -32,6 +34,7 @@ import {
   productJsonEmitter,
   present,
   service,
+  statePresentationField,
   validateProductNodeType,
   validateProductIconRendererBindings,
   writeOutputManifest,
@@ -68,6 +71,7 @@ const contextContract = {
   fields: [field("mode", "string")],
 } as const;
 const fixturePhases = finiteValues("fixture.phase", ["idle", "active"]);
+const fixtureTones = finiteValues("fixture.tone", ["muted", "ok", "warn"]);
 
 const source = service({
   id: "fixture.source",
@@ -95,9 +99,35 @@ const controller = service({
     clockDomain: "none", contextInputs: [], effects: ["fixture.effect"],
   },
 } as const);
+const phasePresentation = defineStatePresentation(fixturePhases, {
+  id: "fixture.phase-signal",
+  fields: [
+    statePresentationField("label", "string"),
+    statePresentationField("tone", "string"),
+    statePresentationField("hint", "string"),
+  ],
+  cases: {
+    idle: { label: "IDLE", tone: "muted", hint: "Waiting" },
+    active: { label: "ACTIVE", tone: "ok", hint: "Running" },
+  },
+});
+const phaseDefinition = defineStateAuthority({
+  id: "fixture.phase-authority",
+  source: {
+    portRef: "ui.controller.state",
+    contract: statusContract,
+    stateField: "phase",
+    states: fixturePhases,
+  },
+  presentation: phasePresentation,
+});
+const phaseAuthority = phaseDefinition.authority;
 const projection = present({
   id: "fixture.projection",
-  inputs: [port("state", statusContract)],
+  inputs: [
+    port("state", statusContract),
+    port("phasePresentation", phasePresentation.contract),
+  ],
   outputs: [port("model", statusContract)],
   runtime: {
     stateOwner: "instance", lifetime: "instance", durability: "transient",
@@ -138,24 +168,6 @@ const componentFamilies = defineScreenComponentFamilyRegistry([control], [{
   },
 }] as const);
 
-const phasePresentation = defineStatePresentation(fixturePhases, {
-  id: "fixture.phase-signal",
-  cases: {
-    idle: { label: "IDLE", tone: "muted" },
-    active: { label: "ACTIVE", tone: "ok" },
-  },
-});
-const phaseAuthority = defineStateAuthority({
-  id: "fixture.phase-authority",
-  source: {
-    portRef: "ui.controller.state",
-    contract: statusContract,
-    stateField: "phase",
-    states: fixturePhases,
-  },
-  presentation: phasePresentation,
-});
-
 const paletteVariant = {
   id: "default",
   identity: { primary: "#ffffff" },
@@ -189,7 +201,7 @@ const baseDeclaration = {
     { id: "phone", rendererRefs: ["renderer.phone"], requiredCapabilities: ["ui.menu"], entryScreen: "MAIN", screenRefs: ["MAIN"], serves: ["compact", "wide"] },
     { id: "wear", rendererRefs: ["renderer.wear"], requiredCapabilities: ["ui.menu"], entryScreen: "MAIN", screenRefs: ["MAIN"], serves: ["round"] },
   ],
-  nodeTypes: [source, controller, projection],
+  nodeTypes: [source, controller, phaseDefinition.adapter.type, projection],
   nodes: [
     { id: "domain.source", nodeTypeRef: source.id, config: {}, bindings: {}, activation: {
       kind: "leased", port: "demand", lifecycleSources: [],
@@ -200,8 +212,10 @@ const baseDeclaration = {
       sourceState: "domain.source.status",
       trigger: "control.main.activate",
     } },
+    phaseDefinition.adapter.node,
     { id: "ui.projection", nodeTypeRef: projection.id, config: {}, bindings: {
       state: "ui.controller.state",
+      phasePresentation: phaseAuthority.adapter.outputPortRef,
     } },
   ],
   configs: [],
@@ -227,6 +241,7 @@ if (false) {
       trigger: "control.main.activate",
     } },
     baseDeclaration.nodes[2],
+    baseDeclaration.nodes[3],
   ] }, assetCatalog);
   defineProduct({ ...baseDeclaration, nodes: [
     baseDeclaration.nodes[0],
@@ -236,6 +251,7 @@ if (false) {
       sourceState: "invented.output",
     } },
     baseDeclaration.nodes[2],
+    baseDeclaration.nodes[3],
   ] }, assetCatalog);
   defineProduct({ ...baseDeclaration, components: [{
     ...control,
@@ -245,13 +261,14 @@ if (false) {
       inputs: { invented: "ui.projection.model" },
     },
   }] }, assetCatalog);
-  defineProduct({ ...baseDeclaration, nodeTypes: [noDemandSource, controller, projection], nodes: [
+  defineProduct({ ...baseDeclaration, nodeTypes: [noDemandSource, controller, phaseDefinition.adapter.type, projection], nodes: [
     { id: "domain.source", nodeTypeRef: noDemandSource.id, config: {}, bindings: {}, activation: {
       // @ts-expect-error A service without a demand input is structurally lifetime, never leased.
       kind: "leased", port: "demand", lifecycleSources: ["app-active"],
     } },
     baseDeclaration.nodes[1],
     baseDeclaration.nodes[2],
+    baseDeclaration.nodes[3],
   ] }, assetCatalog);
 
   // @ts-expect-error A service must prove that it owns at least one runtime effect.
@@ -261,16 +278,45 @@ if (false) {
 
   defineStatePresentation(fixturePhases, {
     id: "fixture.missing-phase",
+    fields: phasePresentation.fields,
     // @ts-expect-error Every canonical state must have presentation data.
-    cases: { idle: { label: "IDLE" } },
+    cases: { idle: { label: "IDLE", tone: "muted", hint: "Waiting" } },
   });
   defineStatePresentation(fixturePhases, {
     id: "fixture.extra-phase",
+    fields: phasePresentation.fields,
     cases: {
-      idle: { label: "IDLE" },
-      active: { label: "ACTIVE" },
+      idle: { label: "IDLE", tone: "muted", hint: "Waiting" },
+      active: { label: "ACTIVE", tone: "ok", hint: "Running" },
       // @ts-expect-error A presentation cannot invent a state outside the canonical space.
-      invented: { label: "INVENTED" },
+      invented: { label: "INVENTED", tone: "warn", hint: "No" },
+    },
+  });
+  defineStatePresentation(fixturePhases, {
+    id: "fixture.missing-payload",
+    fields: phasePresentation.fields,
+    cases: {
+      // @ts-expect-error Every case must carry the complete payload schema.
+      idle: { label: "IDLE", tone: "muted" },
+      active: { label: "ACTIVE", tone: "ok", hint: "Running" },
+    },
+  });
+  defineStatePresentation(fixturePhases, {
+    id: "fixture.extra-payload",
+    fields: phasePresentation.fields,
+    cases: {
+      // @ts-expect-error A case cannot invent payload fields outside the shared schema.
+      idle: { label: "IDLE", tone: "muted", hint: "Waiting", invented: "NO" },
+      active: { label: "ACTIVE", tone: "ok", hint: "Running" },
+    },
+  });
+  defineStatePresentation(fixturePhases, {
+    id: "fixture.invalid-tone",
+    fields: [statePresentationField("tone", fixtureTones)],
+    cases: {
+      idle: { tone: "muted" },
+      // @ts-expect-error Finite payload fields accept only their declared closed values.
+      active: { tone: "invented" },
     },
   });
 }
@@ -290,6 +336,24 @@ test("service, derive and present are structurally distinct authoring kinds", ()
       clockDomain: "none", contextInputs: [], effects: [],
     },
   } as const), /must use a presentation contract/);
+  assert.throws(() => derive({
+    id: "fixture.context-derived-truth",
+    inputs: [contextPort("policy", contextContract)],
+    outputs: [port("value", internalContract)],
+    runtime: {
+      stateOwner: "none", lifetime: "call", durability: "transient",
+      clockDomain: "none", contextInputs: [], effects: [],
+    },
+  } as const), /context may tune a service but cannot become derived or presented truth/);
+  assert.throws(() => present({
+    id: "fixture.context-presented-truth",
+    inputs: [contextPort("policy", contextContract)],
+    outputs: [port("model", statusContract)],
+    runtime: {
+      stateOwner: "none", lifetime: "call", durability: "transient",
+      clockDomain: "none", contextInputs: [], effects: [],
+    },
+  } as const), /context may tune a service but cannot become derived or presented truth/);
 
   assert.throws(() => fixture({
     components: [{ ...control, bindings: {
@@ -302,19 +366,39 @@ test("service, derive and present are structurally distinct authoring kinds", ()
     nodes: [
       baseDeclaration.nodes[0],
       baseDeclaration.nodes[1],
-      { id: "ui.first", nodeTypeRef: projection.id, config: {}, bindings: { state: "ui.controller.state" } },
-      { id: "ui.projection", nodeTypeRef: projection.id, config: {}, bindings: { state: "ui.first.model" } },
+      baseDeclaration.nodes[2],
+      { id: "ui.first", nodeTypeRef: projection.id, config: {}, bindings: {
+        state: "ui.controller.state", phasePresentation: phaseAuthority.adapter.outputPortRef,
+      } },
+      { id: "ui.projection", nodeTypeRef: projection.id, config: {}, bindings: {
+        state: "ui.first.model", phasePresentation: phaseAuthority.adapter.outputPortRef,
+      } },
     ],
   }), /make 'ui.first' derive - only the final node before a component may be present/);
 });
 
 test("closed state authority rejects incomplete, invented and overlapping presentation truths", () => {
+  const operations = finiteValues("fixture.operation", ["idle", "fetching"]);
+  const dataStates = finiteValues("fixture.data", ["missing", "available"]);
+  const combinedStates = finiteProduct("fixture.operation-data", [operations, dataStates]);
+  assert.deepEqual(combinedStates.values, [
+    "idle.missing", "idle.available", "fetching.missing", "fetching.available",
+  ]);
+  const generatedCases = mapFiniteCases(combinedStates, (state) => ({
+    label: state.toUpperCase(), tone: "muted", hint: state,
+  }));
+  assert.deepEqual(Object.keys(defineStatePresentation(combinedStates, {
+    id: "fixture.generated-operation-data",
+    fields: phasePresentation.fields,
+    cases: generatedCases,
+  }).cases), combinedStates.values);
+
   assert.throws(() => fixture({
     stateAuthorities: [{
       ...phaseAuthority,
       presentation: {
         ...phasePresentation,
-        cases: { idle: { label: "IDLE", tone: "muted" } },
+        cases: { idle: { label: "IDLE", tone: "muted", hint: "Waiting" } },
       },
     }],
   }), /state presentation 'fixture.phase-signal' is missing case 'active'/);
@@ -326,7 +410,7 @@ test("closed state authority rejects incomplete, invented and overlapping presen
         ...phasePresentation,
         cases: {
           ...phasePresentation.cases,
-          invented: { label: "INVENTED", tone: "warn" },
+          invented: { label: "INVENTED", tone: "warn", hint: "No" },
         },
       },
     }],
@@ -341,33 +425,55 @@ test("closed state authority rejects incomplete, invented and overlapping presen
         id: "fixture.second-phase-signal",
       },
     }],
-  }), /duplicate state authority source/);
+  }), /duplicate state authority axis/);
 
   assert.throws(() => fixture({ stateAuthorities: [] }),
-    /service 'ui.controller' UI-reaching closed state 'ui.controller.state' has no state authority/);
+    /UI-reaching closed state 'ui.controller.state#phase' has no state authority/);
 
-  const relay = derive({
-    id: "fixture.phase-relay",
-    inputs: [port("state", statusContract)],
-    outputs: [port("state", statusContract)],
+  assert.throws(() => defineStatePresentation(fixturePhases, {
+    id: "fixture.empty-payload",
+    fields: phasePresentation.fields,
+    cases: { idle: {}, active: {} },
+  } as never), /case 'idle' is missing field 'label', 'tone', 'hint'/);
+
+  assert.throws(() => defineStatePresentation(fixturePhases, {
+    id: "fixture.extra-payload",
+    fields: phasePresentation.fields,
+    cases: {
+      idle: { label: "IDLE", tone: "muted", hint: "Waiting", invented: "NO" },
+      active: { label: "ACTIVE", tone: "ok", hint: "Running" },
+    },
+  } as never), /case 'idle' has extra field 'invented'/);
+
+  assert.throws(() => defineStatePresentation(fixturePhases, {
+    id: "fixture.invalid-tone-runtime",
+    fields: [statePresentationField("tone", fixtureTones)],
+    cases: { idle: { tone: "muted" }, active: { tone: "invented" } },
+  } as never), /case 'active' field 'tone' does not match its payload schema/);
+
+  const alternatePhases = finiteValues("fixture.alternate-phase", ["quiet", "loud"]);
+  const alternateContract = {
+    id: "fixture.alternate-status",
+    kind: "state",
+    boundary: "presentation",
+    fields: [field("phase", finiteValueRef(alternatePhases.id))],
+  } as const;
+  const inventedState = derive({
+    id: "fixture.invented-state",
+    inputs: [port("raw", internalContract)],
+    outputs: [port("state", alternateContract)],
     runtime: {
       stateOwner: "none", lifetime: "call", durability: "transient",
       clockDomain: "none", contextInputs: [], effects: [],
     },
   } as const);
-  assert.throws(() => fixture({
-    nodeTypes: [source, controller, relay, projection],
-    nodes: [
-      baseDeclaration.nodes[0],
-      baseDeclaration.nodes[1],
-      { id: "ui.relay", nodeTypeRef: relay.id, config: {}, bindings: { state: "ui.controller.state" } },
-      { id: "ui.projection", nodeTypeRef: projection.id, config: {}, bindings: { state: "ui.relay.state" } },
+  const ungovernedProjection = present({
+    id: "fixture.ungoverned-projection",
+    inputs: [
+      port("state", statusContract),
+      port("phasePresentation", phasePresentation.contract),
+      port("invented", alternateContract),
     ],
-  }), /present 'ui.projection'.*exactly one direct input from canonical source 'ui.controller.state' \(found 0\)/);
-
-  const duplicateProjection = present({
-    id: "fixture.duplicate-projection",
-    inputs: [port("primary", statusContract), port("duplicate", statusContract)],
     outputs: [port("model", statusContract)],
     runtime: {
       stateOwner: "none", lifetime: "call", durability: "transient",
@@ -375,42 +481,139 @@ test("closed state authority rejects incomplete, invented and overlapping presen
     },
   } as const);
   assert.throws(() => fixture({
-    nodeTypes: [source, controller, duplicateProjection],
+    nodeTypes: [source, controller, phaseDefinition.adapter.type, inventedState, ungovernedProjection],
     nodes: [
       baseDeclaration.nodes[0],
       baseDeclaration.nodes[1],
-      {
-        id: "ui.projection", nodeTypeRef: duplicateProjection.id, config: {},
-        bindings: { primary: "ui.controller.state", duplicate: "ui.controller.state" },
-      },
+      baseDeclaration.nodes[2],
+      { id: "ui.invented", nodeTypeRef: inventedState.id, config: {}, bindings: { raw: "domain.source.status" } },
+      { id: "ui.projection", nodeTypeRef: ungovernedProjection.id, config: {}, bindings: {
+        state: "ui.controller.state",
+        phasePresentation: phaseAuthority.adapter.outputPortRef,
+        invented: "ui.invented.state",
+      } },
     ],
-  }), /present 'ui.projection'.*exactly one direct input from canonical source 'ui.controller.state' \(found 2\)/);
+    finiteValues: [fixturePhases, alternatePhases],
+  }), /UI-reaching closed state 'ui.invented.state#phase' has no state authority/);
 
-  const splitController = service({
-    ...controller,
-    id: "fixture.split-controller",
-    outputs: [port("state", statusContract), port("otherState", statusContract)],
-  } as const);
-  const splitProjection = present({
-    ...duplicateProjection,
-    id: "fixture.split-projection",
-    inputs: [port("state", statusContract), port("otherState", statusContract)],
+  const duplicateProjection = present({
+    id: "fixture.duplicate-projection",
+    inputs: [
+      port("primary", statusContract),
+      port("duplicate", statusContract),
+      port("phasePresentation", phasePresentation.contract),
+    ],
+    outputs: [port("model", statusContract)],
+    runtime: {
+      stateOwner: "none", lifetime: "call", durability: "transient",
+      clockDomain: "none", contextInputs: [], effects: [],
+    },
   } as const);
   assert.throws(() => fixture({
-    nodeTypes: [source, splitController, splitProjection],
+    nodeTypes: [source, controller, phaseDefinition.adapter.type, duplicateProjection],
     nodes: [
       baseDeclaration.nodes[0],
+      baseDeclaration.nodes[1],
+      baseDeclaration.nodes[2],
       {
-        id: "ui.controller", nodeTypeRef: splitController.id, config: {},
-        activation: { kind: "lifetime", lifecycleSources: [] },
-        bindings: { sourceState: "domain.source.status", trigger: "control.main.activate" },
-      },
-      {
-        id: "ui.projection", nodeTypeRef: splitProjection.id, config: {},
-        bindings: { state: "ui.controller.state", otherState: "ui.controller.otherState" },
+        id: "ui.projection", nodeTypeRef: duplicateProjection.id, config: {},
+        bindings: {
+          primary: "ui.controller.state", duplicate: "ui.controller.state",
+          phasePresentation: phaseAuthority.adapter.outputPortRef,
+        },
       },
     ],
-  }), /service 'ui.controller' exposes multiple UI-reaching closed state outputs/);
+  }), /exactly one canonical input.*\(found 2\/1\)/);
+
+  const alternatePresentation = defineStatePresentation(alternatePhases, {
+    id: "fixture.alternate-signal",
+    fields: phasePresentation.fields,
+    cases: {
+      quiet: { label: "QUIET", tone: "muted", hint: "Waiting" },
+      loud: { label: "LOUD", tone: "warn", hint: "Running" },
+    },
+  });
+  const alternateState = derive({
+    id: "fixture.alternate-state",
+    inputs: [port("canonical", statusContract)],
+    outputs: [port("state", alternateContract)],
+    runtime: {
+      stateOwner: "none", lifetime: "call", durability: "transient",
+      clockDomain: "none", contextInputs: [], effects: [],
+    },
+  } as const);
+  const alternateDefinition = defineStateAuthority({
+    id: "fixture.alternate-authority",
+    source: {
+      portRef: "ui.invented.state", contract: alternateContract,
+      stateField: "phase", states: alternatePhases,
+    },
+    presentation: alternatePresentation,
+  });
+  const competingProjection = present({
+    id: "fixture.competing-projection",
+    inputs: [
+      port("state", statusContract),
+      port("phasePresentation", phasePresentation.contract),
+      port("alternate", alternateContract),
+      port("alternatePresentation", alternatePresentation.contract),
+    ],
+    outputs: [port("model", statusContract)],
+    runtime: {
+      stateOwner: "none", lifetime: "call", durability: "transient",
+      clockDomain: "none", contextInputs: [], effects: [],
+    },
+  } as const);
+  assert.throws(() => fixture({
+    nodeTypes: [
+      source, controller, phaseDefinition.adapter.type, alternateState,
+      alternateDefinition.adapter.type, competingProjection,
+    ],
+    nodes: [
+      baseDeclaration.nodes[0],
+      baseDeclaration.nodes[1],
+      baseDeclaration.nodes[2],
+      { id: "ui.invented", nodeTypeRef: alternateState.id, config: {}, bindings: { canonical: "ui.controller.state" } },
+      alternateDefinition.adapter.node,
+      { id: "ui.projection", nodeTypeRef: competingProjection.id, config: {}, bindings: {
+        state: "ui.controller.state",
+        phasePresentation: phaseAuthority.adapter.outputPortRef,
+        alternate: "ui.invented.state",
+        alternatePresentation: alternateDefinition.authority.adapter.outputPortRef,
+      } },
+    ],
+    finiteValues: [fixturePhases, alternatePhases],
+    stateAuthorities: [phaseAuthority, alternateDefinition.authority],
+  }), /competing ancestor\/descendant state lineages consumed by present 'ui.projection'/);
+
+  const inventedOutputProjection = present({
+    id: "fixture.invented-output-projection",
+    inputs: [
+      port("state", statusContract),
+      port("phasePresentation", phasePresentation.contract),
+    ],
+    outputs: [port("model", alternateContract)],
+    runtime: {
+      stateOwner: "none", lifetime: "call", durability: "transient",
+      clockDomain: "none", contextInputs: [], effects: [],
+    },
+  } as const);
+  const alternateControlType = defineComponentType({
+    ...controlType,
+    inputs: [componentPort("state", alternateContract)],
+  } as const);
+  assert.throws(() => fixture({
+    nodeTypes: [source, controller, phaseDefinition.adapter.type, inventedOutputProjection],
+    nodes: [
+      baseDeclaration.nodes[0], baseDeclaration.nodes[1], baseDeclaration.nodes[2],
+      { id: "ui.projection", nodeTypeRef: inventedOutputProjection.id, config: {}, bindings: {
+        state: "ui.controller.state", phasePresentation: phaseAuthority.adapter.outputPortRef,
+      } },
+    ],
+    finiteValues: [fixturePhases, alternatePhases],
+    componentTypes: [alternateControlType],
+    components: [{ ...control, componentTypeRef: alternateControlType.id }],
+  }), /uses closed state 'fixture.alternate-phase' without exactly one bound canonical authority/);
 });
 
 test("one mandatory graph compiles deterministic outputs and a complete port registry", async () => {
@@ -418,14 +621,18 @@ test("one mandatory graph compiles deterministic outputs and a complete port reg
   assert.equal(product.schemaVersion, 8);
   assert.deepEqual(product.stateAuthorities, [{
     ...phaseAuthority,
-    presentation: { ...phasePresentation, consumers: ["ui.projection.state"] },
+    presentation: { ...phasePresentation, consumers: ["ui.projection.phasePresentation"] },
   }]);
-  assert.equal(product.nodes.length, 3);
-  assert.deepEqual(product.portRegistry.contracts, [demandContract, internalContract, actionContract, statusContract]);
+  assert.equal(product.nodes.length, 4);
+  assert.deepEqual(product.portRegistry.contracts, [
+    demandContract, internalContract, actionContract, statusContract, phasePresentation.contract,
+  ]);
   assert.deepEqual(product.portRegistry.bindings, [
     { kind: "node-input", from: "domain.source.status", to: "ui.controller.sourceState", purpose: "data" },
     { kind: "component-event", from: "control.main.activate", to: "ui.controller.trigger", purpose: "data" },
+    { kind: "node-input", from: "ui.controller.state", to: `${phaseAuthority.adapter.nodeInstanceRef}.state`, purpose: "data" },
     { kind: "node-input", from: "ui.controller.state", to: "ui.projection.state", purpose: "data" },
+    { kind: "node-input", from: phaseAuthority.adapter.outputPortRef, to: "ui.projection.phasePresentation", purpose: "data" },
     { kind: "component-input", from: "ui.projection.model", to: "control.main.state", purpose: "data" },
   ]);
   assert.equal(product.portRegistry.demandEdges.length, 3);
@@ -680,6 +887,7 @@ test("mandatory bindings and the component boundary fail before emission", () =>
         invented: "domain.source.status",
       } },
       baseDeclaration.nodes[2],
+      baseDeclaration.nodes[3],
     ],
   }), /binds extra input/);
   assert.throws(() => fixture({
