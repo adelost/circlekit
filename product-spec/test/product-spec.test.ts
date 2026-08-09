@@ -14,6 +14,8 @@ import {
   demandPort,
   decodeNativeBindingManifest,
   defineComponentType,
+  defineStateAuthority,
+  defineStatePresentation,
   derive,
   definePalette,
   definePortableAssetCatalog,
@@ -65,11 +67,12 @@ const contextContract = {
   boundary: "service-internal",
   fields: [field("mode", "string")],
 } as const;
+const fixturePhases = finiteValues("fixture.phase", ["idle", "active"]);
 
 const source = service({
   id: "fixture.source",
   inputs: [demandPort("demand", demandContract)],
-  outputs: [port("status", statusContract)],
+  outputs: [port("status", internalContract)],
   runtime: {
     stateOwner: "none", lifetime: "process", durability: "transient",
     clockDomain: "none", contextInputs: [], effects: ["fixture.source-read"],
@@ -83,7 +86,7 @@ const noDemandSource = service({
 const controller = service({
   id: "fixture.controller",
   inputs: [
-    port("sourceState", statusContract),
+    port("sourceState", internalContract),
     port("trigger", actionContract),
   ],
   outputs: [port("state", statusContract)],
@@ -103,7 +106,7 @@ const projection = present({
 } as const);
 const background = service({
   id: "fixture.background",
-  inputs: [port("status", statusContract)],
+  inputs: [port("status", internalContract)],
   outputs: [],
   runtime: {
     stateOwner: "instance", lifetime: "instance", durability: "transient",
@@ -134,6 +137,24 @@ const componentFamilies = defineScreenComponentFamilyRegistry([control], [{
     })),
   },
 }] as const);
+
+const phasePresentation = defineStatePresentation(fixturePhases, {
+  id: "fixture.phase-signal",
+  cases: {
+    idle: { label: "IDLE", tone: "muted" },
+    active: { label: "ACTIVE", tone: "ok" },
+  },
+});
+const phaseAuthority = defineStateAuthority({
+  id: "fixture.phase-authority",
+  source: {
+    portRef: "ui.controller.state",
+    contract: statusContract,
+    stateField: "phase",
+    states: fixturePhases,
+  },
+  presentation: phasePresentation,
+});
 
 const paletteVariant = {
   id: "default",
@@ -184,7 +205,8 @@ const baseDeclaration = {
     } },
   ],
   configs: [],
-  finiteValues: [finiteValues("fixture.phase", ["idle", "active"])],
+  finiteValues: [fixturePhases],
+  stateAuthorities: [phaseAuthority],
   componentTypes: [controlType],
   components: [control],
   componentFamilies,
@@ -236,6 +258,21 @@ if (false) {
   service({ ...source, runtime: { ...source.runtime, effects: [] } } as const);
   // @ts-expect-error A derive node cannot own an external effect.
   derive({ ...projection, runtime: { ...projection.runtime, effects: ["fixture.effect"] } } as const);
+
+  defineStatePresentation(fixturePhases, {
+    id: "fixture.missing-phase",
+    // @ts-expect-error Every canonical state must have presentation data.
+    cases: { idle: { label: "IDLE" } },
+  });
+  defineStatePresentation(fixturePhases, {
+    id: "fixture.extra-phase",
+    cases: {
+      idle: { label: "IDLE" },
+      active: { label: "ACTIVE" },
+      // @ts-expect-error A presentation cannot invent a state outside the canonical space.
+      invented: { label: "INVENTED" },
+    },
+  });
 }
 
 test("service, derive and present are structurally distinct authoring kinds", () => {
@@ -271,11 +308,120 @@ test("service, derive and present are structurally distinct authoring kinds", ()
   }), /make 'ui.first' derive - only the final node before a component may be present/);
 });
 
+test("closed state authority rejects incomplete, invented and overlapping presentation truths", () => {
+  assert.throws(() => fixture({
+    stateAuthorities: [{
+      ...phaseAuthority,
+      presentation: {
+        ...phasePresentation,
+        cases: { idle: { label: "IDLE", tone: "muted" } },
+      },
+    }],
+  }), /state presentation 'fixture.phase-signal' is missing case 'active'/);
+
+  assert.throws(() => fixture({
+    stateAuthorities: [{
+      ...phaseAuthority,
+      presentation: {
+        ...phasePresentation,
+        cases: {
+          ...phasePresentation.cases,
+          invented: { label: "INVENTED", tone: "warn" },
+        },
+      },
+    }],
+  }), /state presentation 'fixture.phase-signal' has extra case 'invented'/);
+
+  assert.throws(() => fixture({
+    stateAuthorities: [phaseAuthority, {
+      ...phaseAuthority,
+      id: "fixture.second-phase-authority",
+      presentation: {
+        ...phasePresentation,
+        id: "fixture.second-phase-signal",
+      },
+    }],
+  }), /duplicate state authority source/);
+
+  assert.throws(() => fixture({ stateAuthorities: [] }),
+    /service 'ui.controller' UI-reaching closed state 'ui.controller.state' has no state authority/);
+
+  const relay = derive({
+    id: "fixture.phase-relay",
+    inputs: [port("state", statusContract)],
+    outputs: [port("state", statusContract)],
+    runtime: {
+      stateOwner: "none", lifetime: "call", durability: "transient",
+      clockDomain: "none", contextInputs: [], effects: [],
+    },
+  } as const);
+  assert.throws(() => fixture({
+    nodeTypes: [source, controller, relay, projection],
+    nodes: [
+      baseDeclaration.nodes[0],
+      baseDeclaration.nodes[1],
+      { id: "ui.relay", nodeTypeRef: relay.id, config: {}, bindings: { state: "ui.controller.state" } },
+      { id: "ui.projection", nodeTypeRef: projection.id, config: {}, bindings: { state: "ui.relay.state" } },
+    ],
+  }), /present 'ui.projection'.*exactly one direct input from canonical source 'ui.controller.state' \(found 0\)/);
+
+  const duplicateProjection = present({
+    id: "fixture.duplicate-projection",
+    inputs: [port("primary", statusContract), port("duplicate", statusContract)],
+    outputs: [port("model", statusContract)],
+    runtime: {
+      stateOwner: "none", lifetime: "call", durability: "transient",
+      clockDomain: "none", contextInputs: [], effects: [],
+    },
+  } as const);
+  assert.throws(() => fixture({
+    nodeTypes: [source, controller, duplicateProjection],
+    nodes: [
+      baseDeclaration.nodes[0],
+      baseDeclaration.nodes[1],
+      {
+        id: "ui.projection", nodeTypeRef: duplicateProjection.id, config: {},
+        bindings: { primary: "ui.controller.state", duplicate: "ui.controller.state" },
+      },
+    ],
+  }), /present 'ui.projection'.*exactly one direct input from canonical source 'ui.controller.state' \(found 2\)/);
+
+  const splitController = service({
+    ...controller,
+    id: "fixture.split-controller",
+    outputs: [port("state", statusContract), port("otherState", statusContract)],
+  } as const);
+  const splitProjection = present({
+    ...duplicateProjection,
+    id: "fixture.split-projection",
+    inputs: [port("state", statusContract), port("otherState", statusContract)],
+  } as const);
+  assert.throws(() => fixture({
+    nodeTypes: [source, splitController, splitProjection],
+    nodes: [
+      baseDeclaration.nodes[0],
+      {
+        id: "ui.controller", nodeTypeRef: splitController.id, config: {},
+        activation: { kind: "lifetime", lifecycleSources: [] },
+        bindings: { sourceState: "domain.source.status", trigger: "control.main.activate" },
+      },
+      {
+        id: "ui.projection", nodeTypeRef: splitProjection.id, config: {},
+        bindings: { state: "ui.controller.state", otherState: "ui.controller.otherState" },
+      },
+    ],
+  }), /service 'ui.controller' exposes multiple UI-reaching closed state outputs/);
+});
+
 test("one mandatory graph compiles deterministic outputs and a complete port registry", async () => {
   const product = fixture();
-  assert.equal(product.schemaVersion, 7);
+  assert.equal(product.schemaVersion, 8);
+  assert.deepEqual(product.stateAuthorities, [{
+    ...phaseAuthority,
+    presentation: { ...phasePresentation, consumers: ["ui.projection.state"] },
+  }]);
   assert.equal(product.nodes.length, 3);
-  assert.deepEqual(product.portRegistry.contracts, [demandContract, statusContract, actionContract]);
+  assert.deepEqual(product.portRegistry.contracts, [demandContract, internalContract, actionContract, statusContract]);
   assert.deepEqual(product.portRegistry.bindings, [
     { kind: "node-input", from: "domain.source.status", to: "ui.controller.sourceState", purpose: "data" },
     { kind: "component-event", from: "control.main.activate", to: "ui.controller.trigger", purpose: "data" },

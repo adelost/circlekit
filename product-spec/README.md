@@ -35,6 +35,19 @@ catalog. The catalog is emitted in Product IR, while opaque record/list types
 continue to use `valueRef`. Compilation rejects both unknown finite references
 and catalog declarations that no mounted contract consumes.
 
+Closed service status uses one `defineStateAuthority(...)` per node instance.
+Its source is an exact output port, contract, finite discriminator field and
+finite value declaration. `defineStatePresentation(...)` derives copy/tone or
+other product data from that same value declaration: its case keys are the
+canonical state ids, so a presentation cannot invent a private tier, collapse
+two states behind one identity, or omit a new state. The compiler derives every
+`present(...)` consumer transitively from the data graph and requires exactly
+one direct canonical-state input on each; products cannot maintain a coverage
+list. A UI-reaching finite service state with no authority, a second authority
+or presentation-state output from the same service, missing/extra cases and
+independent status wiring all fail before Product IR is emitted. Products with
+no eligible closed status authority write `stateAuthorities: []` explicitly.
+
 Reusable node and component types own named contracts. Product instances
 bind every required input and UI event explicitly; the compiler derives one
 closed port registry and rejects missing, extra, incompatible, internal or

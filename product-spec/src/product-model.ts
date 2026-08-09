@@ -24,6 +24,11 @@ import {
   type ProductNodeType,
 } from "./node-model.js";
 import {
+  compileStateAuthorities,
+  type CompiledStateAuthority,
+  type StateAuthority,
+} from "./state-authority-model.js";
+import {
   definePalette,
   definePortableAssetCatalog,
   paletteTokenIds,
@@ -35,7 +40,7 @@ import {
   type ProductPalette,
 } from "./visual-model.js";
 
-export const PRODUCT_SPEC_SCHEMA_VERSION = 7 as const;
+export const PRODUCT_SPEC_SCHEMA_VERSION = 8 as const;
 
 export interface RendererBinding<Id extends string = string, Capability extends string = string> {
   readonly id: Id;
@@ -87,6 +92,8 @@ export interface ProductDeclaration<
   readonly nodes: Nodes & ExactNodeInstances<NodeTypes, Nodes, ComponentTypes, Components>;
   readonly configs: readonly LegoConfigRef[];
   readonly finiteValues: readonly LegoFiniteValueDeclaration[];
+  /** Canonical closed state sources and every presentation vocabulary derived from them. */
+  readonly stateAuthorities: readonly StateAuthority[];
   readonly componentTypes: ComponentTypes;
   readonly components: Components & ExactComponentInstances<NodeTypes, Nodes, ComponentTypes, Components>;
   readonly componentFamilies: Families;
@@ -105,6 +112,7 @@ export interface ProductIr {
   readonly nodes: readonly ProductNodeInstance[];
   readonly configs: readonly LegoConfigRef[];
   readonly finiteValues: readonly LegoFiniteValueDeclaration[];
+  readonly stateAuthorities: readonly CompiledStateAuthority[];
   readonly componentTypes: readonly ComponentType[];
   readonly components: readonly ProductComponentInstance[];
   readonly componentFamilies: readonly ScreenComponentFamilyRef[];
@@ -243,6 +251,11 @@ export function defineProduct<
     components: declaration.components,
     mountedScopes,
   });
+  const stateAuthorities = compileStateAuthorities(
+    declaration.stateAuthorities,
+    declaration.finiteValues,
+    graph,
+  );
   return {
     kind: "product-spec-ir",
     schemaVersion: PRODUCT_SPEC_SCHEMA_VERSION,
@@ -253,6 +266,7 @@ export function defineProduct<
     nodes: graph.nodes,
     configs: graph.configs,
     finiteValues: declaration.finiteValues,
+    stateAuthorities,
     componentTypes: graph.componentTypes,
     components: graph.components,
     componentFamilies: declaration.componentFamilies,
