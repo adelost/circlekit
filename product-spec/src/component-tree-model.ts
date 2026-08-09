@@ -4,7 +4,7 @@ import {
   requireUnique,
   requireWireId,
   type LegoContract,
-} from "./native-lego-model.js";
+} from "./node-model.js";
 
 export const PORTABLE_SURFACE_CLASSES = ["round", "compact", "wide"] as const;
 export type PortableSurfaceClass = (typeof PORTABLE_SURFACE_CLASSES)[number];

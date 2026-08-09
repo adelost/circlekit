@@ -1,5 +1,6 @@
 export type LegoPrimitive = "boolean" | "integer" | "number" | "string";
-export type LegoRole = "source" | "adapter" | "selector" | "policy" | "consumer";
+/** The only executable authoring kinds. Graph position is derived, never declared as a second role. */
+export type ProductNodeKind = "service" | "derive" | "present";
 export type LegoStateOwner = "none" | "instance" | "external";
 export type LegoLifetime = "call" | "operation" | "instance" | "process";
 export type LegoDurability = "transient" | "durable";
@@ -166,7 +167,7 @@ export function contextPort<const Id extends string, const Contract extends Lego
   return { id, contract, purpose: "context" };
 }
 
-export interface LegoRuntimeSpec {
+export interface ProductNodeRuntime {
   readonly stateOwner: LegoStateOwner;
   readonly lifetime: LegoLifetime;
   readonly durability: LegoDurability;
@@ -175,17 +176,47 @@ export interface LegoRuntimeSpec {
   readonly effects: readonly string[];
 }
 
-export interface LegoSpec {
+export interface ProductNodeType {
   readonly id: string;
-  readonly role: LegoRole;
+  readonly kind: ProductNodeKind;
   readonly inputs: readonly LegoPort[];
   readonly outputs: readonly LegoPort[];
   readonly configInputs?: readonly LegoConfigInput[];
-  readonly runtime: LegoRuntimeSpec;
+  readonly runtime: ProductNodeRuntime;
 }
 
-export function defineLegoSpec<const T extends LegoSpec>(spec: T): T {
-  requireWireId(spec.id, "LegoSpec");
+type ProductNodeDefinition = Omit<ProductNodeType, "kind">;
+type EffectfulRuntime<Runtime extends ProductNodeRuntime> = Runtime & {
+  readonly effects: readonly [string, ...string[]];
+};
+type EffectFreeRuntime<Runtime extends ProductNodeRuntime> = Runtime & {
+  readonly effects: readonly [];
+};
+
+/** Owns external IO, a resource, persistence or platform lifecycle. */
+export function service<const T extends ProductNodeDefinition>(
+  spec: T & { readonly runtime: EffectfulRuntime<T["runtime"]> },
+): T & { readonly kind: "service" } {
+  return validateProductNodeType({ ...spec, kind: "service" }) as T & { readonly kind: "service" };
+}
+
+/** Effect-free domain computation. It may retain deterministic stream state. */
+export function derive<const T extends ProductNodeDefinition>(
+  spec: T & { readonly runtime: EffectFreeRuntime<T["runtime"]> },
+): T & { readonly kind: "derive" } {
+  return validateProductNodeType({ ...spec, kind: "derive" }) as T & { readonly kind: "derive" };
+}
+
+/** Final effect-free immutable model feeding one or more components. */
+export function present<const T extends ProductNodeDefinition>(
+  spec: T & { readonly runtime: EffectFreeRuntime<T["runtime"]> },
+): T & { readonly kind: "present" } {
+  return validateProductNodeType({ ...spec, kind: "present" }) as T & { readonly kind: "present" };
+}
+
+/** Compiler-side validation for already-authored node types. */
+export function validateProductNodeType<const T extends ProductNodeType>(spec: T): T {
+  requireWireId(spec.id, "ProductNodeType");
   validatePorts(spec.inputs, `${spec.id} input`);
   validatePorts(spec.outputs, `${spec.id} output`);
   validateConfigInputs(spec.configInputs ?? [], spec.id);
@@ -193,15 +224,29 @@ export function defineLegoSpec<const T extends LegoSpec>(spec: T): T {
   requireUnique(spec.runtime.effects, `${spec.id} effect`);
   spec.runtime.contextInputs.forEach((id) => requireWireId(id, `${spec.id} context input`));
   spec.runtime.effects.forEach((id) => requireWireId(id, `${spec.id} effect`));
+  if (spec.kind === "service" && spec.runtime.effects.length === 0) {
+    throw new Error(`service '${spec.id}' must declare at least one runtime effect`);
+  }
+  if (spec.kind !== "service" && spec.runtime.effects.length !== 0) {
+    throw new Error(`${spec.kind} '${spec.id}' cannot declare runtime effects`);
+  }
+  if (spec.kind === "present") {
+    if (spec.outputs.length === 0) throw new Error(`present '${spec.id}' has no presentation output`);
+    const invalid = spec.outputs.filter(({ contract }) =>
+      contract.boundary !== "presentation" || contract.kind === "event");
+    if (invalid.length > 0) {
+      throw new Error(`present '${spec.id}' output '${invalid.map(({ id }) => id).join("', '")}' must use a presentation contract`);
+    }
+  }
   if (spec.runtime.durability === "durable" && spec.runtime.stateOwner === "none") {
-    throw new Error(`LegoSpec '${spec.id}' cannot make unowned state durable`);
+    throw new Error(`ProductNodeType '${spec.id}' cannot make unowned state durable`);
   }
   return spec;
 }
 
-export function validateServiceConfig(
+export function validateNodeConfig(
   instanceId: string,
-  spec: LegoSpec,
+  spec: ProductNodeType,
   configBindings: Readonly<Record<string, string>>,
   configs: ReadonlyMap<string, LegoConfigRef>,
 ): ReadonlySet<string> {
@@ -210,14 +255,14 @@ export function validateServiceConfig(
   for (const [name, id] of Object.entries(configBindings)) {
     requireIdentifier(name, `config key in '${instanceId}'`);
     const input = inputs.get(name);
-    if (input === undefined) throw new Error(`service '${instanceId}' uses undeclared config input '${name}'`);
+    if (input === undefined) throw new Error(`node '${instanceId}' uses undeclared config input '${name}'`);
     const config = configs.get(id);
-    if (config === undefined) throw new Error(`service '${instanceId}' uses unknown config '${id}'`);
+    if (config === undefined) throw new Error(`node '${instanceId}' uses unknown config '${id}'`);
     validateConfigValues(instanceId, input, config);
     used.add(id);
   }
   for (const input of inputs.values()) {
-    if (!(input.id in configBindings)) throw new Error(`service '${instanceId}' is missing config input '${input.id}'`);
+    if (!(input.id in configBindings)) throw new Error(`node '${instanceId}' is missing config input '${input.id}'`);
   }
   return used;
 }

@@ -13,7 +13,7 @@ import type { ProductIr } from "./product-model.js";
  * every axis in one pass instead of the first failure, and a test can assert the
  * axis and direction rather than that something threw.
  */
-export const NATIVE_BINDING_MANIFEST_SCHEMA_VERSION = 2 as const;
+export const NATIVE_BINDING_MANIFEST_SCHEMA_VERSION = 3 as const;
 
 export interface NativeBindingManifest {
   readonly stage: "native-export";
@@ -27,8 +27,8 @@ export interface NativeBindingManifest {
     readonly profiles: readonly string[];
   }[];
   readonly icons: readonly { readonly iconId: string; readonly nativeSymbol: string }[];
-  readonly services?: readonly {
-    readonly serviceId: string;
+  readonly nodes?: readonly {
+    readonly nodeId: string;
     readonly nativePortId: string;
     readonly profiles: readonly string[];
     readonly inputPorts: readonly string[];
@@ -46,7 +46,7 @@ export type ConformanceAxis =
   | "artifact"
   | "component"
   | "icon"
-  | "service-port"
+  | "node-port"
   | "finite-value";
 
 /**
@@ -105,9 +105,9 @@ const irSection = <T,>(value: readonly T[] | undefined): readonly T[] => value ?
 
 /** Every mounted lego port, as the `mount.port` refs wiring and native bindings use. */
 function portRefs(ir: ProductIr): { inputs: Set<string>; outputs: Set<string> } {
-  const inputs = new Set(ir.portRegistry.servicePorts
+  const inputs = new Set(ir.portRegistry.nodePorts
     .filter(({ direction }) => direction === "input").map(({ ref }) => ref));
-  const outputs = new Set(ir.portRegistry.servicePorts
+  const outputs = new Set(ir.portRegistry.nodePorts
     .filter(({ direction }) => direction === "output").map(({ ref }) => ref));
   return { inputs, outputs };
 }
@@ -226,33 +226,33 @@ export function productArtifactConformance(
   ));
 
   // Measured against Link, not assumed: its ten lego mount ids and its ten
-  // manifest serviceIds are the SAME set, and its navigation lego declares
+  // manifest nodeIds are the SAME set, and its navigation node declares
   // port("open")/port("destination") — exactly the bare names the manifest
-  // carries. So a manifest port is service-relative and qualifies as
-  // `serviceId.port`, which is the mount-qualified ref this graph uses.
+  // carries. So a manifest port is node-relative and qualifies as
+  // `nodeId.port`, which is the instance-qualified ref this graph uses.
   //
-  // A serviceId with no matching mount is reported rather than silently
+  // A nodeId with no matching instance is reported rather than silently
   // qualifying into a ref that cannot match anything.
   const { inputs, outputs } = portRefs(ir);
-  const mountIds = new Set(irSection(ir.services).map(({ id }) => id));
-  for (const service of manifest.services ?? []) {
-    if (!mountIds.has(service.serviceId)) {
-      out.push(finding("service-port", "orphan", service.serviceId,
-        `service '${service.serviceId}' has no lego mount, so its ports cannot be resolved`));
+  const mountIds = new Set(irSection(ir.nodes).map(({ id }) => id));
+  for (const node of manifest.nodes ?? []) {
+    if (!mountIds.has(node.nodeId)) {
+      out.push(finding("node-port", "orphan", node.nodeId,
+        `node '${node.nodeId}' has no product instance, so its ports cannot be resolved`));
       continue;
     }
     for (const [port, declared, side] of [
-      ...service.inputPorts.map((p) => [p, inputs, "input"] as const),
-      ...service.outputPorts.map((p) => [p, outputs, "output"] as const),
+      ...node.inputPorts.map((p) => [p, inputs, "input"] as const),
+      ...node.outputPorts.map((p) => [p, outputs, "output"] as const),
     ]) {
-      const ref = `${service.serviceId}.${port}`;
+      const ref = `${node.nodeId}.${port}`;
       if (!declared.has(ref)) {
-        out.push(finding("service-port", "orphan", ref,
-          `service '${service.serviceId}' binds ${side} port '${port}', which its lego does not declare`));
+        out.push(finding("node-port", "orphan", ref,
+          `node '${node.nodeId}' binds ${side} port '${port}', which its type does not declare`));
       }
     }
   }
-  if (manifest.services === undefined) out.push(unasserted("service-port", "services"));
+  if (manifest.nodes === undefined) out.push(unasserted("node-port", "nodes"));
 
   // Two-way parity on the value space itself, not just its name: a native enum
   // that gained or lost a case is exactly the drift finite values exist to stop.
@@ -322,15 +322,15 @@ export function decodeNativeBindingManifest(raw: unknown): NativeBindingManifest
         nativeSymbol: requiredString(item.nativeSymbol, `icon ${index} nativeSymbol`),
       };
     }),
-    ...(root.services === undefined ? {} : {
-      services: list(root.services, "manifest services").map((value, index) => {
-        const item = record(value, `manifest service ${index}`);
+    ...(root.nodes === undefined ? {} : {
+      nodes: list(root.nodes, "manifest nodes").map((value, index) => {
+        const item = record(value, `manifest node ${index}`);
         return {
-          serviceId: requiredString(item.serviceId, `service ${index} serviceId`),
-          nativePortId: requiredString(item.nativePortId, `service ${index} nativePortId`),
-          profiles: stringList(item.profiles, `service ${index} profiles`),
-          inputPorts: stringList(item.inputPorts, `service ${index} inputPorts`),
-          outputPorts: stringList(item.outputPorts, `service ${index} outputPorts`),
+          nodeId: requiredString(item.nodeId, `node ${index} nodeId`),
+          nativePortId: requiredString(item.nativePortId, `node ${index} nativePortId`),
+          profiles: stringList(item.profiles, `node ${index} profiles`),
+          inputPorts: stringList(item.inputPorts, `node ${index} inputPorts`),
+          outputPorts: stringList(item.outputPorts, `node ${index} outputPorts`),
         };
       }),
     }),
