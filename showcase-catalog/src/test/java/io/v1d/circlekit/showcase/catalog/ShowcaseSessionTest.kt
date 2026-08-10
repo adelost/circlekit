@@ -113,4 +113,19 @@ class ShowcaseSessionTest {
         assertTrue(session.handle(ShowcaseProbeCommand("back")).ok)
         assertTrue(calls == 1)
     }
+
+    @Test
+    fun `page back executes the registered system or previous behavior`() {
+        val session = ShowcaseSession(ShowcaseArtifactProfile.PHONE_FULL_UI)
+        var previousCalls = 0
+
+        assertFalse(session.backPage { previousCalls += 1; true })
+        assertEquals(0, previousCalls)
+
+        assertTrue(session.route("section.atoms"))
+        assertEquals("section.atoms", session.activePage.value)
+        assertTrue(session.backPage { previousCalls += 1; true })
+        assertEquals(1, previousCalls)
+        assertEquals("section.foundations", session.activePage.value)
+    }
 }

@@ -33,23 +33,66 @@ struct ShowcaseCatalogSource: ShowcaseNativeBinding {
 @Observable
 final class ShowcaseNavigationController: ShowcaseNativeBinding {
     let nodeTypeRef: String
-    var path: [GeneratedShowcaseComponentId] = []
+    let artifact: ShowcaseNavigationArtifact
+    var path: [ShowcaseNavigationDestination] = [] {
+        didSet {
+            activePage = path.reversed().compactMap { destination in
+                if case .page(let pageRef) = destination { return pageRef }
+                return nil
+            }.first ?? artifact.entryPageRef
+        }
+    }
+    var activePage: String
 
-    init(nodeTypeRef: String) {
+    init(nodeTypeRef: String, artifactId: GeneratedShowcaseArtifactId) {
         self.nodeTypeRef = nodeTypeRef
+        artifact = GeneratedShowcaseProduct.navigationArtifacts.first(where: { $0.artifactId == artifactId })!
+        activePage = artifact.entryPageRef
+        precondition(
+            GeneratedShowcaseProduct.activePageBindings.contains(where: {
+                $0.publisherPortRef.rawValue == "navigation.activePage" &&
+                    $0.pageHostPortRef.rawValue == "page.host.activePage"
+            }),
+            "Product IR has no active-page/page-host binding"
+        )
+        precondition(GeneratedShowcaseProduct.nativeComponents.contains(where: {
+            $0.componentTypeRef == "showcase.page-host" && $0.rendererId == "ShowcasePageHost" &&
+                $0.profiles.contains(artifactId)
+        }))
+        precondition(GeneratedShowcaseProduct.nativeComponents.contains(where: {
+            $0.componentTypeRef == "showcase.page-menu" && $0.rendererId == "ShowcasePageMenu" &&
+                $0.profiles.contains(artifactId)
+        }))
+    }
+
+    func route(_ pageRef: String) {
+        precondition(artifact.pages.contains(where: { $0.pageRef == pageRef }))
+        requireAction(componentId: .pageMenu, sourcePort: "page.menu.route", effect: "push")
+        activePage = pageRef
+        path.append(.page(pageRef))
     }
 
     func open(_ componentId: GeneratedShowcaseComponentId) {
-        precondition(
-            GeneratedShowcaseProduct.portBindings.contains(where: {
-                $0.kind == "component-event" &&
-                    $0.from.rawValue == "\(componentId.rawValue).open" &&
-                    $0.to.rawValue.hasPrefix("navigation.")
-            }),
-            "Product IR has no navigation event binding for \(componentId.rawValue)"
-        )
-        path.append(componentId)
+        requireAction(componentId: componentId, sourcePort: "\(componentId.rawValue).open", effect: "dispatch")
+        path.append(.component(componentId))
     }
+
+    private func requireAction(componentId: GeneratedShowcaseComponentId, sourcePort: String, effect: String) {
+        precondition(
+            GeneratedShowcaseProduct.navigationActionGroups.contains(where: { group in
+                group.artifactId == artifact.artifactId && group.componentId == componentId &&
+                    group.actions.contains(where: {
+                        $0.sourcePortRef.rawValue == sourcePort && $0.effect == effect
+                    })
+            }),
+            "Product IR has no \(effect) action binding for \(componentId.rawValue)"
+        )
+    }
+}
+
+enum ShowcaseNavigationDestination: Hashable {
+    case page(String)
+    case component(GeneratedShowcaseComponentId)
 }
 
 @MainActor
@@ -65,7 +108,7 @@ final class ShowcaseNativeEnvironment {
         let catalogNode = GeneratedShowcaseProduct.nodes.first(where: { $0.id == .catalog })!
         let navigationNode = GeneratedShowcaseProduct.nodes.first(where: { $0.id == .navigation })!
         catalog = ShowcaseCatalogSource(nodeTypeRef: catalogNode.typeRef, artifact: artifact)
-        navigation = ShowcaseNavigationController(nodeTypeRef: navigationNode.typeRef)
+        navigation = ShowcaseNavigationController(nodeTypeRef: navigationNode.typeRef, artifactId: artifact.id)
         GeneratedShowcaseNodeId.allCases.forEach { _ = binding(for: $0) }
     }
 

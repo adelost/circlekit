@@ -23,12 +23,18 @@ object ShowcaseScreens {
     fun root(session: ShowcaseSession, dev: ShowcaseDevPort? = null): RingScreen = RingScreen.Launcher(
         title = "CIRCLEKIT",
         gridRole = MenuGridRole.COMPONENT_GALLERY,
-        entries = ShowcaseCatalogRuntime.screensFor(session.artifactProfile.id).mapNotNull { screen ->
+        entries = ShowcaseNativeBindings.navigationArtifacts.single {
+            it.artifactRef == session.artifactProfile.id
+        }.pages.mapNotNull { page ->
+            val screen = page.pageRef
             val family = ShowcaseFamily.entries.singleOrNull { screen == "section.${it.id}" } ?: return@mapNotNull null
             LaunchSpec(
                 icon = ShowcaseNativeBindings.requireIcon(family.iconId),
                 label = family.menuLabel,
-                open = { familyScreen(screen, family, session) },
+                open = {
+                    check(session.route(screen))
+                    familyScreen(screen, family, session)
+                },
             )
         } + listOfNotNull(
             dev?.let { port ->
@@ -61,6 +67,8 @@ object ShowcaseScreens {
             ShowcaseNativeRenderer.TEXT,
             ShowcaseNativeRenderer.CAPTURE,
             ShowcaseNativeRenderer.PLAYBACK,
+            ShowcaseNativeRenderer.PAGE_HOST,
+            ShowcaseNativeRenderer.PAGE_MENU,
             -> error("Component renderer ${pair.first.id.value} is not a RingScreen")
         }
     }

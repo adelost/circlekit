@@ -1,9 +1,11 @@
 import { port, present, service } from "@v1d/product-spec";
 import { showcaseCases } from "./catalog.js";
 import {
+  showcaseActivePageContract,
   showcaseCatalogContract,
   showcaseNavigationContract,
   showcaseOpenActionContract,
+  showcaseRouteContract,
 } from "./graph-contracts.js";
 
 /** Generated catalog data is already the final immutable renderer model. */
@@ -24,8 +26,14 @@ export const showcaseCatalogPresentation = present({
 /** The only effect owner: it mutates the host navigation stack. */
 export const showcaseNavigationService = service({
   id: "showcase.navigation-service",
-  inputs: showcaseCases.map(({ openPort }) => port(openPort, showcaseOpenActionContract)),
-  outputs: [port("destination", showcaseNavigationContract)],
+  inputs: [
+    port("route", showcaseRouteContract),
+    ...showcaseCases.map(({ openPort }) => port(openPort, showcaseOpenActionContract)),
+  ],
+  outputs: [
+    port("activePage", showcaseActivePageContract),
+    port("destination", showcaseNavigationContract),
+  ],
   runtime: {
     stateOwner: "instance",
     lifetime: "instance",
@@ -68,7 +76,10 @@ export const showcaseNodes = [
     id: "navigation",
     nodeTypeRef: showcaseNavigationService.id,
     config: {},
-    bindings: navigationBindings(showcaseCases),
+    bindings: {
+      route: "page.menu.route",
+      ...navigationBindings(showcaseCases),
+    },
     activation: { kind: "lifetime", lifecycleSources: [] },
   },
   {

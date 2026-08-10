@@ -2,7 +2,7 @@
 module GeneratedCircleKitShowcase {
     const PRODUCT_ID = "circlekit-showcase";
     const PRODUCT_LABEL = "CIRCLEKIT";
-    const PRODUCT_SPEC_VERSION = "0.3.46";
+    const PRODUCT_SPEC_VERSION = "0.3.47";
     const ARTIFACT_ID = "garmin-limited-ui";
     const RENDERER_ID = "garmin-connectiq-monkeyc";
     const SCREEN_ID = "artifact.garmin-limited-ui";
@@ -27,7 +27,8 @@ module GeneratedCircleKitShowcase {
     const COLOR_LINE = 0x232527;
     const COLOR_ICON = 0xF1EFE9;
     var NATIVE_COMPONENTS = [
-        { "componentId" => COMPONENT_ID, "rendererId" => "CircleKitShowcaseView.drawProgressDial" }
+        { "componentId" => COMPONENT_ID, "rendererId" => "CircleKitShowcaseView.drawProgressDial" },
+        { "componentId" => "showcase.page-host", "rendererId" => "CircleKitShowcaseView" }
     ];
     var NATIVE_ICONS = [
         {
@@ -149,8 +150,8 @@ module GeneratedCircleKitShowcase {
         {
             "nodeId" => "navigation",
             "nativePortId" => "GeneratedCircleKitShowcase.open",
-            "inputPorts" => ["foundationColors", "foundationGeometry", "atomIconAction", "controlActionRow", "controlChoiceRow", "controlAdjustment", "controlProgress", "controlPressRing", "inputText", "mediaCapture", "mediaPlayback", "templateScreens", "flowSource", "flowUpdate", "flowService"],
-            "outputPorts" => ["destination"]
+            "inputPorts" => ["route", "foundationColors", "foundationGeometry", "atomIconAction", "controlActionRow", "controlChoiceRow", "controlAdjustment", "controlProgress", "controlPressRing", "inputText", "mediaCapture", "mediaPlayback", "templateScreens", "flowSource", "flowUpdate", "flowService"],
+            "outputPorts" => ["activePage", "destination"]
         },
         {
             "nodeId" => "navigation.presentation",
@@ -159,7 +160,28 @@ module GeneratedCircleKitShowcase {
             "outputPorts" => ["model"]
         }
     ];
+    var NATIVE_NAVIGATION_ARTIFACTS = [
+        {
+            "artifactRef" => "garmin-limited-ui",
+            "entryPageRef" => "artifact.garmin-limited-ui",
+            "pages" => [{ "pageRef" => "artifact.garmin-limited-ui", "restore" => "root", "back" => "system", "guardContractRef" => null }]
+        }
+    ];
+    var NATIVE_ACTIVE_PAGE_BINDINGS = [
+        {
+            "publisherPortRef" => "navigation.activePage",
+            "pageHostPortRef" => "page.host.activePage"
+        }
+    ];
+    var NATIVE_NAVIGATION_ACTION_GROUPS = [
+        {
+            "artifactRef" => "garmin-limited-ui",
+            "componentInstanceRef" => "control.progress",
+            "actions" => [{ "sourcePortRef" => "control.progress.open", "targetPortRef" => "navigation.controlProgress", "effect" => "dispatch" }]
+        }
+    ];
     var _destination = null;
+    var _activePage = SCREEN_ID;
 
     function nativeIcon(iconId) {
         for (var index = 0; index < NATIVE_ICONS.size(); index += 1) {
@@ -184,8 +206,42 @@ module GeneratedCircleKitShowcase {
         _destination = { "portId" => portId, "componentId" => componentId };
     }
 
+    function dispatch(componentId) {
+        for (var groupIndex = 0; groupIndex < NATIVE_NAVIGATION_ACTION_GROUPS.size(); groupIndex += 1) {
+            var group = NATIVE_NAVIGATION_ACTION_GROUPS[groupIndex];
+            if (group["artifactRef"] == ARTIFACT_ID && group["componentInstanceRef"] == componentId) {
+                var action = group["actions"][0];
+                if (action["effect"] == "dispatch") {
+                    open(action["targetPortRef"], componentId);
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
     function navigationModel() {
         return _destination;
+    }
+
+    function activePage() {
+        return _activePage;
+    }
+
+    function route(pageRef) {
+        for (var artifactIndex = 0; artifactIndex < NATIVE_NAVIGATION_ARTIFACTS.size(); artifactIndex += 1) {
+            var artifact = NATIVE_NAVIGATION_ARTIFACTS[artifactIndex];
+            if (artifact["artifactRef"] == ARTIFACT_ID) {
+                for (var pageIndex = 0; pageIndex < artifact["pages"].size(); pageIndex += 1) {
+                    var page = artifact["pages"][pageIndex];
+                    if (page["pageRef"] == pageRef) {
+                        _activePage = pageRef;
+                        return _activePage;
+                    }
+                }
+            }
+        }
+        return _activePage;
     }
 
     function requireNativeBindings() {
@@ -196,7 +252,8 @@ module GeneratedCircleKitShowcase {
             }
         }
         var catalog = catalogModel();
-        open(OPEN_PORT, catalog["componentId"]);
+        dispatch(catalog["componentId"]);
+        route(activePage());
         return navigationModel();
     }
 }

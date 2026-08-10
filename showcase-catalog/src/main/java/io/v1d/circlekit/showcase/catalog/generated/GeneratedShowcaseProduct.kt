@@ -26,7 +26,7 @@ enum class ShowcaseFamily(
 
 object ShowcaseManifest {
     const val PRODUCT_ID: String = "circlekit-showcase"
-    const val PRODUCT_SPEC_VERSION: String = "0.3.46"
+    const val PRODUCT_SPEC_VERSION: String = "0.3.47"
 
     val profiles: Set<String> = ShowcaseArtifactProfile.entries.mapTo(linkedSetOf(), ShowcaseArtifactProfile::id)
 
@@ -240,49 +240,49 @@ object ShowcaseManifest {
     )
 
     val componentTrees: List<ShowcaseComponentTree> = listOf(
-        ShowcaseComponentTree("phone-full-ui", "section.foundations", "compact", listOf("foundation.colors", "foundation.geometry")),
-        ShowcaseComponentTree("phone-full-ui", "section.foundations", "wide", listOf("foundation.colors", "foundation.geometry")),
-        ShowcaseComponentTree("phone-full-ui", "section.atoms", "compact", listOf("atom.icon-action")),
-        ShowcaseComponentTree("phone-full-ui", "section.atoms", "wide", listOf("atom.icon-action")),
-        ShowcaseComponentTree("phone-full-ui", "section.controls", "compact", listOf("control.action-row", "control.choice-row", "control.adjustment", "control.progress", "control.press-ring")),
-        ShowcaseComponentTree("phone-full-ui", "section.controls", "wide", listOf("control.action-row", "control.choice-row", "control.adjustment", "control.progress", "control.press-ring")),
-        ShowcaseComponentTree("phone-full-ui", "section.input", "compact", listOf("input.text")),
-        ShowcaseComponentTree("phone-full-ui", "section.input", "wide", listOf("input.text")),
-        ShowcaseComponentTree("phone-full-ui", "section.media", "compact", listOf("media.capture", "media.playback")),
-        ShowcaseComponentTree("phone-full-ui", "section.media", "wide", listOf("media.capture", "media.playback")),
-        ShowcaseComponentTree("phone-full-ui", "section.templates", "compact", listOf("template.screens")),
-        ShowcaseComponentTree("phone-full-ui", "section.templates", "wide", listOf("template.screens")),
-        ShowcaseComponentTree("phone-full-ui", "section.flows", "compact", listOf("flow.source", "flow.update", "flow.service")),
-        ShowcaseComponentTree("phone-full-ui", "section.flows", "wide", listOf("flow.source", "flow.update", "flow.service")),
-        ShowcaseComponentTree("wear-full-ui", "section.foundations", "round", listOf("foundation.colors", "foundation.geometry")),
-        ShowcaseComponentTree("wear-full-ui", "section.atoms", "round", listOf("atom.icon-action")),
-        ShowcaseComponentTree("wear-full-ui", "section.controls", "round", listOf("control.action-row", "control.choice-row", "control.adjustment", "control.progress", "control.press-ring")),
-        ShowcaseComponentTree("wear-full-ui", "section.input", "round", listOf("input.text")),
-        ShowcaseComponentTree("wear-full-ui", "section.media", "round", listOf("media.capture", "media.playback")),
-        ShowcaseComponentTree("wear-full-ui", "section.templates", "round", listOf("template.screens")),
-        ShowcaseComponentTree("wear-full-ui", "section.flows", "round", listOf("flow.source", "flow.update", "flow.service")),
-        ShowcaseComponentTree("iphone-full-ui", "section.foundations", "compact", listOf("foundation.colors", "foundation.geometry")),
-        ShowcaseComponentTree("iphone-full-ui", "section.foundations", "wide", listOf("foundation.colors", "foundation.geometry")),
-        ShowcaseComponentTree("iphone-full-ui", "section.atoms", "compact", listOf("atom.icon-action")),
-        ShowcaseComponentTree("iphone-full-ui", "section.atoms", "wide", listOf("atom.icon-action")),
-        ShowcaseComponentTree("iphone-full-ui", "section.controls", "compact", listOf("control.action-row", "control.choice-row", "control.adjustment", "control.progress", "control.press-ring")),
-        ShowcaseComponentTree("iphone-full-ui", "section.controls", "wide", listOf("control.action-row", "control.choice-row", "control.adjustment", "control.progress", "control.press-ring")),
-        ShowcaseComponentTree("iphone-full-ui", "section.input", "compact", listOf("input.text")),
-        ShowcaseComponentTree("iphone-full-ui", "section.input", "wide", listOf("input.text")),
-        ShowcaseComponentTree("iphone-full-ui", "section.media", "compact", listOf("media.capture", "media.playback")),
-        ShowcaseComponentTree("iphone-full-ui", "section.media", "wide", listOf("media.capture", "media.playback")),
-        ShowcaseComponentTree("iphone-full-ui", "section.templates", "compact", listOf("template.screens")),
-        ShowcaseComponentTree("iphone-full-ui", "section.templates", "wide", listOf("template.screens")),
-        ShowcaseComponentTree("iphone-full-ui", "section.flows", "compact", listOf("flow.source", "flow.update", "flow.service")),
-        ShowcaseComponentTree("iphone-full-ui", "section.flows", "wide", listOf("flow.source", "flow.update", "flow.service")),
-        ShowcaseComponentTree("watchos-full-ui", "section.foundations", "round", listOf("foundation.colors", "foundation.geometry")),
-        ShowcaseComponentTree("watchos-full-ui", "section.atoms", "round", listOf("atom.icon-action")),
-        ShowcaseComponentTree("watchos-full-ui", "section.controls", "round", listOf("control.action-row", "control.choice-row", "control.adjustment", "control.progress", "control.press-ring")),
-        ShowcaseComponentTree("watchos-full-ui", "section.input", "round", listOf("input.text")),
-        ShowcaseComponentTree("watchos-full-ui", "section.media", "round", listOf("media.capture", "media.playback")),
-        ShowcaseComponentTree("watchos-full-ui", "section.templates", "round", listOf("template.screens")),
-        ShowcaseComponentTree("watchos-full-ui", "section.flows", "round", listOf("flow.source", "flow.update", "flow.service")),
-        ShowcaseComponentTree("garmin-limited-ui", "artifact.garmin-limited-ui", "round", listOf("control.progress")),
+        ShowcaseComponentTree("phone-full-ui", "section.foundations", "compact", listOf("foundation.colors", "foundation.geometry", "page.menu", "page.host")),
+        ShowcaseComponentTree("phone-full-ui", "section.foundations", "wide", listOf("foundation.colors", "foundation.geometry", "page.menu", "page.host")),
+        ShowcaseComponentTree("phone-full-ui", "section.atoms", "compact", listOf("atom.icon-action", "page.menu", "page.host")),
+        ShowcaseComponentTree("phone-full-ui", "section.atoms", "wide", listOf("atom.icon-action", "page.menu", "page.host")),
+        ShowcaseComponentTree("phone-full-ui", "section.controls", "compact", listOf("control.action-row", "control.choice-row", "control.adjustment", "control.progress", "control.press-ring", "page.menu", "page.host")),
+        ShowcaseComponentTree("phone-full-ui", "section.controls", "wide", listOf("control.action-row", "control.choice-row", "control.adjustment", "control.progress", "control.press-ring", "page.menu", "page.host")),
+        ShowcaseComponentTree("phone-full-ui", "section.input", "compact", listOf("input.text", "page.menu", "page.host")),
+        ShowcaseComponentTree("phone-full-ui", "section.input", "wide", listOf("input.text", "page.menu", "page.host")),
+        ShowcaseComponentTree("phone-full-ui", "section.media", "compact", listOf("media.capture", "media.playback", "page.menu", "page.host")),
+        ShowcaseComponentTree("phone-full-ui", "section.media", "wide", listOf("media.capture", "media.playback", "page.menu", "page.host")),
+        ShowcaseComponentTree("phone-full-ui", "section.templates", "compact", listOf("template.screens", "page.menu", "page.host")),
+        ShowcaseComponentTree("phone-full-ui", "section.templates", "wide", listOf("template.screens", "page.menu", "page.host")),
+        ShowcaseComponentTree("phone-full-ui", "section.flows", "compact", listOf("flow.source", "flow.update", "flow.service", "page.menu", "page.host")),
+        ShowcaseComponentTree("phone-full-ui", "section.flows", "wide", listOf("flow.source", "flow.update", "flow.service", "page.menu", "page.host")),
+        ShowcaseComponentTree("wear-full-ui", "section.foundations", "round", listOf("foundation.colors", "foundation.geometry", "page.menu", "page.host")),
+        ShowcaseComponentTree("wear-full-ui", "section.atoms", "round", listOf("atom.icon-action", "page.menu", "page.host")),
+        ShowcaseComponentTree("wear-full-ui", "section.controls", "round", listOf("control.action-row", "control.choice-row", "control.adjustment", "control.progress", "control.press-ring", "page.menu", "page.host")),
+        ShowcaseComponentTree("wear-full-ui", "section.input", "round", listOf("input.text", "page.menu", "page.host")),
+        ShowcaseComponentTree("wear-full-ui", "section.media", "round", listOf("media.capture", "media.playback", "page.menu", "page.host")),
+        ShowcaseComponentTree("wear-full-ui", "section.templates", "round", listOf("template.screens", "page.menu", "page.host")),
+        ShowcaseComponentTree("wear-full-ui", "section.flows", "round", listOf("flow.source", "flow.update", "flow.service", "page.menu", "page.host")),
+        ShowcaseComponentTree("iphone-full-ui", "section.foundations", "compact", listOf("foundation.colors", "foundation.geometry", "page.menu", "page.host")),
+        ShowcaseComponentTree("iphone-full-ui", "section.foundations", "wide", listOf("foundation.colors", "foundation.geometry", "page.menu", "page.host")),
+        ShowcaseComponentTree("iphone-full-ui", "section.atoms", "compact", listOf("atom.icon-action", "page.menu", "page.host")),
+        ShowcaseComponentTree("iphone-full-ui", "section.atoms", "wide", listOf("atom.icon-action", "page.menu", "page.host")),
+        ShowcaseComponentTree("iphone-full-ui", "section.controls", "compact", listOf("control.action-row", "control.choice-row", "control.adjustment", "control.progress", "control.press-ring", "page.menu", "page.host")),
+        ShowcaseComponentTree("iphone-full-ui", "section.controls", "wide", listOf("control.action-row", "control.choice-row", "control.adjustment", "control.progress", "control.press-ring", "page.menu", "page.host")),
+        ShowcaseComponentTree("iphone-full-ui", "section.input", "compact", listOf("input.text", "page.menu", "page.host")),
+        ShowcaseComponentTree("iphone-full-ui", "section.input", "wide", listOf("input.text", "page.menu", "page.host")),
+        ShowcaseComponentTree("iphone-full-ui", "section.media", "compact", listOf("media.capture", "media.playback", "page.menu", "page.host")),
+        ShowcaseComponentTree("iphone-full-ui", "section.media", "wide", listOf("media.capture", "media.playback", "page.menu", "page.host")),
+        ShowcaseComponentTree("iphone-full-ui", "section.templates", "compact", listOf("template.screens", "page.menu", "page.host")),
+        ShowcaseComponentTree("iphone-full-ui", "section.templates", "wide", listOf("template.screens", "page.menu", "page.host")),
+        ShowcaseComponentTree("iphone-full-ui", "section.flows", "compact", listOf("flow.source", "flow.update", "flow.service", "page.menu", "page.host")),
+        ShowcaseComponentTree("iphone-full-ui", "section.flows", "wide", listOf("flow.source", "flow.update", "flow.service", "page.menu", "page.host")),
+        ShowcaseComponentTree("watchos-full-ui", "section.foundations", "round", listOf("foundation.colors", "foundation.geometry", "page.menu", "page.host")),
+        ShowcaseComponentTree("watchos-full-ui", "section.atoms", "round", listOf("atom.icon-action", "page.menu", "page.host")),
+        ShowcaseComponentTree("watchos-full-ui", "section.controls", "round", listOf("control.action-row", "control.choice-row", "control.adjustment", "control.progress", "control.press-ring", "page.menu", "page.host")),
+        ShowcaseComponentTree("watchos-full-ui", "section.input", "round", listOf("input.text", "page.menu", "page.host")),
+        ShowcaseComponentTree("watchos-full-ui", "section.media", "round", listOf("media.capture", "media.playback", "page.menu", "page.host")),
+        ShowcaseComponentTree("watchos-full-ui", "section.templates", "round", listOf("template.screens", "page.menu", "page.host")),
+        ShowcaseComponentTree("watchos-full-ui", "section.flows", "round", listOf("flow.source", "flow.update", "flow.service", "page.menu", "page.host")),
+        ShowcaseComponentTree("garmin-limited-ui", "artifact.garmin-limited-ui", "round", listOf("control.progress", "page.host")),
     )
 
     val nodes: List<ShowcaseNodeDescriptor> = listOf(
@@ -293,6 +293,7 @@ object ShowcaseManifest {
 
     val ports: List<ShowcaseProductPort> = listOf(
         ShowcaseProductPort("catalog.model", "node", "catalog", "showcase.catalog-presentation", "model", "output", "showcase.catalog-presentation", "presentation", true, "data"),
+        ShowcaseProductPort("navigation.route", "node", "navigation", "showcase.navigation-service", "route", "input", "showcase.navigation.route-intent", "ui-event", true, "data"),
         ShowcaseProductPort("navigation.foundationColors", "node", "navigation", "showcase.navigation-service", "foundationColors", "input", "showcase.open-action", "ui-event", true, "data"),
         ShowcaseProductPort("navigation.foundationGeometry", "node", "navigation", "showcase.navigation-service", "foundationGeometry", "input", "showcase.open-action", "ui-event", true, "data"),
         ShowcaseProductPort("navigation.atomIconAction", "node", "navigation", "showcase.navigation-service", "atomIconAction", "input", "showcase.open-action", "ui-event", true, "data"),
@@ -308,6 +309,7 @@ object ShowcaseManifest {
         ShowcaseProductPort("navigation.flowSource", "node", "navigation", "showcase.navigation-service", "flowSource", "input", "showcase.open-action", "ui-event", true, "data"),
         ShowcaseProductPort("navigation.flowUpdate", "node", "navigation", "showcase.navigation-service", "flowUpdate", "input", "showcase.open-action", "ui-event", true, "data"),
         ShowcaseProductPort("navigation.flowService", "node", "navigation", "showcase.navigation-service", "flowService", "input", "showcase.open-action", "ui-event", true, "data"),
+        ShowcaseProductPort("navigation.activePage", "node", "navigation", "showcase.navigation-service", "activePage", "output", "showcase.navigation.active-page", "presentation", true, "data"),
         ShowcaseProductPort("navigation.destination", "node", "navigation", "showcase.navigation-service", "destination", "output", "showcase.navigation-presentation", "presentation", true, "data"),
         ShowcaseProductPort("navigation.presentation.destination", "node", "navigation.presentation", "showcase.navigation-presentation", "destination", "input", "showcase.navigation-presentation", "presentation", true, "data"),
         ShowcaseProductPort("navigation.presentation.model", "node", "navigation.presentation", "showcase.navigation-presentation", "model", "output", "showcase.navigation-presentation", "presentation", true, "data"),
@@ -356,9 +358,12 @@ object ShowcaseManifest {
         ShowcaseProductPort("flow.service.catalog", "component", "flow.service", "flow.service", "catalog", "input", "showcase.catalog-presentation", "presentation", true, "data"),
         ShowcaseProductPort("flow.service.navigation", "component", "flow.service", "flow.service", "navigation", "input", "showcase.navigation-presentation", "presentation", true, "data"),
         ShowcaseProductPort("flow.service.open", "component", "flow.service", "flow.service", "open", "output", "showcase.open-action", "ui-event", true, "data"),
+        ShowcaseProductPort("page.host.activePage", "component", "page.host", "showcase.page-host", "activePage", "input", "showcase.navigation.active-page", "presentation", true, "data"),
+        ShowcaseProductPort("page.menu.route", "component", "page.menu", "showcase.page-menu", "route", "output", "showcase.navigation.route-intent", "ui-event", true, "data"),
     )
 
     val bindings: List<ShowcasePortBinding> = listOf(
+        ShowcasePortBinding("component-event", "page.menu.route", "navigation.route", "data"),
         ShowcasePortBinding("component-event", "foundation.colors.open", "navigation.foundationColors", "data"),
         ShowcasePortBinding("component-event", "foundation.geometry.open", "navigation.foundationGeometry", "data"),
         ShowcasePortBinding("component-event", "atom.icon-action.open", "navigation.atomIconAction", "data"),
@@ -405,6 +410,7 @@ object ShowcaseManifest {
         ShowcasePortBinding("component-input", "navigation.presentation.model", "flow.update.navigation", "data"),
         ShowcasePortBinding("component-input", "catalog.model", "flow.service.catalog", "data"),
         ShowcasePortBinding("component-input", "navigation.presentation.model", "flow.service.navigation", "data"),
+        ShowcasePortBinding("component-input", "navigation.activePage", "page.host.activePage", "data"),
     )
 
     val demandEdges: List<ShowcaseDemandEdge> = listOf(
@@ -416,6 +422,7 @@ object ShowcaseManifest {
     fun componentIds(profileId: String, screenId: String): List<String> = componentTrees
         .filter { it.artifactProfileId == profileId && it.screenId == screenId }
         .flatMap(ShowcaseComponentTree::componentIds)
+        .filter { id -> cases.any { it.id.value == id } }
         .distinct()
 
     fun find(caseId: ShowcaseCaseId): ShowcaseCase? = cases.find { it.id == caseId }

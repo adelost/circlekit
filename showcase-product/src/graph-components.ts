@@ -1,9 +1,11 @@
 import { componentPort, defineComponentType } from "@v1d/product-spec";
 import { showcaseCases } from "./catalog.js";
 import {
+  showcaseActivePageContract,
   showcaseCatalogContract,
   showcaseNavigationContract,
   showcaseOpenActionContract,
+  showcaseRouteContract,
 } from "./graph-contracts.js";
 
 /**
@@ -32,3 +34,49 @@ export const showcaseComponentInstances = showcaseCases.map(({ id, openPort }) =
     events: { open: `navigation.${openPort}` as `navigation.${typeof openPort}` },
   },
 }));
+
+/** The native page container consumes the single active-page publication. */
+export const showcasePageHostType = defineComponentType({
+  id: "showcase.page-host",
+  requiredCapabilities: ["ui.component-tree"],
+  inputs: [componentPort("activePage", showcaseActivePageContract)],
+  outputs: [],
+} as const);
+
+export const showcasePageHost = {
+  id: "page.host",
+  componentTypeRef: showcasePageHostType.id,
+  bindings: {
+    inputs: { activePage: "navigation.activePage" },
+    events: {},
+  },
+} as const;
+
+/** Full-UI section launchers publish the closed RouteIntent payload. */
+export const showcasePageMenuType = defineComponentType({
+  id: "showcase.page-menu",
+  requiredCapabilities: ["ui.navigation"],
+  inputs: [],
+  outputs: [componentPort("route", showcaseRouteContract)],
+} as const);
+
+export const showcasePageMenu = {
+  id: "page.menu",
+  componentTypeRef: showcasePageMenuType.id,
+  bindings: {
+    inputs: {},
+    events: { route: "navigation.route" },
+  },
+} as const;
+
+export const showcaseAllComponentTypes = [
+  ...showcaseComponentTypes,
+  showcasePageHostType,
+  showcasePageMenuType,
+] as const;
+
+export const showcaseAllComponentInstances = [
+  ...showcaseComponentInstances,
+  showcasePageHost,
+  showcasePageMenu,
+] as const;

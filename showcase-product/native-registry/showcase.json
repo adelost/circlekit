@@ -1,6 +1,6 @@
 {
   "stage": "native-export",
-  "schemaVersion": 4,
+  "schemaVersion": 5,
   "sourceFile": "showcase-catalog/src/main/java/io/v1d/circlekit/showcase/catalog/ShowcaseNativeBindings.kt",
   "profiles": ["phone-full-ui", "wear-full-ui"],
   "components": [
@@ -18,7 +18,9 @@
     { "componentId": "template.screens", "rendererId": "screen-templates", "profiles": ["phone-full-ui", "wear-full-ui"] },
     { "componentId": "flow.source", "rendererId": "source", "profiles": ["phone-full-ui", "wear-full-ui"] },
     { "componentId": "flow.update", "rendererId": "update", "profiles": ["phone-full-ui", "wear-full-ui"] },
-    { "componentId": "flow.service", "rendererId": "service", "profiles": ["phone-full-ui", "wear-full-ui"] }
+    { "componentId": "flow.service", "rendererId": "service", "profiles": ["phone-full-ui", "wear-full-ui"] },
+    { "componentId": "showcase.page-host", "rendererId": "page-host", "profiles": ["phone-full-ui", "wear-full-ui"] },
+    { "componentId": "showcase.page-menu", "rendererId": "page-menu", "profiles": ["phone-full-ui", "wear-full-ui"] }
   ],
   "icons": [
     { "iconId": "palette", "nativeSymbol": "RingIcons.Palette" },
@@ -36,8 +38,53 @@
   ],
   "nodes": [
     { "nodeId": "catalog", "nativePortId": "io.v1d.circlekit.showcase.catalog.ShowcaseCatalogRuntime", "profiles": ["phone-full-ui", "wear-full-ui"], "inputPorts": [], "outputPorts": ["model"] },
-    { "nodeId": "navigation", "nativePortId": "io.v1d.circlekit.showcase.catalog.ShowcaseSession", "profiles": ["phone-full-ui", "wear-full-ui"], "inputPorts": ["foundationColors", "foundationGeometry", "atomIconAction", "controlActionRow", "controlChoiceRow", "controlAdjustment", "controlProgress", "controlPressRing", "inputText", "mediaCapture", "mediaPlayback", "templateScreens", "flowSource", "flowUpdate", "flowService"], "outputPorts": ["destination"] },
+    { "nodeId": "navigation", "nativePortId": "io.v1d.circlekit.showcase.catalog.ShowcaseSession", "profiles": ["phone-full-ui", "wear-full-ui"], "inputPorts": ["route", "foundationColors", "foundationGeometry", "atomIconAction", "controlActionRow", "controlChoiceRow", "controlAdjustment", "controlProgress", "controlPressRing", "inputText", "mediaCapture", "mediaPlayback", "templateScreens", "flowSource", "flowUpdate", "flowService"], "outputPorts": ["activePage", "destination"] },
     { "nodeId": "navigation.presentation", "nativePortId": "io.v1d.circlekit.showcase.catalog.ShowcaseSession", "profiles": ["phone-full-ui", "wear-full-ui"], "inputPorts": ["destination"], "outputPorts": ["model"] }
   ],
-  "finiteValues": []
+  "finiteValues": [
+    { "id": "showcase.navigation.page", "values": ["section.foundations", "section.atoms", "section.controls", "section.input", "section.media", "section.templates", "section.flows", "artifact.garmin-limited-ui"] }
+  ],
+  "navigation": {
+    "artifacts": [
+      { "artifactRef": "phone-full-ui", "entryPageRef": "section.foundations", "pages": [{ "pageRef": "section.foundations", "restore": "root", "back": "system", "guardContractRef": null }, { "pageRef": "section.atoms", "restore": "process", "back": "previous", "guardContractRef": null }, { "pageRef": "section.controls", "restore": "process", "back": "previous", "guardContractRef": null }, { "pageRef": "section.input", "restore": "process", "back": "previous", "guardContractRef": null }, { "pageRef": "section.media", "restore": "process", "back": "previous", "guardContractRef": null }, { "pageRef": "section.templates", "restore": "process", "back": "previous", "guardContractRef": null }, { "pageRef": "section.flows", "restore": "process", "back": "previous", "guardContractRef": null }] },
+      { "artifactRef": "wear-full-ui", "entryPageRef": "section.foundations", "pages": [{ "pageRef": "section.foundations", "restore": "root", "back": "system", "guardContractRef": null }, { "pageRef": "section.atoms", "restore": "process", "back": "previous", "guardContractRef": null }, { "pageRef": "section.controls", "restore": "process", "back": "previous", "guardContractRef": null }, { "pageRef": "section.input", "restore": "process", "back": "previous", "guardContractRef": null }, { "pageRef": "section.media", "restore": "process", "back": "previous", "guardContractRef": null }, { "pageRef": "section.templates", "restore": "process", "back": "previous", "guardContractRef": null }, { "pageRef": "section.flows", "restore": "process", "back": "previous", "guardContractRef": null }] }
+    ],
+    "activePageBindings": [
+      { "publisherPortRef": "navigation.activePage", "pageHostPortRef": "page.host.activePage" }
+    ],
+    "actionGroups": [
+      { "artifactRef": "phone-full-ui", "componentInstanceRef": "foundation.colors", "actions": [{ "sourcePortRef": "foundation.colors.open", "targetPortRef": "navigation.foundationColors", "effect": "dispatch" }] },
+      { "artifactRef": "phone-full-ui", "componentInstanceRef": "foundation.geometry", "actions": [{ "sourcePortRef": "foundation.geometry.open", "targetPortRef": "navigation.foundationGeometry", "effect": "dispatch" }] },
+      { "artifactRef": "phone-full-ui", "componentInstanceRef": "atom.icon-action", "actions": [{ "sourcePortRef": "atom.icon-action.open", "targetPortRef": "navigation.atomIconAction", "effect": "dispatch" }] },
+      { "artifactRef": "phone-full-ui", "componentInstanceRef": "control.action-row", "actions": [{ "sourcePortRef": "control.action-row.open", "targetPortRef": "navigation.controlActionRow", "effect": "dispatch" }] },
+      { "artifactRef": "phone-full-ui", "componentInstanceRef": "control.choice-row", "actions": [{ "sourcePortRef": "control.choice-row.open", "targetPortRef": "navigation.controlChoiceRow", "effect": "dispatch" }] },
+      { "artifactRef": "phone-full-ui", "componentInstanceRef": "control.adjustment", "actions": [{ "sourcePortRef": "control.adjustment.open", "targetPortRef": "navigation.controlAdjustment", "effect": "dispatch" }] },
+      { "artifactRef": "phone-full-ui", "componentInstanceRef": "control.progress", "actions": [{ "sourcePortRef": "control.progress.open", "targetPortRef": "navigation.controlProgress", "effect": "dispatch" }] },
+      { "artifactRef": "phone-full-ui", "componentInstanceRef": "control.press-ring", "actions": [{ "sourcePortRef": "control.press-ring.open", "targetPortRef": "navigation.controlPressRing", "effect": "dispatch" }] },
+      { "artifactRef": "phone-full-ui", "componentInstanceRef": "input.text", "actions": [{ "sourcePortRef": "input.text.open", "targetPortRef": "navigation.inputText", "effect": "dispatch" }] },
+      { "artifactRef": "phone-full-ui", "componentInstanceRef": "media.capture", "actions": [{ "sourcePortRef": "media.capture.open", "targetPortRef": "navigation.mediaCapture", "effect": "dispatch" }] },
+      { "artifactRef": "phone-full-ui", "componentInstanceRef": "media.playback", "actions": [{ "sourcePortRef": "media.playback.open", "targetPortRef": "navigation.mediaPlayback", "effect": "dispatch" }] },
+      { "artifactRef": "phone-full-ui", "componentInstanceRef": "template.screens", "actions": [{ "sourcePortRef": "template.screens.open", "targetPortRef": "navigation.templateScreens", "effect": "dispatch" }] },
+      { "artifactRef": "phone-full-ui", "componentInstanceRef": "flow.source", "actions": [{ "sourcePortRef": "flow.source.open", "targetPortRef": "navigation.flowSource", "effect": "dispatch" }] },
+      { "artifactRef": "phone-full-ui", "componentInstanceRef": "flow.update", "actions": [{ "sourcePortRef": "flow.update.open", "targetPortRef": "navigation.flowUpdate", "effect": "dispatch" }] },
+      { "artifactRef": "phone-full-ui", "componentInstanceRef": "flow.service", "actions": [{ "sourcePortRef": "flow.service.open", "targetPortRef": "navigation.flowService", "effect": "dispatch" }] },
+      { "artifactRef": "phone-full-ui", "componentInstanceRef": "page.menu", "actions": [{ "sourcePortRef": "page.menu.route", "targetPortRef": "navigation.route", "effect": "push" }] },
+      { "artifactRef": "wear-full-ui", "componentInstanceRef": "foundation.colors", "actions": [{ "sourcePortRef": "foundation.colors.open", "targetPortRef": "navigation.foundationColors", "effect": "dispatch" }] },
+      { "artifactRef": "wear-full-ui", "componentInstanceRef": "foundation.geometry", "actions": [{ "sourcePortRef": "foundation.geometry.open", "targetPortRef": "navigation.foundationGeometry", "effect": "dispatch" }] },
+      { "artifactRef": "wear-full-ui", "componentInstanceRef": "atom.icon-action", "actions": [{ "sourcePortRef": "atom.icon-action.open", "targetPortRef": "navigation.atomIconAction", "effect": "dispatch" }] },
+      { "artifactRef": "wear-full-ui", "componentInstanceRef": "control.action-row", "actions": [{ "sourcePortRef": "control.action-row.open", "targetPortRef": "navigation.controlActionRow", "effect": "dispatch" }] },
+      { "artifactRef": "wear-full-ui", "componentInstanceRef": "control.choice-row", "actions": [{ "sourcePortRef": "control.choice-row.open", "targetPortRef": "navigation.controlChoiceRow", "effect": "dispatch" }] },
+      { "artifactRef": "wear-full-ui", "componentInstanceRef": "control.adjustment", "actions": [{ "sourcePortRef": "control.adjustment.open", "targetPortRef": "navigation.controlAdjustment", "effect": "dispatch" }] },
+      { "artifactRef": "wear-full-ui", "componentInstanceRef": "control.progress", "actions": [{ "sourcePortRef": "control.progress.open", "targetPortRef": "navigation.controlProgress", "effect": "dispatch" }] },
+      { "artifactRef": "wear-full-ui", "componentInstanceRef": "control.press-ring", "actions": [{ "sourcePortRef": "control.press-ring.open", "targetPortRef": "navigation.controlPressRing", "effect": "dispatch" }] },
+      { "artifactRef": "wear-full-ui", "componentInstanceRef": "input.text", "actions": [{ "sourcePortRef": "input.text.open", "targetPortRef": "navigation.inputText", "effect": "dispatch" }] },
+      { "artifactRef": "wear-full-ui", "componentInstanceRef": "media.capture", "actions": [{ "sourcePortRef": "media.capture.open", "targetPortRef": "navigation.mediaCapture", "effect": "dispatch" }] },
+      { "artifactRef": "wear-full-ui", "componentInstanceRef": "media.playback", "actions": [{ "sourcePortRef": "media.playback.open", "targetPortRef": "navigation.mediaPlayback", "effect": "dispatch" }] },
+      { "artifactRef": "wear-full-ui", "componentInstanceRef": "template.screens", "actions": [{ "sourcePortRef": "template.screens.open", "targetPortRef": "navigation.templateScreens", "effect": "dispatch" }] },
+      { "artifactRef": "wear-full-ui", "componentInstanceRef": "flow.source", "actions": [{ "sourcePortRef": "flow.source.open", "targetPortRef": "navigation.flowSource", "effect": "dispatch" }] },
+      { "artifactRef": "wear-full-ui", "componentInstanceRef": "flow.update", "actions": [{ "sourcePortRef": "flow.update.open", "targetPortRef": "navigation.flowUpdate", "effect": "dispatch" }] },
+      { "artifactRef": "wear-full-ui", "componentInstanceRef": "flow.service", "actions": [{ "sourcePortRef": "flow.service.open", "targetPortRef": "navigation.flowService", "effect": "dispatch" }] },
+      { "artifactRef": "wear-full-ui", "componentInstanceRef": "page.menu", "actions": [{ "sourcePortRef": "page.menu.route", "targetPortRef": "navigation.route", "effect": "push" }] }
+    ]
+  }
 }

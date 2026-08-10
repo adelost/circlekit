@@ -72,6 +72,41 @@ data class ShowcaseDemandEdge(
     val targetPortRef: String,
 )
 
+data class ShowcaseFiniteValueBinding(
+    val id: String,
+    val values: List<String>,
+)
+
+data class ShowcaseNavigationPage(
+    val pageRef: String,
+    val restore: String,
+    val back: String,
+    val guardContractRef: String?,
+)
+
+data class ShowcaseNavigationArtifact(
+    val artifactRef: String,
+    val entryPageRef: String,
+    val pages: List<ShowcaseNavigationPage>,
+)
+
+data class ShowcaseActivePageBinding(
+    val publisherPortRef: String,
+    val pageHostPortRef: String,
+)
+
+data class ShowcaseNavigationAction(
+    val sourcePortRef: String,
+    val targetPortRef: String,
+    val effect: String,
+)
+
+data class ShowcaseNavigationActionGroup(
+    val artifactRef: String,
+    val componentInstanceRef: String,
+    val actions: List<ShowcaseNavigationAction>,
+)
+
 data class ShowcaseDestination(
     val caseId: ShowcaseCaseId? = null,
     val scenarioId: ShowcaseScenarioId? = null,
@@ -130,6 +165,10 @@ class ShowcaseSession(
     val artifactProfile: ShowcaseArtifactProfile,
 ) {
     private val mutableDestination = MutableStateFlow(ShowcaseDestination())
+    private val navigationArtifact = ShowcaseNativeBindings.navigationArtifacts.single {
+        it.artifactRef == artifactProfile.id
+    }
+    private val mutableActivePage = MutableStateFlow(navigationArtifact.entryPageRef)
     private val mutableIconActionActive = MutableStateFlow(false)
     private var surface: String = "UNKNOWN"
     private var navigationBack: (() -> Boolean)? = null
@@ -138,6 +177,7 @@ class ShowcaseSession(
     val flows = ShowcaseFlowState()
 
     val destination: StateFlow<ShowcaseDestination> = mutableDestination.asStateFlow()
+    val activePage: StateFlow<String> = mutableActivePage.asStateFlow()
     val iconActionActive: StateFlow<Boolean> = mutableIconActionActive.asStateFlow()
 
     init {
@@ -151,6 +191,10 @@ class ShowcaseSession(
         }
         if (!available) return false
         if (ShowcaseCatalogRuntime.find(caseId, scenarioId) == null) return false
+        return ShowcaseNativeBindings.dispatchOpen(this, caseId, scenarioId)
+    }
+
+    internal fun commitOpen(caseId: ShowcaseCaseId, scenarioId: ShowcaseScenarioId): Boolean {
         ShowcaseProductInspectorRegistry.requireOpenTarget(caseId)
         interaction.prepare(caseId, scenarioId)
         media.prepare(caseId, scenarioId)
@@ -159,7 +203,25 @@ class ShowcaseSession(
         return true
     }
 
+    fun route(pageRef: String): Boolean {
+        return ShowcaseNativeBindings.route(this, pageRef)
+    }
+
+    internal fun commitRoute(pageRef: String) {
+        mutableActivePage.value = pageRef
+    }
+
+    fun backPage(previous: () -> Boolean): Boolean =
+        ShowcaseNativeBindings.back(mutableActivePage.value, previous).also { handled ->
+            if (handled) restoreEntryPage()
+        }
+
+    fun restoreEntryPage() {
+        mutableActivePage.value = navigationArtifact.entryPageRef
+    }
+
     fun reset() {
+        restoreEntryPage()
         mutableDestination.value = ShowcaseDestination()
         mutableIconActionActive.value = false
         interaction.reset()

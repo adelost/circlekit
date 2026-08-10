@@ -12,6 +12,9 @@ class CircleKitShowcaseView extends WatchUi.View {
     }
 
     function onUpdate(dc as Dc) as Void {
+        // The page host consumes the generated active-page binding even though
+        // this limited artifact has one closed page and therefore no route UI.
+        GeneratedCircleKitShowcase.activePage();
         dc.setColor(GeneratedCircleKitShowcase.COLOR_SURFACE, GeneratedCircleKitShowcase.COLOR_SURFACE);
         dc.clear();
 

@@ -126,6 +126,14 @@
         {
           "componentInstanceRef": "foundation.geometry",
           "mountRef": "foundation.geometry"
+        },
+        {
+          "componentInstanceRef": "page.menu",
+          "mountRef": "page.menu"
+        },
+        {
+          "componentInstanceRef": "page.host",
+          "mountRef": "page.host"
         }
       ],
       "omittedMounts": [],
@@ -142,6 +150,14 @@
         {
           "componentInstanceRef": "foundation.geometry",
           "mountRef": "foundation.geometry"
+        },
+        {
+          "componentInstanceRef": "page.menu",
+          "mountRef": "page.menu"
+        },
+        {
+          "componentInstanceRef": "page.host",
+          "mountRef": "page.host"
         }
       ],
       "omittedMounts": [],
@@ -154,6 +170,14 @@
         {
           "componentInstanceRef": "atom.icon-action",
           "mountRef": "atom.icon-action"
+        },
+        {
+          "componentInstanceRef": "page.menu",
+          "mountRef": "page.menu"
+        },
+        {
+          "componentInstanceRef": "page.host",
+          "mountRef": "page.host"
         }
       ],
       "omittedMounts": [],
@@ -166,6 +190,14 @@
         {
           "componentInstanceRef": "atom.icon-action",
           "mountRef": "atom.icon-action"
+        },
+        {
+          "componentInstanceRef": "page.menu",
+          "mountRef": "page.menu"
+        },
+        {
+          "componentInstanceRef": "page.host",
+          "mountRef": "page.host"
         }
       ],
       "omittedMounts": [],
@@ -194,6 +226,14 @@
         {
           "componentInstanceRef": "control.press-ring",
           "mountRef": "control.press-ring"
+        },
+        {
+          "componentInstanceRef": "page.menu",
+          "mountRef": "page.menu"
+        },
+        {
+          "componentInstanceRef": "page.host",
+          "mountRef": "page.host"
         }
       ],
       "omittedMounts": [],
@@ -222,6 +262,14 @@
         {
           "componentInstanceRef": "control.press-ring",
           "mountRef": "control.press-ring"
+        },
+        {
+          "componentInstanceRef": "page.menu",
+          "mountRef": "page.menu"
+        },
+        {
+          "componentInstanceRef": "page.host",
+          "mountRef": "page.host"
         }
       ],
       "omittedMounts": [],
@@ -234,6 +282,14 @@
         {
           "componentInstanceRef": "input.text",
           "mountRef": "input.text"
+        },
+        {
+          "componentInstanceRef": "page.menu",
+          "mountRef": "page.menu"
+        },
+        {
+          "componentInstanceRef": "page.host",
+          "mountRef": "page.host"
         }
       ],
       "omittedMounts": [],
@@ -246,6 +302,14 @@
         {
           "componentInstanceRef": "input.text",
           "mountRef": "input.text"
+        },
+        {
+          "componentInstanceRef": "page.menu",
+          "mountRef": "page.menu"
+        },
+        {
+          "componentInstanceRef": "page.host",
+          "mountRef": "page.host"
         }
       ],
       "omittedMounts": [],
@@ -262,6 +326,14 @@
         {
           "componentInstanceRef": "media.playback",
           "mountRef": "media.playback"
+        },
+        {
+          "componentInstanceRef": "page.menu",
+          "mountRef": "page.menu"
+        },
+        {
+          "componentInstanceRef": "page.host",
+          "mountRef": "page.host"
         }
       ],
       "omittedMounts": [],
@@ -278,6 +350,14 @@
         {
           "componentInstanceRef": "media.playback",
           "mountRef": "media.playback"
+        },
+        {
+          "componentInstanceRef": "page.menu",
+          "mountRef": "page.menu"
+        },
+        {
+          "componentInstanceRef": "page.host",
+          "mountRef": "page.host"
         }
       ],
       "omittedMounts": [],
@@ -290,6 +370,14 @@
         {
           "componentInstanceRef": "template.screens",
           "mountRef": "template.screens"
+        },
+        {
+          "componentInstanceRef": "page.menu",
+          "mountRef": "page.menu"
+        },
+        {
+          "componentInstanceRef": "page.host",
+          "mountRef": "page.host"
         }
       ],
       "omittedMounts": [],
@@ -302,6 +390,14 @@
         {
           "componentInstanceRef": "template.screens",
           "mountRef": "template.screens"
+        },
+        {
+          "componentInstanceRef": "page.menu",
+          "mountRef": "page.menu"
+        },
+        {
+          "componentInstanceRef": "page.host",
+          "mountRef": "page.host"
         }
       ],
       "omittedMounts": [],
@@ -322,6 +418,14 @@
         {
           "componentInstanceRef": "flow.service",
           "mountRef": "flow.service"
+        },
+        {
+          "componentInstanceRef": "page.menu",
+          "mountRef": "page.menu"
+        },
+        {
+          "componentInstanceRef": "page.host",
+          "mountRef": "page.host"
         }
       ],
       "omittedMounts": [],
@@ -342,6 +446,14 @@
         {
           "componentInstanceRef": "flow.service",
           "mountRef": "flow.service"
+        },
+        {
+          "componentInstanceRef": "page.menu",
+          "mountRef": "page.menu"
+        },
+        {
+          "componentInstanceRef": "page.host",
+          "mountRef": "page.host"
         }
       ],
       "omittedMounts": [],
@@ -358,6 +470,14 @@
         {
           "componentInstanceRef": "foundation.geometry",
           "mountRef": "foundation.geometry"
+        },
+        {
+          "componentInstanceRef": "page.menu",
+          "mountRef": "page.menu"
+        },
+        {
+          "componentInstanceRef": "page.host",
+          "mountRef": "page.host"
         }
       ],
       "omittedMounts": [],
@@ -370,6 +490,14 @@
         {
           "componentInstanceRef": "atom.icon-action",
           "mountRef": "atom.icon-action"
+        },
+        {
+          "componentInstanceRef": "page.menu",
+          "mountRef": "page.menu"
+        },
+        {
+          "componentInstanceRef": "page.host",
+          "mountRef": "page.host"
         }
       ],
       "omittedMounts": [],
@@ -398,6 +526,14 @@
         {
           "componentInstanceRef": "control.press-ring",
           "mountRef": "control.press-ring"
+        },
+        {
+          "componentInstanceRef": "page.menu",
+          "mountRef": "page.menu"
+        },
+        {
+          "componentInstanceRef": "page.host",
+          "mountRef": "page.host"
         }
       ],
       "omittedMounts": [],
@@ -410,6 +546,14 @@
         {
           "componentInstanceRef": "input.text",
           "mountRef": "input.text"
+        },
+        {
+          "componentInstanceRef": "page.menu",
+          "mountRef": "page.menu"
+        },
+        {
+          "componentInstanceRef": "page.host",
+          "mountRef": "page.host"
         }
       ],
       "omittedMounts": [],
@@ -426,6 +570,14 @@
         {
           "componentInstanceRef": "media.playback",
           "mountRef": "media.playback"
+        },
+        {
+          "componentInstanceRef": "page.menu",
+          "mountRef": "page.menu"
+        },
+        {
+          "componentInstanceRef": "page.host",
+          "mountRef": "page.host"
         }
       ],
       "omittedMounts": [],
@@ -438,6 +590,14 @@
         {
           "componentInstanceRef": "template.screens",
           "mountRef": "template.screens"
+        },
+        {
+          "componentInstanceRef": "page.menu",
+          "mountRef": "page.menu"
+        },
+        {
+          "componentInstanceRef": "page.host",
+          "mountRef": "page.host"
         }
       ],
       "omittedMounts": [],
@@ -458,6 +618,14 @@
         {
           "componentInstanceRef": "flow.service",
           "mountRef": "flow.service"
+        },
+        {
+          "componentInstanceRef": "page.menu",
+          "mountRef": "page.menu"
+        },
+        {
+          "componentInstanceRef": "page.host",
+          "mountRef": "page.host"
         }
       ],
       "omittedMounts": [],
@@ -474,6 +642,14 @@
         {
           "componentInstanceRef": "foundation.geometry",
           "mountRef": "foundation.geometry"
+        },
+        {
+          "componentInstanceRef": "page.menu",
+          "mountRef": "page.menu"
+        },
+        {
+          "componentInstanceRef": "page.host",
+          "mountRef": "page.host"
         }
       ],
       "omittedMounts": [],
@@ -490,6 +666,14 @@
         {
           "componentInstanceRef": "foundation.geometry",
           "mountRef": "foundation.geometry"
+        },
+        {
+          "componentInstanceRef": "page.menu",
+          "mountRef": "page.menu"
+        },
+        {
+          "componentInstanceRef": "page.host",
+          "mountRef": "page.host"
         }
       ],
       "omittedMounts": [],
@@ -502,6 +686,14 @@
         {
           "componentInstanceRef": "atom.icon-action",
           "mountRef": "atom.icon-action"
+        },
+        {
+          "componentInstanceRef": "page.menu",
+          "mountRef": "page.menu"
+        },
+        {
+          "componentInstanceRef": "page.host",
+          "mountRef": "page.host"
         }
       ],
       "omittedMounts": [],
@@ -514,6 +706,14 @@
         {
           "componentInstanceRef": "atom.icon-action",
           "mountRef": "atom.icon-action"
+        },
+        {
+          "componentInstanceRef": "page.menu",
+          "mountRef": "page.menu"
+        },
+        {
+          "componentInstanceRef": "page.host",
+          "mountRef": "page.host"
         }
       ],
       "omittedMounts": [],
@@ -542,6 +742,14 @@
         {
           "componentInstanceRef": "control.press-ring",
           "mountRef": "control.press-ring"
+        },
+        {
+          "componentInstanceRef": "page.menu",
+          "mountRef": "page.menu"
+        },
+        {
+          "componentInstanceRef": "page.host",
+          "mountRef": "page.host"
         }
       ],
       "omittedMounts": [],
@@ -570,6 +778,14 @@
         {
           "componentInstanceRef": "control.press-ring",
           "mountRef": "control.press-ring"
+        },
+        {
+          "componentInstanceRef": "page.menu",
+          "mountRef": "page.menu"
+        },
+        {
+          "componentInstanceRef": "page.host",
+          "mountRef": "page.host"
         }
       ],
       "omittedMounts": [],
@@ -582,6 +798,14 @@
         {
           "componentInstanceRef": "input.text",
           "mountRef": "input.text"
+        },
+        {
+          "componentInstanceRef": "page.menu",
+          "mountRef": "page.menu"
+        },
+        {
+          "componentInstanceRef": "page.host",
+          "mountRef": "page.host"
         }
       ],
       "omittedMounts": [],
@@ -594,6 +818,14 @@
         {
           "componentInstanceRef": "input.text",
           "mountRef": "input.text"
+        },
+        {
+          "componentInstanceRef": "page.menu",
+          "mountRef": "page.menu"
+        },
+        {
+          "componentInstanceRef": "page.host",
+          "mountRef": "page.host"
         }
       ],
       "omittedMounts": [],
@@ -610,6 +842,14 @@
         {
           "componentInstanceRef": "media.playback",
           "mountRef": "media.playback"
+        },
+        {
+          "componentInstanceRef": "page.menu",
+          "mountRef": "page.menu"
+        },
+        {
+          "componentInstanceRef": "page.host",
+          "mountRef": "page.host"
         }
       ],
       "omittedMounts": [],
@@ -626,6 +866,14 @@
         {
           "componentInstanceRef": "media.playback",
           "mountRef": "media.playback"
+        },
+        {
+          "componentInstanceRef": "page.menu",
+          "mountRef": "page.menu"
+        },
+        {
+          "componentInstanceRef": "page.host",
+          "mountRef": "page.host"
         }
       ],
       "omittedMounts": [],
@@ -638,6 +886,14 @@
         {
           "componentInstanceRef": "template.screens",
           "mountRef": "template.screens"
+        },
+        {
+          "componentInstanceRef": "page.menu",
+          "mountRef": "page.menu"
+        },
+        {
+          "componentInstanceRef": "page.host",
+          "mountRef": "page.host"
         }
       ],
       "omittedMounts": [],
@@ -650,6 +906,14 @@
         {
           "componentInstanceRef": "template.screens",
           "mountRef": "template.screens"
+        },
+        {
+          "componentInstanceRef": "page.menu",
+          "mountRef": "page.menu"
+        },
+        {
+          "componentInstanceRef": "page.host",
+          "mountRef": "page.host"
         }
       ],
       "omittedMounts": [],
@@ -670,6 +934,14 @@
         {
           "componentInstanceRef": "flow.service",
           "mountRef": "flow.service"
+        },
+        {
+          "componentInstanceRef": "page.menu",
+          "mountRef": "page.menu"
+        },
+        {
+          "componentInstanceRef": "page.host",
+          "mountRef": "page.host"
         }
       ],
       "omittedMounts": [],
@@ -690,6 +962,14 @@
         {
           "componentInstanceRef": "flow.service",
           "mountRef": "flow.service"
+        },
+        {
+          "componentInstanceRef": "page.menu",
+          "mountRef": "page.menu"
+        },
+        {
+          "componentInstanceRef": "page.host",
+          "mountRef": "page.host"
         }
       ],
       "omittedMounts": [],
@@ -706,6 +986,14 @@
         {
           "componentInstanceRef": "foundation.geometry",
           "mountRef": "foundation.geometry"
+        },
+        {
+          "componentInstanceRef": "page.menu",
+          "mountRef": "page.menu"
+        },
+        {
+          "componentInstanceRef": "page.host",
+          "mountRef": "page.host"
         }
       ],
       "omittedMounts": [],
@@ -718,6 +1006,14 @@
         {
           "componentInstanceRef": "atom.icon-action",
           "mountRef": "atom.icon-action"
+        },
+        {
+          "componentInstanceRef": "page.menu",
+          "mountRef": "page.menu"
+        },
+        {
+          "componentInstanceRef": "page.host",
+          "mountRef": "page.host"
         }
       ],
       "omittedMounts": [],
@@ -746,6 +1042,14 @@
         {
           "componentInstanceRef": "control.press-ring",
           "mountRef": "control.press-ring"
+        },
+        {
+          "componentInstanceRef": "page.menu",
+          "mountRef": "page.menu"
+        },
+        {
+          "componentInstanceRef": "page.host",
+          "mountRef": "page.host"
         }
       ],
       "omittedMounts": [],
@@ -758,6 +1062,14 @@
         {
           "componentInstanceRef": "input.text",
           "mountRef": "input.text"
+        },
+        {
+          "componentInstanceRef": "page.menu",
+          "mountRef": "page.menu"
+        },
+        {
+          "componentInstanceRef": "page.host",
+          "mountRef": "page.host"
         }
       ],
       "omittedMounts": [],
@@ -774,6 +1086,14 @@
         {
           "componentInstanceRef": "media.playback",
           "mountRef": "media.playback"
+        },
+        {
+          "componentInstanceRef": "page.menu",
+          "mountRef": "page.menu"
+        },
+        {
+          "componentInstanceRef": "page.host",
+          "mountRef": "page.host"
         }
       ],
       "omittedMounts": [],
@@ -786,6 +1106,14 @@
         {
           "componentInstanceRef": "template.screens",
           "mountRef": "template.screens"
+        },
+        {
+          "componentInstanceRef": "page.menu",
+          "mountRef": "page.menu"
+        },
+        {
+          "componentInstanceRef": "page.host",
+          "mountRef": "page.host"
         }
       ],
       "omittedMounts": [],
@@ -806,6 +1134,14 @@
         {
           "componentInstanceRef": "flow.service",
           "mountRef": "flow.service"
+        },
+        {
+          "componentInstanceRef": "page.menu",
+          "mountRef": "page.menu"
+        },
+        {
+          "componentInstanceRef": "page.host",
+          "mountRef": "page.host"
         }
       ],
       "omittedMounts": [],
@@ -818,6 +1154,10 @@
         {
           "componentInstanceRef": "control.progress",
           "mountRef": "control.progress"
+        },
+        {
+          "componentInstanceRef": "page.host",
+          "mountRef": "page.host"
         }
       ],
       "omittedMounts": [],
@@ -857,6 +1197,28 @@
                 "requirement": {
                   "kind": "required"
                 }
+              },
+              {
+                "capacity": null,
+                "id": "page.menu",
+                "instance": "page.menu",
+                "order": 2,
+                "priority": 0,
+                "region": "navigation",
+                "requirement": {
+                  "kind": "required"
+                }
+              },
+              {
+                "capacity": null,
+                "id": "page.host",
+                "instance": "page.host",
+                "order": 3,
+                "priority": 0,
+                "region": "page-host",
+                "requirement": {
+                  "kind": "required"
+                }
               }
             ],
             "surface": "round"
@@ -884,6 +1246,28 @@
                 "requirement": {
                   "kind": "required"
                 }
+              },
+              {
+                "capacity": null,
+                "id": "page.menu",
+                "instance": "page.menu",
+                "order": 2,
+                "priority": 0,
+                "region": "navigation",
+                "requirement": {
+                  "kind": "required"
+                }
+              },
+              {
+                "capacity": null,
+                "id": "page.host",
+                "instance": "page.host",
+                "order": 3,
+                "priority": 0,
+                "region": "page-host",
+                "requirement": {
+                  "kind": "required"
+                }
               }
             ],
             "surface": "compact"
@@ -908,6 +1292,28 @@
                 "order": 1,
                 "priority": 0,
                 "region": "content",
+                "requirement": {
+                  "kind": "required"
+                }
+              },
+              {
+                "capacity": null,
+                "id": "page.menu",
+                "instance": "page.menu",
+                "order": 2,
+                "priority": 0,
+                "region": "navigation",
+                "requirement": {
+                  "kind": "required"
+                }
+              },
+              {
+                "capacity": null,
+                "id": "page.host",
+                "instance": "page.host",
+                "order": 3,
+                "priority": 0,
+                "region": "page-host",
                 "requirement": {
                   "kind": "required"
                 }
@@ -935,6 +1341,28 @@
                 "requirement": {
                   "kind": "required"
                 }
+              },
+              {
+                "capacity": null,
+                "id": "page.menu",
+                "instance": "page.menu",
+                "order": 1,
+                "priority": 0,
+                "region": "navigation",
+                "requirement": {
+                  "kind": "required"
+                }
+              },
+              {
+                "capacity": null,
+                "id": "page.host",
+                "instance": "page.host",
+                "order": 2,
+                "priority": 0,
+                "region": "page-host",
+                "requirement": {
+                  "kind": "required"
+                }
               }
             ],
             "surface": "round"
@@ -951,6 +1379,28 @@
                 "requirement": {
                   "kind": "required"
                 }
+              },
+              {
+                "capacity": null,
+                "id": "page.menu",
+                "instance": "page.menu",
+                "order": 1,
+                "priority": 0,
+                "region": "navigation",
+                "requirement": {
+                  "kind": "required"
+                }
+              },
+              {
+                "capacity": null,
+                "id": "page.host",
+                "instance": "page.host",
+                "order": 2,
+                "priority": 0,
+                "region": "page-host",
+                "requirement": {
+                  "kind": "required"
+                }
               }
             ],
             "surface": "compact"
@@ -964,6 +1414,28 @@
                 "order": 0,
                 "priority": 0,
                 "region": "content",
+                "requirement": {
+                  "kind": "required"
+                }
+              },
+              {
+                "capacity": null,
+                "id": "page.menu",
+                "instance": "page.menu",
+                "order": 1,
+                "priority": 0,
+                "region": "navigation",
+                "requirement": {
+                  "kind": "required"
+                }
+              },
+              {
+                "capacity": null,
+                "id": "page.host",
+                "instance": "page.host",
+                "order": 2,
+                "priority": 0,
+                "region": "page-host",
                 "requirement": {
                   "kind": "required"
                 }
@@ -1035,6 +1507,28 @@
                 "requirement": {
                   "kind": "required"
                 }
+              },
+              {
+                "capacity": null,
+                "id": "page.menu",
+                "instance": "page.menu",
+                "order": 5,
+                "priority": 0,
+                "region": "navigation",
+                "requirement": {
+                  "kind": "required"
+                }
+              },
+              {
+                "capacity": null,
+                "id": "page.host",
+                "instance": "page.host",
+                "order": 6,
+                "priority": 0,
+                "region": "page-host",
+                "requirement": {
+                  "kind": "required"
+                }
               }
             ],
             "surface": "round"
@@ -1095,6 +1589,28 @@
                 "requirement": {
                   "kind": "required"
                 }
+              },
+              {
+                "capacity": null,
+                "id": "page.menu",
+                "instance": "page.menu",
+                "order": 5,
+                "priority": 0,
+                "region": "navigation",
+                "requirement": {
+                  "kind": "required"
+                }
+              },
+              {
+                "capacity": null,
+                "id": "page.host",
+                "instance": "page.host",
+                "order": 6,
+                "priority": 0,
+                "region": "page-host",
+                "requirement": {
+                  "kind": "required"
+                }
               }
             ],
             "surface": "compact"
@@ -1152,6 +1668,28 @@
                 "order": 4,
                 "priority": 0,
                 "region": "content",
+                "requirement": {
+                  "kind": "required"
+                }
+              },
+              {
+                "capacity": null,
+                "id": "page.menu",
+                "instance": "page.menu",
+                "order": 5,
+                "priority": 0,
+                "region": "navigation",
+                "requirement": {
+                  "kind": "required"
+                }
+              },
+              {
+                "capacity": null,
+                "id": "page.host",
+                "instance": "page.host",
+                "order": 6,
+                "priority": 0,
+                "region": "page-host",
                 "requirement": {
                   "kind": "required"
                 }
@@ -1179,6 +1717,28 @@
                 "requirement": {
                   "kind": "required"
                 }
+              },
+              {
+                "capacity": null,
+                "id": "page.menu",
+                "instance": "page.menu",
+                "order": 1,
+                "priority": 0,
+                "region": "navigation",
+                "requirement": {
+                  "kind": "required"
+                }
+              },
+              {
+                "capacity": null,
+                "id": "page.host",
+                "instance": "page.host",
+                "order": 2,
+                "priority": 0,
+                "region": "page-host",
+                "requirement": {
+                  "kind": "required"
+                }
               }
             ],
             "surface": "round"
@@ -1195,6 +1755,28 @@
                 "requirement": {
                   "kind": "required"
                 }
+              },
+              {
+                "capacity": null,
+                "id": "page.menu",
+                "instance": "page.menu",
+                "order": 1,
+                "priority": 0,
+                "region": "navigation",
+                "requirement": {
+                  "kind": "required"
+                }
+              },
+              {
+                "capacity": null,
+                "id": "page.host",
+                "instance": "page.host",
+                "order": 2,
+                "priority": 0,
+                "region": "page-host",
+                "requirement": {
+                  "kind": "required"
+                }
               }
             ],
             "surface": "compact"
@@ -1208,6 +1790,28 @@
                 "order": 0,
                 "priority": 0,
                 "region": "content",
+                "requirement": {
+                  "kind": "required"
+                }
+              },
+              {
+                "capacity": null,
+                "id": "page.menu",
+                "instance": "page.menu",
+                "order": 1,
+                "priority": 0,
+                "region": "navigation",
+                "requirement": {
+                  "kind": "required"
+                }
+              },
+              {
+                "capacity": null,
+                "id": "page.host",
+                "instance": "page.host",
+                "order": 2,
+                "priority": 0,
+                "region": "page-host",
                 "requirement": {
                   "kind": "required"
                 }
@@ -1246,6 +1850,28 @@
                 "requirement": {
                   "kind": "required"
                 }
+              },
+              {
+                "capacity": null,
+                "id": "page.menu",
+                "instance": "page.menu",
+                "order": 2,
+                "priority": 0,
+                "region": "navigation",
+                "requirement": {
+                  "kind": "required"
+                }
+              },
+              {
+                "capacity": null,
+                "id": "page.host",
+                "instance": "page.host",
+                "order": 3,
+                "priority": 0,
+                "region": "page-host",
+                "requirement": {
+                  "kind": "required"
+                }
               }
             ],
             "surface": "round"
@@ -1273,6 +1899,28 @@
                 "requirement": {
                   "kind": "required"
                 }
+              },
+              {
+                "capacity": null,
+                "id": "page.menu",
+                "instance": "page.menu",
+                "order": 2,
+                "priority": 0,
+                "region": "navigation",
+                "requirement": {
+                  "kind": "required"
+                }
+              },
+              {
+                "capacity": null,
+                "id": "page.host",
+                "instance": "page.host",
+                "order": 3,
+                "priority": 0,
+                "region": "page-host",
+                "requirement": {
+                  "kind": "required"
+                }
               }
             ],
             "surface": "compact"
@@ -1297,6 +1945,28 @@
                 "order": 1,
                 "priority": 0,
                 "region": "content",
+                "requirement": {
+                  "kind": "required"
+                }
+              },
+              {
+                "capacity": null,
+                "id": "page.menu",
+                "instance": "page.menu",
+                "order": 2,
+                "priority": 0,
+                "region": "navigation",
+                "requirement": {
+                  "kind": "required"
+                }
+              },
+              {
+                "capacity": null,
+                "id": "page.host",
+                "instance": "page.host",
+                "order": 3,
+                "priority": 0,
+                "region": "page-host",
                 "requirement": {
                   "kind": "required"
                 }
@@ -1324,6 +1994,28 @@
                 "requirement": {
                   "kind": "required"
                 }
+              },
+              {
+                "capacity": null,
+                "id": "page.menu",
+                "instance": "page.menu",
+                "order": 1,
+                "priority": 0,
+                "region": "navigation",
+                "requirement": {
+                  "kind": "required"
+                }
+              },
+              {
+                "capacity": null,
+                "id": "page.host",
+                "instance": "page.host",
+                "order": 2,
+                "priority": 0,
+                "region": "page-host",
+                "requirement": {
+                  "kind": "required"
+                }
               }
             ],
             "surface": "round"
@@ -1340,6 +2032,28 @@
                 "requirement": {
                   "kind": "required"
                 }
+              },
+              {
+                "capacity": null,
+                "id": "page.menu",
+                "instance": "page.menu",
+                "order": 1,
+                "priority": 0,
+                "region": "navigation",
+                "requirement": {
+                  "kind": "required"
+                }
+              },
+              {
+                "capacity": null,
+                "id": "page.host",
+                "instance": "page.host",
+                "order": 2,
+                "priority": 0,
+                "region": "page-host",
+                "requirement": {
+                  "kind": "required"
+                }
               }
             ],
             "surface": "compact"
@@ -1353,6 +2067,28 @@
                 "order": 0,
                 "priority": 0,
                 "region": "content",
+                "requirement": {
+                  "kind": "required"
+                }
+              },
+              {
+                "capacity": null,
+                "id": "page.menu",
+                "instance": "page.menu",
+                "order": 1,
+                "priority": 0,
+                "region": "navigation",
+                "requirement": {
+                  "kind": "required"
+                }
+              },
+              {
+                "capacity": null,
+                "id": "page.host",
+                "instance": "page.host",
+                "order": 2,
+                "priority": 0,
+                "region": "page-host",
                 "requirement": {
                   "kind": "required"
                 }
@@ -1402,6 +2138,28 @@
                 "requirement": {
                   "kind": "required"
                 }
+              },
+              {
+                "capacity": null,
+                "id": "page.menu",
+                "instance": "page.menu",
+                "order": 3,
+                "priority": 0,
+                "region": "navigation",
+                "requirement": {
+                  "kind": "required"
+                }
+              },
+              {
+                "capacity": null,
+                "id": "page.host",
+                "instance": "page.host",
+                "order": 4,
+                "priority": 0,
+                "region": "page-host",
+                "requirement": {
+                  "kind": "required"
+                }
               }
             ],
             "surface": "round"
@@ -1440,6 +2198,28 @@
                 "requirement": {
                   "kind": "required"
                 }
+              },
+              {
+                "capacity": null,
+                "id": "page.menu",
+                "instance": "page.menu",
+                "order": 3,
+                "priority": 0,
+                "region": "navigation",
+                "requirement": {
+                  "kind": "required"
+                }
+              },
+              {
+                "capacity": null,
+                "id": "page.host",
+                "instance": "page.host",
+                "order": 4,
+                "priority": 0,
+                "region": "page-host",
+                "requirement": {
+                  "kind": "required"
+                }
               }
             ],
             "surface": "compact"
@@ -1475,6 +2255,28 @@
                 "order": 2,
                 "priority": 0,
                 "region": "content",
+                "requirement": {
+                  "kind": "required"
+                }
+              },
+              {
+                "capacity": null,
+                "id": "page.menu",
+                "instance": "page.menu",
+                "order": 3,
+                "priority": 0,
+                "region": "navigation",
+                "requirement": {
+                  "kind": "required"
+                }
+              },
+              {
+                "capacity": null,
+                "id": "page.host",
+                "instance": "page.host",
+                "order": 4,
+                "priority": 0,
+                "region": "page-host",
                 "requirement": {
                   "kind": "required"
                 }
@@ -1502,6 +2304,17 @@
                 "requirement": {
                   "kind": "required"
                 }
+              },
+              {
+                "capacity": null,
+                "id": "page.host",
+                "instance": "page.host",
+                "order": 1,
+                "priority": 0,
+                "region": "page-host",
+                "requirement": {
+                  "kind": "required"
+                }
               }
             ],
             "surface": "round"
@@ -1518,6 +2331,17 @@
                 "requirement": {
                   "kind": "required"
                 }
+              },
+              {
+                "capacity": null,
+                "id": "page.host",
+                "instance": "page.host",
+                "order": 1,
+                "priority": 0,
+                "region": "page-host",
+                "requirement": {
+                  "kind": "required"
+                }
               }
             ],
             "surface": "compact"
@@ -1531,6 +2355,17 @@
                 "order": 0,
                 "priority": 0,
                 "region": "content",
+                "requirement": {
+                  "kind": "required"
+                }
+              },
+              {
+                "capacity": null,
+                "id": "page.host",
+                "instance": "page.host",
+                "order": 1,
+                "priority": 0,
+                "region": "page-host",
                 "requirement": {
                   "kind": "required"
                 }
@@ -1738,6 +2573,26 @@
       },
       "componentTypeRef": "flow.service",
       "id": "flow.service"
+    },
+    {
+      "bindings": {
+        "events": {},
+        "inputs": {
+          "activePage": "navigation.activePage"
+        }
+      },
+      "componentTypeRef": "showcase.page-host",
+      "id": "page.host"
+    },
+    {
+      "bindings": {
+        "events": {
+          "route": "navigation.route"
+        },
+        "inputs": {}
+      },
+      "componentTypeRef": "showcase.page-menu",
+      "id": "page.menu"
     }
   ],
   "componentTypes": [
@@ -3075,10 +3930,89 @@
       "requiredCapabilities": [
         "ui.component-tree"
       ]
+    },
+    {
+      "id": "showcase.page-host",
+      "inputs": [
+        {
+          "contract": {
+            "boundary": "presentation",
+            "fields": [
+              {
+                "clockDomain": "none",
+                "name": "page",
+                "nullable": false,
+                "value": {
+                  "finite": true,
+                  "ref": "showcase.navigation.page"
+                }
+              }
+            ],
+            "id": "showcase.navigation.active-page",
+            "kind": "state",
+            "navigation": {
+              "kind": "active-page"
+            }
+          },
+          "id": "activePage",
+          "required": true
+        }
+      ],
+      "outputs": [],
+      "requiredCapabilities": [
+        "ui.component-tree"
+      ]
+    },
+    {
+      "id": "showcase.page-menu",
+      "inputs": [],
+      "outputs": [
+        {
+          "contract": {
+            "boundary": "ui-event",
+            "fields": [
+              {
+                "clockDomain": "none",
+                "name": "target",
+                "nullable": false,
+                "value": {
+                  "finite": true,
+                  "ref": "showcase.navigation.page"
+                }
+              }
+            ],
+            "id": "showcase.navigation.route-intent",
+            "kind": "event",
+            "navigation": {
+              "effect": "push",
+              "kind": "route"
+            }
+          },
+          "id": "route",
+          "required": true
+        }
+      ],
+      "requiredCapabilities": [
+        "ui.navigation"
+      ]
     }
   ],
   "configs": [],
-  "finiteValues": [],
+  "finiteValues": [
+    {
+      "id": "showcase.navigation.page",
+      "values": [
+        "section.foundations",
+        "section.atoms",
+        "section.controls",
+        "section.input",
+        "section.media",
+        "section.templates",
+        "section.flows",
+        "artifact.garmin-limited-ui"
+      ]
+    }
+  ],
   "iconRefs": [
     {
       "artifacts": [
@@ -3204,6 +4138,661 @@
   ],
   "id": "circlekit-showcase",
   "kind": "product-spec-ir",
+  "navigation": {
+    "actionGroups": [
+      {
+        "actions": [
+          {
+            "contractRef": "showcase.open-action",
+            "effect": "dispatch",
+            "id": "open",
+            "kind": "event",
+            "sourcePortRef": "atom.icon-action.open",
+            "targetPortRef": "navigation.atomIconAction"
+          }
+        ],
+        "artifactRefs": [
+          "iphone-full-ui",
+          "phone-full-ui",
+          "watchos-full-ui",
+          "wear-full-ui"
+        ],
+        "componentInstanceRef": "atom.icon-action",
+        "pageRefs": [
+          "section.atoms"
+        ]
+      },
+      {
+        "actions": [
+          {
+            "contractRef": "showcase.open-action",
+            "effect": "dispatch",
+            "id": "open",
+            "kind": "event",
+            "sourcePortRef": "control.action-row.open",
+            "targetPortRef": "navigation.controlActionRow"
+          }
+        ],
+        "artifactRefs": [
+          "iphone-full-ui",
+          "phone-full-ui",
+          "watchos-full-ui",
+          "wear-full-ui"
+        ],
+        "componentInstanceRef": "control.action-row",
+        "pageRefs": [
+          "section.controls"
+        ]
+      },
+      {
+        "actions": [
+          {
+            "contractRef": "showcase.open-action",
+            "effect": "dispatch",
+            "id": "open",
+            "kind": "event",
+            "sourcePortRef": "control.adjustment.open",
+            "targetPortRef": "navigation.controlAdjustment"
+          }
+        ],
+        "artifactRefs": [
+          "iphone-full-ui",
+          "phone-full-ui",
+          "watchos-full-ui",
+          "wear-full-ui"
+        ],
+        "componentInstanceRef": "control.adjustment",
+        "pageRefs": [
+          "section.controls"
+        ]
+      },
+      {
+        "actions": [
+          {
+            "contractRef": "showcase.open-action",
+            "effect": "dispatch",
+            "id": "open",
+            "kind": "event",
+            "sourcePortRef": "control.choice-row.open",
+            "targetPortRef": "navigation.controlChoiceRow"
+          }
+        ],
+        "artifactRefs": [
+          "iphone-full-ui",
+          "phone-full-ui",
+          "watchos-full-ui",
+          "wear-full-ui"
+        ],
+        "componentInstanceRef": "control.choice-row",
+        "pageRefs": [
+          "section.controls"
+        ]
+      },
+      {
+        "actions": [
+          {
+            "contractRef": "showcase.open-action",
+            "effect": "dispatch",
+            "id": "open",
+            "kind": "event",
+            "sourcePortRef": "control.press-ring.open",
+            "targetPortRef": "navigation.controlPressRing"
+          }
+        ],
+        "artifactRefs": [
+          "iphone-full-ui",
+          "phone-full-ui",
+          "watchos-full-ui",
+          "wear-full-ui"
+        ],
+        "componentInstanceRef": "control.press-ring",
+        "pageRefs": [
+          "section.controls"
+        ]
+      },
+      {
+        "actions": [
+          {
+            "contractRef": "showcase.open-action",
+            "effect": "dispatch",
+            "id": "open",
+            "kind": "event",
+            "sourcePortRef": "control.progress.open",
+            "targetPortRef": "navigation.controlProgress"
+          }
+        ],
+        "artifactRefs": [
+          "garmin-limited-ui",
+          "iphone-full-ui",
+          "phone-full-ui",
+          "watchos-full-ui",
+          "wear-full-ui"
+        ],
+        "componentInstanceRef": "control.progress",
+        "pageRefs": [
+          "artifact.garmin-limited-ui",
+          "section.controls"
+        ]
+      },
+      {
+        "actions": [
+          {
+            "contractRef": "showcase.open-action",
+            "effect": "dispatch",
+            "id": "open",
+            "kind": "event",
+            "sourcePortRef": "flow.service.open",
+            "targetPortRef": "navigation.flowService"
+          }
+        ],
+        "artifactRefs": [
+          "iphone-full-ui",
+          "phone-full-ui",
+          "watchos-full-ui",
+          "wear-full-ui"
+        ],
+        "componentInstanceRef": "flow.service",
+        "pageRefs": [
+          "section.flows"
+        ]
+      },
+      {
+        "actions": [
+          {
+            "contractRef": "showcase.open-action",
+            "effect": "dispatch",
+            "id": "open",
+            "kind": "event",
+            "sourcePortRef": "flow.source.open",
+            "targetPortRef": "navigation.flowSource"
+          }
+        ],
+        "artifactRefs": [
+          "iphone-full-ui",
+          "phone-full-ui",
+          "watchos-full-ui",
+          "wear-full-ui"
+        ],
+        "componentInstanceRef": "flow.source",
+        "pageRefs": [
+          "section.flows"
+        ]
+      },
+      {
+        "actions": [
+          {
+            "contractRef": "showcase.open-action",
+            "effect": "dispatch",
+            "id": "open",
+            "kind": "event",
+            "sourcePortRef": "flow.update.open",
+            "targetPortRef": "navigation.flowUpdate"
+          }
+        ],
+        "artifactRefs": [
+          "iphone-full-ui",
+          "phone-full-ui",
+          "watchos-full-ui",
+          "wear-full-ui"
+        ],
+        "componentInstanceRef": "flow.update",
+        "pageRefs": [
+          "section.flows"
+        ]
+      },
+      {
+        "actions": [
+          {
+            "contractRef": "showcase.open-action",
+            "effect": "dispatch",
+            "id": "open",
+            "kind": "event",
+            "sourcePortRef": "foundation.colors.open",
+            "targetPortRef": "navigation.foundationColors"
+          }
+        ],
+        "artifactRefs": [
+          "iphone-full-ui",
+          "phone-full-ui",
+          "watchos-full-ui",
+          "wear-full-ui"
+        ],
+        "componentInstanceRef": "foundation.colors",
+        "pageRefs": [
+          "section.foundations"
+        ]
+      },
+      {
+        "actions": [
+          {
+            "contractRef": "showcase.open-action",
+            "effect": "dispatch",
+            "id": "open",
+            "kind": "event",
+            "sourcePortRef": "foundation.geometry.open",
+            "targetPortRef": "navigation.foundationGeometry"
+          }
+        ],
+        "artifactRefs": [
+          "iphone-full-ui",
+          "phone-full-ui",
+          "watchos-full-ui",
+          "wear-full-ui"
+        ],
+        "componentInstanceRef": "foundation.geometry",
+        "pageRefs": [
+          "section.foundations"
+        ]
+      },
+      {
+        "actions": [
+          {
+            "contractRef": "showcase.open-action",
+            "effect": "dispatch",
+            "id": "open",
+            "kind": "event",
+            "sourcePortRef": "input.text.open",
+            "targetPortRef": "navigation.inputText"
+          }
+        ],
+        "artifactRefs": [
+          "iphone-full-ui",
+          "phone-full-ui",
+          "watchos-full-ui",
+          "wear-full-ui"
+        ],
+        "componentInstanceRef": "input.text",
+        "pageRefs": [
+          "section.input"
+        ]
+      },
+      {
+        "actions": [
+          {
+            "contractRef": "showcase.open-action",
+            "effect": "dispatch",
+            "id": "open",
+            "kind": "event",
+            "sourcePortRef": "media.capture.open",
+            "targetPortRef": "navigation.mediaCapture"
+          }
+        ],
+        "artifactRefs": [
+          "iphone-full-ui",
+          "phone-full-ui",
+          "watchos-full-ui",
+          "wear-full-ui"
+        ],
+        "componentInstanceRef": "media.capture",
+        "pageRefs": [
+          "section.media"
+        ]
+      },
+      {
+        "actions": [
+          {
+            "contractRef": "showcase.open-action",
+            "effect": "dispatch",
+            "id": "open",
+            "kind": "event",
+            "sourcePortRef": "media.playback.open",
+            "targetPortRef": "navigation.mediaPlayback"
+          }
+        ],
+        "artifactRefs": [
+          "iphone-full-ui",
+          "phone-full-ui",
+          "watchos-full-ui",
+          "wear-full-ui"
+        ],
+        "componentInstanceRef": "media.playback",
+        "pageRefs": [
+          "section.media"
+        ]
+      },
+      {
+        "actions": [
+          {
+            "contractRef": "showcase.navigation.route-intent",
+            "effect": "push",
+            "id": "route",
+            "kind": "route",
+            "sourcePortRef": "page.menu.route",
+            "targetPortRef": "navigation.route"
+          }
+        ],
+        "artifactRefs": [
+          "iphone-full-ui",
+          "phone-full-ui",
+          "watchos-full-ui",
+          "wear-full-ui"
+        ],
+        "componentInstanceRef": "page.menu",
+        "pageRefs": [
+          "section.atoms",
+          "section.controls",
+          "section.flows",
+          "section.foundations",
+          "section.input",
+          "section.media",
+          "section.templates"
+        ]
+      },
+      {
+        "actions": [
+          {
+            "contractRef": "showcase.open-action",
+            "effect": "dispatch",
+            "id": "open",
+            "kind": "event",
+            "sourcePortRef": "template.screens.open",
+            "targetPortRef": "navigation.templateScreens"
+          }
+        ],
+        "artifactRefs": [
+          "iphone-full-ui",
+          "phone-full-ui",
+          "watchos-full-ui",
+          "wear-full-ui"
+        ],
+        "componentInstanceRef": "template.screens",
+        "pageRefs": [
+          "section.templates"
+        ]
+      }
+    ],
+    "activePageContract": {
+      "boundary": "presentation",
+      "fields": [
+        {
+          "clockDomain": "none",
+          "name": "page",
+          "nullable": false,
+          "value": {
+            "finite": true,
+            "ref": "showcase.navigation.page"
+          }
+        }
+      ],
+      "id": "showcase.navigation.active-page",
+      "kind": "state",
+      "navigation": {
+        "kind": "active-page"
+      }
+    },
+    "activePagePortRef": "navigation.activePage",
+    "artifacts": [
+      {
+        "artifactRef": "phone-full-ui",
+        "entryPageRef": "section.foundations",
+        "pages": [
+          {
+            "back": "system",
+            "guardContractRef": null,
+            "pageRef": "section.foundations",
+            "restore": "root"
+          },
+          {
+            "back": "previous",
+            "guardContractRef": null,
+            "pageRef": "section.atoms",
+            "restore": "process"
+          },
+          {
+            "back": "previous",
+            "guardContractRef": null,
+            "pageRef": "section.controls",
+            "restore": "process"
+          },
+          {
+            "back": "previous",
+            "guardContractRef": null,
+            "pageRef": "section.input",
+            "restore": "process"
+          },
+          {
+            "back": "previous",
+            "guardContractRef": null,
+            "pageRef": "section.media",
+            "restore": "process"
+          },
+          {
+            "back": "previous",
+            "guardContractRef": null,
+            "pageRef": "section.templates",
+            "restore": "process"
+          },
+          {
+            "back": "previous",
+            "guardContractRef": null,
+            "pageRef": "section.flows",
+            "restore": "process"
+          }
+        ]
+      },
+      {
+        "artifactRef": "wear-full-ui",
+        "entryPageRef": "section.foundations",
+        "pages": [
+          {
+            "back": "system",
+            "guardContractRef": null,
+            "pageRef": "section.foundations",
+            "restore": "root"
+          },
+          {
+            "back": "previous",
+            "guardContractRef": null,
+            "pageRef": "section.atoms",
+            "restore": "process"
+          },
+          {
+            "back": "previous",
+            "guardContractRef": null,
+            "pageRef": "section.controls",
+            "restore": "process"
+          },
+          {
+            "back": "previous",
+            "guardContractRef": null,
+            "pageRef": "section.input",
+            "restore": "process"
+          },
+          {
+            "back": "previous",
+            "guardContractRef": null,
+            "pageRef": "section.media",
+            "restore": "process"
+          },
+          {
+            "back": "previous",
+            "guardContractRef": null,
+            "pageRef": "section.templates",
+            "restore": "process"
+          },
+          {
+            "back": "previous",
+            "guardContractRef": null,
+            "pageRef": "section.flows",
+            "restore": "process"
+          }
+        ]
+      },
+      {
+        "artifactRef": "iphone-full-ui",
+        "entryPageRef": "section.foundations",
+        "pages": [
+          {
+            "back": "system",
+            "guardContractRef": null,
+            "pageRef": "section.foundations",
+            "restore": "root"
+          },
+          {
+            "back": "previous",
+            "guardContractRef": null,
+            "pageRef": "section.atoms",
+            "restore": "process"
+          },
+          {
+            "back": "previous",
+            "guardContractRef": null,
+            "pageRef": "section.controls",
+            "restore": "process"
+          },
+          {
+            "back": "previous",
+            "guardContractRef": null,
+            "pageRef": "section.input",
+            "restore": "process"
+          },
+          {
+            "back": "previous",
+            "guardContractRef": null,
+            "pageRef": "section.media",
+            "restore": "process"
+          },
+          {
+            "back": "previous",
+            "guardContractRef": null,
+            "pageRef": "section.templates",
+            "restore": "process"
+          },
+          {
+            "back": "previous",
+            "guardContractRef": null,
+            "pageRef": "section.flows",
+            "restore": "process"
+          }
+        ]
+      },
+      {
+        "artifactRef": "watchos-full-ui",
+        "entryPageRef": "section.foundations",
+        "pages": [
+          {
+            "back": "system",
+            "guardContractRef": null,
+            "pageRef": "section.foundations",
+            "restore": "root"
+          },
+          {
+            "back": "previous",
+            "guardContractRef": null,
+            "pageRef": "section.atoms",
+            "restore": "process"
+          },
+          {
+            "back": "previous",
+            "guardContractRef": null,
+            "pageRef": "section.controls",
+            "restore": "process"
+          },
+          {
+            "back": "previous",
+            "guardContractRef": null,
+            "pageRef": "section.input",
+            "restore": "process"
+          },
+          {
+            "back": "previous",
+            "guardContractRef": null,
+            "pageRef": "section.media",
+            "restore": "process"
+          },
+          {
+            "back": "previous",
+            "guardContractRef": null,
+            "pageRef": "section.templates",
+            "restore": "process"
+          },
+          {
+            "back": "previous",
+            "guardContractRef": null,
+            "pageRef": "section.flows",
+            "restore": "process"
+          }
+        ]
+      },
+      {
+        "artifactRef": "garmin-limited-ui",
+        "entryPageRef": "artifact.garmin-limited-ui",
+        "pages": [
+          {
+            "back": "system",
+            "guardContractRef": null,
+            "pageRef": "artifact.garmin-limited-ui",
+            "restore": "root"
+          }
+        ]
+      }
+    ],
+    "id": "showcase.navigation",
+    "pageHostPortRef": "page.host.activePage",
+    "pages": [
+      {
+        "back": "system",
+        "guardContractRef": null,
+        "id": "section.foundations"
+      },
+      {
+        "back": "previous",
+        "guardContractRef": null,
+        "id": "section.atoms"
+      },
+      {
+        "back": "previous",
+        "guardContractRef": null,
+        "id": "section.controls"
+      },
+      {
+        "back": "previous",
+        "guardContractRef": null,
+        "id": "section.input"
+      },
+      {
+        "back": "previous",
+        "guardContractRef": null,
+        "id": "section.media"
+      },
+      {
+        "back": "previous",
+        "guardContractRef": null,
+        "id": "section.templates"
+      },
+      {
+        "back": "previous",
+        "guardContractRef": null,
+        "id": "section.flows"
+      },
+      {
+        "back": "system",
+        "guardContractRef": null,
+        "id": "artifact.garmin-limited-ui"
+      }
+    ],
+    "pageValuesRef": "showcase.navigation.page",
+    "routeIntentContract": {
+      "boundary": "ui-event",
+      "fields": [
+        {
+          "clockDomain": "none",
+          "name": "target",
+          "nullable": false,
+          "value": {
+            "finite": true,
+            "ref": "showcase.navigation.page"
+          }
+        }
+      ],
+      "id": "showcase.navigation.route-intent",
+      "kind": "event",
+      "navigation": {
+        "effect": "push",
+        "kind": "route"
+      }
+    }
+  },
   "nodes": [
     {
       "bindings": {},
@@ -3231,6 +4820,7 @@
         "inputText": "input.text.open",
         "mediaCapture": "media.capture.open",
         "mediaPlayback": "media.playback.open",
+        "route": "page.menu.route",
         "templateScreens": "template.screens.open"
       },
       "config": {},
@@ -3298,6 +4888,30 @@
     {
       "id": "showcase.navigation-service",
       "inputs": [
+        {
+          "contract": {
+            "boundary": "ui-event",
+            "fields": [
+              {
+                "clockDomain": "none",
+                "name": "target",
+                "nullable": false,
+                "value": {
+                  "finite": true,
+                  "ref": "showcase.navigation.page"
+                }
+              }
+            ],
+            "id": "showcase.navigation.route-intent",
+            "kind": "event",
+            "navigation": {
+              "effect": "push",
+              "kind": "route"
+            }
+          },
+          "id": "route",
+          "purpose": "data"
+        },
         {
           "contract": {
             "boundary": "ui-event",
@@ -3652,6 +5266,29 @@
             "fields": [
               {
                 "clockDomain": "none",
+                "name": "page",
+                "nullable": false,
+                "value": {
+                  "finite": true,
+                  "ref": "showcase.navigation.page"
+                }
+              }
+            ],
+            "id": "showcase.navigation.active-page",
+            "kind": "state",
+            "navigation": {
+              "kind": "active-page"
+            }
+          },
+          "id": "activePage",
+          "purpose": "data"
+        },
+        {
+          "contract": {
+            "boundary": "presentation",
+            "fields": [
+              {
+                "clockDomain": "none",
                 "name": "caseId",
                 "nullable": true,
                 "value": "string"
@@ -3749,6 +5386,12 @@
   },
   "portRegistry": {
     "bindings": [
+      {
+        "from": "page.menu.route",
+        "kind": "component-event",
+        "purpose": "data",
+        "to": "navigation.route"
+      },
       {
         "from": "foundation.colors.open",
         "kind": "component-event",
@@ -4024,6 +5667,12 @@
         "kind": "component-input",
         "purpose": "data",
         "to": "flow.service.navigation"
+      },
+      {
+        "from": "navigation.activePage",
+        "kind": "component-input",
+        "purpose": "data",
+        "to": "page.host.activePage"
       }
     ],
     "componentPorts": [
@@ -4566,6 +6215,30 @@
         "ref": "flow.service.open",
         "required": true,
         "typeRef": "flow.service"
+      },
+      {
+        "boundary": "presentation",
+        "contractRef": "showcase.navigation.active-page",
+        "direction": "input",
+        "ownerId": "page.host",
+        "ownerKind": "component",
+        "portId": "activePage",
+        "purpose": "data",
+        "ref": "page.host.activePage",
+        "required": true,
+        "typeRef": "showcase.page-host"
+      },
+      {
+        "boundary": "ui-event",
+        "contractRef": "showcase.navigation.route-intent",
+        "direction": "output",
+        "ownerId": "page.menu",
+        "ownerKind": "component",
+        "portId": "route",
+        "purpose": "data",
+        "ref": "page.menu.route",
+        "required": true,
+        "typeRef": "showcase.page-menu"
       }
     ],
     "contracts": [
@@ -4603,6 +6276,26 @@
         "fields": [
           {
             "clockDomain": "none",
+            "name": "target",
+            "nullable": false,
+            "value": {
+              "finite": true,
+              "ref": "showcase.navigation.page"
+            }
+          }
+        ],
+        "id": "showcase.navigation.route-intent",
+        "kind": "event",
+        "navigation": {
+          "effect": "push",
+          "kind": "route"
+        }
+      },
+      {
+        "boundary": "ui-event",
+        "fields": [
+          {
+            "clockDomain": "none",
             "name": "caseId",
             "nullable": false,
             "value": "string"
@@ -4616,6 +6309,25 @@
         ],
         "id": "showcase.open-action",
         "kind": "event"
+      },
+      {
+        "boundary": "presentation",
+        "fields": [
+          {
+            "clockDomain": "none",
+            "name": "page",
+            "nullable": false,
+            "value": {
+              "finite": true,
+              "ref": "showcase.navigation.page"
+            }
+          }
+        ],
+        "id": "showcase.navigation.active-page",
+        "kind": "state",
+        "navigation": {
+          "kind": "active-page"
+        }
       },
       {
         "boundary": "presentation",
@@ -4650,6 +6362,18 @@
         "ref": "catalog.model",
         "required": true,
         "typeRef": "showcase.catalog-presentation"
+      },
+      {
+        "boundary": "ui-event",
+        "contractRef": "showcase.navigation.route-intent",
+        "direction": "input",
+        "ownerId": "navigation",
+        "ownerKind": "node",
+        "portId": "route",
+        "purpose": "data",
+        "ref": "navigation.route",
+        "required": true,
+        "typeRef": "showcase.navigation-service"
       },
       {
         "boundary": "ui-event",
@@ -4833,6 +6557,18 @@
       },
       {
         "boundary": "presentation",
+        "contractRef": "showcase.navigation.active-page",
+        "direction": "output",
+        "ownerId": "navigation",
+        "ownerKind": "node",
+        "portId": "activePage",
+        "purpose": "data",
+        "ref": "navigation.activePage",
+        "required": true,
+        "typeRef": "showcase.navigation-service"
+      },
+      {
+        "boundary": "presentation",
         "contractRef": "showcase.navigation-presentation",
         "direction": "output",
         "ownerId": "navigation",
@@ -4869,7 +6605,7 @@
       }
     ]
   },
-  "productSpecVersion": "0.3.46",
+  "productSpecVersion": "0.3.47",
   "rendererBindings": [
     {
       "capabilities": [
@@ -4910,7 +6646,7 @@
       "id": "garmin-connectiq-monkeyc"
     }
   ],
-  "schemaVersion": 8,
+  "schemaVersion": 9,
   "showcase": {
     "cases": [
       {

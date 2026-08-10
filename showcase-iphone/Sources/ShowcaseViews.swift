@@ -15,19 +15,11 @@ struct ShowcaseRootView: View {
                 ScrollView {
                     LazyVStack(spacing: metrics.rowSpacing) {
                         ShowcaseHeader(artifact: environment.catalog.artifact, surface: surface)
-                        ForEach(trees, id: \.screenId) { tree in
-                            ShowcaseSectionHeader(screenId: tree.screenId)
-                            ForEach(tree.mounts.sorted(by: { $0.order < $1.order })) { mount in
-                                let component = environment.catalog.component(mount.componentId)
-                                Button { navigation.open(component.id) } label: {
-                                    ShowcaseMenuRow(
-                                        component: component,
-                                        icon: environment.catalog.icon(component.iconId),
-                                        metrics: metrics
-                                    )
-                                }
-                                .buttonStyle(.plain)
+                        ForEach(navigation.artifact.pages, id: \.pageRef) { page in
+                            Button { navigation.route(page.pageRef) } label: {
+                                ShowcasePageMenuRow(pageRef: page.pageRef, metrics: metrics)
                             }
+                            .buttonStyle(.plain)
                         }
                     }
                     .frame(maxWidth: metrics.contentWidth)
@@ -37,12 +29,78 @@ struct ShowcaseRootView: View {
                 }
                 .background(GeneratedShowcaseProduct.colors.surface)
             }
-            .navigationDestination(for: GeneratedShowcaseComponentId.self) { id in
-                ShowcaseComponentScreen(component: environment.catalog.component(id))
+            .navigationDestination(for: ShowcaseNavigationDestination.self) { destination in
+                switch destination {
+                case .page(let pageRef):
+                    ShowcasePageHostView(pageRef: pageRef, environment: environment)
+                case .component(let id):
+                    ShowcaseComponentScreen(component: environment.catalog.component(id))
+                }
             }
         }
         .tint(GeneratedShowcaseProduct.colors.accent)
         .preferredColorScheme(.dark)
+    }
+}
+
+private struct ShowcasePageHostView: View {
+    let pageRef: String
+    let environment: ShowcaseNativeEnvironment
+
+    var body: some View {
+        @Bindable var navigation = environment.navigation
+        GeometryReader { geometry in
+            let preferredSurface = ShowcaseNativePlatform.preferredSurface(width: geometry.size.width)
+            let tree = environment.catalog.trees(preferredSurface: preferredSurface)
+                .first(where: { $0.screenId == navigation.activePage })!
+            let metrics = ShowcaseLayoutMetrics(surface: tree.surface)
+            ScrollView {
+                LazyVStack(spacing: metrics.rowSpacing) {
+                    ShowcaseSectionHeader(screenId: tree.screenId)
+                    ForEach(tree.mounts.sorted(by: { $0.order < $1.order })) { mount in
+                        let component = environment.catalog.component(mount.componentId)
+                        Button { navigation.open(component.id) } label: {
+                            ShowcaseMenuRow(
+                                component: component,
+                                icon: environment.catalog.icon(component.iconId),
+                                metrics: metrics
+                            )
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+                .frame(maxWidth: metrics.contentWidth)
+                .padding(.horizontal, metrics.horizontalPadding)
+                .padding(.vertical, metrics.verticalPadding)
+                .frame(maxWidth: .infinity)
+            }
+            .background(GeneratedShowcaseProduct.colors.surface)
+        }
+        .navigationTitle(pageRef.replacingOccurrences(of: "section.", with: "").uppercased())
+    }
+}
+
+private struct ShowcasePageMenuRow: View {
+    let pageRef: String
+    let metrics: ShowcaseLayoutMetrics
+
+    var body: some View {
+        HStack {
+            Text(pageRef.replacingOccurrences(of: "section.", with: "").uppercased())
+                .font(.system(size: 16, weight: .bold, design: .rounded))
+                .foregroundStyle(GeneratedShowcaseProduct.colors.action)
+            Spacer(minLength: 8)
+            Text("›")
+                .font(.system(size: 20, weight: .bold, design: .rounded))
+                .foregroundStyle(GeneratedShowcaseProduct.colors.accent)
+        }
+        .padding(.horizontal, 16)
+        .frame(minHeight: metrics.rowHeight)
+        .overlay {
+            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                .stroke(GeneratedShowcaseProduct.colors.line, lineWidth: 1)
+        }
+        .contentShape(Rectangle())
     }
 }
 

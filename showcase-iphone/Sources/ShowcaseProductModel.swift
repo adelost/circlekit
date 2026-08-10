@@ -133,11 +133,47 @@ struct ShowcaseNode: Hashable {
     let outputPorts: [String]
 }
 
+struct ShowcaseNativeComponentRegistration: Hashable {
+    let componentTypeRef: String
+    let rendererId: String
+    let profiles: [GeneratedShowcaseArtifactId]
+}
+
 struct ShowcasePortBinding: Hashable {
     let kind: String
     let from: GeneratedShowcasePortId
     let to: GeneratedShowcasePortId
     let purpose: String
+}
+
+struct ShowcaseNavigationPage: Hashable {
+    let pageRef: String
+    let restore: String
+    let back: String
+    let guardContractRef: String?
+}
+
+struct ShowcaseNavigationArtifact: Hashable {
+    let artifactId: GeneratedShowcaseArtifactId
+    let entryPageRef: String
+    let pages: [ShowcaseNavigationPage]
+}
+
+struct ShowcaseActivePageBinding: Hashable {
+    let publisherPortRef: GeneratedShowcasePortId
+    let pageHostPortRef: GeneratedShowcasePortId
+}
+
+struct ShowcaseNavigationAction: Hashable {
+    let sourcePortRef: GeneratedShowcasePortId
+    let targetPortRef: GeneratedShowcasePortId
+    let effect: String
+}
+
+struct ShowcaseNavigationActionGroup: Hashable {
+    let artifactId: GeneratedShowcaseArtifactId
+    let componentId: GeneratedShowcaseComponentId
+    let actions: [ShowcaseNavigationAction]
 }
 
 extension Color {

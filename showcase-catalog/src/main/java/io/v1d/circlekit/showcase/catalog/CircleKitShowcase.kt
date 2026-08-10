@@ -43,11 +43,19 @@ fun CircleKitShowcase(
     modifier: Modifier = Modifier,
 ) {
     val destination by session.destination.collectAsState()
+    // CircleKitShowcase is the registered page host: this is the actual
+    // navigation.activePage -> page.host.activePage consumption.
+    val activePage by session.activePage.collectAsState()
     val surface = LocalCircleSurfaceLayout.current.surfaceClass
     val reservedChrome = remember(destination) { ShowcaseScreens.reservedChrome(destination) }
     val selectedTheme = destination.colorTheme()
 
-    SideEffect { session.setSurface(surface.name) }
+    SideEffect {
+        session.setSurface(surface.name)
+        require(ShowcaseNativeBindings.navigationArtifacts.single {
+            it.artifactRef == session.artifactProfile.id
+        }.pages.any { it.pageRef == activePage })
+    }
 
     CircleColorSchemeProvider(selectedTheme) {
         CompositionLocalProvider(LocalRoundChromeReservation provides reservedChrome) {
@@ -71,7 +79,7 @@ fun CircleKitShowcase(
                                     session.closeSelection()
                                     true
                                 }
-                                rootNavigator.back() -> true
+                                session.backPage(rootNavigator::back) -> true
                                 else -> false
                             }
                         }

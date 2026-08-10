@@ -1,6 +1,6 @@
 {
   "stage": "native-export",
-  "schemaVersion": 4,
+  "schemaVersion": 5,
   "sourceFile": "showcase-iphone/Sources/Generated/GeneratedShowcaseProduct.swift",
   "profiles": [
     "iphone-full-ui",
@@ -18,6 +18,22 @@
     {
       "componentId": "foundation.geometry",
       "rendererId": "ShowcaseComponentScreen",
+      "profiles": [
+        "iphone-full-ui",
+        "watchos-full-ui"
+      ]
+    },
+    {
+      "componentId": "showcase.page-menu",
+      "rendererId": "ShowcasePageMenu",
+      "profiles": [
+        "iphone-full-ui",
+        "watchos-full-ui"
+      ]
+    },
+    {
+      "componentId": "showcase.page-host",
+      "rendererId": "ShowcasePageHost",
       "profiles": [
         "iphone-full-ui",
         "watchos-full-ui"
@@ -199,6 +215,7 @@
         "watchos-full-ui"
       ],
       "inputPorts": [
+        "route",
         "foundationColors",
         "foundationGeometry",
         "atomIconAction",
@@ -216,6 +233,7 @@
         "flowService"
       ],
       "outputPorts": [
+        "activePage",
         "destination"
       ]
     },
@@ -234,5 +252,479 @@
       ]
     }
   ],
-  "finiteValues": []
+  "finiteValues": [
+    {
+      "id": "showcase.navigation.page",
+      "values": [
+        "section.foundations",
+        "section.atoms",
+        "section.controls",
+        "section.input",
+        "section.media",
+        "section.templates",
+        "section.flows",
+        "artifact.garmin-limited-ui"
+      ]
+    }
+  ],
+  "navigation": {
+    "artifacts": [
+      {
+        "artifactRef": "iphone-full-ui",
+        "entryPageRef": "section.foundations",
+        "pages": [
+          {
+            "pageRef": "section.foundations",
+            "restore": "root",
+            "back": "system",
+            "guardContractRef": null
+          },
+          {
+            "pageRef": "section.atoms",
+            "restore": "process",
+            "back": "previous",
+            "guardContractRef": null
+          },
+          {
+            "pageRef": "section.controls",
+            "restore": "process",
+            "back": "previous",
+            "guardContractRef": null
+          },
+          {
+            "pageRef": "section.input",
+            "restore": "process",
+            "back": "previous",
+            "guardContractRef": null
+          },
+          {
+            "pageRef": "section.media",
+            "restore": "process",
+            "back": "previous",
+            "guardContractRef": null
+          },
+          {
+            "pageRef": "section.templates",
+            "restore": "process",
+            "back": "previous",
+            "guardContractRef": null
+          },
+          {
+            "pageRef": "section.flows",
+            "restore": "process",
+            "back": "previous",
+            "guardContractRef": null
+          }
+        ]
+      },
+      {
+        "artifactRef": "watchos-full-ui",
+        "entryPageRef": "section.foundations",
+        "pages": [
+          {
+            "pageRef": "section.foundations",
+            "restore": "root",
+            "back": "system",
+            "guardContractRef": null
+          },
+          {
+            "pageRef": "section.atoms",
+            "restore": "process",
+            "back": "previous",
+            "guardContractRef": null
+          },
+          {
+            "pageRef": "section.controls",
+            "restore": "process",
+            "back": "previous",
+            "guardContractRef": null
+          },
+          {
+            "pageRef": "section.input",
+            "restore": "process",
+            "back": "previous",
+            "guardContractRef": null
+          },
+          {
+            "pageRef": "section.media",
+            "restore": "process",
+            "back": "previous",
+            "guardContractRef": null
+          },
+          {
+            "pageRef": "section.templates",
+            "restore": "process",
+            "back": "previous",
+            "guardContractRef": null
+          },
+          {
+            "pageRef": "section.flows",
+            "restore": "process",
+            "back": "previous",
+            "guardContractRef": null
+          }
+        ]
+      }
+    ],
+    "activePageBindings": [
+      {
+        "publisherPortRef": "navigation.activePage",
+        "pageHostPortRef": "page.host.activePage"
+      }
+    ],
+    "actionGroups": [
+      {
+        "artifactRef": "iphone-full-ui",
+        "componentInstanceRef": "foundation.colors",
+        "actions": [
+          {
+            "sourcePortRef": "foundation.colors.open",
+            "targetPortRef": "navigation.foundationColors",
+            "effect": "dispatch"
+          }
+        ]
+      },
+      {
+        "artifactRef": "watchos-full-ui",
+        "componentInstanceRef": "foundation.colors",
+        "actions": [
+          {
+            "sourcePortRef": "foundation.colors.open",
+            "targetPortRef": "navigation.foundationColors",
+            "effect": "dispatch"
+          }
+        ]
+      },
+      {
+        "artifactRef": "iphone-full-ui",
+        "componentInstanceRef": "foundation.geometry",
+        "actions": [
+          {
+            "sourcePortRef": "foundation.geometry.open",
+            "targetPortRef": "navigation.foundationGeometry",
+            "effect": "dispatch"
+          }
+        ]
+      },
+      {
+        "artifactRef": "watchos-full-ui",
+        "componentInstanceRef": "foundation.geometry",
+        "actions": [
+          {
+            "sourcePortRef": "foundation.geometry.open",
+            "targetPortRef": "navigation.foundationGeometry",
+            "effect": "dispatch"
+          }
+        ]
+      },
+      {
+        "artifactRef": "iphone-full-ui",
+        "componentInstanceRef": "atom.icon-action",
+        "actions": [
+          {
+            "sourcePortRef": "atom.icon-action.open",
+            "targetPortRef": "navigation.atomIconAction",
+            "effect": "dispatch"
+          }
+        ]
+      },
+      {
+        "artifactRef": "watchos-full-ui",
+        "componentInstanceRef": "atom.icon-action",
+        "actions": [
+          {
+            "sourcePortRef": "atom.icon-action.open",
+            "targetPortRef": "navigation.atomIconAction",
+            "effect": "dispatch"
+          }
+        ]
+      },
+      {
+        "artifactRef": "iphone-full-ui",
+        "componentInstanceRef": "control.action-row",
+        "actions": [
+          {
+            "sourcePortRef": "control.action-row.open",
+            "targetPortRef": "navigation.controlActionRow",
+            "effect": "dispatch"
+          }
+        ]
+      },
+      {
+        "artifactRef": "watchos-full-ui",
+        "componentInstanceRef": "control.action-row",
+        "actions": [
+          {
+            "sourcePortRef": "control.action-row.open",
+            "targetPortRef": "navigation.controlActionRow",
+            "effect": "dispatch"
+          }
+        ]
+      },
+      {
+        "artifactRef": "iphone-full-ui",
+        "componentInstanceRef": "control.choice-row",
+        "actions": [
+          {
+            "sourcePortRef": "control.choice-row.open",
+            "targetPortRef": "navigation.controlChoiceRow",
+            "effect": "dispatch"
+          }
+        ]
+      },
+      {
+        "artifactRef": "watchos-full-ui",
+        "componentInstanceRef": "control.choice-row",
+        "actions": [
+          {
+            "sourcePortRef": "control.choice-row.open",
+            "targetPortRef": "navigation.controlChoiceRow",
+            "effect": "dispatch"
+          }
+        ]
+      },
+      {
+        "artifactRef": "iphone-full-ui",
+        "componentInstanceRef": "control.adjustment",
+        "actions": [
+          {
+            "sourcePortRef": "control.adjustment.open",
+            "targetPortRef": "navigation.controlAdjustment",
+            "effect": "dispatch"
+          }
+        ]
+      },
+      {
+        "artifactRef": "watchos-full-ui",
+        "componentInstanceRef": "control.adjustment",
+        "actions": [
+          {
+            "sourcePortRef": "control.adjustment.open",
+            "targetPortRef": "navigation.controlAdjustment",
+            "effect": "dispatch"
+          }
+        ]
+      },
+      {
+        "artifactRef": "iphone-full-ui",
+        "componentInstanceRef": "control.progress",
+        "actions": [
+          {
+            "sourcePortRef": "control.progress.open",
+            "targetPortRef": "navigation.controlProgress",
+            "effect": "dispatch"
+          }
+        ]
+      },
+      {
+        "artifactRef": "watchos-full-ui",
+        "componentInstanceRef": "control.progress",
+        "actions": [
+          {
+            "sourcePortRef": "control.progress.open",
+            "targetPortRef": "navigation.controlProgress",
+            "effect": "dispatch"
+          }
+        ]
+      },
+      {
+        "artifactRef": "iphone-full-ui",
+        "componentInstanceRef": "control.press-ring",
+        "actions": [
+          {
+            "sourcePortRef": "control.press-ring.open",
+            "targetPortRef": "navigation.controlPressRing",
+            "effect": "dispatch"
+          }
+        ]
+      },
+      {
+        "artifactRef": "watchos-full-ui",
+        "componentInstanceRef": "control.press-ring",
+        "actions": [
+          {
+            "sourcePortRef": "control.press-ring.open",
+            "targetPortRef": "navigation.controlPressRing",
+            "effect": "dispatch"
+          }
+        ]
+      },
+      {
+        "artifactRef": "iphone-full-ui",
+        "componentInstanceRef": "input.text",
+        "actions": [
+          {
+            "sourcePortRef": "input.text.open",
+            "targetPortRef": "navigation.inputText",
+            "effect": "dispatch"
+          }
+        ]
+      },
+      {
+        "artifactRef": "watchos-full-ui",
+        "componentInstanceRef": "input.text",
+        "actions": [
+          {
+            "sourcePortRef": "input.text.open",
+            "targetPortRef": "navigation.inputText",
+            "effect": "dispatch"
+          }
+        ]
+      },
+      {
+        "artifactRef": "iphone-full-ui",
+        "componentInstanceRef": "media.capture",
+        "actions": [
+          {
+            "sourcePortRef": "media.capture.open",
+            "targetPortRef": "navigation.mediaCapture",
+            "effect": "dispatch"
+          }
+        ]
+      },
+      {
+        "artifactRef": "watchos-full-ui",
+        "componentInstanceRef": "media.capture",
+        "actions": [
+          {
+            "sourcePortRef": "media.capture.open",
+            "targetPortRef": "navigation.mediaCapture",
+            "effect": "dispatch"
+          }
+        ]
+      },
+      {
+        "artifactRef": "iphone-full-ui",
+        "componentInstanceRef": "media.playback",
+        "actions": [
+          {
+            "sourcePortRef": "media.playback.open",
+            "targetPortRef": "navigation.mediaPlayback",
+            "effect": "dispatch"
+          }
+        ]
+      },
+      {
+        "artifactRef": "watchos-full-ui",
+        "componentInstanceRef": "media.playback",
+        "actions": [
+          {
+            "sourcePortRef": "media.playback.open",
+            "targetPortRef": "navigation.mediaPlayback",
+            "effect": "dispatch"
+          }
+        ]
+      },
+      {
+        "artifactRef": "iphone-full-ui",
+        "componentInstanceRef": "template.screens",
+        "actions": [
+          {
+            "sourcePortRef": "template.screens.open",
+            "targetPortRef": "navigation.templateScreens",
+            "effect": "dispatch"
+          }
+        ]
+      },
+      {
+        "artifactRef": "watchos-full-ui",
+        "componentInstanceRef": "template.screens",
+        "actions": [
+          {
+            "sourcePortRef": "template.screens.open",
+            "targetPortRef": "navigation.templateScreens",
+            "effect": "dispatch"
+          }
+        ]
+      },
+      {
+        "artifactRef": "iphone-full-ui",
+        "componentInstanceRef": "flow.source",
+        "actions": [
+          {
+            "sourcePortRef": "flow.source.open",
+            "targetPortRef": "navigation.flowSource",
+            "effect": "dispatch"
+          }
+        ]
+      },
+      {
+        "artifactRef": "watchos-full-ui",
+        "componentInstanceRef": "flow.source",
+        "actions": [
+          {
+            "sourcePortRef": "flow.source.open",
+            "targetPortRef": "navigation.flowSource",
+            "effect": "dispatch"
+          }
+        ]
+      },
+      {
+        "artifactRef": "iphone-full-ui",
+        "componentInstanceRef": "flow.update",
+        "actions": [
+          {
+            "sourcePortRef": "flow.update.open",
+            "targetPortRef": "navigation.flowUpdate",
+            "effect": "dispatch"
+          }
+        ]
+      },
+      {
+        "artifactRef": "watchos-full-ui",
+        "componentInstanceRef": "flow.update",
+        "actions": [
+          {
+            "sourcePortRef": "flow.update.open",
+            "targetPortRef": "navigation.flowUpdate",
+            "effect": "dispatch"
+          }
+        ]
+      },
+      {
+        "artifactRef": "iphone-full-ui",
+        "componentInstanceRef": "flow.service",
+        "actions": [
+          {
+            "sourcePortRef": "flow.service.open",
+            "targetPortRef": "navigation.flowService",
+            "effect": "dispatch"
+          }
+        ]
+      },
+      {
+        "artifactRef": "watchos-full-ui",
+        "componentInstanceRef": "flow.service",
+        "actions": [
+          {
+            "sourcePortRef": "flow.service.open",
+            "targetPortRef": "navigation.flowService",
+            "effect": "dispatch"
+          }
+        ]
+      },
+      {
+        "artifactRef": "iphone-full-ui",
+        "componentInstanceRef": "page.menu",
+        "actions": [
+          {
+            "sourcePortRef": "page.menu.route",
+            "targetPortRef": "navigation.route",
+            "effect": "push"
+          }
+        ]
+      },
+      {
+        "artifactRef": "watchos-full-ui",
+        "componentInstanceRef": "page.menu",
+        "actions": [
+          {
+            "sourcePortRef": "page.menu.route",
+            "targetPortRef": "navigation.route",
+            "effect": "push"
+          }
+        ]
+      }
+    ]
+  }
 }
