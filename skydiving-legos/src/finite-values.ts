@@ -124,6 +124,20 @@ export const fetchSources = finiteValues(
   ["weather", "cloud", "map-objects", "map-tiles", "airport-pressure", "aircraft"],
 );
 
+/**
+ * Read off Kotlin's `AttitudeAccuracy` (core/contracts/AttitudeObservation.kt),
+ * the same members `pressure.accuracy` already carries. It was left out of
+ * 0.1.0 on purpose: its only reader, `attitude.observation`, is held back for a
+ * different missing space (`attitude.source`), so declaring this one alone
+ * would have added a reserved set nothing could read. It is declared now
+ * because the space is real and derivable, and waiting on an unrelated domain
+ * decision would leave a known truth undeclared.
+ */
+export const attitudeAccuracies = finiteValues(
+  "attitude.accuracy",
+  ["unreliable", "low", "medium", "high", "unknown"],
+);
+
 export const skydivingFiniteValues = [
   weatherOperationStatuses,
   weatherDataFreshnesses,
@@ -143,4 +157,5 @@ export const skydivingFiniteValues = [
   watchAccountActions,
   statusRefreshSources,
   fetchSources,
+  attitudeAccuracies,
 ] as const;
