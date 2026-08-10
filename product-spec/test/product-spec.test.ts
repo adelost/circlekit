@@ -889,8 +889,8 @@ test("closed state authority rejects incomplete, invented and overlapping presen
     bindings: {
       inputs: {
         model: "ui.independent.model",
-        availabilityPresentation: availabilityDefinition.authority.adapter.outputPortRef,
-        phasePresentation: descendantPhaseDefinition.authority.adapter.outputPortRef,
+        availabilityPresentation: availabilityDefinition.presentationPortRef,
+        phasePresentation: descendantPhaseDefinition.presentationPortRef,
       },
       events: {},
     },
@@ -1002,7 +1002,7 @@ test("closed state authority rejects incomplete, invented and overlapping presen
     componentTypeRef: positionControlType.id,
     bindings: { inputs: {
       model: "ui.position.model",
-      availabilityPresentation: availabilityDefinition.authority.adapter.outputPortRef,
+      availabilityPresentation: availabilityDefinition.presentationPortRef,
     }, events: {} },
   } as const;
   const settingsControl = {
@@ -1129,7 +1129,7 @@ test("closed state authority rejects incomplete, invented and overlapping presen
       bindings: { ...control.bindings, inputs: {
         state: "ui.projection.model",
         phasePresentation: phaseAuthority.adapter.outputPortRef,
-        alternatePresentation: alternateDefinition.authority.adapter.outputPortRef,
+        alternatePresentation: alternateDefinition.presentationPortRef,
       } },
     }],
   }), /competing ancestor\/descendant state lineages consumed by component 'control.main'/);
