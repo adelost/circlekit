@@ -313,6 +313,67 @@ test("a product cannot copy a library contract id even with the identical schema
   );
 });
 
+test("a product resolves finite refs through the library that reserves them", () => {
+  // The red case that blocked Skyvw: a library reserves fixture.phase, so the
+  // product may no longer declare it -- and its own contracts still name it.
+  // Before library finites joined the resolution set this threw
+  // `contract 'fixture.status' uses unknown finite value 'fixture.phase'`,
+  // which made a reserved space impossible to USE.
+  const library = defineProductLibraryCatalog({
+    id: "fixture.library",
+    contracts: [],
+    nodeTypes: [],
+    finiteValues: [fixturePhases],
+  });
+  const product = defineProduct(
+    { ...baseDeclaration, finiteValues: [] } as never,
+    assetCatalog,
+    [library],
+  );
+  assert.equal(product.id, "fixture");
+
+  // The other direction, same fixture: reservation still bites. Resolution
+  // widened what a contract may NAME, not who OWNS an id.
+  const copiedPhases = { ...fixturePhases, values: [...fixturePhases.values] } as const;
+  assert.throws(
+    () => defineProduct(
+      { ...baseDeclaration, finiteValues: [copiedPhases] } as never,
+      assetCatalog,
+      [library],
+    ),
+    /product finite value 'fixture\.phase' collides with library 'fixture\.library'/,
+  );
+});
+
+test("a library's unused finite values are not the product's orphans", () => {
+  // A shared catalog carries more than any one product needs. Counting its
+  // spares as orphans would force every consumer to use all of them, so the
+  // orphan rule stays on the product's own declarations.
+  const spare = finiteValues("fixture.unused-space", ["one", "two"]);
+  const library = defineProductLibraryCatalog({
+    id: "fixture.library",
+    contracts: [],
+    nodeTypes: [],
+    finiteValues: [fixturePhases, spare],
+  });
+  const product = defineProduct(
+    { ...baseDeclaration, finiteValues: [] } as never,
+    assetCatalog,
+    [library],
+  );
+  assert.equal(product.id, "fixture");
+
+  // The product's OWN unused declaration is still an orphan.
+  assert.throws(
+    () => defineProduct(
+      { ...baseDeclaration, finiteValues: [finiteValues("fixture.dead", ["x"])] } as never,
+      assetCatalog,
+      [library],
+    ),
+    /orphan finite value declaration 'fixture\.dead'/,
+  );
+});
+
 test("library provenance preserves exact imports and reserves node-type and finite-value ids", () => {
   const library = defineProductLibraryCatalog({
     id: "fixture.library",

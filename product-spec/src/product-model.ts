@@ -199,10 +199,18 @@ export function defineProduct<
   requireUnique(declaration.componentFamilies.map(({ screen }) => screen), "component-family screen");
   requireUnique(declaration.componentFamilies.map(({ family }) => family.id), "component-family ref");
   const finiteValues = [...declaration.finiteValues, declaration.navigation.pageValues];
+  const libraryFiniteValues = libraries.flatMap(({ finiteValues: values }) => [...values]);
+  /**
+   * What a contract or a state authority may NAME. Deliberately separate from
+   * `finiteValues`, which is what this product DECLARES and what reaches the
+   * IR: a library's spaces resolve here without being re-emitted as the
+   * product's own, so adopting a library cannot change generated output.
+   */
+  const resolvableFiniteValues = [...finiteValues, ...libraryFiniteValues];
   validateFiniteValues(finiteValues, declaration.nodeTypes, declaration.componentTypes, [
     declaration.navigation.activePageContract,
     declaration.navigation.routeIntentContract,
-  ]);
+  ], libraryFiniteValues);
   validateVisuals(declaration, assetCatalog);
 
   const renderers = new Map(declaration.rendererBindings.map((item) => [item.id, item]));
@@ -316,7 +324,7 @@ export function defineProduct<
   });
   const stateAuthorities = compileStateAuthorities(
     declaration.stateAuthorities,
-    finiteValues,
+    resolvableFiniteValues,
     graph,
   );
   const navigation = compileProductNavigation({
@@ -387,11 +395,28 @@ function validateVisuals(
   }
 }
 
+/**
+ * Resolve finite refs against the product AND its libraries; judge orphans on
+ * the product alone.
+ *
+ * A library reserves its ids so a product cannot re-declare them, which means
+ * the product can no longer carry a copy of a space its contracts reach. Those
+ * refs still have to resolve, so the library's declarations belong in the set
+ * this reads. Reservation is about who OWNS an id; resolution is about what a
+ * contract can NAME, and they are not the same question.
+ *
+ * The orphan rule stays product-only on purpose. It exists to catch a product
+ * declaring a space nothing uses -- dead weight its author can delete. A shared
+ * catalog is expected to carry more than any one product needs; counting the
+ * library's spare spaces as orphans would force every consumer to use all of
+ * them, which is the opposite of what a shared catalog is for.
+ */
 function validateFiniteValues(
   declarations: readonly LegoFiniteValueDeclaration[],
   nodes: readonly ProductNodeType[],
   components: readonly ComponentType[],
   additionalContracts: readonly LegoContract[] = [],
+  libraryFiniteValues: readonly LegoFiniteValueDeclaration[] = [],
 ): void {
   const catalog = new Map<string, LegoFiniteValueDeclaration>();
   for (const item of declarations) {
@@ -400,6 +425,13 @@ function validateFiniteValues(
     if (item.values.length === 0) throw new Error(`finite value declaration '${item.id}' has no values`);
     requireUnique(item.values, `value in finite declaration '${item.id}'`);
     catalog.set(item.id, item);
+  }
+  /** Only the product's own ids can be orphans; the library's spares cannot. */
+  const ownDeclarations = new Set(catalog.keys());
+  for (const item of libraryFiniteValues) {
+    // A product id and a library id never collide here: validateProductLibraryUsage
+    // has already rejected that, so this cannot mask a re-declaration.
+    if (!catalog.has(item.id)) catalog.set(item.id, item);
   }
   const used = new Set<string>();
   const contracts: LegoContract[] = [
@@ -416,7 +448,7 @@ function validateFiniteValues(
       used.add(item.value.ref);
     }
   }
-  const orphan = [...catalog.keys()].filter((id) => !used.has(id));
+  const orphan = [...ownDeclarations].filter((id) => !used.has(id));
   if (orphan.length > 0) throw new Error(`orphan finite value declaration '${orphan.join("', '")}'`);
 }
 
