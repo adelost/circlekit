@@ -38,55 +38,48 @@ enum class ShowcaseComponentKind { TEXT, PRESS, CAPTURE, PLAYBACK }
 
 object ShowcasePresentations {
     fun selected(
-        destination: ShowcaseDestination,
-        session: ShowcaseSession,
+        mounted: ShowcaseMountedRenderer,
         surface: CircleSurfaceClass,
-        textEntryPort: RingTextEntryPort?,
     ): ShowcasePresentation {
-        val pair = ShowcaseManifest.find(
-            requireNotNull(destination.caseId),
-            requireNotNull(destination.scenarioId),
-        ) ?: error("Showcase destination was validated before selection")
-        return when (ShowcaseNativeBindings.requireComponent(pair.first.id.value).renderer) {
+        val catalog = mounted.inputs.require<ShowcaseCatalogRendererInput>("${mounted.renderer.componentId()}.catalog")
+        return when (mounted.renderer) {
             ShowcaseNativeRenderer.TEXT -> if (surface == CircleSurfaceClass.ROUND) {
-                ShowcasePresentation.Screen(textEntryRows(pair.second, session.media, textEntryPort))
+                ShowcasePresentation.Screen(textEntryRows(
+                    catalog.scenario,
+                    mounted.runtime().media,
+                    mounted.typedEmitter(),
+                ))
             } else {
                 ShowcasePresentation.Component(ShowcaseComponentKind.TEXT)
             }
             ShowcaseNativeRenderer.PRESS -> ShowcasePresentation.Component(ShowcaseComponentKind.PRESS)
             ShowcaseNativeRenderer.CAPTURE -> ShowcasePresentation.Component(ShowcaseComponentKind.CAPTURE)
             ShowcaseNativeRenderer.PLAYBACK -> ShowcasePresentation.Component(ShowcaseComponentKind.PLAYBACK)
-            else -> ShowcasePresentation.Screen(ShowcaseScreens.selectedScreen(destination, session))
+            else -> ShowcasePresentation.Screen(ShowcaseScreens.selectedScreen(mounted))
         }
     }
 
     private fun textEntryRows(
         scenario: ShowcaseScenario,
-        state: ShowcaseMediaState,
-        port: RingTextEntryPort?,
+        model: ShowcaseMediaRendererInput,
+        emitter: ShowcaseTypedRendererEmitter,
     ): RingScreen.Rows = RingScreen.Rows(
         title = scenario.label,
-        items = combine(state.text, state.submitCount) { text, submits ->
-            val spec = textSpec(scenario, state, text)
-            val available = spec.enabled && port != null
+        items = combine(model.text, model.submitCount) { text, submits ->
+            val spec = textSpec(scenario, text, emitter)
+            val available = spec.enabled
             listOf(
                 RowSpec(
                     key = "platform-text",
                     title = if (available) "EDIT TEXT" else "TEXT INPUT",
                     sub = when {
-                        port == null -> "PLATFORM IME UNAVAILABLE"
                         text.isEmpty() -> "EMPTY · SENT $submits"
                         else -> "$text · SENT $submits"
                     },
                     icon = RingIcons.Pencil,
                     hint = "Opens the Wear system editor; CircleKit keeps the same text spec.",
                     onTap = if (available) {
-                        {
-                            port.openPlatformTextEntry(spec) { result ->
-                                spec.onValueChange(result.take(spec.maxLength))
-                                spec.onSubmit()
-                            }
-                        }
+                        { emitter.emit(ShowcaseRendererEventPayload("text.platform")) }
                     } else {
                         null
                     },
@@ -97,23 +90,25 @@ object ShowcasePresentations {
 
     @Composable
     fun ComponentPreview(
-        destination: ShowcaseDestination,
+        mounted: ShowcaseMountedRenderer,
         kind: ShowcaseComponentKind,
-        state: ShowcaseMediaState,
         surface: CircleSurfaceClass,
         onBack: () -> Unit,
     ) {
-        val scenario = requireNotNull(destination.scenarioId).value
+        val catalog = mounted.inputs.require<ShowcaseCatalogRendererInput>("${mounted.renderer.componentId()}.catalog")
+        val media = mounted.runtime().media
+        val emitter = mounted.typedEmitter()
+        val scenario = catalog.scenario.id.value
         ComponentFrame(
-            title = ShowcaseManifest.find(requireNotNull(destination.caseId))?.title.orEmpty(),
+            title = catalog.case.title,
             surface = surface,
             onBack = onBack,
         ) {
             when (kind) {
-                ShowcaseComponentKind.TEXT -> TextPreview(scenario, state)
-                ShowcaseComponentKind.PRESS -> PressPreview(state)
-                ShowcaseComponentKind.CAPTURE -> CapturePreview(state, surface)
-                ShowcaseComponentKind.PLAYBACK -> PlaybackPreview(state)
+                ShowcaseComponentKind.TEXT -> TextPreview(scenario, media, emitter)
+                ShowcaseComponentKind.PRESS -> PressPreview(media, emitter)
+                ShowcaseComponentKind.CAPTURE -> CapturePreview(media, surface)
+                ShowcaseComponentKind.PLAYBACK -> PlaybackPreview(media, emitter)
             }
         }
     }
@@ -151,23 +146,27 @@ object ShowcasePresentations {
     }
 
     @Composable
-    private fun TextPreview(scenario: String, state: ShowcaseMediaState) {
-        val text by state.text.collectAsState()
+    private fun TextPreview(
+        scenario: String,
+        model: ShowcaseMediaRendererInput,
+        emitter: ShowcaseTypedRendererEmitter,
+    ) {
+        val text by model.text.collectAsState()
         RingTextComposer(
             spec = textSpec(
                 ShowcaseScenario(ShowcaseScenarioId(scenario), scenario.uppercase()),
-                state,
                 text,
+                emitter,
             ),
         )
     }
 
     @Composable
-    private fun PressPreview(state: ShowcaseMediaState) {
-        val active by state.captureActive.collectAsState()
-        val enabled by state.captureEnabled.collectAsState()
-        val failed by state.captureFailed.collectAsState()
-        val elapsedMs by state.captureElapsedMs.collectAsState()
+    private fun PressPreview(model: ShowcaseMediaRendererInput, emitter: ShowcaseTypedRendererEmitter) {
+        val active by model.captureActive.collectAsState()
+        val enabled by model.captureEnabled.collectAsState()
+        val failed by model.captureFailed.collectAsState()
+        val elapsedMs by model.captureElapsedMs.collectAsState()
         RingPressLifecycle(
             spec = RingPressLifecycleSpec(
                 label = if (failed) "TRY AGAIN" else if (active) "RECORDING" else "RECORD",
@@ -180,18 +179,18 @@ object ShowcasePresentations {
                     active -> null
                     else -> "HOLD"
                 },
-                onBegin = state::beginCapture,
-                onRelease = state::releaseCapture,
-                onCancel = state::cancelCapture,
+                onBegin = { true.also { emitter.emit(ShowcaseRendererEventPayload("capture.begin")) } },
+                onRelease = { emitter.emit(ShowcaseRendererEventPayload("capture.release")) },
+                onCancel = { emitter.emit(ShowcaseRendererEventPayload("capture.cancel")) },
             ),
         )
     }
 
     @Composable
-    private fun CapturePreview(state: ShowcaseMediaState, surface: CircleSurfaceClass) {
-        val active by state.captureActive.collectAsState()
-        val elapsedMs by state.captureElapsedMs.collectAsState()
-        val levels by state.captureLevels.collectAsState()
+    private fun CapturePreview(model: ShowcaseMediaRendererInput, surface: CircleSurfaceClass) {
+        val active by model.captureActive.collectAsState()
+        val elapsedMs by model.captureElapsedMs.collectAsState()
+        val levels by model.captureLevels.collectAsState()
         RingAudioCaptureFeedback(
             spec = RingAudioCaptureFeedbackSpec(
                 elapsedMs = elapsedMs,
@@ -205,34 +204,69 @@ object ShowcasePresentations {
     }
 
     @Composable
-    private fun PlaybackPreview(state: ShowcaseMediaState) {
-        val playbackState by state.playbackState.collectAsState()
-        val positionMs by state.playbackPositionMs.collectAsState()
-        val durationMs by state.playbackDurationMs.collectAsState()
+    private fun PlaybackPreview(model: ShowcaseMediaRendererInput, emitter: ShowcaseTypedRendererEmitter) {
+        val playbackState by model.playbackState.collectAsState()
+        val positionMs by model.playbackPositionMs.collectAsState()
+        val durationMs by model.playbackDurationMs.collectAsState()
         RingPlaybackControls(
             spec = RingPlaybackSpec(
                 title = "VOICE REPLY",
                 state = playbackState,
                 positionMs = positionMs,
                 durationMs = durationMs,
-                onPlayPause = state::togglePlayback,
-                onStop = state::stopPlayback,
+                onPlayPause = { emitter.emit(ShowcaseRendererEventPayload("playback.toggle")) },
+                onStop = { emitter.emit(ShowcaseRendererEventPayload("playback.stop")) },
             ),
         )
     }
 
     private fun textSpec(
         scenario: ShowcaseScenario,
-        state: ShowcaseMediaState,
         text: String,
+        emitter: ShowcaseTypedRendererEmitter,
     ) = RingTextInputSpec(
         value = text,
         label = "MESSAGE",
         enabled = scenario.id.value != "disabled",
         maxLength = ShowcaseMediaState.TEXT_MAX_LENGTH,
-        onValueChange = state::updateText,
-        onSubmit = state::submitText,
+        onValueChange = { emitter.emit(ShowcaseRendererEventPayload("text.change", it)) },
+        onSubmit = { emitter.emit(ShowcaseRendererEventPayload("text.submit")) },
+    )
+
+    fun textSpecForHost(scenario: ShowcaseScenario, text: String) = RingTextInputSpec(
+        value = text,
+        label = "MESSAGE",
+        enabled = scenario.id.value != "disabled",
+        maxLength = ShowcaseMediaState.TEXT_MAX_LENGTH,
+        onValueChange = {},
+        onSubmit = {},
     )
 
     private fun formatSeconds(elapsedMs: Long): String = "%.1f S".format(elapsedMs / 1_000f)
+}
+
+private fun ShowcaseMountedRenderer.runtime(): ShowcaseRuntimeRendererInput =
+    inputs.require("${renderer.componentId()}.renderer")
+
+private fun ShowcaseMountedRenderer.typedEmitter(): ShowcaseTypedRendererEmitter =
+    eventEmitter as ShowcaseTypedRendererEmitter
+
+fun ShowcaseNativeRenderer.componentId(): String = when (this) {
+    ShowcaseNativeRenderer.COLORS -> "foundation.colors"
+    ShowcaseNativeRenderer.GEOMETRY -> "foundation.geometry"
+    ShowcaseNativeRenderer.ICON_ACTIONS -> "atom.icon-action"
+    ShowcaseNativeRenderer.ACTION_ROWS -> "control.action-row"
+    ShowcaseNativeRenderer.CHOICE_ROWS -> "control.choice-row"
+    ShowcaseNativeRenderer.ADJUSTMENT -> "control.adjustment"
+    ShowcaseNativeRenderer.PROGRESS -> "control.progress"
+    ShowcaseNativeRenderer.PRESS -> "control.press-ring"
+    ShowcaseNativeRenderer.TEXT -> "input.text"
+    ShowcaseNativeRenderer.CAPTURE -> "media.capture"
+    ShowcaseNativeRenderer.PLAYBACK -> "media.playback"
+    ShowcaseNativeRenderer.SCREEN_TEMPLATES -> "template.screens"
+    ShowcaseNativeRenderer.SOURCE -> "flow.source"
+    ShowcaseNativeRenderer.UPDATE -> "flow.update"
+    ShowcaseNativeRenderer.SERVICE -> "flow.service"
+    ShowcaseNativeRenderer.PAGE_HOST -> "page.host"
+    ShowcaseNativeRenderer.PAGE_MENU -> "page.menu"
 }

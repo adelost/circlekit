@@ -14,19 +14,19 @@ import kotlinx.coroutines.flow.map
 
 /** Data-only interaction fixtures rendered by the normal RingScreen hosts. */
 object ShowcaseInteractionScreens {
-    fun actionRows(scenario: ShowcaseScenario, state: ShowcaseInteractionState): RingScreen.Rows =
+    fun actionRows(scenario: ShowcaseScenario, model: ShowcaseInteractionRendererInput, emitter: ShowcaseTypedRendererEmitter): RingScreen.Rows =
         RingScreen.Rows(
             title = scenario.label,
-            items = combine(state.actionCount, state.actionFailed, state.availability) { count, failed, availability ->
-                listOf(actionRow(scenario.id.value, count, failed, availability, state))
+            items = combine(model.actionCount, model.actionFailed, model.availability) { count, failed, availability ->
+                listOf(actionRow(scenario.id.value, count, failed, availability, emitter))
             },
         )
 
-    fun choiceRows(scenario: ShowcaseScenario, state: ShowcaseInteractionState): RingScreen.Rows {
+    fun choiceRows(scenario: ShowcaseScenario, model: ShowcaseInteractionRendererInput, emitter: ShowcaseTypedRendererEmitter): RingScreen.Rows {
         val options = choiceOptions(scenario.id.value)
         return RingScreen.Rows(
             title = scenario.label,
-            items = state.choiceIndex.map { index ->
+            items = model.choiceIndex.map { index ->
                 val selectedIndex = index.coerceIn(options.indices)
                 listOf(
                     RowSpec(
@@ -36,7 +36,10 @@ object ShowcaseInteractionScreens {
                         icon = RingIcons.Grid,
                         hint = "Cycles through the declared finite choices.",
                         choices = options,
-                        onSelect = { selected -> state.selectChoice(options.indexOf(selected), options.size) },
+                        onSelect = { selected -> emitter.emit(ShowcaseRendererEventPayload(
+                            "choice.select",
+                            options.indexOf(selected).toString(),
+                        )) },
                         choiceRole = if (options == TOGGLE_OPTIONS) {
                             CircleChoiceRole.TOGGLE
                         } else {
@@ -48,10 +51,10 @@ object ShowcaseInteractionScreens {
         )
     }
 
-    fun adjustmentRows(scenario: ShowcaseScenario, state: ShowcaseInteractionState): RingScreen.Rows =
+    fun adjustmentRows(scenario: ShowcaseScenario, model: ShowcaseInteractionRendererInput, emitter: ShowcaseTypedRendererEmitter): RingScreen.Rows =
         RingScreen.Rows(
             title = scenario.label,
-            items = state.adjustmentValue.map { value ->
+            items = model.adjustmentValue.map { value ->
                 listOf(
                     RowSpec(
                         key = "altitude",
@@ -59,8 +62,8 @@ object ShowcaseInteractionScreens {
                         sub = "$value M",
                         icon = RingIcons.Ruler,
                         hint = "Opens one shared continuous adjustment screen.",
-                        onDec = { state.adjust(-100) },
-                        onInc = { state.adjust(100) },
+                        onDec = { emitter.emit(ShowcaseRendererEventPayload("adjust", "-100")) },
+                        onInc = { emitter.emit(ShowcaseRendererEventPayload("adjust", "100")) },
                         adjustmentValue = AdjustmentValuePresentation(
                             primary = "$value M",
                             supporting = "0–1000 M · 100 M STEP",
@@ -73,10 +76,10 @@ object ShowcaseInteractionScreens {
             },
         )
 
-    fun progressRows(scenario: ShowcaseScenario, state: ShowcaseInteractionState): RingScreen.Rows =
+    fun progressRows(scenario: ShowcaseScenario, model: ShowcaseInteractionRendererInput, emitter: ShowcaseTypedRendererEmitter): RingScreen.Rows =
         RingScreen.Rows(
             title = scenario.label,
-            items = state.work.map { work ->
+            items = model.work.map { work ->
                 val progress = when (work) {
                     ShowcaseWorkState.INDETERMINATE -> CircleLabelProgress.Indeterminate
                     ShowcaseWorkState.EMPTY -> CircleLabelProgress.Determinate(0f)
@@ -91,7 +94,7 @@ object ShowcaseInteractionScreens {
                         sub = work.copy,
                         icon = if (work == ShowcaseWorkState.FAILED) RingIcons.Warning else RingIcons.Download,
                         hint = "Measured work stays in the action label.",
-                        onTap = state::advanceWork,
+                        onTap = { emitter.emit(ShowcaseRendererEventPayload("progress.advance")) },
                         labelProgress = progress,
                         semanticColor = RingTokens.Broken.takeIf { work == ShowcaseWorkState.FAILED },
                     ),
@@ -104,17 +107,17 @@ object ShowcaseInteractionScreens {
         count: Int,
         failed: Boolean,
         availability: ShowcaseAvailability,
-        state: ShowcaseInteractionState,
+        emitter: ShowcaseTypedRendererEmitter,
     ): RowSpec = when (scenario) {
-        "immediate" -> action("CENTER VIEW", "FIRED $count", CircleActionTiming.IMMEDIATE) { state.runAction() }
-        "deliberate" -> action("SAVE VIEW", "FIRED $count", CircleActionTiming.DELIBERATE) { state.runAction() }
+        "immediate" -> action("CENTER VIEW", "FIRED $count", CircleActionTiming.IMMEDIATE) { emitter.emit(ShowcaseRendererEventPayload("action.run")) }
+        "deliberate" -> action("SAVE VIEW", "FIRED $count", CircleActionTiming.DELIBERATE) { emitter.emit(ShowcaseRendererEventPayload("action.run")) }
         "confirm" -> RowSpec(
             key = "confirm",
             title = "DELETE CACHE",
             sub = "FIRED $count",
             icon = RingIcons.Trash,
             hint = "Requires the longer confirmation hold.",
-            onTap = { state.runAction() },
+            onTap = { emitter.emit(ShowcaseRendererEventPayload("action.run")) },
             holdToConfirm = true,
             holdMs = MenuDesign.holdDestructiveMs,
         )
@@ -125,7 +128,7 @@ object ShowcaseInteractionScreens {
                 sub = "PERMISSION NEEDED",
                 icon = RingIcons.Record,
                 hint = "A named action can recover this unavailable state.",
-                onTap = state::recover,
+                onTap = { emitter.emit(ShowcaseRendererEventPayload("action.recover")) },
                 semanticColor = RingTokens.Aging,
             )
         } else {
@@ -145,7 +148,7 @@ object ShowcaseInteractionScreens {
             sub = if (failed) "FAILED" else "READY",
             icon = if (failed) RingIcons.Warning else RingIcons.Play,
             hint = "A callback failure remains recoverable in the same control.",
-            onTap = { state.runAction(fails = !failed) },
+            onTap = { emitter.emit(ShowcaseRendererEventPayload("action.run", "fail".takeIf { !failed })) },
             semanticColor = RingTokens.Broken.takeIf { failed },
         )
         else -> error("Unknown action scenario $scenario")

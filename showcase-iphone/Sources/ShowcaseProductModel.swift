@@ -71,7 +71,23 @@ struct ShowcaseComponent: Identifiable, Hashable {
     let rendererId: String
     let title: String
     let iconId: String
+    let openPort: String
     let scenarios: [ShowcaseScenario]
+}
+
+struct ShowcaseImmutableInputBundle {
+    let values: [String: Any]
+
+    func require(_ consumerPortRef: String) -> Any {
+        precondition(values[consumerPortRef] != nil, "Missing immutable Showcase input \(consumerPortRef)")
+        return values[consumerPortRef]!
+    }
+}
+
+struct ShowcaseMountedRenderer {
+    let component: ShowcaseComponent
+    let inputs: ShowcaseImmutableInputBundle
+    let emitter: ShowcaseNativeEventEmitterRegistration
 }
 
 struct ShowcaseComponentMount: Identifiable, Hashable {
@@ -133,10 +149,40 @@ struct ShowcaseNode: Hashable {
     let outputPorts: [String]
 }
 
-struct ShowcaseNativeComponentRegistration: Hashable {
+struct ShowcaseNativeMountRegistration {
+    let profileId: GeneratedShowcaseArtifactId
+    let pageRef: String
+    let surface: GeneratedShowcaseSurface
+    let mountRef: String
+    let mount: @MainActor (ShowcaseNativeEnvironment) -> Any
+}
+
+struct ShowcaseNativeInputRegistration {
+    let consumerPortRef: String
+    let producerPortRef: String
+    let contractRef: String
+    let required: Bool
+    let read: @MainActor (ShowcaseNativeEnvironment) -> Any
+}
+
+struct ShowcaseNativeEventBindingRegistration {
+    let sourcePortRef: String
+    let targetPortRef: String
+    let contractRef: String
+    let emit: @MainActor (ShowcaseNativeEnvironment, Any) -> Void
+}
+
+enum ShowcaseNativeEventEmitterRegistration {
+    case empty((Never) -> Never)
+    case typed([ShowcaseNativeEventBindingRegistration])
+}
+
+struct ShowcaseNativeComponentRegistration {
+    let componentInstanceRef: GeneratedShowcaseComponentId
     let componentTypeRef: String
-    let rendererId: String
-    let profiles: [GeneratedShowcaseArtifactId]
+    let mounts: [ShowcaseNativeMountRegistration]
+    let immutableInputs: [ShowcaseNativeInputRegistration]
+    let eventEmitter: ShowcaseNativeEventEmitterRegistration
 }
 
 struct ShowcasePortBinding: Hashable {

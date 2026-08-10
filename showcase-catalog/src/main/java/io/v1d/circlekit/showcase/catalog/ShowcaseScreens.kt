@@ -44,32 +44,34 @@ object ShowcaseScreens {
     )
 
     fun selectedScreen(
-        destination: ShowcaseDestination,
-        session: ShowcaseSession,
+        mounted: ShowcaseMountedRenderer,
     ): RingScreen {
-        val pair = ShowcaseManifest.find(
-            requireNotNull(destination.caseId),
-            requireNotNull(destination.scenarioId),
-        ) ?: error("Showcase destination was validated before selection")
-        return when (ShowcaseNativeBindings.requireComponent(pair.first.id.value).renderer) {
-            ShowcaseNativeRenderer.COLORS -> colors(pair.second)
-            ShowcaseNativeRenderer.GEOMETRY -> geometry(pair.second)
-            ShowcaseNativeRenderer.ICON_ACTIONS -> iconActions(pair.second, session)
-            ShowcaseNativeRenderer.ACTION_ROWS -> ShowcaseInteractionScreens.actionRows(pair.second, session.interaction)
-            ShowcaseNativeRenderer.CHOICE_ROWS -> ShowcaseInteractionScreens.choiceRows(pair.second, session.interaction)
-            ShowcaseNativeRenderer.ADJUSTMENT -> ShowcaseInteractionScreens.adjustmentRows(pair.second, session.interaction)
-            ShowcaseNativeRenderer.PROGRESS -> ShowcaseInteractionScreens.progressRows(pair.second, session.interaction)
-            ShowcaseNativeRenderer.SCREEN_TEMPLATES -> ShowcaseTemplateFixtures.screen(pair.second, session)
-            ShowcaseNativeRenderer.SOURCE -> ShowcaseFlowScreens.source(session.flows)
-            ShowcaseNativeRenderer.UPDATE -> ShowcaseFlowScreens.update(session.flows)
-            ShowcaseNativeRenderer.SERVICE -> ShowcaseFlowScreens.service(session.flows)
+        val catalog = mounted.inputs.require<ShowcaseCatalogRendererInput>("${mounted.renderer.componentId()}.catalog")
+        val runtime = if (mounted.renderer.interactive) {
+            mounted.inputs.require<ShowcaseRuntimeRendererInput>("${mounted.renderer.componentId()}.renderer")
+        } else {
+            null
+        }
+        val emitter = mounted.eventEmitter as? ShowcaseTypedRendererEmitter
+        return when (mounted.renderer) {
+            ShowcaseNativeRenderer.COLORS -> colors(catalog.scenario)
+            ShowcaseNativeRenderer.GEOMETRY -> geometry(catalog.scenario)
+            ShowcaseNativeRenderer.ICON_ACTIONS -> iconActions(catalog.scenario, runtime!!.interaction, emitter!!)
+            ShowcaseNativeRenderer.ACTION_ROWS -> ShowcaseInteractionScreens.actionRows(catalog.scenario, runtime!!.interaction, emitter!!)
+            ShowcaseNativeRenderer.CHOICE_ROWS -> ShowcaseInteractionScreens.choiceRows(catalog.scenario, runtime!!.interaction, emitter!!)
+            ShowcaseNativeRenderer.ADJUSTMENT -> ShowcaseInteractionScreens.adjustmentRows(catalog.scenario, runtime!!.interaction, emitter!!)
+            ShowcaseNativeRenderer.PROGRESS -> ShowcaseInteractionScreens.progressRows(catalog.scenario, runtime!!.interaction, emitter!!)
+            ShowcaseNativeRenderer.SCREEN_TEMPLATES -> ShowcaseTemplateFixtures.screen(catalog.scenario, runtime!!, emitter!!)
+            ShowcaseNativeRenderer.SOURCE -> ShowcaseFlowScreens.source(runtime!!.flows, emitter!!)
+            ShowcaseNativeRenderer.UPDATE -> ShowcaseFlowScreens.update(runtime!!.flows, emitter!!)
+            ShowcaseNativeRenderer.SERVICE -> ShowcaseFlowScreens.service(runtime!!.flows, emitter!!)
             ShowcaseNativeRenderer.PRESS,
             ShowcaseNativeRenderer.TEXT,
             ShowcaseNativeRenderer.CAPTURE,
             ShowcaseNativeRenderer.PLAYBACK,
             ShowcaseNativeRenderer.PAGE_HOST,
             ShowcaseNativeRenderer.PAGE_MENU,
-            -> error("Component renderer ${pair.first.id.value} is not a RingScreen")
+            -> error("Component renderer ${catalog.case.id.value} is not a RingScreen")
         }
     }
 
@@ -193,11 +195,15 @@ object ShowcaseScreens {
     private fun infoRow(key: String, title: String, sub: String, icon: androidx.compose.ui.graphics.vector.ImageVector) =
         RowSpec(key = key, title = title, sub = sub, icon = icon)
 
-    private fun iconActions(scenario: ShowcaseScenario, session: ShowcaseSession): RingScreen {
+    private fun iconActions(
+        scenario: ShowcaseScenario,
+        model: ShowcaseInteractionRendererInput,
+        emitter: ShowcaseTypedRendererEmitter,
+    ): RingScreen {
         val active: Flow<Boolean?> = when (scenario.id.value) {
             "idle" -> flowOf(false)
             "active" -> flowOf(true)
-            "immediate", "deliberate" -> session.iconActionActive.map<Boolean, Boolean?> { it }
+            "immediate", "deliberate" -> model.iconActionActive.map<Boolean, Boolean?> { it }
             "disabled" -> flowOf(false)
             else -> error("Unknown icon scenario ${scenario.id.value}")
         }
@@ -221,8 +227,8 @@ object ShowcaseScreens {
                     open = { null },
                     run = {
                         if (scenario.id.value in setOf("immediate", "deliberate") && index == 0) {
-                            session.invoke(ShowcaseActionId(ShowcaseSession.ACTION_TOGGLE_ICON))
-                            session.invoke(ShowcaseActionId(ShowcaseSession.ACTION_RUN))
+                            emitter.emit(ShowcaseRendererEventPayload("icon.toggle"))
+                            emitter.emit(ShowcaseRendererEventPayload("action.run"))
                         }
                     },
                     active = if (index == 0) active else flowOf(false),

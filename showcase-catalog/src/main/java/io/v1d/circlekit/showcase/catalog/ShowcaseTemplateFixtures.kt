@@ -35,13 +35,17 @@ enum class ShowcaseScreenCase(val scenarioId: String) {
 
 /** Deterministic specs for every public RingScreen case. */
 object ShowcaseTemplateFixtures {
-    fun screen(scenario: ShowcaseScenario, session: ShowcaseSession): RingScreen = when (scenario.id.value) {
+    fun screen(
+        scenario: ShowcaseScenario,
+        model: ShowcaseRuntimeRendererInput,
+        emitter: ShowcaseTypedRendererEmitter,
+    ): RingScreen = when (scenario.id.value) {
         ShowcaseScreenCase.HUB.scenarioId -> hub()
         ShowcaseScreenCase.DETAIL.scenarioId -> detail(Health.FRESH, Progress(3, 5)) {}
         ShowcaseScreenCase.LAUNCHER.scenarioId -> launcher()
         ShowcaseScreenCase.ROWS.scenarioId -> rows()
-        ShowcaseScreenCase.ADJUSTMENT.scenarioId -> adjustment(session)
-        ShowcaseScreenCase.COLOR_PICKER.scenarioId -> colorPicker(session)
+        ShowcaseScreenCase.ADJUSTMENT.scenarioId -> adjustment(model.interaction, emitter)
+        ShowcaseScreenCase.COLOR_PICKER.scenarioId -> colorPicker(model.flows, emitter)
         ShowcaseScreenCase.DIAL_PREVIEW.scenarioId -> dialPreview(CircleColorTheme.SEA_GLASS)
         "empty" -> RingScreen.Rows("EMPTY", flowOf(emptyList()))
         "max-capacity" -> maxCapacityRows()
@@ -60,13 +64,16 @@ object ShowcaseTemplateFixtures {
         is RingScreen.DialPreview -> ShowcaseScreenCase.DIAL_PREVIEW
     }
 
-    fun representatives(session: ShowcaseSession): List<RingScreen> = listOf(
+    fun representatives(
+        model: ShowcaseRuntimeRendererInput,
+        emitter: ShowcaseTypedRendererEmitter,
+    ): List<RingScreen> = listOf(
         hub(),
         detail(Health.FRESH, null) {},
         launcher(),
         rows(),
-        adjustment(session),
-        colorPicker(session),
+        adjustment(model.interaction, emitter),
+        colorPicker(model.flows, emitter),
         dialPreview(CircleColorTheme.SEA_GLASS),
     )
 
@@ -151,26 +158,32 @@ object ShowcaseTemplateFixtures {
         ),
     )
 
-    private fun adjustment(session: ShowcaseSession): RingScreen.Adjustment {
+    private fun adjustment(
+        model: ShowcaseInteractionRendererInput,
+        emitter: ShowcaseTypedRendererEmitter,
+    ): RingScreen.Adjustment {
         fun row(value: Int) = RowSpec(
             key = "template-adjustment",
             title = "ALTITUDE",
             sub = "$value M",
             icon = RingIcons.Ruler,
-            onDec = { session.interaction.adjust(-100) },
-            onInc = { session.interaction.adjust(100) },
+            onDec = { emitter.emit(ShowcaseRendererEventPayload("adjust", "-100")) },
+            onInc = { emitter.emit(ShowcaseRendererEventPayload("adjust", "100")) },
             adjustmentValue = AdjustmentValuePresentation("$value M", "0–1000 M · 100 M STEP"),
         )
         return RingScreen.Adjustment(
             title = "ADJUSTMENT",
-            initial = row(session.interaction.adjustmentValue.value),
-            row = session.interaction.adjustmentValue.map(::row),
+            initial = row(model.adjustmentValue.value),
+            row = model.adjustmentValue.map(::row),
         )
     }
 
-    private fun colorPicker(session: ShowcaseSession): RingScreen.ColorPicker = RingScreen.ColorPicker(
-        selected = session.flows.theme,
-        onSelect = session.flows::selectTheme,
+    private fun colorPicker(
+        model: ShowcaseFlowRendererInput,
+        emitter: ShowcaseTypedRendererEmitter,
+    ): RingScreen.ColorPicker = RingScreen.ColorPicker(
+        selected = model.theme,
+        onSelect = { emitter.emit(ShowcaseRendererEventPayload("template.theme", it.name)) },
         dialPreview = dialSpec(),
     )
 

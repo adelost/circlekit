@@ -1,4 +1,15 @@
-import type { NativeBindingManifest, ProductEmitterPlugin, ProductIr } from "@v1d/product-spec";
+import type {
+  NativeBindingManifest,
+  NativeComponentRendererRegistration,
+  ProductEmitterPlugin,
+  ProductIr,
+} from "@v1d/product-spec";
+import {
+  defineNativeComponentRendererRegistration,
+  defineNativeEmptyEventEmitter,
+  defineNativeTypedEventEmitter,
+  nativeComponentRendererManifest,
+} from "@v1d/product-spec";
 import {
   compileShowcaseNativeFiniteValues,
   compileShowcaseNativeNodes,
@@ -145,9 +156,9 @@ function selectLimitedUi(
   const component = product.showcase.cases.find(({ id }) => id === included.componentInstanceRef);
   const componentInstance = product.components.find(({ id }) => id === included.componentInstanceRef);
   const scenario = component?.scenarios[0];
-  const openRef = componentInstance?.bindings.events.open;
+  const openRef = componentInstance?.bindings.events.action;
   if (component === undefined || scenario === undefined || openRef === undefined) {
-    throw new Error(`Showcase Garmin component '${included.componentInstanceRef}' has no default scenario`);
+    throw new Error(`Showcase Garmin component '${included.componentInstanceRef}' has no typed action endpoint`);
   }
   const icon = product.iconRefs.find(({ assetRef, artifacts: refs }) =>
     assetRef === component.iconId && refs.includes(artifact.id));
@@ -202,6 +213,8 @@ function emitMonkeyC(
     { nodeId: "catalog", nativePortId: "GeneratedCircleKitShowcase.catalogModel" },
     { nodeId: "navigation", nativePortId: "GeneratedCircleKitShowcase.open" },
     { nodeId: "navigation.presentation", nativePortId: "GeneratedCircleKitShowcase.navigationModel" },
+    { nodeId: "renderer", nativePortId: "GeneratedCircleKitShowcase.emitProgressAction" },
+    { nodeId: "renderer.presentation", nativePortId: "GeneratedCircleKitShowcase.rendererModel" },
   ]);
   // Host truth: this executable has one root page and one component dispatch.
   // The manifest serializes these same registrations without reading
@@ -213,10 +226,56 @@ function emitMonkeyC(
     }, {
       artifactRefs: [selection.artifactId],
       componentInstanceRef: selection.componentId,
-      sourcePortRef: `${selection.componentId}.open`,
-      targetPortRef: `navigation.${selection.openPort}`,
+      sourcePortRef: `${selection.componentId}.action`,
+      targetPortRef: `renderer.${selection.openPort}`,
     });
   const nativeNavigation = nativeNavigationManifest(garminNavigationRegistration)!;
+  const componentRegistrations: readonly NativeComponentRendererRegistration[] = [
+    defineNativeComponentRendererRegistration({
+      component: { instanceRef: selection.componentId, typeRef: selection.componentId },
+      mounts: [{
+        profileRef: selection.artifactId,
+        pageRef: selection.screenId,
+        surface: selection.surface,
+        mountRef: selection.componentId,
+        mount: (inputs, emitter) => ({ inputs, emitter }),
+      }],
+      immutableInputs: [
+        nativeInput(`${selection.componentId}.catalog`, "catalog.model", "showcase.catalog-presentation"),
+        nativeInput(
+          `${selection.componentId}.navigation`,
+          "navigation.presentation.model",
+          "showcase.navigation-presentation",
+        ),
+        nativeInput(
+          `${selection.componentId}.renderer`,
+          "renderer.presentation.model",
+          "showcase.renderer-presentation",
+        ),
+      ],
+      eventEmitter: defineNativeTypedEventEmitter([
+        nativeEvent(
+          `${selection.componentId}.action`,
+          `renderer.${selection.openPort}`,
+          "showcase.renderer-action",
+        ),
+      ]),
+    }),
+    defineNativeComponentRendererRegistration({
+      component: { instanceRef: "page.host", typeRef: "showcase.page-host" },
+      mounts: [{
+        profileRef: selection.artifactId,
+        pageRef: selection.screenId,
+        surface: selection.surface,
+        mountRef: "page.host",
+        mount: (inputs, emitter) => ({ inputs, emitter }),
+      }],
+      immutableInputs: [
+        nativeInput("page.host.activePage", "navigation.activePage", "showcase.navigation.active-page"),
+      ],
+      eventEmitter: defineNativeEmptyEventEmitter(),
+    }),
+  ];
   const nativeIcons = unique(product.iconRefs.map(({ assetRef }) => assetRef)).map((id) => {
     const asset = assetCatalog.icons.find((candidate) => candidate.id === id);
     if (asset === undefined) throw new Error(`Showcase Garmin native registry uses missing icon '${id}'`);
@@ -228,18 +287,7 @@ function emitMonkeyC(
   const manifest = {
     sourceFile,
     profiles,
-    components: [
-      {
-        componentId: selection.componentId,
-        rendererId: "CircleKitShowcaseView.drawProgressDial",
-        profiles,
-      },
-      {
-        componentId: "showcase.page-host",
-        rendererId: "CircleKitShowcaseView",
-        profiles,
-      },
-    ],
+    components: nativeComponentRendererManifest(componentRegistrations),
     icons: nativeIcons.map(({ id }) => ({
       iconId: id,
       nativeSymbol: "GeneratedCircleKitShowcase.nativeIcon",
@@ -278,8 +326,50 @@ module GeneratedCircleKitShowcase {
     const COLOR_LINE = ${monkeyColor(style.line)};
     const COLOR_ICON = ${monkeyColor(resolveIconColor(product, selection.iconAccent, style))};
     var NATIVE_COMPONENTS = [
-        { "componentId" => COMPONENT_ID, "rendererId" => "CircleKitShowcaseView.drawProgressDial" },
-        { "componentId" => "showcase.page-host", "rendererId" => "CircleKitShowcaseView" }
+        {
+            "instanceRef" => COMPONENT_ID,
+            "typeRef" => COMPONENT_ID,
+            "mounts" => [{
+                "profileRef" => ARTIFACT_ID,
+                "pageRef" => SCREEN_ID,
+                "surface" => SURFACE_CLASS,
+                "mountRef" => COMPONENT_ID,
+                "mount" => method(:mountProgress)
+            }],
+            "immutableInputs" => [
+                { "consumerPortRef" => COMPONENT_ID + ".catalog", "producerPortRef" => "catalog.model", "contractRef" => "showcase.catalog-presentation", "required" => true, "read" => method(:catalogModel) },
+                { "consumerPortRef" => COMPONENT_ID + ".navigation", "producerPortRef" => "navigation.presentation.model", "contractRef" => "showcase.navigation-presentation", "required" => true, "read" => method(:navigationModel) },
+                { "consumerPortRef" => COMPONENT_ID + ".renderer", "producerPortRef" => "renderer.presentation.model", "contractRef" => "showcase.renderer-presentation", "required" => true, "read" => method(:rendererModel) }
+            ],
+            "eventEmitter" => {
+                "kind" => "typed",
+                "bindings" => [{
+                    "sourcePortRef" => COMPONENT_ID + ".action",
+                    "targetPortRef" => "renderer." + OPEN_PORT,
+                    "contractRef" => "showcase.renderer-action",
+                    "emit" => method(:emitProgressAction)
+                }]
+            }
+        },
+        {
+            "instanceRef" => "page.host",
+            "typeRef" => "showcase.page-host",
+            "mounts" => [{
+                "profileRef" => ARTIFACT_ID,
+                "pageRef" => SCREEN_ID,
+                "surface" => SURFACE_CLASS,
+                "mountRef" => "page.host",
+                "mount" => method(:mountPageHost)
+            }],
+            "immutableInputs" => [{
+                "consumerPortRef" => "page.host.activePage",
+                "producerPortRef" => "navigation.activePage",
+                "contractRef" => "showcase.navigation.active-page",
+                "required" => true,
+                "read" => method(:activePage)
+            }],
+            "eventEmitter" => { "kind" => "empty", "emit" => method(:emitReadOnly) }
+        }
     ];
     var NATIVE_ICONS = [
 ${nativeIcons.map(({ id, asset, geometry }) => `        {
@@ -336,10 +426,31 @@ ${nativeNavigation.actionGroups.map((group) => `        {
     function catalogModel() {
         var component = NATIVE_COMPONENTS[0];
         return {
-            "componentId" => component["componentId"],
+            "componentId" => component["instanceRef"],
             "scenarioId" => SCENARIO_ID,
             "iconAssetRef" => ICON_ASSET_REF
         };
+    }
+
+    function rendererModel() {
+        return { "activeTicks" => ACTIVE_TICKS, "scenarioId" => SCENARIO_ID };
+    }
+
+    function mountProgress(inputs, emitter) {
+        return { "inputs" => inputs, "emitter" => emitter, "componentId" => COMPONENT_ID };
+    }
+
+    function mountPageHost(inputs, emitter) {
+        return { "inputs" => inputs, "emitter" => emitter, "componentId" => "page.host" };
+    }
+
+    function emitProgressAction(payload) {
+        open("renderer." + OPEN_PORT, COMPONENT_ID);
+        return payload;
+    }
+
+    function emitReadOnly(event) {
+        return null;
     }
 
     function open(portId, componentId) {
@@ -391,6 +502,15 @@ ${nativeNavigation.actionGroups.map((group) => `        {
                 return null;
             }
         }
+        for (var componentIndex = 0; componentIndex < NATIVE_COMPONENTS.size(); componentIndex += 1) {
+            var registration = NATIVE_COMPONENTS[componentIndex];
+            var values = {};
+            for (var inputIndex = 0; inputIndex < registration["immutableInputs"].size(); inputIndex += 1) {
+                var input = registration["immutableInputs"][inputIndex];
+                values[input["consumerPortRef"]] = input["read"].invoke();
+            }
+            registration["mounts"][0]["mount"].invoke(values, registration["eventEmitter"]);
+        }
         var catalog = catalogModel();
         dispatch(catalog["componentId"]);
         route(activePage());
@@ -399,6 +519,25 @@ ${nativeNavigation.actionGroups.map((group) => `        {
 }
 `;
   return { source, manifest };
+}
+
+function nativeInput(consumerPortRef: string, producerPortRef: string, contractRef: string) {
+  return {
+    consumerPortRef,
+    producerPortRef,
+    contractRef,
+    required: true,
+    read: () => producerPortRef,
+  } as const;
+}
+
+function nativeEvent(sourcePortRef: string, targetPortRef: string, contractRef: string) {
+  return {
+    sourcePortRef,
+    targetPortRef,
+    contractRef,
+    emit: (_payload: unknown): void => {},
+  } as const;
 }
 
 function compileIcon(asset: GarminVectorAsset): Readonly<{

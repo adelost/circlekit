@@ -61,13 +61,14 @@ fun CircleKitShowcase(
         CompositionLocalProvider(LocalRoundChromeReservation provides reservedChrome) {
             RingActionCueHost(modifier = modifier) {
                 Box(Modifier.fillMaxSize()) {
-                    val presentation = if (destination.isRoot) {
+                    val mounted = if (destination.isRoot) {
                         null
                     } else {
                         remember(destination, surface, textEntryPort) {
-                            ShowcasePresentations.selected(destination, session, surface, textEntryPort)
+                            ShowcaseNativeBindings.mountRenderer(session, destination, surface, textEntryPort)
                         }
                     }
+                    val presentation = mounted?.let { ShowcasePresentations.selected(it, surface) }
                     val selectedNavigator = (presentation as? ShowcasePresentation.Screen)?.let { selected ->
                         remember(destination, selected.value) { RingNavigator(selected.value) }
                     }
@@ -100,9 +101,8 @@ fun CircleKitShowcase(
                             onExit = { if (!navigateBack()) onExit() },
                         )
                         is ShowcasePresentation.Component -> ShowcasePresentations.ComponentPreview(
-                            destination = destination,
+                            mounted = requireNotNull(mounted),
                             kind = presentation.kind,
-                            state = session.media,
                             surface = surface,
                             onBack = { if (!navigateBack()) onExit() },
                         )

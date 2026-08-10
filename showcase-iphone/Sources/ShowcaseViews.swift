@@ -16,7 +16,13 @@ struct ShowcaseRootView: View {
                     LazyVStack(spacing: metrics.rowSpacing) {
                         ShowcaseHeader(artifact: environment.catalog.artifact, surface: surface)
                         ForEach(navigation.artifact.pages, id: \.pageRef) { page in
-                            Button { navigation.route(page.pageRef) } label: {
+                            Button {
+                                environment.emit(
+                                    componentId: .pageMenu,
+                                    sourcePortRef: "page.menu.route",
+                                    payload: page.pageRef
+                                )
+                            } label: {
                                 ShowcasePageMenuRow(pageRef: page.pageRef, metrics: metrics)
                             }
                             .buttonStyle(.plain)
@@ -34,7 +40,7 @@ struct ShowcaseRootView: View {
                 case .page(let pageRef):
                     ShowcasePageHostView(pageRef: pageRef, environment: environment)
                 case .component(let id):
-                    ShowcaseComponentScreen(component: environment.catalog.component(id))
+                    ShowcaseComponentScreen(mounted: environment.mountComponent(id), environment: environment)
                 }
             }
         }
@@ -59,7 +65,13 @@ private struct ShowcasePageHostView: View {
                     ShowcaseSectionHeader(screenId: tree.screenId)
                     ForEach(tree.mounts.sorted(by: { $0.order < $1.order })) { mount in
                         let component = environment.catalog.component(mount.componentId)
-                        Button { navigation.open(component.id) } label: {
+                        Button {
+                            environment.emit(
+                                componentId: .pageMenu,
+                                sourcePortRef: "page.menu.\(component.openPort)",
+                                payload: component.id
+                            )
+                        } label: {
                             ShowcaseMenuRow(
                                 component: component,
                                 icon: environment.catalog.icon(component.iconId),
@@ -172,8 +184,21 @@ private struct ShowcaseMenuRow: View {
 }
 
 private struct ShowcaseComponentScreen: View {
-    let component: ShowcaseComponent
+    let mounted: ShowcaseMountedRenderer
+    let environment: ShowcaseNativeEnvironment
     @State private var scenarioIndex = 0
+
+    private var component: ShowcaseComponent { mounted.component }
+
+    init(mounted: ShowcaseMountedRenderer, environment: ShowcaseNativeEnvironment) {
+        self.mounted = mounted
+        self.environment = environment
+        _ = mounted.inputs.require("\(mounted.component.id.rawValue).catalog")
+        _ = mounted.inputs.require("\(mounted.component.id.rawValue).navigation")
+        if case .typed = mounted.emitter {
+            _ = mounted.inputs.require("\(mounted.component.id.rawValue).renderer")
+        }
+    }
 
     var body: some View {
         ScrollView {
@@ -214,6 +239,14 @@ private struct ShowcaseComponentScreen: View {
         }
         .background(GeneratedShowcaseProduct.colors.surface)
         .navigationTitle(component.title)
+        .onChange(of: scenarioIndex) { _, next in
+            guard case .typed = mounted.emitter else { return }
+            environment.emit(
+                componentId: component.id,
+                sourcePortRef: "\(component.id.rawValue).action",
+                payload: ["actionId": "scenario", "value": component.scenarios[next].id]
+            )
+        }
     }
 
     private var selectedScenario: ShowcaseScenario {

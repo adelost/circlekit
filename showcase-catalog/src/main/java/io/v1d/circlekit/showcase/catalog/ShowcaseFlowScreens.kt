@@ -20,8 +20,8 @@ import kotlinx.coroutines.flow.map
 
 /** Real shared projections fed only deterministic local fixture data. */
 object ShowcaseFlowScreens {
-    fun source(state: ShowcaseFlowState): RingScreen.Detail {
-        val health = combine(state.source, state.sourceEnabled) { source, enabled ->
+    fun source(model: ShowcaseFlowRendererInput, emitter: ShowcaseTypedRendererEmitter): RingScreen.Detail {
+        val health = combine(model.source, model.sourceEnabled) { source, enabled ->
             healthOf(
                 source,
                 SourcePolicy(
@@ -36,9 +36,9 @@ object ShowcaseFlowScreens {
             title = "SOURCE HEALTH",
             icon = RingIcons.Cloud,
             sourceId = SourceId("showcase-flow"),
-            hero = state.source.map { it.value ?: "—" },
-            sub = state.source.map { source -> sourceCopy(source.lastError, source.coverage) },
-            freshness = combine(state.source, health) { source, sourceHealth ->
+            hero = model.source.map { it.value ?: "—" },
+            sub = model.source.map { source -> sourceCopy(source.lastError, source.coverage) },
+            freshness = combine(model.source, health) { source, sourceHealth ->
                 when {
                     source.inFlight -> "FETCHING ${source.progress?.done ?: 0}/${source.progress?.total ?: 0}"
                     sourceHealth == Health.OFF -> "DISABLED"
@@ -49,33 +49,33 @@ object ShowcaseFlowScreens {
                 }
             },
             health = health,
-            progress = state.source.map { it.progress },
-            onRefresh = state::refreshSource,
-            refreshEnabled = state.source.map { !it.inFlight },
+            progress = model.source.map { it.progress },
+            onRefresh = { emitter.emit(ShowcaseRendererEventPayload("source.refresh")) },
+            refreshEnabled = model.source.map { !it.inFlight },
         )
     }
 
-    fun update(state: ShowcaseFlowState): RingScreen.Rows = RingScreen.Rows(
+    fun update(model: ShowcaseFlowRendererInput, emitter: ShowcaseTypedRendererEmitter): RingScreen.Rows = RingScreen.Rows(
         title = "UPDATE FLOW",
-        items = state.update.map { updateState ->
+        items = model.update.map { updateState ->
             releaseUpdateRows(
                 state = updateState,
                 currentVersionName = "0.3.9",
                 updateKey = "update",
                 updateTitle = "UPDATE",
-                onCheck = state::advanceUpdate,
-                onInstall = state::advanceUpdate,
+                onCheck = { emitter.emit(ShowcaseRendererEventPayload("update.advance")) },
+                onInstall = { emitter.emit(ShowcaseRendererEventPayload("update.advance")) },
                 hint = "Advances only deterministic update data; no download or install is performed.",
             )
         },
     )
 
-    fun service(state: ShowcaseFlowState): RingScreen.Rows = RingScreen.Rows(
+    fun service(model: ShowcaseFlowRendererInput, emitter: ShowcaseTypedRendererEmitter): RingScreen.Rows = RingScreen.Rows(
         title = "SERVICE STATUS",
-        items = state.service.map { snapshot -> serviceRows(snapshot, state) },
+        items = model.service.map { snapshot -> serviceRows(snapshot, emitter) },
     )
 
-    private fun serviceRows(snapshot: ServiceSnapshot, state: ShowcaseFlowState): List<RowSpec> {
+    private fun serviceRows(snapshot: ServiceSnapshot, emitter: ShowcaseTypedRendererEmitter): List<RowSpec> {
         val lastAttempt = snapshot.lastAttempt
         val outcome = lastAttempt?.outcome
         val active = snapshot.activeOperations > 0 || snapshot.activeTransfers > 0
@@ -90,7 +90,7 @@ object ShowcaseFlowScreens {
                     else -> "IDLE"
                 },
                 icon = if (outcome == ServiceOutcome.FAILED) RingIcons.Warning else RingIcons.Wifi,
-                onTap = state::advanceService.takeIf { !active },
+                onTap = { emitter.emit(ShowcaseRendererEventPayload("service.advance")) }.takeIf { !active },
                 labelProgress = CircleLabelProgress.Indeterminate.takeIf { active },
                 semanticColor = RingTokens.Broken.takeIf { outcome == ServiceOutcome.FAILED },
             ),

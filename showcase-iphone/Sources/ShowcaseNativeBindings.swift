@@ -18,7 +18,9 @@ struct ShowcaseCatalogSource: ShowcaseNativeBinding {
 
     func component(_ id: GeneratedShowcaseComponentId) -> ShowcaseComponent {
         let component = GeneratedShowcaseProduct.components.first(where: { $0.id == id })!
-        precondition(component.rendererId == "ShowcaseComponentScreen")
+        precondition(GeneratedShowcaseProduct.nativeComponents.contains(where: {
+            $0.componentInstanceRef == id && $0.componentTypeRef == id.rawValue
+        }))
         return component
     }
 
@@ -27,6 +29,10 @@ struct ShowcaseCatalogSource: ShowcaseNativeBinding {
         precondition(icon.nativeSymbol == "ShowcaseVectorIcon")
         return icon
     }
+}
+
+struct ShowcaseRendererSource: ShowcaseNativeBinding {
+    let nodeTypeRef: String
 }
 
 @MainActor
@@ -56,12 +62,12 @@ final class ShowcaseNavigationController: ShowcaseNativeBinding {
             "Product IR has no active-page/page-host binding"
         )
         precondition(GeneratedShowcaseProduct.nativeComponents.contains(where: {
-            $0.componentTypeRef == "showcase.page-host" && $0.rendererId == "ShowcasePageHost" &&
-                $0.profiles.contains(artifactId)
+            $0.componentInstanceRef == .pageHost && $0.componentTypeRef == "showcase.page-host" &&
+                $0.mounts.contains(where: { $0.profileId == artifactId })
         }))
         precondition(GeneratedShowcaseProduct.nativeComponents.contains(where: {
-            $0.componentTypeRef == "showcase.page-menu" && $0.rendererId == "ShowcasePageMenu" &&
-                $0.profiles.contains(artifactId)
+            $0.componentInstanceRef == .pageMenu && $0.componentTypeRef == "showcase.page-menu" &&
+                $0.mounts.contains(where: { $0.profileId == artifactId })
         }))
     }
 
@@ -73,7 +79,8 @@ final class ShowcaseNavigationController: ShowcaseNativeBinding {
     }
 
     func open(_ componentId: GeneratedShowcaseComponentId) {
-        requireAction(componentId: componentId, sourcePort: "\(componentId.rawValue).open", effect: "dispatch")
+        let component = GeneratedShowcaseProduct.components.first(where: { $0.id == componentId })!
+        requireAction(componentId: .pageMenu, sourcePort: "page.menu.\(component.openPort)", effect: "dispatch")
         path.append(.component(componentId))
     }
 
@@ -100,6 +107,7 @@ enum ShowcaseNavigationDestination: Hashable {
 final class ShowcaseNativeEnvironment {
     let catalog: ShowcaseCatalogSource
     let navigation: ShowcaseNavigationController
+    let renderer: ShowcaseRendererSource
 
     init() {
         let artifact = GeneratedShowcaseProduct.artifacts.first(where: {
@@ -107,8 +115,10 @@ final class ShowcaseNativeEnvironment {
         })!
         let catalogNode = GeneratedShowcaseProduct.nodes.first(where: { $0.id == .catalog })!
         let navigationNode = GeneratedShowcaseProduct.nodes.first(where: { $0.id == .navigation })!
+        let rendererNode = GeneratedShowcaseProduct.nodes.first(where: { $0.id == .renderer })!
         catalog = ShowcaseCatalogSource(nodeTypeRef: catalogNode.typeRef, artifact: artifact)
         navigation = ShowcaseNavigationController(nodeTypeRef: navigationNode.typeRef, artifactId: artifact.id)
+        renderer = ShowcaseRendererSource(nodeTypeRef: rendererNode.typeRef)
         GeneratedShowcaseNodeId.allCases.forEach { _ = binding(for: $0) }
     }
 
@@ -121,6 +131,75 @@ final class ShowcaseNativeEnvironment {
         case .navigation, .navigationPresentation:
             precondition(registration.nativePortId == "ShowcaseNavigationController")
             return navigation
+        case .renderer, .rendererPresentation:
+            precondition(registration.nativePortId == "ShowcaseNativeEnvironment")
+            return renderer
+        }
+    }
+
+    func mountComponent(_ id: GeneratedShowcaseComponentId) -> ShowcaseMountedRenderer {
+        let registration = GeneratedShowcaseProduct.nativeComponents.first(where: {
+            $0.componentInstanceRef == id && $0.mounts.contains(where: { $0.profileId == catalog.artifact.id })
+        })!
+        let values = Dictionary(uniqueKeysWithValues: registration.immutableInputs.map { input in
+            (input.consumerPortRef, input.read(self))
+        })
+        let mounted = registration.mounts.first(where: { $0.profileId == catalog.artifact.id })!.mount(self)
+        guard let component = mounted as? ShowcaseComponent else {
+            preconditionFailure("Native Showcase mount \(id.rawValue) did not return its immutable component model")
+        }
+        return ShowcaseMountedRenderer(
+            component: component,
+            inputs: ShowcaseImmutableInputBundle(values: values),
+            emitter: registration.eventEmitter
+        )
+    }
+
+    func componentValue(_ id: GeneratedShowcaseComponentId) -> Any {
+        switch id {
+        case .pageHost:
+            return navigation.activePage
+        case .pageMenu:
+            return navigation.artifact.pages
+        default:
+            return catalog.component(id)
+        }
+    }
+
+    func read(producerPortRef: String) -> Any {
+        switch producerPortRef {
+        case "catalog.model":
+            return GeneratedShowcaseProduct.components
+        case "navigation.presentation.model":
+            return navigation.path
+        case "renderer.presentation.model":
+            return GeneratedShowcaseProduct.components
+        case "navigation.activePage":
+            return navigation.activePage
+        default:
+            preconditionFailure("No native Showcase reader for \(producerPortRef)")
+        }
+    }
+
+    func emit(componentId: GeneratedShowcaseComponentId, sourcePortRef: String, payload: Any) {
+        let registration = GeneratedShowcaseProduct.nativeComponents.first(where: {
+            $0.componentInstanceRef == componentId
+        })!
+        switch registration.eventEmitter {
+        case .empty:
+            preconditionFailure("Read-only Showcase renderer \(componentId.rawValue) cannot emit")
+        case .typed(let bindings):
+            bindings.first(where: { $0.sourcePortRef == sourcePortRef })!.emit(self, payload)
+        }
+    }
+
+    func dispatch(sourcePortRef: String, payload: Any) {
+        if sourcePortRef == "page.menu.route", let pageRef = payload as? String {
+            navigation.route(pageRef)
+        } else if sourcePortRef.hasPrefix("page.menu."), let componentId = payload as? GeneratedShowcaseComponentId {
+            navigation.open(componentId)
+        } else {
+            precondition(sourcePortRef.hasSuffix(".action"), "Unknown Showcase event \(sourcePortRef)")
         }
     }
 }

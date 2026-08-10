@@ -45,26 +45,30 @@ export function fullUiNavigationRegistration(
       publisherPortRef: "navigation.activePage",
       pageHostPortRef: "page.host.activePage",
     }],
-    actionGroups: [
-      ...dispatches.flatMap((dispatch) => dispatch.artifactRefs.map((artifactRef) => ({
-        artifactRef,
-        componentInstanceRef: dispatch.componentInstanceRef,
-        actions: [{
+    actionGroups: artifacts.flatMap((artifact) => {
+      const groups = new Map<string, ShowcaseNativeNavigationRegistration["actionGroups"][number]["actions"][number][]>();
+      for (const dispatch of dispatches.filter(({ artifactRefs }) => artifactRefs.includes(artifact.artifactRef))) {
+        const actions = groups.get(dispatch.componentInstanceRef) ?? [];
+        actions.push({
           sourcePortRef: dispatch.sourcePortRef,
           targetPortRef: dispatch.targetPortRef,
-          effect: "dispatch" as const,
-        }],
-      }))),
-      ...artifacts.map((artifact) => ({
+          effect: "dispatch",
+        });
+        groups.set(dispatch.componentInstanceRef, actions);
+      }
+      const menuActions = groups.get("page.menu") ?? [];
+      menuActions.push({
+        sourcePortRef: "page.menu.route",
+        targetPortRef: "navigation.route",
+        effect: "push",
+      });
+      groups.set("page.menu", menuActions);
+      return [...groups].map(([componentInstanceRef, actions]) => ({
         artifactRef: artifact.artifactRef,
-        componentInstanceRef: "page.menu",
-        actions: [{
-          sourcePortRef: "page.menu.route",
-          targetPortRef: "navigation.route",
-          effect: "push" as const,
-        }],
-      })),
-    ],
+        componentInstanceRef,
+        actions,
+      }));
+    }),
   };
 }
 

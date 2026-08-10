@@ -195,14 +195,16 @@ export function requireCircleKitShowcaseNativeConformance(
  */
 function requireEveryComponentOnEveryAndroidProfile(manifest: NativeBindingManifest): void {
   const expected = [...SHOWCASE_ANDROID_ARTIFACT_PROFILES].sort().join(", ");
-  for (const { componentId, profiles } of manifest.components) {
-    if (new Set(profiles).size !== profiles.length) {
-      throw new Error(`native component '${componentId}' repeats a profile`);
+  for (const { component, mounts } of manifest.components) {
+    const profiles = mounts.map(({ profileRef }) => profileRef);
+    const distinct = [...new Set(profiles)];
+    if (distinct.length > SHOWCASE_ANDROID_ARTIFACT_PROFILES.length) {
+      throw new Error(`native component '${component.instanceRef}' repeats a profile scope`);
     }
-    const actual = [...profiles].sort().join(", ");
+    const actual = distinct.sort().join(", ");
     if (actual !== expected) {
       throw new Error(
-        `native component '${componentId}' renders on [${actual}], ` +
+        `native component '${component.instanceRef}' renders on [${actual}], ` +
         `but Showcase demonstrates every component on [${expected}]`,
       );
     }

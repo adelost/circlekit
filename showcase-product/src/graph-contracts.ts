@@ -32,6 +32,25 @@ export const showcaseNavigationContract = {
   ],
 } as const;
 
+/** Host-local Showcase fixture state after its effect-free presentation boundary. */
+export const showcaseRendererContract = {
+  id: "showcase.renderer-presentation",
+  kind: "snapshot",
+  boundary: "presentation",
+  fields: [field("model", valueRef("showcase.renderer-model"))],
+} as const;
+
+/** One typed interaction from a mounted Showcase renderer to its host-local producer. */
+export const showcaseRendererActionContract = {
+  id: "showcase.renderer-action",
+  kind: "event",
+  boundary: "ui-event",
+  fields: [
+    field("actionId", "string"),
+    field("value", "string", { nullable: true }),
+  ],
+} as const;
+
 /** A mounted Showcase component asks the native navigation owner to open itself. */
 export const showcaseOpenActionContract = {
   id: "showcase.open-action",
