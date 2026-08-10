@@ -91,6 +91,8 @@ export function compileProductGraph(input: {
   readonly componentTypes: readonly ComponentType[];
   readonly components: readonly ProductComponentInstance[];
   readonly mountedScopes: readonly MountedComponentScope[];
+  /** Typed outputs consumed by another compiler-owned IR seam rather than a graph input. */
+  readonly intrinsicConsumerContractRefs?: readonly string[];
 }): CompiledProductGraph {
   requireUnique(input.nodeTypes.map(({ id }) => id), "node type");
   requireUnique(input.nodes.map(({ id }) => id), "node instance");
@@ -260,7 +262,11 @@ export function compileProductGraph(input: {
     if (missingEvents.length > 0) throw new Error(`component '${instance.id}' is missing event binding '${missingEvents.join("', '")}'`);
   }
 
-  const orphanOutputs = [...outputs.values()].filter(({ required, ref }) => required && !usedOutputs.has(ref));
+  const intrinsicConsumerContractRefs = input.intrinsicConsumerContractRefs ?? [];
+  requireUnique(intrinsicConsumerContractRefs, "intrinsic consumer contract");
+  const intrinsicConsumers = new Set(intrinsicConsumerContractRefs);
+  const orphanOutputs = [...outputs.values()].filter(({ required, ref, contractRef }) =>
+    required && !usedOutputs.has(ref) && !intrinsicConsumers.has(contractRef));
   if (orphanOutputs.length > 0) throw new Error(`orphan output port '${orphanOutputs.map(({ ref }) => ref).join("', '")}'`);
   requireAcyclic(input.nodes, bindings);
   const mountedIds = new Set(input.mountedScopes.map(({ componentInstanceRef }) => componentInstanceRef));

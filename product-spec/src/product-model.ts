@@ -146,7 +146,11 @@ export function defineProduct<
   requireUnique(declaration.artifacts.map(({ id }) => id), "artifact profile");
   requireUnique(declaration.componentFamilies.map(({ screen }) => screen), "component-family screen");
   requireUnique(declaration.componentFamilies.map(({ family }) => family.id), "component-family ref");
-  validateFiniteValues(declaration.finiteValues, declaration.nodeTypes, declaration.componentTypes);
+  const finiteValues = [...declaration.finiteValues, declaration.navigation.pageValues];
+  validateFiniteValues(finiteValues, declaration.nodeTypes, declaration.componentTypes, [
+    declaration.navigation.activePageContract,
+    ...declaration.navigation.routeContracts,
+  ]);
   validateVisuals(declaration, assetCatalog);
 
   const renderers = new Map(declaration.rendererBindings.map((item) => [item.id, item]));
@@ -257,10 +261,11 @@ export function defineProduct<
     componentTypes: declaration.componentTypes,
     components: declaration.components,
     mountedScopes,
+    intrinsicConsumerContractRefs: [declaration.navigation.activePageContract.id],
   });
   const stateAuthorities = compileStateAuthorities(
     declaration.stateAuthorities,
-    declaration.finiteValues,
+    finiteValues,
     graph,
   );
   const navigation = compileProductNavigation({
@@ -279,7 +284,7 @@ export function defineProduct<
     nodeTypes: graph.nodeTypes,
     nodes: graph.nodes,
     configs: graph.configs,
-    finiteValues: declaration.finiteValues,
+    finiteValues,
     stateAuthorities,
     componentTypes: graph.componentTypes,
     components: graph.components,
@@ -335,6 +340,7 @@ function validateFiniteValues(
   declarations: readonly LegoFiniteValueDeclaration[],
   nodes: readonly ProductNodeType[],
   components: readonly ComponentType[],
+  additionalContracts: readonly LegoContract[] = [],
 ): void {
   const catalog = new Map<string, LegoFiniteValueDeclaration>();
   for (const item of declarations) {
@@ -348,6 +354,7 @@ function validateFiniteValues(
   const contracts: LegoContract[] = [
     ...nodes.flatMap((node) => [...node.inputs, ...node.outputs].map(({ contract }) => contract)),
     ...components.flatMap((component) => [...component.inputs, ...component.outputs].map(({ contract }) => contract)),
+    ...additionalContracts,
   ];
   for (const contract of contracts) {
     for (const item of contract.fields) {

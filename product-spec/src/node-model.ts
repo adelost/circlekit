@@ -35,6 +35,12 @@ export interface LegoField {
   readonly clockDomain: LegoClockDomain;
 }
 
+export type LegoNavigationContract =
+  | { readonly kind: "active-page" }
+  | { readonly kind: "guard" }
+  | { readonly kind: "event" }
+  | { readonly kind: "route"; readonly targetPageRef: string; readonly effect: "push" };
+
 export function valueRef(ref: string): LegoValueRef {
   requireWireId(ref, "value ref");
   return { ref };
@@ -105,6 +111,8 @@ export interface LegoContract {
   readonly kind: "observation" | "state" | "snapshot" | "event";
   readonly boundary: LegoBoundaryKind;
   readonly fields: readonly LegoField[];
+  /** Optional compiler-owned navigation meaning; it is part of contract identity. */
+  readonly navigation?: LegoNavigationContract;
 }
 
 export type LegoConfigValue = boolean | number | string;
@@ -209,8 +217,6 @@ export interface ProductNodeRuntime {
 export interface ProductNodeType {
   readonly id: string;
   readonly kind: ProductNodeKind;
-  /** Optional closed policy identity available to page guards; implementation stays native. */
-  readonly navigationGuardPolicyRef?: string;
   readonly inputs: readonly LegoPort[];
   readonly outputs: readonly LegoPort[];
   readonly configInputs?: readonly LegoConfigInput[];
@@ -249,9 +255,6 @@ export function present<const T extends ProductNodeDefinition>(
 /** Compiler-side validation for already-authored node types. */
 export function validateProductNodeType<const T extends ProductNodeType>(spec: T): T {
   requireWireId(spec.id, "ProductNodeType");
-  if (spec.navigationGuardPolicyRef !== undefined) {
-    requireWireId(spec.navigationGuardPolicyRef, `navigation guard policy in '${spec.id}'`);
-  }
   validatePorts(spec.inputs, `${spec.id} input`);
   validatePorts(spec.outputs, `${spec.id} output`);
   validateConfigInputs(spec.configInputs ?? [], spec.id);
@@ -336,6 +339,7 @@ export function contractFingerprint(contract: LegoContract): string {
       nullable: item.nullable,
       clockDomain: item.clockDomain,
     })),
+    navigation: contract.navigation ?? null,
   });
 }
 
@@ -420,6 +424,23 @@ export function validateContract(contract: LegoContract): void {
     requireIdentifier(item.name, `field in '${contract.id}'`);
     if (typeof item.value !== "string") requireWireId(item.value.ref, `value ref in '${contract.id}'`);
     if (item.unit !== undefined) requireWireId(item.unit, `unit in '${contract.id}'`);
+  }
+  if (contract.navigation?.kind === "route") {
+    if (contract.kind !== "event" || contract.boundary !== "ui-event") {
+      throw new Error(`navigation route contract '${contract.id}' must be a ui-event`);
+    }
+    if (!/^[A-Za-z][A-Za-z0-9._-]*$/u.test(contract.navigation.targetPageRef)) {
+      throw new Error(`navigation route contract '${contract.id}' has invalid target '${contract.navigation.targetPageRef}'`);
+    }
+  } else if (contract.navigation?.kind === "event"
+    && (contract.kind !== "event" || contract.boundary !== "ui-event")) {
+    throw new Error(`navigation event contract '${contract.id}' must be a ui-event`);
+  } else if (contract.navigation?.kind === "guard"
+    && (contract.kind !== "state" || contract.boundary !== "service-internal")) {
+    throw new Error(`navigation guard contract '${contract.id}' must be service-internal state`);
+  } else if (contract.navigation?.kind === "active-page"
+    && (contract.kind !== "state" || contract.boundary !== "presentation")) {
+    throw new Error(`navigation active-page contract '${contract.id}' must be presentation state`);
   }
 }
 

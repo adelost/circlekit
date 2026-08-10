@@ -29,6 +29,8 @@ import {
   logOutputManifest,
   mapFiniteCases,
   navigationActivePageContract,
+  navigationEventContract,
+  navigationGuardContract,
   navigationRouteContract,
   PORTABLE_SURFACE_CLASSES,
   port,
@@ -232,14 +234,11 @@ const baseDeclaration = {
   palette,
   assetCatalogRef: { id: assetCatalog.id, version: assetCatalog.version },
   iconRefs: [{ id: "status.check", assetRef: "check", accent: "status.ok", artifacts: ["phone", "wear"] }],
-  navigation: defineProductNavigation(componentFamilies, [
-    source, controller, phaseDefinition.adapter.type, projection,
-  ], {
+  navigation: defineProductNavigation(componentFamilies, {
     id: "fixture.navigation",
     pageSemantics: {
-      MAIN: { default: true, restore: "root", guardPolicyRef: null, back: "system" },
+      MAIN: { restore: "root", guard: null, back: "system" },
     },
-    menus: [],
   } as const),
 } as const;
 
@@ -250,28 +249,34 @@ function fixture(overrides: Record<string, unknown> = {}) {
 const navigationId = "fixture.closed-navigation";
 const activePageContract = navigationActivePageContract(navigationId);
 const detailsRouteContract = navigationRouteContract(navigationId, "DETAILS");
+const sessionGuardContract = navigationGuardContract("fixture.session-ready");
+const menuActivateContract = navigationEventContract({
+  id: "fixture.menu-activate", kind: "event", boundary: "ui-event", fields: [],
+} as const);
+const guardService = service({
+  id: "fixture.guard-service",
+  inputs: [],
+  outputs: [port("allowed", sessionGuardContract)],
+  runtime: {
+    stateOwner: "external", lifetime: "process", durability: "transient",
+    clockDomain: "none", contextInputs: [], effects: ["fixture.guard-read"],
+  },
+} as const);
 const navigationService = service({
   id: "fixture.navigation-service",
-  navigationGuardPolicyRef: "fixture.session-ready",
-  inputs: [port("openDetails", detailsRouteContract)],
+  inputs: [
+    port("openDetails", detailsRouteContract),
+    port("sessionReady", sessionGuardContract),
+  ],
   outputs: [port("activePage", activePageContract)],
   runtime: {
     stateOwner: "instance", lifetime: "instance", durability: "transient",
     clockDomain: "none", contextInputs: [], effects: ["ui.navigation"],
   },
 } as const);
-const navigationProjection = present({
-  id: "fixture.navigation-projection",
-  inputs: [port("activePage", activePageContract)],
-  outputs: [port("model", activePageContract)],
-  runtime: {
-    stateOwner: "none", lifetime: "instance", durability: "transient",
-    clockDomain: "none", contextInputs: [], effects: [],
-  },
-} as const);
 const menuEventSink = service({
   id: "fixture.menu-event-sink",
-  inputs: [port("activate", actionContract)],
+  inputs: [port("activate", menuActivateContract)],
   outputs: [],
   runtime: {
     stateOwner: "none", lifetime: "process", durability: "transient",
@@ -284,14 +289,8 @@ const navigationMenuType = defineComponentType({
   inputs: [],
   outputs: [
     componentPort("openDetails", detailsRouteContract),
-    componentPort("activate", actionContract),
+    componentPort("activate", menuActivateContract),
   ],
-} as const);
-const pageHostType = defineComponentType({
-  id: "fixture.page-host",
-  requiredCapabilities: ["ui.menu"],
-  inputs: [componentPort("activePage", activePageContract)],
-  outputs: [],
 } as const);
 const navigationMenu = {
   id: "menu.main", componentTypeRef: navigationMenuType.id,
@@ -303,12 +302,8 @@ const navigationMenu = {
     },
   },
 } as const;
-const pageHost = {
-  id: "page.host", componentTypeRef: pageHostType.id,
-  bindings: { inputs: { activePage: "navigation.presentation.model" }, events: {} },
-} as const;
 const navigationFamilies = defineScreenComponentFamilyRegistry(
-  [control, navigationMenu, pageHost],
+  [control, navigationMenu],
   [
     { screen: "MAIN", family: {
       id: "fixture.navigation-main",
@@ -317,7 +312,6 @@ const navigationFamilies = defineScreenComponentFamilyRegistry(
         mounts: [
           { instance: control.id, region: "primary" },
           { instance: navigationMenu.id, region: "menu" },
-          { instance: pageHost.id, region: "host" },
         ],
       })),
     } },
@@ -327,31 +321,22 @@ const navigationFamilies = defineScreenComponentFamilyRegistry(
         surface,
         mounts: [
           { instance: control.id, region: "primary" },
-          { instance: pageHost.id, region: "host" },
         ],
       })),
     } },
   ] as const,
 );
 const navigationNodeTypes = [
-  ...baseDeclaration.nodeTypes, navigationService, navigationProjection, menuEventSink,
+  ...baseDeclaration.nodeTypes, guardService, navigationService, menuEventSink,
 ] as const;
-const navigationDeclaration = defineProductNavigation(navigationFamilies, navigationNodeTypes, {
+const navigationDeclaration = defineProductNavigation(navigationFamilies, {
   id: navigationId,
   pageSemantics: {
-    MAIN: { default: true, restore: "root", guardPolicyRef: null, back: "system" },
+    MAIN: { restore: "root", guard: null, back: "system" },
     DETAILS: {
-      default: false, restore: "process", guardPolicyRef: "fixture.session-ready", back: "previous",
+      restore: "process", guard: sessionGuardContract, back: "previous",
     },
   },
-  menus: [{
-    id: "fixture-menu",
-    componentInstanceRef: navigationMenu.id,
-    actions: [
-      { id: "open-details", kind: "route", sourcePortRef: "menu.main.openDetails", targetPageRef: "DETAILS" },
-      { id: "activate", kind: "event", sourcePortRef: "menu.main.activate" },
-    ],
-  }],
 } as const);
 const navigationProductDeclaration = {
   ...baseDeclaration,
@@ -362,13 +347,16 @@ const navigationProductDeclaration = {
   nodes: [
     ...baseDeclaration.nodes,
     {
-      id: "navigation.service", nodeTypeRef: navigationService.id, config: {},
-      bindings: { openDetails: "menu.main.openDetails" },
+      id: "guard.service", nodeTypeRef: guardService.id, config: {}, bindings: {},
       activation: { kind: "lifetime", lifecycleSources: [] },
     },
     {
-      id: "navigation.presentation", nodeTypeRef: navigationProjection.id, config: {},
-      bindings: { activePage: "navigation.service.activePage" },
+      id: "navigation.service", nodeTypeRef: navigationService.id, config: {},
+      bindings: {
+        openDetails: "menu.main.openDetails",
+        sessionReady: "guard.service.allowed",
+      },
+      activation: { kind: "lifetime", lifecycleSources: [] },
     },
     {
       id: "menu.event-sink", nodeTypeRef: menuEventSink.id, config: {},
@@ -376,14 +364,37 @@ const navigationProductDeclaration = {
       activation: { kind: "lifetime", lifecycleSources: [] },
     },
   ],
-  componentTypes: [...baseDeclaration.componentTypes, navigationMenuType, pageHostType],
-  components: [...baseDeclaration.components, navigationMenu, pageHost],
+  componentTypes: [...baseDeclaration.componentTypes, navigationMenuType],
+  components: [...baseDeclaration.components, navigationMenu],
   componentFamilies: navigationFamilies,
   navigation: navigationDeclaration,
 } as const;
 
 function navigationFixture(overrides: Record<string, unknown> = {}) {
   return defineProduct({ ...navigationProductDeclaration, ...overrides }, assetCatalog);
+}
+
+function navigationFixtureWithRouteContract(routeContract: ReturnType<typeof navigationRouteContract>) {
+  const changedNavigationService = service({
+    ...navigationService,
+    inputs: [
+      port("openDetails", routeContract),
+      port("sessionReady", sessionGuardContract),
+    ],
+  } as const);
+  const changedMenuType = defineComponentType({
+    ...navigationMenuType,
+    outputs: [
+      componentPort("openDetails", routeContract),
+      componentPort("activate", menuActivateContract),
+    ],
+  } as const);
+  return navigationFixture({
+    nodeTypes: navigationNodeTypes.map((type) =>
+      type.id === navigationService.id ? changedNavigationService : type),
+    componentTypes: navigationProductDeclaration.componentTypes.map((type) =>
+      type.id === navigationMenuType.id ? changedMenuType : type),
+  });
 }
 
 if (false) {
@@ -1103,44 +1114,39 @@ test("one mandatory graph compiles deterministic outputs and a complete port reg
 
 test("page navigation compiles route and event menu actions into the one port graph", () => {
   const product = navigationFixture();
-  assert.deepEqual(product.navigation.pages.map(({ id, default: isDefault, restore, guardPolicyRef, back }) =>
-    ({ id, default: isDefault, restore, guardPolicyRef, back })), [
-    { id: "MAIN", default: true, restore: "root", guardPolicyRef: null, back: "system" },
-    { id: "DETAILS", default: false, restore: "process", guardPolicyRef: "fixture.session-ready", back: "previous" },
+  assert.equal(product.navigation.pageValuesRef, `${navigationId}.page`);
+  assert.deepEqual(product.navigation.pages, [
+    { id: "MAIN", restore: "root", guardContractRef: null, back: "system" },
+    { id: "DETAILS", restore: "process", guardContractRef: "fixture.session-ready", back: "previous" },
   ]);
+  assert.deepEqual(product.finiteValues.at(-1), {
+    id: `${navigationId}.page`, values: ["MAIN", "DETAILS"],
+  });
   assert.deepEqual(product.navigation.menus, [{
-    id: "fixture-menu",
     componentInstanceRef: "menu.main",
     pageRefs: ["MAIN"],
     artifactRefs: ["phone", "wear"],
     actions: [
       {
-        id: "open-details", kind: "route", sourcePortRef: "menu.main.openDetails",
+        id: "openDetails", kind: "route", sourcePortRef: "menu.main.openDetails",
         targetPortRef: "navigation.service.openDetails", contractRef: detailsRouteContract.id,
         targetPageRef: "DETAILS", effect: "push",
       },
       {
         id: "activate", kind: "event", sourcePortRef: "menu.main.activate",
-        targetPortRef: "menu.event-sink.activate", contractRef: actionContract.id,
+        targetPortRef: "menu.event-sink.activate", contractRef: menuActivateContract.id,
       },
     ],
   }]);
 });
 
 test("navigation mutation rejects an unknown target", () => {
-  const menu = navigationDeclaration.menus[0]!;
-  assert.throws(() => navigationFixture({
-    navigation: {
-      ...navigationDeclaration,
-      menus: [{ ...menu, actions: [
-        { ...menu.actions[0], targetPageRef: "UNKNOWN" },
-        menu.actions[1],
-      ] }],
-    },
-  }), /navigation targets unknown page 'UNKNOWN'/);
+  assert.throws(() => navigationFixtureWithRouteContract(
+    navigationRouteContract(navigationId, "UNKNOWN"),
+  ), /navigation targets unknown page 'UNKNOWN'/);
 });
 
-test("navigation mutation rejects undeclared entry and missing default", () => {
+test("navigation mutation rejects undeclared entry and a non-root entry", () => {
   assert.throws(() => navigationFixture({
     artifacts: [
       { ...navigationProductDeclaration.artifacts[0], entryScreen: "UNKNOWN" },
@@ -1150,22 +1156,19 @@ test("navigation mutation rejects undeclared entry and missing default", () => {
   assert.throws(() => navigationFixture({
     navigation: {
       ...navigationDeclaration,
-      pages: navigationDeclaration.pages.map((page) => ({ ...page, default: false })),
+      pages: navigationDeclaration.pages.map((page) =>
+        page.id === "MAIN" ? { ...page, restore: "process" as const } : page),
     },
-  }), /must select exactly one default page \(found 0\)/);
+  }), /entry 'MAIN' must use root restore/);
 });
 
 test("navigation mutation rejects menu target drift", () => {
-  const menu = navigationDeclaration.menus[0]!;
-  assert.throws(() => navigationFixture({
-    navigation: {
-      ...navigationDeclaration,
-      menus: [{ ...menu, actions: [
-        { ...menu.actions[0], targetPageRef: "MAIN" },
-        menu.actions[1],
-      ] }],
-    },
-  }), /target drift: 'MAIN' requires contract/);
+  const drifted = {
+    ...detailsRouteContract,
+    navigation: { kind: "route", targetPageRef: "MAIN", effect: "push" },
+  } as const;
+  assert.throws(() => navigationFixtureWithRouteContract(drifted),
+    /target drift: 'MAIN' requires contract/);
 });
 
 test("navigation mutation rejects an orphan page", () => {
@@ -1176,16 +1179,15 @@ test("navigation mutation rejects an orphan page", () => {
       family: { ...navigationFamilies[1]!.family, id: "fixture.navigation-orphan" },
     },
   ] as const;
-  const orphanNavigation = defineProductNavigation(orphanFamilies, navigationNodeTypes, {
+  const orphanNavigation = defineProductNavigation(orphanFamilies, {
     id: navigationId,
     pageSemantics: {
-      MAIN: { default: true, restore: "root", guardPolicyRef: null, back: "system" },
+      MAIN: { restore: "root", guard: null, back: "system" },
       DETAILS: {
-        default: false, restore: "process", guardPolicyRef: "fixture.session-ready", back: "previous",
+        restore: "process", guard: sessionGuardContract, back: "previous",
       },
-      ORPHAN: { default: false, restore: "process", guardPolicyRef: null, back: "previous" },
+      ORPHAN: { restore: "process", guard: null, back: "previous" },
     },
-    menus: navigationDeclaration.menus,
   } as const);
   assert.throws(() => navigationFixture({
     componentFamilies: orphanFamilies,
@@ -1200,6 +1202,28 @@ test("navigation mutation rejects a menu page missing from one artifact", () => 
       { ...navigationProductDeclaration.artifacts[1], screenRefs: ["MAIN"] },
     ],
   }), /targets page 'DETAILS' outside artifact 'wear'/);
+});
+
+test("navigation derives mounted actions and rejects a missing typed binding without menu opt-in", () => {
+  assert.equal("menus" in navigationDeclaration, false);
+  assert.throws(() => navigationFixture({
+    components: navigationProductDeclaration.components.map((component) =>
+      component.id === navigationMenu.id ? {
+        ...component,
+        bindings: { ...component.bindings, events: { activate: "menu.event-sink.activate" } },
+      } : component),
+  }), /missing event binding 'openDetails'/);
+});
+
+test("navigation mutation rejects a guard absent from the typed navigation-service graph", () => {
+  const missingGuard = navigationGuardContract("fixture.missing-guard");
+  assert.throws(() => navigationFixture({
+    navigation: {
+      ...navigationDeclaration,
+      pages: navigationDeclaration.pages.map((page) =>
+        page.id === "DETAILS" ? { ...page, guard: missingGuard } : page),
+    },
+  }), /guard 'fixture.missing-guard' must bind exactly one navigation service input/);
 });
 
 test("demand ports propagate activation forward without becoming data dependencies", () => {
@@ -1513,13 +1537,12 @@ test("mandatory bindings and the component boundary fail before emission", () =>
     componentTypes: [controlType, optionalType, detailsType],
     components: [control, optional, details],
     componentFamilies: optionalFamilies,
-    navigation: defineProductNavigation(optionalFamilies, baseDeclaration.nodeTypes, {
+    navigation: defineProductNavigation(optionalFamilies, {
       id: "fixture.navigation",
       pageSemantics: {
-        MAIN: { default: true, restore: "root", guardPolicyRef: null, back: "system" },
-        DETAILS: { default: false, restore: "process", guardPolicyRef: null, back: "previous" },
+        MAIN: { restore: "root", guard: null, back: "system" },
+        DETAILS: { restore: "process", guard: null, back: "previous" },
       },
-      menus: [],
     } as const),
   });
   assert.deepEqual(scoped.artifactScopes
@@ -1639,7 +1662,10 @@ const conformingManifest: NativeBindingManifest = {
       outputPorts: ["presentation"],
     },
   ],
-  finiteValues: [{ id: "fixture.phase", values: ["idle", "active"] }],
+  finiteValues: [
+    { id: "fixture.phase", values: ["idle", "active"] },
+    { id: "fixture.navigation.page", values: ["MAIN"] },
+  ],
 };
 
 const mutate = (change: (draft: NativeBindingManifest) => NativeBindingManifest): NativeBindingManifest =>
