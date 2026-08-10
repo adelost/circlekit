@@ -209,6 +209,8 @@ export interface ProductNodeRuntime {
 export interface ProductNodeType {
   readonly id: string;
   readonly kind: ProductNodeKind;
+  /** Optional closed policy identity available to page guards; implementation stays native. */
+  readonly navigationGuardPolicyRef?: string;
   readonly inputs: readonly LegoPort[];
   readonly outputs: readonly LegoPort[];
   readonly configInputs?: readonly LegoConfigInput[];
@@ -247,6 +249,9 @@ export function present<const T extends ProductNodeDefinition>(
 /** Compiler-side validation for already-authored node types. */
 export function validateProductNodeType<const T extends ProductNodeType>(spec: T): T {
   requireWireId(spec.id, "ProductNodeType");
+  if (spec.navigationGuardPolicyRef !== undefined) {
+    requireWireId(spec.navigationGuardPolicyRef, `navigation guard policy in '${spec.id}'`);
+  }
   validatePorts(spec.inputs, `${spec.id} input`);
   validatePorts(spec.outputs, `${spec.id} output`);
   validateConfigInputs(spec.configInputs ?? [], spec.id);

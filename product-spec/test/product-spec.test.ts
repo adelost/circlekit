@@ -20,6 +20,7 @@ import {
   definePalette,
   definePortableAssetCatalog,
   defineProduct,
+  defineProductNavigation,
   defineScreenComponentFamilyRegistry,
   field,
   finiteProduct,
@@ -27,6 +28,8 @@ import {
   finiteValues,
   logOutputManifest,
   mapFiniteCases,
+  navigationActivePageContract,
+  navigationRouteContract,
   PORTABLE_SURFACE_CLASSES,
   port,
   productArtifactConformance,
@@ -229,10 +232,158 @@ const baseDeclaration = {
   palette,
   assetCatalogRef: { id: assetCatalog.id, version: assetCatalog.version },
   iconRefs: [{ id: "status.check", assetRef: "check", accent: "status.ok", artifacts: ["phone", "wear"] }],
+  navigation: defineProductNavigation(componentFamilies, [
+    source, controller, phaseDefinition.adapter.type, projection,
+  ], {
+    id: "fixture.navigation",
+    pageSemantics: {
+      MAIN: { default: true, restore: "root", guardPolicyRef: null, back: "system" },
+    },
+    menus: [],
+  } as const),
 } as const;
 
 function fixture(overrides: Record<string, unknown> = {}) {
   return defineProduct({ ...baseDeclaration, ...overrides }, assetCatalog);
+}
+
+const navigationId = "fixture.closed-navigation";
+const activePageContract = navigationActivePageContract(navigationId);
+const detailsRouteContract = navigationRouteContract(navigationId, "DETAILS");
+const navigationService = service({
+  id: "fixture.navigation-service",
+  navigationGuardPolicyRef: "fixture.session-ready",
+  inputs: [port("openDetails", detailsRouteContract)],
+  outputs: [port("activePage", activePageContract)],
+  runtime: {
+    stateOwner: "instance", lifetime: "instance", durability: "transient",
+    clockDomain: "none", contextInputs: [], effects: ["ui.navigation"],
+  },
+} as const);
+const navigationProjection = present({
+  id: "fixture.navigation-projection",
+  inputs: [port("activePage", activePageContract)],
+  outputs: [port("model", activePageContract)],
+  runtime: {
+    stateOwner: "none", lifetime: "instance", durability: "transient",
+    clockDomain: "none", contextInputs: [], effects: [],
+  },
+} as const);
+const menuEventSink = service({
+  id: "fixture.menu-event-sink",
+  inputs: [port("activate", actionContract)],
+  outputs: [],
+  runtime: {
+    stateOwner: "none", lifetime: "process", durability: "transient",
+    clockDomain: "none", contextInputs: [], effects: ["fixture.menu-event"],
+  },
+} as const);
+const navigationMenuType = defineComponentType({
+  id: "fixture.navigation-menu",
+  requiredCapabilities: ["ui.menu"],
+  inputs: [],
+  outputs: [
+    componentPort("openDetails", detailsRouteContract),
+    componentPort("activate", actionContract),
+  ],
+} as const);
+const pageHostType = defineComponentType({
+  id: "fixture.page-host",
+  requiredCapabilities: ["ui.menu"],
+  inputs: [componentPort("activePage", activePageContract)],
+  outputs: [],
+} as const);
+const navigationMenu = {
+  id: "menu.main", componentTypeRef: navigationMenuType.id,
+  bindings: {
+    inputs: {},
+    events: {
+      openDetails: "navigation.service.openDetails",
+      activate: "menu.event-sink.activate",
+    },
+  },
+} as const;
+const pageHost = {
+  id: "page.host", componentTypeRef: pageHostType.id,
+  bindings: { inputs: { activePage: "navigation.presentation.model" }, events: {} },
+} as const;
+const navigationFamilies = defineScreenComponentFamilyRegistry(
+  [control, navigationMenu, pageHost],
+  [
+    { screen: "MAIN", family: {
+      id: "fixture.navigation-main",
+      trees: PORTABLE_SURFACE_CLASSES.map((surface) => ({
+        surface,
+        mounts: [
+          { instance: control.id, region: "primary" },
+          { instance: navigationMenu.id, region: "menu" },
+          { instance: pageHost.id, region: "host" },
+        ],
+      })),
+    } },
+    { screen: "DETAILS", family: {
+      id: "fixture.navigation-details",
+      trees: PORTABLE_SURFACE_CLASSES.map((surface) => ({
+        surface,
+        mounts: [
+          { instance: control.id, region: "primary" },
+          { instance: pageHost.id, region: "host" },
+        ],
+      })),
+    } },
+  ] as const,
+);
+const navigationNodeTypes = [
+  ...baseDeclaration.nodeTypes, navigationService, navigationProjection, menuEventSink,
+] as const;
+const navigationDeclaration = defineProductNavigation(navigationFamilies, navigationNodeTypes, {
+  id: navigationId,
+  pageSemantics: {
+    MAIN: { default: true, restore: "root", guardPolicyRef: null, back: "system" },
+    DETAILS: {
+      default: false, restore: "process", guardPolicyRef: "fixture.session-ready", back: "previous",
+    },
+  },
+  menus: [{
+    id: "fixture-menu",
+    componentInstanceRef: navigationMenu.id,
+    actions: [
+      { id: "open-details", kind: "route", sourcePortRef: "menu.main.openDetails", targetPageRef: "DETAILS" },
+      { id: "activate", kind: "event", sourcePortRef: "menu.main.activate" },
+    ],
+  }],
+} as const);
+const navigationProductDeclaration = {
+  ...baseDeclaration,
+  artifacts: baseDeclaration.artifacts.map((artifact) => ({
+    ...artifact, screenRefs: ["MAIN", "DETAILS"] as const,
+  })),
+  nodeTypes: navigationNodeTypes,
+  nodes: [
+    ...baseDeclaration.nodes,
+    {
+      id: "navigation.service", nodeTypeRef: navigationService.id, config: {},
+      bindings: { openDetails: "menu.main.openDetails" },
+      activation: { kind: "lifetime", lifecycleSources: [] },
+    },
+    {
+      id: "navigation.presentation", nodeTypeRef: navigationProjection.id, config: {},
+      bindings: { activePage: "navigation.service.activePage" },
+    },
+    {
+      id: "menu.event-sink", nodeTypeRef: menuEventSink.id, config: {},
+      bindings: { activate: "menu.main.activate" },
+      activation: { kind: "lifetime", lifecycleSources: [] },
+    },
+  ],
+  componentTypes: [...baseDeclaration.componentTypes, navigationMenuType, pageHostType],
+  components: [...baseDeclaration.components, navigationMenu, pageHost],
+  componentFamilies: navigationFamilies,
+  navigation: navigationDeclaration,
+} as const;
+
+function navigationFixture(overrides: Record<string, unknown> = {}) {
+  return defineProduct({ ...navigationProductDeclaration, ...overrides }, assetCatalog);
 }
 
 if (false) {
@@ -909,7 +1060,7 @@ test("closed state authority rejects incomplete, invented and overlapping presen
 
 test("one mandatory graph compiles deterministic outputs and a complete port registry", async () => {
   const product = fixture();
-  assert.equal(product.schemaVersion, 8);
+  assert.equal(product.schemaVersion, 9);
   assert.deepEqual(product.stateAuthorities, [{
     ...phaseAuthority,
     presentation: { ...phasePresentation, consumers: ["control.main.phasePresentation"] },
@@ -948,6 +1099,107 @@ test("one mandatory graph compiles deterministic outputs and a complete port reg
   } finally {
     await rm(root, { recursive: true, force: true });
   }
+});
+
+test("page navigation compiles route and event menu actions into the one port graph", () => {
+  const product = navigationFixture();
+  assert.deepEqual(product.navigation.pages.map(({ id, default: isDefault, restore, guardPolicyRef, back }) =>
+    ({ id, default: isDefault, restore, guardPolicyRef, back })), [
+    { id: "MAIN", default: true, restore: "root", guardPolicyRef: null, back: "system" },
+    { id: "DETAILS", default: false, restore: "process", guardPolicyRef: "fixture.session-ready", back: "previous" },
+  ]);
+  assert.deepEqual(product.navigation.menus, [{
+    id: "fixture-menu",
+    componentInstanceRef: "menu.main",
+    pageRefs: ["MAIN"],
+    artifactRefs: ["phone", "wear"],
+    actions: [
+      {
+        id: "open-details", kind: "route", sourcePortRef: "menu.main.openDetails",
+        targetPortRef: "navigation.service.openDetails", contractRef: detailsRouteContract.id,
+        targetPageRef: "DETAILS", effect: "push",
+      },
+      {
+        id: "activate", kind: "event", sourcePortRef: "menu.main.activate",
+        targetPortRef: "menu.event-sink.activate", contractRef: actionContract.id,
+      },
+    ],
+  }]);
+});
+
+test("navigation mutation rejects an unknown target", () => {
+  const menu = navigationDeclaration.menus[0]!;
+  assert.throws(() => navigationFixture({
+    navigation: {
+      ...navigationDeclaration,
+      menus: [{ ...menu, actions: [
+        { ...menu.actions[0], targetPageRef: "UNKNOWN" },
+        menu.actions[1],
+      ] }],
+    },
+  }), /navigation targets unknown page 'UNKNOWN'/);
+});
+
+test("navigation mutation rejects undeclared entry and missing default", () => {
+  assert.throws(() => navigationFixture({
+    artifacts: [
+      { ...navigationProductDeclaration.artifacts[0], entryScreen: "UNKNOWN" },
+      navigationProductDeclaration.artifacts[1],
+    ],
+  }), /entry screen 'UNKNOWN' is not selected|missing entry screen 'UNKNOWN'|entry 'UNKNOWN' is an undeclared page/);
+  assert.throws(() => navigationFixture({
+    navigation: {
+      ...navigationDeclaration,
+      pages: navigationDeclaration.pages.map((page) => ({ ...page, default: false })),
+    },
+  }), /must select exactly one default page \(found 0\)/);
+});
+
+test("navigation mutation rejects menu target drift", () => {
+  const menu = navigationDeclaration.menus[0]!;
+  assert.throws(() => navigationFixture({
+    navigation: {
+      ...navigationDeclaration,
+      menus: [{ ...menu, actions: [
+        { ...menu.actions[0], targetPageRef: "MAIN" },
+        menu.actions[1],
+      ] }],
+    },
+  }), /target drift: 'MAIN' requires contract/);
+});
+
+test("navigation mutation rejects an orphan page", () => {
+  const orphanFamilies = [
+    ...navigationFamilies,
+    {
+      screen: "ORPHAN",
+      family: { ...navigationFamilies[1]!.family, id: "fixture.navigation-orphan" },
+    },
+  ] as const;
+  const orphanNavigation = defineProductNavigation(orphanFamilies, navigationNodeTypes, {
+    id: navigationId,
+    pageSemantics: {
+      MAIN: { default: true, restore: "root", guardPolicyRef: null, back: "system" },
+      DETAILS: {
+        default: false, restore: "process", guardPolicyRef: "fixture.session-ready", back: "previous",
+      },
+      ORPHAN: { default: false, restore: "process", guardPolicyRef: null, back: "previous" },
+    },
+    menus: navigationDeclaration.menus,
+  } as const);
+  assert.throws(() => navigationFixture({
+    componentFamilies: orphanFamilies,
+    navigation: orphanNavigation,
+  }), /orphan page 'ORPHAN' is selected by no artifact/);
+});
+
+test("navigation mutation rejects a menu page missing from one artifact", () => {
+  assert.throws(() => navigationFixture({
+    artifacts: [
+      navigationProductDeclaration.artifacts[0],
+      { ...navigationProductDeclaration.artifacts[1], screenRefs: ["MAIN"] },
+    ],
+  }), /targets page 'DETAILS' outside artifact 'wear'/);
 });
 
 test("demand ports propagate activation forward without becoming data dependencies", () => {
@@ -1261,6 +1513,14 @@ test("mandatory bindings and the component boundary fail before emission", () =>
     componentTypes: [controlType, optionalType, detailsType],
     components: [control, optional, details],
     componentFamilies: optionalFamilies,
+    navigation: defineProductNavigation(optionalFamilies, baseDeclaration.nodeTypes, {
+      id: "fixture.navigation",
+      pageSemantics: {
+        MAIN: { default: true, restore: "root", guardPolicyRef: null, back: "system" },
+        DETAILS: { default: false, restore: "process", guardPolicyRef: null, back: "previous" },
+      },
+      menus: [],
+    } as const),
   });
   assert.deepEqual(scoped.artifactScopes
     .filter(({ artifactRef }) => artifactRef === "phone")

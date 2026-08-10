@@ -2,6 +2,7 @@ export * from "./conformance-model.js";
 export * from "./component-tree-model.js";
 export * from "./invariant-model.js";
 export * from "./node-model.js";
+export * from "./navigation-model.js";
 export * from "./output-manifest.js";
 export * from "./port-graph-model.js";
 export * from "./node-instance-model.js";

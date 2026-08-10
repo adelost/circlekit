@@ -29,6 +29,11 @@ import {
   type StateAuthority,
 } from "./state-authority-model.js";
 import {
+  compileProductNavigation,
+  type ProductNavigationDeclaration,
+  type ProductNavigationIr,
+} from "./navigation-model.js";
+import {
   definePalette,
   definePortableAssetCatalog,
   paletteTokenIds,
@@ -40,7 +45,7 @@ import {
   type ProductPalette,
 } from "./visual-model.js";
 
-export const PRODUCT_SPEC_SCHEMA_VERSION = 8 as const;
+export const PRODUCT_SPEC_SCHEMA_VERSION = 9 as const;
 
 export interface RendererBinding<Id extends string = string, Capability extends string = string> {
   readonly id: Id;
@@ -100,6 +105,7 @@ export interface ProductDeclaration<
   readonly palette: ProductPalette<PaletteVariant>;
   readonly assetCatalogRef: PortableAssetCatalogRef;
   readonly iconRefs: readonly ProductIconRef<PaletteTokenRef<PaletteVariant>, string>[];
+  readonly navigation: ProductNavigationDeclaration<NoInfer<Families[number]["screen"]>>;
 }
 
 export interface ProductIr {
@@ -121,6 +127,7 @@ export interface ProductIr {
   readonly palette: ProductPalette;
   readonly assetCatalogRef: PortableAssetCatalogRef;
   readonly iconRefs: readonly ProductIconRef[];
+  readonly navigation: ProductNavigationIr;
 }
 
 export function defineProduct<
@@ -256,6 +263,13 @@ export function defineProduct<
     declaration.finiteValues,
     graph,
   );
+  const navigation = compileProductNavigation({
+    declaration: declaration.navigation,
+    artifacts: declaration.artifacts,
+    componentFamilies: declaration.componentFamilies,
+    artifactScopes,
+    graph,
+  });
   return {
     kind: "product-spec-ir",
     schemaVersion: PRODUCT_SPEC_SCHEMA_VERSION,
@@ -275,6 +289,7 @@ export function defineProduct<
     palette: declaration.palette,
     assetCatalogRef: declaration.assetCatalogRef,
     iconRefs: declaration.iconRefs,
+    navigation,
   };
 }
 
