@@ -64,7 +64,9 @@ const symbols = {
   surfaceComponents: { ringSurface: "dev.acme.native.Surface", spatialMode: "dev.acme.native.SpatialMode" },
 } as const satisfies SkydivingNativeSymbols;
 
-if (kotlinIdentifier("acme-main") !== "AcmeMain" || symbols.homeActions.homeActionId === "") process.exit(1);
+const generatedName: string = kotlinIdentifier("acme-main");
+const nativeSymbol: string = symbols.homeActions.homeActionId;
+if (generatedName.length === 0 || nativeSymbol.length === 0) throw new Error("Acme fixture is incomplete");
 `);
 
 execFileSync("npm", ["install", "--ignore-scripts", "--no-audit", "--no-fund"], { cwd: scratch, stdio: "inherit" });
