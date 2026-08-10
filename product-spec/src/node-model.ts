@@ -35,6 +35,11 @@ export interface LegoField {
   readonly clockDomain: LegoClockDomain;
 }
 
+export type LegoNavigationContract =
+  | { readonly kind: "active-page" }
+  | { readonly kind: "guard" }
+  | { readonly kind: "route"; readonly effect: "push" };
+
 export function valueRef(ref: string): LegoValueRef {
   requireWireId(ref, "value ref");
   return { ref };
@@ -105,6 +110,8 @@ export interface LegoContract {
   readonly kind: "observation" | "state" | "snapshot" | "event";
   readonly boundary: LegoBoundaryKind;
   readonly fields: readonly LegoField[];
+  /** Optional compiler-owned navigation meaning; it is part of contract identity. */
+  readonly navigation?: LegoNavigationContract;
 }
 
 export type LegoConfigValue = boolean | number | string;
@@ -247,6 +254,12 @@ export function present<const T extends ProductNodeDefinition>(
 /** Compiler-side validation for already-authored node types. */
 export function validateProductNodeType<const T extends ProductNodeType>(spec: T): T {
   requireWireId(spec.id, "ProductNodeType");
+  const uiEventOutputs = spec.outputs.filter(({ contract }) => contract.boundary === "ui-event");
+  if (uiEventOutputs.length > 0) {
+    throw new Error(
+      `${spec.kind} '${spec.id}' cannot originate ui-event output '${uiEventOutputs.map(({ id }) => id).join("', '")}'`,
+    );
+  }
   validatePorts(spec.inputs, `${spec.id} input`);
   validatePorts(spec.outputs, `${spec.id} output`);
   validateConfigInputs(spec.configInputs ?? [], spec.id);
@@ -331,6 +344,7 @@ export function contractFingerprint(contract: LegoContract): string {
       nullable: item.nullable,
       clockDomain: item.clockDomain,
     })),
+    navigation: contract.navigation ?? null,
   });
 }
 
@@ -415,6 +429,22 @@ export function validateContract(contract: LegoContract): void {
     requireIdentifier(item.name, `field in '${contract.id}'`);
     if (typeof item.value !== "string") requireWireId(item.value.ref, `value ref in '${contract.id}'`);
     if (item.unit !== undefined) requireWireId(item.unit, `unit in '${contract.id}'`);
+  }
+  if (contract.navigation?.kind === "route") {
+    if (contract.kind !== "event" || contract.boundary !== "ui-event") {
+      throw new Error(`navigation route contract '${contract.id}' must be a ui-event`);
+    }
+    const target = contract.fields.filter(({ name }) => name === "target");
+    if (target.length !== 1 || typeof target[0]!.value === "string"
+      || !("finite" in target[0]!.value) || target[0]!.value.finite !== true) {
+      throw new Error(`navigation route contract '${contract.id}' must carry one finite 'target' field`);
+    }
+  } else if (contract.navigation?.kind === "guard"
+    && (contract.kind !== "state" || contract.boundary !== "service-internal")) {
+    throw new Error(`navigation guard contract '${contract.id}' must be service-internal state`);
+  } else if (contract.navigation?.kind === "active-page"
+    && (contract.kind !== "state" || contract.boundary !== "presentation")) {
+    throw new Error(`navigation active-page contract '${contract.id}' must be presentation state`);
   }
 }
 

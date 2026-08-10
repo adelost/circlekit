@@ -233,6 +233,9 @@ export function compileStateAuthorities(
     if (presentIds.has(output.ownerId) || generatedAdapterOutputs.has(output.ref) || !componentTargets(output.ref).size) continue;
     const contract = contractById.get(output.contractRef);
     if (contract?.boundary !== "presentation" || contract.kind === "event") continue;
+    // PageId is already closed and interpreted by the navigation compiler. Its
+    // declared page-host consumes identity, not a second label/tone presentation.
+    if (contract.navigation?.kind === "active-page") continue;
     for (const contractField of contract.fields) {
       if (!isFiniteValueRef(contractField.value)) continue;
       eligibleAxes.push({ portRef: output.ref, field: contractField.name, stateRef: contractField.value.ref });

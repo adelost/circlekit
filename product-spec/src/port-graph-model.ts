@@ -308,7 +308,9 @@ export function compileProductGraph(input: {
     const targetNode = target.ownerKind === "node"
       ? nodeTypes.get(nodeById.get(target.ownerId)?.nodeTypeRef ?? "")
       : undefined;
-    if (target.ownerKind === "component" && sourceNode?.kind !== "present") {
+    const directActivePage = sourceNode?.kind === "service"
+      && contracts.get(source.contractRef)?.navigation?.kind === "active-page";
+    if (target.ownerKind === "component" && sourceNode?.kind !== "present" && !directActivePage) {
       throw new Error(
         `${sourceNode?.kind ?? source.ownerKind} '${source.ownerId}' cannot feed component '${target.ownerId}' directly; ` +
         "add a final present node",

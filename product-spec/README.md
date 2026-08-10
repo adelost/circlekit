@@ -80,3 +80,28 @@ Lifecycle declarations whose closure reaches no leased service are rejected.
 Each artifact selects its screens from the product's typed component-family
 catalog. Required mounts must be supported by its renderer, while an optional
 `omit` mount is recorded as an explicit artifact-scope outcome in Product IR.
+
+Navigation reuses that catalog rather than declaring another page list.
+`defineProductNavigation(componentFamilies, ...)` requires only `guard` and
+closed `back` semantics for every derived screen id. Each artifact's existing
+`entryScreen` is its sole default authority; the compiler derives `root`
+restore for that page and `process` for the artifact's other `screenRefs`.
+Different artifacts may therefore have different entries and subsets without
+a global default or restore copy.
+
+There is one `navigationRouteContract(id)` for the product. It is a UI event
+whose sole target is the finite `target: PageId` payload; there is no second
+target in its id or metadata. UI events may originate only at mounted component
+outputs and must bind a service input. The navigation service publishes the
+finite active PageId to one declared page-host component input. Typed route and
+ordinary event outputs on every mounted component compile into neutral `actionGroups`;
+menus are ordinary component types, instances and mounts, not a second catalog.
+Guards are service-output state contracts wired into the same navigation
+service, never node-role strings or TypeScript predicates.
+
+Native binding manifest schema 5 requires actual host navigation registrations:
+artifact entry/page semantics, the active-page publisher/page-host edge, and
+every action source, service target and effect. Shared conformance compares all
+of these in both directions. Native exporters must build this section from
+their registered ports and hosts; copying expected Product IR into the manifest
+does not constitute an implementation proof.

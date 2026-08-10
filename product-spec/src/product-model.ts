@@ -29,6 +29,11 @@ import {
   type StateAuthority,
 } from "./state-authority-model.js";
 import {
+  compileProductNavigation,
+  type ProductNavigationDeclaration,
+  type ProductNavigationIr,
+} from "./navigation-model.js";
+import {
   definePalette,
   definePortableAssetCatalog,
   paletteTokenIds,
@@ -40,7 +45,7 @@ import {
   type ProductPalette,
 } from "./visual-model.js";
 
-export const PRODUCT_SPEC_SCHEMA_VERSION = 8 as const;
+export const PRODUCT_SPEC_SCHEMA_VERSION = 9 as const;
 
 export interface RendererBinding<Id extends string = string, Capability extends string = string> {
   readonly id: Id;
@@ -100,6 +105,7 @@ export interface ProductDeclaration<
   readonly palette: ProductPalette<PaletteVariant>;
   readonly assetCatalogRef: PortableAssetCatalogRef;
   readonly iconRefs: readonly ProductIconRef<PaletteTokenRef<PaletteVariant>, string>[];
+  readonly navigation: ProductNavigationDeclaration<NoInfer<Families[number]["screen"]>>;
 }
 
 export interface ProductIr {
@@ -121,6 +127,7 @@ export interface ProductIr {
   readonly palette: ProductPalette;
   readonly assetCatalogRef: PortableAssetCatalogRef;
   readonly iconRefs: readonly ProductIconRef[];
+  readonly navigation: ProductNavigationIr;
 }
 
 export function defineProduct<
@@ -139,7 +146,11 @@ export function defineProduct<
   requireUnique(declaration.artifacts.map(({ id }) => id), "artifact profile");
   requireUnique(declaration.componentFamilies.map(({ screen }) => screen), "component-family screen");
   requireUnique(declaration.componentFamilies.map(({ family }) => family.id), "component-family ref");
-  validateFiniteValues(declaration.finiteValues, declaration.nodeTypes, declaration.componentTypes);
+  const finiteValues = [...declaration.finiteValues, declaration.navigation.pageValues];
+  validateFiniteValues(finiteValues, declaration.nodeTypes, declaration.componentTypes, [
+    declaration.navigation.activePageContract,
+    declaration.navigation.routeIntentContract,
+  ]);
   validateVisuals(declaration, assetCatalog);
 
   const renderers = new Map(declaration.rendererBindings.map((item) => [item.id, item]));
@@ -253,9 +264,16 @@ export function defineProduct<
   });
   const stateAuthorities = compileStateAuthorities(
     declaration.stateAuthorities,
-    declaration.finiteValues,
+    finiteValues,
     graph,
   );
+  const navigation = compileProductNavigation({
+    declaration: declaration.navigation,
+    artifacts: declaration.artifacts,
+    componentFamilies: declaration.componentFamilies,
+    artifactScopes,
+    graph,
+  });
   return {
     kind: "product-spec-ir",
     schemaVersion: PRODUCT_SPEC_SCHEMA_VERSION,
@@ -265,7 +283,7 @@ export function defineProduct<
     nodeTypes: graph.nodeTypes,
     nodes: graph.nodes,
     configs: graph.configs,
-    finiteValues: declaration.finiteValues,
+    finiteValues,
     stateAuthorities,
     componentTypes: graph.componentTypes,
     components: graph.components,
@@ -275,6 +293,7 @@ export function defineProduct<
     palette: declaration.palette,
     assetCatalogRef: declaration.assetCatalogRef,
     iconRefs: declaration.iconRefs,
+    navigation,
   };
 }
 
@@ -320,6 +339,7 @@ function validateFiniteValues(
   declarations: readonly LegoFiniteValueDeclaration[],
   nodes: readonly ProductNodeType[],
   components: readonly ComponentType[],
+  additionalContracts: readonly LegoContract[] = [],
 ): void {
   const catalog = new Map<string, LegoFiniteValueDeclaration>();
   for (const item of declarations) {
@@ -333,6 +353,7 @@ function validateFiniteValues(
   const contracts: LegoContract[] = [
     ...nodes.flatMap((node) => [...node.inputs, ...node.outputs].map(({ contract }) => contract)),
     ...components.flatMap((component) => [...component.inputs, ...component.outputs].map(({ contract }) => contract)),
+    ...additionalContracts,
   ];
   for (const contract of contracts) {
     for (const item of contract.fields) {
