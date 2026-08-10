@@ -93,7 +93,7 @@ test("the catalog declares the skydiving domain and validates on its own", () =>
   assert.equal(SKYDIVING_LEGO_MODULE_COUNT, 14);
   assert.ok(skydivingContracts.length > 70, `only ${skydivingContracts.length} contracts`);
   assert.ok(skydivingNodeTypes.length > 30, `only ${skydivingNodeTypes.length} node types`);
-  assert.equal(skydivingFiniteValues.length, 18);
+  assert.equal(skydivingFiniteValues.length, 19);
 });
 
 test("a product may be built against the catalog", () => {
