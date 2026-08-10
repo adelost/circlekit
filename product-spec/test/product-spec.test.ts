@@ -29,7 +29,6 @@ import {
   logOutputManifest,
   mapFiniteCases,
   navigationActivePageContract,
-  navigationEventContract,
   navigationGuardContract,
   navigationConformance,
   navigationRouteContract,
@@ -297,9 +296,9 @@ const navigationId = "fixture.closed-navigation";
 const activePageContract = navigationActivePageContract(navigationId);
 const routeIntentContract = navigationRouteContract(navigationId);
 const sessionGuardContract = navigationGuardContract("fixture.session-ready");
-const menuActivateContract = navigationEventContract({
+const menuActivateContract = {
   id: "fixture.menu-activate", kind: "event", boundary: "ui-event", fields: [],
-} as const);
+} as const;
 const guardService = service({
   id: "fixture.guard-service",
   inputs: [],
@@ -457,22 +456,33 @@ const nativeClosedNavigation: NativeNavigationBindingManifest = {
     publisherPortRef: "navigation.service.activePage",
     pageHostPortRef: "page.closed-host.activePage",
   }],
-  actionGroups: ["phone", "wear"].map((artifactRef) => ({
-    artifactRef,
-    componentInstanceRef: "weather.card",
-    actions: [
-      {
-        sourcePortRef: "weather.card.route",
-        targetPortRef: "navigation.service.route",
-        effect: "push" as const,
-      },
-      {
-        sourcePortRef: "weather.card.activate",
-        targetPortRef: "weather.event-sink.activate",
+  actionGroups: ["phone", "wear"].flatMap((artifactRef) => [
+    {
+      artifactRef,
+      componentInstanceRef: "control.main",
+      actions: [{
+        sourcePortRef: "control.main.activate",
+        targetPortRef: "ui.controller.trigger",
         effect: "dispatch" as const,
-      },
-    ],
-  })),
+      }],
+    },
+    {
+      artifactRef,
+      componentInstanceRef: "weather.card",
+      actions: [
+        {
+          sourcePortRef: "weather.card.route",
+          targetPortRef: "navigation.service.route",
+          effect: "push" as const,
+        },
+        {
+          sourcePortRef: "weather.card.activate",
+          targetPortRef: "weather.event-sink.activate",
+          effect: "dispatch" as const,
+        },
+      ],
+    },
+  ]),
 };
 
 if (false) {
@@ -1233,21 +1243,32 @@ test("page navigation compiles one RouteIntent and neutral action groups into th
     id: `${navigationId}.page`, values: ["MAIN", "DETAILS"],
   });
   assert.equal("menus" in product.navigation, false);
-  assert.deepEqual(product.navigation.actionGroups, [{
-    componentInstanceRef: "weather.card",
-    pageRefs: ["MAIN"],
-    artifactRefs: ["phone", "wear"],
-    actions: [
-      {
-        id: "route", kind: "route", sourcePortRef: "weather.card.route",
-        targetPortRef: "navigation.service.route", contractRef: routeIntentContract.id, effect: "push",
-      },
-      {
-        id: "activate", kind: "event", sourcePortRef: "weather.card.activate",
-        targetPortRef: "weather.event-sink.activate", contractRef: menuActivateContract.id, effect: "dispatch",
-      },
-    ],
-  }]);
+  assert.deepEqual(product.navigation.actionGroups, [
+    {
+      componentInstanceRef: "control.main",
+      pageRefs: ["DETAILS", "MAIN"],
+      artifactRefs: ["phone", "wear"],
+      actions: [{
+        id: "activate", kind: "event", sourcePortRef: "control.main.activate",
+        targetPortRef: "ui.controller.trigger", contractRef: actionContract.id, effect: "dispatch",
+      }],
+    },
+    {
+      componentInstanceRef: "weather.card",
+      pageRefs: ["MAIN"],
+      artifactRefs: ["phone", "wear"],
+      actions: [
+        {
+          id: "route", kind: "route", sourcePortRef: "weather.card.route",
+          targetPortRef: "navigation.service.route", contractRef: routeIntentContract.id, effect: "push",
+        },
+        {
+          id: "activate", kind: "event", sourcePortRef: "weather.card.activate",
+          targetPortRef: "weather.event-sink.activate", contractRef: menuActivateContract.id, effect: "dispatch",
+        },
+      ],
+    },
+  ]);
 });
 
 test("route target contradiction is unrepresentable and service-origin route is rejected", () => {
@@ -1922,7 +1943,15 @@ const conformingManifest: NativeBindingManifest = {
     activePageBindings: [{
       publisherPortRef: "navigation.service.activePage", pageHostPortRef: "page.host.activePage",
     }],
-    actionGroups: [],
+    actionGroups: ["phone", "wear"].map((artifactRef) => ({
+      artifactRef,
+      componentInstanceRef: "control.main",
+      actions: [{
+        sourcePortRef: "control.main.activate",
+        targetPortRef: "ui.controller.trigger",
+        effect: "dispatch" as const,
+      }],
+    })),
   },
 };
 
@@ -2041,6 +2070,15 @@ test("one host checks only its component profiles while host coverage checks the
       artifacts: profiles.map((artifactRef) => ({
         artifactRef, entryPageRef: "MAIN",
         pages: [{ pageRef: "MAIN", restore: "root" as const, back: "system" as const, guardContractRef: null }],
+      })),
+      actionGroups: profiles.map((artifactRef) => ({
+        artifactRef,
+        componentInstanceRef: "control.main",
+        actions: [{
+          sourcePortRef: "control.main.activate",
+          targetPortRef: "ui.controller.trigger",
+          effect: "dispatch" as const,
+        }],
       })),
     },
   });

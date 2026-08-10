@@ -94,7 +94,7 @@ whose sole target is the finite `target: PageId` payload; there is no second
 target in its id or metadata. UI events may originate only at mounted component
 outputs and must bind a service input. The navigation service publishes the
 finite active PageId to one declared page-host component input. Typed route and
-event outputs on any mounted component compile into neutral `actionGroups`;
+ordinary event outputs on every mounted component compile into neutral `actionGroups`;
 menus are ordinary component types, instances and mounts, not a second catalog.
 Guards are service-output state contracts wired into the same navigation
 service, never node-role strings or TypeScript predicates.

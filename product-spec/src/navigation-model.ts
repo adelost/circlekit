@@ -49,12 +49,6 @@ export interface NavigationRouteIntentContract extends LegoContract {
   readonly navigation: { readonly kind: "route"; readonly effect: "push" };
 }
 
-export interface NavigationEventContract extends LegoContract {
-  readonly kind: "event";
-  readonly boundary: "ui-event";
-  readonly navigation: { readonly kind: "event" };
-}
-
 export interface NavigationActivePageContract extends LegoContract {
   readonly kind: "state";
   readonly boundary: "presentation";
@@ -139,14 +133,6 @@ export function navigationGuardContract(id: string): NavigationGuardContract {
   } as const;
   validateContract(contract);
   return contract;
-}
-
-export function navigationEventContract<
-  const Contract extends LegoContract & { readonly kind: "event"; readonly boundary: "ui-event" },
->(contract: Contract): Contract & NavigationEventContract {
-  const tagged = { ...contract, navigation: { kind: "event" } as const };
-  validateContract(tagged);
-  return tagged;
 }
 
 export function defineProductNavigation<
@@ -261,8 +247,7 @@ export function compileProductNavigation(input: {
   }
 
   validateGuardInputs(uniqueGuardContracts(declaration.pages), activeOutput.ownerId, graph, nodeById, nodeTypeById);
-  const actionOutputs = graph.portRegistry.componentPorts.filter((port) =>
-    port.direction === "output" && isNavigationActionContract(contractById.get(port.contractRef)));
+  const actionOutputs = graph.portRegistry.componentPorts.filter((port) => port.direction === "output");
   const bindings = new Map(graph.portRegistry.bindings.map((binding) => [binding.from, binding]));
   const actionGroups = [...new Set(actionOutputs.map(({ ownerId }) => ownerId))].sort()
     .map((ownerId): CompiledProductActionGroup => {
@@ -375,10 +360,6 @@ function uniqueGuardContracts(pages: readonly ProductPageDeclaration[]): Navigat
 
 function sameNavigationContract(actual: LegoContract | undefined, expected: LegoContract): boolean {
   return actual !== undefined && actual.id === expected.id && contractFingerprint(actual) === contractFingerprint(expected);
-}
-
-function isNavigationActionContract(contract: LegoContract | undefined): contract is NavigationRouteIntentContract | NavigationEventContract {
-  return isRouteContract(contract) || contract?.navigation?.kind === "event";
 }
 
 function isRouteContract(contract: LegoContract | undefined): contract is NavigationRouteIntentContract {

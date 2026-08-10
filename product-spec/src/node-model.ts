@@ -38,7 +38,6 @@ export interface LegoField {
 export type LegoNavigationContract =
   | { readonly kind: "active-page" }
   | { readonly kind: "guard" }
-  | { readonly kind: "event" }
   | { readonly kind: "route"; readonly effect: "push" };
 
 export function valueRef(ref: string): LegoValueRef {
@@ -440,9 +439,6 @@ export function validateContract(contract: LegoContract): void {
       || !("finite" in target[0]!.value) || target[0]!.value.finite !== true) {
       throw new Error(`navigation route contract '${contract.id}' must carry one finite 'target' field`);
     }
-  } else if (contract.navigation?.kind === "event"
-    && (contract.kind !== "event" || contract.boundary !== "ui-event")) {
-    throw new Error(`navigation event contract '${contract.id}' must be a ui-event`);
   } else if (contract.navigation?.kind === "guard"
     && (contract.kind !== "state" || contract.boundary !== "service-internal")) {
     throw new Error(`navigation guard contract '${contract.id}' must be service-internal state`);
