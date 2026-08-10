@@ -2535,6 +2535,13 @@ test("native manifest decoding requires exact renderer, node and navigation axes
   const invalidComponent = (invalidSurface.components as Array<Record<string, unknown>>)[0]!;
   (invalidComponent.mounts as Array<Record<string, unknown>>)[0]!.surface = "desktop";
   assert.throws(() => decodeNativeBindingManifest(invalidSurface), /is not a portable surface/);
+  const emptyTypedEmitter = structuredClone(conformingManifest) as unknown as Record<string, unknown>;
+  const readOnlyComponent = (emptyTypedEmitter.components as Array<Record<string, unknown>>)[1]!;
+  readOnlyComponent.eventEmitter = { kind: "typed", bindings: [] };
+  assert.throws(
+    () => decodeNativeBindingManifest(emptyTypedEmitter),
+    /typed eventEmitter has no binding; use kind 'empty'/,
+  );
   const partial = { ...conformingManifest } as Record<string, unknown>;
   delete partial.nodes;
   assert.throws(() => decodeNativeBindingManifest(partial), /manifest nodes must be an array/);

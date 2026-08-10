@@ -413,6 +413,14 @@ export function decodeNativeBindingManifest(raw: unknown): NativeBindingManifest
       if (emitterKind !== "empty" && emitterKind !== "typed") {
         throw new Error(`component ${index} eventEmitter kind '${emitterKind}' is unsupported`);
       }
+      const eventBindings = emitterKind === "typed"
+        ? list(eventEmitter.bindings, `component ${index} eventEmitter bindings`)
+        : [];
+      if (emitterKind === "typed" && eventBindings.length === 0) {
+        throw new Error(
+          `component ${index} typed eventEmitter has no binding; use kind 'empty' for a read-only component`,
+        );
+      }
       return {
         component: {
           instanceRef: requiredString(component.instanceRef, `component ${index} identity instanceRef`),
@@ -438,8 +446,7 @@ export function decodeNativeBindingManifest(raw: unknown): NativeBindingManifest
         }),
         eventEmitter: emitterKind === "empty" ? { kind: "empty" as const } : {
           kind: "typed" as const,
-          bindings: list(eventEmitter.bindings, `component ${index} eventEmitter bindings`)
-            .map((bindingValue, bindingIndex) => {
+          bindings: eventBindings.map((bindingValue, bindingIndex) => {
               const binding = record(bindingValue, `component ${index} event binding ${bindingIndex}`);
               return {
                 sourcePortRef: requiredString(binding.sourcePortRef,
