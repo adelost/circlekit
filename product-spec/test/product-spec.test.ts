@@ -175,7 +175,7 @@ const control = {
   bindings: {
     inputs: {
       state: "ui.projection.model",
-      phasePresentation: adapterFields(phaseAuthority.adapter).outputPortRef,
+      phasePresentation: phaseDefinition.presentationPortRef,
     },
     events: { activate: "ui.controller.trigger" },
   },
@@ -775,7 +775,7 @@ test("closed state authority rejects incomplete, invented and overlapping presen
       baseDeclaration.nodes[0], baseDeclaration.nodes[1], baseDeclaration.nodes[2],
       { id: "ui.projection", nodeTypeRef: handwrittenCopy.id, config: {}, bindings: {
         state: "ui.controller.state",
-        generated: adapterFields(phaseAuthority.adapter).outputPortRef,
+        generated: phaseDefinition.presentationPortRef,
       } },
     ],
   }), /presentation-adapter' is present and feeds 'ui.projection'/);
@@ -1131,7 +1131,7 @@ test("closed state authority rejects incomplete, invented and overlapping presen
       componentTypeRef: competingControlType.id,
       bindings: { ...control.bindings, inputs: {
         state: "ui.projection.model",
-        phasePresentation: adapterFields(phaseAuthority.adapter).outputPortRef,
+        phasePresentation: phaseDefinition.presentationPortRef,
         alternatePresentation: alternateDefinition.presentationPortRef,
       } },
     }],
