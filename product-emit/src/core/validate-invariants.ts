@@ -6,10 +6,10 @@ import type { Diagnostic } from "./model.js";
 export type PortableInvariant = Pick<InvariantSpec, "id" | "statement">;
 
 /** Structural validation stays repo- and platform-independent. */
-export function validateInvariants(
+export function validateInvariants<Target extends string>(
   invariants: readonly PortableInvariant[],
   productId: string,
-  diagnostics: Diagnostic[],
+  diagnostics: Diagnostic<Target>[],
 ): void {
   const seen = new Set<string>();
   for (const invariant of invariants) {

@@ -5,8 +5,21 @@ export function diagnostic(
   declarationKind: string,
   source: SourceRef,
   message: string,
-  target?: "registry" | "kotlin",
-): Diagnostic {
+): Diagnostic<never>;
+export function diagnostic<Target extends string>(
+  rule: string,
+  declarationKind: string,
+  source: SourceRef,
+  message: string,
+  target: Target,
+): Diagnostic<Target>;
+export function diagnostic(
+  rule: string,
+  declarationKind: string,
+  source: SourceRef,
+  message: string,
+  target?: string,
+): Diagnostic<string> {
   return {
     rule,
     declarationKind,
@@ -21,7 +34,7 @@ export function registryDiagnostic(
   rule: string,
   bindingId: string,
   message: string,
-): Diagnostic {
+): Diagnostic<"registry"> {
   return {
     rule,
     declarationKind: "native-binding",
