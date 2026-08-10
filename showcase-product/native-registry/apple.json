@@ -1,0 +1,238 @@
+{
+  "stage": "native-export",
+  "schemaVersion": 4,
+  "sourceFile": "showcase-iphone/Sources/Generated/GeneratedShowcaseProduct.swift",
+  "profiles": [
+    "iphone-full-ui",
+    "watchos-full-ui"
+  ],
+  "components": [
+    {
+      "componentId": "foundation.colors",
+      "rendererId": "ShowcaseComponentScreen",
+      "profiles": [
+        "iphone-full-ui",
+        "watchos-full-ui"
+      ]
+    },
+    {
+      "componentId": "foundation.geometry",
+      "rendererId": "ShowcaseComponentScreen",
+      "profiles": [
+        "iphone-full-ui",
+        "watchos-full-ui"
+      ]
+    },
+    {
+      "componentId": "atom.icon-action",
+      "rendererId": "ShowcaseComponentScreen",
+      "profiles": [
+        "iphone-full-ui",
+        "watchos-full-ui"
+      ]
+    },
+    {
+      "componentId": "control.action-row",
+      "rendererId": "ShowcaseComponentScreen",
+      "profiles": [
+        "iphone-full-ui",
+        "watchos-full-ui"
+      ]
+    },
+    {
+      "componentId": "control.choice-row",
+      "rendererId": "ShowcaseComponentScreen",
+      "profiles": [
+        "iphone-full-ui",
+        "watchos-full-ui"
+      ]
+    },
+    {
+      "componentId": "control.adjustment",
+      "rendererId": "ShowcaseComponentScreen",
+      "profiles": [
+        "iphone-full-ui",
+        "watchos-full-ui"
+      ]
+    },
+    {
+      "componentId": "control.progress",
+      "rendererId": "ShowcaseComponentScreen",
+      "profiles": [
+        "iphone-full-ui",
+        "watchos-full-ui"
+      ]
+    },
+    {
+      "componentId": "control.press-ring",
+      "rendererId": "ShowcaseComponentScreen",
+      "profiles": [
+        "iphone-full-ui",
+        "watchos-full-ui"
+      ]
+    },
+    {
+      "componentId": "input.text",
+      "rendererId": "ShowcaseComponentScreen",
+      "profiles": [
+        "iphone-full-ui",
+        "watchos-full-ui"
+      ]
+    },
+    {
+      "componentId": "media.capture",
+      "rendererId": "ShowcaseComponentScreen",
+      "profiles": [
+        "iphone-full-ui",
+        "watchos-full-ui"
+      ]
+    },
+    {
+      "componentId": "media.playback",
+      "rendererId": "ShowcaseComponentScreen",
+      "profiles": [
+        "iphone-full-ui",
+        "watchos-full-ui"
+      ]
+    },
+    {
+      "componentId": "template.screens",
+      "rendererId": "ShowcaseComponentScreen",
+      "profiles": [
+        "iphone-full-ui",
+        "watchos-full-ui"
+      ]
+    },
+    {
+      "componentId": "flow.source",
+      "rendererId": "ShowcaseComponentScreen",
+      "profiles": [
+        "iphone-full-ui",
+        "watchos-full-ui"
+      ]
+    },
+    {
+      "componentId": "flow.update",
+      "rendererId": "ShowcaseComponentScreen",
+      "profiles": [
+        "iphone-full-ui",
+        "watchos-full-ui"
+      ]
+    },
+    {
+      "componentId": "flow.service",
+      "rendererId": "ShowcaseComponentScreen",
+      "profiles": [
+        "iphone-full-ui",
+        "watchos-full-ui"
+      ]
+    }
+  ],
+  "icons": [
+    {
+      "iconId": "palette",
+      "nativeSymbol": "ShowcaseVectorIcon"
+    },
+    {
+      "iconId": "grid",
+      "nativeSymbol": "ShowcaseVectorIcon"
+    },
+    {
+      "iconId": "watch",
+      "nativeSymbol": "ShowcaseVectorIcon"
+    },
+    {
+      "iconId": "touchdown-run",
+      "nativeSymbol": "ShowcaseVectorIcon"
+    },
+    {
+      "iconId": "sliders",
+      "nativeSymbol": "ShowcaseVectorIcon"
+    },
+    {
+      "iconId": "download",
+      "nativeSymbol": "ShowcaseVectorIcon"
+    },
+    {
+      "iconId": "record",
+      "nativeSymbol": "ShowcaseVectorIcon"
+    },
+    {
+      "iconId": "pencil",
+      "nativeSymbol": "ShowcaseVectorIcon"
+    },
+    {
+      "iconId": "play",
+      "nativeSymbol": "ShowcaseVectorIcon"
+    },
+    {
+      "iconId": "layers",
+      "nativeSymbol": "ShowcaseVectorIcon"
+    },
+    {
+      "iconId": "wifi",
+      "nativeSymbol": "ShowcaseVectorIcon"
+    },
+    {
+      "iconId": "wrench",
+      "nativeSymbol": "ShowcaseVectorIcon"
+    }
+  ],
+  "nodes": [
+    {
+      "nodeId": "catalog",
+      "nativePortId": "ShowcaseCatalogSource",
+      "profiles": [
+        "iphone-full-ui",
+        "watchos-full-ui"
+      ],
+      "inputPorts": [],
+      "outputPorts": [
+        "model"
+      ]
+    },
+    {
+      "nodeId": "navigation",
+      "nativePortId": "ShowcaseNavigationController",
+      "profiles": [
+        "iphone-full-ui",
+        "watchos-full-ui"
+      ],
+      "inputPorts": [
+        "foundationColors",
+        "foundationGeometry",
+        "atomIconAction",
+        "controlActionRow",
+        "controlChoiceRow",
+        "controlAdjustment",
+        "controlProgress",
+        "controlPressRing",
+        "inputText",
+        "mediaCapture",
+        "mediaPlayback",
+        "templateScreens",
+        "flowSource",
+        "flowUpdate",
+        "flowService"
+      ],
+      "outputPorts": [
+        "destination"
+      ]
+    },
+    {
+      "nodeId": "navigation.presentation",
+      "nativePortId": "ShowcaseNavigationController",
+      "profiles": [
+        "iphone-full-ui",
+        "watchos-full-ui"
+      ],
+      "inputPorts": [
+        "destination"
+      ],
+      "outputPorts": [
+        "model"
+      ]
+    }
+  ],
+  "finiteValues": []
+}

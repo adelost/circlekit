@@ -1,6 +1,6 @@
 {
   "stage": "native-export",
-  "schemaVersion": 3,
+  "schemaVersion": 4,
   "sourceFile": "showcase-catalog/src/main/java/io/v1d/circlekit/showcase/catalog/ShowcaseNativeBindings.kt",
   "profiles": ["phone-full-ui", "wear-full-ui"],
   "components": [

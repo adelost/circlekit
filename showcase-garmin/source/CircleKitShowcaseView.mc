@@ -3,8 +3,12 @@ import Toybox.Math;
 import Toybox.WatchUi;
 
 class CircleKitShowcaseView extends WatchUi.View {
+    var _icon;
+
     function initialize() {
         View.initialize();
+        GeneratedCircleKitShowcase.requireNativeBindings();
+        _icon = GeneratedCircleKitShowcase.nativeIcon(GeneratedCircleKitShowcase.ICON_ASSET_REF);
     }
 
     function onUpdate(dc as Dc) as Void {
@@ -61,14 +65,14 @@ class CircleKitShowcaseView extends WatchUi.View {
 
     private function drawProductIcon(dc, centreX, top) {
         var size = 28.0;
-        var scale = size / GeneratedCircleKitShowcase.ICON_VIEWPORT_WIDTH;
+        var scale = size / _icon["viewportWidth"];
         var left = centreX - (size / 2.0);
         dc.setColor(GeneratedCircleKitShowcase.COLOR_ICON, Graphics.COLOR_TRANSPARENT);
 
         for (var fillIndex = 0;
-                fillIndex < GeneratedCircleKitShowcase.ICON_FILL_PATHS.size();
+                fillIndex < _icon["fillPaths"].size();
                 fillIndex += 1) {
-            var sourceFill = GeneratedCircleKitShowcase.ICON_FILL_PATHS[fillIndex];
+            var sourceFill = _icon["fillPaths"][fillIndex];
             var fillPoints = [];
             for (var pointIndex = 0; pointIndex < sourceFill.size(); pointIndex += 1) {
                 var point = sourceFill[pointIndex];
@@ -81,10 +85,10 @@ class CircleKitShowcaseView extends WatchUi.View {
         }
 
         for (var strokeIndex = 0;
-                strokeIndex < GeneratedCircleKitShowcase.ICON_STROKE_PATHS.size();
+                strokeIndex < _icon["strokePaths"].size();
                 strokeIndex += 1) {
-            var sourceStroke = GeneratedCircleKitShowcase.ICON_STROKE_PATHS[strokeIndex];
-            dc.setPenWidth((GeneratedCircleKitShowcase.ICON_STROKE_WIDTHS[strokeIndex] * scale).toNumber());
+            var sourceStroke = _icon["strokePaths"][strokeIndex];
+            dc.setPenWidth((_icon["strokeWidths"][strokeIndex] * scale).toNumber());
             for (var lineIndex = 1; lineIndex < sourceStroke.size(); lineIndex += 1) {
                 var from = sourceStroke[lineIndex - 1];
                 var to = sourceStroke[lineIndex];

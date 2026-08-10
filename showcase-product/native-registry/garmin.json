@@ -1,0 +1,121 @@
+{
+  "stage": "native-export",
+  "schemaVersion": 4,
+  "sourceFile": "showcase-garmin/source/GeneratedCircleKitShowcase.mc",
+  "profiles": [
+    "garmin-limited-ui"
+  ],
+  "components": [
+    {
+      "componentId": "control.progress",
+      "rendererId": "CircleKitShowcaseView.drawProgressDial",
+      "profiles": [
+        "garmin-limited-ui"
+      ]
+    }
+  ],
+  "icons": [
+    {
+      "iconId": "palette",
+      "nativeSymbol": "GeneratedCircleKitShowcase.nativeIcon"
+    },
+    {
+      "iconId": "grid",
+      "nativeSymbol": "GeneratedCircleKitShowcase.nativeIcon"
+    },
+    {
+      "iconId": "touchdown-run",
+      "nativeSymbol": "GeneratedCircleKitShowcase.nativeIcon"
+    },
+    {
+      "iconId": "pencil",
+      "nativeSymbol": "GeneratedCircleKitShowcase.nativeIcon"
+    },
+    {
+      "iconId": "play",
+      "nativeSymbol": "GeneratedCircleKitShowcase.nativeIcon"
+    },
+    {
+      "iconId": "layers",
+      "nativeSymbol": "GeneratedCircleKitShowcase.nativeIcon"
+    },
+    {
+      "iconId": "wifi",
+      "nativeSymbol": "GeneratedCircleKitShowcase.nativeIcon"
+    },
+    {
+      "iconId": "watch",
+      "nativeSymbol": "GeneratedCircleKitShowcase.nativeIcon"
+    },
+    {
+      "iconId": "sliders",
+      "nativeSymbol": "GeneratedCircleKitShowcase.nativeIcon"
+    },
+    {
+      "iconId": "download",
+      "nativeSymbol": "GeneratedCircleKitShowcase.nativeIcon"
+    },
+    {
+      "iconId": "record",
+      "nativeSymbol": "GeneratedCircleKitShowcase.nativeIcon"
+    },
+    {
+      "iconId": "wrench",
+      "nativeSymbol": "GeneratedCircleKitShowcase.nativeIcon"
+    }
+  ],
+  "nodes": [
+    {
+      "nodeId": "catalog",
+      "nativePortId": "GeneratedCircleKitShowcase.catalogModel",
+      "profiles": [
+        "garmin-limited-ui"
+      ],
+      "inputPorts": [],
+      "outputPorts": [
+        "model"
+      ]
+    },
+    {
+      "nodeId": "navigation",
+      "nativePortId": "GeneratedCircleKitShowcase.open",
+      "profiles": [
+        "garmin-limited-ui"
+      ],
+      "inputPorts": [
+        "foundationColors",
+        "foundationGeometry",
+        "atomIconAction",
+        "controlActionRow",
+        "controlChoiceRow",
+        "controlAdjustment",
+        "controlProgress",
+        "controlPressRing",
+        "inputText",
+        "mediaCapture",
+        "mediaPlayback",
+        "templateScreens",
+        "flowSource",
+        "flowUpdate",
+        "flowService"
+      ],
+      "outputPorts": [
+        "destination"
+      ]
+    },
+    {
+      "nodeId": "navigation.presentation",
+      "nativePortId": "GeneratedCircleKitShowcase.navigationModel",
+      "profiles": [
+        "garmin-limited-ui"
+      ],
+      "inputPorts": [
+        "destination"
+      ],
+      "outputPorts": [
+        "model"
+      ]
+    }
+  ],
+  "finiteValues": []
+}

@@ -26,7 +26,7 @@ enum class ShowcaseFamily(
 
 object ShowcaseManifest {
     const val PRODUCT_ID: String = "circlekit-showcase"
-    const val PRODUCT_SPEC_VERSION: String = "0.3.42"
+    const val PRODUCT_SPEC_VERSION: String = "0.3.46"
 
     val profiles: Set<String> = ShowcaseArtifactProfile.entries.mapTo(linkedSetOf(), ShowcaseArtifactProfile::id)
 

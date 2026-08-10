@@ -68,6 +68,7 @@ struct ShowcaseScenario: Identifiable, Hashable {
 
 struct ShowcaseComponent: Identifiable, Hashable {
     let id: GeneratedShowcaseComponentId
+    let rendererId: String
     let title: String
     let iconId: String
     let scenarios: [ShowcaseScenario]
@@ -116,6 +117,7 @@ struct ShowcaseIconPath: Hashable {
 
 struct ShowcaseIconAsset: Identifiable, Hashable {
     let id: String
+    let nativeSymbol: String
     let viewportWidth: CGFloat
     let viewportHeight: CGFloat
     let paths: [ShowcaseIconPath]
@@ -125,6 +127,10 @@ struct ShowcaseNode: Hashable {
     let id: GeneratedShowcaseNodeId
     let typeRef: String
     let kind: String
+    let nativePortId: String
+    let profiles: [GeneratedShowcaseArtifactId]
+    let inputPorts: [String]
+    let outputPorts: [String]
 }
 
 struct ShowcasePortBinding: Hashable {

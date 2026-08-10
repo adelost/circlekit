@@ -17,11 +17,15 @@ struct ShowcaseCatalogSource: ShowcaseNativeBinding {
     }
 
     func component(_ id: GeneratedShowcaseComponentId) -> ShowcaseComponent {
-        GeneratedShowcaseProduct.components.first(where: { $0.id == id })!
+        let component = GeneratedShowcaseProduct.components.first(where: { $0.id == id })!
+        precondition(component.rendererId == "ShowcaseComponentScreen")
+        return component
     }
 
     func icon(_ id: String) -> ShowcaseIconAsset {
-        GeneratedShowcaseProduct.icons.first(where: { $0.id == id })!
+        let icon = GeneratedShowcaseProduct.icons.first(where: { $0.id == id })!
+        precondition(icon.nativeSymbol == "ShowcaseVectorIcon")
+        return icon
     }
 }
 
@@ -66,10 +70,14 @@ final class ShowcaseNativeEnvironment {
     }
 
     func binding(for id: GeneratedShowcaseNodeId) -> any ShowcaseNativeBinding {
+        let registration = GeneratedShowcaseProduct.nodes.first(where: { $0.id == id })!
         switch id {
-        case .catalog: catalog
-        case .navigation: navigation
-        case .navigationPresentation: navigation
+        case .catalog:
+            precondition(registration.nativePortId == "ShowcaseCatalogSource")
+            return catalog
+        case .navigation, .navigationPresentation:
+            precondition(registration.nativePortId == "ShowcaseNavigationController")
+            return navigation
         }
     }
 }

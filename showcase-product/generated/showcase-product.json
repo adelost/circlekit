@@ -4869,7 +4869,7 @@
       }
     ]
   },
-  "productSpecVersion": "0.3.42",
+  "productSpecVersion": "0.3.46",
   "rendererBindings": [
     {
       "capabilities": [
@@ -4910,7 +4910,7 @@
       "id": "garmin-connectiq-monkeyc"
     }
   ],
-  "schemaVersion": 7,
+  "schemaVersion": 8,
   "showcase": {
     "cases": [
       {
@@ -5405,5 +5405,6 @@
         "title": "FLOWS"
       }
     ]
-  }
+  },
+  "stateAuthorities": []
 }

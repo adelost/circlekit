@@ -7,6 +7,8 @@ import {
   PRODUCT_SPEC_SCHEMA_VERSION,
   buildOutputManifest,
   productJsonEmitter,
+  type NativeBindingManifest,
+  type ProductEmitterPlugin,
 } from "@v1d/product-spec";
 import { showcaseKotlinEmitter } from "../src/emit-kotlin.js";
 import { CIRCLEKIT_ASSET_CATALOG, CIRCLEKIT_STYLE } from "@v1d/circlekit-assets";
@@ -15,6 +17,7 @@ import { showcaseSwiftEmitter } from "../src/emit-swift.js";
 import {
   SHOWCASE_ARTIFACT_PROFILES,
   compileCircleKitShowcaseProduct,
+  requireCircleKitShowcaseNativeConformance,
 } from "../src/product.js";
 
 const root = resolve(import.meta.dirname, "../..");
@@ -33,12 +36,56 @@ async function productSpecVersion(): Promise<string> {
   return raw.version as string;
 }
 
+const swiftEmitter = () => showcaseSwiftEmitter(
+  "generated/GeneratedShowcaseProduct.swift",
+  "generated/apple-native.json",
+  [
+    { id: "apple-iphone-swiftui", surfaces: ["compact", "wide"] },
+    { id: "apple-watchos-swiftui", surfaces: ["round"] },
+  ],
+  CIRCLEKIT_ASSET_CATALOG,
+  CIRCLEKIT_STYLE,
+);
+
+const garminEmitter = () => showcaseGarminEmitter(
+  "generated/GeneratedCircleKitShowcase.mc",
+  "generated/garmin-native.json",
+  CIRCLEKIT_ASSET_CATALOG,
+  CIRCLEKIT_STYLE,
+);
+
+function emittedRegistry(
+  emitter: ProductEmitterPlugin,
+  product: ReturnType<typeof compileCircleKitShowcaseProduct>,
+  id: string,
+): NativeBindingManifest {
+  const output = emitter.emit(product).find((artifact) => artifact.id === id);
+  assert.notEqual(output, undefined);
+  return decodeNativeBindingManifest(JSON.parse(output!.content));
+}
+
+function nativeHosts(
+  product: ReturnType<typeof compileCircleKitShowcaseProduct>,
+  android: NativeBindingManifest,
+): readonly NativeBindingManifest[] {
+  return [
+    android,
+    emittedRegistry(swiftEmitter(), product, "showcase-swiftui-native-manifest"),
+    emittedRegistry(garminEmitter(), product, "showcase-garmin-native-manifest"),
+  ];
+}
+
 test("one compiled ProductSpec owns Android, Apple and Garmin Showcase structure", async () => {
-  const product = compileCircleKitShowcaseProduct(await registry(), await productSpecVersion());
+  const android = await registry();
+  const version = await productSpecVersion();
+  assert.equal(version, "0.3.46");
+  const product = compileCircleKitShowcaseProduct(version);
   // Read from the package rather than pinned to a literal: a hardcoded number goes
   // stale on every schema bump and only ever proves which version was current the
   // day the test was written.
   assert.equal(product.schemaVersion, PRODUCT_SPEC_SCHEMA_VERSION);
+  assert.equal(product.schemaVersion, 8);
+  assert.deepEqual(product.stateAuthorities, []);
   assert.deepEqual(product.artifacts.map(({ id }) => id), SHOWCASE_ARTIFACT_PROFILES);
   assert.equal(product.showcase.sections.length, 7);
   assert.equal(product.showcase.cases.length, 15);
@@ -78,31 +125,41 @@ test("one compiled ProductSpec owns Android, Apple and Garmin Showcase structure
   const first = buildOutputManifest(product, [
     productJsonEmitter("generated/showcase-product.json"),
     showcaseKotlinEmitter("generated/GeneratedShowcaseProduct.kt"),
-    showcaseSwiftEmitter("generated/GeneratedShowcaseProduct.swift", [
-      { id: "apple-iphone-swiftui", surfaces: ["compact", "wide"] },
-      { id: "apple-watchos-swiftui", surfaces: ["round"] },
-    ], CIRCLEKIT_ASSET_CATALOG, CIRCLEKIT_STYLE),
-    showcaseGarminEmitter(
-      "generated/GeneratedCircleKitShowcase.mc", CIRCLEKIT_ASSET_CATALOG, CIRCLEKIT_STYLE,
-    ),
+    swiftEmitter(),
+    garminEmitter(),
   ], ["generated"]);
   const second = buildOutputManifest(product, [
     productJsonEmitter("generated/showcase-product.json"),
     showcaseKotlinEmitter("generated/GeneratedShowcaseProduct.kt"),
-    showcaseSwiftEmitter("generated/GeneratedShowcaseProduct.swift", [
-      { id: "apple-iphone-swiftui", surfaces: ["compact", "wide"] },
-      { id: "apple-watchos-swiftui", surfaces: ["round"] },
-    ], CIRCLEKIT_ASSET_CATALOG, CIRCLEKIT_STYLE),
-    showcaseGarminEmitter(
-      "generated/GeneratedCircleKitShowcase.mc", CIRCLEKIT_ASSET_CATALOG, CIRCLEKIT_STYLE,
-    ),
+    swiftEmitter(),
+    garminEmitter(),
   ], ["generated"]);
   assert.deepEqual(first, second);
+  const output = (id: string) => {
+    const artifact = first.artifacts.find((candidate) => candidate.id === id);
+    assert.notEqual(artifact, undefined);
+    return artifact!;
+  };
+  const apple = decodeNativeBindingManifest(JSON.parse(output("showcase-swiftui-native-manifest").content));
+  const garminRegistry = decodeNativeBindingManifest(JSON.parse(output("showcase-garmin-native-manifest").content));
+  requireCircleKitShowcaseNativeConformance(product, android, [android, apple, garminRegistry]);
 
-  const swift = showcaseSwiftEmitter("generated/GeneratedShowcaseProduct.swift", [
-    { id: "apple-iphone-swiftui", surfaces: ["compact", "wide"] },
-    { id: "apple-watchos-swiftui", surfaces: ["round"] },
-  ], CIRCLEKIT_ASSET_CATALOG, CIRCLEKIT_STYLE);
+  const swiftGenerated = output("showcase-swiftui").content;
+  for (const node of apple.nodes) {
+    assert.match(swiftGenerated, new RegExp(`nativePortId: "${node.nativePortId.replaceAll(".", "\\.")}"`, "u"));
+    for (const port of [...node.inputPorts, ...node.outputPorts]) {
+      assert.match(swiftGenerated, new RegExp(`"${port}"`, "u"));
+    }
+  }
+  const garminGenerated = output("showcase-garmin-limited-ui").content;
+  for (const node of garminRegistry.nodes) {
+    assert.match(garminGenerated, new RegExp(`"nativePortId" => "${node.nativePortId.replaceAll(".", "\\.")}"`, "u"));
+  }
+  for (const { iconId } of garminRegistry.icons) {
+    assert.match(garminGenerated, new RegExp(`"id" => "${iconId}"`, "u"));
+  }
+
+  const swift = swiftEmitter();
   const swiftSource = swift.emit(product)[0]!.content;
   for (const section of ["foundations", "atoms", "controls", "input", "media", "templates", "flows"]) {
     assert.match(swiftSource, new RegExp(`screenId: "section\\.${section}"`, "u"));
@@ -112,9 +169,7 @@ test("one compiled ProductSpec owns Android, Apple and Garmin Showcase structure
     artifacts: product.artifacts.filter(({ id }) => id !== "watchos-full-ui"),
   }), /apple-watchos-swiftui.*exactly one artifact, found 0/);
 
-  const garmin = showcaseGarminEmitter(
-    "generated/GeneratedCircleKitShowcase.mc", CIRCLEKIT_ASSET_CATALOG, CIRCLEKIT_STYLE,
-  );
+  const garmin = garminEmitter();
   assert.throws(() => garmin.emit({
     ...product,
     artifacts: product.artifacts.filter(({ id }) => id !== "garmin-limited-ui"),
@@ -128,24 +183,31 @@ test("one compiled ProductSpec owns Android, Apple and Garmin Showcase structure
 test("native component, profile and icon drift stops before emission", async () => {
   const actual = await registry();
   const version = await productSpecVersion();
-  assert.throws(() => compileCircleKitShowcaseProduct({
+  const product = compileCircleKitShowcaseProduct(version);
+  const hosts = nativeHosts(product, actual);
+  const validateAndroid = (android: NativeBindingManifest) =>
+    requireCircleKitShowcaseNativeConformance(product, android, [android, ...hosts.slice(1)]);
+  assert.throws(() => validateAndroid({
     ...actual,
     components: actual.components.slice(1),
-  }, version), /\[component\/missing\] component binding 'foundation\.colors@phone-full-ui'/);
-  assert.throws(() => compileCircleKitShowcaseProduct({
+  }), /\[component\/missing\].*foundation\.colors@phone-full-ui/);
+  assert.throws(() => validateAndroid({
     ...actual,
     components: actual.components.map((binding, index) => index === 0
       ? { ...binding, profiles: ["phone-full-ui"] }
       : binding),
-  }, version), /renders on \[phone-full-ui\], but Showcase demonstrates every component/);
-  assert.throws(() => compileCircleKitShowcaseProduct({
+  }), /renders on \[phone-full-ui\], but Showcase demonstrates every component/);
+  assert.throws(() => validateAndroid({
     ...actual,
     icons: [...actual.icons, { iconId: "orphan", nativeSymbol: "RingIcons.Orphan" }],
-  }, version), /\[icon\/orphan\] icon asset 'orphan'/);
-  assert.throws(() => compileCircleKitShowcaseProduct({
+  }), /\[icon\/orphan\] icon asset 'orphan'/);
+  assert.throws(() => validateAndroid({
     ...actual,
-    nodes: actual.nodes?.map((node) => node.nodeId === "navigation"
+    nodes: actual.nodes.map((node) => node.nodeId === "navigation"
       ? { ...node, inputPorts: node.inputPorts.slice(1) }
       : node),
-  }, version), /native node 'navigation' ports differ/);
+  }), /\[node-port\/missing\].*navigation\./);
+  assert.throws(() => requireCircleKitShowcaseNativeConformance(
+    product, actual, hosts.slice(0, 2),
+  ), /\[artifact\/missing\].*garmin-limited-ui/);
 });
