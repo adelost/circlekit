@@ -1,6 +1,6 @@
 {
   "name": "@v1d/product-spec",
-  "version": "0.3.50",
+  "version": "0.3.51",
   "description": "Product-neutral typed authoring and compiler core for v1d applications",
   "type": "module",
   "files": [
@@ -17,10 +17,14 @@
       "import": "./dist/src/foundation.js"
     }
   },
+  "bin": {
+    "v1d-check-pins": "./dist/src/pin-check-cli.js"
+  },
   "scripts": {
     "clean": "node -e \"require('node:fs').rmSync('dist',{recursive:true,force:true})\"",
     "build": "npm run clean && tsc -p tsconfig.json",
     "test": "npm run build && node --test dist/test/*.test.js",
+    "check:pins": "npm run build && node dist/src/pin-check-cli.js",
     "pack:release": "npm run test && npm pack"
   },
   "devDependencies": {

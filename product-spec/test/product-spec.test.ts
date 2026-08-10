@@ -17,6 +17,7 @@ import {
   demandPort,
   decodeNativeBindingManifest,
   defineComponentType,
+  defineProductLibraryCatalog,
   defineStateAuthority,
   defineStatePresentation,
   derive,
@@ -294,6 +295,54 @@ function fixture(overrides: Record<string, unknown> = {}) {
   }
   return defineProduct(declaration as never, assetCatalog);
 }
+
+test("a product cannot copy a library contract id even with the identical schema", () => {
+  const libraryContract = {
+    ...internalContract,
+    fields: [...internalContract.fields],
+  } as const;
+  const library = defineProductLibraryCatalog({
+    id: "fixture.library",
+    contracts: [libraryContract],
+    nodeTypes: [],
+    finiteValues: [],
+  });
+  assert.throws(
+    () => defineProduct(baseDeclaration, assetCatalog, [library]),
+    /product contract 'fixture\.internal' collides with library 'fixture\.library'/,
+  );
+});
+
+test("library provenance preserves exact imports and reserves node-type and finite-value ids", () => {
+  const library = defineProductLibraryCatalog({
+    id: "fixture.library",
+    contracts: [internalContract, demandContract],
+    nodeTypes: [source],
+    finiteValues: [fixturePhases],
+  });
+  const product = defineProduct(baseDeclaration, assetCatalog, [library]);
+  assert.deepEqual(product.nodeTypes, baseDeclaration.nodeTypes);
+  assert.deepEqual(product.finiteValues.slice(0, -1), baseDeclaration.finiteValues);
+
+  const copiedSource = {
+    ...source,
+    inputs: [...source.inputs],
+    outputs: [...source.outputs],
+  } as const;
+  assert.throws(
+    () => defineProduct({ ...baseDeclaration, nodeTypes: [
+      copiedSource,
+      ...baseDeclaration.nodeTypes.slice(1),
+    ] } as never, assetCatalog, [library]),
+    /product node type 'fixture\.source' collides with library 'fixture\.library'/,
+  );
+
+  const copiedPhases = { ...fixturePhases, values: [...fixturePhases.values] } as const;
+  assert.throws(
+    () => defineProduct({ ...baseDeclaration, finiteValues: [copiedPhases] } as never, assetCatalog, [library]),
+    /product finite value 'fixture\.phase' collides with library 'fixture\.library'/,
+  );
+});
 
 const navigationId = "fixture.closed-navigation";
 const activePageContract = navigationActivePageContract(navigationId);

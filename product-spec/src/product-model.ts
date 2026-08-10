@@ -17,6 +17,8 @@ import type {
 import {
   requireUnique,
   requireWireId,
+  validateContract,
+  validateProductNodeType,
   type LegoConfigRef,
   type LegoContract,
   type LegoFiniteValueDeclaration,
@@ -46,6 +48,44 @@ import {
 } from "./visual-model.js";
 
 export const PRODUCT_SPEC_SCHEMA_VERSION = 9 as const;
+
+export interface ProductLibraryCatalog<
+  Id extends string = string,
+  Contracts extends readonly LegoContract[] = readonly LegoContract[],
+  NodeTypes extends readonly ProductNodeType[] = readonly ProductNodeType[],
+  FiniteValues extends readonly LegoFiniteValueDeclaration[] = readonly LegoFiniteValueDeclaration[],
+> {
+  readonly kind: "product-library-catalog";
+  readonly id: Id;
+  readonly contracts: Contracts;
+  readonly nodeTypes: NodeTypes;
+  readonly finiteValues: FiniteValues;
+}
+
+export interface ProductLibraryCatalogDeclaration<
+  Id extends string = string,
+  Contracts extends readonly LegoContract[] = readonly LegoContract[],
+  NodeTypes extends readonly ProductNodeType[] = readonly ProductNodeType[],
+  FiniteValues extends readonly LegoFiniteValueDeclaration[] = readonly LegoFiniteValueDeclaration[],
+> {
+  readonly id: Id;
+  readonly contracts: Contracts;
+  readonly nodeTypes: NodeTypes;
+  readonly finiteValues: FiniteValues;
+}
+
+/** A separately supplied library catalog owns and reserves every declared wire id. */
+export function defineProductLibraryCatalog<
+  const Id extends string,
+  const Contracts extends readonly LegoContract[],
+  const NodeTypes extends readonly ProductNodeType[],
+  const FiniteValues extends readonly LegoFiniteValueDeclaration[],
+>(declaration: ProductLibraryCatalogDeclaration<Id, Contracts, NodeTypes, FiniteValues>):
+  ProductLibraryCatalog<Id, Contracts, NodeTypes, FiniteValues> {
+  const catalog = { kind: "product-library-catalog" as const, ...declaration };
+  validateProductLibraryCatalog(catalog);
+  return catalog;
+}
 
 export interface RendererBinding<Id extends string = string, Capability extends string = string> {
   readonly id: Id;
@@ -89,18 +129,19 @@ export interface ProductDeclaration<
   Nodes extends readonly ProductNodeInstance[] = readonly ProductNodeInstance[],
   ComponentTypes extends readonly ComponentType[] = readonly ComponentType[],
   Components extends readonly ProductComponentInstance[] = readonly ProductComponentInstance[],
+  AvailableNodeTypes extends readonly ProductNodeType[] = NodeTypes,
 > {
   readonly id: string;
   readonly rendererBindings: readonly RendererBinding[];
   readonly artifacts: readonly ArtifactProfile<string, string, string, NoInfer<Families[number]["screen"]>>[];
   readonly nodeTypes: NodeTypes;
-  readonly nodes: Nodes & ExactNodeInstances<NodeTypes, Nodes, ComponentTypes, Components>;
+  readonly nodes: Nodes & ExactNodeInstances<AvailableNodeTypes, Nodes, ComponentTypes, Components>;
   readonly configs: readonly LegoConfigRef[];
   readonly finiteValues: readonly LegoFiniteValueDeclaration[];
   /** Canonical closed state axes plus their mandatory executable presentation adapters. */
   readonly stateAuthorities: readonly StateAuthority[];
   readonly componentTypes: ComponentTypes;
-  readonly components: Components & ExactComponentInstances<NodeTypes, Nodes, ComponentTypes, Components>;
+  readonly components: Components & ExactComponentInstances<AvailableNodeTypes, Nodes, ComponentTypes, Components>;
   readonly componentFamilies: Families;
   readonly palette: ProductPalette<PaletteVariant>;
   readonly assetCatalogRef: PortableAssetCatalogRef;
@@ -137,11 +178,22 @@ export function defineProduct<
   const Nodes extends readonly ProductNodeInstance[],
   const ComponentTypes extends readonly ComponentType[],
   const Components extends readonly ProductComponentInstance[],
+  const Libraries extends readonly ProductLibraryCatalog[] = readonly [],
 >(
-  declaration: ProductDeclaration<PaletteVariant, Families, NodeTypes, Nodes, ComponentTypes, Components>,
+  declaration: ProductDeclaration<
+    PaletteVariant,
+    Families,
+    NodeTypes,
+    Nodes,
+    ComponentTypes,
+    Components,
+    readonly (NodeTypes[number] | Libraries[number]["nodeTypes"][number])[]
+  >,
   assetCatalog: PortableAssetCatalog,
+  libraries: Libraries = [] as unknown as Libraries,
 ): ProductIr {
   requireWireId(declaration.id, "product");
+  validateProductLibraryUsage(declaration, libraries);
   requireUnique(declaration.rendererBindings.map(({ id }) => id), "renderer binding");
   requireUnique(declaration.artifacts.map(({ id }) => id), "artifact profile");
   requireUnique(declaration.componentFamilies.map(({ screen }) => screen), "component-family screen");
@@ -366,6 +418,143 @@ function validateFiniteValues(
   }
   const orphan = [...catalog.keys()].filter((id) => !used.has(id));
   if (orphan.length > 0) throw new Error(`orphan finite value declaration '${orphan.join("', '")}'`);
+}
+
+interface LibraryEntry<T> {
+  readonly catalogId: string;
+  readonly value: T;
+}
+
+interface ProductLibraryIndex {
+  readonly contracts: ReadonlyMap<string, LibraryEntry<LegoContract>>;
+  readonly nodeTypes: ReadonlyMap<string, LibraryEntry<ProductNodeType>>;
+  readonly finiteValues: ReadonlyMap<string, LibraryEntry<LegoFiniteValueDeclaration>>;
+}
+
+function validateProductLibraryCatalog(catalog: ProductLibraryCatalog): void {
+  requireWireId(catalog.id, "product library catalog");
+  requireUnique(catalog.contracts.map(({ id }) => id), `contract in library '${catalog.id}'`);
+  requireUnique(catalog.nodeTypes.map(({ id }) => id), `node type in library '${catalog.id}'`);
+  requireUnique(catalog.finiteValues.map(({ id }) => id), `finite value in library '${catalog.id}'`);
+
+  const contracts = new Map(catalog.contracts.map((contract) => {
+    validateContract(contract);
+    return [contract.id, contract] as const;
+  }));
+  const finiteValues = new Map(catalog.finiteValues.map((declaration) => {
+    validateFiniteDeclaration(declaration, `library '${catalog.id}'`);
+    return [declaration.id, declaration] as const;
+  }));
+
+  for (const nodeType of catalog.nodeTypes) {
+    validateProductNodeType(nodeType);
+    for (const port of [...nodeType.inputs, ...nodeType.outputs]) {
+      const declared = contracts.get(port.contract.id);
+      if (declared === undefined) {
+        throw new Error(
+          `library '${catalog.id}' node type '${nodeType.id}' uses undeclared contract '${port.contract.id}'`,
+        );
+      }
+      if (declared !== port.contract) {
+        throw new Error(
+          `library '${catalog.id}' node type '${nodeType.id}' must reference its declared contract '${port.contract.id}'`,
+        );
+      }
+    }
+  }
+  for (const contract of catalog.contracts) {
+    for (const item of contract.fields) {
+      if (!isFiniteValueRef(item.value)) continue;
+      if (!finiteValues.has(item.value.ref)) {
+        throw new Error(
+          `library '${catalog.id}' contract '${contract.id}' uses undeclared finite value '${item.value.ref}'`,
+        );
+      }
+    }
+  }
+}
+
+function validateProductLibraryUsage(
+  declaration: {
+    readonly nodeTypes: readonly ProductNodeType[];
+    readonly finiteValues: readonly LegoFiniteValueDeclaration[];
+    readonly componentTypes: readonly ComponentType[];
+    readonly navigation: Pick<
+      ProductNavigationDeclaration,
+      "pageValues" | "activePageContract" | "routeIntentContract"
+    >;
+  },
+  libraries: readonly ProductLibraryCatalog[],
+): void {
+  const index = buildProductLibraryIndex(libraries);
+  for (const nodeType of declaration.nodeTypes) {
+    requireLibraryIdentity(index.nodeTypes, nodeType.id, nodeType, "node type");
+  }
+  for (const finite of [...declaration.finiteValues, declaration.navigation.pageValues]) {
+    requireLibraryIdentity(index.finiteValues, finite.id, finite, "finite value");
+  }
+  const contracts = [
+    ...declaration.nodeTypes.flatMap((node) => [...node.inputs, ...node.outputs].map(({ contract }) => contract)),
+    ...declaration.componentTypes.flatMap((component) =>
+      [...component.inputs, ...component.outputs].map(({ contract }) => contract)),
+    declaration.navigation.activePageContract,
+    declaration.navigation.routeIntentContract,
+  ];
+  for (const contract of contracts) {
+    requireLibraryIdentity(index.contracts, contract.id, contract, "contract");
+  }
+}
+
+function buildProductLibraryIndex(libraries: readonly ProductLibraryCatalog[]): ProductLibraryIndex {
+  requireUnique(libraries.map(({ id }) => id), "product library catalog");
+  const contracts = new Map<string, LibraryEntry<LegoContract>>();
+  const nodeTypes = new Map<string, LibraryEntry<ProductNodeType>>();
+  const finiteValues = new Map<string, LibraryEntry<LegoFiniteValueDeclaration>>();
+  for (const library of libraries) {
+    validateProductLibraryCatalog(library);
+    registerLibraryIds(contracts, library.id, library.contracts, "contract");
+    registerLibraryIds(nodeTypes, library.id, library.nodeTypes, "node type");
+    registerLibraryIds(finiteValues, library.id, library.finiteValues, "finite value");
+  }
+  return { contracts, nodeTypes, finiteValues };
+}
+
+function registerLibraryIds<T extends { readonly id: string }>(
+  target: Map<string, LibraryEntry<T>>,
+  catalogId: string,
+  values: readonly T[],
+  kind: string,
+): void {
+  for (const value of values) {
+    const existing = target.get(value.id);
+    if (existing !== undefined) {
+      throw new Error(
+        `library '${catalogId}' ${kind} '${value.id}' collides with library '${existing.catalogId}'`,
+      );
+    }
+    target.set(value.id, { catalogId, value });
+  }
+}
+
+function requireLibraryIdentity<T>(
+  reserved: ReadonlyMap<string, LibraryEntry<T>>,
+  id: string,
+  value: T,
+  kind: string,
+): void {
+  const entry = reserved.get(id);
+  if (entry !== undefined && entry.value !== value) {
+    throw new Error(`product ${kind} '${id}' collides with library '${entry.catalogId}'`);
+  }
+}
+
+function validateFiniteDeclaration(declaration: LegoFiniteValueDeclaration, owner: string): void {
+  requireWireId(declaration.id, `finite value declaration in ${owner}`);
+  if (declaration.values.length === 0) {
+    throw new Error(`finite value declaration '${declaration.id}' in ${owner} has no values`);
+  }
+  requireUnique(declaration.values, `value in finite declaration '${declaration.id}'`);
+  declaration.values.forEach((value) => requireWireId(value, `value in finite declaration '${declaration.id}'`));
 }
 
 function isFiniteValueRef(value: LegoContract["fields"][number]["value"]): value is LegoFiniteValueRef {

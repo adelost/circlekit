@@ -13,16 +13,27 @@ MODE="${2:-}"
 MODULES=(designkit ringkit releasekit releasekit-ui servicekit)
 EXTENSIONS=(aar pom module)
 CHECKSUM_SUFFIXES=("" .md5 .sha1 .sha256 .sha512)
-NPM_DIRS=(product-spec circlekit-assets)
-NPM_SLUGS=(product-spec circlekit-assets)
-NPM_TARBALLS=(v1d-product-spec v1d-circlekit-assets)
-NPM_GATES=(test check:designkit)
+NPM_PACKAGES=(
+  "product-spec|product-spec|product-spec|v1d-product-spec|test"
+  "maven|circlekit-assets|circlekit-assets|v1d-circlekit-assets|check:designkit"
+  "skydiving-legos|skydiving-legos|skydiving-legos|v1d-skydiving-legos|test"
+  "product-emit|product-emit|product-emit|v1d-product-emit|test"
+)
 
-case "$AXIS" in
-  maven) PUBLISHER="publish-maven" ;;
-  product-spec) PUBLISHER="publish-product-spec" ;;
-  *) echo "unknown CircleKit release axis: $AXIS" >&2; exit 2 ;;
-esac
+PUBLISHER="publish-maven"
+release_package="circlekit-assets"
+if [[ "$AXIS" != maven ]]; then
+  release_package=""
+  for package in "${NPM_PACKAGES[@]}"; do
+    IFS='|' read -r package_axis package_dir _ _ _ <<< "$package"
+    if [[ "$package_axis" == "$AXIS" ]]; then
+      PUBLISHER="publish-$AXIS"
+      release_package="$package_dir"
+      break
+    fi
+  done
+  [[ -n "$release_package" ]] || { echo "unknown CircleKit release axis: $AXIS" >&2; exit 2; }
+fi
 
 if [[ ! "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
   echo "usage: scripts/$PUBLISHER.sh X.Y.Z [--prepare-only]" >&2
@@ -39,8 +50,6 @@ if ! git -C "$REPO_ROOT" diff --quiet ||
 fi
 
 source_sha="$(git -C "$REPO_ROOT" rev-parse HEAD)"
-release_package="circlekit-assets"
-[[ "$AXIS" == product-spec ]] && release_package="product-spec"
 package_version="$(node -p "require('$REPO_ROOT/$release_package/package.json').version")"
 [[ "$package_version" == "$VERSION" ]] || {
   echo "$PUBLISHER: $release_package version $package_version must equal release $VERSION" >&2
@@ -153,13 +162,12 @@ stage_npm_package() {
   ' "$npm_root/versions.json" "${previous_versions[@]}"
 }
 
-if [[ "$AXIS" == product-spec ]]; then
-  stage_npm_package "${NPM_DIRS[0]}" "${NPM_SLUGS[0]}" "${NPM_TARBALLS[0]}" "${NPM_GATES[0]}" "$VERSION"
-  stage_npm_package "" "${NPM_SLUGS[1]}" "${NPM_TARBALLS[1]}" ""
-else
-  stage_npm_package "" "${NPM_SLUGS[0]}" "${NPM_TARBALLS[0]}" ""
-  stage_npm_package "${NPM_DIRS[1]}" "${NPM_SLUGS[1]}" "${NPM_TARBALLS[1]}" "${NPM_GATES[1]}" "$VERSION"
-fi
+for package in "${NPM_PACKAGES[@]}"; do
+  IFS='|' read -r package_axis package_dir package_slug package_tarball package_gate <<< "$package"
+  package_release=""
+  [[ "$package_axis" == "$AXIS" ]] && package_release="$VERSION"
+  stage_npm_package "$package_dir" "$package_slug" "$package_tarball" "$package_gate" "$package_release"
+done
 
 if [[ "$AXIS" == maven ]]; then
   "$REPO_ROOT/gradlew" \
@@ -235,7 +243,7 @@ for module in "${MODULES[@]}"; do
   done
 
   metadata="$target_module/maven-metadata.xml"
-  if [[ "$AXIS" == product-spec ]]; then
+  if [[ "$AXIS" != maven ]]; then
     if [[ "$metadata_status" == 200 ]]; then
       cp "$remote_metadata" "$metadata"
     fi
@@ -295,7 +303,7 @@ if [[ "$MODE" == "--prepare-only" ]]; then
 fi
 
 commit_message="CircleKit Maven $VERSION cumulative snapshot"
-[[ "$AXIS" == product-spec ]] && commit_message="ProductSpec $VERSION cumulative snapshot"
+[[ "$AXIS" != maven ]] && commit_message="@v1d/$AXIS $VERSION cumulative snapshot"
 env -u CLOUDFLARE_API_TOKEN npx wrangler pages deploy "$cumulative_repository" \
   --project-name=circlekit \
   --branch=main \
