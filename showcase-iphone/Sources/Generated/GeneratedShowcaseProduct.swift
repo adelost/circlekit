@@ -930,6 +930,26 @@ enum GeneratedShowcaseProduct {
     static let navigationActionGroups: [ShowcaseNavigationActionGroup] = [
         ShowcaseNavigationActionGroup(
             artifactId: .iphoneFullUi,
+            componentId: .foundationColors,
+            actions: [ShowcaseNavigationAction(sourcePortRef: .foundationColorsOpen, targetPortRef: .navigationFoundationColors, effect: "dispatch")]
+        ),
+        ShowcaseNavigationActionGroup(
+            artifactId: .watchosFullUi,
+            componentId: .foundationColors,
+            actions: [ShowcaseNavigationAction(sourcePortRef: .foundationColorsOpen, targetPortRef: .navigationFoundationColors, effect: "dispatch")]
+        ),
+        ShowcaseNavigationActionGroup(
+            artifactId: .iphoneFullUi,
+            componentId: .foundationGeometry,
+            actions: [ShowcaseNavigationAction(sourcePortRef: .foundationGeometryOpen, targetPortRef: .navigationFoundationGeometry, effect: "dispatch")]
+        ),
+        ShowcaseNavigationActionGroup(
+            artifactId: .watchosFullUi,
+            componentId: .foundationGeometry,
+            actions: [ShowcaseNavigationAction(sourcePortRef: .foundationGeometryOpen, targetPortRef: .navigationFoundationGeometry, effect: "dispatch")]
+        ),
+        ShowcaseNavigationActionGroup(
+            artifactId: .iphoneFullUi,
             componentId: .atomIconAction,
             actions: [ShowcaseNavigationAction(sourcePortRef: .atomIconActionOpen, targetPortRef: .navigationAtomIconAction, effect: "dispatch")]
         ),
@@ -950,16 +970,6 @@ enum GeneratedShowcaseProduct {
         ),
         ShowcaseNavigationActionGroup(
             artifactId: .iphoneFullUi,
-            componentId: .controlAdjustment,
-            actions: [ShowcaseNavigationAction(sourcePortRef: .controlAdjustmentOpen, targetPortRef: .navigationControlAdjustment, effect: "dispatch")]
-        ),
-        ShowcaseNavigationActionGroup(
-            artifactId: .watchosFullUi,
-            componentId: .controlAdjustment,
-            actions: [ShowcaseNavigationAction(sourcePortRef: .controlAdjustmentOpen, targetPortRef: .navigationControlAdjustment, effect: "dispatch")]
-        ),
-        ShowcaseNavigationActionGroup(
-            artifactId: .iphoneFullUi,
             componentId: .controlChoiceRow,
             actions: [ShowcaseNavigationAction(sourcePortRef: .controlChoiceRowOpen, targetPortRef: .navigationControlChoiceRow, effect: "dispatch")]
         ),
@@ -970,13 +980,13 @@ enum GeneratedShowcaseProduct {
         ),
         ShowcaseNavigationActionGroup(
             artifactId: .iphoneFullUi,
-            componentId: .controlPressRing,
-            actions: [ShowcaseNavigationAction(sourcePortRef: .controlPressRingOpen, targetPortRef: .navigationControlPressRing, effect: "dispatch")]
+            componentId: .controlAdjustment,
+            actions: [ShowcaseNavigationAction(sourcePortRef: .controlAdjustmentOpen, targetPortRef: .navigationControlAdjustment, effect: "dispatch")]
         ),
         ShowcaseNavigationActionGroup(
             artifactId: .watchosFullUi,
-            componentId: .controlPressRing,
-            actions: [ShowcaseNavigationAction(sourcePortRef: .controlPressRingOpen, targetPortRef: .navigationControlPressRing, effect: "dispatch")]
+            componentId: .controlAdjustment,
+            actions: [ShowcaseNavigationAction(sourcePortRef: .controlAdjustmentOpen, targetPortRef: .navigationControlAdjustment, effect: "dispatch")]
         ),
         ShowcaseNavigationActionGroup(
             artifactId: .iphoneFullUi,
@@ -990,53 +1000,13 @@ enum GeneratedShowcaseProduct {
         ),
         ShowcaseNavigationActionGroup(
             artifactId: .iphoneFullUi,
-            componentId: .flowService,
-            actions: [ShowcaseNavigationAction(sourcePortRef: .flowServiceOpen, targetPortRef: .navigationFlowService, effect: "dispatch")]
+            componentId: .controlPressRing,
+            actions: [ShowcaseNavigationAction(sourcePortRef: .controlPressRingOpen, targetPortRef: .navigationControlPressRing, effect: "dispatch")]
         ),
         ShowcaseNavigationActionGroup(
             artifactId: .watchosFullUi,
-            componentId: .flowService,
-            actions: [ShowcaseNavigationAction(sourcePortRef: .flowServiceOpen, targetPortRef: .navigationFlowService, effect: "dispatch")]
-        ),
-        ShowcaseNavigationActionGroup(
-            artifactId: .iphoneFullUi,
-            componentId: .flowSource,
-            actions: [ShowcaseNavigationAction(sourcePortRef: .flowSourceOpen, targetPortRef: .navigationFlowSource, effect: "dispatch")]
-        ),
-        ShowcaseNavigationActionGroup(
-            artifactId: .watchosFullUi,
-            componentId: .flowSource,
-            actions: [ShowcaseNavigationAction(sourcePortRef: .flowSourceOpen, targetPortRef: .navigationFlowSource, effect: "dispatch")]
-        ),
-        ShowcaseNavigationActionGroup(
-            artifactId: .iphoneFullUi,
-            componentId: .flowUpdate,
-            actions: [ShowcaseNavigationAction(sourcePortRef: .flowUpdateOpen, targetPortRef: .navigationFlowUpdate, effect: "dispatch")]
-        ),
-        ShowcaseNavigationActionGroup(
-            artifactId: .watchosFullUi,
-            componentId: .flowUpdate,
-            actions: [ShowcaseNavigationAction(sourcePortRef: .flowUpdateOpen, targetPortRef: .navigationFlowUpdate, effect: "dispatch")]
-        ),
-        ShowcaseNavigationActionGroup(
-            artifactId: .iphoneFullUi,
-            componentId: .foundationColors,
-            actions: [ShowcaseNavigationAction(sourcePortRef: .foundationColorsOpen, targetPortRef: .navigationFoundationColors, effect: "dispatch")]
-        ),
-        ShowcaseNavigationActionGroup(
-            artifactId: .watchosFullUi,
-            componentId: .foundationColors,
-            actions: [ShowcaseNavigationAction(sourcePortRef: .foundationColorsOpen, targetPortRef: .navigationFoundationColors, effect: "dispatch")]
-        ),
-        ShowcaseNavigationActionGroup(
-            artifactId: .iphoneFullUi,
-            componentId: .foundationGeometry,
-            actions: [ShowcaseNavigationAction(sourcePortRef: .foundationGeometryOpen, targetPortRef: .navigationFoundationGeometry, effect: "dispatch")]
-        ),
-        ShowcaseNavigationActionGroup(
-            artifactId: .watchosFullUi,
-            componentId: .foundationGeometry,
-            actions: [ShowcaseNavigationAction(sourcePortRef: .foundationGeometryOpen, targetPortRef: .navigationFoundationGeometry, effect: "dispatch")]
+            componentId: .controlPressRing,
+            actions: [ShowcaseNavigationAction(sourcePortRef: .controlPressRingOpen, targetPortRef: .navigationControlPressRing, effect: "dispatch")]
         ),
         ShowcaseNavigationActionGroup(
             artifactId: .iphoneFullUi,
@@ -1070,23 +1040,53 @@ enum GeneratedShowcaseProduct {
         ),
         ShowcaseNavigationActionGroup(
             artifactId: .iphoneFullUi,
-            componentId: .pageMenu,
-            actions: [ShowcaseNavigationAction(sourcePortRef: .pageMenuRoute, targetPortRef: .navigationRoute, effect: "push")]
+            componentId: .templateScreens,
+            actions: [ShowcaseNavigationAction(sourcePortRef: .templateScreensOpen, targetPortRef: .navigationTemplateScreens, effect: "dispatch")]
         ),
         ShowcaseNavigationActionGroup(
             artifactId: .watchosFullUi,
-            componentId: .pageMenu,
-            actions: [ShowcaseNavigationAction(sourcePortRef: .pageMenuRoute, targetPortRef: .navigationRoute, effect: "push")]
+            componentId: .templateScreens,
+            actions: [ShowcaseNavigationAction(sourcePortRef: .templateScreensOpen, targetPortRef: .navigationTemplateScreens, effect: "dispatch")]
         ),
         ShowcaseNavigationActionGroup(
             artifactId: .iphoneFullUi,
-            componentId: .templateScreens,
-            actions: [ShowcaseNavigationAction(sourcePortRef: .templateScreensOpen, targetPortRef: .navigationTemplateScreens, effect: "dispatch")]
+            componentId: .flowSource,
+            actions: [ShowcaseNavigationAction(sourcePortRef: .flowSourceOpen, targetPortRef: .navigationFlowSource, effect: "dispatch")]
         ),
         ShowcaseNavigationActionGroup(
             artifactId: .watchosFullUi,
-            componentId: .templateScreens,
-            actions: [ShowcaseNavigationAction(sourcePortRef: .templateScreensOpen, targetPortRef: .navigationTemplateScreens, effect: "dispatch")]
+            componentId: .flowSource,
+            actions: [ShowcaseNavigationAction(sourcePortRef: .flowSourceOpen, targetPortRef: .navigationFlowSource, effect: "dispatch")]
+        ),
+        ShowcaseNavigationActionGroup(
+            artifactId: .iphoneFullUi,
+            componentId: .flowUpdate,
+            actions: [ShowcaseNavigationAction(sourcePortRef: .flowUpdateOpen, targetPortRef: .navigationFlowUpdate, effect: "dispatch")]
+        ),
+        ShowcaseNavigationActionGroup(
+            artifactId: .watchosFullUi,
+            componentId: .flowUpdate,
+            actions: [ShowcaseNavigationAction(sourcePortRef: .flowUpdateOpen, targetPortRef: .navigationFlowUpdate, effect: "dispatch")]
+        ),
+        ShowcaseNavigationActionGroup(
+            artifactId: .iphoneFullUi,
+            componentId: .flowService,
+            actions: [ShowcaseNavigationAction(sourcePortRef: .flowServiceOpen, targetPortRef: .navigationFlowService, effect: "dispatch")]
+        ),
+        ShowcaseNavigationActionGroup(
+            artifactId: .watchosFullUi,
+            componentId: .flowService,
+            actions: [ShowcaseNavigationAction(sourcePortRef: .flowServiceOpen, targetPortRef: .navigationFlowService, effect: "dispatch")]
+        ),
+        ShowcaseNavigationActionGroup(
+            artifactId: .iphoneFullUi,
+            componentId: .pageMenu,
+            actions: [ShowcaseNavigationAction(sourcePortRef: .pageMenuRoute, targetPortRef: .navigationRoute, effect: "push")]
+        ),
+        ShowcaseNavigationActionGroup(
+            artifactId: .watchosFullUi,
+            componentId: .pageMenu,
+            actions: [ShowcaseNavigationAction(sourcePortRef: .pageMenuRoute, targetPortRef: .navigationRoute, effect: "push")]
         )
     ]
 }

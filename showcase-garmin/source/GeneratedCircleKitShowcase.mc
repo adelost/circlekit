@@ -164,7 +164,7 @@ module GeneratedCircleKitShowcase {
         {
             "artifactRef" => "garmin-limited-ui",
             "entryPageRef" => "artifact.garmin-limited-ui",
-            "pages" => ["artifact.garmin-limited-ui"]
+            "pages" => [{ "pageRef" => "artifact.garmin-limited-ui", "restore" => "root", "back" => "system", "guardContractRef" => null }]
         }
     ];
     var NATIVE_ACTIVE_PAGE_BINDINGS = [
@@ -206,6 +206,20 @@ module GeneratedCircleKitShowcase {
         _destination = { "portId" => portId, "componentId" => componentId };
     }
 
+    function dispatch(componentId) {
+        for (var groupIndex = 0; groupIndex < NATIVE_NAVIGATION_ACTION_GROUPS.size(); groupIndex += 1) {
+            var group = NATIVE_NAVIGATION_ACTION_GROUPS[groupIndex];
+            if (group["artifactRef"] == ARTIFACT_ID && group["componentInstanceRef"] == componentId) {
+                var action = group["actions"][0];
+                if (action["effect"] == "dispatch") {
+                    open(action["targetPortRef"], componentId);
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
     function navigationModel() {
         return _destination;
     }
@@ -215,8 +229,17 @@ module GeneratedCircleKitShowcase {
     }
 
     function route(pageRef) {
-        if (pageRef == SCREEN_ID) {
-            _activePage = pageRef;
+        for (var artifactIndex = 0; artifactIndex < NATIVE_NAVIGATION_ARTIFACTS.size(); artifactIndex += 1) {
+            var artifact = NATIVE_NAVIGATION_ARTIFACTS[artifactIndex];
+            if (artifact["artifactRef"] == ARTIFACT_ID) {
+                for (var pageIndex = 0; pageIndex < artifact["pages"].size(); pageIndex += 1) {
+                    var page = artifact["pages"][pageIndex];
+                    if (page["pageRef"] == pageRef) {
+                        _activePage = pageRef;
+                        return _activePage;
+                    }
+                }
+            }
         }
         return _activePage;
     }
@@ -229,8 +252,8 @@ module GeneratedCircleKitShowcase {
             }
         }
         var catalog = catalogModel();
-        open(OPEN_PORT, catalog["componentId"]);
-        activePage();
+        dispatch(catalog["componentId"]);
+        route(activePage());
         return navigationModel();
     }
 }

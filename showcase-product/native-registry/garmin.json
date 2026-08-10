@@ -150,8 +150,8 @@
           {
             "pageRef": "artifact.garmin-limited-ui",
             "restore": "root",
-            "guardContractRef": null,
-            "back": "system"
+            "back": "system",
+            "guardContractRef": null
           }
         ]
       }

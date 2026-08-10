@@ -6,8 +6,9 @@ import type {
 } from "@v1d/product-spec";
 import {
   compileShowcaseNativeFiniteValues,
-  compileShowcaseNativeNavigation,
   compileShowcaseNativeNodes,
+  fullUiNavigationRegistration,
+  nativeNavigationManifest,
   nativeManifestArtifact,
 } from "./native-manifest.js";
 import { parseSvgPath, type NormalizedPathCommand } from "./parse-svg-path.js";
@@ -188,7 +189,11 @@ function emitSwift(
     if (missingArtifact !== undefined) {
       throw new Error(`Showcase SwiftUI icon '${ref.id}' does not serve '${missingArtifact.id}'`);
     }
-    return { component, ref, profiles: usedBy.map(({ id }) => id) };
+    const openTarget = product.components.find(({ id }) => id === component.id)?.bindings.events.open;
+    if (openTarget === undefined) {
+      throw new Error(`Showcase SwiftUI component '${component.id}' has no executable open target`);
+    }
+    return { component, ref, profiles: usedBy.map(({ id }) => id), openTarget };
   });
   const icons = unique(componentBindings.map(({ ref }) => ref.id)).map((id) => {
     const ref = componentBindings.find(({ ref }) => ref.id === id)!.ref;
@@ -217,7 +222,24 @@ function emitSwift(
     { nodeId: "navigation", nativePortId: "ShowcaseNavigationController" },
     { nodeId: "navigation.presentation", nativePortId: "ShowcaseNavigationController" },
   ]);
-  const nativeNavigation = compileShowcaseNativeNavigation(product, profiles);
+  // Host truth: SwiftUI's NavigationStack executes system back at the entry
+  // page, previous-page pop everywhere else, and dispatches the registrations
+  // below from ShowcaseNavigationController. Do not source this from
+  // product.navigation; conformance must remain an independent comparison.
+  const swiftNavigationRegistration = fullUiNavigationRegistration(
+    selections.map(({ artifact }) => ({
+      artifactRef: artifact.id,
+      entryPageRef: artifact.entryScreen,
+      pageRefs: artifact.screenRefs,
+    })),
+    componentBindings.map(({ component, profiles: artifactRefs, openTarget }) => ({
+      artifactRefs,
+      componentInstanceRef: component.id,
+      sourcePortRef: `${component.id}.open`,
+      targetPortRef: openTarget,
+    })),
+  );
+  const nativeNavigation = nativeNavigationManifest(swiftNavigationRegistration)!;
   const manifest = {
     sourceFile,
     profiles,

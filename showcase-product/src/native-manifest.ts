@@ -10,33 +10,117 @@ export interface ShowcaseNativeNodeAdapter {
   readonly nativePortId: string;
 }
 
-/**
- * Navigation registrations shared by one deterministic native source and its
- * exported manifest. Callers must emit these records into executable host code;
- * a manifest-only use would not constitute a native binding.
- */
-export function compileShowcaseNativeNavigation(
-  product: ProductIr,
-  profiles: readonly string[],
-): NativeBindingManifest["navigation"] {
-  const profileSet = new Set(profiles);
+export type ShowcaseNativeNavigationRegistration = NonNullable<NativeBindingManifest["navigation"]>;
+
+export interface ShowcaseNativeArtifactRegistration {
+  readonly artifactRef: string;
+  readonly entryPageRef: string;
+  readonly pageRefs: readonly string[];
+}
+
+export interface ShowcaseNativeDispatchRegistration {
+  readonly artifactRefs: readonly string[];
+  readonly componentInstanceRef: string;
+  readonly sourcePortRef: string;
+  readonly targetPortRef: string;
+}
+
+/** The registration executed by NavigationStack hosts. */
+export function fullUiNavigationRegistration(
+  artifacts: readonly ShowcaseNativeArtifactRegistration[],
+  dispatches: readonly ShowcaseNativeDispatchRegistration[],
+): ShowcaseNativeNavigationRegistration {
   return {
-    artifacts: product.navigation.artifacts.filter(({ artifactRef }) => profileSet.has(artifactRef)),
+    artifacts: artifacts.map((artifact) => ({
+      artifactRef: artifact.artifactRef,
+      entryPageRef: artifact.entryPageRef,
+      pages: artifact.pageRefs.map((pageRef) => ({
+        pageRef,
+        restore: pageRef === artifact.entryPageRef ? "root" : "process",
+        back: pageRef === artifact.entryPageRef ? "system" : "previous",
+        guardContractRef: null,
+      })),
+    })),
     activePageBindings: [{
-      publisherPortRef: product.navigation.activePagePortRef,
-      pageHostPortRef: product.navigation.pageHostPortRef,
+      publisherPortRef: "navigation.activePage",
+      pageHostPortRef: "page.host.activePage",
     }],
-    actionGroups: product.navigation.actionGroups.flatMap((group) => group.artifactRefs
-      .filter((artifactRef) => profileSet.has(artifactRef))
-      .map((artifactRef) => ({
+    actionGroups: [
+      ...dispatches.flatMap((dispatch) => dispatch.artifactRefs.map((artifactRef) => ({
         artifactRef,
-        componentInstanceRef: group.componentInstanceRef,
-        actions: group.actions.map(({ sourcePortRef, targetPortRef, effect }) => ({
-          sourcePortRef,
-          targetPortRef,
-          effect,
-        })),
+        componentInstanceRef: dispatch.componentInstanceRef,
+        actions: [{
+          sourcePortRef: dispatch.sourcePortRef,
+          targetPortRef: dispatch.targetPortRef,
+          effect: "dispatch" as const,
+        }],
       }))),
+      ...artifacts.map((artifact) => ({
+        artifactRef: artifact.artifactRef,
+        componentInstanceRef: "page.menu",
+        actions: [{
+          sourcePortRef: "page.menu.route",
+          targetPortRef: "navigation.route",
+          effect: "push" as const,
+        }],
+      })),
+    ],
+  };
+}
+
+/** The registration executed by the one-page Garmin host. */
+export function singlePageNavigationRegistration(
+  artifact: ShowcaseNativeArtifactRegistration,
+  dispatch: ShowcaseNativeDispatchRegistration,
+): ShowcaseNativeNavigationRegistration {
+  if (artifact.pageRefs.length !== 1 || artifact.pageRefs[0] !== artifact.entryPageRef) {
+    throw new Error("single-page native host must register exactly its entry page");
+  }
+  return {
+    artifacts: [{
+      artifactRef: artifact.artifactRef,
+      entryPageRef: artifact.entryPageRef,
+      pages: [{
+        pageRef: artifact.entryPageRef,
+        restore: "root",
+        back: "system",
+        guardContractRef: null,
+      }],
+    }],
+    activePageBindings: [{
+      publisherPortRef: "navigation.activePage",
+      pageHostPortRef: "page.host.activePage",
+    }],
+    actionGroups: [{
+      artifactRef: artifact.artifactRef,
+      componentInstanceRef: dispatch.componentInstanceRef,
+      actions: [{
+        sourcePortRef: dispatch.sourcePortRef,
+        targetPortRef: dispatch.targetPortRef,
+        effect: "dispatch",
+      }],
+    }],
+  };
+}
+
+/**
+ * Serialize native navigation registrations without consulting ProductSpec.
+ * The caller builds these records from the executable host implementation;
+ * shared conformance is the independent comparison with product.navigation.
+ */
+export function nativeNavigationManifest(
+  registration: ShowcaseNativeNavigationRegistration,
+): NativeBindingManifest["navigation"] {
+  return {
+    artifacts: registration.artifacts.map((artifact) => ({
+      ...artifact,
+      pages: artifact.pages.map((page) => ({ ...page })),
+    })),
+    activePageBindings: registration.activePageBindings.map((binding) => ({ ...binding })),
+    actionGroups: registration.actionGroups.map((group) => ({
+      ...group,
+      actions: group.actions.map((action) => ({ ...action })),
+    })),
   };
 }
 

@@ -79,9 +79,7 @@ fun CircleKitShowcase(
                                     session.closeSelection()
                                     true
                                 }
-                                rootNavigator.back() -> true.also {
-                                    if (rootNavigator.stack.size == 1) session.restoreEntryPage()
-                                }
+                                session.backPage(rootNavigator::back) -> true
                                 else -> false
                             }
                         }

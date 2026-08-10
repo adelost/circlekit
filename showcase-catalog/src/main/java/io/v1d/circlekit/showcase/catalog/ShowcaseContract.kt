@@ -191,12 +191,10 @@ class ShowcaseSession(
         }
         if (!available) return false
         if (ShowcaseCatalogRuntime.find(caseId, scenarioId) == null) return false
-        ShowcaseNativeBindings.requireAction(
-            profileId = artifactProfile.id,
-            componentInstanceRef = caseId.value,
-            sourcePortRef = "${caseId.value}.open",
-            effect = "dispatch",
-        )
+        return ShowcaseNativeBindings.dispatchOpen(this, caseId, scenarioId)
+    }
+
+    internal fun commitOpen(caseId: ShowcaseCaseId, scenarioId: ShowcaseScenarioId): Boolean {
         ShowcaseProductInspectorRegistry.requireOpenTarget(caseId)
         interaction.prepare(caseId, scenarioId)
         media.prepare(caseId, scenarioId)
@@ -206,16 +204,17 @@ class ShowcaseSession(
     }
 
     fun route(pageRef: String): Boolean {
-        if (navigationArtifact.pages.none { it.pageRef == pageRef }) return false
-        ShowcaseNativeBindings.requireAction(
-            profileId = artifactProfile.id,
-            componentInstanceRef = "page.menu",
-            sourcePortRef = "page.menu.route",
-            effect = "push",
-        )
-        mutableActivePage.value = pageRef
-        return true
+        return ShowcaseNativeBindings.route(this, pageRef)
     }
+
+    internal fun commitRoute(pageRef: String) {
+        mutableActivePage.value = pageRef
+    }
+
+    fun backPage(previous: () -> Boolean): Boolean =
+        ShowcaseNativeBindings.back(mutableActivePage.value, previous).also { handled ->
+            if (handled) restoreEntryPage()
+        }
 
     fun restoreEntryPage() {
         mutableActivePage.value = navigationArtifact.entryPageRef

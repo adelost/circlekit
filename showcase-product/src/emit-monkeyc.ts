@@ -1,9 +1,10 @@
 import type { NativeBindingManifest, ProductEmitterPlugin, ProductIr } from "@v1d/product-spec";
 import {
   compileShowcaseNativeFiniteValues,
-  compileShowcaseNativeNavigation,
   compileShowcaseNativeNodes,
+  nativeNavigationManifest,
   nativeManifestArtifact,
+  singlePageNavigationRegistration,
 } from "./native-manifest.js";
 import { parseSvgPath, type NormalizedPathCommand } from "./parse-svg-path.js";
 import type { CircleKitShowcaseProductIr } from "./product.js";
@@ -202,7 +203,20 @@ function emitMonkeyC(
     { nodeId: "navigation", nativePortId: "GeneratedCircleKitShowcase.open" },
     { nodeId: "navigation.presentation", nativePortId: "GeneratedCircleKitShowcase.navigationModel" },
   ]);
-  const nativeNavigation = compileShowcaseNativeNavigation(product, profiles);
+  // Host truth: this executable has one root page and one component dispatch.
+  // The manifest serializes these same registrations without reading
+  // product.navigation.
+  const garminNavigationRegistration = singlePageNavigationRegistration({
+      artifactRef: selection.artifactId,
+      entryPageRef: selection.screenId,
+      pageRefs: [selection.screenId],
+    }, {
+      artifactRefs: [selection.artifactId],
+      componentInstanceRef: selection.componentId,
+      sourcePortRef: `${selection.componentId}.open`,
+      targetPortRef: `navigation.${selection.openPort}`,
+    });
+  const nativeNavigation = nativeNavigationManifest(garminNavigationRegistration)!;
   const nativeIcons = unique(product.iconRefs.map(({ assetRef }) => assetRef)).map((id) => {
     const asset = assetCatalog.icons.find((candidate) => candidate.id === id);
     if (asset === undefined) throw new Error(`Showcase Garmin native registry uses missing icon '${id}'`);
@@ -290,7 +304,7 @@ ${nativeNodes.map((node) => `        {
 ${nativeNavigation.artifacts.map((artifact) => `        {
             "artifactRef" => ${monkeyString(artifact.artifactRef)},
             "entryPageRef" => ${monkeyString(artifact.entryPageRef)},
-            "pages" => [${artifact.pages.map((page) => monkeyString(page.pageRef)).join(", ")}]
+            "pages" => [${artifact.pages.map((page) => `{ "pageRef" => ${monkeyString(page.pageRef)}, "restore" => ${monkeyString(page.restore)}, "back" => ${monkeyString(page.back)}, "guardContractRef" => ${page.guardContractRef === null ? "null" : monkeyString(page.guardContractRef)} }`).join(", ")}]
         }`).join(",\n")}
     ];
     var NATIVE_ACTIVE_PAGE_BINDINGS = [
@@ -332,6 +346,20 @@ ${nativeNavigation.actionGroups.map((group) => `        {
         _destination = { "portId" => portId, "componentId" => componentId };
     }
 
+    function dispatch(componentId) {
+        for (var groupIndex = 0; groupIndex < NATIVE_NAVIGATION_ACTION_GROUPS.size(); groupIndex += 1) {
+            var group = NATIVE_NAVIGATION_ACTION_GROUPS[groupIndex];
+            if (group["artifactRef"] == ARTIFACT_ID && group["componentInstanceRef"] == componentId) {
+                var action = group["actions"][0];
+                if (action["effect"] == "dispatch") {
+                    open(action["targetPortRef"], componentId);
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
     function navigationModel() {
         return _destination;
     }
@@ -341,8 +369,17 @@ ${nativeNavigation.actionGroups.map((group) => `        {
     }
 
     function route(pageRef) {
-        if (pageRef == SCREEN_ID) {
-            _activePage = pageRef;
+        for (var artifactIndex = 0; artifactIndex < NATIVE_NAVIGATION_ARTIFACTS.size(); artifactIndex += 1) {
+            var artifact = NATIVE_NAVIGATION_ARTIFACTS[artifactIndex];
+            if (artifact["artifactRef"] == ARTIFACT_ID) {
+                for (var pageIndex = 0; pageIndex < artifact["pages"].size(); pageIndex += 1) {
+                    var page = artifact["pages"][pageIndex];
+                    if (page["pageRef"] == pageRef) {
+                        _activePage = pageRef;
+                        return _activePage;
+                    }
+                }
+            }
         }
         return _activePage;
     }
@@ -355,8 +392,8 @@ ${nativeNavigation.actionGroups.map((group) => `        {
             }
         }
         var catalog = catalogModel();
-        open(OPEN_PORT, catalog["componentId"]);
-        activePage();
+        dispatch(catalog["componentId"]);
+        route(activePage());
         return navigationModel();
     }
 }

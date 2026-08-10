@@ -13,6 +13,10 @@ import {
   type ProductEmitterPlugin,
 } from "@v1d/product-spec";
 import { showcaseKotlinEmitter } from "../src/emit-kotlin.js";
+import {
+  fullUiNavigationRegistration,
+  nativeNavigationManifest,
+} from "../src/native-manifest.js";
 import { CIRCLEKIT_ASSET_CATALOG, CIRCLEKIT_STYLE } from "@v1d/circlekit-assets";
 import { showcaseGarminEmitter } from "../src/emit-monkeyc.js";
 import { showcaseSwiftEmitter } from "../src/emit-swift.js";
@@ -249,6 +253,55 @@ test("native component, profile and icon drift stops before emission", async () 
       actionGroups: actual.navigation.actionGroups.filter(({ componentInstanceRef }) => componentInstanceRef !== "page.menu"),
     },
   }), /\[navigation\/missing\].*page\.menu/);
+
+  const appleHost = hosts.find(({ profiles }) => profiles?.includes("iphone-full-ui") === true);
+  if (appleHost?.profiles === undefined) throw new Error("missing executable Apple host registration");
+  const appleProfiles = appleHost.profiles;
+  const appleArtifacts = product.artifacts
+    .filter(({ id }) => appleProfiles.includes(id))
+    .map((artifact) => ({
+      artifactRef: artifact.id,
+      entryPageRef: artifact.entryScreen,
+      pageRefs: artifact.screenRefs,
+    }));
+  const appleDispatches = product.showcase.cases.map((component) => ({
+    artifactRefs: appleProfiles,
+    componentInstanceRef: component.id,
+    sourcePortRef: `${component.id}.open`,
+    targetPortRef: product.components.find(({ id }) => id === component.id)!.bindings.events.open!,
+  }));
+  const withoutNativePage = fullUiNavigationRegistration(
+    appleArtifacts.map((artifact, index) => index === 0
+      ? { ...artifact, pageRefs: artifact.pageRefs.slice(0, -1) }
+      : artifact),
+    appleDispatches,
+  );
+  assert.match(
+    productArtifactConformance(product, {
+      ...appleHost,
+      navigation: nativeNavigationManifest(withoutNativePage)!,
+    }).map(({ message }) => message).join("\n"),
+    /section\.flows/u,
+  );
+
+  const changedExecutableBack = fullUiNavigationRegistration(appleArtifacts, appleDispatches);
+  const changedPage = changedExecutableBack.artifacts[0]!.pages[1]!;
+  const backDriftRegistration = {
+    ...changedExecutableBack,
+    artifacts: changedExecutableBack.artifacts.map((artifact, index) => index === 0 ? {
+      ...artifact,
+      pages: artifact.pages.map((page) => page.pageRef === changedPage.pageRef
+        ? { ...page, back: "system" as const }
+        : page),
+    } : artifact),
+  };
+  assert.match(
+    productArtifactConformance(product, {
+      ...appleHost,
+      navigation: nativeNavigationManifest(backDriftRegistration)!,
+    }).map(({ message }) => message).join("\n"),
+    /back.*section\.atoms|section\.atoms.*back/u,
+  );
   assert.throws(() => requireCircleKitShowcaseNativeConformance(
     product, actual, hosts.slice(0, 2),
   ), /\[artifact\/missing\].*garmin-limited-ui/);

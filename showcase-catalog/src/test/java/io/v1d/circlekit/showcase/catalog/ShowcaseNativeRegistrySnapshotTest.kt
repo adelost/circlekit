@@ -32,9 +32,15 @@ class ShowcaseNativeRegistrySnapshotTest {
             "showcase-catalog/src/main/java/io/v1d/circlekit/showcase/catalog/ShowcaseScreens.kt",
         )).toString(Charsets.UTF_8)
         assertFalse(source.contains("product.navigation"))
-        assertTrue(source.contains("ShowcaseManifest.navigationArtifacts"))
+        assertFalse(source.contains("ShowcaseManifest.navigationArtifacts"))
+        assertTrue(source.contains("ShowcaseNativePageBack.SYSTEM"))
+        assertTrue(source.contains("ShowcaseNativePageBack.PREVIOUS"))
         assertTrue(screens.contains("ShowcaseNativeBindings.navigationArtifacts"))
         assertTrue(screens.contains("session.route(screen)"))
+        val host = Files.readAllBytes(findRepoRoot().resolve(
+            "showcase-catalog/src/main/java/io/v1d/circlekit/showcase/catalog/CircleKitShowcase.kt",
+        )).toString(Charsets.UTF_8)
+        assertTrue(host.contains("session.backPage(rootNavigator::back)"))
     }
 
     private fun snapshot(): String {
