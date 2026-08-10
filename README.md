@@ -9,6 +9,8 @@ Shared Android foundations used by Skyvw and Agentmux Link.
 - `servicekit`: bounded telemetry used by the shared modules.
 - `product-spec`: product-neutral TypeScript authoring, validation and output
   manifests, published as the versioned `@v1d/product-spec` npm tarball.
+- `product-emit`: deterministic ProductSpec emitters with separate
+  product-neutral `/core` and skydiving `/skydiving` entrypoints.
 - `showcase-product`: CircleKit-owned, data-only Showcase ProductConfig. Its
   one generated descriptor drives both Android Showcase hosts.
 - `circlekit-assets`: CircleKit-owned portable vector geometry, published as
@@ -30,6 +32,10 @@ neither command may remove historical npm or Maven payloads:
 # Pure TypeScript: tests and packs ProductSpec; never invokes Gradle or AAR publication.
 scripts/publish-product-spec.sh X.Y.Z --prepare-only
 scripts/publish-product-spec.sh X.Y.Z
+
+# TypeScript emitters only; never invokes Gradle or AAR publication.
+scripts/publish-product-emit.sh X.Y.Z --prepare-only
+scripts/publish-product-emit.sh X.Y.Z
 
 # Android/design-system axis: publishes the five AARs plus circlekit-assets.
 scripts/publish-maven.sh X.Y.Z --prepare-only
