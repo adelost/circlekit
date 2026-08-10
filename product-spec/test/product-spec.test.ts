@@ -1274,14 +1274,14 @@ test("navigation rejects an undeclared artifact entry", () => {
 test("navigation derives restore independently for artifacts with different entries", () => {
   const product = navigationFixture({
     artifacts: [
-      navigationProductDeclaration.artifacts[0],
+      { ...navigationProductDeclaration.artifacts[0], screenRefs: ["MAIN"] },
       { ...navigationProductDeclaration.artifacts[1], entryScreen: "DETAILS" },
     ],
   });
   assert.deepEqual(product.navigation.artifacts.map(({ artifactRef, entryPageRef, pages }) => ({
     artifactRef, entryPageRef, restore: pages.map(({ pageRef, restore }) => `${pageRef}:${restore}`),
   })), [
-    { artifactRef: "phone", entryPageRef: "MAIN", restore: ["MAIN:root", "DETAILS:process"] },
+    { artifactRef: "phone", entryPageRef: "MAIN", restore: ["MAIN:root"] },
     { artifactRef: "wear", entryPageRef: "DETAILS", restore: ["MAIN:process", "DETAILS:root"] },
   ]);
 });
