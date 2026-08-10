@@ -46,7 +46,7 @@ object ShowcaseScreens {
     ): RingScreen {
         val catalog = mounted.inputs.require<ShowcaseCatalogRendererInput>("${mounted.renderer.componentId()}.catalog")
         val snapshot = if (mounted.renderer.interactive) {
-            mounted.inputs.require<Any>("${mounted.renderer.componentId()}.renderer")
+            mounted.inputs.require<ShowcaseRendererSnapshot>("${mounted.renderer.componentId()}.renderer")
         } else {
             null
         }

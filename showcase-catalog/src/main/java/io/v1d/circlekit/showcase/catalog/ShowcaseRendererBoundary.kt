@@ -31,23 +31,25 @@ data class ShowcaseCatalogRendererInput(
 
 data class ShowcaseNavigationRendererInput(val destination: ShowcaseDestination)
 
-data class ShowcaseIconActionSnapshot(val active: Boolean)
+sealed interface ShowcaseRendererSnapshot
+
+data class ShowcaseIconActionSnapshot(val active: Boolean) : ShowcaseRendererSnapshot
 data class ShowcaseActionRowSnapshot(
     val count: Int,
     val failed: Boolean,
     val availability: ShowcaseAvailability,
-)
-data class ShowcaseChoiceSnapshot(val selectedIndex: Int)
-data class ShowcaseAdjustmentSnapshot(val value: Int)
-data class ShowcaseProgressSnapshot(val work: ShowcaseWorkState)
-data class ShowcasePressSnapshot(val active: Boolean, val enabled: Boolean, val failed: Boolean, val elapsedMs: Long)
-data class ShowcaseTextSnapshot(val text: String, val submitCount: Int)
-data class ShowcaseCaptureSnapshot(val active: Boolean, val elapsedMs: Long, val levels: List<Float>)
-data class ShowcasePlaybackSnapshot(val state: RingPlaybackState, val positionMs: Long, val durationMs: Long)
-data class ShowcaseTemplateSnapshot(val adjustmentValue: Int, val theme: CircleColorTheme)
-data class ShowcaseSourceSnapshot(val source: SourceState<String>, val enabled: Boolean)
-data class ShowcaseUpdateSnapshot(val state: UpdateState)
-data class ShowcaseServiceSnapshot(val state: ServiceSnapshot)
+) : ShowcaseRendererSnapshot
+data class ShowcaseChoiceSnapshot(val selectedIndex: Int) : ShowcaseRendererSnapshot
+data class ShowcaseAdjustmentSnapshot(val value: Int) : ShowcaseRendererSnapshot
+data class ShowcaseProgressSnapshot(val work: ShowcaseWorkState) : ShowcaseRendererSnapshot
+data class ShowcasePressSnapshot(val active: Boolean, val enabled: Boolean, val failed: Boolean, val elapsedMs: Long) : ShowcaseRendererSnapshot
+data class ShowcaseTextSnapshot(val text: String, val submitCount: Int) : ShowcaseRendererSnapshot
+data class ShowcaseCaptureSnapshot(val active: Boolean, val elapsedMs: Long, val levels: List<Float>) : ShowcaseRendererSnapshot
+data class ShowcasePlaybackSnapshot(val state: RingPlaybackState, val positionMs: Long, val durationMs: Long) : ShowcaseRendererSnapshot
+data class ShowcaseTemplateSnapshot(val adjustmentValue: Int, val theme: CircleColorTheme) : ShowcaseRendererSnapshot
+data class ShowcaseSourceSnapshot(val source: SourceState<String>, val enabled: Boolean) : ShowcaseRendererSnapshot
+data class ShowcaseUpdateSnapshot(val state: UpdateState) : ShowcaseRendererSnapshot
+data class ShowcaseServiceSnapshot(val state: ServiceSnapshot) : ShowcaseRendererSnapshot
 
 data class ShowcaseMountedRenderer(
     val renderer: ShowcaseNativeRenderer,
@@ -59,7 +61,7 @@ class ShowcaseRendererProducerPorts(
     private val session: ShowcaseSession,
     private val destination: ShowcaseDestination,
     private val textEntryPort: RingTextEntryPort?,
-    private val rendererSnapshot: Any? = null,
+    private val rendererSnapshot: ShowcaseRendererSnapshot? = null,
 ) {
     fun read(producerPortRef: String, componentId: String): Any = when (producerPortRef) {
         "catalog.model" -> {
@@ -73,7 +75,7 @@ class ShowcaseRendererProducerPorts(
         else -> error("No Showcase producer port '$producerPortRef'")
     }
 
-    fun snapshot(componentId: String): Any = when (componentId) {
+    fun snapshot(componentId: String): ShowcaseRendererSnapshot = when (componentId) {
         "atom.icon-action" -> ShowcaseIconActionSnapshot(session.iconActionActive.value)
         "control.action-row" -> ShowcaseActionRowSnapshot(
             session.interaction.actionCount.value,
@@ -111,7 +113,7 @@ class ShowcaseRendererProducerPorts(
     }
 
     @Composable
-    fun observeSnapshot(componentId: String): Any = when (componentId) {
+    fun observeSnapshot(componentId: String): ShowcaseRendererSnapshot = when (componentId) {
         "atom.icon-action" -> ShowcaseIconActionSnapshot(session.iconActionActive.collectAsState().value)
         "control.action-row" -> ShowcaseActionRowSnapshot(
             session.interaction.actionCount.collectAsState().value,

@@ -355,7 +355,7 @@ object ShowcaseNativeBindings {
         destination: ShowcaseDestination,
         surface: com.adelost.designkit.ui.CircleSurfaceClass,
         textEntryPort: com.adelost.ringkit.ui.RingTextEntryPort?,
-        rendererSnapshot: Any? = null,
+        rendererSnapshot: ShowcaseRendererSnapshot? = null,
     ): ShowcaseMountedRenderer {
         val componentId = requireNotNull(destination.caseId).value
         val registration = requireComponent(componentId)

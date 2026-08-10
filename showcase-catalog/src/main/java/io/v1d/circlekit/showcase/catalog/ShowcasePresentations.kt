@@ -59,7 +59,7 @@ object ShowcasePresentations {
 
     private fun textEntryRows(
         scenario: ShowcaseScenario,
-        model: Any,
+        model: ShowcaseRendererSnapshot,
         emitter: ShowcaseTypedRendererEmitter,
     ): RingScreen.Rows = RingScreen.Rows(
         title = scenario.label,
@@ -232,7 +232,7 @@ object ShowcasePresentations {
     private fun formatSeconds(elapsedMs: Long): String = "%.1f S".format(elapsedMs / 1_000f)
 }
 
-private fun ShowcaseMountedRenderer.snapshot(): Any =
+private fun ShowcaseMountedRenderer.snapshot(): ShowcaseRendererSnapshot =
     inputs.require("${renderer.componentId()}.renderer")
 
 private fun ShowcaseMountedRenderer.typedEmitter(): ShowcaseTypedRendererEmitter =
