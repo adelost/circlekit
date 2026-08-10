@@ -1,5 +1,7 @@
 import {
+  assertProductArtifactConformance,
   defineProduct,
+  productArtifactHostCoverage,
   type NativeBindingManifest,
   type ProductIr,
 } from "@v1d/product-spec";
@@ -96,6 +98,9 @@ const baseProduct = defineProduct({
   // product says out loud: an omitted section reads as coverage to anything that
   // compares this declaration against a native binding manifest.
   finiteValues: [],
+  // Schema 8 makes authority ownership mandatory. The compiler accepts this empty
+  // set only because the graph above exposes no finite-valued state axis to UI.
+  stateAuthorities: [],
   componentTypes: showcaseComponentTypes,
   components: showcaseComponentInstances,
   componentFamilies: showcaseComponentFamilies,
@@ -125,7 +130,6 @@ export interface CircleKitShowcaseProductIr extends ProductIr {
 }
 
 export function compileCircleKitShowcaseProduct(
-  manifest: NativeBindingManifest,
   productSpecVersion: string,
 ): CircleKitShowcaseProductIr {
   requireCatalogSound();
@@ -135,84 +139,25 @@ export function compileCircleKitShowcaseProduct(
     productSpecVersion,
     showcase: { sections: showcaseSections, cases: showcaseCases },
   };
-  // Conformance runs on the COMPILED ir, not on the catalog it was built from. The
-  // local version compared showcaseCases against the manifest directly, which meant a
-  // defect introduced between the catalog and the compiled product was invisible to
-  // the very check meant to catch it.
-  requireEveryComponentOnEveryAndroidProfile(manifest);
-  requireNativeHostConformance(ir, manifest);
-  requireExactNativeNodes(ir, manifest);
   return ir;
 }
 
-function requireNativeHostConformance(
+export function requireCircleKitShowcaseNativeConformance(
   product: CircleKitShowcaseProductIr,
-  manifest: NativeBindingManifest,
+  androidManifest: NativeBindingManifest,
+  manifests: readonly NativeBindingManifest[],
 ): void {
-  if (manifest.profiles === undefined) throw new Error("Showcase native artifact profiles are unasserted");
-  const hostProfiles = new Set(manifest.profiles);
-  const declaredProfiles = new Set(product.artifacts.map(({ id }) => id));
-  for (const profile of hostProfiles) {
-    if (!declaredProfiles.has(profile)) throw new Error(`[artifact/orphan] artifact profile '${profile}'`);
+  if (!manifests.includes(androidManifest)) {
+    throw new Error("Showcase native host set omits its Android manifest");
   }
-  const typeByInstance = new Map(product.components.map(({ id, componentTypeRef }) => [id, componentTypeRef]));
-  const expected = new Set(product.artifactScopes
-    .filter(({ artifactRef }) => hostProfiles.has(artifactRef))
-    .flatMap(({ artifactRef, includedMounts }) => includedMounts.map(({ componentInstanceRef }) => {
-      const type = typeByInstance.get(componentInstanceRef);
-      if (type === undefined) throw new Error(`artifact scope uses missing component '${componentInstanceRef}'`);
-      return `${type}@${artifactRef}`;
-    })));
-  const actual = new Set(manifest.components.flatMap(({ componentId, profiles }) =>
-    profiles.map((profile) => `${componentId}@${profile}`)));
-  const findings = [
-    ...[...expected].filter((id) => !actual.has(id)).map((id) => `[component/missing] component binding '${id}'`),
-    ...[...actual].filter((id) => !expected.has(id)).map((id) => `[component/orphan] component binding '${id}'`),
-  ];
-  if (findings.length > 0) throw new Error(findings.join("\n"));
-
-  const selectedInstances = new Set(product.artifactScopes
-    .filter(({ artifactRef }) => hostProfiles.has(artifactRef))
-    .flatMap(({ includedMounts }) => includedMounts.map(({ componentInstanceRef }) => componentInstanceRef)));
-  const expectedIcons = new Set<string>(product.showcase.cases
-    .filter(({ id }) => selectedInstances.has(id)).map(({ iconId }) => iconId));
-  const actualIcons = new Set(manifest.icons.map(({ iconId }) => iconId));
-  const iconFindings = [
-    ...[...expectedIcons].filter((id) => !actualIcons.has(id)).map((id) => `[icon/missing] icon asset '${id}'`),
-    ...[...actualIcons].filter((id) => !expectedIcons.has(id)).map((id) => `[icon/orphan] icon asset '${id}'`),
-  ];
-  if (iconFindings.length > 0) throw new Error(iconFindings.join("\n"));
-}
-
-function requireExactNativeNodes(
-  product: CircleKitShowcaseProductIr,
-  manifest: NativeBindingManifest,
-): void {
-  if (manifest.nodes === undefined) throw new Error("Showcase native nodes are unasserted");
-  requireUnique(manifest.nodes.map(({ nodeId }) => nodeId), "native node binding");
-  const expectedIds = product.nodes.map(({ id }) => id).sort();
-  const actualIds = manifest.nodes.map(({ nodeId }) => nodeId).sort();
-  if (expectedIds.join(",") !== actualIds.join(",")) {
-    throw new Error(`Showcase native nodes differ: expected [${expectedIds}] actual [${actualIds}]`);
+  requireEveryComponentOnEveryAndroidProfile(androidManifest);
+  for (const manifest of manifests) {
+    assertProductArtifactConformance(product, manifest);
   }
-  const expectedProfiles = [...SHOWCASE_ANDROID_ARTIFACT_PROFILES].sort().join(",");
-  for (const node of manifest.nodes) {
-    const actualProfiles = [...node.profiles].sort().join(",");
-    if (actualProfiles !== expectedProfiles) {
-      throw new Error(`Showcase native node '${node.nodeId}' has profiles [${actualProfiles}]`);
-    }
-    const ports = product.portRegistry.nodePorts.filter(({ ownerId }) => ownerId === node.nodeId);
-    const expectedInputs = ports.filter(({ direction }) => direction === "input").map(({ portId }) => portId).sort();
-    const expectedOutputs = ports.filter(({ direction }) => direction === "output").map(({ portId }) => portId).sort();
-    const actualInputs = [...node.inputPorts].sort();
-    const actualOutputs = [...node.outputPorts].sort();
-    if (expectedInputs.join(",") !== actualInputs.join(",") ||
-        expectedOutputs.join(",") !== actualOutputs.join(",")) {
-      throw new Error(
-        `Showcase native node '${node.nodeId}' ports differ: ` +
-        `inputs [${actualInputs}] outputs [${actualOutputs}]`,
-      );
-    }
+  const uncovered = productArtifactHostCoverage(product, manifests);
+  if (uncovered.length > 0) {
+    throw new Error(uncovered.map(({ axis, direction, message }) =>
+      `[${axis}/${direction}] ${message}`).join("\n"));
   }
 }
 
@@ -220,9 +165,9 @@ function requireExactNativeNodes(
  * A Showcase product rule, deliberately NOT a conformance axis.
  *
  * Showcase exists to demonstrate every component on every Android form factor, so a
- * component bound to only one of them is a hole in the demo. Conformance cannot check
- * this for anyone: the component catalog records ids, not which artifacts a component
- * belongs to, so there is nothing product-side to compare a subset against.
+ * component bound to only one of them is a hole in the demo. Shared conformance proves
+ * every declared artifact scope; this local rule keeps the stronger Showcase invariant
+ * explicit and gives the native author the direct all-Android-profiles diagnostic.
  *
  * Kept local rather than dropped. The shared helper replacing the old parity function
  * covers product-to-manifest agreement, and this covers a rule only this product has.

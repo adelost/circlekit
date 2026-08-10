@@ -53,7 +53,7 @@ data class ShowcaseNativeNodeBinding(
  * snapshot and rejects missing, orphan or profile-drifted bindings.
  */
 object ShowcaseNativeBindings {
-    const val SCHEMA_VERSION = 3
+    const val SCHEMA_VERSION = 4
     const val SOURCE_FILE =
         "showcase-catalog/src/main/java/io/v1d/circlekit/showcase/catalog/ShowcaseNativeBindings.kt"
 

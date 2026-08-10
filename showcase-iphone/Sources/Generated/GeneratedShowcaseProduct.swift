@@ -105,7 +105,7 @@ enum GeneratedShowcasePortId: String, CaseIterable, Hashable {
 
 enum GeneratedShowcaseProduct {
     static let productId = "circlekit-showcase"
-    static let productSpecVersion = "0.3.42"
+    static let productSpecVersion = "0.3.46"
     static let artifacts: [ShowcaseArtifact] = [
         ShowcaseArtifact(
             id: .iphoneFullUi,
@@ -138,92 +138,107 @@ enum GeneratedShowcaseProduct {
     static let components: [ShowcaseComponent] = [
         ShowcaseComponent(
             id: .foundationColors,
+            rendererId: "ShowcaseComponentScreen",
             title: "COLORS",
-            iconId: "showcase.palette",
+            iconId: "palette",
             scenarios: [ShowcaseScenario(id: "sea-glass", label: "SEA GLASS"), ShowcaseScenario(id: "flat-cyan", label: "FLAT CYAN"), ShowcaseScenario(id: "muted", label: "MUTED"), ShowcaseScenario(id: "high-contrast", label: "HIGH CONTRAST")]
         ),
         ShowcaseComponent(
             id: .foundationGeometry,
+            rendererId: "ShowcaseComponentScreen",
             title: "GEOMETRY",
-            iconId: "showcase.grid",
+            iconId: "grid",
             scenarios: [ShowcaseScenario(id: "round-192", label: "ROUND 192"), ShowcaseScenario(id: "phone-compact", label: "PHONE COMPACT"), ShowcaseScenario(id: "phone-wide", label: "PHONE WIDE"), ShowcaseScenario(id: "chrome-x", label: "X @ 9"), ShowcaseScenario(id: "chrome-x-gear", label: "X + GEAR")]
         ),
         ShowcaseComponent(
             id: .atomIconAction,
+            rendererId: "ShowcaseComponentScreen",
             title: "ACTIONS",
-            iconId: "showcase.watch",
+            iconId: "watch",
             scenarios: [ShowcaseScenario(id: "idle", label: "IDLE"), ShowcaseScenario(id: "active", label: "ACTIVE"), ShowcaseScenario(id: "immediate", label: "IMMEDIATE"), ShowcaseScenario(id: "deliberate", label: "DELIBERATE"), ShowcaseScenario(id: "disabled", label: "DISABLED")]
         ),
         ShowcaseComponent(
             id: .controlActionRow,
+            rendererId: "ShowcaseComponentScreen",
             title: "ACTION ROW",
-            iconId: "showcase.touchdown-run",
+            iconId: "touchdown-run",
             scenarios: [ShowcaseScenario(id: "immediate", label: "IMMEDIATE"), ShowcaseScenario(id: "deliberate", label: "DELIBERATE"), ShowcaseScenario(id: "confirm", label: "CONFIRM"), ShowcaseScenario(id: "recoverable", label: "RECOVERABLE"), ShowcaseScenario(id: "blocked", label: "BLOCKED"), ShowcaseScenario(id: "failure", label: "FAILURE + RETRY")]
         ),
         ShowcaseComponent(
             id: .controlChoiceRow,
+            rendererId: "ShowcaseComponentScreen",
             title: "CHOICES",
-            iconId: "showcase.grid",
+            iconId: "grid",
             scenarios: [ShowcaseScenario(id: "off", label: "TOGGLE OFF"), ShowcaseScenario(id: "on", label: "TOGGLE ON"), ShowcaseScenario(id: "two", label: "TWO OPTIONS"), ShowcaseScenario(id: "first", label: "SEVEN · FIRST"), ShowcaseScenario(id: "middle", label: "SEVEN · MIDDLE"), ShowcaseScenario(id: "last", label: "SEVEN · LAST")]
         ),
         ShowcaseComponent(
             id: .controlAdjustment,
+            rendererId: "ShowcaseComponentScreen",
             title: "ADJUST",
-            iconId: "showcase.sliders",
+            iconId: "sliders",
             scenarios: [ShowcaseScenario(id: "minimum", label: "MINIMUM"), ShowcaseScenario(id: "middle", label: "MIDDLE"), ShowcaseScenario(id: "maximum", label: "MAXIMUM"), ShowcaseScenario(id: "deliberate", label: "DELIBERATE STEPS")]
         ),
         ShowcaseComponent(
             id: .controlProgress,
+            rendererId: "ShowcaseComponentScreen",
             title: "PROGRESS",
-            iconId: "showcase.download",
+            iconId: "download",
             scenarios: [ShowcaseScenario(id: "none", label: "NONE"), ShowcaseScenario(id: "indeterminate", label: "INDETERMINATE"), ShowcaseScenario(id: "empty", label: "0 PERCENT"), ShowcaseScenario(id: "half", label: "50 PERCENT"), ShowcaseScenario(id: "complete", label: "100 PERCENT"), ShowcaseScenario(id: "failed", label: "FAILURE + RETRY")]
         ),
         ShowcaseComponent(
             id: .controlPressRing,
+            rendererId: "ShowcaseComponentScreen",
             title: "PRESS",
-            iconId: "showcase.record",
+            iconId: "record",
             scenarios: [ShowcaseScenario(id: "idle", label: "IDLE"), ShowcaseScenario(id: "recording", label: "RECORDING"), ShowcaseScenario(id: "disabled", label: "DISABLED"), ShowcaseScenario(id: "failed", label: "FAILED + RETRY")]
         ),
         ShowcaseComponent(
             id: .inputText,
+            rendererId: "ShowcaseComponentScreen",
             title: "TEXT",
-            iconId: "showcase.pencil",
+            iconId: "pencil",
             scenarios: [ShowcaseScenario(id: "empty", label: "EMPTY"), ShowcaseScenario(id: "filled", label: "FILLED"), ShowcaseScenario(id: "max", label: "MAX LENGTH"), ShowcaseScenario(id: "disabled", label: "DISABLED")]
         ),
         ShowcaseComponent(
             id: .mediaCapture,
+            rendererId: "ShowcaseComponentScreen",
             title: "WAVEFORM",
-            iconId: "showcase.record",
+            iconId: "record",
             scenarios: [ShowcaseScenario(id: "silent", label: "NO SAMPLES"), ShowcaseScenario(id: "active", label: "ACTIVE"), ShowcaseScenario(id: "long", label: "LONG DURATION")]
         ),
         ShowcaseComponent(
             id: .mediaPlayback,
+            rendererId: "ShowcaseComponentScreen",
             title: "PLAYBACK",
-            iconId: "showcase.play",
+            iconId: "play",
             scenarios: [ShowcaseScenario(id: "ready", label: "READY"), ShowcaseScenario(id: "playing", label: "PLAYING"), ShowcaseScenario(id: "paused", label: "PAUSED"), ShowcaseScenario(id: "complete", label: "COMPLETE"), ShowcaseScenario(id: "failed", label: "FAILED")]
         ),
         ShowcaseComponent(
             id: .templateScreens,
+            rendererId: "ShowcaseComponentScreen",
             title: "SCREENS",
-            iconId: "showcase.layers",
+            iconId: "layers",
             scenarios: [ShowcaseScenario(id: "hub", label: "HUB"), ShowcaseScenario(id: "detail", label: "DETAIL"), ShowcaseScenario(id: "launcher", label: "LAUNCHER"), ShowcaseScenario(id: "rows", label: "ROWS"), ShowcaseScenario(id: "adjustment", label: "ADJUSTMENT"), ShowcaseScenario(id: "color-picker", label: "COLOR PICKER"), ShowcaseScenario(id: "dial-preview", label: "DIAL PREVIEW"), ShowcaseScenario(id: "empty", label: "EMPTY CONTENT"), ShowcaseScenario(id: "max-capacity", label: "MAX CAPACITY"), ShowcaseScenario(id: "long-content", label: "LONG CONTENT")]
         ),
         ShowcaseComponent(
             id: .flowSource,
+            rendererId: "ShowcaseComponentScreen",
             title: "SOURCE",
-            iconId: "showcase.wifi",
+            iconId: "wifi",
             scenarios: [ShowcaseScenario(id: "off", label: "OFF"), ShowcaseScenario(id: "loading", label: "LOADING"), ShowcaseScenario(id: "fresh", label: "FRESH"), ShowcaseScenario(id: "aging", label: "AGING"), ShowcaseScenario(id: "partial", label: "PARTIAL"), ShowcaseScenario(id: "broken", label: "BROKEN")]
         ),
         ShowcaseComponent(
             id: .flowUpdate,
+            rendererId: "ShowcaseComponentScreen",
             title: "UPDATE",
-            iconId: "showcase.download",
+            iconId: "download",
             scenarios: [ShowcaseScenario(id: "checking", label: "CHECKING"), ShowcaseScenario(id: "available", label: "AVAILABLE"), ShowcaseScenario(id: "downloading", label: "DOWNLOADING"), ShowcaseScenario(id: "ready", label: "READY"), ShowcaseScenario(id: "failed", label: "FAILED")]
         ),
         ShowcaseComponent(
             id: .flowService,
+            rendererId: "ShowcaseComponentScreen",
             title: "SERVICE",
-            iconId: "showcase.wrench",
+            iconId: "wrench",
             scenarios: [ShowcaseScenario(id: "idle", label: "IDLE"), ShowcaseScenario(id: "active", label: "ACTIVE"), ShowcaseScenario(id: "success", label: "SUCCESS"), ShowcaseScenario(id: "failed", label: "FAILED"), ShowcaseScenario(id: "cache", label: "CACHE")]
         )
     ]
@@ -423,7 +438,8 @@ enum GeneratedShowcaseProduct {
     ]
     static let icons: [ShowcaseIconAsset] = [
         ShowcaseIconAsset(
-            id: "showcase.palette",
+            id: "palette",
+            nativeSymbol: "ShowcaseVectorIcon",
             viewportWidth: 24.0,
             viewportHeight: 24.0,
             paths: [
@@ -454,7 +470,8 @@ enum GeneratedShowcaseProduct {
             ]
         ),
         ShowcaseIconAsset(
-            id: "showcase.grid",
+            id: "grid",
+            nativeSymbol: "ShowcaseVectorIcon",
             viewportWidth: 24.0,
             viewportHeight: 24.0,
             paths: [
@@ -493,7 +510,8 @@ enum GeneratedShowcaseProduct {
             ]
         ),
         ShowcaseIconAsset(
-            id: "showcase.watch",
+            id: "watch",
+            nativeSymbol: "ShowcaseVectorIcon",
             viewportWidth: 24.0,
             viewportHeight: 24.0,
             paths: [
@@ -519,7 +537,8 @@ enum GeneratedShowcaseProduct {
             ]
         ),
         ShowcaseIconAsset(
-            id: "showcase.touchdown-run",
+            id: "touchdown-run",
+            nativeSymbol: "ShowcaseVectorIcon",
             viewportWidth: 24.0,
             viewportHeight: 24.0,
             paths: [
@@ -539,7 +558,8 @@ enum GeneratedShowcaseProduct {
             ]
         ),
         ShowcaseIconAsset(
-            id: "showcase.sliders",
+            id: "sliders",
+            nativeSymbol: "ShowcaseVectorIcon",
             viewportWidth: 24.0,
             viewportHeight: 24.0,
             paths: [
@@ -573,7 +593,8 @@ enum GeneratedShowcaseProduct {
             ]
         ),
         ShowcaseIconAsset(
-            id: "showcase.download",
+            id: "download",
+            nativeSymbol: "ShowcaseVectorIcon",
             viewportWidth: 24.0,
             viewportHeight: 24.0,
             paths: [
@@ -594,7 +615,8 @@ enum GeneratedShowcaseProduct {
             ]
         ),
         ShowcaseIconAsset(
-            id: "showcase.record",
+            id: "record",
+            nativeSymbol: "ShowcaseVectorIcon",
             viewportWidth: 24.0,
             viewportHeight: 24.0,
             paths: [
@@ -611,7 +633,8 @@ enum GeneratedShowcaseProduct {
             ]
         ),
         ShowcaseIconAsset(
-            id: "showcase.pencil",
+            id: "pencil",
+            nativeSymbol: "ShowcaseVectorIcon",
             viewportWidth: 24.0,
             viewportHeight: 24.0,
             paths: [
@@ -631,7 +654,8 @@ enum GeneratedShowcaseProduct {
             ]
         ),
         ShowcaseIconAsset(
-            id: "showcase.play",
+            id: "play",
+            nativeSymbol: "ShowcaseVectorIcon",
             viewportWidth: 24.0,
             viewportHeight: 24.0,
             paths: [
@@ -647,7 +671,8 @@ enum GeneratedShowcaseProduct {
             ]
         ),
         ShowcaseIconAsset(
-            id: "showcase.layers",
+            id: "layers",
+            nativeSymbol: "ShowcaseVectorIcon",
             viewportWidth: 24.0,
             viewportHeight: 24.0,
             paths: [
@@ -671,7 +696,8 @@ enum GeneratedShowcaseProduct {
             ]
         ),
         ShowcaseIconAsset(
-            id: "showcase.wifi",
+            id: "wifi",
+            nativeSymbol: "ShowcaseVectorIcon",
             viewportWidth: 24.0,
             viewportHeight: 24.0,
             paths: [
@@ -695,7 +721,8 @@ enum GeneratedShowcaseProduct {
             ]
         ),
         ShowcaseIconAsset(
-            id: "showcase.wrench",
+            id: "wrench",
+            nativeSymbol: "ShowcaseVectorIcon",
             viewportWidth: 24.0,
             viewportHeight: 24.0,
             paths: [
@@ -714,9 +741,33 @@ enum GeneratedShowcaseProduct {
         )
     ]
     static let nodes: [ShowcaseNode] = [
-        ShowcaseNode(id: .catalog, typeRef: "showcase.catalog-presentation", kind: "present"),
-        ShowcaseNode(id: .navigation, typeRef: "showcase.navigation-service", kind: "service"),
-        ShowcaseNode(id: .navigationPresentation, typeRef: "showcase.navigation-presentation", kind: "present")
+        ShowcaseNode(
+            id: .catalog,
+            typeRef: "showcase.catalog-presentation",
+            kind: "present",
+            nativePortId: "ShowcaseCatalogSource",
+            profiles: [.iphoneFullUi, .watchosFullUi],
+            inputPorts: [],
+            outputPorts: ["model"]
+        ),
+        ShowcaseNode(
+            id: .navigation,
+            typeRef: "showcase.navigation-service",
+            kind: "service",
+            nativePortId: "ShowcaseNavigationController",
+            profiles: [.iphoneFullUi, .watchosFullUi],
+            inputPorts: ["foundationColors", "foundationGeometry", "atomIconAction", "controlActionRow", "controlChoiceRow", "controlAdjustment", "controlProgress", "controlPressRing", "inputText", "mediaCapture", "mediaPlayback", "templateScreens", "flowSource", "flowUpdate", "flowService"],
+            outputPorts: ["destination"]
+        ),
+        ShowcaseNode(
+            id: .navigationPresentation,
+            typeRef: "showcase.navigation-presentation",
+            kind: "present",
+            nativePortId: "ShowcaseNavigationController",
+            profiles: [.iphoneFullUi, .watchosFullUi],
+            inputPorts: ["destination"],
+            outputPorts: ["model"]
+        )
     ]
     static let portBindings: [ShowcasePortBinding] = [
         ShowcasePortBinding(kind: "component-event", from: .foundationColorsOpen, to: .navigationFoundationColors, purpose: "data"),
