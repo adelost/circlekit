@@ -13,10 +13,6 @@ import {
   type ProductEmitterPlugin,
 } from "@v1d/product-spec";
 import { showcaseKotlinEmitter } from "../src/emit-kotlin.js";
-import {
-  fullUiNavigationRegistration,
-  nativeNavigationManifest,
-} from "../src/native-manifest.js";
 import { CIRCLEKIT_ASSET_CATALOG, CIRCLEKIT_STYLE } from "@v1d/circlekit-assets";
 import { showcaseGarminEmitter } from "../src/emit-monkeyc.js";
 import { showcaseSwiftEmitter } from "../src/emit-swift.js";
@@ -27,6 +23,12 @@ import {
 } from "../src/product.js";
 
 const root = resolve(import.meta.dirname, "../..");
+
+type Mutable<T> = T extends readonly (infer Item)[]
+  ? Mutable<Item>[]
+  : T extends object
+    ? { -readonly [Key in keyof T]: Mutable<T[Key]> }
+    : T;
 
 async function registry() {
   return decodeNativeBindingManifest(JSON.parse(
@@ -256,50 +258,27 @@ test("native component, profile and icon drift stops before emission", async () 
 
   const appleHost = hosts.find(({ profiles }) => profiles?.includes("iphone-full-ui") === true);
   if (appleHost?.profiles === undefined) throw new Error("missing executable Apple host registration");
-  const appleProfiles = appleHost.profiles;
-  const appleArtifacts = product.artifacts
-    .filter(({ id }) => appleProfiles.includes(id))
-    .map((artifact) => ({
-      artifactRef: artifact.id,
-      entryPageRef: artifact.entryScreen,
-      pageRefs: artifact.screenRefs,
-    }));
-  const appleDispatches = product.showcase.cases.map((component) => ({
-    artifactRefs: appleProfiles,
-    componentInstanceRef: component.id,
-    sourcePortRef: `${component.id}.open`,
-    targetPortRef: product.components.find(({ id }) => id === component.id)!.bindings.events.open!,
-  }));
-  const withoutNativePage = fullUiNavigationRegistration(
-    appleArtifacts.map((artifact, index) => index === 0
-      ? { ...artifact, pageRefs: artifact.pageRefs.slice(0, -1) }
-      : artifact),
-    appleDispatches,
-  );
+  const withoutNativePage = structuredClone(appleHost) as Mutable<NativeBindingManifest>;
+  const nativeIphoneArtifact = withoutNativePage.navigation.artifacts
+    .find(({ artifactRef }) => artifactRef === "iphone-full-ui");
+  if (nativeIphoneArtifact === undefined) throw new Error("missing emitted iPhone navigation registration");
+  const nativeFlowsPageIndex = nativeIphoneArtifact.pages
+    .findIndex(({ pageRef }) => pageRef === "section.flows");
+  if (nativeFlowsPageIndex < 0) throw new Error("missing emitted flows page registration");
+  nativeIphoneArtifact.pages.splice(nativeFlowsPageIndex, 1);
   assert.match(
-    productArtifactConformance(product, {
-      ...appleHost,
-      navigation: nativeNavigationManifest(withoutNativePage)!,
-    }).map(({ message }) => message).join("\n"),
+    productArtifactConformance(product, withoutNativePage).map(({ message }) => message).join("\n"),
     /section\.flows/u,
   );
 
-  const changedExecutableBack = fullUiNavigationRegistration(appleArtifacts, appleDispatches);
-  const changedPage = changedExecutableBack.artifacts[0]!.pages[1]!;
-  const backDriftRegistration = {
-    ...changedExecutableBack,
-    artifacts: changedExecutableBack.artifacts.map((artifact, index) => index === 0 ? {
-      ...artifact,
-      pages: artifact.pages.map((page) => page.pageRef === changedPage.pageRef
-        ? { ...page, back: "system" as const }
-        : page),
-    } : artifact),
-  };
+  const changedExecutableBack = structuredClone(appleHost) as Mutable<NativeBindingManifest>;
+  const nativeAtomsPage = changedExecutableBack.navigation.artifacts
+    .find(({ artifactRef }) => artifactRef === "iphone-full-ui")?.pages
+    .find(({ pageRef }) => pageRef === "section.atoms");
+  if (nativeAtomsPage === undefined) throw new Error("missing emitted atoms page registration");
+  nativeAtomsPage.back = "system";
   assert.match(
-    productArtifactConformance(product, {
-      ...appleHost,
-      navigation: nativeNavigationManifest(backDriftRegistration)!,
-    }).map(({ message }) => message).join("\n"),
+    productArtifactConformance(product, changedExecutableBack).map(({ message }) => message).join("\n"),
     /back.*section\.atoms|section\.atoms.*back/u,
   );
   assert.throws(() => requireCircleKitShowcaseNativeConformance(
