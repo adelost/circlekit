@@ -49,6 +49,27 @@ if ! git -C "$REPO_ROOT" diff --quiet ||
   exit 2
 fi
 
+# Every release axis deploys one complete Pages snapshot. Keep the fetch,
+# stage, deploy and alias-verification transaction serial on this host so a
+# second package cannot publish from a stale snapshot while the first alias is
+# still propagating.
+if [[ "$MODE" != --prepare-only ]]; then
+  publish_lock="${CIRCLEKIT_PUBLISH_LOCK:-$HOME/.circlekit-pages-publish.lock}"
+  publish_lock_timeout="${CIRCLEKIT_PUBLISH_LOCK_TIMEOUT_SECONDS:-1800}"
+  [[ "$publish_lock_timeout" =~ ^[0-9]+$ ]] || {
+    echo "$PUBLISHER: invalid lock timeout: $publish_lock_timeout" >&2
+    exit 2
+  }
+  mkdir -p "$(dirname "$publish_lock")"
+  exec 9>"$publish_lock"
+  echo "$PUBLISHER: waiting for cumulative Pages publish lock"
+  flock -w "$publish_lock_timeout" 9 || {
+    echo "$PUBLISHER: timed out waiting for cumulative Pages publish lock" >&2
+    exit 1
+  }
+  echo "$PUBLISHER: acquired cumulative Pages publish lock"
+fi
+
 source_sha="$(git -C "$REPO_ROOT" rev-parse HEAD)"
 package_version="$(node -p "require('$REPO_ROOT/$release_package/package.json').version")"
 [[ "$package_version" == "$VERSION" ]] || {
@@ -90,6 +111,46 @@ stage_npm_package() {
     echo "$PUBLISHER: $slug metadata fetch failed (HTTP $metadata_status)" >&2
     exit 1
   fi
+
+  # versions.json is the fast catalog, but it must not be the only recovery
+  # source. A previously published immutable payload may survive a bad or
+  # overlapping Pages snapshot whose catalog omitted it. Product package
+  # history is the independent, generic list of coordinates worth probing.
+  # Union any reachable historical payload back into the staged catalog.
+  local manifest_path="$package_dir/package.json"
+  local commit historical_version historical_url already_known
+  while IFS= read -r commit; do
+    historical_version="$({
+      git -C "$REPO_ROOT" show "$commit:$manifest_path" 2>/dev/null || true
+    } | node -e '
+      let text = "";
+      process.stdin.setEncoding("utf8");
+      process.stdin.on("data", chunk => text += chunk);
+      process.stdin.on("end", () => {
+        try { process.stdout.write(JSON.parse(text).version ?? ""); }
+        catch { process.stdout.write(""); }
+      });
+    ')"
+    [[ "$historical_version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || continue
+    already_known=false
+    for previous in "${previous_versions[@]}"; do
+      if [[ "$previous" == "$historical_version" ]]; then
+        already_known=true
+        break
+      fi
+    done
+    [[ "$already_known" == true ]] && continue
+    historical_url="$remote_root/$historical_version/$tarball_prefix-$historical_version.tgz"
+    status="$(curl -sS -o /dev/null -w '%{http_code}' "$historical_url")"
+    if [[ "$status" == 200 ]]; then
+      previous_versions+=("$historical_version")
+      echo "$PUBLISHER: recovered $slug $historical_version from its immutable payload"
+    elif [[ "$status" != 404 ]]; then
+      echo "$PUBLISHER: $slug historical payload probe failed for $historical_version (HTTP $status)" >&2
+      exit 1
+    fi
+  done < <(git -C "$REPO_ROOT" log --format=%H -- "$manifest_path")
+
   for previous in "${previous_versions[@]}"; do
     [[ -n "$release_version" && "$previous" == "$release_version" ]] && release_in_metadata=true
     [[ "$previous" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo "$PUBLISHER: unsafe $slug version: $previous" >&2; exit 1; }
@@ -309,6 +370,35 @@ env -u CLOUDFLARE_API_TOKEN npx wrangler pages deploy "$cumulative_repository" \
   --branch=main \
   "--commit-hash=$source_sha" \
   "--commit-message=$commit_message"
+
+# Do not release the host lock when only the immutable candidate happens to be
+# reachable. Wait until the public alias serves this exact cumulative catalog;
+# otherwise the next serialized publisher can still read the previous snapshot.
+declare -a catalog_mismatches=()
+catalog_verified=false
+for attempt in {1..30}; do
+  catalog_mismatches=()
+  for package in "${NPM_PACKAGES[@]}"; do
+    IFS='|' read -r _ _ package_slug _ _ <<< "$package"
+    expected_catalog="$cumulative_repository/npm/v1d/$package_slug/versions.json"
+    live_catalog="$stage/live-$package_slug-versions.json"
+    if ! curl -fsSL -H 'Cache-Control: no-cache' \
+      "$REMOTE_REPOSITORY/npm/v1d/$package_slug/versions.json?source=$source_sha&attempt=$attempt" \
+      -o "$live_catalog" || ! cmp -s "$expected_catalog" "$live_catalog"; then
+      catalog_mismatches+=("$package_slug")
+    fi
+  done
+  if [[ "${#catalog_mismatches[@]}" -eq 0 ]]; then
+    catalog_verified=true
+    break
+  fi
+  sleep 2
+done
+[[ "$catalog_verified" == true ]] || {
+  echo "$PUBLISHER: public alias did not reach the cumulative npm snapshot; mismatched catalogs: ${catalog_mismatches[*]}" >&2
+  exit 1
+}
+echo "$PUBLISHER: public alias serves the exact cumulative npm catalogs"
 
 if [[ "$AXIS" == maven ]]; then
   for module in "${MODULES[@]}"; do
