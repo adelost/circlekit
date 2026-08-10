@@ -30,6 +30,14 @@ Reusable node types may declare typed `configInputs` with field names,
 primitive types and units. ProductConfig supplies the concrete values;
 compilation rejects missing, extra or wrongly typed values before emission.
 
+Reusable domain packages declare their contracts, node types and finite values
+with `defineProductLibraryCatalog(...)`. A product passes those catalogs as the
+third argument to `defineProduct(...)` and may place the exact imported values
+in its normal declaration arrays. The compiler preserves their library origin
+without changing Product IR ordering. A local copy of any reserved contract,
+node-type or finite-value id fails even when its schema is byte-for-byte equal.
+Two libraries may not reserve the same id.
+
 Finite node values use `finiteValueRef` and a product-owned `finiteValues`
 catalog. The catalog is emitted in Product IR, while opaque record/list types
 continue to use `valueRef`. Compilation rejects both unknown finite references
@@ -105,3 +113,9 @@ every action source, service target and effect. Shared conformance compares all
 of these in both directions. Native exporters must build this section from
 their registered ports and hosts; copying expected Product IR into the manifest
 does not constitute an implementation proof.
+
+Consumers can run `v1d-check-pins [package-directory]` after install. It scans
+every direct `@v1d/*` dependency section, requires the immutable versioned
+HTTPS tarball URL, and verifies the exact resolved URL, version and sha512
+integrity in `package-lock.json`. Local `file:`, `workspace:` and project-path
+dependencies are rejected.
