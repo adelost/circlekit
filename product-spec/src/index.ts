@@ -5,6 +5,7 @@ export * from "./invariant-model.js";
 export * from "./node-model.js";
 export * from "./navigation-model.js";
 export * from "./navigation-conformance-model.js";
+export * from "./native-component-renderer-model.js";
 export * from "./output-manifest.js";
 export * from "./port-graph-model.js";
 export * from "./node-instance-model.js";

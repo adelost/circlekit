@@ -13,6 +13,9 @@ import {
   contextPort,
   demandPort,
   decodeNativeBindingManifest,
+  defineNativeComponentRendererRegistration,
+  defineNativeEmptyEventEmitter,
+  defineNativeTypedEventEmitter,
   defineComponentType,
   defineStateAuthority,
   defineStatePresentation,
@@ -32,6 +35,7 @@ import {
   navigationGuardContract,
   navigationConformance,
   navigationRouteContract,
+  nativeComponentRendererManifest,
   PORTABLE_SURFACE_CLASSES,
   port,
   productArtifactConformance,
@@ -44,6 +48,7 @@ import {
   validateProductIconRendererBindings,
   writeOutputManifest,
   type ComponentRenderScopeIr,
+  type NativeComponentRendererManifestEntry,
   type NativeComponentRendererRegistration,
   type NativeNavigationBindingManifest,
 } from "../src/index.js";
@@ -1189,15 +1194,39 @@ test("one mandatory graph compiles deterministic outputs and a complete port reg
     { kind: "component-input", from: phaseAuthority.adapter.outputPortRef, to: "control.main.phasePresentation", purpose: "data" },
     { kind: "component-input", from: "navigation.service.activePage", to: "page.host.activePage", purpose: "data" },
   ]);
-  const { rendererId: _controlRenderer, ...expectedControlRenderContract } =
-    controlRenderer(["phone", "wear"]);
-  const { rendererId: _pageHostRenderer, ...expectedReadOnlyPageHostContract } =
-    pageHostRenderer(["phone", "wear"]);
   assert.deepEqual(product.componentRenderContracts, [
-    expectedControlRenderContract,
-    expectedReadOnlyPageHostContract,
+    {
+      componentInstanceRef: "control.main",
+      componentTypeRef: "fixture.control",
+      scopes: renderScopes(["phone", "wear"], "control.main"),
+      inputs: [
+        {
+          inputPortRef: "control.main.state", producerPortRef: "ui.projection.model",
+          contractRef: statusContract.id, required: true,
+        },
+        {
+          inputPortRef: "control.main.phasePresentation",
+          producerPortRef: phaseAuthority.adapter.outputPortRef,
+          contractRef: phasePresentation.contract.id, required: true,
+        },
+      ],
+      events: [{
+        eventPortRef: "control.main.activate", targetPortRef: "ui.controller.trigger",
+        contractRef: actionContract.id,
+      }],
+    },
+    {
+      componentInstanceRef: "page.host",
+      componentTypeRef: "fixture.page-host",
+      scopes: renderScopes(["phone", "wear"], "page.host"),
+      inputs: [{
+        inputPortRef: "page.host.activePage", producerPortRef: "navigation.service.activePage",
+        contractRef: baseActivePageContract.id, required: true,
+      }],
+      events: [],
+    },
   ]);
-  assert.deepEqual(expectedReadOnlyPageHostContract.events, []);
+  assert.deepEqual(product.componentRenderContracts[1]!.events, []);
   assert.equal(product.portRegistry.demandEdges.length, 3);
   assert.deepEqual(new Set(product.portRegistry.demandEdges.map(({ nodeInstanceRef }) => nodeInstanceRef)),
     new Set(["domain.source"]));
@@ -1847,28 +1876,21 @@ test("mandatory bindings and the component boundary fail before emission", () =>
     .filter(({ artifactRef }) => artifactRef === "phone")
     .map(({ screenRef }) => screenRef),
   ["MAIN", "MAIN"]);
+  const scopedPageHost = pageHostNativeRegistration(["phone", "wear"]);
   const componentFindings = productArtifactConformance(scoped, {
     ...conformingManifest,
-    components: [
-      controlRenderer(["phone", "wear"]),
-      {
-        componentInstanceRef: "control.optional", componentTypeRef: "fixture.optional",
-        rendererId: "OptionalRenderer", scopes: renderScopes(["wear"], "control.optional"),
-        inputs: [], events: [],
-      },
-      {
-        componentInstanceRef: "details.main", componentTypeRef: "fixture.details",
-        rendererId: "DetailsRenderer", scopes: renderScopes(["wear"], "details.main", ["DETAILS"]),
-        inputs: [], events: [],
-      },
-      {
-        ...pageHostRenderer(["phone", "wear"]),
-        scopes: [
-          ...renderScopes(["phone"], "page.host"),
-          ...renderScopes(["wear"], "page.host", ["MAIN", "DETAILS"]),
+    components: nativeComponentRendererManifest([
+      controlNativeRegistration(["phone", "wear"]),
+      readOnlyNativeRegistration("control.optional", "fixture.optional", ["wear"]),
+      readOnlyNativeRegistration("details.main", "fixture.details", ["wear"], ["DETAILS"]),
+      defineNativeComponentRendererRegistration({
+        ...scopedPageHost,
+        mounts: [
+          ...nativeMounts(["phone"], "page.host"),
+          ...nativeMounts(["wear"], "page.host", ["MAIN", "DETAILS"]),
         ],
-      },
-    ],
+      }),
+    ]),
   }).filter(({ axis }) => axis === "component-render");
   assert.deepEqual(componentFindings, []);
 });
@@ -1962,35 +1984,54 @@ function renderScopes(
     artifactSurfaces[artifactRef].map((surface) => ({ artifactRef, screenRef, surface, mountRef }))));
 }
 
-function controlRenderer(
-  profiles: readonly (keyof typeof artifactSurfaces)[],
-  rendererId = "ControlRenderer",
-  screens: readonly string[] = ["MAIN"],
-): NativeComponentRendererRegistration {
-  return {
-    componentInstanceRef: "control.main",
-    componentTypeRef: "fixture.control",
-    rendererId,
-    scopes: renderScopes(profiles, "control.main", screens),
-    inputs: [
-      {
-        inputPortRef: "control.main.state", producerPortRef: "ui.projection.model",
-        contractRef: "fixture.status", required: true,
-      },
-      {
-        inputPortRef: "control.main.phasePresentation",
-        producerPortRef: "fixture.phase-authority.presentation-adapter.presentation",
-        contractRef: phasePresentation.contract.id, required: true,
-      },
-    ],
-    events: [{
-      eventPortRef: "control.main.activate", targetPortRef: "ui.controller.trigger",
-      contractRef: "fixture.action",
-    }],
+const nativeMountCalls: string[] = [];
+const nativeEventCalls: string[] = [];
+const nativeMountEndpoint: NativeComponentRendererRegistration["mounts"][number]["mount"] =
+  (inputs, emitter) => {
+    nativeMountCalls.push(`${Object.keys(inputs).sort().join(",")}:${emitter.kind}`);
+    return Object.freeze({ inputs, emitter });
   };
+
+function nativeMounts(
+  profiles: readonly (keyof typeof artifactSurfaces)[],
+  mountRef: string,
+  screens: readonly string[] = ["MAIN"],
+): NativeComponentRendererRegistration["mounts"] {
+  return profiles.flatMap((profileRef) => screens.flatMap((pageRef) =>
+    artifactSurfaces[profileRef].map((surface) => ({
+      profileRef, pageRef, surface, mountRef, mount: nativeMountEndpoint,
+    }))));
 }
 
-function pageHostRenderer(
+function controlNativeRegistration(
+  profiles: readonly (keyof typeof artifactSurfaces)[],
+  screens: readonly string[] = ["MAIN"],
+): NativeComponentRendererRegistration {
+  return defineNativeComponentRendererRegistration({
+    component: { instanceRef: "control.main", typeRef: "fixture.control" },
+    mounts: nativeMounts(profiles, "control.main", screens),
+    immutableInputs: [
+      {
+        consumerPortRef: "control.main.state", producerPortRef: "ui.projection.model",
+        contractRef: statusContract.id, required: true,
+        read: () => Object.freeze({ active: true, phase: "active" }),
+      },
+      {
+        consumerPortRef: "control.main.phasePresentation",
+        producerPortRef: phaseAuthority.adapter.outputPortRef,
+        contractRef: phasePresentation.contract.id, required: true,
+        read: () => Object.freeze({ label: "ACTIVE", tone: "ok", hint: "Running" }),
+      },
+    ],
+    eventEmitter: defineNativeTypedEventEmitter([{
+      sourcePortRef: "control.main.activate", targetPortRef: "ui.controller.trigger",
+      contractRef: actionContract.id,
+      emit: (payload) => { nativeEventCalls.push(`control.main.activate:${String(payload)}`); },
+    }]),
+  });
+}
+
+function pageHostNativeRegistration(
   profiles: readonly (keyof typeof artifactSurfaces)[],
   instanceRef = "page.host",
   typeRef = "fixture.page-host",
@@ -1998,54 +2039,69 @@ function pageHostRenderer(
   producerPortRef = "navigation.service.activePage",
   screens: readonly string[] = ["MAIN"],
 ): NativeComponentRendererRegistration {
-  return {
-    componentInstanceRef: instanceRef,
-    componentTypeRef: typeRef,
-    rendererId: "PageHostRenderer",
-    scopes: renderScopes(profiles, instanceRef, screens),
-    inputs: [{
-      inputPortRef: `${instanceRef}.activePage`, producerPortRef, contractRef, required: true,
+  return defineNativeComponentRendererRegistration({
+    component: { instanceRef, typeRef },
+    mounts: nativeMounts(profiles, instanceRef, screens),
+    immutableInputs: [{
+      consumerPortRef: `${instanceRef}.activePage`, producerPortRef, contractRef, required: true,
+      read: () => "MAIN",
     }],
-    events: [],
-  };
+    eventEmitter: defineNativeEmptyEventEmitter(),
+  });
+}
+
+function readOnlyNativeRegistration(
+  instanceRef: string,
+  typeRef: string,
+  profiles: readonly (keyof typeof artifactSurfaces)[],
+  screens: readonly string[] = ["MAIN"],
+): NativeComponentRendererRegistration {
+  return defineNativeComponentRendererRegistration({
+    component: { instanceRef, typeRef },
+    mounts: nativeMounts(profiles, instanceRef, screens),
+    immutableInputs: [],
+    eventEmitter: defineNativeEmptyEventEmitter(),
+  });
 }
 
 function navigationRenderers(): readonly NativeComponentRendererRegistration[] {
   return [
-    controlRenderer(["phone", "wear"], "ControlRenderer", ["MAIN", "DETAILS"]),
-    {
-      componentInstanceRef: "weather.card",
-      componentTypeRef: "fixture.weather-card",
-      rendererId: "WeatherCardRenderer",
-      scopes: renderScopes(["phone", "wear"], "weather.card"),
-      inputs: [],
-      events: [
+    controlNativeRegistration(["phone", "wear"], ["MAIN", "DETAILS"]),
+    defineNativeComponentRendererRegistration({
+      component: { instanceRef: "weather.card", typeRef: "fixture.weather-card" },
+      mounts: nativeMounts(["phone", "wear"], "weather.card"),
+      immutableInputs: [],
+      eventEmitter: defineNativeTypedEventEmitter([
         {
-          eventPortRef: "weather.card.route", targetPortRef: "navigation.service.route",
+          sourcePortRef: "weather.card.route", targetPortRef: "navigation.service.route",
           contractRef: routeIntentContract.id,
+          emit: (payload) => { nativeEventCalls.push(`weather.card.route:${String(payload)}`); },
         },
         {
-          eventPortRef: "weather.card.activate", targetPortRef: "weather.event-sink.activate",
+          sourcePortRef: "weather.card.activate", targetPortRef: "weather.event-sink.activate",
           contractRef: menuActivateContract.id,
+          emit: (payload) => { nativeEventCalls.push(`weather.card.activate:${String(payload)}`); },
         },
-      ],
-    },
-    pageHostRenderer(
+      ]),
+    }),
+    pageHostNativeRegistration(
       ["phone", "wear"], "page.closed-host", "fixture.closed-page-host",
       activePageContract.id, "navigation.service.activePage", ["MAIN", "DETAILS"],
     ),
   ];
 }
 
+const conformingNativeRendererRegistrations = [
+  controlNativeRegistration(["phone", "wear"]),
+  pageHostNativeRegistration(["phone", "wear"]),
+] as const;
+
 const conformingManifest: NativeBindingManifest = {
   stage: "native-export",
   schemaVersion: 6,
   sourceFile: "fixture/NativeBindings.kt",
   profiles: ["phone", "wear"],
-  components: [
-    controlRenderer(["phone", "wear"]),
-    pageHostRenderer(["phone", "wear"]),
-  ],
+  components: nativeComponentRendererManifest(conformingNativeRendererRegistrations),
   icons: [{ iconId: "check", nativeSymbol: "Check" }],
   nodes: [
     { nodeId: "domain.source", nativePortId: "SourcePorts", profiles: ["phone", "wear"], inputPorts: ["demand"], outputPorts: ["status"] },
@@ -2098,20 +2154,50 @@ const mutate = (change: (draft: NativeBindingManifest) => NativeBindingManifest)
 
 test("a conforming native manifest reports nothing", () => {
   const product = fixture();
+  const decodedNativeExport = decodeNativeBindingManifest(JSON.parse(JSON.stringify(conformingManifest)));
   assert.equal(product.artifactScopes.filter(({ artifactRef }) => artifactRef === "phone").length, 2);
-  assert.deepEqual(productArtifactConformance(product, conformingManifest), []);
+  assert.deepEqual(productArtifactConformance(product, decodedNativeExport), []);
+});
+
+test("copied expected IR cannot masquerade as an actual native renderer export", () => {
+  const copiedExpected = fixture().componentRenderContracts.map((contract) => ({
+    ...contract,
+    rendererId: "CopiedExpected",
+  }));
+  // @ts-expect-error Expected IR has no compile-bound mount, reader or emitter endpoints.
+  const cannotCompileAsNativeRegistration: NativeComponentRendererRegistration = copiedExpected[0]!;
+  void cannotCompileAsNativeRegistration;
+  assert.throws(
+    () => defineNativeComponentRendererRegistration(copiedExpected[0] as never),
+    /has no component identity/,
+  );
+  assert.throws(
+    () => nativeComponentRendererManifest(copiedExpected as never),
+    /has no component identity/,
+  );
+  assert.throws(
+    () => decodeNativeBindingManifest({ ...conformingManifest, components: copiedExpected }),
+    /component 0 identity must be an object/,
+  );
+  assert.throws(
+    () => defineNativeComponentRendererRegistration(conformingManifest.components[0] as never),
+    /must be compile-bound/,
+  );
 });
 
 test("component renderer conformance is exact for inputs, events, identity and scopes", () => {
   const product = fixture();
-  const controlBinding = conformingManifest.components[0]!;
   const changeControl = (
-    change: (registration: NativeComponentRendererRegistration) => NativeComponentRendererRegistration,
+    change: (registration: NativeComponentRendererManifestEntry) => NativeComponentRendererManifestEntry,
   ): NativeBindingManifest => ({
     ...conformingManifest,
     components: conformingManifest.components.map((registration) =>
-      registration.componentInstanceRef === "control.main" ? change(registration) : registration),
+      registration.component.instanceRef === "control.main" ? change(registration) : registration),
   });
+  const eventBindings = (registration: NativeComponentRendererManifestEntry) => {
+    if (registration.eventEmitter.kind !== "typed") throw new Error("control fixture has no typed emitter");
+    return registration.eventEmitter.bindings;
+  };
   const expectFinding = (
     manifest: NativeBindingManifest,
     direction: ConformanceDirection,
@@ -2124,87 +2210,122 @@ test("component renderer conformance is exact for inputs, events, identity and s
   };
 
   expectFinding(changeControl((registration) => ({
-    ...registration, inputs: registration.inputs.filter(({ inputPortRef }) => inputPortRef !== "control.main.state"),
+    ...registration,
+    immutableInputs: registration.immutableInputs.filter(({
+      consumerPortRef,
+    }) => consumerPortRef !== "control.main.state"),
   })), "missing", "control.main.state");
   expectFinding(changeControl((registration) => ({
-    ...registration, inputs: [...registration.inputs, {
-      inputPortRef: "control.main.extra", producerPortRef: "ui.projection.model",
+    ...registration, immutableInputs: [...registration.immutableInputs, {
+      consumerPortRef: "control.main.extra", producerPortRef: "ui.projection.model",
       contractRef: statusContract.id, required: false,
     }],
   })), "orphan", "control.main.extra");
   expectFinding(changeControl((registration) => ({
-    ...registration, inputs: [...registration.inputs, registration.inputs[0]!],
+    ...registration, immutableInputs: [...registration.immutableInputs, registration.immutableInputs[0]!],
   })), "mismatch", "control.main.state");
-  expectFinding(changeControl((registration) => ({ ...registration, events: [] })),
+  expectFinding(changeControl((registration) => ({ ...registration, eventEmitter: { kind: "empty" } })),
     "missing", "control.main.activate");
   expectFinding(changeControl((registration) => ({
-    ...registration, events: [...registration.events, {
-      eventPortRef: "control.main.extra", targetPortRef: "ui.controller.trigger",
+    ...registration, eventEmitter: { kind: "typed", bindings: [...eventBindings(registration), {
+      sourcePortRef: "control.main.extra", targetPortRef: "ui.controller.trigger",
       contractRef: actionContract.id,
-    }],
+    }] },
   })), "orphan", "control.main.extra");
   expectFinding(changeControl((registration) => ({
-    ...registration, events: [...registration.events, registration.events[0]!],
+    ...registration, eventEmitter: {
+      kind: "typed", bindings: [...eventBindings(registration), eventBindings(registration)[0]!],
+    },
   })), "mismatch", "control.main.activate");
   expectFinding(changeControl((registration) => ({
     ...registration,
-    inputs: registration.inputs.map((input) => input.inputPortRef === "control.main.state"
+    immutableInputs: registration.immutableInputs.map((input) => input.consumerPortRef === "control.main.state"
       ? { ...input, contractRef: phasePresentation.contract.id }
       : input),
   })), "mismatch", "control.main.state");
   expectFinding(changeControl((registration) => ({
     ...registration,
-    inputs: registration.inputs.map((input) => input.inputPortRef === "control.main.state"
+    immutableInputs: registration.immutableInputs.map((input) => input.consumerPortRef === "control.main.state"
       ? { ...input, producerPortRef: phaseAuthority.adapter.outputPortRef }
       : input),
   })), "mismatch", "control.main.state");
   expectFinding(changeControl((registration) => ({
     ...registration,
-    inputs: registration.inputs.map((input) => input.inputPortRef === "control.main.state"
+    immutableInputs: registration.immutableInputs.map((input) => input.consumerPortRef === "control.main.state"
       ? { ...input, required: false }
       : input),
   })), "mismatch", "control.main.state");
   expectFinding(changeControl((registration) => ({
-    ...registration, componentTypeRef: "fixture.page-host",
+    ...registration, component: { ...registration.component, typeRef: "fixture.page-host" },
   })), "mismatch", "control.main");
   expectFinding({
     ...conformingManifest,
     components: conformingManifest.components.map((registration) =>
-      registration.componentInstanceRef === "control.main"
-        ? { ...registration, componentInstanceRef: "control.renamed" }
+      registration.component.instanceRef === "control.main"
+        ? { ...registration, component: { ...registration.component, instanceRef: "control.renamed" } }
         : registration),
   }, "missing", "control.main");
   expectFinding(changeControl((registration) => ({
     ...registration,
-    scopes: registration.scopes.map((scope, index) => index === 0
-      ? { ...scope, artifactRef: "toaster" }
-      : scope),
+    mounts: registration.mounts.map((mount, index) => index === 0
+      ? { ...mount, profileRef: "toaster" }
+      : mount),
   })), "orphan", "control.main@toaster/MAIN/compact/control.main");
+  const orphan = nativeComponentRendererManifest([
+    readOnlyNativeRegistration("native.orphan", "native.orphan-type", ["phone"]),
+  ])[0]!;
   expectFinding({
     ...conformingManifest,
-    components: [...conformingManifest.components, {
-      ...controlBinding,
-      componentInstanceRef: "native.orphan",
-      componentTypeRef: "native.orphan-type",
-      rendererId: "OrphanRenderer",
-      scopes: renderScopes(["phone"], "native.orphan"),
-      inputs: [],
-      events: [],
-    }],
+    components: [...conformingManifest.components, orphan],
   }, "orphan", "native.orphan");
+});
+
+test("a native-style fixture executes registered mount, input and emitter endpoints before export", () => {
+  const renderers = navigationRenderers();
+  const serializedRenderers = nativeComponentRendererManifest(renderers);
+  nativeMountCalls.length = 0;
+  nativeEventCalls.length = 0;
+  assert.deepEqual(renderers[0]!.immutableInputs[0]!.read(), { active: true, phase: "active" });
+  renderers[0]!.mounts[0]!.mount({ state: "ready" }, renderers[0]!.eventEmitter);
+  assert.equal(nativeMountCalls.at(-1), "state:typed");
+  if (renderers[1]!.eventEmitter.kind !== "typed") throw new Error("weather fixture has no typed emitter");
+  renderers[1]!.eventEmitter.bindings[0]!.emit("DETAILS");
+  assert.equal(nativeEventCalls.at(-1), "weather.card.route:DETAILS");
+  assert.equal(renderers[2]!.eventEmitter.kind, "empty");
+  if (renderers[2]!.eventEmitter.kind !== "empty") throw new Error("page host fixture is not read-only");
+  assert.equal(typeof renderers[2]!.eventEmitter.emit, "function");
+  assert.deepEqual(serializedRenderers[2]!.eventEmitter, { kind: "empty" });
+  assert.equal("componentInstanceRef" in serializedRenderers[0]!, false);
+  assert.equal("inputs" in serializedRenderers[0]!, false);
+  assert.equal("events" in serializedRenderers[0]!, false);
 });
 
 test("read-only renderers have an empty emitter and every multi-event target is exhaustive", () => {
   const product = navigationFixture();
   const renderers = navigationRenderers();
+  const serializedRenderers = nativeComponentRendererManifest(renderers);
   const manifest: NativeBindingManifest = {
     ...conformingManifest,
-    components: renderers,
+    components: serializedRenderers,
     navigation: nativeClosedNavigation,
   };
   assert.deepEqual(
     productArtifactConformance(product, manifest).filter(({ axis }) => axis === "component-render"),
     [],
+  );
+  assert.throws(() => defineNativeTypedEventEmitter([]), /use defineNativeEmptyEventEmitter/);
+  const fakeEmptyList = {
+    ...manifest,
+    components: serializedRenderers.map((registration) =>
+      registration.component.instanceRef === "page.closed-host"
+        ? { ...registration, eventEmitter: { kind: "typed" as const, bindings: [] } }
+        : registration),
+  };
+  assert.equal(
+    productArtifactConformance(product, fakeEmptyList)
+      .some(({ axis, direction, subject }) => axis === "component-render" &&
+        direction === "mismatch" && subject === "page.closed-host"),
+    true,
   );
   assert.deepEqual(
     product.componentRenderContracts.find(({ componentInstanceRef }) =>
@@ -2228,13 +2349,16 @@ test("read-only renderers have an empty emitter and every multi-event target is 
 
   const swapped = {
     ...manifest,
-    components: renderers.map((registration) => registration.componentInstanceRef === "weather.card"
+    components: serializedRenderers.map((registration) => registration.component.instanceRef === "weather.card"
       ? {
         ...registration,
-        events: registration.events.map((event, index, events) => ({
-          ...event,
-          targetPortRef: events[index === 0 ? 1 : 0]!.targetPortRef,
-        })),
+        eventEmitter: registration.eventEmitter.kind === "typed" ? {
+          kind: "typed" as const,
+          bindings: registration.eventEmitter.bindings.map((event, index, events) => ({
+            ...event,
+            targetPortRef: events[index === 0 ? 1 : 0]!.targetPortRef,
+          })),
+        } : registration.eventEmitter,
       }
       : registration),
   };
@@ -2246,12 +2370,15 @@ test("read-only renderers have an empty emitter and every multi-event target is 
   );
   const wrongEventContract = {
     ...manifest,
-    components: renderers.map((registration) => registration.componentInstanceRef === "weather.card"
+    components: serializedRenderers.map((registration) => registration.component.instanceRef === "weather.card"
       ? {
         ...registration,
-        events: registration.events.map((event) => event.eventPortRef === "weather.card.route"
-          ? { ...event, contractRef: menuActivateContract.id }
-          : event),
+        eventEmitter: registration.eventEmitter.kind === "typed" ? {
+          kind: "typed" as const,
+          bindings: registration.eventEmitter.bindings.map((event) => event.sourcePortRef === "weather.card.route"
+            ? { ...event, contractRef: menuActivateContract.id }
+            : event),
+        } : registration.eventEmitter,
       }
       : registration),
   };
@@ -2312,7 +2439,7 @@ const AXIS_MUTATIONS: readonly {
       : node),
   }) },
   { axis: "component-render", direction: "mismatch", subject: "control.main", change: (d) => ({
-    ...d, components: [...d.components, controlRenderer(["phone", "wear"], "DuplicateControlRenderer")],
+    ...d, components: [...d.components, d.components[0]!],
   }) },
   { axis: "icon", direction: "missing", subject: "check", change: (d) => ({ ...d, icons: [] }) },
   { axis: "finite-value", direction: "mismatch", subject: "fixture.phase", change: (d) => ({
@@ -2362,10 +2489,10 @@ test("one host checks only its component profiles while host coverage checks the
     ...conformingManifest,
     sourceFile,
     profiles,
-    components: [
-      controlRenderer(profiles, sourceFile),
-      pageHostRenderer(profiles),
-    ],
+    components: nativeComponentRendererManifest([
+      controlNativeRegistration(profiles),
+      pageHostNativeRegistration(profiles),
+    ]),
     nodes: conformingManifest.nodes.map((node) => ({ ...node, profiles })),
     navigation: {
       ...conformingManifest.navigation,
@@ -2406,7 +2533,7 @@ test("native manifest decoding requires exact renderer, node and navigation axes
   assert.throws(() => decodeNativeBindingManifest(withoutComponents), /manifest components must be an array/);
   const invalidSurface = structuredClone(conformingManifest) as unknown as Record<string, unknown>;
   const invalidComponent = (invalidSurface.components as Array<Record<string, unknown>>)[0]!;
-  (invalidComponent.scopes as Array<Record<string, unknown>>)[0]!.surface = "desktop";
+  (invalidComponent.mounts as Array<Record<string, unknown>>)[0]!.surface = "desktop";
   assert.throws(() => decodeNativeBindingManifest(invalidSurface), /is not a portable surface/);
   const partial = { ...conformingManifest } as Record<string, unknown>;
   delete partial.nodes;

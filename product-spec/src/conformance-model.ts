@@ -14,6 +14,11 @@ import {
   navigationConformance,
   type NativeNavigationBindingManifest,
 } from "./navigation-conformance-model.js";
+import type {
+  NativeComponentRendererManifestEntry,
+  NativeImmutableInputManifest,
+  NativeTypedEventBindingManifest,
+} from "./native-component-renderer-model.js";
 
 /**
  * One product, one compiled IR, one native binding manifest per host.
@@ -29,11 +34,6 @@ import {
  */
 export const NATIVE_BINDING_MANIFEST_SCHEMA_VERSION = 6 as const;
 
-export interface NativeComponentRendererRegistration extends ComponentRenderContractIr {
-  /** Compile-bound native implementation symbol; ProductSpec does not author it. */
-  readonly rendererId: string;
-}
-
 export interface NativeBindingManifest {
   readonly stage: "native-export";
   readonly schemaVersion: typeof NATIVE_BINDING_MANIFEST_SCHEMA_VERSION;
@@ -41,7 +41,7 @@ export interface NativeBindingManifest {
   /** Artifact profile ids this host actually renders. */
   readonly profiles?: readonly string[];
   /** Actual instance registrations exported by the native host. */
-  readonly components: readonly NativeComponentRendererRegistration[];
+  readonly components: readonly NativeComponentRendererManifestEntry[];
   readonly icons: readonly { readonly iconId: string; readonly nativeSymbol: string }[];
   /**
    * Exact native node adapters for this host. A node with no ports still has
@@ -137,7 +137,7 @@ function portRefs(ir: ProductIr): { inputs: Set<string>; outputs: Set<string> } 
 function componentRenderConformance(
   declared: readonly ComponentRenderContractIr[],
   hostProfiles: ReadonlySet<string>,
-  bound: readonly NativeComponentRendererRegistration[],
+  bound: readonly NativeComponentRendererManifestEntry[],
 ): ConformanceFinding[] {
   const axis = "component-render" as const;
   const hostDeclared = declared.flatMap((contract): readonly ComponentRenderContractIr[] => {
@@ -145,7 +145,7 @@ function componentRenderConformance(
     return scopes.length === 0 ? [] : [{ ...contract, scopes }];
   });
   const declaredByInstance = new Map(hostDeclared.map((contract) => [contract.componentInstanceRef, contract]));
-  const boundByInstance = new Map(bound.map((contract) => [contract.componentInstanceRef, contract]));
+  const boundByInstance = new Map(bound.map((contract) => [contract.component.instanceRef, contract]));
   const out = compareIds(
     axis,
     declaredByInstance.keys(),
@@ -153,54 +153,62 @@ function componentRenderConformance(
     "component renderer instance",
   );
 
-  for (const instanceRef of duplicates(bound.map(({ componentInstanceRef }) => componentInstanceRef))) {
+  for (const instanceRef of duplicates(bound.map(({ component }) => component.instanceRef))) {
     out.push(finding(axis, "mismatch", instanceRef,
       `component renderer instance '${instanceRef}' is registered more than once`));
   }
 
   for (const [instanceRef, expected] of [...declaredByInstance].sort(([left], [right]) => left.localeCompare(right))) {
-    const actual = bound.find((registration) => registration.componentInstanceRef === instanceRef);
+    const actual = bound.find((registration) => registration.component.instanceRef === instanceRef);
     if (actual === undefined) continue;
-    if (actual.componentTypeRef !== expected.componentTypeRef) {
+    if (actual.component.typeRef !== expected.componentTypeRef) {
       out.push(finding(axis, "mismatch", instanceRef,
         `component renderer instance '${instanceRef}' declares type '${expected.componentTypeRef}' ` +
-        `but native binds '${actual.componentTypeRef}'`));
+        `but native binds '${actual.component.typeRef}'`));
     }
 
     const expectedScopes = new Map(expected.scopes.map((scope) => [componentRenderScopeKey(scope), scope]));
-    const actualScopes = new Map(actual.scopes.map((scope) => [componentRenderScopeKey(scope), scope]));
+    const actualScopes = new Map(actual.mounts.map((mount) => [nativeMountKey(mount), mount]));
     out.push(...compareIds(
       axis,
       expectedScopes.keys(),
       actualScopes.keys(),
       `component renderer scope for '${instanceRef}'`,
     ).map((item) => ({ ...item, subject: `${instanceRef}@${item.subject}` })));
-    for (const scope of duplicates(actual.scopes.map(componentRenderScopeKey))) {
+    for (const scope of duplicates(actual.mounts.map(nativeMountKey))) {
       out.push(finding(axis, "mismatch", `${instanceRef}@${scope}`,
         `component renderer scope '${scope}' for '${instanceRef}' is registered more than once`));
     }
 
-    out.push(...compareRenderInputs(instanceRef, expected.inputs, actual.inputs));
-    out.push(...compareRenderEvents(instanceRef, expected.events, actual.events));
+    out.push(...compareRenderInputs(instanceRef, expected.inputs, actual.immutableInputs));
+    const actualEvents = actual.eventEmitter.kind === "empty" ? [] : actual.eventEmitter.bindings;
+    out.push(...compareRenderEvents(instanceRef, expected.events, actualEvents));
+    if (expected.events.length === 0 && actual.eventEmitter.kind !== "empty") {
+      out.push(finding(axis, "mismatch", instanceRef,
+        `read-only component '${instanceRef}' must bind a compile-bound empty event emitter`));
+    } else if (expected.events.length > 0 && actual.eventEmitter.kind !== "typed") {
+      out.push(finding(axis, "mismatch", instanceRef,
+        `interactive component '${instanceRef}' must bind a typed event emitter`));
+    }
   }
   return out;
 
   function compareRenderInputs(
     instanceRef: string,
     expected: readonly ComponentRenderInputIr[],
-    actual: readonly ComponentRenderInputIr[],
+    actual: readonly NativeImmutableInputManifest[],
   ): ConformanceFinding[] {
     const findings = compareIds(
       axis,
       expected.map(({ inputPortRef }) => inputPortRef),
-      actual.map(({ inputPortRef }) => inputPortRef),
+      actual.map(({ consumerPortRef }) => consumerPortRef),
       `immutable input on '${instanceRef}'`,
     );
-    for (const portRef of duplicates(actual.map(({ inputPortRef }) => inputPortRef))) {
+    for (const portRef of duplicates(actual.map(({ consumerPortRef }) => consumerPortRef))) {
       findings.push(finding(axis, "mismatch", portRef,
         `immutable input '${portRef}' is registered more than once`));
     }
-    const actualByPort = new Map(actual.map((item) => [item.inputPortRef, item]));
+    const actualByPort = new Map(actual.map((item) => [item.consumerPortRef, item]));
     for (const item of expected) {
       const native = actualByPort.get(item.inputPortRef);
       if (native === undefined) continue;
@@ -218,19 +226,19 @@ function componentRenderConformance(
   function compareRenderEvents(
     instanceRef: string,
     expected: readonly ComponentRenderEventIr[],
-    actual: readonly ComponentRenderEventIr[],
+    actual: readonly NativeTypedEventBindingManifest[],
   ): ConformanceFinding[] {
     const findings = compareIds(
       axis,
       expected.map(({ eventPortRef }) => eventPortRef),
-      actual.map(({ eventPortRef }) => eventPortRef),
+      actual.map(({ sourcePortRef }) => sourcePortRef),
       `typed event on '${instanceRef}'`,
     );
-    for (const portRef of duplicates(actual.map(({ eventPortRef }) => eventPortRef))) {
+    for (const portRef of duplicates(actual.map(({ sourcePortRef }) => sourcePortRef))) {
       findings.push(finding(axis, "mismatch", portRef,
         `typed event '${portRef}' is registered more than once`));
     }
-    const actualByPort = new Map(actual.map((item) => [item.eventPortRef, item]));
+    const actualByPort = new Map(actual.map((item) => [item.sourcePortRef, item]));
     for (const item of expected) {
       const native = actualByPort.get(item.eventPortRef);
       if (native === undefined) continue;
@@ -243,6 +251,10 @@ function componentRenderConformance(
     }
     return findings;
   }
+}
+
+function nativeMountKey(mount: NativeComponentRendererManifestEntry["mounts"][number]): string {
+  return `${mount.profileRef}/${mount.pageRef}/${mount.surface}/${mount.mountRef}`;
 }
 
 /**
@@ -395,36 +407,50 @@ export function decodeNativeBindingManifest(raw: unknown): NativeBindingManifest
       : { profiles: stringList(root.profiles, "manifest profiles") }),
     components: list(root.components, "manifest components").map((value, index) => {
       const item = record(value, `manifest component ${index}`);
+      const component = record(item.component, `component ${index} identity`);
+      const eventEmitter = record(item.eventEmitter, `component ${index} eventEmitter`);
+      const emitterKind = requiredString(eventEmitter.kind, `component ${index} eventEmitter kind`);
+      if (emitterKind !== "empty" && emitterKind !== "typed") {
+        throw new Error(`component ${index} eventEmitter kind '${emitterKind}' is unsupported`);
+      }
       return {
-        componentInstanceRef: requiredString(item.componentInstanceRef, `component ${index} componentInstanceRef`),
-        componentTypeRef: requiredString(item.componentTypeRef, `component ${index} componentTypeRef`),
-        rendererId: requiredString(item.rendererId, `component ${index} rendererId`),
-        scopes: list(item.scopes, `component ${index} scopes`).map((scopeValue, scopeIndex) => {
-          const scope = record(scopeValue, `component ${index} scope ${scopeIndex}`);
+        component: {
+          instanceRef: requiredString(component.instanceRef, `component ${index} identity instanceRef`),
+          typeRef: requiredString(component.typeRef, `component ${index} identity typeRef`),
+        },
+        mounts: list(item.mounts, `component ${index} mounts`).map((mountValue, mountIndex) => {
+          const mount = record(mountValue, `component ${index} mount ${mountIndex}`);
           return {
-            artifactRef: requiredString(scope.artifactRef, `component ${index} scope ${scopeIndex} artifactRef`),
-            screenRef: requiredString(scope.screenRef, `component ${index} scope ${scopeIndex} screenRef`),
-            surface: portableSurface(scope.surface, `component ${index} scope ${scopeIndex} surface`),
-            mountRef: requiredString(scope.mountRef, `component ${index} scope ${scopeIndex} mountRef`),
+            profileRef: requiredString(mount.profileRef, `component ${index} mount ${mountIndex} profileRef`),
+            pageRef: requiredString(mount.pageRef, `component ${index} mount ${mountIndex} pageRef`),
+            surface: portableSurface(mount.surface, `component ${index} mount ${mountIndex} surface`),
+            mountRef: requiredString(mount.mountRef, `component ${index} mount ${mountIndex} mountRef`),
           };
         }),
-        inputs: list(item.inputs, `component ${index} inputs`).map((inputValue, inputIndex) => {
+        immutableInputs: list(item.immutableInputs, `component ${index} immutableInputs`).map((inputValue, inputIndex) => {
           const nativeInput = record(inputValue, `component ${index} input ${inputIndex}`);
           return {
-            inputPortRef: requiredString(nativeInput.inputPortRef, `component ${index} input ${inputIndex} inputPortRef`),
+            consumerPortRef: requiredString(nativeInput.consumerPortRef, `component ${index} input ${inputIndex} consumerPortRef`),
             producerPortRef: requiredString(nativeInput.producerPortRef, `component ${index} input ${inputIndex} producerPortRef`),
             contractRef: requiredString(nativeInput.contractRef, `component ${index} input ${inputIndex} contractRef`),
             required: requiredBoolean(nativeInput.required, `component ${index} input ${inputIndex} required`),
           };
         }),
-        events: list(item.events, `component ${index} events`).map((eventValue, eventIndex) => {
-          const event = record(eventValue, `component ${index} event ${eventIndex}`);
-          return {
-            eventPortRef: requiredString(event.eventPortRef, `component ${index} event ${eventIndex} eventPortRef`),
-            targetPortRef: requiredString(event.targetPortRef, `component ${index} event ${eventIndex} targetPortRef`),
-            contractRef: requiredString(event.contractRef, `component ${index} event ${eventIndex} contractRef`),
-          };
-        }),
+        eventEmitter: emitterKind === "empty" ? { kind: "empty" as const } : {
+          kind: "typed" as const,
+          bindings: list(eventEmitter.bindings, `component ${index} eventEmitter bindings`)
+            .map((bindingValue, bindingIndex) => {
+              const binding = record(bindingValue, `component ${index} event binding ${bindingIndex}`);
+              return {
+                sourcePortRef: requiredString(binding.sourcePortRef,
+                  `component ${index} event binding ${bindingIndex} sourcePortRef`),
+                targetPortRef: requiredString(binding.targetPortRef,
+                  `component ${index} event binding ${bindingIndex} targetPortRef`),
+                contractRef: requiredString(binding.contractRef,
+                  `component ${index} event binding ${bindingIndex} contractRef`),
+              };
+            }),
+        },
       };
     }),
     icons: list(root.icons, "manifest icons").map((value, index) => {

@@ -86,9 +86,18 @@ component instance. It contains the exact component type and artifact/screen/
 surface/mount scopes, each bound immutable input with its producer, contract
 and requiredness, and each typed event with its service target and contract.
 There is no second authoring field or renderer catalog. Native binding manifest
-schema 6 exports the host's actual instance registrations in the same shape,
-plus the compile-bound native renderer id; shared conformance compares every
-instance, scope, input and event in both directions.
+schema 6 instead serializes a separate host shape: component identity, mount
+endpoints, immutable input readers and a typed event emitter. The construction
+API requires executable mount/read/emit callbacks before it can export the JSON
+evidence. A read-only component registers `defineNativeEmptyEventEmitter()`,
+whose `never` event endpoint is compile-bound; an authored JSON `events: []` is
+not accepted as proof. Shared conformance compares every instance, scope, input
+and event in both directions.
+
+Unpublished development note: schema 10/6 is reserved for the next unique
+`@v1d/product-spec` version after 0.3.47 (0.3.48). Keep package metadata at
+0.3.47 until the consumer stack is ready; bump once, immediately before merge
+and publication.
 
 Navigation reuses that catalog rather than declaring another page list.
 `defineProductNavigation(componentFamilies, ...)` requires only `guard` and
