@@ -1,6 +1,6 @@
 {
   "stage": "native-export",
-  "schemaVersion": 4,
+  "schemaVersion": 5,
   "sourceFile": "showcase-garmin/source/GeneratedCircleKitShowcase.mc",
   "profiles": [
     "garmin-limited-ui"
@@ -9,6 +9,13 @@
     {
       "componentId": "control.progress",
       "rendererId": "CircleKitShowcaseView.drawProgressDial",
+      "profiles": [
+        "garmin-limited-ui"
+      ]
+    },
+    {
+      "componentId": "showcase.page-host",
+      "rendererId": "CircleKitShowcaseView",
       "profiles": [
         "garmin-limited-ui"
       ]
@@ -83,6 +90,7 @@
         "garmin-limited-ui"
       ],
       "inputPorts": [
+        "route",
         "foundationColors",
         "foundationGeometry",
         "atomIconAction",
@@ -100,6 +108,7 @@
         "flowService"
       ],
       "outputPorts": [
+        "activePage",
         "destination"
       ]
     },
@@ -117,5 +126,54 @@
       ]
     }
   ],
-  "finiteValues": []
+  "finiteValues": [
+    {
+      "id": "showcase.navigation.page",
+      "values": [
+        "section.foundations",
+        "section.atoms",
+        "section.controls",
+        "section.input",
+        "section.media",
+        "section.templates",
+        "section.flows",
+        "artifact.garmin-limited-ui"
+      ]
+    }
+  ],
+  "navigation": {
+    "artifacts": [
+      {
+        "artifactRef": "garmin-limited-ui",
+        "entryPageRef": "artifact.garmin-limited-ui",
+        "pages": [
+          {
+            "pageRef": "artifact.garmin-limited-ui",
+            "restore": "root",
+            "guardContractRef": null,
+            "back": "system"
+          }
+        ]
+      }
+    ],
+    "activePageBindings": [
+      {
+        "publisherPortRef": "navigation.activePage",
+        "pageHostPortRef": "page.host.activePage"
+      }
+    ],
+    "actionGroups": [
+      {
+        "artifactRef": "garmin-limited-ui",
+        "componentInstanceRef": "control.progress",
+        "actions": [
+          {
+            "sourcePortRef": "control.progress.open",
+            "targetPortRef": "navigation.controlProgress",
+            "effect": "dispatch"
+          }
+        ]
+      }
+    ]
+  }
 }

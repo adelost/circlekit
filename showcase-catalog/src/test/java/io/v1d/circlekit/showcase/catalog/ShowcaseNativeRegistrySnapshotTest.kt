@@ -4,6 +4,7 @@ import java.nio.file.Files
 import java.nio.file.Path
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class ShowcaseNativeRegistrySnapshotTest {
@@ -24,11 +25,16 @@ class ShowcaseNativeRegistrySnapshotTest {
     }
 
     @Test
-    fun `native registry is independent of generated product output`() {
+    fun `native navigation registrations are consumed by the page host`() {
         val source = Files.readAllBytes(findRepoRoot().resolve(ShowcaseNativeBindings.SOURCE_FILE))
             .toString(Charsets.UTF_8)
-        assertFalse(source.contains("GeneratedShowcaseProduct"))
-        assertFalse(source.contains("ShowcaseManifest"))
+        val screens = Files.readAllBytes(findRepoRoot().resolve(
+            "showcase-catalog/src/main/java/io/v1d/circlekit/showcase/catalog/ShowcaseScreens.kt",
+        )).toString(Charsets.UTF_8)
+        assertFalse(source.contains("product.navigation"))
+        assertTrue(source.contains("ShowcaseManifest.navigationArtifacts"))
+        assertTrue(screens.contains("ShowcaseNativeBindings.navigationArtifacts"))
+        assertTrue(screens.contains("session.route(screen)"))
     }
 
     private fun snapshot(): String {
@@ -47,8 +53,30 @@ class ShowcaseNativeRegistrySnapshotTest {
                 "\"profiles\": [$profiles], \"inputPorts\": [$inputs], \"outputPorts\": [$outputs] }"
         }
         val hostProfiles = ShowcaseNativeBindings.profiles.sorted().joinToString(", ") { it.json() }
-        // Finite values are declared EMPTY, not omitted. An omitted section means "not
-        // checked", which is a different claim from "binds none".
+        val finiteValues = ShowcaseNativeBindings.finiteValues.joinToString(",\n") { binding ->
+            val values = binding.values.joinToString(", ") { it.json() }
+            "    { \"id\": ${binding.id.json()}, \"values\": [$values] }"
+        }
+        val navigationArtifacts = ShowcaseNativeBindings.navigationArtifacts.joinToString(",\n") { artifact ->
+            val pages = artifact.pages.joinToString(", ") { page ->
+                "{ \"pageRef\": ${page.pageRef.json()}, \"restore\": ${page.restore.json()}, " +
+                    "\"back\": ${page.back.json()}, \"guardContractRef\": ${page.guardContractRef.jsonNullable()} }"
+            }
+            "      { \"artifactRef\": ${artifact.artifactRef.json()}, " +
+                "\"entryPageRef\": ${artifact.entryPageRef.json()}, \"pages\": [$pages] }"
+        }
+        val activePageBindings = ShowcaseNativeBindings.activePageBindings.joinToString(",\n") { binding ->
+            "      { \"publisherPortRef\": ${binding.publisherPortRef.json()}, " +
+                "\"pageHostPortRef\": ${binding.pageHostPortRef.json()} }"
+        }
+        val actionGroups = ShowcaseNativeBindings.navigationActionGroups.joinToString(",\n") { group ->
+            val actions = group.actions.joinToString(", ") { action ->
+                "{ \"sourcePortRef\": ${action.sourcePortRef.json()}, " +
+                    "\"targetPortRef\": ${action.targetPortRef.json()}, \"effect\": ${action.effect.json()} }"
+            }
+            "      { \"artifactRef\": ${group.artifactRef.json()}, " +
+                "\"componentInstanceRef\": ${group.componentInstanceRef.json()}, \"actions\": [$actions] }"
+        }
         return """
             |{
             |  "stage": "native-export",
@@ -64,7 +92,20 @@ class ShowcaseNativeRegistrySnapshotTest {
             |  "nodes": [
             |$nodes
             |  ],
-            |  "finiteValues": []
+            |  "finiteValues": [
+            |$finiteValues
+            |  ],
+            |  "navigation": {
+            |    "artifacts": [
+            |$navigationArtifacts
+            |    ],
+            |    "activePageBindings": [
+            |$activePageBindings
+            |    ],
+            |    "actionGroups": [
+            |$actionGroups
+            |    ]
+            |  }
             |}
         """.trimMargin() + "\n"
     }
@@ -85,4 +126,6 @@ class ShowcaseNativeRegistrySnapshotTest {
         }
         append('"')
     }
+
+    private fun String?.jsonNullable(): String = this?.json() ?: "null"
 }

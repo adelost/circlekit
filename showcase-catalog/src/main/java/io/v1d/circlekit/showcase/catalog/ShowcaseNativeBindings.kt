@@ -23,6 +23,8 @@ enum class ShowcaseNativeRenderer(val id: String) {
     SOURCE("source"),
     UPDATE("update"),
     SERVICE("service"),
+    PAGE_HOST("page-host"),
+    PAGE_MENU("page-menu"),
 }
 
 data class ShowcaseNativeComponentBinding(
@@ -48,12 +50,12 @@ data class ShowcaseNativeNodeBinding(
 }
 
 /**
- * Handwritten Android binding truth. It deliberately has no dependency on
- * generated product classes; the ProductSpec compiler consumes its exported
- * snapshot and rejects missing, orphan or profile-drifted bindings.
+ * Android adapter truth. Product-owned page/action records are generated once
+ * and consumed by both the runtime and this host export; adapter identities stay
+ * handwritten here so a generated manifest cannot invent native coverage.
  */
 object ShowcaseNativeBindings {
-    const val SCHEMA_VERSION = 4
+    const val SCHEMA_VERSION = 5
     const val SOURCE_FILE =
         "showcase-catalog/src/main/java/io/v1d/circlekit/showcase/catalog/ShowcaseNativeBindings.kt"
 
@@ -83,6 +85,8 @@ object ShowcaseNativeBindings {
         component("flow.source", ShowcaseNativeRenderer.SOURCE),
         component("flow.update", ShowcaseNativeRenderer.UPDATE),
         component("flow.service", ShowcaseNativeRenderer.SERVICE),
+        component("showcase.page-host", ShowcaseNativeRenderer.PAGE_HOST),
+        component("showcase.page-menu", ShowcaseNativeRenderer.PAGE_MENU),
     )
 
     val icons: List<ShowcaseNativeIconBinding> = listOf(
@@ -113,6 +117,7 @@ object ShowcaseNativeBindings {
             nativeType = ShowcaseSession::class,
             profiles = bothProfiles,
             inputPorts = listOf(
+                "route",
                 "foundationColors",
                 "foundationGeometry",
                 "atomIconAction",
@@ -129,7 +134,7 @@ object ShowcaseNativeBindings {
                 "flowUpdate",
                 "flowService",
             ),
-            outputPorts = listOf("destination"),
+            outputPorts = listOf("activePage", "destination"),
         ),
         ShowcaseNativeNodeBinding(
             nodeId = "navigation.presentation",
@@ -139,6 +144,32 @@ object ShowcaseNativeBindings {
             outputPorts = listOf("model"),
         ),
     )
+
+    val finiteValues: List<ShowcaseFiniteValueBinding> = ShowcaseManifest.finiteValues
+
+    val navigationArtifacts: List<ShowcaseNavigationArtifact> = ShowcaseManifest.navigationArtifacts
+        .filter { it.artifactRef in profiles }
+
+    val activePageBindings: List<ShowcaseActivePageBinding> = ShowcaseManifest.activePageBindings
+
+    val navigationActionGroups: List<ShowcaseNavigationActionGroup> = ShowcaseManifest.navigationActionGroups
+        .filter { it.artifactRef in profiles }
+
+    fun requireAction(
+        profileId: String,
+        componentInstanceRef: String,
+        sourcePortRef: String,
+        effect: String,
+    ) {
+        require(navigationActionGroups.any { group ->
+            group.artifactRef == profileId && group.componentInstanceRef == componentInstanceRef &&
+                group.actions.any { action ->
+                    action.sourcePortRef == sourcePortRef && action.effect == effect
+                }
+        }) {
+            "No $effect action binding for $profileId/$componentInstanceRef/$sourcePortRef"
+        }
+    }
 
     fun requireComponent(componentId: String): ShowcaseNativeComponentBinding =
         requireNotNull(components.singleOrNull { it.componentId == componentId }) {

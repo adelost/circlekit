@@ -1,4 +1,13 @@
-import { field, valueRef } from "@v1d/product-spec";
+import {
+  field,
+  navigationActivePageContract,
+  navigationRouteContract,
+  valueRef,
+} from "@v1d/product-spec";
+
+export const SHOWCASE_NAVIGATION_ID = "showcase.navigation";
+export const showcaseActivePageContract = navigationActivePageContract(SHOWCASE_NAVIGATION_ID);
+export const showcaseRouteContract = navigationRouteContract(SHOWCASE_NAVIGATION_ID);
 
 /** Immutable catalog data read by every native Showcase renderer. */
 export const showcaseCatalogContract = {

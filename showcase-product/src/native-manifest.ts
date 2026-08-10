@@ -11,6 +11,42 @@ export interface ShowcaseNativeNodeAdapter {
 }
 
 /**
+ * Navigation registrations shared by one deterministic native source and its
+ * exported manifest. Callers must emit these records into executable host code;
+ * a manifest-only use would not constitute a native binding.
+ */
+export function compileShowcaseNativeNavigation(
+  product: ProductIr,
+  profiles: readonly string[],
+): NativeBindingManifest["navigation"] {
+  const profileSet = new Set(profiles);
+  return {
+    artifacts: product.navigation.artifacts.filter(({ artifactRef }) => profileSet.has(artifactRef)),
+    activePageBindings: [{
+      publisherPortRef: product.navigation.activePagePortRef,
+      pageHostPortRef: product.navigation.pageHostPortRef,
+    }],
+    actionGroups: product.navigation.actionGroups.flatMap((group) => group.artifactRefs
+      .filter((artifactRef) => profileSet.has(artifactRef))
+      .map((artifactRef) => ({
+        artifactRef,
+        componentInstanceRef: group.componentInstanceRef,
+        actions: group.actions.map(({ sourcePortRef, targetPortRef, effect }) => ({
+          sourcePortRef,
+          targetPortRef,
+          effect,
+        })),
+      }))),
+  };
+}
+
+export function compileShowcaseNativeFiniteValues(
+  product: ProductIr,
+): NonNullable<NativeBindingManifest["finiteValues"]> {
+  return product.finiteValues.map(({ id, values }) => ({ id, values }));
+}
+
+/**
  * Compile the node registrations emitted into one native host.
  *
  * The adapter names are host-owned. ProductSpec contributes only the exact node

@@ -3,12 +3,14 @@ import {
   defineScreenComponentFamilyRegistry,
 } from "@v1d/product-spec";
 import { showcaseCases, showcaseSections } from "./catalog.js";
-import { showcaseComponentInstances } from "./graph-components.js";
-
-export const SHOWCASE_SECTION_SCREENS = showcaseSections.map(({ id }) => `section.${id}`);
+import {
+  showcaseAllComponentInstances,
+  showcasePageHost,
+  showcasePageMenu,
+} from "./graph-components.js";
 
 export const showcaseComponentFamilies = defineScreenComponentFamilyRegistry(
-  showcaseComponentInstances,
+  showcaseAllComponentInstances,
   [
     ...showcaseSections.map((section) => ({
       screen: `section.${section.id}`,
@@ -16,12 +18,16 @@ export const showcaseComponentFamilies = defineScreenComponentFamilyRegistry(
         id: `showcase.${section.id}`,
         trees: PORTABLE_SURFACE_CLASSES.map((surface) => ({
           surface,
-          mounts: showcaseCases
+          mounts: [
+            ...showcaseCases
             .filter(({ section: candidate }) => candidate === section.id)
             .map(({ id }) => ({
               instance: id,
               region: surface === "round" ? "face" : "content",
             })),
+            { instance: showcasePageMenu.id, region: "navigation" },
+            { instance: showcasePageHost.id, region: "page-host" },
+          ],
         })),
       },
     })),
@@ -31,10 +37,13 @@ export const showcaseComponentFamilies = defineScreenComponentFamilyRegistry(
         id: "showcase.garmin-limited-ui",
         trees: PORTABLE_SURFACE_CLASSES.map((surface) => ({
           surface,
-          mounts: [{
-            instance: "control.progress",
-            region: surface === "round" ? "face" : "content",
-          }],
+          mounts: [
+            {
+              instance: "control.progress",
+              region: surface === "round" ? "face" : "content",
+            },
+            { instance: showcasePageHost.id, region: "page-host" },
+          ],
         })),
       },
     },

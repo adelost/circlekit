@@ -2,7 +2,7 @@
 module GeneratedCircleKitShowcase {
     const PRODUCT_ID = "circlekit-showcase";
     const PRODUCT_LABEL = "CIRCLEKIT";
-    const PRODUCT_SPEC_VERSION = "0.3.46";
+    const PRODUCT_SPEC_VERSION = "0.3.47";
     const ARTIFACT_ID = "garmin-limited-ui";
     const RENDERER_ID = "garmin-connectiq-monkeyc";
     const SCREEN_ID = "artifact.garmin-limited-ui";
@@ -27,7 +27,8 @@ module GeneratedCircleKitShowcase {
     const COLOR_LINE = 0x232527;
     const COLOR_ICON = 0xF1EFE9;
     var NATIVE_COMPONENTS = [
-        { "componentId" => COMPONENT_ID, "rendererId" => "CircleKitShowcaseView.drawProgressDial" }
+        { "componentId" => COMPONENT_ID, "rendererId" => "CircleKitShowcaseView.drawProgressDial" },
+        { "componentId" => "showcase.page-host", "rendererId" => "CircleKitShowcaseView" }
     ];
     var NATIVE_ICONS = [
         {
@@ -149,8 +150,8 @@ module GeneratedCircleKitShowcase {
         {
             "nodeId" => "navigation",
             "nativePortId" => "GeneratedCircleKitShowcase.open",
-            "inputPorts" => ["foundationColors", "foundationGeometry", "atomIconAction", "controlActionRow", "controlChoiceRow", "controlAdjustment", "controlProgress", "controlPressRing", "inputText", "mediaCapture", "mediaPlayback", "templateScreens", "flowSource", "flowUpdate", "flowService"],
-            "outputPorts" => ["destination"]
+            "inputPorts" => ["route", "foundationColors", "foundationGeometry", "atomIconAction", "controlActionRow", "controlChoiceRow", "controlAdjustment", "controlProgress", "controlPressRing", "inputText", "mediaCapture", "mediaPlayback", "templateScreens", "flowSource", "flowUpdate", "flowService"],
+            "outputPorts" => ["activePage", "destination"]
         },
         {
             "nodeId" => "navigation.presentation",
@@ -159,7 +160,28 @@ module GeneratedCircleKitShowcase {
             "outputPorts" => ["model"]
         }
     ];
+    var NATIVE_NAVIGATION_ARTIFACTS = [
+        {
+            "artifactRef" => "garmin-limited-ui",
+            "entryPageRef" => "artifact.garmin-limited-ui",
+            "pages" => ["artifact.garmin-limited-ui"]
+        }
+    ];
+    var NATIVE_ACTIVE_PAGE_BINDINGS = [
+        {
+            "publisherPortRef" => "navigation.activePage",
+            "pageHostPortRef" => "page.host.activePage"
+        }
+    ];
+    var NATIVE_NAVIGATION_ACTION_GROUPS = [
+        {
+            "artifactRef" => "garmin-limited-ui",
+            "componentInstanceRef" => "control.progress",
+            "actions" => [{ "sourcePortRef" => "control.progress.open", "targetPortRef" => "navigation.controlProgress", "effect" => "dispatch" }]
+        }
+    ];
     var _destination = null;
+    var _activePage = SCREEN_ID;
 
     function nativeIcon(iconId) {
         for (var index = 0; index < NATIVE_ICONS.size(); index += 1) {
@@ -188,6 +210,17 @@ module GeneratedCircleKitShowcase {
         return _destination;
     }
 
+    function activePage() {
+        return _activePage;
+    }
+
+    function route(pageRef) {
+        if (pageRef == SCREEN_ID) {
+            _activePage = pageRef;
+        }
+        return _activePage;
+    }
+
     function requireNativeBindings() {
         for (var index = 0; index < NATIVE_NODES.size(); index += 1) {
             var node = NATIVE_NODES[index];
@@ -197,6 +230,7 @@ module GeneratedCircleKitShowcase {
         }
         var catalog = catalogModel();
         open(OPEN_PORT, catalog["componentId"]);
+        activePage();
         return navigationModel();
     }
 }

@@ -1,5 +1,6 @@
 import {
   assertProductArtifactConformance,
+  defineProductNavigation,
   defineProduct,
   productArtifactHostCoverage,
   type NativeBindingManifest,
@@ -7,8 +8,9 @@ import {
 } from "@v1d/product-spec";
 import { CIRCLEKIT_ASSET_CATALOG } from "@v1d/circlekit-assets";
 import { showcaseCases, showcaseSections } from "./catalog.js";
-import { showcaseComponentInstances, showcaseComponentTypes } from "./graph-components.js";
-import { SHOWCASE_SECTION_SCREENS, showcaseComponentFamilies } from "./graph-families.js";
+import { showcaseAllComponentInstances, showcaseAllComponentTypes } from "./graph-components.js";
+import { showcaseComponentFamilies } from "./graph-families.js";
+import { SHOWCASE_NAVIGATION_ID } from "./graph-contracts.js";
 import { showcaseNodes, showcaseNodeTypes } from "./graph-nodes.js";
 
 const SHOWCASE_ANDROID_ARTIFACT_PROFILES = ["phone-full-ui", "wear-full-ui"] as const;
@@ -23,6 +25,24 @@ export const SHOWCASE_ARTIFACT_PROFILES = [
 ] as const;
 
 const showcasePalette = { variants: [] } as const;
+const showcaseFullUiScreens = showcaseComponentFamilies
+  .map(({ screen }) => screen)
+  .filter((screen) => screen.startsWith("section."));
+
+const showcaseNavigation = defineProductNavigation(showcaseComponentFamilies, {
+  id: SHOWCASE_NAVIGATION_ID,
+  pageSemantics: Object.fromEntries(showcaseComponentFamilies.map(({ screen }) => [
+    screen,
+    { guard: null, back: screen === "section.foundations" || screen === "artifact.garmin-limited-ui"
+      ? "system"
+      : "previous" },
+  ])) as {
+    readonly [Screen in (typeof showcaseComponentFamilies)[number]["screen"]]: {
+      readonly guard: null;
+      readonly back: "previous" | "system";
+    };
+  },
+});
 
 const baseProduct = defineProduct({
   id: "circlekit-showcase",
@@ -54,7 +74,7 @@ const baseProduct = defineProduct({
       rendererRefs: ["android-phone-compose"],
       requiredCapabilities: ["ui.menu", "ui.navigation", "ui.component-tree"],
       entryScreen: "section.foundations",
-      screenRefs: SHOWCASE_SECTION_SCREENS,
+      screenRefs: showcaseFullUiScreens,
       serves: ["compact", "wide"],
     },
     {
@@ -62,7 +82,7 @@ const baseProduct = defineProduct({
       rendererRefs: ["android-wear-compose"],
       requiredCapabilities: ["ui.menu", "ui.navigation", "ui.component-tree"],
       entryScreen: "section.foundations",
-      screenRefs: SHOWCASE_SECTION_SCREENS,
+      screenRefs: showcaseFullUiScreens,
       serves: ["round"],
     },
     {
@@ -70,7 +90,7 @@ const baseProduct = defineProduct({
       rendererRefs: ["apple-iphone-swiftui"],
       requiredCapabilities: ["ui.menu", "ui.navigation", "ui.component-tree"],
       entryScreen: "section.foundations",
-      screenRefs: SHOWCASE_SECTION_SCREENS,
+      screenRefs: showcaseFullUiScreens,
       serves: ["compact", "wide"],
     },
     {
@@ -78,7 +98,7 @@ const baseProduct = defineProduct({
       rendererRefs: ["apple-watchos-swiftui"],
       requiredCapabilities: ["ui.menu", "ui.navigation", "ui.component-tree"],
       entryScreen: "section.foundations",
-      screenRefs: SHOWCASE_SECTION_SCREENS,
+      screenRefs: showcaseFullUiScreens,
       serves: ["round"],
     },
     {
@@ -98,12 +118,13 @@ const baseProduct = defineProduct({
   // product says out loud: an omitted section reads as coverage to anything that
   // compares this declaration against a native binding manifest.
   finiteValues: [],
-  // Schema 8 makes authority ownership mandatory. The compiler accepts this empty
-  // set only because the graph above exposes no finite-valued state axis to UI.
+  // Navigation owns its closed active-page state through the schema-9 navigation
+  // service/page-host law. Showcase has no additional product state authority.
   stateAuthorities: [],
-  componentTypes: showcaseComponentTypes,
-  components: showcaseComponentInstances,
+  componentTypes: showcaseAllComponentTypes,
+  components: showcaseAllComponentInstances,
   componentFamilies: showcaseComponentFamilies,
+  navigation: showcaseNavigation,
   palette: showcasePalette,
   assetCatalogRef: {
     id: CIRCLEKIT_ASSET_CATALOG.id,
