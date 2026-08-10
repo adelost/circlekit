@@ -355,6 +355,7 @@ object ShowcaseNativeBindings {
         destination: ShowcaseDestination,
         surface: com.adelost.designkit.ui.CircleSurfaceClass,
         textEntryPort: com.adelost.ringkit.ui.RingTextEntryPort?,
+        rendererSnapshot: Any? = null,
     ): ShowcaseMountedRenderer {
         val componentId = requireNotNull(destination.caseId).value
         val registration = requireComponent(componentId)
@@ -366,7 +367,7 @@ object ShowcaseNativeBindings {
         val mount = requireNotNull(registration.mounts.singleOrNull {
             it.profileRef == session.artifactProfile.id && it.surface == wireSurface
         }) { "No native mount for ${session.artifactProfile.id}/$wireSurface/$componentId" }
-        val producer = ShowcaseRendererProducerPorts(session, destination, textEntryPort)
+        val producer = ShowcaseRendererProducerPorts(session, destination, textEntryPort, rendererSnapshot)
         val values = registration.immutableInputs.associate { input ->
             input.consumerPortRef to input.read(producer)
         }
@@ -505,7 +506,7 @@ object ShowcaseNativeBindings {
         producerPortRef = producer,
         contractRef = contract,
         required = true,
-        read = { ports -> ports.read(producer) },
+        read = { ports -> ports.read(producer, consumer.substringBeforeLast('.')) },
     )
 
     private fun event(source: String, target: String, contract: String, componentId: String) =

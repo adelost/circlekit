@@ -28,25 +28,39 @@ module GeneratedCircleKitShowcase {
     const COLOR_ICON = 0xF1EFE9;
     var NATIVE_COMPONENTS = [
         {
-            "instanceRef" => COMPONENT_ID,
-            "typeRef" => COMPONENT_ID,
+            "instanceRef" => "control.progress",
+            "typeRef" => "control.progress",
             "mounts" => [{
                 "profileRef" => ARTIFACT_ID,
                 "pageRef" => SCREEN_ID,
                 "surface" => SURFACE_CLASS,
-                "mountRef" => COMPONENT_ID,
+                "mountRef" => "control.progress",
                 "mount" => method(:mountProgress)
             }],
-            "immutableInputs" => [
-                { "consumerPortRef" => COMPONENT_ID + ".catalog", "producerPortRef" => "catalog.model", "contractRef" => "showcase.catalog-presentation", "required" => true, "read" => method(:catalogModel) },
-                { "consumerPortRef" => COMPONENT_ID + ".navigation", "producerPortRef" => "navigation.presentation.model", "contractRef" => "showcase.navigation-presentation", "required" => true, "read" => method(:navigationModel) },
-                { "consumerPortRef" => COMPONENT_ID + ".renderer", "producerPortRef" => "renderer.presentation.model", "contractRef" => "showcase.renderer-presentation", "required" => true, "read" => method(:rendererModel) }
-            ],
+            "immutableInputs" => [{
+                "consumerPortRef" => "control.progress.catalog",
+                "producerPortRef" => "catalog.model",
+                "contractRef" => "showcase.catalog-presentation",
+                "required" => true,
+                "read" => method(:catalogModel)
+            }, {
+                "consumerPortRef" => "control.progress.navigation",
+                "producerPortRef" => "navigation.presentation.model",
+                "contractRef" => "showcase.navigation-presentation",
+                "required" => true,
+                "read" => method(:navigationModel)
+            }, {
+                "consumerPortRef" => "control.progress.renderer",
+                "producerPortRef" => "renderer.presentation.model",
+                "contractRef" => "showcase.renderer-presentation",
+                "required" => true,
+                "read" => method(:rendererModel)
+            }],
             "eventEmitter" => {
                 "kind" => "typed",
                 "bindings" => [{
-                    "sourcePortRef" => COMPONENT_ID + ".action",
-                    "targetPortRef" => "renderer." + OPEN_PORT,
+                    "sourcePortRef" => "control.progress.action",
+                    "targetPortRef" => "renderer.controlProgress",
                     "contractRef" => "showcase.renderer-action",
                     "emit" => method(:emitProgressAction)
                 }]
@@ -236,6 +250,7 @@ module GeneratedCircleKitShowcase {
     ];
     var _destination = null;
     var _activePage = SCREEN_ID;
+    var _mountedRenderer = null;
 
     function nativeIcon(iconId) {
         for (var index = 0; index < NATIVE_ICONS.size(); index += 1) {
@@ -252,7 +267,13 @@ module GeneratedCircleKitShowcase {
         return {
             "componentId" => component["instanceRef"],
             "scenarioId" => SCENARIO_ID,
-            "iconAssetRef" => ICON_ASSET_REF
+            "iconAssetRef" => ICON_ASSET_REF,
+            "productLabel" => PRODUCT_LABEL,
+            "surfaceLabel" => SURFACE_LABEL,
+            "componentLabel" => COMPONENT_LABEL,
+            "scenarioLabel" => SCENARIO_LABEL,
+            "componentIdLabel" => COMPONENT_ID_LABEL,
+            "footerLabel" => FOOTER_LABEL
         };
     }
 
@@ -269,7 +290,8 @@ module GeneratedCircleKitShowcase {
     }
 
     function emitProgressAction(payload) {
-        open("renderer." + OPEN_PORT, COMPONENT_ID);
+        var binding = NATIVE_COMPONENTS[0]["eventEmitter"]["bindings"][0];
+        open(binding["targetPortRef"], COMPONENT_ID);
         return payload;
     }
 
@@ -333,11 +355,14 @@ module GeneratedCircleKitShowcase {
                 var input = registration["immutableInputs"][inputIndex];
                 values[input["consumerPortRef"]] = input["read"].invoke();
             }
-            registration["mounts"][0]["mount"].invoke(values, registration["eventEmitter"]);
+            var mounted = registration["mounts"][0]["mount"].invoke(values, registration["eventEmitter"]);
+            if (registration["instanceRef"] == COMPONENT_ID) {
+                _mountedRenderer = mounted;
+            }
         }
         var catalog = catalogModel();
         dispatch(catalog["componentId"]);
         route(activePage());
-        return navigationModel();
+        return _mountedRenderer;
     }
 }

@@ -18,7 +18,7 @@ class ShowcaseFlowScreensTest {
     fun `source fixtures keep last good data and expose honest health`() = runBlocking {
         val session = ShowcaseSession(ShowcaseArtifactProfile.PHONE_FULL_UI)
         val mounted = mount(session, "flow.source", "partial")
-        val model = mounted.runtime().flows
+        val model = mounted.snapshot<ShowcaseSourceSnapshot>()
         val emitter = mounted.eventEmitter as ShowcaseTypedRendererEmitter
         val screen = ShowcaseFlowScreens.source(model, emitter)
 
@@ -27,19 +27,21 @@ class ShowcaseFlowScreensTest {
         assertEquals(3, screen.progress.first()?.done)
 
         session.flows.prepare(ShowcaseCaseId("flow.source"), ShowcaseScenarioId("broken"))
-        assertEquals(Health.BROKEN, screen.health.first())
-        assertTrue(screen.freshness.first().contains("TIMEOUT"))
+        val broken = ShowcaseFlowScreens.source(remount(session).snapshot(), emitter)
+        assertEquals(Health.BROKEN, broken.health.first())
+        assertTrue(broken.freshness.first().contains("TIMEOUT"))
 
         session.flows.refreshSource()
-        assertEquals(Health.FRESH, screen.health.first())
-        assertEquals("18°", screen.hero.first())
+        val fresh = ShowcaseFlowScreens.source(remount(session).snapshot(), emitter)
+        assertEquals(Health.FRESH, fresh.health.first())
+        assertEquals("18°", fresh.hero.first())
     }
 
     @Test
     fun `update fixture projects every state without download or install side effects`() = runBlocking {
         val session = ShowcaseSession(ShowcaseArtifactProfile.PHONE_FULL_UI)
         val mounted = mount(session, "flow.update", "downloading")
-        val model = mounted.runtime().flows
+        val model = mounted.snapshot<ShowcaseUpdateSnapshot>()
         val emitter = mounted.eventEmitter as ShowcaseTypedRendererEmitter
         val rows = ShowcaseFlowScreens.update(model, emitter).items.first()
         val row = rows.first { it.key == "update" }
@@ -50,7 +52,7 @@ class ShowcaseFlowScreensTest {
         assertTrue(rows.any { it.key == "update-published" })
 
         session.flows.prepare(ShowcaseCaseId("flow.update"), ShowcaseScenarioId("failed"))
-        val failed = ShowcaseFlowScreens.update(model, emitter).items.first().single()
+        val failed = ShowcaseFlowScreens.update(remount(session).snapshot(), emitter).items.first().single()
         assertNotNull(failed.onTap)
         failed.onTap?.invoke()
         assertEquals(UpdateState.Checking, session.flows.update.value)
@@ -60,7 +62,7 @@ class ShowcaseFlowScreensTest {
     fun `service fixture exposes active failure and cache truth as ordinary rows`() = runBlocking {
         val session = ShowcaseSession(ShowcaseArtifactProfile.PHONE_FULL_UI)
         val mounted = mount(session, "flow.service", "active")
-        val model = mounted.runtime().flows
+        val model = mounted.snapshot<ShowcaseServiceSnapshot>()
         val emitter = mounted.eventEmitter as ShowcaseTypedRendererEmitter
         val active = ShowcaseFlowScreens.service(model, emitter).items.first()
 
@@ -69,7 +71,7 @@ class ShowcaseFlowScreensTest {
         assertNull(active.first().onTap)
 
         session.flows.prepare(ShowcaseCaseId("flow.service"), ShowcaseScenarioId("cache"))
-        val cached = ShowcaseFlowScreens.service(model, emitter).items.first()
+        val cached = ShowcaseFlowScreens.service(remount(session).snapshot(), emitter).items.first()
         assertTrue(cached.last().sub.contains("24 MB"))
         assertFalse(cached.any { it.sub.contains("https://") })
     }
@@ -83,7 +85,7 @@ class ShowcaseFlowScreensTest {
             val mounted = mount(session, caseId.value, id)
             return ShowcaseTemplateFixtures.screen(
                 requireNotNull(ShowcaseManifest.find(caseId, ShowcaseScenarioId(id))).second,
-                mounted.runtime(),
+                mounted.snapshot(),
                 mounted.eventEmitter as ShowcaseTypedRendererEmitter,
             )
         }
@@ -105,6 +107,13 @@ class ShowcaseFlowScreensTest {
         )
     }
 
-    private fun ShowcaseMountedRenderer.runtime(): ShowcaseRuntimeRendererInput =
+    private fun remount(session: ShowcaseSession): ShowcaseMountedRenderer = ShowcaseNativeBindings.mountRenderer(
+        session,
+        session.destination.value,
+        com.adelost.designkit.ui.CircleSurfaceClass.PHONE_COMPACT,
+        null,
+    )
+
+    private inline fun <reified T> ShowcaseMountedRenderer.snapshot(): T =
         inputs.require("${renderer.componentId()}.renderer")
 }

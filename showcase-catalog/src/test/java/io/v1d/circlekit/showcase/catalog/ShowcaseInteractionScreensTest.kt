@@ -17,7 +17,7 @@ class ShowcaseInteractionScreensTest {
     fun `timing availability and failure are declared by row data`() = runBlocking {
         val session = ShowcaseSession(ShowcaseArtifactProfile.PHONE_FULL_UI)
         val mounted = mount(session, "control.action-row", "immediate")
-        val model = mounted.runtime().interaction
+        val model = mounted.snapshot<ShowcaseActionRowSnapshot>()
         val emitter = mounted.eventEmitter as ShowcaseTypedRendererEmitter
         val immediate = scenario("control.action-row", "immediate")
         val recoverable = scenario("control.action-row", "recoverable")
@@ -28,9 +28,13 @@ class ShowcaseInteractionScreensTest {
             ShowcaseInteractionScreens.actionRows(immediate, model, emitter).items.first().single().actionTiming,
         )
         session.interaction.prepare(ShowcaseCaseId("control.action-row"), recoverable.id)
-        assertNotNull(ShowcaseInteractionScreens.actionRows(recoverable, model, emitter).items.first().single().onTap)
+        assertNotNull(ShowcaseInteractionScreens.actionRows(
+            recoverable,
+            snapshot(session),
+            emitter,
+        ).items.first().single().onTap)
         session.interaction.prepare(ShowcaseCaseId("control.action-row"), blocked.id)
-        assertNull(ShowcaseInteractionScreens.actionRows(blocked, model, emitter).items.first().single().onTap)
+        assertNull(ShowcaseInteractionScreens.actionRows(blocked, snapshot(session), emitter).items.first().single().onTap)
     }
 
     @Test
@@ -38,7 +42,7 @@ class ShowcaseInteractionScreensTest {
         val session = ShowcaseSession(ShowcaseArtifactProfile.PHONE_FULL_UI)
         val last = scenario("control.choice-row", "last")
         val mounted = mount(session, "control.choice-row", "last")
-        val model = mounted.runtime().interaction
+        val model = mounted.snapshot<ShowcaseChoiceSnapshot>()
         val emitter = mounted.eventEmitter as ShowcaseTypedRendererEmitter
         val choice = ShowcaseInteractionScreens.choiceRows(last, model, emitter).items.first().single()
         assertEquals(7, choice.choices.size)
@@ -47,7 +51,7 @@ class ShowcaseInteractionScreensTest {
 
         val adjustmentScenario = scenario("control.adjustment", "deliberate")
         val adjustment = ShowcaseInteractionScreens
-            .adjustmentRows(adjustmentScenario, model, emitter)
+            .adjustmentRows(adjustmentScenario, ShowcaseAdjustmentSnapshot(500), emitter)
             .items
             .first()
             .single()
@@ -56,7 +60,11 @@ class ShowcaseInteractionScreensTest {
 
         val half = scenario("control.progress", "half")
         session.interaction.prepare(ShowcaseCaseId("control.progress"), half.id)
-        val progress = ShowcaseInteractionScreens.progressRows(half, model, emitter).items.first().single().labelProgress
+        val progress = ShowcaseInteractionScreens.progressRows(
+            half,
+            ShowcaseProgressSnapshot(session.interaction.work.value),
+            emitter,
+        ).items.first().single().labelProgress
         assertTrue(progress is CircleLabelProgress.Determinate)
         assertEquals(0.5f, (progress as CircleLabelProgress.Determinate).fraction)
     }
@@ -76,6 +84,12 @@ class ShowcaseInteractionScreensTest {
         )
     }
 
-    private fun ShowcaseMountedRenderer.runtime(): ShowcaseRuntimeRendererInput =
+    private fun snapshot(session: ShowcaseSession): ShowcaseActionRowSnapshot = ShowcaseActionRowSnapshot(
+        session.interaction.actionCount.value,
+        session.interaction.actionFailed.value,
+        session.interaction.availability.value,
+    )
+
+    private inline fun <reified T> ShowcaseMountedRenderer.snapshot(): T =
         inputs.require("${renderer.componentId()}.renderer")
 }

@@ -79,18 +79,47 @@ interface GarminSelection {
   readonly iconAsset: GarminVectorAsset;
 }
 
+export interface ShowcaseGarminEndpointMutation {
+  readonly swapProgressMountToPageHost?: boolean;
+  readonly removeInputPortRef?: string;
+  readonly eventTargetPortRef?: string;
+}
+
+interface GarminHostInputEndpoint {
+  readonly consumerPortRef: string;
+  readonly producerPortRef: string;
+  readonly contractRef: string;
+  readonly symbol: string;
+}
+
+interface GarminHostComponentEndpoint {
+  readonly componentId: string;
+  readonly typeRef: string;
+  readonly mountRef: string;
+  readonly mountSymbol: string;
+  readonly inputs: readonly GarminHostInputEndpoint[];
+  readonly event: Readonly<{ kind: "empty"; symbol: string }> | Readonly<{
+    kind: "typed";
+    sourcePortRef: string;
+    targetPortRef: string;
+    contractRef: string;
+    symbol: string;
+  }>;
+}
+
 export function showcaseGarminEmitter(
   path: string,
   manifestPath: string,
   assetCatalog: GarminAssetCatalog,
   style: GarminStyle,
+  endpointMutation: ShowcaseGarminEndpointMutation = {},
 ): ProductEmitterPlugin {
   return {
     id: "showcase-garmin-limited-ui",
     emit(product) {
       const showcase = requireShowcaseProduct(product);
       const selection = selectLimitedUi(showcase, GARMIN_NATIVE_SUPPORT, assetCatalog);
-      const emission = emitMonkeyC(showcase, selection, assetCatalog, style, path);
+      const emission = emitMonkeyC(showcase, selection, assetCatalog, style, path, endpointMutation);
       return [
         {
           id: "showcase-garmin-limited-ui",
@@ -202,6 +231,7 @@ function emitMonkeyC(
   assetCatalog: GarminAssetCatalog,
   style: GarminStyle,
   sourceFile: string,
+  endpointMutation: ShowcaseGarminEndpointMutation,
 ): Readonly<{
   source: string;
   manifest: Omit<NativeBindingManifest, "stage" | "schemaVersion">;
@@ -209,11 +239,37 @@ function emitMonkeyC(
   const productLabel = product.id.split("-")[0]?.toUpperCase() ?? product.id.toUpperCase();
   const paletteLabel = selection.paletteRef?.toUpperCase() ?? "INHERITED";
   const profiles = [selection.artifactId];
+  const progressEndpoint: GarminHostComponentEndpoint = {
+    componentId: selection.componentId,
+    typeRef: selection.componentId,
+    mountRef: endpointMutation.swapProgressMountToPageHost ? "page.host" : selection.componentId,
+    mountSymbol: endpointMutation.swapProgressMountToPageHost ? "mountPageHost" : "mountProgress",
+    inputs: [
+      garminInput(`${selection.componentId}.catalog`, "catalog.model", "showcase.catalog-presentation", "catalogModel"),
+      garminInput(`${selection.componentId}.navigation`, "navigation.presentation.model", "showcase.navigation-presentation", "navigationModel"),
+      garminInput(`${selection.componentId}.renderer`, "renderer.presentation.model", "showcase.renderer-presentation", "rendererModel"),
+    ].filter(({ consumerPortRef }) => consumerPortRef !== endpointMutation.removeInputPortRef),
+    event: {
+      kind: "typed",
+      sourcePortRef: `${selection.componentId}.action`,
+      targetPortRef: endpointMutation.eventTargetPortRef ?? `renderer.${selection.openPort}`,
+      contractRef: "showcase.renderer-action",
+      symbol: "emitProgressAction",
+    },
+  };
+  const pageHostEndpoint: GarminHostComponentEndpoint = {
+    componentId: "page.host",
+    typeRef: "showcase.page-host",
+    mountRef: "page.host",
+    mountSymbol: "mountPageHost",
+    inputs: [garminInput("page.host.activePage", "navigation.activePage", "showcase.navigation.active-page", "activePage")],
+    event: { kind: "empty", symbol: "emitReadOnly" },
+  };
   const nativeNodes = compileShowcaseNativeNodes(product, profiles, [
     { nodeId: "catalog", nativePortId: "GeneratedCircleKitShowcase.catalogModel" },
     { nodeId: "navigation", nativePortId: "GeneratedCircleKitShowcase.open" },
     { nodeId: "navigation.presentation", nativePortId: "GeneratedCircleKitShowcase.navigationModel" },
-    { nodeId: "renderer", nativePortId: "GeneratedCircleKitShowcase.emitProgressAction" },
+    { nodeId: "renderer", nativePortId: `GeneratedCircleKitShowcase.${progressEndpoint.event.symbol}` },
     { nodeId: "renderer.presentation", nativePortId: "GeneratedCircleKitShowcase.rendererModel" },
   ]);
   // Host truth: this executable has one root page and one component dispatch.
@@ -230,52 +286,25 @@ function emitMonkeyC(
       targetPortRef: `renderer.${selection.openPort}`,
     });
   const nativeNavigation = nativeNavigationManifest(garminNavigationRegistration)!;
-  const componentRegistrations: readonly NativeComponentRendererRegistration[] = [
-    defineNativeComponentRendererRegistration({
-      component: { instanceRef: selection.componentId, typeRef: selection.componentId },
+  const componentRegistrations: readonly NativeComponentRendererRegistration[] = [progressEndpoint, pageHostEndpoint]
+    .map((endpoint) => defineNativeComponentRendererRegistration({
+      component: { instanceRef: endpoint.componentId, typeRef: endpoint.typeRef },
       mounts: [{
         profileRef: selection.artifactId,
         pageRef: selection.screenId,
         surface: selection.surface,
-        mountRef: selection.componentId,
-        mount: (inputs, emitter) => ({ inputs, emitter }),
+        mountRef: endpoint.mountRef,
+        mount: (inputs, emitter) => ({ endpoint: endpoint.mountSymbol, inputs, emitter }),
       }],
-      immutableInputs: [
-        nativeInput(`${selection.componentId}.catalog`, "catalog.model", "showcase.catalog-presentation"),
-        nativeInput(
-          `${selection.componentId}.navigation`,
-          "navigation.presentation.model",
-          "showcase.navigation-presentation",
-        ),
-        nativeInput(
-          `${selection.componentId}.renderer`,
-          "renderer.presentation.model",
-          "showcase.renderer-presentation",
-        ),
-      ],
-      eventEmitter: defineNativeTypedEventEmitter([
-        nativeEvent(
-          `${selection.componentId}.action`,
-          `renderer.${selection.openPort}`,
-          "showcase.renderer-action",
-        ),
-      ]),
-    }),
-    defineNativeComponentRendererRegistration({
-      component: { instanceRef: "page.host", typeRef: "showcase.page-host" },
-      mounts: [{
-        profileRef: selection.artifactId,
-        pageRef: selection.screenId,
-        surface: selection.surface,
-        mountRef: "page.host",
-        mount: (inputs, emitter) => ({ inputs, emitter }),
-      }],
-      immutableInputs: [
-        nativeInput("page.host.activePage", "navigation.activePage", "showcase.navigation.active-page"),
-      ],
-      eventEmitter: defineNativeEmptyEventEmitter(),
-    }),
-  ];
+      immutableInputs: endpoint.inputs.map((input) => nativeInput(
+        input.consumerPortRef, input.producerPortRef, input.contractRef,
+      )),
+      eventEmitter: endpoint.event.kind === "empty"
+        ? defineNativeEmptyEventEmitter()
+        : defineNativeTypedEventEmitter([nativeEvent(
+          endpoint.event.sourcePortRef, endpoint.event.targetPortRef, endpoint.event.contractRef,
+        )]),
+    }));
   const nativeIcons = unique(product.iconRefs.map(({ assetRef }) => assetRef)).map((id) => {
     const asset = assetCatalog.icons.find((candidate) => candidate.id === id);
     if (asset === undefined) throw new Error(`Showcase Garmin native registry uses missing icon '${id}'`);
@@ -326,50 +355,7 @@ module GeneratedCircleKitShowcase {
     const COLOR_LINE = ${monkeyColor(style.line)};
     const COLOR_ICON = ${monkeyColor(resolveIconColor(product, selection.iconAccent, style))};
     var NATIVE_COMPONENTS = [
-        {
-            "instanceRef" => COMPONENT_ID,
-            "typeRef" => COMPONENT_ID,
-            "mounts" => [{
-                "profileRef" => ARTIFACT_ID,
-                "pageRef" => SCREEN_ID,
-                "surface" => SURFACE_CLASS,
-                "mountRef" => COMPONENT_ID,
-                "mount" => method(:mountProgress)
-            }],
-            "immutableInputs" => [
-                { "consumerPortRef" => COMPONENT_ID + ".catalog", "producerPortRef" => "catalog.model", "contractRef" => "showcase.catalog-presentation", "required" => true, "read" => method(:catalogModel) },
-                { "consumerPortRef" => COMPONENT_ID + ".navigation", "producerPortRef" => "navigation.presentation.model", "contractRef" => "showcase.navigation-presentation", "required" => true, "read" => method(:navigationModel) },
-                { "consumerPortRef" => COMPONENT_ID + ".renderer", "producerPortRef" => "renderer.presentation.model", "contractRef" => "showcase.renderer-presentation", "required" => true, "read" => method(:rendererModel) }
-            ],
-            "eventEmitter" => {
-                "kind" => "typed",
-                "bindings" => [{
-                    "sourcePortRef" => COMPONENT_ID + ".action",
-                    "targetPortRef" => "renderer." + OPEN_PORT,
-                    "contractRef" => "showcase.renderer-action",
-                    "emit" => method(:emitProgressAction)
-                }]
-            }
-        },
-        {
-            "instanceRef" => "page.host",
-            "typeRef" => "showcase.page-host",
-            "mounts" => [{
-                "profileRef" => ARTIFACT_ID,
-                "pageRef" => SCREEN_ID,
-                "surface" => SURFACE_CLASS,
-                "mountRef" => "page.host",
-                "mount" => method(:mountPageHost)
-            }],
-            "immutableInputs" => [{
-                "consumerPortRef" => "page.host.activePage",
-                "producerPortRef" => "navigation.activePage",
-                "contractRef" => "showcase.navigation.active-page",
-                "required" => true,
-                "read" => method(:activePage)
-            }],
-            "eventEmitter" => { "kind" => "empty", "emit" => method(:emitReadOnly) }
-        }
+${[progressEndpoint, pageHostEndpoint].map((endpoint) => emitMonkeyHostComponent(endpoint)).join(",\n")}
     ];
     var NATIVE_ICONS = [
 ${nativeIcons.map(({ id, asset, geometry }) => `        {
@@ -412,6 +398,7 @@ ${nativeNavigation.actionGroups.map((group) => `        {
     ];
     var _destination = null;
     var _activePage = SCREEN_ID;
+    var _mountedRenderer = null;
 
     function nativeIcon(iconId) {
         for (var index = 0; index < NATIVE_ICONS.size(); index += 1) {
@@ -428,7 +415,13 @@ ${nativeNavigation.actionGroups.map((group) => `        {
         return {
             "componentId" => component["instanceRef"],
             "scenarioId" => SCENARIO_ID,
-            "iconAssetRef" => ICON_ASSET_REF
+            "iconAssetRef" => ICON_ASSET_REF,
+            "productLabel" => PRODUCT_LABEL,
+            "surfaceLabel" => SURFACE_LABEL,
+            "componentLabel" => COMPONENT_LABEL,
+            "scenarioLabel" => SCENARIO_LABEL,
+            "componentIdLabel" => COMPONENT_ID_LABEL,
+            "footerLabel" => FOOTER_LABEL
         };
     }
 
@@ -445,7 +438,8 @@ ${nativeNavigation.actionGroups.map((group) => `        {
     }
 
     function emitProgressAction(payload) {
-        open("renderer." + OPEN_PORT, COMPONENT_ID);
+        var binding = NATIVE_COMPONENTS[0]["eventEmitter"]["bindings"][0];
+        open(binding["targetPortRef"], COMPONENT_ID);
         return payload;
     }
 
@@ -509,12 +503,15 @@ ${nativeNavigation.actionGroups.map((group) => `        {
                 var input = registration["immutableInputs"][inputIndex];
                 values[input["consumerPortRef"]] = input["read"].invoke();
             }
-            registration["mounts"][0]["mount"].invoke(values, registration["eventEmitter"]);
+            var mounted = registration["mounts"][0]["mount"].invoke(values, registration["eventEmitter"]);
+            if (registration["instanceRef"] == COMPONENT_ID) {
+                _mountedRenderer = mounted;
+            }
         }
         var catalog = catalogModel();
         dispatch(catalog["componentId"]);
         route(activePage());
-        return navigationModel();
+        return _mountedRenderer;
     }
 }
 `;
@@ -529,6 +526,48 @@ function nativeInput(consumerPortRef: string, producerPortRef: string, contractR
     required: true,
     read: () => producerPortRef,
   } as const;
+}
+
+function garminInput(
+  consumerPortRef: string,
+  producerPortRef: string,
+  contractRef: string,
+  symbol: string,
+): GarminHostInputEndpoint {
+  return { consumerPortRef, producerPortRef, contractRef, symbol };
+}
+
+function emitMonkeyHostComponent(endpoint: GarminHostComponentEndpoint): string {
+  const event = endpoint.event.kind === "empty"
+    ? `{ "kind" => "empty", "emit" => method(:${endpoint.event.symbol}) }`
+    : `{
+                "kind" => "typed",
+                "bindings" => [{
+                    "sourcePortRef" => ${monkeyString(endpoint.event.sourcePortRef)},
+                    "targetPortRef" => ${monkeyString(endpoint.event.targetPortRef)},
+                    "contractRef" => ${monkeyString(endpoint.event.contractRef)},
+                    "emit" => method(:${endpoint.event.symbol})
+                }]
+            }`;
+  return `        {
+            "instanceRef" => ${monkeyString(endpoint.componentId)},
+            "typeRef" => ${monkeyString(endpoint.typeRef)},
+            "mounts" => [{
+                "profileRef" => ARTIFACT_ID,
+                "pageRef" => SCREEN_ID,
+                "surface" => SURFACE_CLASS,
+                "mountRef" => ${monkeyString(endpoint.mountRef)},
+                "mount" => method(:${endpoint.mountSymbol})
+            }],
+            "immutableInputs" => [${endpoint.inputs.map((input) => `{
+                "consumerPortRef" => ${monkeyString(input.consumerPortRef)},
+                "producerPortRef" => ${monkeyString(input.producerPortRef)},
+                "contractRef" => ${monkeyString(input.contractRef)},
+                "required" => true,
+                "read" => method(:${input.symbol})
+            }`).join(", ")}],
+            "eventEmitter" => ${event}
+        }`;
 }
 
 function nativeEvent(sourcePortRef: string, targetPortRef: string, contractRef: string) {

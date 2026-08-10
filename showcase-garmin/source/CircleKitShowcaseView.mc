@@ -4,11 +4,13 @@ import Toybox.WatchUi;
 
 class CircleKitShowcaseView extends WatchUi.View {
     var _icon;
+    var _mounted;
 
     function initialize() {
         View.initialize();
-        GeneratedCircleKitShowcase.requireNativeBindings();
-        _icon = GeneratedCircleKitShowcase.nativeIcon(GeneratedCircleKitShowcase.ICON_ASSET_REF);
+        _mounted = GeneratedCircleKitShowcase.requireNativeBindings();
+        var catalog = _mounted["inputs"][GeneratedCircleKitShowcase.COMPONENT_ID + ".catalog"];
+        _icon = GeneratedCircleKitShowcase.nativeIcon(catalog["iconAssetRef"]);
     }
 
     function onUpdate(dc as Dc) as Void {
@@ -20,25 +22,29 @@ class CircleKitShowcaseView extends WatchUi.View {
 
         var centreX = dc.getWidth() / 2;
         var centreY = dc.getHeight() / 2;
-        drawProgressDial(dc, centreX, centreY);
+        var inputs = _mounted["inputs"];
+        var catalog = inputs[GeneratedCircleKitShowcase.COMPONENT_ID + ".catalog"];
+        var renderer = inputs[GeneratedCircleKitShowcase.COMPONENT_ID + ".renderer"];
+        var interactive = _mounted["emitter"]["kind"] == "typed";
+        drawProgressDial(dc, centreX, centreY, renderer["activeTicks"], interactive);
 
         dc.setColor(GeneratedCircleKitShowcase.COLOR_ACTION, Graphics.COLOR_TRANSPARENT);
-        PixelText.draw(dc, centreX, 31, GeneratedCircleKitShowcase.PRODUCT_LABEL, 2);
+        PixelText.draw(dc, centreX, 31, catalog["productLabel"], 2);
         dc.setColor(GeneratedCircleKitShowcase.COLOR_MUTED, Graphics.COLOR_TRANSPARENT);
-        PixelText.draw(dc, centreX, 49, GeneratedCircleKitShowcase.SURFACE_LABEL, 1);
+        PixelText.draw(dc, centreX, 49, catalog["surfaceLabel"], 1);
 
         dc.setColor(GeneratedCircleKitShowcase.COLOR_ACTION, Graphics.COLOR_TRANSPARENT);
-        PixelText.draw(dc, centreX, 91, GeneratedCircleKitShowcase.COMPONENT_LABEL, 2);
+        PixelText.draw(dc, centreX, 91, catalog["componentLabel"], 2);
         dc.setColor(GeneratedCircleKitShowcase.COLOR_ACTION, Graphics.COLOR_TRANSPARENT);
-        PixelText.draw(dc, centreX, 119, GeneratedCircleKitShowcase.SCENARIO_LABEL, 2);
+        PixelText.draw(dc, centreX, 119, catalog["scenarioLabel"], 2);
         drawProductIcon(dc, centreX, 151);
 
         dc.setColor(GeneratedCircleKitShowcase.COLOR_FAINT, Graphics.COLOR_TRANSPARENT);
-        PixelText.draw(dc, centreX, 195, GeneratedCircleKitShowcase.COMPONENT_ID_LABEL, 1);
-        PixelText.draw(dc, centreX, 212, GeneratedCircleKitShowcase.FOOTER_LABEL, 1);
+        PixelText.draw(dc, centreX, 195, catalog["componentIdLabel"], 1);
+        PixelText.draw(dc, centreX, 212, catalog["footerLabel"], 1);
     }
 
-    private function drawProgressDial(dc, centreX, centreY) {
+    private function drawProgressDial(dc, centreX, centreY, activeTicks, interactive) {
         var radius = 112;
         dc.setColor(GeneratedCircleKitShowcase.COLOR_LINE, Graphics.COLOR_TRANSPARENT);
         dc.setPenWidth(2);
@@ -56,7 +62,7 @@ class CircleKitShowcaseView extends WatchUi.View {
             var x2 = centreX + (Math.cos(angle) * outer).toNumber();
             var y2 = centreY + (Math.sin(angle) * outer).toNumber();
             dc.setColor(
-                tick < GeneratedCircleKitShowcase.ACTIVE_TICKS
+                interactive && tick < activeTicks
                     ? GeneratedCircleKitShowcase.COLOR_ACTION
                     : GeneratedCircleKitShowcase.COLOR_LINE,
                 Graphics.COLOR_TRANSPARENT

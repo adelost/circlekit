@@ -70,6 +70,22 @@ interface SwiftIconRef {
   readonly artifacts: readonly string[];
 }
 
+export interface ShowcaseSwiftEndpointMutation {
+  readonly mountSwap?: Readonly<{ registrationComponentId: string; endpointComponentId: string }>;
+  readonly removeInput?: Readonly<{ componentId: string; consumerPortRef: string }>;
+  readonly eventTargetSwap?: Readonly<{ componentId: string; targetPortRef: string }>;
+}
+
+interface SwiftMountEndpoint {
+  readonly componentId: string;
+  readonly mountRef: string;
+}
+
+interface SwiftComponentRegistration {
+  readonly native: NativeComponentRendererRegistration;
+  readonly mountEndpoint: SwiftMountEndpoint;
+}
+
 interface SwiftReadyShowcaseProduct extends CircleKitShowcaseProductIr {
   readonly artifacts: readonly SwiftArtifact[];
   readonly palette: { readonly variants: readonly PortablePaletteVariant[] };
@@ -83,13 +99,14 @@ export function showcaseSwiftEmitter(
   renderers: readonly SwiftRendererSupport[],
   assetCatalog: SwiftAssetCatalog,
   style: SwiftStyle,
+  endpointMutation: ShowcaseSwiftEndpointMutation = {},
 ): ProductEmitterPlugin {
   return {
     id: "showcase-swiftui",
     emit(product) {
       const showcase = requireSwiftReadyShowcase(product);
       const artifacts = requireArtifacts(showcase, renderers);
-      const emission = emitSwift(showcase, artifacts, assetCatalog, style, path);
+      const emission = emitSwift(showcase, artifacts, assetCatalog, style, path, endpointMutation);
       return [
         {
           id: "showcase-swiftui",
@@ -161,6 +178,7 @@ function emitSwift(
   assetCatalog: SwiftAssetCatalog,
   style: SwiftStyle,
   sourceFile: string,
+  endpointMutation: ShowcaseSwiftEndpointMutation,
 ): Readonly<{
   source: string;
   manifest: Omit<NativeBindingManifest, "stage" | "schemaVersion">;
@@ -210,29 +228,37 @@ function emitSwift(
   requireDistinctSwiftCases(portIds, "UI port");
 
   const profiles = selections.map(({ artifact }) => artifact.id);
-  const componentRegistrations: readonly NativeComponentRendererRegistration[] = componentIds.map((componentId) => {
+  const componentRegistrations: readonly SwiftComponentRegistration[] = componentIds.map((componentId) => {
     const component = product.components.find(({ id }) => id === componentId);
     if (component === undefined) throw new Error(`Showcase SwiftUI has no component instance '${componentId}'`);
+    const endpointComponentId = endpointMutation.mountSwap?.registrationComponentId === componentId
+      ? endpointMutation.mountSwap.endpointComponentId
+      : componentId;
+    const mountEndpoint = swiftMountEndpoint(endpointComponentId);
     const mounts = trees.flatMap(({ artifact, scope }) => {
       const included = scope.includedMounts.find(({ componentInstanceRef }) => componentInstanceRef === componentId);
       return included === undefined ? [] : [{
         profileRef: artifact.id,
         pageRef: scope.screenRef,
         surface: scope.surface,
-        mountRef: included.mountRef,
-        mount: (inputs: Readonly<Record<string, unknown>>, emitter: unknown) => ({ componentId, inputs, emitter }),
+        mountRef: mountEndpoint.mountRef,
+        mount: (inputs: Readonly<Record<string, unknown>>, emitter: unknown) => ({
+          componentId: mountEndpoint.componentId, inputs, emitter,
+        }),
       }];
     });
     const commonInputs = componentId === "page.host" || componentId === "page.menu" ? [] : [
       nativeInput(`${componentId}.catalog`, "catalog.model", "showcase.catalog-presentation"),
       nativeInput(`${componentId}.navigation`, "navigation.presentation.model", "showcase.navigation-presentation"),
     ];
-    const immutableInputs = componentId === "page.host"
+    const immutableInputs = (componentId === "page.host"
       ? [nativeInput("page.host.activePage", "navigation.activePage", "showcase.navigation.active-page")]
       : componentId === "page.menu" || componentId === "foundation.colors" || componentId === "foundation.geometry"
         ? commonInputs
         : [...commonInputs,
-          nativeInput(`${componentId}.renderer`, "renderer.presentation.model", "showcase.renderer-presentation")];
+          nativeInput(`${componentId}.renderer`, "renderer.presentation.model", "showcase.renderer-presentation")])
+      .filter(({ consumerPortRef }) => endpointMutation.removeInput?.componentId !== componentId ||
+        endpointMutation.removeInput.consumerPortRef !== consumerPortRef);
     const showcaseCase = product.showcase.cases.find(({ id }) => id === componentId);
     const eventEmitter = componentId === "page.menu"
       ? defineNativeTypedEventEmitter([
@@ -243,14 +269,23 @@ function emitSwift(
       : showcaseCase === undefined || componentId === "foundation.colors" || componentId === "foundation.geometry"
         ? defineNativeEmptyEventEmitter()
         : defineNativeTypedEventEmitter([
-          nativeEvent(`${componentId}.action`, `renderer.${showcaseCase.openPort}`, "showcase.renderer-action"),
+          nativeEvent(
+            `${componentId}.action`,
+            endpointMutation.eventTargetSwap?.componentId === componentId
+              ? endpointMutation.eventTargetSwap.targetPortRef
+              : `renderer.${showcaseCase.openPort}`,
+            "showcase.renderer-action",
+          ),
         ]);
-    return defineNativeComponentRendererRegistration({
-      component: { instanceRef: componentId, typeRef: component.componentTypeRef },
-      mounts,
-      immutableInputs,
-      eventEmitter,
-    });
+    return {
+      mountEndpoint,
+      native: defineNativeComponentRendererRegistration({
+        component: { instanceRef: componentId, typeRef: component.componentTypeRef },
+        mounts,
+        immutableInputs,
+        eventEmitter,
+      }),
+    };
   });
   const nativeNodes = compileShowcaseNativeNodes(product, profiles, [
     { nodeId: "catalog", nativePortId: "ShowcaseCatalogSource" },
@@ -290,7 +325,7 @@ function emitSwift(
   const manifest = {
     sourceFile,
     profiles,
-    components: nativeComponentRendererManifest(componentRegistrations),
+    components: nativeComponentRendererManifest(componentRegistrations.map(({ native }) => native)),
     icons: icons.map(({ ref }) => ({
       iconId: ref.assetRef,
       nativeSymbol: "ShowcaseVectorIcon",
@@ -391,7 +426,7 @@ ${nativeNodes.map((nativeNode) => {
 }).join(",\n")}
     ]
     static let nativeComponents: [ShowcaseNativeComponentRegistration] = [
-${componentRegistrations.map((registration) => `        ShowcaseNativeComponentRegistration(
+${componentRegistrations.map(({ native: registration, mountEndpoint }) => `        ShowcaseNativeComponentRegistration(
             componentInstanceRef: .${swiftCase(registration.component.instanceRef)},
             componentTypeRef: ${swiftString(registration.component.typeRef)},
             mounts: [${registration.mounts.map((mount) => `ShowcaseNativeMountRegistration(
@@ -399,7 +434,11 @@ ${componentRegistrations.map((registration) => `        ShowcaseNativeComponentR
                 pageRef: ${swiftString(mount.pageRef)},
                 surface: .${swiftCase(mount.surface)},
                 mountRef: ${swiftString(mount.mountRef)},
-                mount: { environment in environment.componentValue(.${swiftCase(registration.component.instanceRef)}) }
+                mount: { inputs, emitter in ShowcaseMountedRenderer(
+                    componentId: .${swiftCase(mountEndpoint.componentId)},
+                    inputs: inputs,
+                    emitter: emitter
+                ) }
             )`).join(", ")}],
             immutableInputs: [${registration.immutableInputs.map((input) => `ShowcaseNativeInputRegistration(
                 consumerPortRef: ${swiftString(input.consumerPortRef)},
@@ -415,7 +454,11 @@ ${componentRegistrations.map((registration) => `        ShowcaseNativeComponentR
                 targetPortRef: ${swiftString(binding.targetPortRef)},
                 contractRef: ${swiftString(binding.contractRef)},
                 emit: { environment, payload in
-                    environment.dispatch(sourcePortRef: ${swiftString(binding.sourcePortRef)}, payload: payload)
+                    environment.dispatch(
+                        sourcePortRef: ${swiftString(binding.sourcePortRef)},
+                        targetPortRef: ${swiftString(binding.targetPortRef)},
+                        payload: payload
+                    )
                 }
             )`).join(", ")}])`}
         )`).join(",\n")}
@@ -443,6 +486,20 @@ ${nativeNavigation.actionGroups.map((group) => `        ShowcaseNavigationAction
 }
 `;
   return { source, manifest };
+}
+
+function swiftMountEndpoint(componentId: string): SwiftMountEndpoint {
+  switch (componentId) {
+  case "foundation.colors": case "foundation.geometry": case "atom.icon-action":
+  case "control.action-row": case "control.choice-row": case "control.adjustment":
+  case "control.progress": case "control.press-ring": case "input.text":
+  case "media.capture": case "media.playback": case "template.screens":
+  case "flow.source": case "flow.update": case "flow.service":
+  case "page.host": case "page.menu":
+    return { componentId, mountRef: componentId };
+  default:
+    throw new Error(`Swift native host has no compile-bound mount endpoint '${componentId}'`);
+  }
 }
 
 function nativeInput(consumerPortRef: string, producerPortRef: string, contractRef: string) {

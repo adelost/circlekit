@@ -8,8 +8,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -27,7 +25,7 @@ import com.adelost.ringkit.ui.RingTextComposer
 import com.adelost.ringkit.ui.RingTextEntryPort
 import com.adelost.ringkit.ui.RingTextInputSpec
 import com.adelost.ringkit.ui.RowSpec
-import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flowOf
 
 sealed interface ShowcasePresentation {
     data class Screen(val value: RingScreen) : ShowcasePresentation
@@ -46,7 +44,7 @@ object ShowcasePresentations {
             ShowcaseNativeRenderer.TEXT -> if (surface == CircleSurfaceClass.ROUND) {
                 ShowcasePresentation.Screen(textEntryRows(
                     catalog.scenario,
-                    mounted.runtime().media,
+                    mounted.snapshot(),
                     mounted.typedEmitter(),
                 ))
             } else {
@@ -61,20 +59,20 @@ object ShowcasePresentations {
 
     private fun textEntryRows(
         scenario: ShowcaseScenario,
-        model: ShowcaseMediaRendererInput,
+        model: Any,
         emitter: ShowcaseTypedRendererEmitter,
     ): RingScreen.Rows = RingScreen.Rows(
         title = scenario.label,
-        items = combine(model.text, model.submitCount) { text, submits ->
-            val spec = textSpec(scenario, text, emitter)
+        items = (model as ShowcaseTextSnapshot).let { snapshot -> flowOf(
+            textSpec(scenario, snapshot.text, emitter).let { spec ->
             val available = spec.enabled
             listOf(
                 RowSpec(
                     key = "platform-text",
                     title = if (available) "EDIT TEXT" else "TEXT INPUT",
                     sub = when {
-                        text.isEmpty() -> "EMPTY · SENT $submits"
-                        else -> "$text · SENT $submits"
+                        snapshot.text.isEmpty() -> "EMPTY · SENT ${snapshot.submitCount}"
+                        else -> "${snapshot.text} · SENT ${snapshot.submitCount}"
                     },
                     icon = RingIcons.Pencil,
                     hint = "Opens the Wear system editor; CircleKit keeps the same text spec.",
@@ -84,8 +82,8 @@ object ShowcasePresentations {
                         null
                     },
                 ),
-            )
-        },
+            ) }
+        ) },
     )
 
     @Composable
@@ -96,7 +94,7 @@ object ShowcasePresentations {
         onBack: () -> Unit,
     ) {
         val catalog = mounted.inputs.require<ShowcaseCatalogRendererInput>("${mounted.renderer.componentId()}.catalog")
-        val media = mounted.runtime().media
+        val snapshot = mounted.snapshot()
         val emitter = mounted.typedEmitter()
         val scenario = catalog.scenario.id.value
         ComponentFrame(
@@ -105,10 +103,10 @@ object ShowcasePresentations {
             onBack = onBack,
         ) {
             when (kind) {
-                ShowcaseComponentKind.TEXT -> TextPreview(scenario, media, emitter)
-                ShowcaseComponentKind.PRESS -> PressPreview(media, emitter)
-                ShowcaseComponentKind.CAPTURE -> CapturePreview(media, surface)
-                ShowcaseComponentKind.PLAYBACK -> PlaybackPreview(media, emitter)
+                ShowcaseComponentKind.TEXT -> TextPreview(scenario, snapshot as ShowcaseTextSnapshot, emitter)
+                ShowcaseComponentKind.PRESS -> PressPreview(snapshot as ShowcasePressSnapshot, emitter)
+                ShowcaseComponentKind.CAPTURE -> CapturePreview(snapshot as ShowcaseCaptureSnapshot, surface)
+                ShowcaseComponentKind.PLAYBACK -> PlaybackPreview(snapshot as ShowcasePlaybackSnapshot, emitter)
             }
         }
     }
@@ -148,35 +146,30 @@ object ShowcasePresentations {
     @Composable
     private fun TextPreview(
         scenario: String,
-        model: ShowcaseMediaRendererInput,
+        model: ShowcaseTextSnapshot,
         emitter: ShowcaseTypedRendererEmitter,
     ) {
-        val text by model.text.collectAsState()
         RingTextComposer(
             spec = textSpec(
                 ShowcaseScenario(ShowcaseScenarioId(scenario), scenario.uppercase()),
-                text,
+                model.text,
                 emitter,
             ),
         )
     }
 
     @Composable
-    private fun PressPreview(model: ShowcaseMediaRendererInput, emitter: ShowcaseTypedRendererEmitter) {
-        val active by model.captureActive.collectAsState()
-        val enabled by model.captureEnabled.collectAsState()
-        val failed by model.captureFailed.collectAsState()
-        val elapsedMs by model.captureElapsedMs.collectAsState()
+    private fun PressPreview(model: ShowcasePressSnapshot, emitter: ShowcaseTypedRendererEmitter) {
         RingPressLifecycle(
             spec = RingPressLifecycleSpec(
-                label = if (failed) "TRY AGAIN" else if (active) "RECORDING" else "RECORD",
-                active = active,
-                enabled = enabled,
-                centerValue = if (active) formatSeconds(elapsedMs) else null,
+                label = if (model.failed) "TRY AGAIN" else if (model.active) "RECORDING" else "RECORD",
+                active = model.active,
+                enabled = model.enabled,
+                centerValue = if (model.active) formatSeconds(model.elapsedMs) else null,
                 sub = when {
-                    failed -> "FAILED"
-                    !enabled -> "DISABLED"
-                    active -> null
+                    model.failed -> "FAILED"
+                    !model.enabled -> "DISABLED"
+                    model.active -> null
                     else -> "HOLD"
                 },
                 onBegin = { true.also { emitter.emit(ShowcaseRendererEventPayload("capture.begin")) } },
@@ -187,15 +180,12 @@ object ShowcasePresentations {
     }
 
     @Composable
-    private fun CapturePreview(model: ShowcaseMediaRendererInput, surface: CircleSurfaceClass) {
-        val active by model.captureActive.collectAsState()
-        val elapsedMs by model.captureElapsedMs.collectAsState()
-        val levels by model.captureLevels.collectAsState()
+    private fun CapturePreview(model: ShowcaseCaptureSnapshot, surface: CircleSurfaceClass) {
         RingAudioCaptureFeedback(
             spec = RingAudioCaptureFeedbackSpec(
-                elapsedMs = elapsedMs,
-                levels = levels,
-                active = active,
+                elapsedMs = model.elapsedMs,
+                levels = model.levels,
+                active = model.active,
             ),
             modifier = Modifier
                 .fillMaxWidth()
@@ -204,16 +194,13 @@ object ShowcasePresentations {
     }
 
     @Composable
-    private fun PlaybackPreview(model: ShowcaseMediaRendererInput, emitter: ShowcaseTypedRendererEmitter) {
-        val playbackState by model.playbackState.collectAsState()
-        val positionMs by model.playbackPositionMs.collectAsState()
-        val durationMs by model.playbackDurationMs.collectAsState()
+    private fun PlaybackPreview(model: ShowcasePlaybackSnapshot, emitter: ShowcaseTypedRendererEmitter) {
         RingPlaybackControls(
             spec = RingPlaybackSpec(
                 title = "VOICE REPLY",
-                state = playbackState,
-                positionMs = positionMs,
-                durationMs = durationMs,
+                state = model.state,
+                positionMs = model.positionMs,
+                durationMs = model.durationMs,
                 onPlayPause = { emitter.emit(ShowcaseRendererEventPayload("playback.toggle")) },
                 onStop = { emitter.emit(ShowcaseRendererEventPayload("playback.stop")) },
             ),
@@ -245,7 +232,7 @@ object ShowcasePresentations {
     private fun formatSeconds(elapsedMs: Long): String = "%.1f S".format(elapsedMs / 1_000f)
 }
 
-private fun ShowcaseMountedRenderer.runtime(): ShowcaseRuntimeRendererInput =
+private fun ShowcaseMountedRenderer.snapshot(): Any =
     inputs.require("${renderer.componentId()}.renderer")
 
 private fun ShowcaseMountedRenderer.typedEmitter(): ShowcaseTypedRendererEmitter =

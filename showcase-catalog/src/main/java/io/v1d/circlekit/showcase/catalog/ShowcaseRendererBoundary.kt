@@ -6,7 +6,8 @@ import com.adelost.ringkit.data.SourceState
 import com.adelost.ringkit.ui.RingPlaybackState
 import com.adelost.ringkit.ui.RingTextEntryPort
 import com.adelost.servicekit.ServiceSnapshot
-import kotlinx.coroutines.flow.StateFlow
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 
 data class ShowcaseRendererEventPayload(
     val actionId: String,
@@ -30,42 +31,23 @@ data class ShowcaseCatalogRendererInput(
 
 data class ShowcaseNavigationRendererInput(val destination: ShowcaseDestination)
 
-data class ShowcaseInteractionRendererInput(
-    val iconActionActive: StateFlow<Boolean>,
-    val actionCount: StateFlow<Int>,
-    val actionFailed: StateFlow<Boolean>,
-    val availability: StateFlow<ShowcaseAvailability>,
-    val choiceIndex: StateFlow<Int>,
-    val adjustmentValue: StateFlow<Int>,
-    val work: StateFlow<ShowcaseWorkState>,
+data class ShowcaseIconActionSnapshot(val active: Boolean)
+data class ShowcaseActionRowSnapshot(
+    val count: Int,
+    val failed: Boolean,
+    val availability: ShowcaseAvailability,
 )
-
-data class ShowcaseMediaRendererInput(
-    val text: StateFlow<String>,
-    val submitCount: StateFlow<Int>,
-    val captureActive: StateFlow<Boolean>,
-    val captureEnabled: StateFlow<Boolean>,
-    val captureFailed: StateFlow<Boolean>,
-    val captureElapsedMs: StateFlow<Long>,
-    val captureLevels: StateFlow<List<Float>>,
-    val playbackState: StateFlow<RingPlaybackState>,
-    val playbackPositionMs: StateFlow<Long>,
-    val playbackDurationMs: StateFlow<Long>,
-)
-
-data class ShowcaseFlowRendererInput(
-    val source: StateFlow<SourceState<String>>,
-    val sourceEnabled: StateFlow<Boolean>,
-    val update: StateFlow<UpdateState>,
-    val service: StateFlow<ServiceSnapshot>,
-    val theme: StateFlow<CircleColorTheme>,
-)
-
-data class ShowcaseRuntimeRendererInput(
-    val interaction: ShowcaseInteractionRendererInput,
-    val media: ShowcaseMediaRendererInput,
-    val flows: ShowcaseFlowRendererInput,
-)
+data class ShowcaseChoiceSnapshot(val selectedIndex: Int)
+data class ShowcaseAdjustmentSnapshot(val value: Int)
+data class ShowcaseProgressSnapshot(val work: ShowcaseWorkState)
+data class ShowcasePressSnapshot(val active: Boolean, val enabled: Boolean, val failed: Boolean, val elapsedMs: Long)
+data class ShowcaseTextSnapshot(val text: String, val submitCount: Int)
+data class ShowcaseCaptureSnapshot(val active: Boolean, val elapsedMs: Long, val levels: List<Float>)
+data class ShowcasePlaybackSnapshot(val state: RingPlaybackState, val positionMs: Long, val durationMs: Long)
+data class ShowcaseTemplateSnapshot(val adjustmentValue: Int, val theme: CircleColorTheme)
+data class ShowcaseSourceSnapshot(val source: SourceState<String>, val enabled: Boolean)
+data class ShowcaseUpdateSnapshot(val state: UpdateState)
+data class ShowcaseServiceSnapshot(val state: ServiceSnapshot)
 
 data class ShowcaseMountedRenderer(
     val renderer: ShowcaseNativeRenderer,
@@ -77,46 +59,99 @@ class ShowcaseRendererProducerPorts(
     private val session: ShowcaseSession,
     private val destination: ShowcaseDestination,
     private val textEntryPort: RingTextEntryPort?,
+    private val rendererSnapshot: Any? = null,
 ) {
-    fun read(producerPortRef: String): Any = when (producerPortRef) {
+    fun read(producerPortRef: String, componentId: String): Any = when (producerPortRef) {
         "catalog.model" -> {
             val case = requireNotNull(ShowcaseManifest.find(requireNotNull(destination.caseId)))
             val scenario = requireNotNull(case.scenarios.find { it.id == destination.scenarioId })
             ShowcaseCatalogRendererInput(case, scenario)
         }
         "navigation.presentation.model" -> ShowcaseNavigationRendererInput(destination)
-        "renderer.presentation.model" -> ShowcaseRuntimeRendererInput(
-            interaction = ShowcaseInteractionRendererInput(
-                session.iconActionActive,
-                session.interaction.actionCount,
-                session.interaction.actionFailed,
-                session.interaction.availability,
-                session.interaction.choiceIndex,
-                session.interaction.adjustmentValue,
-                session.interaction.work,
-            ),
-            media = ShowcaseMediaRendererInput(
-                session.media.text,
-                session.media.submitCount,
-                session.media.captureActive,
-                session.media.captureEnabled,
-                session.media.captureFailed,
-                session.media.captureElapsedMs,
-                session.media.captureLevels,
-                session.media.playbackState,
-                session.media.playbackPositionMs,
-                session.media.playbackDurationMs,
-            ),
-            flows = ShowcaseFlowRendererInput(
-                session.flows.source,
-                session.flows.sourceEnabled,
-                session.flows.update,
-                session.flows.service,
-                session.flows.theme,
-            ),
-        )
+        "renderer.presentation.model" -> rendererSnapshot ?: snapshot(componentId)
         "navigation.activePage" -> session.activePage.value
         else -> error("No Showcase producer port '$producerPortRef'")
+    }
+
+    fun snapshot(componentId: String): Any = when (componentId) {
+        "atom.icon-action" -> ShowcaseIconActionSnapshot(session.iconActionActive.value)
+        "control.action-row" -> ShowcaseActionRowSnapshot(
+            session.interaction.actionCount.value,
+            session.interaction.actionFailed.value,
+            session.interaction.availability.value,
+        )
+        "control.choice-row" -> ShowcaseChoiceSnapshot(session.interaction.choiceIndex.value)
+        "control.adjustment" -> ShowcaseAdjustmentSnapshot(session.interaction.adjustmentValue.value)
+        "control.progress" -> ShowcaseProgressSnapshot(session.interaction.work.value)
+        "control.press-ring" -> ShowcasePressSnapshot(
+            session.media.captureActive.value,
+            session.media.captureEnabled.value,
+            session.media.captureFailed.value,
+            session.media.captureElapsedMs.value,
+        )
+        "input.text" -> ShowcaseTextSnapshot(session.media.text.value, session.media.submitCount.value)
+        "media.capture" -> ShowcaseCaptureSnapshot(
+            session.media.captureActive.value,
+            session.media.captureElapsedMs.value,
+            session.media.captureLevels.value.toList(),
+        )
+        "media.playback" -> ShowcasePlaybackSnapshot(
+            session.media.playbackState.value,
+            session.media.playbackPositionMs.value,
+            session.media.playbackDurationMs.value,
+        )
+        "template.screens" -> ShowcaseTemplateSnapshot(
+            session.interaction.adjustmentValue.value,
+            session.flows.theme.value,
+        )
+        "flow.source" -> ShowcaseSourceSnapshot(session.flows.source.value, session.flows.sourceEnabled.value)
+        "flow.update" -> ShowcaseUpdateSnapshot(session.flows.update.value)
+        "flow.service" -> ShowcaseServiceSnapshot(session.flows.service.value)
+        else -> error("No component-specific Showcase snapshot for '$componentId'")
+    }
+
+    @Composable
+    fun observeSnapshot(componentId: String): Any = when (componentId) {
+        "atom.icon-action" -> ShowcaseIconActionSnapshot(session.iconActionActive.collectAsState().value)
+        "control.action-row" -> ShowcaseActionRowSnapshot(
+            session.interaction.actionCount.collectAsState().value,
+            session.interaction.actionFailed.collectAsState().value,
+            session.interaction.availability.collectAsState().value,
+        )
+        "control.choice-row" -> ShowcaseChoiceSnapshot(session.interaction.choiceIndex.collectAsState().value)
+        "control.adjustment" -> ShowcaseAdjustmentSnapshot(session.interaction.adjustmentValue.collectAsState().value)
+        "control.progress" -> ShowcaseProgressSnapshot(session.interaction.work.collectAsState().value)
+        "control.press-ring" -> ShowcasePressSnapshot(
+            session.media.captureActive.collectAsState().value,
+            session.media.captureEnabled.collectAsState().value,
+            session.media.captureFailed.collectAsState().value,
+            session.media.captureElapsedMs.collectAsState().value,
+        )
+        "input.text" -> ShowcaseTextSnapshot(
+            session.media.text.collectAsState().value,
+            session.media.submitCount.collectAsState().value,
+        )
+        "media.capture" -> ShowcaseCaptureSnapshot(
+            session.media.captureActive.collectAsState().value,
+            session.media.captureElapsedMs.collectAsState().value,
+            session.media.captureLevels.collectAsState().value.toList(),
+        )
+        "media.playback" -> ShowcasePlaybackSnapshot(
+            session.media.playbackState.collectAsState().value,
+            session.media.playbackPositionMs.collectAsState().value,
+            session.media.playbackDurationMs.collectAsState().value,
+        )
+        "template.screens" -> ShowcaseTemplateSnapshot(
+            session.interaction.adjustmentValue.collectAsState().value,
+            session.flows.theme.collectAsState().value,
+        )
+        "flow.source" -> ShowcaseSourceSnapshot(
+            session.flows.source.collectAsState().value,
+            session.flows.sourceEnabled.collectAsState().value,
+        )
+        "flow.update" -> ShowcaseUpdateSnapshot(session.flows.update.collectAsState().value)
+        "flow.service" -> ShowcaseServiceSnapshot(session.flows.service.collectAsState().value)
+        else -> error("No component-specific Showcase snapshot for '$componentId'")
     }
 
     fun emit(componentId: String, payload: ShowcaseRendererEventPayload) {

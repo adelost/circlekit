@@ -15,9 +15,7 @@ import androidx.compose.ui.graphics.toArgb
 import com.adelost.ringkit.ui.LaunchSpec
 import com.adelost.ringkit.ui.RingScreen
 import com.adelost.ringkit.ui.RowSpec
-import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
-import kotlinx.coroutines.flow.map
 
 object ShowcaseScreens {
     fun root(session: ShowcaseSession, dev: ShowcaseDevPort? = null): RingScreen = RingScreen.Launcher(
@@ -47,8 +45,8 @@ object ShowcaseScreens {
         mounted: ShowcaseMountedRenderer,
     ): RingScreen {
         val catalog = mounted.inputs.require<ShowcaseCatalogRendererInput>("${mounted.renderer.componentId()}.catalog")
-        val runtime = if (mounted.renderer.interactive) {
-            mounted.inputs.require<ShowcaseRuntimeRendererInput>("${mounted.renderer.componentId()}.renderer")
+        val snapshot = if (mounted.renderer.interactive) {
+            mounted.inputs.require<Any>("${mounted.renderer.componentId()}.renderer")
         } else {
             null
         }
@@ -56,15 +54,15 @@ object ShowcaseScreens {
         return when (mounted.renderer) {
             ShowcaseNativeRenderer.COLORS -> colors(catalog.scenario)
             ShowcaseNativeRenderer.GEOMETRY -> geometry(catalog.scenario)
-            ShowcaseNativeRenderer.ICON_ACTIONS -> iconActions(catalog.scenario, runtime!!.interaction, emitter!!)
-            ShowcaseNativeRenderer.ACTION_ROWS -> ShowcaseInteractionScreens.actionRows(catalog.scenario, runtime!!.interaction, emitter!!)
-            ShowcaseNativeRenderer.CHOICE_ROWS -> ShowcaseInteractionScreens.choiceRows(catalog.scenario, runtime!!.interaction, emitter!!)
-            ShowcaseNativeRenderer.ADJUSTMENT -> ShowcaseInteractionScreens.adjustmentRows(catalog.scenario, runtime!!.interaction, emitter!!)
-            ShowcaseNativeRenderer.PROGRESS -> ShowcaseInteractionScreens.progressRows(catalog.scenario, runtime!!.interaction, emitter!!)
-            ShowcaseNativeRenderer.SCREEN_TEMPLATES -> ShowcaseTemplateFixtures.screen(catalog.scenario, runtime!!, emitter!!)
-            ShowcaseNativeRenderer.SOURCE -> ShowcaseFlowScreens.source(runtime!!.flows, emitter!!)
-            ShowcaseNativeRenderer.UPDATE -> ShowcaseFlowScreens.update(runtime!!.flows, emitter!!)
-            ShowcaseNativeRenderer.SERVICE -> ShowcaseFlowScreens.service(runtime!!.flows, emitter!!)
+            ShowcaseNativeRenderer.ICON_ACTIONS -> iconActions(catalog.scenario, snapshot as ShowcaseIconActionSnapshot, emitter!!)
+            ShowcaseNativeRenderer.ACTION_ROWS -> ShowcaseInteractionScreens.actionRows(catalog.scenario, snapshot as ShowcaseActionRowSnapshot, emitter!!)
+            ShowcaseNativeRenderer.CHOICE_ROWS -> ShowcaseInteractionScreens.choiceRows(catalog.scenario, snapshot as ShowcaseChoiceSnapshot, emitter!!)
+            ShowcaseNativeRenderer.ADJUSTMENT -> ShowcaseInteractionScreens.adjustmentRows(catalog.scenario, snapshot as ShowcaseAdjustmentSnapshot, emitter!!)
+            ShowcaseNativeRenderer.PROGRESS -> ShowcaseInteractionScreens.progressRows(catalog.scenario, snapshot as ShowcaseProgressSnapshot, emitter!!)
+            ShowcaseNativeRenderer.SCREEN_TEMPLATES -> ShowcaseTemplateFixtures.screen(catalog.scenario, snapshot as ShowcaseTemplateSnapshot, emitter!!)
+            ShowcaseNativeRenderer.SOURCE -> ShowcaseFlowScreens.source(snapshot as ShowcaseSourceSnapshot, emitter!!)
+            ShowcaseNativeRenderer.UPDATE -> ShowcaseFlowScreens.update(snapshot as ShowcaseUpdateSnapshot, emitter!!)
+            ShowcaseNativeRenderer.SERVICE -> ShowcaseFlowScreens.service(snapshot as ShowcaseServiceSnapshot, emitter!!)
             ShowcaseNativeRenderer.PRESS,
             ShowcaseNativeRenderer.TEXT,
             ShowcaseNativeRenderer.CAPTURE,
@@ -197,13 +195,13 @@ object ShowcaseScreens {
 
     private fun iconActions(
         scenario: ShowcaseScenario,
-        model: ShowcaseInteractionRendererInput,
+        model: ShowcaseIconActionSnapshot,
         emitter: ShowcaseTypedRendererEmitter,
     ): RingScreen {
-        val active: Flow<Boolean?> = when (scenario.id.value) {
+        val active = when (scenario.id.value) {
             "idle" -> flowOf(false)
             "active" -> flowOf(true)
-            "immediate", "deliberate" -> model.iconActionActive.map<Boolean, Boolean?> { it }
+            "immediate", "deliberate" -> flowOf<Boolean?>(model.active)
             "disabled" -> flowOf(false)
             else -> error("Unknown icon scenario ${scenario.id.value}")
         }

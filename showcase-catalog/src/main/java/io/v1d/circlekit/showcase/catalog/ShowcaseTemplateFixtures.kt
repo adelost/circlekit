@@ -37,15 +37,15 @@ enum class ShowcaseScreenCase(val scenarioId: String) {
 object ShowcaseTemplateFixtures {
     fun screen(
         scenario: ShowcaseScenario,
-        model: ShowcaseRuntimeRendererInput,
+        model: ShowcaseTemplateSnapshot,
         emitter: ShowcaseTypedRendererEmitter,
     ): RingScreen = when (scenario.id.value) {
         ShowcaseScreenCase.HUB.scenarioId -> hub()
         ShowcaseScreenCase.DETAIL.scenarioId -> detail(Health.FRESH, Progress(3, 5)) {}
         ShowcaseScreenCase.LAUNCHER.scenarioId -> launcher()
         ShowcaseScreenCase.ROWS.scenarioId -> rows()
-        ShowcaseScreenCase.ADJUSTMENT.scenarioId -> adjustment(model.interaction, emitter)
-        ShowcaseScreenCase.COLOR_PICKER.scenarioId -> colorPicker(model.flows, emitter)
+        ShowcaseScreenCase.ADJUSTMENT.scenarioId -> adjustment(model, emitter)
+        ShowcaseScreenCase.COLOR_PICKER.scenarioId -> colorPicker(model, emitter)
         ShowcaseScreenCase.DIAL_PREVIEW.scenarioId -> dialPreview(CircleColorTheme.SEA_GLASS)
         "empty" -> RingScreen.Rows("EMPTY", flowOf(emptyList()))
         "max-capacity" -> maxCapacityRows()
@@ -65,15 +65,15 @@ object ShowcaseTemplateFixtures {
     }
 
     fun representatives(
-        model: ShowcaseRuntimeRendererInput,
+        model: ShowcaseTemplateSnapshot,
         emitter: ShowcaseTypedRendererEmitter,
     ): List<RingScreen> = listOf(
         hub(),
         detail(Health.FRESH, null) {},
         launcher(),
         rows(),
-        adjustment(model.interaction, emitter),
-        colorPicker(model.flows, emitter),
+        adjustment(model, emitter),
+        colorPicker(model, emitter),
         dialPreview(CircleColorTheme.SEA_GLASS),
     )
 
@@ -159,7 +159,7 @@ object ShowcaseTemplateFixtures {
     )
 
     private fun adjustment(
-        model: ShowcaseInteractionRendererInput,
+        model: ShowcaseTemplateSnapshot,
         emitter: ShowcaseTypedRendererEmitter,
     ): RingScreen.Adjustment {
         fun row(value: Int) = RowSpec(
@@ -173,16 +173,16 @@ object ShowcaseTemplateFixtures {
         )
         return RingScreen.Adjustment(
             title = "ADJUSTMENT",
-            initial = row(model.adjustmentValue.value),
-            row = model.adjustmentValue.map(::row),
+            initial = row(model.adjustmentValue),
+            row = flowOf(model.adjustmentValue).map(::row),
         )
     }
 
     private fun colorPicker(
-        model: ShowcaseFlowRendererInput,
+        model: ShowcaseTemplateSnapshot,
         emitter: ShowcaseTypedRendererEmitter,
     ): RingScreen.ColorPicker = RingScreen.ColorPicker(
-        selected = model.theme,
+        selected = flowOf(model.theme),
         onSelect = { emitter.emit(ShowcaseRendererEventPayload("template.theme", it.name)) },
         dialPreview = dialSpec(),
     )

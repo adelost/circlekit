@@ -15,64 +15,58 @@ import com.adelost.ringkit.ui.RowSpec
 import com.adelost.servicekit.ServiceOutcome
 import com.adelost.servicekit.ServiceSnapshot
 import kotlin.time.Duration.Companion.minutes
-import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.flowOf
 
 /** Real shared projections fed only deterministic local fixture data. */
 object ShowcaseFlowScreens {
-    fun source(model: ShowcaseFlowRendererInput, emitter: ShowcaseTypedRendererEmitter): RingScreen.Detail {
-        val health = combine(model.source, model.sourceEnabled) { source, enabled ->
-            healthOf(
-                source,
+    fun source(model: ShowcaseSourceSnapshot, emitter: ShowcaseTypedRendererEmitter): RingScreen.Detail {
+        val health = healthOf(
+                model.source,
                 SourcePolicy(
                     ttl = 5.minutes,
                     triggers = setOf(Trigger.VISIBLE),
-                    enabled = { enabled },
+                    enabled = { model.enabled },
                 ),
                 ShowcaseFlowState.NOW_MONO_MS,
             )
-        }
         return RingScreen.Detail(
             title = "SOURCE HEALTH",
             icon = RingIcons.Cloud,
             sourceId = SourceId("showcase-flow"),
-            hero = model.source.map { it.value ?: "—" },
-            sub = model.source.map { source -> sourceCopy(source.lastError, source.coverage) },
-            freshness = combine(model.source, health) { source, sourceHealth ->
-                when {
-                    source.inFlight -> "FETCHING ${source.progress?.done ?: 0}/${source.progress?.total ?: 0}"
-                    sourceHealth == Health.OFF -> "DISABLED"
-                    sourceHealth == Health.FRESH -> "FRESH · JUST NOW"
-                    sourceHealth == Health.AGING && source.value != null -> "AGING · LAST GOOD KEPT"
-                    sourceHealth == Health.BROKEN -> source.lastError?.word ?: "BROKEN"
+            hero = flowOf(model.source.value ?: "—"),
+            sub = flowOf(sourceCopy(model.source.lastError, model.source.coverage)),
+            freshness = flowOf(when {
+                    model.source.inFlight -> "FETCHING ${model.source.progress?.done ?: 0}/${model.source.progress?.total ?: 0}"
+                    health == Health.OFF -> "DISABLED"
+                    health == Health.FRESH -> "FRESH · JUST NOW"
+                    health == Health.AGING && model.source.value != null -> "AGING · LAST GOOD KEPT"
+                    health == Health.BROKEN -> model.source.lastError?.word ?: "BROKEN"
                     else -> "WAITING FOR FIRST VALUE"
-                }
-            },
-            health = health,
-            progress = model.source.map { it.progress },
+                }),
+            health = flowOf(health),
+            progress = flowOf(model.source.progress),
             onRefresh = { emitter.emit(ShowcaseRendererEventPayload("source.refresh")) },
-            refreshEnabled = model.source.map { !it.inFlight },
+            refreshEnabled = flowOf(!model.source.inFlight),
         )
     }
 
-    fun update(model: ShowcaseFlowRendererInput, emitter: ShowcaseTypedRendererEmitter): RingScreen.Rows = RingScreen.Rows(
+    fun update(model: ShowcaseUpdateSnapshot, emitter: ShowcaseTypedRendererEmitter): RingScreen.Rows = RingScreen.Rows(
         title = "UPDATE FLOW",
-        items = model.update.map { updateState ->
+        items = flowOf(
             releaseUpdateRows(
-                state = updateState,
+                state = model.state,
                 currentVersionName = "0.3.9",
                 updateKey = "update",
                 updateTitle = "UPDATE",
                 onCheck = { emitter.emit(ShowcaseRendererEventPayload("update.advance")) },
                 onInstall = { emitter.emit(ShowcaseRendererEventPayload("update.advance")) },
                 hint = "Advances only deterministic update data; no download or install is performed.",
-            )
-        },
+            )),
     )
 
-    fun service(model: ShowcaseFlowRendererInput, emitter: ShowcaseTypedRendererEmitter): RingScreen.Rows = RingScreen.Rows(
+    fun service(model: ShowcaseServiceSnapshot, emitter: ShowcaseTypedRendererEmitter): RingScreen.Rows = RingScreen.Rows(
         title = "SERVICE STATUS",
-        items = model.service.map { snapshot -> serviceRows(snapshot, emitter) },
+        items = flowOf(serviceRows(model.state, emitter)),
     )
 
     private fun serviceRows(snapshot: ServiceSnapshot, emitter: ShowcaseTypedRendererEmitter): List<RowSpec> {

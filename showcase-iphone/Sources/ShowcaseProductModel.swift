@@ -175,7 +175,7 @@ struct ShowcaseNativeMountRegistration {
     let pageRef: String
     let surface: GeneratedShowcaseSurface
     let mountRef: String
-    let mount: @MainActor (ShowcaseNativeEnvironment) -> Any
+    let mount: @MainActor (ShowcaseImmutableInputBundle, ShowcaseRendererEmitter) -> Any
 }
 
 struct ShowcaseNativeInputRegistration {

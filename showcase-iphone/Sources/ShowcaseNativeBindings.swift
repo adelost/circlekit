@@ -144,10 +144,7 @@ final class ShowcaseNativeEnvironment {
         let values = Dictionary(uniqueKeysWithValues: registration.immutableInputs.map { input in
             (input.consumerPortRef, input.read(self))
         })
-        let mounted = registration.mounts.first(where: { $0.profileId == catalog.artifact.id })!.mount(self)
-        guard let component = mounted as? ShowcaseComponent else {
-            preconditionFailure("Native Showcase mount \(id.rawValue) did not return its immutable component model")
-        }
+        let inputs = ShowcaseImmutableInputBundle(values: values)
         let emitter: ShowcaseRendererEmitter
         switch registration.eventEmitter {
         case .empty(let endpoint):
@@ -162,11 +159,12 @@ final class ShowcaseNativeEnvironment {
                 )
             })
         }
-        return ShowcaseMountedRenderer(
-            componentId: component.id,
-            inputs: ShowcaseImmutableInputBundle(values: values),
-            emitter: emitter
-        )
+        let mounted = registration.mounts.first(where: { $0.profileId == catalog.artifact.id })!
+            .mount(inputs, emitter)
+        guard let renderer = mounted as? ShowcaseMountedRenderer else {
+            preconditionFailure("Native Showcase mount \(id.rawValue) did not return its immutable renderer")
+        }
+        return renderer
     }
 
     func componentValue(_ id: GeneratedShowcaseComponentId) -> Any {
@@ -207,13 +205,17 @@ final class ShowcaseNativeEnvironment {
         }
     }
 
-    func dispatch(sourcePortRef: String, payload: Any) {
+    func dispatch(sourcePortRef: String, targetPortRef: String, payload: Any) {
         if sourcePortRef == "page.menu.route", let pageRef = payload as? String {
+            precondition(targetPortRef == "navigation.route")
             navigation.route(pageRef)
         } else if sourcePortRef.hasPrefix("page.menu."), let componentId = payload as? GeneratedShowcaseComponentId {
+            let component = GeneratedShowcaseProduct.components.first(where: { $0.id == componentId })!
+            precondition(targetPortRef == "navigation.\(component.openPort)")
             navigation.open(componentId)
         } else {
             precondition(sourcePortRef.hasSuffix(".action"), "Unknown Showcase event \(sourcePortRef)")
+            precondition(targetPortRef.hasPrefix("renderer."), "Unknown Showcase target \(targetPortRef)")
         }
     }
 }

@@ -9,26 +9,22 @@ import com.adelost.designkit.ui.RingTokens
 import com.adelost.ringkit.ui.AdjustmentValuePresentation
 import com.adelost.ringkit.ui.RingScreen
 import com.adelost.ringkit.ui.RowSpec
-import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.flowOf
 
 /** Data-only interaction fixtures rendered by the normal RingScreen hosts. */
 object ShowcaseInteractionScreens {
-    fun actionRows(scenario: ShowcaseScenario, model: ShowcaseInteractionRendererInput, emitter: ShowcaseTypedRendererEmitter): RingScreen.Rows =
+    fun actionRows(scenario: ShowcaseScenario, model: ShowcaseActionRowSnapshot, emitter: ShowcaseTypedRendererEmitter): RingScreen.Rows =
         RingScreen.Rows(
             title = scenario.label,
-            items = combine(model.actionCount, model.actionFailed, model.availability) { count, failed, availability ->
-                listOf(actionRow(scenario.id.value, count, failed, availability, emitter))
-            },
+            items = flowOf(listOf(actionRow(scenario.id.value, model.count, model.failed, model.availability, emitter))),
         )
 
-    fun choiceRows(scenario: ShowcaseScenario, model: ShowcaseInteractionRendererInput, emitter: ShowcaseTypedRendererEmitter): RingScreen.Rows {
+    fun choiceRows(scenario: ShowcaseScenario, model: ShowcaseChoiceSnapshot, emitter: ShowcaseTypedRendererEmitter): RingScreen.Rows {
         val options = choiceOptions(scenario.id.value)
+        val selectedIndex = model.selectedIndex.coerceIn(options.indices)
         return RingScreen.Rows(
             title = scenario.label,
-            items = model.choiceIndex.map { index ->
-                val selectedIndex = index.coerceIn(options.indices)
-                listOf(
+            items = flowOf(listOf(
                     RowSpec(
                         key = "choice",
                         title = if (options.size == 2 && options == TOGGLE_OPTIONS) "SATELLITE" else "DISPLAY MODE",
@@ -46,61 +42,57 @@ object ShowcaseInteractionScreens {
                             CircleChoiceRole.STEPPED
                         },
                     ),
-                )
-            },
+                )),
         )
     }
 
-    fun adjustmentRows(scenario: ShowcaseScenario, model: ShowcaseInteractionRendererInput, emitter: ShowcaseTypedRendererEmitter): RingScreen.Rows =
+    fun adjustmentRows(scenario: ShowcaseScenario, model: ShowcaseAdjustmentSnapshot, emitter: ShowcaseTypedRendererEmitter): RingScreen.Rows =
         RingScreen.Rows(
             title = scenario.label,
-            items = model.adjustmentValue.map { value ->
-                listOf(
+            items = flowOf(listOf(
                     RowSpec(
                         key = "altitude",
                         title = "ALTITUDE",
-                        sub = "$value M",
+                        sub = "${model.value} M",
                         icon = RingIcons.Ruler,
                         hint = "Opens one shared continuous adjustment screen.",
                         onDec = { emitter.emit(ShowcaseRendererEventPayload("adjust", "-100")) },
                         onInc = { emitter.emit(ShowcaseRendererEventPayload("adjust", "100")) },
                         adjustmentValue = AdjustmentValuePresentation(
-                            primary = "$value M",
+                            primary = "${model.value} M",
                             supporting = "0–1000 M · 100 M STEP",
                         ),
                         adjustHoldMs = MenuDesign.holdDeliberateMs.takeIf {
                             scenario.id.value == "deliberate"
                         },
                     ),
-                )
-            },
+                )),
         )
 
-    fun progressRows(scenario: ShowcaseScenario, model: ShowcaseInteractionRendererInput, emitter: ShowcaseTypedRendererEmitter): RingScreen.Rows =
-        RingScreen.Rows(
+    fun progressRows(scenario: ShowcaseScenario, model: ShowcaseProgressSnapshot, emitter: ShowcaseTypedRendererEmitter): RingScreen.Rows {
+        val progress = when (model.work) {
+            ShowcaseWorkState.INDETERMINATE -> CircleLabelProgress.Indeterminate
+            ShowcaseWorkState.EMPTY -> CircleLabelProgress.Determinate(0f)
+            ShowcaseWorkState.HALF -> CircleLabelProgress.Determinate(0.5f)
+            ShowcaseWorkState.COMPLETE -> CircleLabelProgress.Determinate(1f)
+            ShowcaseWorkState.NONE, ShowcaseWorkState.FAILED -> null
+        }
+        return RingScreen.Rows(
             title = scenario.label,
-            items = model.work.map { work ->
-                val progress = when (work) {
-                    ShowcaseWorkState.INDETERMINATE -> CircleLabelProgress.Indeterminate
-                    ShowcaseWorkState.EMPTY -> CircleLabelProgress.Determinate(0f)
-                    ShowcaseWorkState.HALF -> CircleLabelProgress.Determinate(0.5f)
-                    ShowcaseWorkState.COMPLETE -> CircleLabelProgress.Determinate(1f)
-                    ShowcaseWorkState.NONE, ShowcaseWorkState.FAILED -> null
-                }
-                listOf(
+            items = flowOf(listOf(
                     RowSpec(
                         key = "work",
-                        title = if (work == ShowcaseWorkState.FAILED) "RETRY" else "FETCH DATA",
-                        sub = work.copy,
-                        icon = if (work == ShowcaseWorkState.FAILED) RingIcons.Warning else RingIcons.Download,
+                        title = if (model.work == ShowcaseWorkState.FAILED) "RETRY" else "FETCH DATA",
+                        sub = model.work.copy,
+                        icon = if (model.work == ShowcaseWorkState.FAILED) RingIcons.Warning else RingIcons.Download,
                         hint = "Measured work stays in the action label.",
                         onTap = { emitter.emit(ShowcaseRendererEventPayload("progress.advance")) },
                         labelProgress = progress,
-                        semanticColor = RingTokens.Broken.takeIf { work == ShowcaseWorkState.FAILED },
+                        semanticColor = RingTokens.Broken.takeIf { model.work == ShowcaseWorkState.FAILED },
                     ),
-                )
-            },
+                )),
         )
+    }
 
     private fun actionRow(
         scenario: String,

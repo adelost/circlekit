@@ -10,6 +10,7 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -64,8 +65,25 @@ fun CircleKitShowcase(
                     val mounted = if (destination.isRoot) {
                         null
                     } else {
-                        remember(destination, surface, textEntryPort) {
-                            ShowcaseNativeBindings.mountRenderer(session, destination, surface, textEntryPort)
+                        val componentId = requireNotNull(destination.caseId).value
+                        val producer = remember(session, destination, textEntryPort) {
+                            ShowcaseRendererProducerPorts(session, destination, textEntryPort)
+                        }
+                        val rendererSnapshot = key(componentId) {
+                            if (ShowcaseNativeBindings.requireComponent(componentId).renderer.interactive) {
+                                producer.observeSnapshot(componentId)
+                            } else {
+                                null
+                            }
+                        }
+                        remember(destination, surface, textEntryPort, rendererSnapshot) {
+                            ShowcaseNativeBindings.mountRenderer(
+                                session,
+                                destination,
+                                surface,
+                                textEntryPort,
+                                rendererSnapshot,
+                            )
                         }
                     }
                     val presentation = mounted?.let { ShowcasePresentations.selected(it, surface) }

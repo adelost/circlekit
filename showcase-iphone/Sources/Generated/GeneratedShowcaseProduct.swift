@@ -860,19 +860,31 @@ enum GeneratedShowcaseProduct {
                 pageRef: "section.foundations",
                 surface: .compact,
                 mountRef: "foundation.colors",
-                mount: { environment in environment.componentValue(.foundationColors) }
+                mount: { inputs, emitter in ShowcaseMountedRenderer(
+                    componentId: .foundationColors,
+                    inputs: inputs,
+                    emitter: emitter
+                ) }
             ), ShowcaseNativeMountRegistration(
                 profileId: .iphoneFullUi,
                 pageRef: "section.foundations",
                 surface: .wide,
                 mountRef: "foundation.colors",
-                mount: { environment in environment.componentValue(.foundationColors) }
+                mount: { inputs, emitter in ShowcaseMountedRenderer(
+                    componentId: .foundationColors,
+                    inputs: inputs,
+                    emitter: emitter
+                ) }
             ), ShowcaseNativeMountRegistration(
                 profileId: .watchosFullUi,
                 pageRef: "section.foundations",
                 surface: .round,
                 mountRef: "foundation.colors",
-                mount: { environment in environment.componentValue(.foundationColors) }
+                mount: { inputs, emitter in ShowcaseMountedRenderer(
+                    componentId: .foundationColors,
+                    inputs: inputs,
+                    emitter: emitter
+                ) }
             )],
             immutableInputs: [ShowcaseNativeInputRegistration(
                 consumerPortRef: "foundation.colors.catalog",
@@ -897,19 +909,31 @@ enum GeneratedShowcaseProduct {
                 pageRef: "section.foundations",
                 surface: .compact,
                 mountRef: "foundation.geometry",
-                mount: { environment in environment.componentValue(.foundationGeometry) }
+                mount: { inputs, emitter in ShowcaseMountedRenderer(
+                    componentId: .foundationGeometry,
+                    inputs: inputs,
+                    emitter: emitter
+                ) }
             ), ShowcaseNativeMountRegistration(
                 profileId: .iphoneFullUi,
                 pageRef: "section.foundations",
                 surface: .wide,
                 mountRef: "foundation.geometry",
-                mount: { environment in environment.componentValue(.foundationGeometry) }
+                mount: { inputs, emitter in ShowcaseMountedRenderer(
+                    componentId: .foundationGeometry,
+                    inputs: inputs,
+                    emitter: emitter
+                ) }
             ), ShowcaseNativeMountRegistration(
                 profileId: .watchosFullUi,
                 pageRef: "section.foundations",
                 surface: .round,
                 mountRef: "foundation.geometry",
-                mount: { environment in environment.componentValue(.foundationGeometry) }
+                mount: { inputs, emitter in ShowcaseMountedRenderer(
+                    componentId: .foundationGeometry,
+                    inputs: inputs,
+                    emitter: emitter
+                ) }
             )],
             immutableInputs: [ShowcaseNativeInputRegistration(
                 consumerPortRef: "foundation.geometry.catalog",
@@ -934,127 +958,211 @@ enum GeneratedShowcaseProduct {
                 pageRef: "section.foundations",
                 surface: .compact,
                 mountRef: "page.menu",
-                mount: { environment in environment.componentValue(.pageMenu) }
+                mount: { inputs, emitter in ShowcaseMountedRenderer(
+                    componentId: .pageMenu,
+                    inputs: inputs,
+                    emitter: emitter
+                ) }
             ), ShowcaseNativeMountRegistration(
                 profileId: .iphoneFullUi,
                 pageRef: "section.foundations",
                 surface: .wide,
                 mountRef: "page.menu",
-                mount: { environment in environment.componentValue(.pageMenu) }
+                mount: { inputs, emitter in ShowcaseMountedRenderer(
+                    componentId: .pageMenu,
+                    inputs: inputs,
+                    emitter: emitter
+                ) }
             ), ShowcaseNativeMountRegistration(
                 profileId: .iphoneFullUi,
                 pageRef: "section.atoms",
                 surface: .compact,
                 mountRef: "page.menu",
-                mount: { environment in environment.componentValue(.pageMenu) }
+                mount: { inputs, emitter in ShowcaseMountedRenderer(
+                    componentId: .pageMenu,
+                    inputs: inputs,
+                    emitter: emitter
+                ) }
             ), ShowcaseNativeMountRegistration(
                 profileId: .iphoneFullUi,
                 pageRef: "section.atoms",
                 surface: .wide,
                 mountRef: "page.menu",
-                mount: { environment in environment.componentValue(.pageMenu) }
+                mount: { inputs, emitter in ShowcaseMountedRenderer(
+                    componentId: .pageMenu,
+                    inputs: inputs,
+                    emitter: emitter
+                ) }
             ), ShowcaseNativeMountRegistration(
                 profileId: .iphoneFullUi,
                 pageRef: "section.controls",
                 surface: .compact,
                 mountRef: "page.menu",
-                mount: { environment in environment.componentValue(.pageMenu) }
+                mount: { inputs, emitter in ShowcaseMountedRenderer(
+                    componentId: .pageMenu,
+                    inputs: inputs,
+                    emitter: emitter
+                ) }
             ), ShowcaseNativeMountRegistration(
                 profileId: .iphoneFullUi,
                 pageRef: "section.controls",
                 surface: .wide,
                 mountRef: "page.menu",
-                mount: { environment in environment.componentValue(.pageMenu) }
+                mount: { inputs, emitter in ShowcaseMountedRenderer(
+                    componentId: .pageMenu,
+                    inputs: inputs,
+                    emitter: emitter
+                ) }
             ), ShowcaseNativeMountRegistration(
                 profileId: .iphoneFullUi,
                 pageRef: "section.input",
                 surface: .compact,
                 mountRef: "page.menu",
-                mount: { environment in environment.componentValue(.pageMenu) }
+                mount: { inputs, emitter in ShowcaseMountedRenderer(
+                    componentId: .pageMenu,
+                    inputs: inputs,
+                    emitter: emitter
+                ) }
             ), ShowcaseNativeMountRegistration(
                 profileId: .iphoneFullUi,
                 pageRef: "section.input",
                 surface: .wide,
                 mountRef: "page.menu",
-                mount: { environment in environment.componentValue(.pageMenu) }
+                mount: { inputs, emitter in ShowcaseMountedRenderer(
+                    componentId: .pageMenu,
+                    inputs: inputs,
+                    emitter: emitter
+                ) }
             ), ShowcaseNativeMountRegistration(
                 profileId: .iphoneFullUi,
                 pageRef: "section.media",
                 surface: .compact,
                 mountRef: "page.menu",
-                mount: { environment in environment.componentValue(.pageMenu) }
+                mount: { inputs, emitter in ShowcaseMountedRenderer(
+                    componentId: .pageMenu,
+                    inputs: inputs,
+                    emitter: emitter
+                ) }
             ), ShowcaseNativeMountRegistration(
                 profileId: .iphoneFullUi,
                 pageRef: "section.media",
                 surface: .wide,
                 mountRef: "page.menu",
-                mount: { environment in environment.componentValue(.pageMenu) }
+                mount: { inputs, emitter in ShowcaseMountedRenderer(
+                    componentId: .pageMenu,
+                    inputs: inputs,
+                    emitter: emitter
+                ) }
             ), ShowcaseNativeMountRegistration(
                 profileId: .iphoneFullUi,
                 pageRef: "section.templates",
                 surface: .compact,
                 mountRef: "page.menu",
-                mount: { environment in environment.componentValue(.pageMenu) }
+                mount: { inputs, emitter in ShowcaseMountedRenderer(
+                    componentId: .pageMenu,
+                    inputs: inputs,
+                    emitter: emitter
+                ) }
             ), ShowcaseNativeMountRegistration(
                 profileId: .iphoneFullUi,
                 pageRef: "section.templates",
                 surface: .wide,
                 mountRef: "page.menu",
-                mount: { environment in environment.componentValue(.pageMenu) }
+                mount: { inputs, emitter in ShowcaseMountedRenderer(
+                    componentId: .pageMenu,
+                    inputs: inputs,
+                    emitter: emitter
+                ) }
             ), ShowcaseNativeMountRegistration(
                 profileId: .iphoneFullUi,
                 pageRef: "section.flows",
                 surface: .compact,
                 mountRef: "page.menu",
-                mount: { environment in environment.componentValue(.pageMenu) }
+                mount: { inputs, emitter in ShowcaseMountedRenderer(
+                    componentId: .pageMenu,
+                    inputs: inputs,
+                    emitter: emitter
+                ) }
             ), ShowcaseNativeMountRegistration(
                 profileId: .iphoneFullUi,
                 pageRef: "section.flows",
                 surface: .wide,
                 mountRef: "page.menu",
-                mount: { environment in environment.componentValue(.pageMenu) }
+                mount: { inputs, emitter in ShowcaseMountedRenderer(
+                    componentId: .pageMenu,
+                    inputs: inputs,
+                    emitter: emitter
+                ) }
             ), ShowcaseNativeMountRegistration(
                 profileId: .watchosFullUi,
                 pageRef: "section.foundations",
                 surface: .round,
                 mountRef: "page.menu",
-                mount: { environment in environment.componentValue(.pageMenu) }
+                mount: { inputs, emitter in ShowcaseMountedRenderer(
+                    componentId: .pageMenu,
+                    inputs: inputs,
+                    emitter: emitter
+                ) }
             ), ShowcaseNativeMountRegistration(
                 profileId: .watchosFullUi,
                 pageRef: "section.atoms",
                 surface: .round,
                 mountRef: "page.menu",
-                mount: { environment in environment.componentValue(.pageMenu) }
+                mount: { inputs, emitter in ShowcaseMountedRenderer(
+                    componentId: .pageMenu,
+                    inputs: inputs,
+                    emitter: emitter
+                ) }
             ), ShowcaseNativeMountRegistration(
                 profileId: .watchosFullUi,
                 pageRef: "section.controls",
                 surface: .round,
                 mountRef: "page.menu",
-                mount: { environment in environment.componentValue(.pageMenu) }
+                mount: { inputs, emitter in ShowcaseMountedRenderer(
+                    componentId: .pageMenu,
+                    inputs: inputs,
+                    emitter: emitter
+                ) }
             ), ShowcaseNativeMountRegistration(
                 profileId: .watchosFullUi,
                 pageRef: "section.input",
                 surface: .round,
                 mountRef: "page.menu",
-                mount: { environment in environment.componentValue(.pageMenu) }
+                mount: { inputs, emitter in ShowcaseMountedRenderer(
+                    componentId: .pageMenu,
+                    inputs: inputs,
+                    emitter: emitter
+                ) }
             ), ShowcaseNativeMountRegistration(
                 profileId: .watchosFullUi,
                 pageRef: "section.media",
                 surface: .round,
                 mountRef: "page.menu",
-                mount: { environment in environment.componentValue(.pageMenu) }
+                mount: { inputs, emitter in ShowcaseMountedRenderer(
+                    componentId: .pageMenu,
+                    inputs: inputs,
+                    emitter: emitter
+                ) }
             ), ShowcaseNativeMountRegistration(
                 profileId: .watchosFullUi,
                 pageRef: "section.templates",
                 surface: .round,
                 mountRef: "page.menu",
-                mount: { environment in environment.componentValue(.pageMenu) }
+                mount: { inputs, emitter in ShowcaseMountedRenderer(
+                    componentId: .pageMenu,
+                    inputs: inputs,
+                    emitter: emitter
+                ) }
             ), ShowcaseNativeMountRegistration(
                 profileId: .watchosFullUi,
                 pageRef: "section.flows",
                 surface: .round,
                 mountRef: "page.menu",
-                mount: { environment in environment.componentValue(.pageMenu) }
+                mount: { inputs, emitter in ShowcaseMountedRenderer(
+                    componentId: .pageMenu,
+                    inputs: inputs,
+                    emitter: emitter
+                ) }
             )],
             immutableInputs: [],
             eventEmitter: .typed([ShowcaseNativeEventBindingRegistration(
@@ -1062,112 +1170,176 @@ enum GeneratedShowcaseProduct {
                 targetPortRef: "navigation.route",
                 contractRef: "showcase.navigation.route-intent",
                 emit: { environment, payload in
-                    environment.dispatch(sourcePortRef: "page.menu.route", payload: payload)
+                    environment.dispatch(
+                        sourcePortRef: "page.menu.route",
+                        targetPortRef: "navigation.route",
+                        payload: payload
+                    )
                 }
             ), ShowcaseNativeEventBindingRegistration(
                 sourcePortRef: "page.menu.foundationColors",
                 targetPortRef: "navigation.foundationColors",
                 contractRef: "showcase.open-action",
                 emit: { environment, payload in
-                    environment.dispatch(sourcePortRef: "page.menu.foundationColors", payload: payload)
+                    environment.dispatch(
+                        sourcePortRef: "page.menu.foundationColors",
+                        targetPortRef: "navigation.foundationColors",
+                        payload: payload
+                    )
                 }
             ), ShowcaseNativeEventBindingRegistration(
                 sourcePortRef: "page.menu.foundationGeometry",
                 targetPortRef: "navigation.foundationGeometry",
                 contractRef: "showcase.open-action",
                 emit: { environment, payload in
-                    environment.dispatch(sourcePortRef: "page.menu.foundationGeometry", payload: payload)
+                    environment.dispatch(
+                        sourcePortRef: "page.menu.foundationGeometry",
+                        targetPortRef: "navigation.foundationGeometry",
+                        payload: payload
+                    )
                 }
             ), ShowcaseNativeEventBindingRegistration(
                 sourcePortRef: "page.menu.atomIconAction",
                 targetPortRef: "navigation.atomIconAction",
                 contractRef: "showcase.open-action",
                 emit: { environment, payload in
-                    environment.dispatch(sourcePortRef: "page.menu.atomIconAction", payload: payload)
+                    environment.dispatch(
+                        sourcePortRef: "page.menu.atomIconAction",
+                        targetPortRef: "navigation.atomIconAction",
+                        payload: payload
+                    )
                 }
             ), ShowcaseNativeEventBindingRegistration(
                 sourcePortRef: "page.menu.controlActionRow",
                 targetPortRef: "navigation.controlActionRow",
                 contractRef: "showcase.open-action",
                 emit: { environment, payload in
-                    environment.dispatch(sourcePortRef: "page.menu.controlActionRow", payload: payload)
+                    environment.dispatch(
+                        sourcePortRef: "page.menu.controlActionRow",
+                        targetPortRef: "navigation.controlActionRow",
+                        payload: payload
+                    )
                 }
             ), ShowcaseNativeEventBindingRegistration(
                 sourcePortRef: "page.menu.controlChoiceRow",
                 targetPortRef: "navigation.controlChoiceRow",
                 contractRef: "showcase.open-action",
                 emit: { environment, payload in
-                    environment.dispatch(sourcePortRef: "page.menu.controlChoiceRow", payload: payload)
+                    environment.dispatch(
+                        sourcePortRef: "page.menu.controlChoiceRow",
+                        targetPortRef: "navigation.controlChoiceRow",
+                        payload: payload
+                    )
                 }
             ), ShowcaseNativeEventBindingRegistration(
                 sourcePortRef: "page.menu.controlAdjustment",
                 targetPortRef: "navigation.controlAdjustment",
                 contractRef: "showcase.open-action",
                 emit: { environment, payload in
-                    environment.dispatch(sourcePortRef: "page.menu.controlAdjustment", payload: payload)
+                    environment.dispatch(
+                        sourcePortRef: "page.menu.controlAdjustment",
+                        targetPortRef: "navigation.controlAdjustment",
+                        payload: payload
+                    )
                 }
             ), ShowcaseNativeEventBindingRegistration(
                 sourcePortRef: "page.menu.controlProgress",
                 targetPortRef: "navigation.controlProgress",
                 contractRef: "showcase.open-action",
                 emit: { environment, payload in
-                    environment.dispatch(sourcePortRef: "page.menu.controlProgress", payload: payload)
+                    environment.dispatch(
+                        sourcePortRef: "page.menu.controlProgress",
+                        targetPortRef: "navigation.controlProgress",
+                        payload: payload
+                    )
                 }
             ), ShowcaseNativeEventBindingRegistration(
                 sourcePortRef: "page.menu.controlPressRing",
                 targetPortRef: "navigation.controlPressRing",
                 contractRef: "showcase.open-action",
                 emit: { environment, payload in
-                    environment.dispatch(sourcePortRef: "page.menu.controlPressRing", payload: payload)
+                    environment.dispatch(
+                        sourcePortRef: "page.menu.controlPressRing",
+                        targetPortRef: "navigation.controlPressRing",
+                        payload: payload
+                    )
                 }
             ), ShowcaseNativeEventBindingRegistration(
                 sourcePortRef: "page.menu.inputText",
                 targetPortRef: "navigation.inputText",
                 contractRef: "showcase.open-action",
                 emit: { environment, payload in
-                    environment.dispatch(sourcePortRef: "page.menu.inputText", payload: payload)
+                    environment.dispatch(
+                        sourcePortRef: "page.menu.inputText",
+                        targetPortRef: "navigation.inputText",
+                        payload: payload
+                    )
                 }
             ), ShowcaseNativeEventBindingRegistration(
                 sourcePortRef: "page.menu.mediaCapture",
                 targetPortRef: "navigation.mediaCapture",
                 contractRef: "showcase.open-action",
                 emit: { environment, payload in
-                    environment.dispatch(sourcePortRef: "page.menu.mediaCapture", payload: payload)
+                    environment.dispatch(
+                        sourcePortRef: "page.menu.mediaCapture",
+                        targetPortRef: "navigation.mediaCapture",
+                        payload: payload
+                    )
                 }
             ), ShowcaseNativeEventBindingRegistration(
                 sourcePortRef: "page.menu.mediaPlayback",
                 targetPortRef: "navigation.mediaPlayback",
                 contractRef: "showcase.open-action",
                 emit: { environment, payload in
-                    environment.dispatch(sourcePortRef: "page.menu.mediaPlayback", payload: payload)
+                    environment.dispatch(
+                        sourcePortRef: "page.menu.mediaPlayback",
+                        targetPortRef: "navigation.mediaPlayback",
+                        payload: payload
+                    )
                 }
             ), ShowcaseNativeEventBindingRegistration(
                 sourcePortRef: "page.menu.templateScreens",
                 targetPortRef: "navigation.templateScreens",
                 contractRef: "showcase.open-action",
                 emit: { environment, payload in
-                    environment.dispatch(sourcePortRef: "page.menu.templateScreens", payload: payload)
+                    environment.dispatch(
+                        sourcePortRef: "page.menu.templateScreens",
+                        targetPortRef: "navigation.templateScreens",
+                        payload: payload
+                    )
                 }
             ), ShowcaseNativeEventBindingRegistration(
                 sourcePortRef: "page.menu.flowSource",
                 targetPortRef: "navigation.flowSource",
                 contractRef: "showcase.open-action",
                 emit: { environment, payload in
-                    environment.dispatch(sourcePortRef: "page.menu.flowSource", payload: payload)
+                    environment.dispatch(
+                        sourcePortRef: "page.menu.flowSource",
+                        targetPortRef: "navigation.flowSource",
+                        payload: payload
+                    )
                 }
             ), ShowcaseNativeEventBindingRegistration(
                 sourcePortRef: "page.menu.flowUpdate",
                 targetPortRef: "navigation.flowUpdate",
                 contractRef: "showcase.open-action",
                 emit: { environment, payload in
-                    environment.dispatch(sourcePortRef: "page.menu.flowUpdate", payload: payload)
+                    environment.dispatch(
+                        sourcePortRef: "page.menu.flowUpdate",
+                        targetPortRef: "navigation.flowUpdate",
+                        payload: payload
+                    )
                 }
             ), ShowcaseNativeEventBindingRegistration(
                 sourcePortRef: "page.menu.flowService",
                 targetPortRef: "navigation.flowService",
                 contractRef: "showcase.open-action",
                 emit: { environment, payload in
-                    environment.dispatch(sourcePortRef: "page.menu.flowService", payload: payload)
+                    environment.dispatch(
+                        sourcePortRef: "page.menu.flowService",
+                        targetPortRef: "navigation.flowService",
+                        payload: payload
+                    )
                 }
             )])
         ),
@@ -1179,127 +1351,211 @@ enum GeneratedShowcaseProduct {
                 pageRef: "section.foundations",
                 surface: .compact,
                 mountRef: "page.host",
-                mount: { environment in environment.componentValue(.pageHost) }
+                mount: { inputs, emitter in ShowcaseMountedRenderer(
+                    componentId: .pageHost,
+                    inputs: inputs,
+                    emitter: emitter
+                ) }
             ), ShowcaseNativeMountRegistration(
                 profileId: .iphoneFullUi,
                 pageRef: "section.foundations",
                 surface: .wide,
                 mountRef: "page.host",
-                mount: { environment in environment.componentValue(.pageHost) }
+                mount: { inputs, emitter in ShowcaseMountedRenderer(
+                    componentId: .pageHost,
+                    inputs: inputs,
+                    emitter: emitter
+                ) }
             ), ShowcaseNativeMountRegistration(
                 profileId: .iphoneFullUi,
                 pageRef: "section.atoms",
                 surface: .compact,
                 mountRef: "page.host",
-                mount: { environment in environment.componentValue(.pageHost) }
+                mount: { inputs, emitter in ShowcaseMountedRenderer(
+                    componentId: .pageHost,
+                    inputs: inputs,
+                    emitter: emitter
+                ) }
             ), ShowcaseNativeMountRegistration(
                 profileId: .iphoneFullUi,
                 pageRef: "section.atoms",
                 surface: .wide,
                 mountRef: "page.host",
-                mount: { environment in environment.componentValue(.pageHost) }
+                mount: { inputs, emitter in ShowcaseMountedRenderer(
+                    componentId: .pageHost,
+                    inputs: inputs,
+                    emitter: emitter
+                ) }
             ), ShowcaseNativeMountRegistration(
                 profileId: .iphoneFullUi,
                 pageRef: "section.controls",
                 surface: .compact,
                 mountRef: "page.host",
-                mount: { environment in environment.componentValue(.pageHost) }
+                mount: { inputs, emitter in ShowcaseMountedRenderer(
+                    componentId: .pageHost,
+                    inputs: inputs,
+                    emitter: emitter
+                ) }
             ), ShowcaseNativeMountRegistration(
                 profileId: .iphoneFullUi,
                 pageRef: "section.controls",
                 surface: .wide,
                 mountRef: "page.host",
-                mount: { environment in environment.componentValue(.pageHost) }
+                mount: { inputs, emitter in ShowcaseMountedRenderer(
+                    componentId: .pageHost,
+                    inputs: inputs,
+                    emitter: emitter
+                ) }
             ), ShowcaseNativeMountRegistration(
                 profileId: .iphoneFullUi,
                 pageRef: "section.input",
                 surface: .compact,
                 mountRef: "page.host",
-                mount: { environment in environment.componentValue(.pageHost) }
+                mount: { inputs, emitter in ShowcaseMountedRenderer(
+                    componentId: .pageHost,
+                    inputs: inputs,
+                    emitter: emitter
+                ) }
             ), ShowcaseNativeMountRegistration(
                 profileId: .iphoneFullUi,
                 pageRef: "section.input",
                 surface: .wide,
                 mountRef: "page.host",
-                mount: { environment in environment.componentValue(.pageHost) }
+                mount: { inputs, emitter in ShowcaseMountedRenderer(
+                    componentId: .pageHost,
+                    inputs: inputs,
+                    emitter: emitter
+                ) }
             ), ShowcaseNativeMountRegistration(
                 profileId: .iphoneFullUi,
                 pageRef: "section.media",
                 surface: .compact,
                 mountRef: "page.host",
-                mount: { environment in environment.componentValue(.pageHost) }
+                mount: { inputs, emitter in ShowcaseMountedRenderer(
+                    componentId: .pageHost,
+                    inputs: inputs,
+                    emitter: emitter
+                ) }
             ), ShowcaseNativeMountRegistration(
                 profileId: .iphoneFullUi,
                 pageRef: "section.media",
                 surface: .wide,
                 mountRef: "page.host",
-                mount: { environment in environment.componentValue(.pageHost) }
+                mount: { inputs, emitter in ShowcaseMountedRenderer(
+                    componentId: .pageHost,
+                    inputs: inputs,
+                    emitter: emitter
+                ) }
             ), ShowcaseNativeMountRegistration(
                 profileId: .iphoneFullUi,
                 pageRef: "section.templates",
                 surface: .compact,
                 mountRef: "page.host",
-                mount: { environment in environment.componentValue(.pageHost) }
+                mount: { inputs, emitter in ShowcaseMountedRenderer(
+                    componentId: .pageHost,
+                    inputs: inputs,
+                    emitter: emitter
+                ) }
             ), ShowcaseNativeMountRegistration(
                 profileId: .iphoneFullUi,
                 pageRef: "section.templates",
                 surface: .wide,
                 mountRef: "page.host",
-                mount: { environment in environment.componentValue(.pageHost) }
+                mount: { inputs, emitter in ShowcaseMountedRenderer(
+                    componentId: .pageHost,
+                    inputs: inputs,
+                    emitter: emitter
+                ) }
             ), ShowcaseNativeMountRegistration(
                 profileId: .iphoneFullUi,
                 pageRef: "section.flows",
                 surface: .compact,
                 mountRef: "page.host",
-                mount: { environment in environment.componentValue(.pageHost) }
+                mount: { inputs, emitter in ShowcaseMountedRenderer(
+                    componentId: .pageHost,
+                    inputs: inputs,
+                    emitter: emitter
+                ) }
             ), ShowcaseNativeMountRegistration(
                 profileId: .iphoneFullUi,
                 pageRef: "section.flows",
                 surface: .wide,
                 mountRef: "page.host",
-                mount: { environment in environment.componentValue(.pageHost) }
+                mount: { inputs, emitter in ShowcaseMountedRenderer(
+                    componentId: .pageHost,
+                    inputs: inputs,
+                    emitter: emitter
+                ) }
             ), ShowcaseNativeMountRegistration(
                 profileId: .watchosFullUi,
                 pageRef: "section.foundations",
                 surface: .round,
                 mountRef: "page.host",
-                mount: { environment in environment.componentValue(.pageHost) }
+                mount: { inputs, emitter in ShowcaseMountedRenderer(
+                    componentId: .pageHost,
+                    inputs: inputs,
+                    emitter: emitter
+                ) }
             ), ShowcaseNativeMountRegistration(
                 profileId: .watchosFullUi,
                 pageRef: "section.atoms",
                 surface: .round,
                 mountRef: "page.host",
-                mount: { environment in environment.componentValue(.pageHost) }
+                mount: { inputs, emitter in ShowcaseMountedRenderer(
+                    componentId: .pageHost,
+                    inputs: inputs,
+                    emitter: emitter
+                ) }
             ), ShowcaseNativeMountRegistration(
                 profileId: .watchosFullUi,
                 pageRef: "section.controls",
                 surface: .round,
                 mountRef: "page.host",
-                mount: { environment in environment.componentValue(.pageHost) }
+                mount: { inputs, emitter in ShowcaseMountedRenderer(
+                    componentId: .pageHost,
+                    inputs: inputs,
+                    emitter: emitter
+                ) }
             ), ShowcaseNativeMountRegistration(
                 profileId: .watchosFullUi,
                 pageRef: "section.input",
                 surface: .round,
                 mountRef: "page.host",
-                mount: { environment in environment.componentValue(.pageHost) }
+                mount: { inputs, emitter in ShowcaseMountedRenderer(
+                    componentId: .pageHost,
+                    inputs: inputs,
+                    emitter: emitter
+                ) }
             ), ShowcaseNativeMountRegistration(
                 profileId: .watchosFullUi,
                 pageRef: "section.media",
                 surface: .round,
                 mountRef: "page.host",
-                mount: { environment in environment.componentValue(.pageHost) }
+                mount: { inputs, emitter in ShowcaseMountedRenderer(
+                    componentId: .pageHost,
+                    inputs: inputs,
+                    emitter: emitter
+                ) }
             ), ShowcaseNativeMountRegistration(
                 profileId: .watchosFullUi,
                 pageRef: "section.templates",
                 surface: .round,
                 mountRef: "page.host",
-                mount: { environment in environment.componentValue(.pageHost) }
+                mount: { inputs, emitter in ShowcaseMountedRenderer(
+                    componentId: .pageHost,
+                    inputs: inputs,
+                    emitter: emitter
+                ) }
             ), ShowcaseNativeMountRegistration(
                 profileId: .watchosFullUi,
                 pageRef: "section.flows",
                 surface: .round,
                 mountRef: "page.host",
-                mount: { environment in environment.componentValue(.pageHost) }
+                mount: { inputs, emitter in ShowcaseMountedRenderer(
+                    componentId: .pageHost,
+                    inputs: inputs,
+                    emitter: emitter
+                ) }
             )],
             immutableInputs: [ShowcaseNativeInputRegistration(
                 consumerPortRef: "page.host.activePage",
@@ -1318,19 +1574,31 @@ enum GeneratedShowcaseProduct {
                 pageRef: "section.atoms",
                 surface: .compact,
                 mountRef: "atom.icon-action",
-                mount: { environment in environment.componentValue(.atomIconAction) }
+                mount: { inputs, emitter in ShowcaseMountedRenderer(
+                    componentId: .atomIconAction,
+                    inputs: inputs,
+                    emitter: emitter
+                ) }
             ), ShowcaseNativeMountRegistration(
                 profileId: .iphoneFullUi,
                 pageRef: "section.atoms",
                 surface: .wide,
                 mountRef: "atom.icon-action",
-                mount: { environment in environment.componentValue(.atomIconAction) }
+                mount: { inputs, emitter in ShowcaseMountedRenderer(
+                    componentId: .atomIconAction,
+                    inputs: inputs,
+                    emitter: emitter
+                ) }
             ), ShowcaseNativeMountRegistration(
                 profileId: .watchosFullUi,
                 pageRef: "section.atoms",
                 surface: .round,
                 mountRef: "atom.icon-action",
-                mount: { environment in environment.componentValue(.atomIconAction) }
+                mount: { inputs, emitter in ShowcaseMountedRenderer(
+                    componentId: .atomIconAction,
+                    inputs: inputs,
+                    emitter: emitter
+                ) }
             )],
             immutableInputs: [ShowcaseNativeInputRegistration(
                 consumerPortRef: "atom.icon-action.catalog",
@@ -1356,7 +1624,11 @@ enum GeneratedShowcaseProduct {
                 targetPortRef: "renderer.atomIconAction",
                 contractRef: "showcase.renderer-action",
                 emit: { environment, payload in
-                    environment.dispatch(sourcePortRef: "atom.icon-action.action", payload: payload)
+                    environment.dispatch(
+                        sourcePortRef: "atom.icon-action.action",
+                        targetPortRef: "renderer.atomIconAction",
+                        payload: payload
+                    )
                 }
             )])
         ),
@@ -1368,19 +1640,31 @@ enum GeneratedShowcaseProduct {
                 pageRef: "section.controls",
                 surface: .compact,
                 mountRef: "control.action-row",
-                mount: { environment in environment.componentValue(.controlActionRow) }
+                mount: { inputs, emitter in ShowcaseMountedRenderer(
+                    componentId: .controlActionRow,
+                    inputs: inputs,
+                    emitter: emitter
+                ) }
             ), ShowcaseNativeMountRegistration(
                 profileId: .iphoneFullUi,
                 pageRef: "section.controls",
                 surface: .wide,
                 mountRef: "control.action-row",
-                mount: { environment in environment.componentValue(.controlActionRow) }
+                mount: { inputs, emitter in ShowcaseMountedRenderer(
+                    componentId: .controlActionRow,
+                    inputs: inputs,
+                    emitter: emitter
+                ) }
             ), ShowcaseNativeMountRegistration(
                 profileId: .watchosFullUi,
                 pageRef: "section.controls",
                 surface: .round,
                 mountRef: "control.action-row",
-                mount: { environment in environment.componentValue(.controlActionRow) }
+                mount: { inputs, emitter in ShowcaseMountedRenderer(
+                    componentId: .controlActionRow,
+                    inputs: inputs,
+                    emitter: emitter
+                ) }
             )],
             immutableInputs: [ShowcaseNativeInputRegistration(
                 consumerPortRef: "control.action-row.catalog",
@@ -1406,7 +1690,11 @@ enum GeneratedShowcaseProduct {
                 targetPortRef: "renderer.controlActionRow",
                 contractRef: "showcase.renderer-action",
                 emit: { environment, payload in
-                    environment.dispatch(sourcePortRef: "control.action-row.action", payload: payload)
+                    environment.dispatch(
+                        sourcePortRef: "control.action-row.action",
+                        targetPortRef: "renderer.controlActionRow",
+                        payload: payload
+                    )
                 }
             )])
         ),
@@ -1418,19 +1706,31 @@ enum GeneratedShowcaseProduct {
                 pageRef: "section.controls",
                 surface: .compact,
                 mountRef: "control.choice-row",
-                mount: { environment in environment.componentValue(.controlChoiceRow) }
+                mount: { inputs, emitter in ShowcaseMountedRenderer(
+                    componentId: .controlChoiceRow,
+                    inputs: inputs,
+                    emitter: emitter
+                ) }
             ), ShowcaseNativeMountRegistration(
                 profileId: .iphoneFullUi,
                 pageRef: "section.controls",
                 surface: .wide,
                 mountRef: "control.choice-row",
-                mount: { environment in environment.componentValue(.controlChoiceRow) }
+                mount: { inputs, emitter in ShowcaseMountedRenderer(
+                    componentId: .controlChoiceRow,
+                    inputs: inputs,
+                    emitter: emitter
+                ) }
             ), ShowcaseNativeMountRegistration(
                 profileId: .watchosFullUi,
                 pageRef: "section.controls",
                 surface: .round,
                 mountRef: "control.choice-row",
-                mount: { environment in environment.componentValue(.controlChoiceRow) }
+                mount: { inputs, emitter in ShowcaseMountedRenderer(
+                    componentId: .controlChoiceRow,
+                    inputs: inputs,
+                    emitter: emitter
+                ) }
             )],
             immutableInputs: [ShowcaseNativeInputRegistration(
                 consumerPortRef: "control.choice-row.catalog",
@@ -1456,7 +1756,11 @@ enum GeneratedShowcaseProduct {
                 targetPortRef: "renderer.controlChoiceRow",
                 contractRef: "showcase.renderer-action",
                 emit: { environment, payload in
-                    environment.dispatch(sourcePortRef: "control.choice-row.action", payload: payload)
+                    environment.dispatch(
+                        sourcePortRef: "control.choice-row.action",
+                        targetPortRef: "renderer.controlChoiceRow",
+                        payload: payload
+                    )
                 }
             )])
         ),
@@ -1468,19 +1772,31 @@ enum GeneratedShowcaseProduct {
                 pageRef: "section.controls",
                 surface: .compact,
                 mountRef: "control.adjustment",
-                mount: { environment in environment.componentValue(.controlAdjustment) }
+                mount: { inputs, emitter in ShowcaseMountedRenderer(
+                    componentId: .controlAdjustment,
+                    inputs: inputs,
+                    emitter: emitter
+                ) }
             ), ShowcaseNativeMountRegistration(
                 profileId: .iphoneFullUi,
                 pageRef: "section.controls",
                 surface: .wide,
                 mountRef: "control.adjustment",
-                mount: { environment in environment.componentValue(.controlAdjustment) }
+                mount: { inputs, emitter in ShowcaseMountedRenderer(
+                    componentId: .controlAdjustment,
+                    inputs: inputs,
+                    emitter: emitter
+                ) }
             ), ShowcaseNativeMountRegistration(
                 profileId: .watchosFullUi,
                 pageRef: "section.controls",
                 surface: .round,
                 mountRef: "control.adjustment",
-                mount: { environment in environment.componentValue(.controlAdjustment) }
+                mount: { inputs, emitter in ShowcaseMountedRenderer(
+                    componentId: .controlAdjustment,
+                    inputs: inputs,
+                    emitter: emitter
+                ) }
             )],
             immutableInputs: [ShowcaseNativeInputRegistration(
                 consumerPortRef: "control.adjustment.catalog",
@@ -1506,7 +1822,11 @@ enum GeneratedShowcaseProduct {
                 targetPortRef: "renderer.controlAdjustment",
                 contractRef: "showcase.renderer-action",
                 emit: { environment, payload in
-                    environment.dispatch(sourcePortRef: "control.adjustment.action", payload: payload)
+                    environment.dispatch(
+                        sourcePortRef: "control.adjustment.action",
+                        targetPortRef: "renderer.controlAdjustment",
+                        payload: payload
+                    )
                 }
             )])
         ),
@@ -1518,19 +1838,31 @@ enum GeneratedShowcaseProduct {
                 pageRef: "section.controls",
                 surface: .compact,
                 mountRef: "control.progress",
-                mount: { environment in environment.componentValue(.controlProgress) }
+                mount: { inputs, emitter in ShowcaseMountedRenderer(
+                    componentId: .controlProgress,
+                    inputs: inputs,
+                    emitter: emitter
+                ) }
             ), ShowcaseNativeMountRegistration(
                 profileId: .iphoneFullUi,
                 pageRef: "section.controls",
                 surface: .wide,
                 mountRef: "control.progress",
-                mount: { environment in environment.componentValue(.controlProgress) }
+                mount: { inputs, emitter in ShowcaseMountedRenderer(
+                    componentId: .controlProgress,
+                    inputs: inputs,
+                    emitter: emitter
+                ) }
             ), ShowcaseNativeMountRegistration(
                 profileId: .watchosFullUi,
                 pageRef: "section.controls",
                 surface: .round,
                 mountRef: "control.progress",
-                mount: { environment in environment.componentValue(.controlProgress) }
+                mount: { inputs, emitter in ShowcaseMountedRenderer(
+                    componentId: .controlProgress,
+                    inputs: inputs,
+                    emitter: emitter
+                ) }
             )],
             immutableInputs: [ShowcaseNativeInputRegistration(
                 consumerPortRef: "control.progress.catalog",
@@ -1556,7 +1888,11 @@ enum GeneratedShowcaseProduct {
                 targetPortRef: "renderer.controlProgress",
                 contractRef: "showcase.renderer-action",
                 emit: { environment, payload in
-                    environment.dispatch(sourcePortRef: "control.progress.action", payload: payload)
+                    environment.dispatch(
+                        sourcePortRef: "control.progress.action",
+                        targetPortRef: "renderer.controlProgress",
+                        payload: payload
+                    )
                 }
             )])
         ),
@@ -1568,19 +1904,31 @@ enum GeneratedShowcaseProduct {
                 pageRef: "section.controls",
                 surface: .compact,
                 mountRef: "control.press-ring",
-                mount: { environment in environment.componentValue(.controlPressRing) }
+                mount: { inputs, emitter in ShowcaseMountedRenderer(
+                    componentId: .controlPressRing,
+                    inputs: inputs,
+                    emitter: emitter
+                ) }
             ), ShowcaseNativeMountRegistration(
                 profileId: .iphoneFullUi,
                 pageRef: "section.controls",
                 surface: .wide,
                 mountRef: "control.press-ring",
-                mount: { environment in environment.componentValue(.controlPressRing) }
+                mount: { inputs, emitter in ShowcaseMountedRenderer(
+                    componentId: .controlPressRing,
+                    inputs: inputs,
+                    emitter: emitter
+                ) }
             ), ShowcaseNativeMountRegistration(
                 profileId: .watchosFullUi,
                 pageRef: "section.controls",
                 surface: .round,
                 mountRef: "control.press-ring",
-                mount: { environment in environment.componentValue(.controlPressRing) }
+                mount: { inputs, emitter in ShowcaseMountedRenderer(
+                    componentId: .controlPressRing,
+                    inputs: inputs,
+                    emitter: emitter
+                ) }
             )],
             immutableInputs: [ShowcaseNativeInputRegistration(
                 consumerPortRef: "control.press-ring.catalog",
@@ -1606,7 +1954,11 @@ enum GeneratedShowcaseProduct {
                 targetPortRef: "renderer.controlPressRing",
                 contractRef: "showcase.renderer-action",
                 emit: { environment, payload in
-                    environment.dispatch(sourcePortRef: "control.press-ring.action", payload: payload)
+                    environment.dispatch(
+                        sourcePortRef: "control.press-ring.action",
+                        targetPortRef: "renderer.controlPressRing",
+                        payload: payload
+                    )
                 }
             )])
         ),
@@ -1618,19 +1970,31 @@ enum GeneratedShowcaseProduct {
                 pageRef: "section.input",
                 surface: .compact,
                 mountRef: "input.text",
-                mount: { environment in environment.componentValue(.inputText) }
+                mount: { inputs, emitter in ShowcaseMountedRenderer(
+                    componentId: .inputText,
+                    inputs: inputs,
+                    emitter: emitter
+                ) }
             ), ShowcaseNativeMountRegistration(
                 profileId: .iphoneFullUi,
                 pageRef: "section.input",
                 surface: .wide,
                 mountRef: "input.text",
-                mount: { environment in environment.componentValue(.inputText) }
+                mount: { inputs, emitter in ShowcaseMountedRenderer(
+                    componentId: .inputText,
+                    inputs: inputs,
+                    emitter: emitter
+                ) }
             ), ShowcaseNativeMountRegistration(
                 profileId: .watchosFullUi,
                 pageRef: "section.input",
                 surface: .round,
                 mountRef: "input.text",
-                mount: { environment in environment.componentValue(.inputText) }
+                mount: { inputs, emitter in ShowcaseMountedRenderer(
+                    componentId: .inputText,
+                    inputs: inputs,
+                    emitter: emitter
+                ) }
             )],
             immutableInputs: [ShowcaseNativeInputRegistration(
                 consumerPortRef: "input.text.catalog",
@@ -1656,7 +2020,11 @@ enum GeneratedShowcaseProduct {
                 targetPortRef: "renderer.inputText",
                 contractRef: "showcase.renderer-action",
                 emit: { environment, payload in
-                    environment.dispatch(sourcePortRef: "input.text.action", payload: payload)
+                    environment.dispatch(
+                        sourcePortRef: "input.text.action",
+                        targetPortRef: "renderer.inputText",
+                        payload: payload
+                    )
                 }
             )])
         ),
@@ -1668,19 +2036,31 @@ enum GeneratedShowcaseProduct {
                 pageRef: "section.media",
                 surface: .compact,
                 mountRef: "media.capture",
-                mount: { environment in environment.componentValue(.mediaCapture) }
+                mount: { inputs, emitter in ShowcaseMountedRenderer(
+                    componentId: .mediaCapture,
+                    inputs: inputs,
+                    emitter: emitter
+                ) }
             ), ShowcaseNativeMountRegistration(
                 profileId: .iphoneFullUi,
                 pageRef: "section.media",
                 surface: .wide,
                 mountRef: "media.capture",
-                mount: { environment in environment.componentValue(.mediaCapture) }
+                mount: { inputs, emitter in ShowcaseMountedRenderer(
+                    componentId: .mediaCapture,
+                    inputs: inputs,
+                    emitter: emitter
+                ) }
             ), ShowcaseNativeMountRegistration(
                 profileId: .watchosFullUi,
                 pageRef: "section.media",
                 surface: .round,
                 mountRef: "media.capture",
-                mount: { environment in environment.componentValue(.mediaCapture) }
+                mount: { inputs, emitter in ShowcaseMountedRenderer(
+                    componentId: .mediaCapture,
+                    inputs: inputs,
+                    emitter: emitter
+                ) }
             )],
             immutableInputs: [ShowcaseNativeInputRegistration(
                 consumerPortRef: "media.capture.catalog",
@@ -1706,7 +2086,11 @@ enum GeneratedShowcaseProduct {
                 targetPortRef: "renderer.mediaCapture",
                 contractRef: "showcase.renderer-action",
                 emit: { environment, payload in
-                    environment.dispatch(sourcePortRef: "media.capture.action", payload: payload)
+                    environment.dispatch(
+                        sourcePortRef: "media.capture.action",
+                        targetPortRef: "renderer.mediaCapture",
+                        payload: payload
+                    )
                 }
             )])
         ),
@@ -1718,19 +2102,31 @@ enum GeneratedShowcaseProduct {
                 pageRef: "section.media",
                 surface: .compact,
                 mountRef: "media.playback",
-                mount: { environment in environment.componentValue(.mediaPlayback) }
+                mount: { inputs, emitter in ShowcaseMountedRenderer(
+                    componentId: .mediaPlayback,
+                    inputs: inputs,
+                    emitter: emitter
+                ) }
             ), ShowcaseNativeMountRegistration(
                 profileId: .iphoneFullUi,
                 pageRef: "section.media",
                 surface: .wide,
                 mountRef: "media.playback",
-                mount: { environment in environment.componentValue(.mediaPlayback) }
+                mount: { inputs, emitter in ShowcaseMountedRenderer(
+                    componentId: .mediaPlayback,
+                    inputs: inputs,
+                    emitter: emitter
+                ) }
             ), ShowcaseNativeMountRegistration(
                 profileId: .watchosFullUi,
                 pageRef: "section.media",
                 surface: .round,
                 mountRef: "media.playback",
-                mount: { environment in environment.componentValue(.mediaPlayback) }
+                mount: { inputs, emitter in ShowcaseMountedRenderer(
+                    componentId: .mediaPlayback,
+                    inputs: inputs,
+                    emitter: emitter
+                ) }
             )],
             immutableInputs: [ShowcaseNativeInputRegistration(
                 consumerPortRef: "media.playback.catalog",
@@ -1756,7 +2152,11 @@ enum GeneratedShowcaseProduct {
                 targetPortRef: "renderer.mediaPlayback",
                 contractRef: "showcase.renderer-action",
                 emit: { environment, payload in
-                    environment.dispatch(sourcePortRef: "media.playback.action", payload: payload)
+                    environment.dispatch(
+                        sourcePortRef: "media.playback.action",
+                        targetPortRef: "renderer.mediaPlayback",
+                        payload: payload
+                    )
                 }
             )])
         ),
@@ -1768,19 +2168,31 @@ enum GeneratedShowcaseProduct {
                 pageRef: "section.templates",
                 surface: .compact,
                 mountRef: "template.screens",
-                mount: { environment in environment.componentValue(.templateScreens) }
+                mount: { inputs, emitter in ShowcaseMountedRenderer(
+                    componentId: .templateScreens,
+                    inputs: inputs,
+                    emitter: emitter
+                ) }
             ), ShowcaseNativeMountRegistration(
                 profileId: .iphoneFullUi,
                 pageRef: "section.templates",
                 surface: .wide,
                 mountRef: "template.screens",
-                mount: { environment in environment.componentValue(.templateScreens) }
+                mount: { inputs, emitter in ShowcaseMountedRenderer(
+                    componentId: .templateScreens,
+                    inputs: inputs,
+                    emitter: emitter
+                ) }
             ), ShowcaseNativeMountRegistration(
                 profileId: .watchosFullUi,
                 pageRef: "section.templates",
                 surface: .round,
                 mountRef: "template.screens",
-                mount: { environment in environment.componentValue(.templateScreens) }
+                mount: { inputs, emitter in ShowcaseMountedRenderer(
+                    componentId: .templateScreens,
+                    inputs: inputs,
+                    emitter: emitter
+                ) }
             )],
             immutableInputs: [ShowcaseNativeInputRegistration(
                 consumerPortRef: "template.screens.catalog",
@@ -1806,7 +2218,11 @@ enum GeneratedShowcaseProduct {
                 targetPortRef: "renderer.templateScreens",
                 contractRef: "showcase.renderer-action",
                 emit: { environment, payload in
-                    environment.dispatch(sourcePortRef: "template.screens.action", payload: payload)
+                    environment.dispatch(
+                        sourcePortRef: "template.screens.action",
+                        targetPortRef: "renderer.templateScreens",
+                        payload: payload
+                    )
                 }
             )])
         ),
@@ -1818,19 +2234,31 @@ enum GeneratedShowcaseProduct {
                 pageRef: "section.flows",
                 surface: .compact,
                 mountRef: "flow.source",
-                mount: { environment in environment.componentValue(.flowSource) }
+                mount: { inputs, emitter in ShowcaseMountedRenderer(
+                    componentId: .flowSource,
+                    inputs: inputs,
+                    emitter: emitter
+                ) }
             ), ShowcaseNativeMountRegistration(
                 profileId: .iphoneFullUi,
                 pageRef: "section.flows",
                 surface: .wide,
                 mountRef: "flow.source",
-                mount: { environment in environment.componentValue(.flowSource) }
+                mount: { inputs, emitter in ShowcaseMountedRenderer(
+                    componentId: .flowSource,
+                    inputs: inputs,
+                    emitter: emitter
+                ) }
             ), ShowcaseNativeMountRegistration(
                 profileId: .watchosFullUi,
                 pageRef: "section.flows",
                 surface: .round,
                 mountRef: "flow.source",
-                mount: { environment in environment.componentValue(.flowSource) }
+                mount: { inputs, emitter in ShowcaseMountedRenderer(
+                    componentId: .flowSource,
+                    inputs: inputs,
+                    emitter: emitter
+                ) }
             )],
             immutableInputs: [ShowcaseNativeInputRegistration(
                 consumerPortRef: "flow.source.catalog",
@@ -1856,7 +2284,11 @@ enum GeneratedShowcaseProduct {
                 targetPortRef: "renderer.flowSource",
                 contractRef: "showcase.renderer-action",
                 emit: { environment, payload in
-                    environment.dispatch(sourcePortRef: "flow.source.action", payload: payload)
+                    environment.dispatch(
+                        sourcePortRef: "flow.source.action",
+                        targetPortRef: "renderer.flowSource",
+                        payload: payload
+                    )
                 }
             )])
         ),
@@ -1868,19 +2300,31 @@ enum GeneratedShowcaseProduct {
                 pageRef: "section.flows",
                 surface: .compact,
                 mountRef: "flow.update",
-                mount: { environment in environment.componentValue(.flowUpdate) }
+                mount: { inputs, emitter in ShowcaseMountedRenderer(
+                    componentId: .flowUpdate,
+                    inputs: inputs,
+                    emitter: emitter
+                ) }
             ), ShowcaseNativeMountRegistration(
                 profileId: .iphoneFullUi,
                 pageRef: "section.flows",
                 surface: .wide,
                 mountRef: "flow.update",
-                mount: { environment in environment.componentValue(.flowUpdate) }
+                mount: { inputs, emitter in ShowcaseMountedRenderer(
+                    componentId: .flowUpdate,
+                    inputs: inputs,
+                    emitter: emitter
+                ) }
             ), ShowcaseNativeMountRegistration(
                 profileId: .watchosFullUi,
                 pageRef: "section.flows",
                 surface: .round,
                 mountRef: "flow.update",
-                mount: { environment in environment.componentValue(.flowUpdate) }
+                mount: { inputs, emitter in ShowcaseMountedRenderer(
+                    componentId: .flowUpdate,
+                    inputs: inputs,
+                    emitter: emitter
+                ) }
             )],
             immutableInputs: [ShowcaseNativeInputRegistration(
                 consumerPortRef: "flow.update.catalog",
@@ -1906,7 +2350,11 @@ enum GeneratedShowcaseProduct {
                 targetPortRef: "renderer.flowUpdate",
                 contractRef: "showcase.renderer-action",
                 emit: { environment, payload in
-                    environment.dispatch(sourcePortRef: "flow.update.action", payload: payload)
+                    environment.dispatch(
+                        sourcePortRef: "flow.update.action",
+                        targetPortRef: "renderer.flowUpdate",
+                        payload: payload
+                    )
                 }
             )])
         ),
@@ -1918,19 +2366,31 @@ enum GeneratedShowcaseProduct {
                 pageRef: "section.flows",
                 surface: .compact,
                 mountRef: "flow.service",
-                mount: { environment in environment.componentValue(.flowService) }
+                mount: { inputs, emitter in ShowcaseMountedRenderer(
+                    componentId: .flowService,
+                    inputs: inputs,
+                    emitter: emitter
+                ) }
             ), ShowcaseNativeMountRegistration(
                 profileId: .iphoneFullUi,
                 pageRef: "section.flows",
                 surface: .wide,
                 mountRef: "flow.service",
-                mount: { environment in environment.componentValue(.flowService) }
+                mount: { inputs, emitter in ShowcaseMountedRenderer(
+                    componentId: .flowService,
+                    inputs: inputs,
+                    emitter: emitter
+                ) }
             ), ShowcaseNativeMountRegistration(
                 profileId: .watchosFullUi,
                 pageRef: "section.flows",
                 surface: .round,
                 mountRef: "flow.service",
-                mount: { environment in environment.componentValue(.flowService) }
+                mount: { inputs, emitter in ShowcaseMountedRenderer(
+                    componentId: .flowService,
+                    inputs: inputs,
+                    emitter: emitter
+                ) }
             )],
             immutableInputs: [ShowcaseNativeInputRegistration(
                 consumerPortRef: "flow.service.catalog",
@@ -1956,7 +2416,11 @@ enum GeneratedShowcaseProduct {
                 targetPortRef: "renderer.flowService",
                 contractRef: "showcase.renderer-action",
                 emit: { environment, payload in
-                    environment.dispatch(sourcePortRef: "flow.service.action", payload: payload)
+                    environment.dispatch(
+                        sourcePortRef: "flow.service.action",
+                        targetPortRef: "renderer.flowService",
+                        payload: payload
+                    )
                 }
             )])
         )

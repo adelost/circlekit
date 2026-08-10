@@ -14,8 +14,8 @@ import {
 } from "@v1d/product-spec";
 import { showcaseKotlinEmitter } from "../src/emit-kotlin.js";
 import { CIRCLEKIT_ASSET_CATALOG, CIRCLEKIT_STYLE } from "@v1d/circlekit-assets";
-import { showcaseGarminEmitter } from "../src/emit-monkeyc.js";
-import { showcaseSwiftEmitter } from "../src/emit-swift.js";
+import { showcaseGarminEmitter, type ShowcaseGarminEndpointMutation } from "../src/emit-monkeyc.js";
+import { showcaseSwiftEmitter, type ShowcaseSwiftEndpointMutation } from "../src/emit-swift.js";
 import {
   SHOWCASE_ARTIFACT_PROFILES,
   compileCircleKitShowcaseProduct,
@@ -44,7 +44,7 @@ async function productSpecVersion(): Promise<string> {
   return raw.version as string;
 }
 
-const swiftEmitter = () => showcaseSwiftEmitter(
+const swiftEmitter = (mutation: ShowcaseSwiftEndpointMutation = {}) => showcaseSwiftEmitter(
   "generated/GeneratedShowcaseProduct.swift",
   "generated/apple-native.json",
   [
@@ -53,13 +53,15 @@ const swiftEmitter = () => showcaseSwiftEmitter(
   ],
   CIRCLEKIT_ASSET_CATALOG,
   CIRCLEKIT_STYLE,
+  mutation,
 );
 
-const garminEmitter = () => showcaseGarminEmitter(
+const garminEmitter = (mutation: ShowcaseGarminEndpointMutation = {}) => showcaseGarminEmitter(
   "generated/GeneratedCircleKitShowcase.mc",
   "generated/garmin-native.json",
   CIRCLEKIT_ASSET_CATALOG,
   CIRCLEKIT_STYLE,
+  mutation,
 );
 
 function emittedRegistry(
@@ -205,9 +207,9 @@ test("one compiled ProductSpec owns Android, Apple and Garmin Showcase structure
   assert.match(swiftGenerated, /static let navigationArtifacts:/u);
   assert.match(swiftGenerated, /effect: "dispatch"/u);
   assert.match(swiftGenerated, /effect: "push"/u);
-  assert.match(swiftGenerated, /mount: \{ environment in environment\.componentValue/u);
+  assert.match(swiftGenerated, /mount: \{ inputs, emitter in ShowcaseMountedRenderer/u);
   assert.match(swiftGenerated, /read: \{ environment in environment\.read/u);
-  assert.match(swiftGenerated, /environment\.dispatch\(sourcePortRef:/u);
+  assert.match(swiftGenerated, /environment\.dispatch\(\s*sourcePortRef:/u);
   const garminGenerated = output("showcase-garmin-limited-ui").content;
   for (const node of garminRegistry.nodes) {
     assert.match(garminGenerated, new RegExp(`"nativePortId" => "${node.nativePortId.replaceAll(".", "\\.")}"`, "u"));
@@ -220,6 +222,11 @@ test("one compiled ProductSpec owns Android, Apple and Garmin Showcase structure
   assert.match(garminGenerated, /"mount" => method\(:mountProgress\)/u);
   assert.match(garminGenerated, /"read" => method\(:rendererModel\)/u);
   assert.match(garminGenerated, /"emit" => method\(:emitProgressAction\)/u);
+  assert.match(garminGenerated, /_mountedRenderer = mounted/u);
+  assert.match(garminGenerated, /return _mountedRenderer/u);
+  const garminView = await readFile(resolve(root, "../showcase-garmin/source/CircleKitShowcaseView.mc"), "utf8");
+  assert.match(garminView, /_mounted\["inputs"\]/u);
+  assert.match(garminView, /_mounted\["emitter"\]\["kind"\]/u);
 
   const swift = swiftEmitter();
   const swiftSource = swift.emit(product)[0]!.content;
@@ -320,4 +327,36 @@ test("native component, profile and icon drift stops before emission", async () 
   assert.throws(() => requireCircleKitShowcaseNativeConformance(
     product, actual, hosts.slice(0, 2),
   ), /\[artifact\/missing\].*garmin-limited-ui/);
+
+  const swappedSwiftEmitter = swiftEmitter({
+    mountSwap: { registrationComponentId: "atom.icon-action", endpointComponentId: "control.progress" },
+  });
+  const swappedSwift = emittedRegistry(swappedSwiftEmitter, product, "showcase-swiftui-native-manifest");
+  assert.match(
+    productArtifactConformance(product, swappedSwift).map(({ message }) => message).join("\n"),
+    /atom\.icon-action.*control\.progress|control\.progress.*atom\.icon-action/u,
+  );
+  assert.match(
+    swappedSwiftEmitter.emit(product).find(({ id }) => id === "showcase-swiftui")!.content,
+    /componentId: \.controlProgress/u,
+  );
+
+  const missingSwiftReader = emittedRegistry(swiftEmitter({
+    removeInput: { componentId: "atom.icon-action", consumerPortRef: "atom.icon-action.renderer" },
+  }), product, "showcase-swiftui-native-manifest");
+  assert.match(
+    productArtifactConformance(product, missingSwiftReader).map(({ message }) => message).join("\n"),
+    /atom\.icon-action\.renderer/u,
+  );
+
+  const swappedGarminEmitter = garminEmitter({ eventTargetPortRef: "renderer.flowSource" });
+  const swappedGarmin = emittedRegistry(swappedGarminEmitter, product, "showcase-garmin-native-manifest");
+  assert.match(
+    productArtifactConformance(product, swappedGarmin).map(({ message }) => message).join("\n"),
+    /control\.progress.*flowSource|flowSource.*control\.progress/u,
+  );
+  assert.match(
+    swappedGarminEmitter.emit(product).find(({ id }) => id === "showcase-garmin-limited-ui")!.content,
+    /"targetPortRef" => "renderer\.flowSource"/u,
+  );
 });
