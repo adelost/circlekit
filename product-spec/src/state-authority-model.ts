@@ -15,6 +15,7 @@ import {
   type ProductNodeType,
 } from "./node-model.js";
 import type { CompiledProductGraph, PortBindingIr } from "./port-graph-model.js";
+import { adapterFields } from "./state-authority-internals.js";
 export type StatePresentationFieldValue = LegoPrimitive | LegoFiniteValueDeclaration;
 export interface StatePresentationField<Name extends string = string,
   Value extends StatePresentationFieldValue = StatePresentationFieldValue> {
@@ -126,18 +127,6 @@ export interface StateAuthorityAdapter {
 }
 
 declare const stateAuthorityAdapterBrand: unique symbol;
-
-interface StateAuthorityAdapterFields {
-  readonly nodeTypeRef: string;
-  readonly nodeInstanceRef: string;
-  readonly inputPortRef: string;
-  readonly outputPortRef: string;
-}
-
-/** The foundation's view of an adapter. Not exported: emitters live in here. */
-function adapterFields(adapter: StateAuthorityAdapter): StateAuthorityAdapterFields {
-  return adapter as unknown as StateAuthorityAdapterFields;
-}
 
 export interface StateAuthority {
   readonly id: string;
