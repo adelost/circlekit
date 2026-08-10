@@ -7,10 +7,11 @@ object ShowcaseProductInspectorRegistry {
     val bindings: List<ShowcasePortBinding> get() = ShowcaseManifest.bindings
     val demandEdges: List<ShowcaseDemandEdge> get() = ShowcaseManifest.demandEdges
 
-    fun requireOpenTarget(caseId: ShowcaseCaseId): String {
-        val source = "${caseId.value}.open"
+    fun requireOpenTarget(caseId: ShowcaseCaseId, targetPortRef: String): String {
         val target = requireNotNull(bindings.singleOrNull {
-            it.kind == "component-event" && it.from == source
+            it.kind == "component-event" &&
+                it.from.startsWith("page.menu.") &&
+                it.to == targetPortRef
         }) { "No Product IR open binding for ${caseId.value}" }.to
         val owner = target.substringBeforeLast('.')
         val port = target.substringAfterLast('.')

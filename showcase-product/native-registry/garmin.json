@@ -1,24 +1,79 @@
 {
   "stage": "native-export",
-  "schemaVersion": 5,
+  "schemaVersion": 6,
   "sourceFile": "showcase-garmin/source/GeneratedCircleKitShowcase.mc",
   "profiles": [
     "garmin-limited-ui"
   ],
   "components": [
     {
-      "componentId": "control.progress",
-      "rendererId": "CircleKitShowcaseView.drawProgressDial",
-      "profiles": [
-        "garmin-limited-ui"
-      ]
+      "component": {
+        "instanceRef": "control.progress",
+        "typeRef": "control.progress"
+      },
+      "mounts": [
+        {
+          "profileRef": "garmin-limited-ui",
+          "pageRef": "artifact.garmin-limited-ui",
+          "surface": "round",
+          "mountRef": "control.progress"
+        }
+      ],
+      "immutableInputs": [
+        {
+          "consumerPortRef": "control.progress.catalog",
+          "producerPortRef": "catalog.model",
+          "contractRef": "showcase.catalog-presentation",
+          "required": true
+        },
+        {
+          "consumerPortRef": "control.progress.navigation",
+          "producerPortRef": "navigation.presentation.model",
+          "contractRef": "showcase.navigation-presentation",
+          "required": true
+        },
+        {
+          "consumerPortRef": "control.progress.renderer",
+          "producerPortRef": "renderer.presentation.model",
+          "contractRef": "showcase.renderer-presentation",
+          "required": true
+        }
+      ],
+      "eventEmitter": {
+        "kind": "typed",
+        "bindings": [
+          {
+            "sourcePortRef": "control.progress.action",
+            "targetPortRef": "renderer.controlProgress",
+            "contractRef": "showcase.renderer-action"
+          }
+        ]
+      }
     },
     {
-      "componentId": "showcase.page-host",
-      "rendererId": "CircleKitShowcaseView",
-      "profiles": [
-        "garmin-limited-ui"
-      ]
+      "component": {
+        "instanceRef": "page.host",
+        "typeRef": "showcase.page-host"
+      },
+      "mounts": [
+        {
+          "profileRef": "garmin-limited-ui",
+          "pageRef": "artifact.garmin-limited-ui",
+          "surface": "round",
+          "mountRef": "page.host"
+        }
+      ],
+      "immutableInputs": [
+        {
+          "consumerPortRef": "page.host.activePage",
+          "producerPortRef": "navigation.activePage",
+          "contractRef": "showcase.navigation.active-page",
+          "required": true
+        }
+      ],
+      "eventEmitter": {
+        "kind": "empty"
+      }
     }
   ],
   "icons": [
@@ -124,6 +179,44 @@
       "outputPorts": [
         "model"
       ]
+    },
+    {
+      "nodeId": "renderer",
+      "nativePortId": "GeneratedCircleKitShowcase.emitProgressAction",
+      "profiles": [
+        "garmin-limited-ui"
+      ],
+      "inputPorts": [
+        "atomIconAction",
+        "controlActionRow",
+        "controlChoiceRow",
+        "controlAdjustment",
+        "controlProgress",
+        "controlPressRing",
+        "inputText",
+        "mediaCapture",
+        "mediaPlayback",
+        "templateScreens",
+        "flowSource",
+        "flowUpdate",
+        "flowService"
+      ],
+      "outputPorts": [
+        "model"
+      ]
+    },
+    {
+      "nodeId": "renderer.presentation",
+      "nativePortId": "GeneratedCircleKitShowcase.rendererModel",
+      "profiles": [
+        "garmin-limited-ui"
+      ],
+      "inputPorts": [
+        "model"
+      ],
+      "outputPorts": [
+        "model"
+      ]
     }
   ],
   "finiteValues": [
@@ -168,8 +261,8 @@
         "componentInstanceRef": "control.progress",
         "actions": [
           {
-            "sourcePortRef": "control.progress.open",
-            "targetPortRef": "navigation.controlProgress",
+            "sourcePortRef": "control.progress.action",
+            "targetPortRef": "renderer.controlProgress",
             "effect": "dispatch"
           }
         ]

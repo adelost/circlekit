@@ -161,7 +161,11 @@ class ShowcaseRendererProducerPorts(
             targetPortRef == "navigation.route" -> session.commitRoute(requireNotNull(payload.value))
             targetPortRef.startsWith("navigation.") && payload.actionId == "navigation.open" -> {
                 val (caseId, scenarioId) = requireNotNull(payload.value).split('|', limit = 2)
-                session.commitOpen(ShowcaseCaseId(caseId), ShowcaseScenarioId(scenarioId))
+                session.commitOpen(
+                    ShowcaseCaseId(caseId),
+                    ShowcaseScenarioId(scenarioId),
+                    targetPortRef,
+                )
             }
             else -> error("Unknown native Showcase navigation event '$targetPortRef'")
         }

@@ -15,34 +15,39 @@ import org.junit.Test
 class ShowcaseInteractionScreensTest {
     @Test
     fun `timing availability and failure are declared by row data`() = runBlocking {
-        val state = ShowcaseInteractionState()
+        val session = ShowcaseSession(ShowcaseArtifactProfile.PHONE_FULL_UI)
+        val mounted = mount(session, "control.action-row", "immediate")
+        val model = mounted.runtime().interaction
+        val emitter = mounted.eventEmitter as ShowcaseTypedRendererEmitter
         val immediate = scenario("control.action-row", "immediate")
         val recoverable = scenario("control.action-row", "recoverable")
         val blocked = scenario("control.action-row", "blocked")
 
         assertEquals(
             CircleActionTiming.IMMEDIATE,
-            ShowcaseInteractionScreens.actionRows(immediate, state).items.first().single().actionTiming,
+            ShowcaseInteractionScreens.actionRows(immediate, model, emitter).items.first().single().actionTiming,
         )
-        state.prepare(ShowcaseCaseId("control.action-row"), recoverable.id)
-        assertNotNull(ShowcaseInteractionScreens.actionRows(recoverable, state).items.first().single().onTap)
-        state.prepare(ShowcaseCaseId("control.action-row"), blocked.id)
-        assertNull(ShowcaseInteractionScreens.actionRows(blocked, state).items.first().single().onTap)
+        session.interaction.prepare(ShowcaseCaseId("control.action-row"), recoverable.id)
+        assertNotNull(ShowcaseInteractionScreens.actionRows(recoverable, model, emitter).items.first().single().onTap)
+        session.interaction.prepare(ShowcaseCaseId("control.action-row"), blocked.id)
+        assertNull(ShowcaseInteractionScreens.actionRows(blocked, model, emitter).items.first().single().onTap)
     }
 
     @Test
     fun `choice adjustment and measured work retain their semantic specs`() = runBlocking {
-        val state = ShowcaseInteractionState()
+        val session = ShowcaseSession(ShowcaseArtifactProfile.PHONE_FULL_UI)
         val last = scenario("control.choice-row", "last")
-        state.prepare(ShowcaseCaseId("control.choice-row"), last.id)
-        val choice = ShowcaseInteractionScreens.choiceRows(last, state).items.first().single()
+        val mounted = mount(session, "control.choice-row", "last")
+        val model = mounted.runtime().interaction
+        val emitter = mounted.eventEmitter as ShowcaseTypedRendererEmitter
+        val choice = ShowcaseInteractionScreens.choiceRows(last, model, emitter).items.first().single()
         assertEquals(7, choice.choices.size)
         assertEquals("G", choice.sub)
         assertEquals(CircleChoiceRole.STEPPED, choice.choiceRole)
 
         val adjustmentScenario = scenario("control.adjustment", "deliberate")
         val adjustment = ShowcaseInteractionScreens
-            .adjustmentRows(adjustmentScenario, state)
+            .adjustmentRows(adjustmentScenario, model, emitter)
             .items
             .first()
             .single()
@@ -50,8 +55,8 @@ class ShowcaseInteractionScreensTest {
         assertNotNull(adjustment.adjustHoldMs)
 
         val half = scenario("control.progress", "half")
-        state.prepare(ShowcaseCaseId("control.progress"), half.id)
-        val progress = ShowcaseInteractionScreens.progressRows(half, state).items.first().single().labelProgress
+        session.interaction.prepare(ShowcaseCaseId("control.progress"), half.id)
+        val progress = ShowcaseInteractionScreens.progressRows(half, model, emitter).items.first().single().labelProgress
         assertTrue(progress is CircleLabelProgress.Determinate)
         assertEquals(0.5f, (progress as CircleLabelProgress.Determinate).fraction)
     }
@@ -60,4 +65,17 @@ class ShowcaseInteractionScreensTest {
         requireNotNull(
             ShowcaseManifest.find(ShowcaseCaseId(caseId), ShowcaseScenarioId(scenarioId)),
         ).second
+
+    private fun mount(session: ShowcaseSession, caseId: String, scenarioId: String): ShowcaseMountedRenderer {
+        assertTrue(session.open(ShowcaseCaseId(caseId), ShowcaseScenarioId(scenarioId)))
+        return ShowcaseNativeBindings.mountRenderer(
+            session,
+            session.destination.value,
+            com.adelost.designkit.ui.CircleSurfaceClass.PHONE_COMPACT,
+            null,
+        )
+    }
+
+    private fun ShowcaseMountedRenderer.runtime(): ShowcaseRuntimeRendererInput =
+        inputs.require("${renderer.componentId()}.renderer")
 }

@@ -2378,12 +2378,1643 @@
       "screen": "artifact.garmin-limited-ui"
     }
   ],
+  "componentRenderContracts": [
+    {
+      "componentInstanceRef": "foundation.colors",
+      "componentTypeRef": "foundation.colors",
+      "events": [],
+      "inputs": [
+        {
+          "contractRef": "showcase.catalog-presentation",
+          "inputPortRef": "foundation.colors.catalog",
+          "producerPortRef": "catalog.model",
+          "required": true
+        },
+        {
+          "contractRef": "showcase.navigation-presentation",
+          "inputPortRef": "foundation.colors.navigation",
+          "producerPortRef": "navigation.presentation.model",
+          "required": true
+        }
+      ],
+      "scopes": [
+        {
+          "artifactRef": "phone-full-ui",
+          "mountRef": "foundation.colors",
+          "screenRef": "section.foundations",
+          "surface": "compact"
+        },
+        {
+          "artifactRef": "phone-full-ui",
+          "mountRef": "foundation.colors",
+          "screenRef": "section.foundations",
+          "surface": "wide"
+        },
+        {
+          "artifactRef": "wear-full-ui",
+          "mountRef": "foundation.colors",
+          "screenRef": "section.foundations",
+          "surface": "round"
+        },
+        {
+          "artifactRef": "iphone-full-ui",
+          "mountRef": "foundation.colors",
+          "screenRef": "section.foundations",
+          "surface": "compact"
+        },
+        {
+          "artifactRef": "iphone-full-ui",
+          "mountRef": "foundation.colors",
+          "screenRef": "section.foundations",
+          "surface": "wide"
+        },
+        {
+          "artifactRef": "watchos-full-ui",
+          "mountRef": "foundation.colors",
+          "screenRef": "section.foundations",
+          "surface": "round"
+        }
+      ]
+    },
+    {
+      "componentInstanceRef": "foundation.geometry",
+      "componentTypeRef": "foundation.geometry",
+      "events": [],
+      "inputs": [
+        {
+          "contractRef": "showcase.catalog-presentation",
+          "inputPortRef": "foundation.geometry.catalog",
+          "producerPortRef": "catalog.model",
+          "required": true
+        },
+        {
+          "contractRef": "showcase.navigation-presentation",
+          "inputPortRef": "foundation.geometry.navigation",
+          "producerPortRef": "navigation.presentation.model",
+          "required": true
+        }
+      ],
+      "scopes": [
+        {
+          "artifactRef": "phone-full-ui",
+          "mountRef": "foundation.geometry",
+          "screenRef": "section.foundations",
+          "surface": "compact"
+        },
+        {
+          "artifactRef": "phone-full-ui",
+          "mountRef": "foundation.geometry",
+          "screenRef": "section.foundations",
+          "surface": "wide"
+        },
+        {
+          "artifactRef": "wear-full-ui",
+          "mountRef": "foundation.geometry",
+          "screenRef": "section.foundations",
+          "surface": "round"
+        },
+        {
+          "artifactRef": "iphone-full-ui",
+          "mountRef": "foundation.geometry",
+          "screenRef": "section.foundations",
+          "surface": "compact"
+        },
+        {
+          "artifactRef": "iphone-full-ui",
+          "mountRef": "foundation.geometry",
+          "screenRef": "section.foundations",
+          "surface": "wide"
+        },
+        {
+          "artifactRef": "watchos-full-ui",
+          "mountRef": "foundation.geometry",
+          "screenRef": "section.foundations",
+          "surface": "round"
+        }
+      ]
+    },
+    {
+      "componentInstanceRef": "atom.icon-action",
+      "componentTypeRef": "atom.icon-action",
+      "events": [
+        {
+          "contractRef": "showcase.renderer-action",
+          "eventPortRef": "atom.icon-action.action",
+          "targetPortRef": "renderer.atomIconAction"
+        }
+      ],
+      "inputs": [
+        {
+          "contractRef": "showcase.catalog-presentation",
+          "inputPortRef": "atom.icon-action.catalog",
+          "producerPortRef": "catalog.model",
+          "required": true
+        },
+        {
+          "contractRef": "showcase.navigation-presentation",
+          "inputPortRef": "atom.icon-action.navigation",
+          "producerPortRef": "navigation.presentation.model",
+          "required": true
+        },
+        {
+          "contractRef": "showcase.renderer-presentation",
+          "inputPortRef": "atom.icon-action.renderer",
+          "producerPortRef": "renderer.presentation.model",
+          "required": true
+        }
+      ],
+      "scopes": [
+        {
+          "artifactRef": "phone-full-ui",
+          "mountRef": "atom.icon-action",
+          "screenRef": "section.atoms",
+          "surface": "compact"
+        },
+        {
+          "artifactRef": "phone-full-ui",
+          "mountRef": "atom.icon-action",
+          "screenRef": "section.atoms",
+          "surface": "wide"
+        },
+        {
+          "artifactRef": "wear-full-ui",
+          "mountRef": "atom.icon-action",
+          "screenRef": "section.atoms",
+          "surface": "round"
+        },
+        {
+          "artifactRef": "iphone-full-ui",
+          "mountRef": "atom.icon-action",
+          "screenRef": "section.atoms",
+          "surface": "compact"
+        },
+        {
+          "artifactRef": "iphone-full-ui",
+          "mountRef": "atom.icon-action",
+          "screenRef": "section.atoms",
+          "surface": "wide"
+        },
+        {
+          "artifactRef": "watchos-full-ui",
+          "mountRef": "atom.icon-action",
+          "screenRef": "section.atoms",
+          "surface": "round"
+        }
+      ]
+    },
+    {
+      "componentInstanceRef": "control.action-row",
+      "componentTypeRef": "control.action-row",
+      "events": [
+        {
+          "contractRef": "showcase.renderer-action",
+          "eventPortRef": "control.action-row.action",
+          "targetPortRef": "renderer.controlActionRow"
+        }
+      ],
+      "inputs": [
+        {
+          "contractRef": "showcase.catalog-presentation",
+          "inputPortRef": "control.action-row.catalog",
+          "producerPortRef": "catalog.model",
+          "required": true
+        },
+        {
+          "contractRef": "showcase.navigation-presentation",
+          "inputPortRef": "control.action-row.navigation",
+          "producerPortRef": "navigation.presentation.model",
+          "required": true
+        },
+        {
+          "contractRef": "showcase.renderer-presentation",
+          "inputPortRef": "control.action-row.renderer",
+          "producerPortRef": "renderer.presentation.model",
+          "required": true
+        }
+      ],
+      "scopes": [
+        {
+          "artifactRef": "phone-full-ui",
+          "mountRef": "control.action-row",
+          "screenRef": "section.controls",
+          "surface": "compact"
+        },
+        {
+          "artifactRef": "phone-full-ui",
+          "mountRef": "control.action-row",
+          "screenRef": "section.controls",
+          "surface": "wide"
+        },
+        {
+          "artifactRef": "wear-full-ui",
+          "mountRef": "control.action-row",
+          "screenRef": "section.controls",
+          "surface": "round"
+        },
+        {
+          "artifactRef": "iphone-full-ui",
+          "mountRef": "control.action-row",
+          "screenRef": "section.controls",
+          "surface": "compact"
+        },
+        {
+          "artifactRef": "iphone-full-ui",
+          "mountRef": "control.action-row",
+          "screenRef": "section.controls",
+          "surface": "wide"
+        },
+        {
+          "artifactRef": "watchos-full-ui",
+          "mountRef": "control.action-row",
+          "screenRef": "section.controls",
+          "surface": "round"
+        }
+      ]
+    },
+    {
+      "componentInstanceRef": "control.choice-row",
+      "componentTypeRef": "control.choice-row",
+      "events": [
+        {
+          "contractRef": "showcase.renderer-action",
+          "eventPortRef": "control.choice-row.action",
+          "targetPortRef": "renderer.controlChoiceRow"
+        }
+      ],
+      "inputs": [
+        {
+          "contractRef": "showcase.catalog-presentation",
+          "inputPortRef": "control.choice-row.catalog",
+          "producerPortRef": "catalog.model",
+          "required": true
+        },
+        {
+          "contractRef": "showcase.navigation-presentation",
+          "inputPortRef": "control.choice-row.navigation",
+          "producerPortRef": "navigation.presentation.model",
+          "required": true
+        },
+        {
+          "contractRef": "showcase.renderer-presentation",
+          "inputPortRef": "control.choice-row.renderer",
+          "producerPortRef": "renderer.presentation.model",
+          "required": true
+        }
+      ],
+      "scopes": [
+        {
+          "artifactRef": "phone-full-ui",
+          "mountRef": "control.choice-row",
+          "screenRef": "section.controls",
+          "surface": "compact"
+        },
+        {
+          "artifactRef": "phone-full-ui",
+          "mountRef": "control.choice-row",
+          "screenRef": "section.controls",
+          "surface": "wide"
+        },
+        {
+          "artifactRef": "wear-full-ui",
+          "mountRef": "control.choice-row",
+          "screenRef": "section.controls",
+          "surface": "round"
+        },
+        {
+          "artifactRef": "iphone-full-ui",
+          "mountRef": "control.choice-row",
+          "screenRef": "section.controls",
+          "surface": "compact"
+        },
+        {
+          "artifactRef": "iphone-full-ui",
+          "mountRef": "control.choice-row",
+          "screenRef": "section.controls",
+          "surface": "wide"
+        },
+        {
+          "artifactRef": "watchos-full-ui",
+          "mountRef": "control.choice-row",
+          "screenRef": "section.controls",
+          "surface": "round"
+        }
+      ]
+    },
+    {
+      "componentInstanceRef": "control.adjustment",
+      "componentTypeRef": "control.adjustment",
+      "events": [
+        {
+          "contractRef": "showcase.renderer-action",
+          "eventPortRef": "control.adjustment.action",
+          "targetPortRef": "renderer.controlAdjustment"
+        }
+      ],
+      "inputs": [
+        {
+          "contractRef": "showcase.catalog-presentation",
+          "inputPortRef": "control.adjustment.catalog",
+          "producerPortRef": "catalog.model",
+          "required": true
+        },
+        {
+          "contractRef": "showcase.navigation-presentation",
+          "inputPortRef": "control.adjustment.navigation",
+          "producerPortRef": "navigation.presentation.model",
+          "required": true
+        },
+        {
+          "contractRef": "showcase.renderer-presentation",
+          "inputPortRef": "control.adjustment.renderer",
+          "producerPortRef": "renderer.presentation.model",
+          "required": true
+        }
+      ],
+      "scopes": [
+        {
+          "artifactRef": "phone-full-ui",
+          "mountRef": "control.adjustment",
+          "screenRef": "section.controls",
+          "surface": "compact"
+        },
+        {
+          "artifactRef": "phone-full-ui",
+          "mountRef": "control.adjustment",
+          "screenRef": "section.controls",
+          "surface": "wide"
+        },
+        {
+          "artifactRef": "wear-full-ui",
+          "mountRef": "control.adjustment",
+          "screenRef": "section.controls",
+          "surface": "round"
+        },
+        {
+          "artifactRef": "iphone-full-ui",
+          "mountRef": "control.adjustment",
+          "screenRef": "section.controls",
+          "surface": "compact"
+        },
+        {
+          "artifactRef": "iphone-full-ui",
+          "mountRef": "control.adjustment",
+          "screenRef": "section.controls",
+          "surface": "wide"
+        },
+        {
+          "artifactRef": "watchos-full-ui",
+          "mountRef": "control.adjustment",
+          "screenRef": "section.controls",
+          "surface": "round"
+        }
+      ]
+    },
+    {
+      "componentInstanceRef": "control.progress",
+      "componentTypeRef": "control.progress",
+      "events": [
+        {
+          "contractRef": "showcase.renderer-action",
+          "eventPortRef": "control.progress.action",
+          "targetPortRef": "renderer.controlProgress"
+        }
+      ],
+      "inputs": [
+        {
+          "contractRef": "showcase.catalog-presentation",
+          "inputPortRef": "control.progress.catalog",
+          "producerPortRef": "catalog.model",
+          "required": true
+        },
+        {
+          "contractRef": "showcase.navigation-presentation",
+          "inputPortRef": "control.progress.navigation",
+          "producerPortRef": "navigation.presentation.model",
+          "required": true
+        },
+        {
+          "contractRef": "showcase.renderer-presentation",
+          "inputPortRef": "control.progress.renderer",
+          "producerPortRef": "renderer.presentation.model",
+          "required": true
+        }
+      ],
+      "scopes": [
+        {
+          "artifactRef": "phone-full-ui",
+          "mountRef": "control.progress",
+          "screenRef": "section.controls",
+          "surface": "compact"
+        },
+        {
+          "artifactRef": "phone-full-ui",
+          "mountRef": "control.progress",
+          "screenRef": "section.controls",
+          "surface": "wide"
+        },
+        {
+          "artifactRef": "wear-full-ui",
+          "mountRef": "control.progress",
+          "screenRef": "section.controls",
+          "surface": "round"
+        },
+        {
+          "artifactRef": "iphone-full-ui",
+          "mountRef": "control.progress",
+          "screenRef": "section.controls",
+          "surface": "compact"
+        },
+        {
+          "artifactRef": "iphone-full-ui",
+          "mountRef": "control.progress",
+          "screenRef": "section.controls",
+          "surface": "wide"
+        },
+        {
+          "artifactRef": "watchos-full-ui",
+          "mountRef": "control.progress",
+          "screenRef": "section.controls",
+          "surface": "round"
+        },
+        {
+          "artifactRef": "garmin-limited-ui",
+          "mountRef": "control.progress",
+          "screenRef": "artifact.garmin-limited-ui",
+          "surface": "round"
+        }
+      ]
+    },
+    {
+      "componentInstanceRef": "control.press-ring",
+      "componentTypeRef": "control.press-ring",
+      "events": [
+        {
+          "contractRef": "showcase.renderer-action",
+          "eventPortRef": "control.press-ring.action",
+          "targetPortRef": "renderer.controlPressRing"
+        }
+      ],
+      "inputs": [
+        {
+          "contractRef": "showcase.catalog-presentation",
+          "inputPortRef": "control.press-ring.catalog",
+          "producerPortRef": "catalog.model",
+          "required": true
+        },
+        {
+          "contractRef": "showcase.navigation-presentation",
+          "inputPortRef": "control.press-ring.navigation",
+          "producerPortRef": "navigation.presentation.model",
+          "required": true
+        },
+        {
+          "contractRef": "showcase.renderer-presentation",
+          "inputPortRef": "control.press-ring.renderer",
+          "producerPortRef": "renderer.presentation.model",
+          "required": true
+        }
+      ],
+      "scopes": [
+        {
+          "artifactRef": "phone-full-ui",
+          "mountRef": "control.press-ring",
+          "screenRef": "section.controls",
+          "surface": "compact"
+        },
+        {
+          "artifactRef": "phone-full-ui",
+          "mountRef": "control.press-ring",
+          "screenRef": "section.controls",
+          "surface": "wide"
+        },
+        {
+          "artifactRef": "wear-full-ui",
+          "mountRef": "control.press-ring",
+          "screenRef": "section.controls",
+          "surface": "round"
+        },
+        {
+          "artifactRef": "iphone-full-ui",
+          "mountRef": "control.press-ring",
+          "screenRef": "section.controls",
+          "surface": "compact"
+        },
+        {
+          "artifactRef": "iphone-full-ui",
+          "mountRef": "control.press-ring",
+          "screenRef": "section.controls",
+          "surface": "wide"
+        },
+        {
+          "artifactRef": "watchos-full-ui",
+          "mountRef": "control.press-ring",
+          "screenRef": "section.controls",
+          "surface": "round"
+        }
+      ]
+    },
+    {
+      "componentInstanceRef": "input.text",
+      "componentTypeRef": "input.text",
+      "events": [
+        {
+          "contractRef": "showcase.renderer-action",
+          "eventPortRef": "input.text.action",
+          "targetPortRef": "renderer.inputText"
+        }
+      ],
+      "inputs": [
+        {
+          "contractRef": "showcase.catalog-presentation",
+          "inputPortRef": "input.text.catalog",
+          "producerPortRef": "catalog.model",
+          "required": true
+        },
+        {
+          "contractRef": "showcase.navigation-presentation",
+          "inputPortRef": "input.text.navigation",
+          "producerPortRef": "navigation.presentation.model",
+          "required": true
+        },
+        {
+          "contractRef": "showcase.renderer-presentation",
+          "inputPortRef": "input.text.renderer",
+          "producerPortRef": "renderer.presentation.model",
+          "required": true
+        }
+      ],
+      "scopes": [
+        {
+          "artifactRef": "phone-full-ui",
+          "mountRef": "input.text",
+          "screenRef": "section.input",
+          "surface": "compact"
+        },
+        {
+          "artifactRef": "phone-full-ui",
+          "mountRef": "input.text",
+          "screenRef": "section.input",
+          "surface": "wide"
+        },
+        {
+          "artifactRef": "wear-full-ui",
+          "mountRef": "input.text",
+          "screenRef": "section.input",
+          "surface": "round"
+        },
+        {
+          "artifactRef": "iphone-full-ui",
+          "mountRef": "input.text",
+          "screenRef": "section.input",
+          "surface": "compact"
+        },
+        {
+          "artifactRef": "iphone-full-ui",
+          "mountRef": "input.text",
+          "screenRef": "section.input",
+          "surface": "wide"
+        },
+        {
+          "artifactRef": "watchos-full-ui",
+          "mountRef": "input.text",
+          "screenRef": "section.input",
+          "surface": "round"
+        }
+      ]
+    },
+    {
+      "componentInstanceRef": "media.capture",
+      "componentTypeRef": "media.capture",
+      "events": [
+        {
+          "contractRef": "showcase.renderer-action",
+          "eventPortRef": "media.capture.action",
+          "targetPortRef": "renderer.mediaCapture"
+        }
+      ],
+      "inputs": [
+        {
+          "contractRef": "showcase.catalog-presentation",
+          "inputPortRef": "media.capture.catalog",
+          "producerPortRef": "catalog.model",
+          "required": true
+        },
+        {
+          "contractRef": "showcase.navigation-presentation",
+          "inputPortRef": "media.capture.navigation",
+          "producerPortRef": "navigation.presentation.model",
+          "required": true
+        },
+        {
+          "contractRef": "showcase.renderer-presentation",
+          "inputPortRef": "media.capture.renderer",
+          "producerPortRef": "renderer.presentation.model",
+          "required": true
+        }
+      ],
+      "scopes": [
+        {
+          "artifactRef": "phone-full-ui",
+          "mountRef": "media.capture",
+          "screenRef": "section.media",
+          "surface": "compact"
+        },
+        {
+          "artifactRef": "phone-full-ui",
+          "mountRef": "media.capture",
+          "screenRef": "section.media",
+          "surface": "wide"
+        },
+        {
+          "artifactRef": "wear-full-ui",
+          "mountRef": "media.capture",
+          "screenRef": "section.media",
+          "surface": "round"
+        },
+        {
+          "artifactRef": "iphone-full-ui",
+          "mountRef": "media.capture",
+          "screenRef": "section.media",
+          "surface": "compact"
+        },
+        {
+          "artifactRef": "iphone-full-ui",
+          "mountRef": "media.capture",
+          "screenRef": "section.media",
+          "surface": "wide"
+        },
+        {
+          "artifactRef": "watchos-full-ui",
+          "mountRef": "media.capture",
+          "screenRef": "section.media",
+          "surface": "round"
+        }
+      ]
+    },
+    {
+      "componentInstanceRef": "media.playback",
+      "componentTypeRef": "media.playback",
+      "events": [
+        {
+          "contractRef": "showcase.renderer-action",
+          "eventPortRef": "media.playback.action",
+          "targetPortRef": "renderer.mediaPlayback"
+        }
+      ],
+      "inputs": [
+        {
+          "contractRef": "showcase.catalog-presentation",
+          "inputPortRef": "media.playback.catalog",
+          "producerPortRef": "catalog.model",
+          "required": true
+        },
+        {
+          "contractRef": "showcase.navigation-presentation",
+          "inputPortRef": "media.playback.navigation",
+          "producerPortRef": "navigation.presentation.model",
+          "required": true
+        },
+        {
+          "contractRef": "showcase.renderer-presentation",
+          "inputPortRef": "media.playback.renderer",
+          "producerPortRef": "renderer.presentation.model",
+          "required": true
+        }
+      ],
+      "scopes": [
+        {
+          "artifactRef": "phone-full-ui",
+          "mountRef": "media.playback",
+          "screenRef": "section.media",
+          "surface": "compact"
+        },
+        {
+          "artifactRef": "phone-full-ui",
+          "mountRef": "media.playback",
+          "screenRef": "section.media",
+          "surface": "wide"
+        },
+        {
+          "artifactRef": "wear-full-ui",
+          "mountRef": "media.playback",
+          "screenRef": "section.media",
+          "surface": "round"
+        },
+        {
+          "artifactRef": "iphone-full-ui",
+          "mountRef": "media.playback",
+          "screenRef": "section.media",
+          "surface": "compact"
+        },
+        {
+          "artifactRef": "iphone-full-ui",
+          "mountRef": "media.playback",
+          "screenRef": "section.media",
+          "surface": "wide"
+        },
+        {
+          "artifactRef": "watchos-full-ui",
+          "mountRef": "media.playback",
+          "screenRef": "section.media",
+          "surface": "round"
+        }
+      ]
+    },
+    {
+      "componentInstanceRef": "template.screens",
+      "componentTypeRef": "template.screens",
+      "events": [
+        {
+          "contractRef": "showcase.renderer-action",
+          "eventPortRef": "template.screens.action",
+          "targetPortRef": "renderer.templateScreens"
+        }
+      ],
+      "inputs": [
+        {
+          "contractRef": "showcase.catalog-presentation",
+          "inputPortRef": "template.screens.catalog",
+          "producerPortRef": "catalog.model",
+          "required": true
+        },
+        {
+          "contractRef": "showcase.navigation-presentation",
+          "inputPortRef": "template.screens.navigation",
+          "producerPortRef": "navigation.presentation.model",
+          "required": true
+        },
+        {
+          "contractRef": "showcase.renderer-presentation",
+          "inputPortRef": "template.screens.renderer",
+          "producerPortRef": "renderer.presentation.model",
+          "required": true
+        }
+      ],
+      "scopes": [
+        {
+          "artifactRef": "phone-full-ui",
+          "mountRef": "template.screens",
+          "screenRef": "section.templates",
+          "surface": "compact"
+        },
+        {
+          "artifactRef": "phone-full-ui",
+          "mountRef": "template.screens",
+          "screenRef": "section.templates",
+          "surface": "wide"
+        },
+        {
+          "artifactRef": "wear-full-ui",
+          "mountRef": "template.screens",
+          "screenRef": "section.templates",
+          "surface": "round"
+        },
+        {
+          "artifactRef": "iphone-full-ui",
+          "mountRef": "template.screens",
+          "screenRef": "section.templates",
+          "surface": "compact"
+        },
+        {
+          "artifactRef": "iphone-full-ui",
+          "mountRef": "template.screens",
+          "screenRef": "section.templates",
+          "surface": "wide"
+        },
+        {
+          "artifactRef": "watchos-full-ui",
+          "mountRef": "template.screens",
+          "screenRef": "section.templates",
+          "surface": "round"
+        }
+      ]
+    },
+    {
+      "componentInstanceRef": "flow.source",
+      "componentTypeRef": "flow.source",
+      "events": [
+        {
+          "contractRef": "showcase.renderer-action",
+          "eventPortRef": "flow.source.action",
+          "targetPortRef": "renderer.flowSource"
+        }
+      ],
+      "inputs": [
+        {
+          "contractRef": "showcase.catalog-presentation",
+          "inputPortRef": "flow.source.catalog",
+          "producerPortRef": "catalog.model",
+          "required": true
+        },
+        {
+          "contractRef": "showcase.navigation-presentation",
+          "inputPortRef": "flow.source.navigation",
+          "producerPortRef": "navigation.presentation.model",
+          "required": true
+        },
+        {
+          "contractRef": "showcase.renderer-presentation",
+          "inputPortRef": "flow.source.renderer",
+          "producerPortRef": "renderer.presentation.model",
+          "required": true
+        }
+      ],
+      "scopes": [
+        {
+          "artifactRef": "phone-full-ui",
+          "mountRef": "flow.source",
+          "screenRef": "section.flows",
+          "surface": "compact"
+        },
+        {
+          "artifactRef": "phone-full-ui",
+          "mountRef": "flow.source",
+          "screenRef": "section.flows",
+          "surface": "wide"
+        },
+        {
+          "artifactRef": "wear-full-ui",
+          "mountRef": "flow.source",
+          "screenRef": "section.flows",
+          "surface": "round"
+        },
+        {
+          "artifactRef": "iphone-full-ui",
+          "mountRef": "flow.source",
+          "screenRef": "section.flows",
+          "surface": "compact"
+        },
+        {
+          "artifactRef": "iphone-full-ui",
+          "mountRef": "flow.source",
+          "screenRef": "section.flows",
+          "surface": "wide"
+        },
+        {
+          "artifactRef": "watchos-full-ui",
+          "mountRef": "flow.source",
+          "screenRef": "section.flows",
+          "surface": "round"
+        }
+      ]
+    },
+    {
+      "componentInstanceRef": "flow.update",
+      "componentTypeRef": "flow.update",
+      "events": [
+        {
+          "contractRef": "showcase.renderer-action",
+          "eventPortRef": "flow.update.action",
+          "targetPortRef": "renderer.flowUpdate"
+        }
+      ],
+      "inputs": [
+        {
+          "contractRef": "showcase.catalog-presentation",
+          "inputPortRef": "flow.update.catalog",
+          "producerPortRef": "catalog.model",
+          "required": true
+        },
+        {
+          "contractRef": "showcase.navigation-presentation",
+          "inputPortRef": "flow.update.navigation",
+          "producerPortRef": "navigation.presentation.model",
+          "required": true
+        },
+        {
+          "contractRef": "showcase.renderer-presentation",
+          "inputPortRef": "flow.update.renderer",
+          "producerPortRef": "renderer.presentation.model",
+          "required": true
+        }
+      ],
+      "scopes": [
+        {
+          "artifactRef": "phone-full-ui",
+          "mountRef": "flow.update",
+          "screenRef": "section.flows",
+          "surface": "compact"
+        },
+        {
+          "artifactRef": "phone-full-ui",
+          "mountRef": "flow.update",
+          "screenRef": "section.flows",
+          "surface": "wide"
+        },
+        {
+          "artifactRef": "wear-full-ui",
+          "mountRef": "flow.update",
+          "screenRef": "section.flows",
+          "surface": "round"
+        },
+        {
+          "artifactRef": "iphone-full-ui",
+          "mountRef": "flow.update",
+          "screenRef": "section.flows",
+          "surface": "compact"
+        },
+        {
+          "artifactRef": "iphone-full-ui",
+          "mountRef": "flow.update",
+          "screenRef": "section.flows",
+          "surface": "wide"
+        },
+        {
+          "artifactRef": "watchos-full-ui",
+          "mountRef": "flow.update",
+          "screenRef": "section.flows",
+          "surface": "round"
+        }
+      ]
+    },
+    {
+      "componentInstanceRef": "flow.service",
+      "componentTypeRef": "flow.service",
+      "events": [
+        {
+          "contractRef": "showcase.renderer-action",
+          "eventPortRef": "flow.service.action",
+          "targetPortRef": "renderer.flowService"
+        }
+      ],
+      "inputs": [
+        {
+          "contractRef": "showcase.catalog-presentation",
+          "inputPortRef": "flow.service.catalog",
+          "producerPortRef": "catalog.model",
+          "required": true
+        },
+        {
+          "contractRef": "showcase.navigation-presentation",
+          "inputPortRef": "flow.service.navigation",
+          "producerPortRef": "navigation.presentation.model",
+          "required": true
+        },
+        {
+          "contractRef": "showcase.renderer-presentation",
+          "inputPortRef": "flow.service.renderer",
+          "producerPortRef": "renderer.presentation.model",
+          "required": true
+        }
+      ],
+      "scopes": [
+        {
+          "artifactRef": "phone-full-ui",
+          "mountRef": "flow.service",
+          "screenRef": "section.flows",
+          "surface": "compact"
+        },
+        {
+          "artifactRef": "phone-full-ui",
+          "mountRef": "flow.service",
+          "screenRef": "section.flows",
+          "surface": "wide"
+        },
+        {
+          "artifactRef": "wear-full-ui",
+          "mountRef": "flow.service",
+          "screenRef": "section.flows",
+          "surface": "round"
+        },
+        {
+          "artifactRef": "iphone-full-ui",
+          "mountRef": "flow.service",
+          "screenRef": "section.flows",
+          "surface": "compact"
+        },
+        {
+          "artifactRef": "iphone-full-ui",
+          "mountRef": "flow.service",
+          "screenRef": "section.flows",
+          "surface": "wide"
+        },
+        {
+          "artifactRef": "watchos-full-ui",
+          "mountRef": "flow.service",
+          "screenRef": "section.flows",
+          "surface": "round"
+        }
+      ]
+    },
+    {
+      "componentInstanceRef": "page.host",
+      "componentTypeRef": "showcase.page-host",
+      "events": [],
+      "inputs": [
+        {
+          "contractRef": "showcase.navigation.active-page",
+          "inputPortRef": "page.host.activePage",
+          "producerPortRef": "navigation.activePage",
+          "required": true
+        }
+      ],
+      "scopes": [
+        {
+          "artifactRef": "phone-full-ui",
+          "mountRef": "page.host",
+          "screenRef": "section.foundations",
+          "surface": "compact"
+        },
+        {
+          "artifactRef": "phone-full-ui",
+          "mountRef": "page.host",
+          "screenRef": "section.foundations",
+          "surface": "wide"
+        },
+        {
+          "artifactRef": "phone-full-ui",
+          "mountRef": "page.host",
+          "screenRef": "section.atoms",
+          "surface": "compact"
+        },
+        {
+          "artifactRef": "phone-full-ui",
+          "mountRef": "page.host",
+          "screenRef": "section.atoms",
+          "surface": "wide"
+        },
+        {
+          "artifactRef": "phone-full-ui",
+          "mountRef": "page.host",
+          "screenRef": "section.controls",
+          "surface": "compact"
+        },
+        {
+          "artifactRef": "phone-full-ui",
+          "mountRef": "page.host",
+          "screenRef": "section.controls",
+          "surface": "wide"
+        },
+        {
+          "artifactRef": "phone-full-ui",
+          "mountRef": "page.host",
+          "screenRef": "section.input",
+          "surface": "compact"
+        },
+        {
+          "artifactRef": "phone-full-ui",
+          "mountRef": "page.host",
+          "screenRef": "section.input",
+          "surface": "wide"
+        },
+        {
+          "artifactRef": "phone-full-ui",
+          "mountRef": "page.host",
+          "screenRef": "section.media",
+          "surface": "compact"
+        },
+        {
+          "artifactRef": "phone-full-ui",
+          "mountRef": "page.host",
+          "screenRef": "section.media",
+          "surface": "wide"
+        },
+        {
+          "artifactRef": "phone-full-ui",
+          "mountRef": "page.host",
+          "screenRef": "section.templates",
+          "surface": "compact"
+        },
+        {
+          "artifactRef": "phone-full-ui",
+          "mountRef": "page.host",
+          "screenRef": "section.templates",
+          "surface": "wide"
+        },
+        {
+          "artifactRef": "phone-full-ui",
+          "mountRef": "page.host",
+          "screenRef": "section.flows",
+          "surface": "compact"
+        },
+        {
+          "artifactRef": "phone-full-ui",
+          "mountRef": "page.host",
+          "screenRef": "section.flows",
+          "surface": "wide"
+        },
+        {
+          "artifactRef": "wear-full-ui",
+          "mountRef": "page.host",
+          "screenRef": "section.foundations",
+          "surface": "round"
+        },
+        {
+          "artifactRef": "wear-full-ui",
+          "mountRef": "page.host",
+          "screenRef": "section.atoms",
+          "surface": "round"
+        },
+        {
+          "artifactRef": "wear-full-ui",
+          "mountRef": "page.host",
+          "screenRef": "section.controls",
+          "surface": "round"
+        },
+        {
+          "artifactRef": "wear-full-ui",
+          "mountRef": "page.host",
+          "screenRef": "section.input",
+          "surface": "round"
+        },
+        {
+          "artifactRef": "wear-full-ui",
+          "mountRef": "page.host",
+          "screenRef": "section.media",
+          "surface": "round"
+        },
+        {
+          "artifactRef": "wear-full-ui",
+          "mountRef": "page.host",
+          "screenRef": "section.templates",
+          "surface": "round"
+        },
+        {
+          "artifactRef": "wear-full-ui",
+          "mountRef": "page.host",
+          "screenRef": "section.flows",
+          "surface": "round"
+        },
+        {
+          "artifactRef": "iphone-full-ui",
+          "mountRef": "page.host",
+          "screenRef": "section.foundations",
+          "surface": "compact"
+        },
+        {
+          "artifactRef": "iphone-full-ui",
+          "mountRef": "page.host",
+          "screenRef": "section.foundations",
+          "surface": "wide"
+        },
+        {
+          "artifactRef": "iphone-full-ui",
+          "mountRef": "page.host",
+          "screenRef": "section.atoms",
+          "surface": "compact"
+        },
+        {
+          "artifactRef": "iphone-full-ui",
+          "mountRef": "page.host",
+          "screenRef": "section.atoms",
+          "surface": "wide"
+        },
+        {
+          "artifactRef": "iphone-full-ui",
+          "mountRef": "page.host",
+          "screenRef": "section.controls",
+          "surface": "compact"
+        },
+        {
+          "artifactRef": "iphone-full-ui",
+          "mountRef": "page.host",
+          "screenRef": "section.controls",
+          "surface": "wide"
+        },
+        {
+          "artifactRef": "iphone-full-ui",
+          "mountRef": "page.host",
+          "screenRef": "section.input",
+          "surface": "compact"
+        },
+        {
+          "artifactRef": "iphone-full-ui",
+          "mountRef": "page.host",
+          "screenRef": "section.input",
+          "surface": "wide"
+        },
+        {
+          "artifactRef": "iphone-full-ui",
+          "mountRef": "page.host",
+          "screenRef": "section.media",
+          "surface": "compact"
+        },
+        {
+          "artifactRef": "iphone-full-ui",
+          "mountRef": "page.host",
+          "screenRef": "section.media",
+          "surface": "wide"
+        },
+        {
+          "artifactRef": "iphone-full-ui",
+          "mountRef": "page.host",
+          "screenRef": "section.templates",
+          "surface": "compact"
+        },
+        {
+          "artifactRef": "iphone-full-ui",
+          "mountRef": "page.host",
+          "screenRef": "section.templates",
+          "surface": "wide"
+        },
+        {
+          "artifactRef": "iphone-full-ui",
+          "mountRef": "page.host",
+          "screenRef": "section.flows",
+          "surface": "compact"
+        },
+        {
+          "artifactRef": "iphone-full-ui",
+          "mountRef": "page.host",
+          "screenRef": "section.flows",
+          "surface": "wide"
+        },
+        {
+          "artifactRef": "watchos-full-ui",
+          "mountRef": "page.host",
+          "screenRef": "section.foundations",
+          "surface": "round"
+        },
+        {
+          "artifactRef": "watchos-full-ui",
+          "mountRef": "page.host",
+          "screenRef": "section.atoms",
+          "surface": "round"
+        },
+        {
+          "artifactRef": "watchos-full-ui",
+          "mountRef": "page.host",
+          "screenRef": "section.controls",
+          "surface": "round"
+        },
+        {
+          "artifactRef": "watchos-full-ui",
+          "mountRef": "page.host",
+          "screenRef": "section.input",
+          "surface": "round"
+        },
+        {
+          "artifactRef": "watchos-full-ui",
+          "mountRef": "page.host",
+          "screenRef": "section.media",
+          "surface": "round"
+        },
+        {
+          "artifactRef": "watchos-full-ui",
+          "mountRef": "page.host",
+          "screenRef": "section.templates",
+          "surface": "round"
+        },
+        {
+          "artifactRef": "watchos-full-ui",
+          "mountRef": "page.host",
+          "screenRef": "section.flows",
+          "surface": "round"
+        },
+        {
+          "artifactRef": "garmin-limited-ui",
+          "mountRef": "page.host",
+          "screenRef": "artifact.garmin-limited-ui",
+          "surface": "round"
+        }
+      ]
+    },
+    {
+      "componentInstanceRef": "page.menu",
+      "componentTypeRef": "showcase.page-menu",
+      "events": [
+        {
+          "contractRef": "showcase.navigation.route-intent",
+          "eventPortRef": "page.menu.route",
+          "targetPortRef": "navigation.route"
+        },
+        {
+          "contractRef": "showcase.open-action",
+          "eventPortRef": "page.menu.foundationColors",
+          "targetPortRef": "navigation.foundationColors"
+        },
+        {
+          "contractRef": "showcase.open-action",
+          "eventPortRef": "page.menu.foundationGeometry",
+          "targetPortRef": "navigation.foundationGeometry"
+        },
+        {
+          "contractRef": "showcase.open-action",
+          "eventPortRef": "page.menu.atomIconAction",
+          "targetPortRef": "navigation.atomIconAction"
+        },
+        {
+          "contractRef": "showcase.open-action",
+          "eventPortRef": "page.menu.controlActionRow",
+          "targetPortRef": "navigation.controlActionRow"
+        },
+        {
+          "contractRef": "showcase.open-action",
+          "eventPortRef": "page.menu.controlChoiceRow",
+          "targetPortRef": "navigation.controlChoiceRow"
+        },
+        {
+          "contractRef": "showcase.open-action",
+          "eventPortRef": "page.menu.controlAdjustment",
+          "targetPortRef": "navigation.controlAdjustment"
+        },
+        {
+          "contractRef": "showcase.open-action",
+          "eventPortRef": "page.menu.controlProgress",
+          "targetPortRef": "navigation.controlProgress"
+        },
+        {
+          "contractRef": "showcase.open-action",
+          "eventPortRef": "page.menu.controlPressRing",
+          "targetPortRef": "navigation.controlPressRing"
+        },
+        {
+          "contractRef": "showcase.open-action",
+          "eventPortRef": "page.menu.inputText",
+          "targetPortRef": "navigation.inputText"
+        },
+        {
+          "contractRef": "showcase.open-action",
+          "eventPortRef": "page.menu.mediaCapture",
+          "targetPortRef": "navigation.mediaCapture"
+        },
+        {
+          "contractRef": "showcase.open-action",
+          "eventPortRef": "page.menu.mediaPlayback",
+          "targetPortRef": "navigation.mediaPlayback"
+        },
+        {
+          "contractRef": "showcase.open-action",
+          "eventPortRef": "page.menu.templateScreens",
+          "targetPortRef": "navigation.templateScreens"
+        },
+        {
+          "contractRef": "showcase.open-action",
+          "eventPortRef": "page.menu.flowSource",
+          "targetPortRef": "navigation.flowSource"
+        },
+        {
+          "contractRef": "showcase.open-action",
+          "eventPortRef": "page.menu.flowUpdate",
+          "targetPortRef": "navigation.flowUpdate"
+        },
+        {
+          "contractRef": "showcase.open-action",
+          "eventPortRef": "page.menu.flowService",
+          "targetPortRef": "navigation.flowService"
+        }
+      ],
+      "inputs": [],
+      "scopes": [
+        {
+          "artifactRef": "phone-full-ui",
+          "mountRef": "page.menu",
+          "screenRef": "section.foundations",
+          "surface": "compact"
+        },
+        {
+          "artifactRef": "phone-full-ui",
+          "mountRef": "page.menu",
+          "screenRef": "section.foundations",
+          "surface": "wide"
+        },
+        {
+          "artifactRef": "phone-full-ui",
+          "mountRef": "page.menu",
+          "screenRef": "section.atoms",
+          "surface": "compact"
+        },
+        {
+          "artifactRef": "phone-full-ui",
+          "mountRef": "page.menu",
+          "screenRef": "section.atoms",
+          "surface": "wide"
+        },
+        {
+          "artifactRef": "phone-full-ui",
+          "mountRef": "page.menu",
+          "screenRef": "section.controls",
+          "surface": "compact"
+        },
+        {
+          "artifactRef": "phone-full-ui",
+          "mountRef": "page.menu",
+          "screenRef": "section.controls",
+          "surface": "wide"
+        },
+        {
+          "artifactRef": "phone-full-ui",
+          "mountRef": "page.menu",
+          "screenRef": "section.input",
+          "surface": "compact"
+        },
+        {
+          "artifactRef": "phone-full-ui",
+          "mountRef": "page.menu",
+          "screenRef": "section.input",
+          "surface": "wide"
+        },
+        {
+          "artifactRef": "phone-full-ui",
+          "mountRef": "page.menu",
+          "screenRef": "section.media",
+          "surface": "compact"
+        },
+        {
+          "artifactRef": "phone-full-ui",
+          "mountRef": "page.menu",
+          "screenRef": "section.media",
+          "surface": "wide"
+        },
+        {
+          "artifactRef": "phone-full-ui",
+          "mountRef": "page.menu",
+          "screenRef": "section.templates",
+          "surface": "compact"
+        },
+        {
+          "artifactRef": "phone-full-ui",
+          "mountRef": "page.menu",
+          "screenRef": "section.templates",
+          "surface": "wide"
+        },
+        {
+          "artifactRef": "phone-full-ui",
+          "mountRef": "page.menu",
+          "screenRef": "section.flows",
+          "surface": "compact"
+        },
+        {
+          "artifactRef": "phone-full-ui",
+          "mountRef": "page.menu",
+          "screenRef": "section.flows",
+          "surface": "wide"
+        },
+        {
+          "artifactRef": "wear-full-ui",
+          "mountRef": "page.menu",
+          "screenRef": "section.foundations",
+          "surface": "round"
+        },
+        {
+          "artifactRef": "wear-full-ui",
+          "mountRef": "page.menu",
+          "screenRef": "section.atoms",
+          "surface": "round"
+        },
+        {
+          "artifactRef": "wear-full-ui",
+          "mountRef": "page.menu",
+          "screenRef": "section.controls",
+          "surface": "round"
+        },
+        {
+          "artifactRef": "wear-full-ui",
+          "mountRef": "page.menu",
+          "screenRef": "section.input",
+          "surface": "round"
+        },
+        {
+          "artifactRef": "wear-full-ui",
+          "mountRef": "page.menu",
+          "screenRef": "section.media",
+          "surface": "round"
+        },
+        {
+          "artifactRef": "wear-full-ui",
+          "mountRef": "page.menu",
+          "screenRef": "section.templates",
+          "surface": "round"
+        },
+        {
+          "artifactRef": "wear-full-ui",
+          "mountRef": "page.menu",
+          "screenRef": "section.flows",
+          "surface": "round"
+        },
+        {
+          "artifactRef": "iphone-full-ui",
+          "mountRef": "page.menu",
+          "screenRef": "section.foundations",
+          "surface": "compact"
+        },
+        {
+          "artifactRef": "iphone-full-ui",
+          "mountRef": "page.menu",
+          "screenRef": "section.foundations",
+          "surface": "wide"
+        },
+        {
+          "artifactRef": "iphone-full-ui",
+          "mountRef": "page.menu",
+          "screenRef": "section.atoms",
+          "surface": "compact"
+        },
+        {
+          "artifactRef": "iphone-full-ui",
+          "mountRef": "page.menu",
+          "screenRef": "section.atoms",
+          "surface": "wide"
+        },
+        {
+          "artifactRef": "iphone-full-ui",
+          "mountRef": "page.menu",
+          "screenRef": "section.controls",
+          "surface": "compact"
+        },
+        {
+          "artifactRef": "iphone-full-ui",
+          "mountRef": "page.menu",
+          "screenRef": "section.controls",
+          "surface": "wide"
+        },
+        {
+          "artifactRef": "iphone-full-ui",
+          "mountRef": "page.menu",
+          "screenRef": "section.input",
+          "surface": "compact"
+        },
+        {
+          "artifactRef": "iphone-full-ui",
+          "mountRef": "page.menu",
+          "screenRef": "section.input",
+          "surface": "wide"
+        },
+        {
+          "artifactRef": "iphone-full-ui",
+          "mountRef": "page.menu",
+          "screenRef": "section.media",
+          "surface": "compact"
+        },
+        {
+          "artifactRef": "iphone-full-ui",
+          "mountRef": "page.menu",
+          "screenRef": "section.media",
+          "surface": "wide"
+        },
+        {
+          "artifactRef": "iphone-full-ui",
+          "mountRef": "page.menu",
+          "screenRef": "section.templates",
+          "surface": "compact"
+        },
+        {
+          "artifactRef": "iphone-full-ui",
+          "mountRef": "page.menu",
+          "screenRef": "section.templates",
+          "surface": "wide"
+        },
+        {
+          "artifactRef": "iphone-full-ui",
+          "mountRef": "page.menu",
+          "screenRef": "section.flows",
+          "surface": "compact"
+        },
+        {
+          "artifactRef": "iphone-full-ui",
+          "mountRef": "page.menu",
+          "screenRef": "section.flows",
+          "surface": "wide"
+        },
+        {
+          "artifactRef": "watchos-full-ui",
+          "mountRef": "page.menu",
+          "screenRef": "section.foundations",
+          "surface": "round"
+        },
+        {
+          "artifactRef": "watchos-full-ui",
+          "mountRef": "page.menu",
+          "screenRef": "section.atoms",
+          "surface": "round"
+        },
+        {
+          "artifactRef": "watchos-full-ui",
+          "mountRef": "page.menu",
+          "screenRef": "section.controls",
+          "surface": "round"
+        },
+        {
+          "artifactRef": "watchos-full-ui",
+          "mountRef": "page.menu",
+          "screenRef": "section.input",
+          "surface": "round"
+        },
+        {
+          "artifactRef": "watchos-full-ui",
+          "mountRef": "page.menu",
+          "screenRef": "section.media",
+          "surface": "round"
+        },
+        {
+          "artifactRef": "watchos-full-ui",
+          "mountRef": "page.menu",
+          "screenRef": "section.templates",
+          "surface": "round"
+        },
+        {
+          "artifactRef": "watchos-full-ui",
+          "mountRef": "page.menu",
+          "screenRef": "section.flows",
+          "surface": "round"
+        }
+      ]
+    }
+  ],
   "components": [
     {
       "bindings": {
-        "events": {
-          "open": "navigation.foundationColors"
-        },
+        "events": {},
         "inputs": {
           "catalog": "catalog.model",
           "navigation": "navigation.presentation.model"
@@ -2394,9 +4025,7 @@
     },
     {
       "bindings": {
-        "events": {
-          "open": "navigation.foundationGeometry"
-        },
+        "events": {},
         "inputs": {
           "catalog": "catalog.model",
           "navigation": "navigation.presentation.model"
@@ -2408,11 +4037,12 @@
     {
       "bindings": {
         "events": {
-          "open": "navigation.atomIconAction"
+          "action": "renderer.atomIconAction"
         },
         "inputs": {
           "catalog": "catalog.model",
-          "navigation": "navigation.presentation.model"
+          "navigation": "navigation.presentation.model",
+          "renderer": "renderer.presentation.model"
         }
       },
       "componentTypeRef": "atom.icon-action",
@@ -2421,11 +4051,12 @@
     {
       "bindings": {
         "events": {
-          "open": "navigation.controlActionRow"
+          "action": "renderer.controlActionRow"
         },
         "inputs": {
           "catalog": "catalog.model",
-          "navigation": "navigation.presentation.model"
+          "navigation": "navigation.presentation.model",
+          "renderer": "renderer.presentation.model"
         }
       },
       "componentTypeRef": "control.action-row",
@@ -2434,11 +4065,12 @@
     {
       "bindings": {
         "events": {
-          "open": "navigation.controlChoiceRow"
+          "action": "renderer.controlChoiceRow"
         },
         "inputs": {
           "catalog": "catalog.model",
-          "navigation": "navigation.presentation.model"
+          "navigation": "navigation.presentation.model",
+          "renderer": "renderer.presentation.model"
         }
       },
       "componentTypeRef": "control.choice-row",
@@ -2447,11 +4079,12 @@
     {
       "bindings": {
         "events": {
-          "open": "navigation.controlAdjustment"
+          "action": "renderer.controlAdjustment"
         },
         "inputs": {
           "catalog": "catalog.model",
-          "navigation": "navigation.presentation.model"
+          "navigation": "navigation.presentation.model",
+          "renderer": "renderer.presentation.model"
         }
       },
       "componentTypeRef": "control.adjustment",
@@ -2460,11 +4093,12 @@
     {
       "bindings": {
         "events": {
-          "open": "navigation.controlProgress"
+          "action": "renderer.controlProgress"
         },
         "inputs": {
           "catalog": "catalog.model",
-          "navigation": "navigation.presentation.model"
+          "navigation": "navigation.presentation.model",
+          "renderer": "renderer.presentation.model"
         }
       },
       "componentTypeRef": "control.progress",
@@ -2473,11 +4107,12 @@
     {
       "bindings": {
         "events": {
-          "open": "navigation.controlPressRing"
+          "action": "renderer.controlPressRing"
         },
         "inputs": {
           "catalog": "catalog.model",
-          "navigation": "navigation.presentation.model"
+          "navigation": "navigation.presentation.model",
+          "renderer": "renderer.presentation.model"
         }
       },
       "componentTypeRef": "control.press-ring",
@@ -2486,11 +4121,12 @@
     {
       "bindings": {
         "events": {
-          "open": "navigation.inputText"
+          "action": "renderer.inputText"
         },
         "inputs": {
           "catalog": "catalog.model",
-          "navigation": "navigation.presentation.model"
+          "navigation": "navigation.presentation.model",
+          "renderer": "renderer.presentation.model"
         }
       },
       "componentTypeRef": "input.text",
@@ -2499,11 +4135,12 @@
     {
       "bindings": {
         "events": {
-          "open": "navigation.mediaCapture"
+          "action": "renderer.mediaCapture"
         },
         "inputs": {
           "catalog": "catalog.model",
-          "navigation": "navigation.presentation.model"
+          "navigation": "navigation.presentation.model",
+          "renderer": "renderer.presentation.model"
         }
       },
       "componentTypeRef": "media.capture",
@@ -2512,11 +4149,12 @@
     {
       "bindings": {
         "events": {
-          "open": "navigation.mediaPlayback"
+          "action": "renderer.mediaPlayback"
         },
         "inputs": {
           "catalog": "catalog.model",
-          "navigation": "navigation.presentation.model"
+          "navigation": "navigation.presentation.model",
+          "renderer": "renderer.presentation.model"
         }
       },
       "componentTypeRef": "media.playback",
@@ -2525,11 +4163,12 @@
     {
       "bindings": {
         "events": {
-          "open": "navigation.templateScreens"
+          "action": "renderer.templateScreens"
         },
         "inputs": {
           "catalog": "catalog.model",
-          "navigation": "navigation.presentation.model"
+          "navigation": "navigation.presentation.model",
+          "renderer": "renderer.presentation.model"
         }
       },
       "componentTypeRef": "template.screens",
@@ -2538,11 +4177,12 @@
     {
       "bindings": {
         "events": {
-          "open": "navigation.flowSource"
+          "action": "renderer.flowSource"
         },
         "inputs": {
           "catalog": "catalog.model",
-          "navigation": "navigation.presentation.model"
+          "navigation": "navigation.presentation.model",
+          "renderer": "renderer.presentation.model"
         }
       },
       "componentTypeRef": "flow.source",
@@ -2551,11 +4191,12 @@
     {
       "bindings": {
         "events": {
-          "open": "navigation.flowUpdate"
+          "action": "renderer.flowUpdate"
         },
         "inputs": {
           "catalog": "catalog.model",
-          "navigation": "navigation.presentation.model"
+          "navigation": "navigation.presentation.model",
+          "renderer": "renderer.presentation.model"
         }
       },
       "componentTypeRef": "flow.update",
@@ -2564,11 +4205,12 @@
     {
       "bindings": {
         "events": {
-          "open": "navigation.flowService"
+          "action": "renderer.flowService"
         },
         "inputs": {
           "catalog": "catalog.model",
-          "navigation": "navigation.presentation.model"
+          "navigation": "navigation.presentation.model",
+          "renderer": "renderer.presentation.model"
         }
       },
       "componentTypeRef": "flow.service",
@@ -2587,7 +4229,22 @@
     {
       "bindings": {
         "events": {
-          "route": "navigation.route"
+          "atomIconAction": "navigation.atomIconAction",
+          "controlActionRow": "navigation.controlActionRow",
+          "controlAdjustment": "navigation.controlAdjustment",
+          "controlChoiceRow": "navigation.controlChoiceRow",
+          "controlPressRing": "navigation.controlPressRing",
+          "controlProgress": "navigation.controlProgress",
+          "flowService": "navigation.flowService",
+          "flowSource": "navigation.flowSource",
+          "flowUpdate": "navigation.flowUpdate",
+          "foundationColors": "navigation.foundationColors",
+          "foundationGeometry": "navigation.foundationGeometry",
+          "inputText": "navigation.inputText",
+          "mediaCapture": "navigation.mediaCapture",
+          "mediaPlayback": "navigation.mediaPlayback",
+          "route": "navigation.route",
+          "templateScreens": "navigation.templateScreens"
         },
         "inputs": {}
       },
@@ -2656,31 +4313,7 @@
           "required": true
         }
       ],
-      "outputs": [
-        {
-          "contract": {
-            "boundary": "ui-event",
-            "fields": [
-              {
-                "clockDomain": "none",
-                "name": "caseId",
-                "nullable": false,
-                "value": "string"
-              },
-              {
-                "clockDomain": "none",
-                "name": "scenarioId",
-                "nullable": true,
-                "value": "string"
-              }
-            ],
-            "id": "showcase.open-action",
-            "kind": "event"
-          },
-          "id": "open",
-          "required": true
-        }
-      ],
+      "outputs": [],
       "requiredCapabilities": [
         "ui.component-tree"
       ]
@@ -2745,31 +4378,7 @@
           "required": true
         }
       ],
-      "outputs": [
-        {
-          "contract": {
-            "boundary": "ui-event",
-            "fields": [
-              {
-                "clockDomain": "none",
-                "name": "caseId",
-                "nullable": false,
-                "value": "string"
-              },
-              {
-                "clockDomain": "none",
-                "name": "scenarioId",
-                "nullable": true,
-                "value": "string"
-              }
-            ],
-            "id": "showcase.open-action",
-            "kind": "event"
-          },
-          "id": "open",
-          "required": true
-        }
-      ],
+      "outputs": [],
       "requiredCapabilities": [
         "ui.component-tree"
       ]
@@ -2832,6 +4441,25 @@
           },
           "id": "navigation",
           "required": true
+        },
+        {
+          "contract": {
+            "boundary": "presentation",
+            "fields": [
+              {
+                "clockDomain": "none",
+                "name": "model",
+                "nullable": false,
+                "value": {
+                  "ref": "showcase.renderer-model"
+                }
+              }
+            ],
+            "id": "showcase.renderer-presentation",
+            "kind": "snapshot"
+          },
+          "id": "renderer",
+          "required": true
         }
       ],
       "outputs": [
@@ -2841,21 +4469,21 @@
             "fields": [
               {
                 "clockDomain": "none",
-                "name": "caseId",
+                "name": "actionId",
                 "nullable": false,
                 "value": "string"
               },
               {
                 "clockDomain": "none",
-                "name": "scenarioId",
+                "name": "value",
                 "nullable": true,
                 "value": "string"
               }
             ],
-            "id": "showcase.open-action",
+            "id": "showcase.renderer-action",
             "kind": "event"
           },
-          "id": "open",
+          "id": "action",
           "required": true
         }
       ],
@@ -2921,6 +4549,25 @@
           },
           "id": "navigation",
           "required": true
+        },
+        {
+          "contract": {
+            "boundary": "presentation",
+            "fields": [
+              {
+                "clockDomain": "none",
+                "name": "model",
+                "nullable": false,
+                "value": {
+                  "ref": "showcase.renderer-model"
+                }
+              }
+            ],
+            "id": "showcase.renderer-presentation",
+            "kind": "snapshot"
+          },
+          "id": "renderer",
+          "required": true
         }
       ],
       "outputs": [
@@ -2930,21 +4577,21 @@
             "fields": [
               {
                 "clockDomain": "none",
-                "name": "caseId",
+                "name": "actionId",
                 "nullable": false,
                 "value": "string"
               },
               {
                 "clockDomain": "none",
-                "name": "scenarioId",
+                "name": "value",
                 "nullable": true,
                 "value": "string"
               }
             ],
-            "id": "showcase.open-action",
+            "id": "showcase.renderer-action",
             "kind": "event"
           },
-          "id": "open",
+          "id": "action",
           "required": true
         }
       ],
@@ -3010,6 +4657,25 @@
           },
           "id": "navigation",
           "required": true
+        },
+        {
+          "contract": {
+            "boundary": "presentation",
+            "fields": [
+              {
+                "clockDomain": "none",
+                "name": "model",
+                "nullable": false,
+                "value": {
+                  "ref": "showcase.renderer-model"
+                }
+              }
+            ],
+            "id": "showcase.renderer-presentation",
+            "kind": "snapshot"
+          },
+          "id": "renderer",
+          "required": true
         }
       ],
       "outputs": [
@@ -3019,21 +4685,21 @@
             "fields": [
               {
                 "clockDomain": "none",
-                "name": "caseId",
+                "name": "actionId",
                 "nullable": false,
                 "value": "string"
               },
               {
                 "clockDomain": "none",
-                "name": "scenarioId",
+                "name": "value",
                 "nullable": true,
                 "value": "string"
               }
             ],
-            "id": "showcase.open-action",
+            "id": "showcase.renderer-action",
             "kind": "event"
           },
-          "id": "open",
+          "id": "action",
           "required": true
         }
       ],
@@ -3099,6 +4765,25 @@
           },
           "id": "navigation",
           "required": true
+        },
+        {
+          "contract": {
+            "boundary": "presentation",
+            "fields": [
+              {
+                "clockDomain": "none",
+                "name": "model",
+                "nullable": false,
+                "value": {
+                  "ref": "showcase.renderer-model"
+                }
+              }
+            ],
+            "id": "showcase.renderer-presentation",
+            "kind": "snapshot"
+          },
+          "id": "renderer",
+          "required": true
         }
       ],
       "outputs": [
@@ -3108,21 +4793,21 @@
             "fields": [
               {
                 "clockDomain": "none",
-                "name": "caseId",
+                "name": "actionId",
                 "nullable": false,
                 "value": "string"
               },
               {
                 "clockDomain": "none",
-                "name": "scenarioId",
+                "name": "value",
                 "nullable": true,
                 "value": "string"
               }
             ],
-            "id": "showcase.open-action",
+            "id": "showcase.renderer-action",
             "kind": "event"
           },
-          "id": "open",
+          "id": "action",
           "required": true
         }
       ],
@@ -3188,6 +4873,25 @@
           },
           "id": "navigation",
           "required": true
+        },
+        {
+          "contract": {
+            "boundary": "presentation",
+            "fields": [
+              {
+                "clockDomain": "none",
+                "name": "model",
+                "nullable": false,
+                "value": {
+                  "ref": "showcase.renderer-model"
+                }
+              }
+            ],
+            "id": "showcase.renderer-presentation",
+            "kind": "snapshot"
+          },
+          "id": "renderer",
+          "required": true
         }
       ],
       "outputs": [
@@ -3197,21 +4901,21 @@
             "fields": [
               {
                 "clockDomain": "none",
-                "name": "caseId",
+                "name": "actionId",
                 "nullable": false,
                 "value": "string"
               },
               {
                 "clockDomain": "none",
-                "name": "scenarioId",
+                "name": "value",
                 "nullable": true,
                 "value": "string"
               }
             ],
-            "id": "showcase.open-action",
+            "id": "showcase.renderer-action",
             "kind": "event"
           },
-          "id": "open",
+          "id": "action",
           "required": true
         }
       ],
@@ -3277,6 +4981,25 @@
           },
           "id": "navigation",
           "required": true
+        },
+        {
+          "contract": {
+            "boundary": "presentation",
+            "fields": [
+              {
+                "clockDomain": "none",
+                "name": "model",
+                "nullable": false,
+                "value": {
+                  "ref": "showcase.renderer-model"
+                }
+              }
+            ],
+            "id": "showcase.renderer-presentation",
+            "kind": "snapshot"
+          },
+          "id": "renderer",
+          "required": true
         }
       ],
       "outputs": [
@@ -3286,21 +5009,21 @@
             "fields": [
               {
                 "clockDomain": "none",
-                "name": "caseId",
+                "name": "actionId",
                 "nullable": false,
                 "value": "string"
               },
               {
                 "clockDomain": "none",
-                "name": "scenarioId",
+                "name": "value",
                 "nullable": true,
                 "value": "string"
               }
             ],
-            "id": "showcase.open-action",
+            "id": "showcase.renderer-action",
             "kind": "event"
           },
-          "id": "open",
+          "id": "action",
           "required": true
         }
       ],
@@ -3366,6 +5089,25 @@
           },
           "id": "navigation",
           "required": true
+        },
+        {
+          "contract": {
+            "boundary": "presentation",
+            "fields": [
+              {
+                "clockDomain": "none",
+                "name": "model",
+                "nullable": false,
+                "value": {
+                  "ref": "showcase.renderer-model"
+                }
+              }
+            ],
+            "id": "showcase.renderer-presentation",
+            "kind": "snapshot"
+          },
+          "id": "renderer",
+          "required": true
         }
       ],
       "outputs": [
@@ -3375,21 +5117,21 @@
             "fields": [
               {
                 "clockDomain": "none",
-                "name": "caseId",
+                "name": "actionId",
                 "nullable": false,
                 "value": "string"
               },
               {
                 "clockDomain": "none",
-                "name": "scenarioId",
+                "name": "value",
                 "nullable": true,
                 "value": "string"
               }
             ],
-            "id": "showcase.open-action",
+            "id": "showcase.renderer-action",
             "kind": "event"
           },
-          "id": "open",
+          "id": "action",
           "required": true
         }
       ],
@@ -3455,6 +5197,25 @@
           },
           "id": "navigation",
           "required": true
+        },
+        {
+          "contract": {
+            "boundary": "presentation",
+            "fields": [
+              {
+                "clockDomain": "none",
+                "name": "model",
+                "nullable": false,
+                "value": {
+                  "ref": "showcase.renderer-model"
+                }
+              }
+            ],
+            "id": "showcase.renderer-presentation",
+            "kind": "snapshot"
+          },
+          "id": "renderer",
+          "required": true
         }
       ],
       "outputs": [
@@ -3464,21 +5225,21 @@
             "fields": [
               {
                 "clockDomain": "none",
-                "name": "caseId",
+                "name": "actionId",
                 "nullable": false,
                 "value": "string"
               },
               {
                 "clockDomain": "none",
-                "name": "scenarioId",
+                "name": "value",
                 "nullable": true,
                 "value": "string"
               }
             ],
-            "id": "showcase.open-action",
+            "id": "showcase.renderer-action",
             "kind": "event"
           },
-          "id": "open",
+          "id": "action",
           "required": true
         }
       ],
@@ -3544,6 +5305,25 @@
           },
           "id": "navigation",
           "required": true
+        },
+        {
+          "contract": {
+            "boundary": "presentation",
+            "fields": [
+              {
+                "clockDomain": "none",
+                "name": "model",
+                "nullable": false,
+                "value": {
+                  "ref": "showcase.renderer-model"
+                }
+              }
+            ],
+            "id": "showcase.renderer-presentation",
+            "kind": "snapshot"
+          },
+          "id": "renderer",
+          "required": true
         }
       ],
       "outputs": [
@@ -3553,21 +5333,21 @@
             "fields": [
               {
                 "clockDomain": "none",
-                "name": "caseId",
+                "name": "actionId",
                 "nullable": false,
                 "value": "string"
               },
               {
                 "clockDomain": "none",
-                "name": "scenarioId",
+                "name": "value",
                 "nullable": true,
                 "value": "string"
               }
             ],
-            "id": "showcase.open-action",
+            "id": "showcase.renderer-action",
             "kind": "event"
           },
-          "id": "open",
+          "id": "action",
           "required": true
         }
       ],
@@ -3633,6 +5413,25 @@
           },
           "id": "navigation",
           "required": true
+        },
+        {
+          "contract": {
+            "boundary": "presentation",
+            "fields": [
+              {
+                "clockDomain": "none",
+                "name": "model",
+                "nullable": false,
+                "value": {
+                  "ref": "showcase.renderer-model"
+                }
+              }
+            ],
+            "id": "showcase.renderer-presentation",
+            "kind": "snapshot"
+          },
+          "id": "renderer",
+          "required": true
         }
       ],
       "outputs": [
@@ -3642,21 +5441,21 @@
             "fields": [
               {
                 "clockDomain": "none",
-                "name": "caseId",
+                "name": "actionId",
                 "nullable": false,
                 "value": "string"
               },
               {
                 "clockDomain": "none",
-                "name": "scenarioId",
+                "name": "value",
                 "nullable": true,
                 "value": "string"
               }
             ],
-            "id": "showcase.open-action",
+            "id": "showcase.renderer-action",
             "kind": "event"
           },
-          "id": "open",
+          "id": "action",
           "required": true
         }
       ],
@@ -3722,6 +5521,25 @@
           },
           "id": "navigation",
           "required": true
+        },
+        {
+          "contract": {
+            "boundary": "presentation",
+            "fields": [
+              {
+                "clockDomain": "none",
+                "name": "model",
+                "nullable": false,
+                "value": {
+                  "ref": "showcase.renderer-model"
+                }
+              }
+            ],
+            "id": "showcase.renderer-presentation",
+            "kind": "snapshot"
+          },
+          "id": "renderer",
+          "required": true
         }
       ],
       "outputs": [
@@ -3731,21 +5549,21 @@
             "fields": [
               {
                 "clockDomain": "none",
-                "name": "caseId",
+                "name": "actionId",
                 "nullable": false,
                 "value": "string"
               },
               {
                 "clockDomain": "none",
-                "name": "scenarioId",
+                "name": "value",
                 "nullable": true,
                 "value": "string"
               }
             ],
-            "id": "showcase.open-action",
+            "id": "showcase.renderer-action",
             "kind": "event"
           },
-          "id": "open",
+          "id": "action",
           "required": true
         }
       ],
@@ -3811,6 +5629,25 @@
           },
           "id": "navigation",
           "required": true
+        },
+        {
+          "contract": {
+            "boundary": "presentation",
+            "fields": [
+              {
+                "clockDomain": "none",
+                "name": "model",
+                "nullable": false,
+                "value": {
+                  "ref": "showcase.renderer-model"
+                }
+              }
+            ],
+            "id": "showcase.renderer-presentation",
+            "kind": "snapshot"
+          },
+          "id": "renderer",
+          "required": true
         }
       ],
       "outputs": [
@@ -3820,21 +5657,21 @@
             "fields": [
               {
                 "clockDomain": "none",
-                "name": "caseId",
+                "name": "actionId",
                 "nullable": false,
                 "value": "string"
               },
               {
                 "clockDomain": "none",
-                "name": "scenarioId",
+                "name": "value",
                 "nullable": true,
                 "value": "string"
               }
             ],
-            "id": "showcase.open-action",
+            "id": "showcase.renderer-action",
             "kind": "event"
           },
-          "id": "open",
+          "id": "action",
           "required": true
         }
       ],
@@ -3900,6 +5737,25 @@
           },
           "id": "navigation",
           "required": true
+        },
+        {
+          "contract": {
+            "boundary": "presentation",
+            "fields": [
+              {
+                "clockDomain": "none",
+                "name": "model",
+                "nullable": false,
+                "value": {
+                  "ref": "showcase.renderer-model"
+                }
+              }
+            ],
+            "id": "showcase.renderer-presentation",
+            "kind": "snapshot"
+          },
+          "id": "renderer",
+          "required": true
         }
       ],
       "outputs": [
@@ -3909,21 +5765,21 @@
             "fields": [
               {
                 "clockDomain": "none",
-                "name": "caseId",
+                "name": "actionId",
                 "nullable": false,
                 "value": "string"
               },
               {
                 "clockDomain": "none",
-                "name": "scenarioId",
+                "name": "value",
                 "nullable": true,
                 "value": "string"
               }
             ],
-            "id": "showcase.open-action",
+            "id": "showcase.renderer-action",
             "kind": "event"
           },
-          "id": "open",
+          "id": "action",
           "required": true
         }
       ],
@@ -3989,6 +5845,351 @@
             }
           },
           "id": "route",
+          "required": true
+        },
+        {
+          "contract": {
+            "boundary": "ui-event",
+            "fields": [
+              {
+                "clockDomain": "none",
+                "name": "caseId",
+                "nullable": false,
+                "value": "string"
+              },
+              {
+                "clockDomain": "none",
+                "name": "scenarioId",
+                "nullable": true,
+                "value": "string"
+              }
+            ],
+            "id": "showcase.open-action",
+            "kind": "event"
+          },
+          "id": "foundationColors",
+          "required": true
+        },
+        {
+          "contract": {
+            "boundary": "ui-event",
+            "fields": [
+              {
+                "clockDomain": "none",
+                "name": "caseId",
+                "nullable": false,
+                "value": "string"
+              },
+              {
+                "clockDomain": "none",
+                "name": "scenarioId",
+                "nullable": true,
+                "value": "string"
+              }
+            ],
+            "id": "showcase.open-action",
+            "kind": "event"
+          },
+          "id": "foundationGeometry",
+          "required": true
+        },
+        {
+          "contract": {
+            "boundary": "ui-event",
+            "fields": [
+              {
+                "clockDomain": "none",
+                "name": "caseId",
+                "nullable": false,
+                "value": "string"
+              },
+              {
+                "clockDomain": "none",
+                "name": "scenarioId",
+                "nullable": true,
+                "value": "string"
+              }
+            ],
+            "id": "showcase.open-action",
+            "kind": "event"
+          },
+          "id": "atomIconAction",
+          "required": true
+        },
+        {
+          "contract": {
+            "boundary": "ui-event",
+            "fields": [
+              {
+                "clockDomain": "none",
+                "name": "caseId",
+                "nullable": false,
+                "value": "string"
+              },
+              {
+                "clockDomain": "none",
+                "name": "scenarioId",
+                "nullable": true,
+                "value": "string"
+              }
+            ],
+            "id": "showcase.open-action",
+            "kind": "event"
+          },
+          "id": "controlActionRow",
+          "required": true
+        },
+        {
+          "contract": {
+            "boundary": "ui-event",
+            "fields": [
+              {
+                "clockDomain": "none",
+                "name": "caseId",
+                "nullable": false,
+                "value": "string"
+              },
+              {
+                "clockDomain": "none",
+                "name": "scenarioId",
+                "nullable": true,
+                "value": "string"
+              }
+            ],
+            "id": "showcase.open-action",
+            "kind": "event"
+          },
+          "id": "controlChoiceRow",
+          "required": true
+        },
+        {
+          "contract": {
+            "boundary": "ui-event",
+            "fields": [
+              {
+                "clockDomain": "none",
+                "name": "caseId",
+                "nullable": false,
+                "value": "string"
+              },
+              {
+                "clockDomain": "none",
+                "name": "scenarioId",
+                "nullable": true,
+                "value": "string"
+              }
+            ],
+            "id": "showcase.open-action",
+            "kind": "event"
+          },
+          "id": "controlAdjustment",
+          "required": true
+        },
+        {
+          "contract": {
+            "boundary": "ui-event",
+            "fields": [
+              {
+                "clockDomain": "none",
+                "name": "caseId",
+                "nullable": false,
+                "value": "string"
+              },
+              {
+                "clockDomain": "none",
+                "name": "scenarioId",
+                "nullable": true,
+                "value": "string"
+              }
+            ],
+            "id": "showcase.open-action",
+            "kind": "event"
+          },
+          "id": "controlProgress",
+          "required": true
+        },
+        {
+          "contract": {
+            "boundary": "ui-event",
+            "fields": [
+              {
+                "clockDomain": "none",
+                "name": "caseId",
+                "nullable": false,
+                "value": "string"
+              },
+              {
+                "clockDomain": "none",
+                "name": "scenarioId",
+                "nullable": true,
+                "value": "string"
+              }
+            ],
+            "id": "showcase.open-action",
+            "kind": "event"
+          },
+          "id": "controlPressRing",
+          "required": true
+        },
+        {
+          "contract": {
+            "boundary": "ui-event",
+            "fields": [
+              {
+                "clockDomain": "none",
+                "name": "caseId",
+                "nullable": false,
+                "value": "string"
+              },
+              {
+                "clockDomain": "none",
+                "name": "scenarioId",
+                "nullable": true,
+                "value": "string"
+              }
+            ],
+            "id": "showcase.open-action",
+            "kind": "event"
+          },
+          "id": "inputText",
+          "required": true
+        },
+        {
+          "contract": {
+            "boundary": "ui-event",
+            "fields": [
+              {
+                "clockDomain": "none",
+                "name": "caseId",
+                "nullable": false,
+                "value": "string"
+              },
+              {
+                "clockDomain": "none",
+                "name": "scenarioId",
+                "nullable": true,
+                "value": "string"
+              }
+            ],
+            "id": "showcase.open-action",
+            "kind": "event"
+          },
+          "id": "mediaCapture",
+          "required": true
+        },
+        {
+          "contract": {
+            "boundary": "ui-event",
+            "fields": [
+              {
+                "clockDomain": "none",
+                "name": "caseId",
+                "nullable": false,
+                "value": "string"
+              },
+              {
+                "clockDomain": "none",
+                "name": "scenarioId",
+                "nullable": true,
+                "value": "string"
+              }
+            ],
+            "id": "showcase.open-action",
+            "kind": "event"
+          },
+          "id": "mediaPlayback",
+          "required": true
+        },
+        {
+          "contract": {
+            "boundary": "ui-event",
+            "fields": [
+              {
+                "clockDomain": "none",
+                "name": "caseId",
+                "nullable": false,
+                "value": "string"
+              },
+              {
+                "clockDomain": "none",
+                "name": "scenarioId",
+                "nullable": true,
+                "value": "string"
+              }
+            ],
+            "id": "showcase.open-action",
+            "kind": "event"
+          },
+          "id": "templateScreens",
+          "required": true
+        },
+        {
+          "contract": {
+            "boundary": "ui-event",
+            "fields": [
+              {
+                "clockDomain": "none",
+                "name": "caseId",
+                "nullable": false,
+                "value": "string"
+              },
+              {
+                "clockDomain": "none",
+                "name": "scenarioId",
+                "nullable": true,
+                "value": "string"
+              }
+            ],
+            "id": "showcase.open-action",
+            "kind": "event"
+          },
+          "id": "flowSource",
+          "required": true
+        },
+        {
+          "contract": {
+            "boundary": "ui-event",
+            "fields": [
+              {
+                "clockDomain": "none",
+                "name": "caseId",
+                "nullable": false,
+                "value": "string"
+              },
+              {
+                "clockDomain": "none",
+                "name": "scenarioId",
+                "nullable": true,
+                "value": "string"
+              }
+            ],
+            "id": "showcase.open-action",
+            "kind": "event"
+          },
+          "id": "flowUpdate",
+          "required": true
+        },
+        {
+          "contract": {
+            "boundary": "ui-event",
+            "fields": [
+              {
+                "clockDomain": "none",
+                "name": "caseId",
+                "nullable": false,
+                "value": "string"
+              },
+              {
+                "clockDomain": "none",
+                "name": "scenarioId",
+                "nullable": true,
+                "value": "string"
+              }
+            ],
+            "id": "showcase.open-action",
+            "kind": "event"
+          },
+          "id": "flowService",
           "required": true
         }
       ],
@@ -4143,12 +6344,12 @@
       {
         "actions": [
           {
-            "contractRef": "showcase.open-action",
+            "contractRef": "showcase.renderer-action",
             "effect": "dispatch",
-            "id": "open",
+            "id": "action",
             "kind": "event",
-            "sourcePortRef": "atom.icon-action.open",
-            "targetPortRef": "navigation.atomIconAction"
+            "sourcePortRef": "atom.icon-action.action",
+            "targetPortRef": "renderer.atomIconAction"
           }
         ],
         "artifactRefs": [
@@ -4165,12 +6366,12 @@
       {
         "actions": [
           {
-            "contractRef": "showcase.open-action",
+            "contractRef": "showcase.renderer-action",
             "effect": "dispatch",
-            "id": "open",
+            "id": "action",
             "kind": "event",
-            "sourcePortRef": "control.action-row.open",
-            "targetPortRef": "navigation.controlActionRow"
+            "sourcePortRef": "control.action-row.action",
+            "targetPortRef": "renderer.controlActionRow"
           }
         ],
         "artifactRefs": [
@@ -4187,12 +6388,12 @@
       {
         "actions": [
           {
-            "contractRef": "showcase.open-action",
+            "contractRef": "showcase.renderer-action",
             "effect": "dispatch",
-            "id": "open",
+            "id": "action",
             "kind": "event",
-            "sourcePortRef": "control.adjustment.open",
-            "targetPortRef": "navigation.controlAdjustment"
+            "sourcePortRef": "control.adjustment.action",
+            "targetPortRef": "renderer.controlAdjustment"
           }
         ],
         "artifactRefs": [
@@ -4209,12 +6410,12 @@
       {
         "actions": [
           {
-            "contractRef": "showcase.open-action",
+            "contractRef": "showcase.renderer-action",
             "effect": "dispatch",
-            "id": "open",
+            "id": "action",
             "kind": "event",
-            "sourcePortRef": "control.choice-row.open",
-            "targetPortRef": "navigation.controlChoiceRow"
+            "sourcePortRef": "control.choice-row.action",
+            "targetPortRef": "renderer.controlChoiceRow"
           }
         ],
         "artifactRefs": [
@@ -4231,12 +6432,12 @@
       {
         "actions": [
           {
-            "contractRef": "showcase.open-action",
+            "contractRef": "showcase.renderer-action",
             "effect": "dispatch",
-            "id": "open",
+            "id": "action",
             "kind": "event",
-            "sourcePortRef": "control.press-ring.open",
-            "targetPortRef": "navigation.controlPressRing"
+            "sourcePortRef": "control.press-ring.action",
+            "targetPortRef": "renderer.controlPressRing"
           }
         ],
         "artifactRefs": [
@@ -4253,12 +6454,12 @@
       {
         "actions": [
           {
-            "contractRef": "showcase.open-action",
+            "contractRef": "showcase.renderer-action",
             "effect": "dispatch",
-            "id": "open",
+            "id": "action",
             "kind": "event",
-            "sourcePortRef": "control.progress.open",
-            "targetPortRef": "navigation.controlProgress"
+            "sourcePortRef": "control.progress.action",
+            "targetPortRef": "renderer.controlProgress"
           }
         ],
         "artifactRefs": [
@@ -4277,12 +6478,12 @@
       {
         "actions": [
           {
-            "contractRef": "showcase.open-action",
+            "contractRef": "showcase.renderer-action",
             "effect": "dispatch",
-            "id": "open",
+            "id": "action",
             "kind": "event",
-            "sourcePortRef": "flow.service.open",
-            "targetPortRef": "navigation.flowService"
+            "sourcePortRef": "flow.service.action",
+            "targetPortRef": "renderer.flowService"
           }
         ],
         "artifactRefs": [
@@ -4299,12 +6500,12 @@
       {
         "actions": [
           {
-            "contractRef": "showcase.open-action",
+            "contractRef": "showcase.renderer-action",
             "effect": "dispatch",
-            "id": "open",
+            "id": "action",
             "kind": "event",
-            "sourcePortRef": "flow.source.open",
-            "targetPortRef": "navigation.flowSource"
+            "sourcePortRef": "flow.source.action",
+            "targetPortRef": "renderer.flowSource"
           }
         ],
         "artifactRefs": [
@@ -4321,12 +6522,12 @@
       {
         "actions": [
           {
-            "contractRef": "showcase.open-action",
+            "contractRef": "showcase.renderer-action",
             "effect": "dispatch",
-            "id": "open",
+            "id": "action",
             "kind": "event",
-            "sourcePortRef": "flow.update.open",
-            "targetPortRef": "navigation.flowUpdate"
+            "sourcePortRef": "flow.update.action",
+            "targetPortRef": "renderer.flowUpdate"
           }
         ],
         "artifactRefs": [
@@ -4343,56 +6544,12 @@
       {
         "actions": [
           {
-            "contractRef": "showcase.open-action",
+            "contractRef": "showcase.renderer-action",
             "effect": "dispatch",
-            "id": "open",
+            "id": "action",
             "kind": "event",
-            "sourcePortRef": "foundation.colors.open",
-            "targetPortRef": "navigation.foundationColors"
-          }
-        ],
-        "artifactRefs": [
-          "iphone-full-ui",
-          "phone-full-ui",
-          "watchos-full-ui",
-          "wear-full-ui"
-        ],
-        "componentInstanceRef": "foundation.colors",
-        "pageRefs": [
-          "section.foundations"
-        ]
-      },
-      {
-        "actions": [
-          {
-            "contractRef": "showcase.open-action",
-            "effect": "dispatch",
-            "id": "open",
-            "kind": "event",
-            "sourcePortRef": "foundation.geometry.open",
-            "targetPortRef": "navigation.foundationGeometry"
-          }
-        ],
-        "artifactRefs": [
-          "iphone-full-ui",
-          "phone-full-ui",
-          "watchos-full-ui",
-          "wear-full-ui"
-        ],
-        "componentInstanceRef": "foundation.geometry",
-        "pageRefs": [
-          "section.foundations"
-        ]
-      },
-      {
-        "actions": [
-          {
-            "contractRef": "showcase.open-action",
-            "effect": "dispatch",
-            "id": "open",
-            "kind": "event",
-            "sourcePortRef": "input.text.open",
-            "targetPortRef": "navigation.inputText"
+            "sourcePortRef": "input.text.action",
+            "targetPortRef": "renderer.inputText"
           }
         ],
         "artifactRefs": [
@@ -4409,12 +6566,12 @@
       {
         "actions": [
           {
-            "contractRef": "showcase.open-action",
+            "contractRef": "showcase.renderer-action",
             "effect": "dispatch",
-            "id": "open",
+            "id": "action",
             "kind": "event",
-            "sourcePortRef": "media.capture.open",
-            "targetPortRef": "navigation.mediaCapture"
+            "sourcePortRef": "media.capture.action",
+            "targetPortRef": "renderer.mediaCapture"
           }
         ],
         "artifactRefs": [
@@ -4431,12 +6588,12 @@
       {
         "actions": [
           {
-            "contractRef": "showcase.open-action",
+            "contractRef": "showcase.renderer-action",
             "effect": "dispatch",
-            "id": "open",
+            "id": "action",
             "kind": "event",
-            "sourcePortRef": "media.playback.open",
-            "targetPortRef": "navigation.mediaPlayback"
+            "sourcePortRef": "media.playback.action",
+            "targetPortRef": "renderer.mediaPlayback"
           }
         ],
         "artifactRefs": [
@@ -4459,6 +6616,126 @@
             "kind": "route",
             "sourcePortRef": "page.menu.route",
             "targetPortRef": "navigation.route"
+          },
+          {
+            "contractRef": "showcase.open-action",
+            "effect": "dispatch",
+            "id": "foundationColors",
+            "kind": "event",
+            "sourcePortRef": "page.menu.foundationColors",
+            "targetPortRef": "navigation.foundationColors"
+          },
+          {
+            "contractRef": "showcase.open-action",
+            "effect": "dispatch",
+            "id": "foundationGeometry",
+            "kind": "event",
+            "sourcePortRef": "page.menu.foundationGeometry",
+            "targetPortRef": "navigation.foundationGeometry"
+          },
+          {
+            "contractRef": "showcase.open-action",
+            "effect": "dispatch",
+            "id": "atomIconAction",
+            "kind": "event",
+            "sourcePortRef": "page.menu.atomIconAction",
+            "targetPortRef": "navigation.atomIconAction"
+          },
+          {
+            "contractRef": "showcase.open-action",
+            "effect": "dispatch",
+            "id": "controlActionRow",
+            "kind": "event",
+            "sourcePortRef": "page.menu.controlActionRow",
+            "targetPortRef": "navigation.controlActionRow"
+          },
+          {
+            "contractRef": "showcase.open-action",
+            "effect": "dispatch",
+            "id": "controlChoiceRow",
+            "kind": "event",
+            "sourcePortRef": "page.menu.controlChoiceRow",
+            "targetPortRef": "navigation.controlChoiceRow"
+          },
+          {
+            "contractRef": "showcase.open-action",
+            "effect": "dispatch",
+            "id": "controlAdjustment",
+            "kind": "event",
+            "sourcePortRef": "page.menu.controlAdjustment",
+            "targetPortRef": "navigation.controlAdjustment"
+          },
+          {
+            "contractRef": "showcase.open-action",
+            "effect": "dispatch",
+            "id": "controlProgress",
+            "kind": "event",
+            "sourcePortRef": "page.menu.controlProgress",
+            "targetPortRef": "navigation.controlProgress"
+          },
+          {
+            "contractRef": "showcase.open-action",
+            "effect": "dispatch",
+            "id": "controlPressRing",
+            "kind": "event",
+            "sourcePortRef": "page.menu.controlPressRing",
+            "targetPortRef": "navigation.controlPressRing"
+          },
+          {
+            "contractRef": "showcase.open-action",
+            "effect": "dispatch",
+            "id": "inputText",
+            "kind": "event",
+            "sourcePortRef": "page.menu.inputText",
+            "targetPortRef": "navigation.inputText"
+          },
+          {
+            "contractRef": "showcase.open-action",
+            "effect": "dispatch",
+            "id": "mediaCapture",
+            "kind": "event",
+            "sourcePortRef": "page.menu.mediaCapture",
+            "targetPortRef": "navigation.mediaCapture"
+          },
+          {
+            "contractRef": "showcase.open-action",
+            "effect": "dispatch",
+            "id": "mediaPlayback",
+            "kind": "event",
+            "sourcePortRef": "page.menu.mediaPlayback",
+            "targetPortRef": "navigation.mediaPlayback"
+          },
+          {
+            "contractRef": "showcase.open-action",
+            "effect": "dispatch",
+            "id": "templateScreens",
+            "kind": "event",
+            "sourcePortRef": "page.menu.templateScreens",
+            "targetPortRef": "navigation.templateScreens"
+          },
+          {
+            "contractRef": "showcase.open-action",
+            "effect": "dispatch",
+            "id": "flowSource",
+            "kind": "event",
+            "sourcePortRef": "page.menu.flowSource",
+            "targetPortRef": "navigation.flowSource"
+          },
+          {
+            "contractRef": "showcase.open-action",
+            "effect": "dispatch",
+            "id": "flowUpdate",
+            "kind": "event",
+            "sourcePortRef": "page.menu.flowUpdate",
+            "targetPortRef": "navigation.flowUpdate"
+          },
+          {
+            "contractRef": "showcase.open-action",
+            "effect": "dispatch",
+            "id": "flowService",
+            "kind": "event",
+            "sourcePortRef": "page.menu.flowService",
+            "targetPortRef": "navigation.flowService"
           }
         ],
         "artifactRefs": [
@@ -4481,12 +6758,12 @@
       {
         "actions": [
           {
-            "contractRef": "showcase.open-action",
+            "contractRef": "showcase.renderer-action",
             "effect": "dispatch",
-            "id": "open",
+            "id": "action",
             "kind": "event",
-            "sourcePortRef": "template.screens.open",
-            "targetPortRef": "navigation.templateScreens"
+            "sourcePortRef": "template.screens.action",
+            "targetPortRef": "renderer.templateScreens"
           }
         ],
         "artifactRefs": [
@@ -4806,22 +7083,22 @@
         "lifecycleSources": []
       },
       "bindings": {
-        "atomIconAction": "atom.icon-action.open",
-        "controlActionRow": "control.action-row.open",
-        "controlAdjustment": "control.adjustment.open",
-        "controlChoiceRow": "control.choice-row.open",
-        "controlPressRing": "control.press-ring.open",
-        "controlProgress": "control.progress.open",
-        "flowService": "flow.service.open",
-        "flowSource": "flow.source.open",
-        "flowUpdate": "flow.update.open",
-        "foundationColors": "foundation.colors.open",
-        "foundationGeometry": "foundation.geometry.open",
-        "inputText": "input.text.open",
-        "mediaCapture": "media.capture.open",
-        "mediaPlayback": "media.playback.open",
+        "atomIconAction": "page.menu.atomIconAction",
+        "controlActionRow": "page.menu.controlActionRow",
+        "controlAdjustment": "page.menu.controlAdjustment",
+        "controlChoiceRow": "page.menu.controlChoiceRow",
+        "controlPressRing": "page.menu.controlPressRing",
+        "controlProgress": "page.menu.controlProgress",
+        "flowService": "page.menu.flowService",
+        "flowSource": "page.menu.flowSource",
+        "flowUpdate": "page.menu.flowUpdate",
+        "foundationColors": "page.menu.foundationColors",
+        "foundationGeometry": "page.menu.foundationGeometry",
+        "inputText": "page.menu.inputText",
+        "mediaCapture": "page.menu.mediaCapture",
+        "mediaPlayback": "page.menu.mediaPlayback",
         "route": "page.menu.route",
-        "templateScreens": "template.screens.open"
+        "templateScreens": "page.menu.templateScreens"
       },
       "config": {},
       "id": "navigation",
@@ -4834,6 +7111,38 @@
       "config": {},
       "id": "navigation.presentation",
       "nodeTypeRef": "showcase.navigation-presentation"
+    },
+    {
+      "activation": {
+        "kind": "lifetime",
+        "lifecycleSources": []
+      },
+      "bindings": {
+        "atomIconAction": "atom.icon-action.action",
+        "controlActionRow": "control.action-row.action",
+        "controlAdjustment": "control.adjustment.action",
+        "controlChoiceRow": "control.choice-row.action",
+        "controlPressRing": "control.press-ring.action",
+        "controlProgress": "control.progress.action",
+        "flowService": "flow.service.action",
+        "flowSource": "flow.source.action",
+        "flowUpdate": "flow.update.action",
+        "inputText": "input.text.action",
+        "mediaCapture": "media.capture.action",
+        "mediaPlayback": "media.playback.action",
+        "templateScreens": "template.screens.action"
+      },
+      "config": {},
+      "id": "renderer",
+      "nodeTypeRef": "showcase.renderer-service"
+    },
+    {
+      "bindings": {
+        "model": "renderer.model"
+      },
+      "config": {},
+      "id": "renderer.presentation",
+      "nodeTypeRef": "showcase.renderer-presentation"
     }
   ],
   "nodeTypes": [
@@ -5379,6 +7688,396 @@
         "lifetime": "instance",
         "stateOwner": "none"
       }
+    },
+    {
+      "id": "showcase.renderer-service",
+      "inputs": [
+        {
+          "contract": {
+            "boundary": "ui-event",
+            "fields": [
+              {
+                "clockDomain": "none",
+                "name": "actionId",
+                "nullable": false,
+                "value": "string"
+              },
+              {
+                "clockDomain": "none",
+                "name": "value",
+                "nullable": true,
+                "value": "string"
+              }
+            ],
+            "id": "showcase.renderer-action",
+            "kind": "event"
+          },
+          "id": "atomIconAction",
+          "purpose": "data"
+        },
+        {
+          "contract": {
+            "boundary": "ui-event",
+            "fields": [
+              {
+                "clockDomain": "none",
+                "name": "actionId",
+                "nullable": false,
+                "value": "string"
+              },
+              {
+                "clockDomain": "none",
+                "name": "value",
+                "nullable": true,
+                "value": "string"
+              }
+            ],
+            "id": "showcase.renderer-action",
+            "kind": "event"
+          },
+          "id": "controlActionRow",
+          "purpose": "data"
+        },
+        {
+          "contract": {
+            "boundary": "ui-event",
+            "fields": [
+              {
+                "clockDomain": "none",
+                "name": "actionId",
+                "nullable": false,
+                "value": "string"
+              },
+              {
+                "clockDomain": "none",
+                "name": "value",
+                "nullable": true,
+                "value": "string"
+              }
+            ],
+            "id": "showcase.renderer-action",
+            "kind": "event"
+          },
+          "id": "controlChoiceRow",
+          "purpose": "data"
+        },
+        {
+          "contract": {
+            "boundary": "ui-event",
+            "fields": [
+              {
+                "clockDomain": "none",
+                "name": "actionId",
+                "nullable": false,
+                "value": "string"
+              },
+              {
+                "clockDomain": "none",
+                "name": "value",
+                "nullable": true,
+                "value": "string"
+              }
+            ],
+            "id": "showcase.renderer-action",
+            "kind": "event"
+          },
+          "id": "controlAdjustment",
+          "purpose": "data"
+        },
+        {
+          "contract": {
+            "boundary": "ui-event",
+            "fields": [
+              {
+                "clockDomain": "none",
+                "name": "actionId",
+                "nullable": false,
+                "value": "string"
+              },
+              {
+                "clockDomain": "none",
+                "name": "value",
+                "nullable": true,
+                "value": "string"
+              }
+            ],
+            "id": "showcase.renderer-action",
+            "kind": "event"
+          },
+          "id": "controlProgress",
+          "purpose": "data"
+        },
+        {
+          "contract": {
+            "boundary": "ui-event",
+            "fields": [
+              {
+                "clockDomain": "none",
+                "name": "actionId",
+                "nullable": false,
+                "value": "string"
+              },
+              {
+                "clockDomain": "none",
+                "name": "value",
+                "nullable": true,
+                "value": "string"
+              }
+            ],
+            "id": "showcase.renderer-action",
+            "kind": "event"
+          },
+          "id": "controlPressRing",
+          "purpose": "data"
+        },
+        {
+          "contract": {
+            "boundary": "ui-event",
+            "fields": [
+              {
+                "clockDomain": "none",
+                "name": "actionId",
+                "nullable": false,
+                "value": "string"
+              },
+              {
+                "clockDomain": "none",
+                "name": "value",
+                "nullable": true,
+                "value": "string"
+              }
+            ],
+            "id": "showcase.renderer-action",
+            "kind": "event"
+          },
+          "id": "inputText",
+          "purpose": "data"
+        },
+        {
+          "contract": {
+            "boundary": "ui-event",
+            "fields": [
+              {
+                "clockDomain": "none",
+                "name": "actionId",
+                "nullable": false,
+                "value": "string"
+              },
+              {
+                "clockDomain": "none",
+                "name": "value",
+                "nullable": true,
+                "value": "string"
+              }
+            ],
+            "id": "showcase.renderer-action",
+            "kind": "event"
+          },
+          "id": "mediaCapture",
+          "purpose": "data"
+        },
+        {
+          "contract": {
+            "boundary": "ui-event",
+            "fields": [
+              {
+                "clockDomain": "none",
+                "name": "actionId",
+                "nullable": false,
+                "value": "string"
+              },
+              {
+                "clockDomain": "none",
+                "name": "value",
+                "nullable": true,
+                "value": "string"
+              }
+            ],
+            "id": "showcase.renderer-action",
+            "kind": "event"
+          },
+          "id": "mediaPlayback",
+          "purpose": "data"
+        },
+        {
+          "contract": {
+            "boundary": "ui-event",
+            "fields": [
+              {
+                "clockDomain": "none",
+                "name": "actionId",
+                "nullable": false,
+                "value": "string"
+              },
+              {
+                "clockDomain": "none",
+                "name": "value",
+                "nullable": true,
+                "value": "string"
+              }
+            ],
+            "id": "showcase.renderer-action",
+            "kind": "event"
+          },
+          "id": "templateScreens",
+          "purpose": "data"
+        },
+        {
+          "contract": {
+            "boundary": "ui-event",
+            "fields": [
+              {
+                "clockDomain": "none",
+                "name": "actionId",
+                "nullable": false,
+                "value": "string"
+              },
+              {
+                "clockDomain": "none",
+                "name": "value",
+                "nullable": true,
+                "value": "string"
+              }
+            ],
+            "id": "showcase.renderer-action",
+            "kind": "event"
+          },
+          "id": "flowSource",
+          "purpose": "data"
+        },
+        {
+          "contract": {
+            "boundary": "ui-event",
+            "fields": [
+              {
+                "clockDomain": "none",
+                "name": "actionId",
+                "nullable": false,
+                "value": "string"
+              },
+              {
+                "clockDomain": "none",
+                "name": "value",
+                "nullable": true,
+                "value": "string"
+              }
+            ],
+            "id": "showcase.renderer-action",
+            "kind": "event"
+          },
+          "id": "flowUpdate",
+          "purpose": "data"
+        },
+        {
+          "contract": {
+            "boundary": "ui-event",
+            "fields": [
+              {
+                "clockDomain": "none",
+                "name": "actionId",
+                "nullable": false,
+                "value": "string"
+              },
+              {
+                "clockDomain": "none",
+                "name": "value",
+                "nullable": true,
+                "value": "string"
+              }
+            ],
+            "id": "showcase.renderer-action",
+            "kind": "event"
+          },
+          "id": "flowService",
+          "purpose": "data"
+        }
+      ],
+      "kind": "service",
+      "outputs": [
+        {
+          "contract": {
+            "boundary": "presentation",
+            "fields": [
+              {
+                "clockDomain": "none",
+                "name": "model",
+                "nullable": false,
+                "value": {
+                  "ref": "showcase.renderer-model"
+                }
+              }
+            ],
+            "id": "showcase.renderer-presentation",
+            "kind": "snapshot"
+          },
+          "id": "model",
+          "purpose": "data"
+        }
+      ],
+      "runtime": {
+        "clockDomain": "none",
+        "contextInputs": [],
+        "durability": "transient",
+        "effects": [
+          "ui.interaction"
+        ],
+        "lifetime": "instance",
+        "stateOwner": "instance"
+      }
+    },
+    {
+      "id": "showcase.renderer-presentation",
+      "inputs": [
+        {
+          "contract": {
+            "boundary": "presentation",
+            "fields": [
+              {
+                "clockDomain": "none",
+                "name": "model",
+                "nullable": false,
+                "value": {
+                  "ref": "showcase.renderer-model"
+                }
+              }
+            ],
+            "id": "showcase.renderer-presentation",
+            "kind": "snapshot"
+          },
+          "id": "model",
+          "purpose": "data"
+        }
+      ],
+      "kind": "present",
+      "outputs": [
+        {
+          "contract": {
+            "boundary": "presentation",
+            "fields": [
+              {
+                "clockDomain": "none",
+                "name": "model",
+                "nullable": false,
+                "value": {
+                  "ref": "showcase.renderer-model"
+                }
+              }
+            ],
+            "id": "showcase.renderer-presentation",
+            "kind": "snapshot"
+          },
+          "id": "model",
+          "purpose": "data"
+        }
+      ],
+      "runtime": {
+        "clockDomain": "none",
+        "contextInputs": [],
+        "durability": "transient",
+        "effects": [],
+        "lifetime": "instance",
+        "stateOwner": "none"
+      }
     }
   ],
   "palette": {
@@ -5393,91 +8092,91 @@
         "to": "navigation.route"
       },
       {
-        "from": "foundation.colors.open",
+        "from": "page.menu.foundationColors",
         "kind": "component-event",
         "purpose": "data",
         "to": "navigation.foundationColors"
       },
       {
-        "from": "foundation.geometry.open",
+        "from": "page.menu.foundationGeometry",
         "kind": "component-event",
         "purpose": "data",
         "to": "navigation.foundationGeometry"
       },
       {
-        "from": "atom.icon-action.open",
+        "from": "page.menu.atomIconAction",
         "kind": "component-event",
         "purpose": "data",
         "to": "navigation.atomIconAction"
       },
       {
-        "from": "control.action-row.open",
+        "from": "page.menu.controlActionRow",
         "kind": "component-event",
         "purpose": "data",
         "to": "navigation.controlActionRow"
       },
       {
-        "from": "control.choice-row.open",
+        "from": "page.menu.controlChoiceRow",
         "kind": "component-event",
         "purpose": "data",
         "to": "navigation.controlChoiceRow"
       },
       {
-        "from": "control.adjustment.open",
+        "from": "page.menu.controlAdjustment",
         "kind": "component-event",
         "purpose": "data",
         "to": "navigation.controlAdjustment"
       },
       {
-        "from": "control.progress.open",
+        "from": "page.menu.controlProgress",
         "kind": "component-event",
         "purpose": "data",
         "to": "navigation.controlProgress"
       },
       {
-        "from": "control.press-ring.open",
+        "from": "page.menu.controlPressRing",
         "kind": "component-event",
         "purpose": "data",
         "to": "navigation.controlPressRing"
       },
       {
-        "from": "input.text.open",
+        "from": "page.menu.inputText",
         "kind": "component-event",
         "purpose": "data",
         "to": "navigation.inputText"
       },
       {
-        "from": "media.capture.open",
+        "from": "page.menu.mediaCapture",
         "kind": "component-event",
         "purpose": "data",
         "to": "navigation.mediaCapture"
       },
       {
-        "from": "media.playback.open",
+        "from": "page.menu.mediaPlayback",
         "kind": "component-event",
         "purpose": "data",
         "to": "navigation.mediaPlayback"
       },
       {
-        "from": "template.screens.open",
+        "from": "page.menu.templateScreens",
         "kind": "component-event",
         "purpose": "data",
         "to": "navigation.templateScreens"
       },
       {
-        "from": "flow.source.open",
+        "from": "page.menu.flowSource",
         "kind": "component-event",
         "purpose": "data",
         "to": "navigation.flowSource"
       },
       {
-        "from": "flow.update.open",
+        "from": "page.menu.flowUpdate",
         "kind": "component-event",
         "purpose": "data",
         "to": "navigation.flowUpdate"
       },
       {
-        "from": "flow.service.open",
+        "from": "page.menu.flowService",
         "kind": "component-event",
         "purpose": "data",
         "to": "navigation.flowService"
@@ -5487,6 +8186,90 @@
         "kind": "node-input",
         "purpose": "data",
         "to": "navigation.presentation.destination"
+      },
+      {
+        "from": "atom.icon-action.action",
+        "kind": "component-event",
+        "purpose": "data",
+        "to": "renderer.atomIconAction"
+      },
+      {
+        "from": "control.action-row.action",
+        "kind": "component-event",
+        "purpose": "data",
+        "to": "renderer.controlActionRow"
+      },
+      {
+        "from": "control.choice-row.action",
+        "kind": "component-event",
+        "purpose": "data",
+        "to": "renderer.controlChoiceRow"
+      },
+      {
+        "from": "control.adjustment.action",
+        "kind": "component-event",
+        "purpose": "data",
+        "to": "renderer.controlAdjustment"
+      },
+      {
+        "from": "control.progress.action",
+        "kind": "component-event",
+        "purpose": "data",
+        "to": "renderer.controlProgress"
+      },
+      {
+        "from": "control.press-ring.action",
+        "kind": "component-event",
+        "purpose": "data",
+        "to": "renderer.controlPressRing"
+      },
+      {
+        "from": "input.text.action",
+        "kind": "component-event",
+        "purpose": "data",
+        "to": "renderer.inputText"
+      },
+      {
+        "from": "media.capture.action",
+        "kind": "component-event",
+        "purpose": "data",
+        "to": "renderer.mediaCapture"
+      },
+      {
+        "from": "media.playback.action",
+        "kind": "component-event",
+        "purpose": "data",
+        "to": "renderer.mediaPlayback"
+      },
+      {
+        "from": "template.screens.action",
+        "kind": "component-event",
+        "purpose": "data",
+        "to": "renderer.templateScreens"
+      },
+      {
+        "from": "flow.source.action",
+        "kind": "component-event",
+        "purpose": "data",
+        "to": "renderer.flowSource"
+      },
+      {
+        "from": "flow.update.action",
+        "kind": "component-event",
+        "purpose": "data",
+        "to": "renderer.flowUpdate"
+      },
+      {
+        "from": "flow.service.action",
+        "kind": "component-event",
+        "purpose": "data",
+        "to": "renderer.flowService"
+      },
+      {
+        "from": "renderer.model",
+        "kind": "node-input",
+        "purpose": "data",
+        "to": "renderer.presentation.model"
       },
       {
         "from": "catalog.model",
@@ -5525,6 +8308,12 @@
         "to": "atom.icon-action.navigation"
       },
       {
+        "from": "renderer.presentation.model",
+        "kind": "component-input",
+        "purpose": "data",
+        "to": "atom.icon-action.renderer"
+      },
+      {
         "from": "catalog.model",
         "kind": "component-input",
         "purpose": "data",
@@ -5535,6 +8324,12 @@
         "kind": "component-input",
         "purpose": "data",
         "to": "control.action-row.navigation"
+      },
+      {
+        "from": "renderer.presentation.model",
+        "kind": "component-input",
+        "purpose": "data",
+        "to": "control.action-row.renderer"
       },
       {
         "from": "catalog.model",
@@ -5549,6 +8344,12 @@
         "to": "control.choice-row.navigation"
       },
       {
+        "from": "renderer.presentation.model",
+        "kind": "component-input",
+        "purpose": "data",
+        "to": "control.choice-row.renderer"
+      },
+      {
         "from": "catalog.model",
         "kind": "component-input",
         "purpose": "data",
@@ -5559,6 +8360,12 @@
         "kind": "component-input",
         "purpose": "data",
         "to": "control.adjustment.navigation"
+      },
+      {
+        "from": "renderer.presentation.model",
+        "kind": "component-input",
+        "purpose": "data",
+        "to": "control.adjustment.renderer"
       },
       {
         "from": "catalog.model",
@@ -5573,6 +8380,12 @@
         "to": "control.progress.navigation"
       },
       {
+        "from": "renderer.presentation.model",
+        "kind": "component-input",
+        "purpose": "data",
+        "to": "control.progress.renderer"
+      },
+      {
         "from": "catalog.model",
         "kind": "component-input",
         "purpose": "data",
@@ -5583,6 +8396,12 @@
         "kind": "component-input",
         "purpose": "data",
         "to": "control.press-ring.navigation"
+      },
+      {
+        "from": "renderer.presentation.model",
+        "kind": "component-input",
+        "purpose": "data",
+        "to": "control.press-ring.renderer"
       },
       {
         "from": "catalog.model",
@@ -5597,6 +8416,12 @@
         "to": "input.text.navigation"
       },
       {
+        "from": "renderer.presentation.model",
+        "kind": "component-input",
+        "purpose": "data",
+        "to": "input.text.renderer"
+      },
+      {
         "from": "catalog.model",
         "kind": "component-input",
         "purpose": "data",
@@ -5607,6 +8432,12 @@
         "kind": "component-input",
         "purpose": "data",
         "to": "media.capture.navigation"
+      },
+      {
+        "from": "renderer.presentation.model",
+        "kind": "component-input",
+        "purpose": "data",
+        "to": "media.capture.renderer"
       },
       {
         "from": "catalog.model",
@@ -5621,6 +8452,12 @@
         "to": "media.playback.navigation"
       },
       {
+        "from": "renderer.presentation.model",
+        "kind": "component-input",
+        "purpose": "data",
+        "to": "media.playback.renderer"
+      },
+      {
         "from": "catalog.model",
         "kind": "component-input",
         "purpose": "data",
@@ -5631,6 +8468,12 @@
         "kind": "component-input",
         "purpose": "data",
         "to": "template.screens.navigation"
+      },
+      {
+        "from": "renderer.presentation.model",
+        "kind": "component-input",
+        "purpose": "data",
+        "to": "template.screens.renderer"
       },
       {
         "from": "catalog.model",
@@ -5645,6 +8488,12 @@
         "to": "flow.source.navigation"
       },
       {
+        "from": "renderer.presentation.model",
+        "kind": "component-input",
+        "purpose": "data",
+        "to": "flow.source.renderer"
+      },
+      {
         "from": "catalog.model",
         "kind": "component-input",
         "purpose": "data",
@@ -5657,6 +8506,12 @@
         "to": "flow.update.navigation"
       },
       {
+        "from": "renderer.presentation.model",
+        "kind": "component-input",
+        "purpose": "data",
+        "to": "flow.update.renderer"
+      },
+      {
         "from": "catalog.model",
         "kind": "component-input",
         "purpose": "data",
@@ -5667,6 +8522,12 @@
         "kind": "component-input",
         "purpose": "data",
         "to": "flow.service.navigation"
+      },
+      {
+        "from": "renderer.presentation.model",
+        "kind": "component-input",
+        "purpose": "data",
+        "to": "flow.service.renderer"
       },
       {
         "from": "navigation.activePage",
@@ -5701,18 +8562,6 @@
         "typeRef": "foundation.colors"
       },
       {
-        "boundary": "ui-event",
-        "contractRef": "showcase.open-action",
-        "direction": "output",
-        "ownerId": "foundation.colors",
-        "ownerKind": "component",
-        "portId": "open",
-        "purpose": "data",
-        "ref": "foundation.colors.open",
-        "required": true,
-        "typeRef": "foundation.colors"
-      },
-      {
         "boundary": "presentation",
         "contractRef": "showcase.catalog-presentation",
         "direction": "input",
@@ -5733,18 +8582,6 @@
         "portId": "navigation",
         "purpose": "data",
         "ref": "foundation.geometry.navigation",
-        "required": true,
-        "typeRef": "foundation.geometry"
-      },
-      {
-        "boundary": "ui-event",
-        "contractRef": "showcase.open-action",
-        "direction": "output",
-        "ownerId": "foundation.geometry",
-        "ownerKind": "component",
-        "portId": "open",
-        "purpose": "data",
-        "ref": "foundation.geometry.open",
         "required": true,
         "typeRef": "foundation.geometry"
       },
@@ -5773,14 +8610,26 @@
         "typeRef": "atom.icon-action"
       },
       {
+        "boundary": "presentation",
+        "contractRef": "showcase.renderer-presentation",
+        "direction": "input",
+        "ownerId": "atom.icon-action",
+        "ownerKind": "component",
+        "portId": "renderer",
+        "purpose": "data",
+        "ref": "atom.icon-action.renderer",
+        "required": true,
+        "typeRef": "atom.icon-action"
+      },
+      {
         "boundary": "ui-event",
-        "contractRef": "showcase.open-action",
+        "contractRef": "showcase.renderer-action",
         "direction": "output",
         "ownerId": "atom.icon-action",
         "ownerKind": "component",
-        "portId": "open",
+        "portId": "action",
         "purpose": "data",
-        "ref": "atom.icon-action.open",
+        "ref": "atom.icon-action.action",
         "required": true,
         "typeRef": "atom.icon-action"
       },
@@ -5809,14 +8658,26 @@
         "typeRef": "control.action-row"
       },
       {
+        "boundary": "presentation",
+        "contractRef": "showcase.renderer-presentation",
+        "direction": "input",
+        "ownerId": "control.action-row",
+        "ownerKind": "component",
+        "portId": "renderer",
+        "purpose": "data",
+        "ref": "control.action-row.renderer",
+        "required": true,
+        "typeRef": "control.action-row"
+      },
+      {
         "boundary": "ui-event",
-        "contractRef": "showcase.open-action",
+        "contractRef": "showcase.renderer-action",
         "direction": "output",
         "ownerId": "control.action-row",
         "ownerKind": "component",
-        "portId": "open",
+        "portId": "action",
         "purpose": "data",
-        "ref": "control.action-row.open",
+        "ref": "control.action-row.action",
         "required": true,
         "typeRef": "control.action-row"
       },
@@ -5845,14 +8706,26 @@
         "typeRef": "control.choice-row"
       },
       {
+        "boundary": "presentation",
+        "contractRef": "showcase.renderer-presentation",
+        "direction": "input",
+        "ownerId": "control.choice-row",
+        "ownerKind": "component",
+        "portId": "renderer",
+        "purpose": "data",
+        "ref": "control.choice-row.renderer",
+        "required": true,
+        "typeRef": "control.choice-row"
+      },
+      {
         "boundary": "ui-event",
-        "contractRef": "showcase.open-action",
+        "contractRef": "showcase.renderer-action",
         "direction": "output",
         "ownerId": "control.choice-row",
         "ownerKind": "component",
-        "portId": "open",
+        "portId": "action",
         "purpose": "data",
-        "ref": "control.choice-row.open",
+        "ref": "control.choice-row.action",
         "required": true,
         "typeRef": "control.choice-row"
       },
@@ -5881,14 +8754,26 @@
         "typeRef": "control.adjustment"
       },
       {
+        "boundary": "presentation",
+        "contractRef": "showcase.renderer-presentation",
+        "direction": "input",
+        "ownerId": "control.adjustment",
+        "ownerKind": "component",
+        "portId": "renderer",
+        "purpose": "data",
+        "ref": "control.adjustment.renderer",
+        "required": true,
+        "typeRef": "control.adjustment"
+      },
+      {
         "boundary": "ui-event",
-        "contractRef": "showcase.open-action",
+        "contractRef": "showcase.renderer-action",
         "direction": "output",
         "ownerId": "control.adjustment",
         "ownerKind": "component",
-        "portId": "open",
+        "portId": "action",
         "purpose": "data",
-        "ref": "control.adjustment.open",
+        "ref": "control.adjustment.action",
         "required": true,
         "typeRef": "control.adjustment"
       },
@@ -5917,14 +8802,26 @@
         "typeRef": "control.progress"
       },
       {
+        "boundary": "presentation",
+        "contractRef": "showcase.renderer-presentation",
+        "direction": "input",
+        "ownerId": "control.progress",
+        "ownerKind": "component",
+        "portId": "renderer",
+        "purpose": "data",
+        "ref": "control.progress.renderer",
+        "required": true,
+        "typeRef": "control.progress"
+      },
+      {
         "boundary": "ui-event",
-        "contractRef": "showcase.open-action",
+        "contractRef": "showcase.renderer-action",
         "direction": "output",
         "ownerId": "control.progress",
         "ownerKind": "component",
-        "portId": "open",
+        "portId": "action",
         "purpose": "data",
-        "ref": "control.progress.open",
+        "ref": "control.progress.action",
         "required": true,
         "typeRef": "control.progress"
       },
@@ -5953,14 +8850,26 @@
         "typeRef": "control.press-ring"
       },
       {
+        "boundary": "presentation",
+        "contractRef": "showcase.renderer-presentation",
+        "direction": "input",
+        "ownerId": "control.press-ring",
+        "ownerKind": "component",
+        "portId": "renderer",
+        "purpose": "data",
+        "ref": "control.press-ring.renderer",
+        "required": true,
+        "typeRef": "control.press-ring"
+      },
+      {
         "boundary": "ui-event",
-        "contractRef": "showcase.open-action",
+        "contractRef": "showcase.renderer-action",
         "direction": "output",
         "ownerId": "control.press-ring",
         "ownerKind": "component",
-        "portId": "open",
+        "portId": "action",
         "purpose": "data",
-        "ref": "control.press-ring.open",
+        "ref": "control.press-ring.action",
         "required": true,
         "typeRef": "control.press-ring"
       },
@@ -5989,14 +8898,26 @@
         "typeRef": "input.text"
       },
       {
+        "boundary": "presentation",
+        "contractRef": "showcase.renderer-presentation",
+        "direction": "input",
+        "ownerId": "input.text",
+        "ownerKind": "component",
+        "portId": "renderer",
+        "purpose": "data",
+        "ref": "input.text.renderer",
+        "required": true,
+        "typeRef": "input.text"
+      },
+      {
         "boundary": "ui-event",
-        "contractRef": "showcase.open-action",
+        "contractRef": "showcase.renderer-action",
         "direction": "output",
         "ownerId": "input.text",
         "ownerKind": "component",
-        "portId": "open",
+        "portId": "action",
         "purpose": "data",
-        "ref": "input.text.open",
+        "ref": "input.text.action",
         "required": true,
         "typeRef": "input.text"
       },
@@ -6025,14 +8946,26 @@
         "typeRef": "media.capture"
       },
       {
+        "boundary": "presentation",
+        "contractRef": "showcase.renderer-presentation",
+        "direction": "input",
+        "ownerId": "media.capture",
+        "ownerKind": "component",
+        "portId": "renderer",
+        "purpose": "data",
+        "ref": "media.capture.renderer",
+        "required": true,
+        "typeRef": "media.capture"
+      },
+      {
         "boundary": "ui-event",
-        "contractRef": "showcase.open-action",
+        "contractRef": "showcase.renderer-action",
         "direction": "output",
         "ownerId": "media.capture",
         "ownerKind": "component",
-        "portId": "open",
+        "portId": "action",
         "purpose": "data",
-        "ref": "media.capture.open",
+        "ref": "media.capture.action",
         "required": true,
         "typeRef": "media.capture"
       },
@@ -6061,14 +8994,26 @@
         "typeRef": "media.playback"
       },
       {
+        "boundary": "presentation",
+        "contractRef": "showcase.renderer-presentation",
+        "direction": "input",
+        "ownerId": "media.playback",
+        "ownerKind": "component",
+        "portId": "renderer",
+        "purpose": "data",
+        "ref": "media.playback.renderer",
+        "required": true,
+        "typeRef": "media.playback"
+      },
+      {
         "boundary": "ui-event",
-        "contractRef": "showcase.open-action",
+        "contractRef": "showcase.renderer-action",
         "direction": "output",
         "ownerId": "media.playback",
         "ownerKind": "component",
-        "portId": "open",
+        "portId": "action",
         "purpose": "data",
-        "ref": "media.playback.open",
+        "ref": "media.playback.action",
         "required": true,
         "typeRef": "media.playback"
       },
@@ -6097,14 +9042,26 @@
         "typeRef": "template.screens"
       },
       {
+        "boundary": "presentation",
+        "contractRef": "showcase.renderer-presentation",
+        "direction": "input",
+        "ownerId": "template.screens",
+        "ownerKind": "component",
+        "portId": "renderer",
+        "purpose": "data",
+        "ref": "template.screens.renderer",
+        "required": true,
+        "typeRef": "template.screens"
+      },
+      {
         "boundary": "ui-event",
-        "contractRef": "showcase.open-action",
+        "contractRef": "showcase.renderer-action",
         "direction": "output",
         "ownerId": "template.screens",
         "ownerKind": "component",
-        "portId": "open",
+        "portId": "action",
         "purpose": "data",
-        "ref": "template.screens.open",
+        "ref": "template.screens.action",
         "required": true,
         "typeRef": "template.screens"
       },
@@ -6133,14 +9090,26 @@
         "typeRef": "flow.source"
       },
       {
+        "boundary": "presentation",
+        "contractRef": "showcase.renderer-presentation",
+        "direction": "input",
+        "ownerId": "flow.source",
+        "ownerKind": "component",
+        "portId": "renderer",
+        "purpose": "data",
+        "ref": "flow.source.renderer",
+        "required": true,
+        "typeRef": "flow.source"
+      },
+      {
         "boundary": "ui-event",
-        "contractRef": "showcase.open-action",
+        "contractRef": "showcase.renderer-action",
         "direction": "output",
         "ownerId": "flow.source",
         "ownerKind": "component",
-        "portId": "open",
+        "portId": "action",
         "purpose": "data",
-        "ref": "flow.source.open",
+        "ref": "flow.source.action",
         "required": true,
         "typeRef": "flow.source"
       },
@@ -6169,14 +9138,26 @@
         "typeRef": "flow.update"
       },
       {
+        "boundary": "presentation",
+        "contractRef": "showcase.renderer-presentation",
+        "direction": "input",
+        "ownerId": "flow.update",
+        "ownerKind": "component",
+        "portId": "renderer",
+        "purpose": "data",
+        "ref": "flow.update.renderer",
+        "required": true,
+        "typeRef": "flow.update"
+      },
+      {
         "boundary": "ui-event",
-        "contractRef": "showcase.open-action",
+        "contractRef": "showcase.renderer-action",
         "direction": "output",
         "ownerId": "flow.update",
         "ownerKind": "component",
-        "portId": "open",
+        "portId": "action",
         "purpose": "data",
-        "ref": "flow.update.open",
+        "ref": "flow.update.action",
         "required": true,
         "typeRef": "flow.update"
       },
@@ -6205,14 +9186,26 @@
         "typeRef": "flow.service"
       },
       {
+        "boundary": "presentation",
+        "contractRef": "showcase.renderer-presentation",
+        "direction": "input",
+        "ownerId": "flow.service",
+        "ownerKind": "component",
+        "portId": "renderer",
+        "purpose": "data",
+        "ref": "flow.service.renderer",
+        "required": true,
+        "typeRef": "flow.service"
+      },
+      {
         "boundary": "ui-event",
-        "contractRef": "showcase.open-action",
+        "contractRef": "showcase.renderer-action",
         "direction": "output",
         "ownerId": "flow.service",
         "ownerKind": "component",
-        "portId": "open",
+        "portId": "action",
         "purpose": "data",
-        "ref": "flow.service.open",
+        "ref": "flow.service.action",
         "required": true,
         "typeRef": "flow.service"
       },
@@ -6237,6 +9230,186 @@
         "portId": "route",
         "purpose": "data",
         "ref": "page.menu.route",
+        "required": true,
+        "typeRef": "showcase.page-menu"
+      },
+      {
+        "boundary": "ui-event",
+        "contractRef": "showcase.open-action",
+        "direction": "output",
+        "ownerId": "page.menu",
+        "ownerKind": "component",
+        "portId": "foundationColors",
+        "purpose": "data",
+        "ref": "page.menu.foundationColors",
+        "required": true,
+        "typeRef": "showcase.page-menu"
+      },
+      {
+        "boundary": "ui-event",
+        "contractRef": "showcase.open-action",
+        "direction": "output",
+        "ownerId": "page.menu",
+        "ownerKind": "component",
+        "portId": "foundationGeometry",
+        "purpose": "data",
+        "ref": "page.menu.foundationGeometry",
+        "required": true,
+        "typeRef": "showcase.page-menu"
+      },
+      {
+        "boundary": "ui-event",
+        "contractRef": "showcase.open-action",
+        "direction": "output",
+        "ownerId": "page.menu",
+        "ownerKind": "component",
+        "portId": "atomIconAction",
+        "purpose": "data",
+        "ref": "page.menu.atomIconAction",
+        "required": true,
+        "typeRef": "showcase.page-menu"
+      },
+      {
+        "boundary": "ui-event",
+        "contractRef": "showcase.open-action",
+        "direction": "output",
+        "ownerId": "page.menu",
+        "ownerKind": "component",
+        "portId": "controlActionRow",
+        "purpose": "data",
+        "ref": "page.menu.controlActionRow",
+        "required": true,
+        "typeRef": "showcase.page-menu"
+      },
+      {
+        "boundary": "ui-event",
+        "contractRef": "showcase.open-action",
+        "direction": "output",
+        "ownerId": "page.menu",
+        "ownerKind": "component",
+        "portId": "controlChoiceRow",
+        "purpose": "data",
+        "ref": "page.menu.controlChoiceRow",
+        "required": true,
+        "typeRef": "showcase.page-menu"
+      },
+      {
+        "boundary": "ui-event",
+        "contractRef": "showcase.open-action",
+        "direction": "output",
+        "ownerId": "page.menu",
+        "ownerKind": "component",
+        "portId": "controlAdjustment",
+        "purpose": "data",
+        "ref": "page.menu.controlAdjustment",
+        "required": true,
+        "typeRef": "showcase.page-menu"
+      },
+      {
+        "boundary": "ui-event",
+        "contractRef": "showcase.open-action",
+        "direction": "output",
+        "ownerId": "page.menu",
+        "ownerKind": "component",
+        "portId": "controlProgress",
+        "purpose": "data",
+        "ref": "page.menu.controlProgress",
+        "required": true,
+        "typeRef": "showcase.page-menu"
+      },
+      {
+        "boundary": "ui-event",
+        "contractRef": "showcase.open-action",
+        "direction": "output",
+        "ownerId": "page.menu",
+        "ownerKind": "component",
+        "portId": "controlPressRing",
+        "purpose": "data",
+        "ref": "page.menu.controlPressRing",
+        "required": true,
+        "typeRef": "showcase.page-menu"
+      },
+      {
+        "boundary": "ui-event",
+        "contractRef": "showcase.open-action",
+        "direction": "output",
+        "ownerId": "page.menu",
+        "ownerKind": "component",
+        "portId": "inputText",
+        "purpose": "data",
+        "ref": "page.menu.inputText",
+        "required": true,
+        "typeRef": "showcase.page-menu"
+      },
+      {
+        "boundary": "ui-event",
+        "contractRef": "showcase.open-action",
+        "direction": "output",
+        "ownerId": "page.menu",
+        "ownerKind": "component",
+        "portId": "mediaCapture",
+        "purpose": "data",
+        "ref": "page.menu.mediaCapture",
+        "required": true,
+        "typeRef": "showcase.page-menu"
+      },
+      {
+        "boundary": "ui-event",
+        "contractRef": "showcase.open-action",
+        "direction": "output",
+        "ownerId": "page.menu",
+        "ownerKind": "component",
+        "portId": "mediaPlayback",
+        "purpose": "data",
+        "ref": "page.menu.mediaPlayback",
+        "required": true,
+        "typeRef": "showcase.page-menu"
+      },
+      {
+        "boundary": "ui-event",
+        "contractRef": "showcase.open-action",
+        "direction": "output",
+        "ownerId": "page.menu",
+        "ownerKind": "component",
+        "portId": "templateScreens",
+        "purpose": "data",
+        "ref": "page.menu.templateScreens",
+        "required": true,
+        "typeRef": "showcase.page-menu"
+      },
+      {
+        "boundary": "ui-event",
+        "contractRef": "showcase.open-action",
+        "direction": "output",
+        "ownerId": "page.menu",
+        "ownerKind": "component",
+        "portId": "flowSource",
+        "purpose": "data",
+        "ref": "page.menu.flowSource",
+        "required": true,
+        "typeRef": "showcase.page-menu"
+      },
+      {
+        "boundary": "ui-event",
+        "contractRef": "showcase.open-action",
+        "direction": "output",
+        "ownerId": "page.menu",
+        "ownerKind": "component",
+        "portId": "flowUpdate",
+        "purpose": "data",
+        "ref": "page.menu.flowUpdate",
+        "required": true,
+        "typeRef": "showcase.page-menu"
+      },
+      {
+        "boundary": "ui-event",
+        "contractRef": "showcase.open-action",
+        "direction": "output",
+        "ownerId": "page.menu",
+        "ownerKind": "component",
+        "portId": "flowService",
+        "purpose": "data",
+        "ref": "page.menu.flowService",
         "required": true,
         "typeRef": "showcase.page-menu"
       }
@@ -6347,6 +9520,40 @@
         ],
         "id": "showcase.navigation-presentation",
         "kind": "state"
+      },
+      {
+        "boundary": "ui-event",
+        "fields": [
+          {
+            "clockDomain": "none",
+            "name": "actionId",
+            "nullable": false,
+            "value": "string"
+          },
+          {
+            "clockDomain": "none",
+            "name": "value",
+            "nullable": true,
+            "value": "string"
+          }
+        ],
+        "id": "showcase.renderer-action",
+        "kind": "event"
+      },
+      {
+        "boundary": "presentation",
+        "fields": [
+          {
+            "clockDomain": "none",
+            "name": "model",
+            "nullable": false,
+            "value": {
+              "ref": "showcase.renderer-model"
+            }
+          }
+        ],
+        "id": "showcase.renderer-presentation",
+        "kind": "snapshot"
       }
     ],
     "demandEdges": [],
@@ -6602,10 +9809,202 @@
         "ref": "navigation.presentation.model",
         "required": true,
         "typeRef": "showcase.navigation-presentation"
+      },
+      {
+        "boundary": "ui-event",
+        "contractRef": "showcase.renderer-action",
+        "direction": "input",
+        "ownerId": "renderer",
+        "ownerKind": "node",
+        "portId": "atomIconAction",
+        "purpose": "data",
+        "ref": "renderer.atomIconAction",
+        "required": true,
+        "typeRef": "showcase.renderer-service"
+      },
+      {
+        "boundary": "ui-event",
+        "contractRef": "showcase.renderer-action",
+        "direction": "input",
+        "ownerId": "renderer",
+        "ownerKind": "node",
+        "portId": "controlActionRow",
+        "purpose": "data",
+        "ref": "renderer.controlActionRow",
+        "required": true,
+        "typeRef": "showcase.renderer-service"
+      },
+      {
+        "boundary": "ui-event",
+        "contractRef": "showcase.renderer-action",
+        "direction": "input",
+        "ownerId": "renderer",
+        "ownerKind": "node",
+        "portId": "controlChoiceRow",
+        "purpose": "data",
+        "ref": "renderer.controlChoiceRow",
+        "required": true,
+        "typeRef": "showcase.renderer-service"
+      },
+      {
+        "boundary": "ui-event",
+        "contractRef": "showcase.renderer-action",
+        "direction": "input",
+        "ownerId": "renderer",
+        "ownerKind": "node",
+        "portId": "controlAdjustment",
+        "purpose": "data",
+        "ref": "renderer.controlAdjustment",
+        "required": true,
+        "typeRef": "showcase.renderer-service"
+      },
+      {
+        "boundary": "ui-event",
+        "contractRef": "showcase.renderer-action",
+        "direction": "input",
+        "ownerId": "renderer",
+        "ownerKind": "node",
+        "portId": "controlProgress",
+        "purpose": "data",
+        "ref": "renderer.controlProgress",
+        "required": true,
+        "typeRef": "showcase.renderer-service"
+      },
+      {
+        "boundary": "ui-event",
+        "contractRef": "showcase.renderer-action",
+        "direction": "input",
+        "ownerId": "renderer",
+        "ownerKind": "node",
+        "portId": "controlPressRing",
+        "purpose": "data",
+        "ref": "renderer.controlPressRing",
+        "required": true,
+        "typeRef": "showcase.renderer-service"
+      },
+      {
+        "boundary": "ui-event",
+        "contractRef": "showcase.renderer-action",
+        "direction": "input",
+        "ownerId": "renderer",
+        "ownerKind": "node",
+        "portId": "inputText",
+        "purpose": "data",
+        "ref": "renderer.inputText",
+        "required": true,
+        "typeRef": "showcase.renderer-service"
+      },
+      {
+        "boundary": "ui-event",
+        "contractRef": "showcase.renderer-action",
+        "direction": "input",
+        "ownerId": "renderer",
+        "ownerKind": "node",
+        "portId": "mediaCapture",
+        "purpose": "data",
+        "ref": "renderer.mediaCapture",
+        "required": true,
+        "typeRef": "showcase.renderer-service"
+      },
+      {
+        "boundary": "ui-event",
+        "contractRef": "showcase.renderer-action",
+        "direction": "input",
+        "ownerId": "renderer",
+        "ownerKind": "node",
+        "portId": "mediaPlayback",
+        "purpose": "data",
+        "ref": "renderer.mediaPlayback",
+        "required": true,
+        "typeRef": "showcase.renderer-service"
+      },
+      {
+        "boundary": "ui-event",
+        "contractRef": "showcase.renderer-action",
+        "direction": "input",
+        "ownerId": "renderer",
+        "ownerKind": "node",
+        "portId": "templateScreens",
+        "purpose": "data",
+        "ref": "renderer.templateScreens",
+        "required": true,
+        "typeRef": "showcase.renderer-service"
+      },
+      {
+        "boundary": "ui-event",
+        "contractRef": "showcase.renderer-action",
+        "direction": "input",
+        "ownerId": "renderer",
+        "ownerKind": "node",
+        "portId": "flowSource",
+        "purpose": "data",
+        "ref": "renderer.flowSource",
+        "required": true,
+        "typeRef": "showcase.renderer-service"
+      },
+      {
+        "boundary": "ui-event",
+        "contractRef": "showcase.renderer-action",
+        "direction": "input",
+        "ownerId": "renderer",
+        "ownerKind": "node",
+        "portId": "flowUpdate",
+        "purpose": "data",
+        "ref": "renderer.flowUpdate",
+        "required": true,
+        "typeRef": "showcase.renderer-service"
+      },
+      {
+        "boundary": "ui-event",
+        "contractRef": "showcase.renderer-action",
+        "direction": "input",
+        "ownerId": "renderer",
+        "ownerKind": "node",
+        "portId": "flowService",
+        "purpose": "data",
+        "ref": "renderer.flowService",
+        "required": true,
+        "typeRef": "showcase.renderer-service"
+      },
+      {
+        "boundary": "presentation",
+        "contractRef": "showcase.renderer-presentation",
+        "direction": "output",
+        "ownerId": "renderer",
+        "ownerKind": "node",
+        "portId": "model",
+        "purpose": "data",
+        "ref": "renderer.model",
+        "required": true,
+        "typeRef": "showcase.renderer-service"
+      },
+      {
+        "boundary": "presentation",
+        "contractRef": "showcase.renderer-presentation",
+        "direction": "input",
+        "ownerId": "renderer.presentation",
+        "ownerKind": "node",
+        "portId": "model",
+        "purpose": "data",
+        "ref": "renderer.presentation.model",
+        "required": true,
+        "typeRef": "showcase.renderer-presentation"
+      },
+      {
+        "boundary": "presentation",
+        "contractRef": "showcase.renderer-presentation",
+        "direction": "output",
+        "ownerId": "renderer.presentation",
+        "ownerKind": "node",
+        "portId": "model",
+        "purpose": "data",
+        "ref": "renderer.presentation.model",
+        "required": true,
+        "typeRef": "showcase.renderer-presentation"
       }
     ]
   },
-  "productSpecVersion": "0.3.47",
+  "productSpecVersion": "0.3.48",
   "rendererBindings": [
     {
       "capabilities": [
@@ -6646,7 +10045,7 @@
       "id": "garmin-connectiq-monkeyc"
     }
   ],
-  "schemaVersion": 9,
+  "schemaVersion": 10,
   "showcase": {
     "cases": [
       {

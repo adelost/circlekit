@@ -84,10 +84,31 @@ struct ShowcaseImmutableInputBundle {
     }
 }
 
+struct ShowcaseBoundEventBinding {
+    let sourcePortRef: String
+    let targetPortRef: String
+    let contractRef: String
+    let emit: @MainActor (Any) -> Void
+}
+
+enum ShowcaseRendererEmitter {
+    case empty((Never) -> Never)
+    case typed([ShowcaseBoundEventBinding])
+}
+
 struct ShowcaseMountedRenderer {
-    let component: ShowcaseComponent
+    let componentId: GeneratedShowcaseComponentId
     let inputs: ShowcaseImmutableInputBundle
-    let emitter: ShowcaseNativeEventEmitterRegistration
+    let emitter: ShowcaseRendererEmitter
+
+    @MainActor
+    func emit(sourcePortRef: String, payload: Any) {
+        guard case .typed(let bindings) = emitter else {
+            preconditionFailure("Read-only Showcase renderer \(componentId.rawValue) cannot emit")
+        }
+        let binding = bindings.first(where: { $0.sourcePortRef == sourcePortRef })!
+        binding.emit(payload)
+    }
 }
 
 struct ShowcaseComponentMount: Identifiable, Hashable {

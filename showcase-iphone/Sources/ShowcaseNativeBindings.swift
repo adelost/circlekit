@@ -148,10 +148,24 @@ final class ShowcaseNativeEnvironment {
         guard let component = mounted as? ShowcaseComponent else {
             preconditionFailure("Native Showcase mount \(id.rawValue) did not return its immutable component model")
         }
+        let emitter: ShowcaseRendererEmitter
+        switch registration.eventEmitter {
+        case .empty(let endpoint):
+            emitter = .empty(endpoint)
+        case .typed(let bindings):
+            emitter = .typed(bindings.map { binding in
+                ShowcaseBoundEventBinding(
+                    sourcePortRef: binding.sourcePortRef,
+                    targetPortRef: binding.targetPortRef,
+                    contractRef: binding.contractRef,
+                    emit: { payload in binding.emit(self, payload) }
+                )
+            })
+        }
         return ShowcaseMountedRenderer(
-            component: component,
+            componentId: component.id,
             inputs: ShowcaseImmutableInputBundle(values: values),
-            emitter: registration.eventEmitter
+            emitter: emitter
         )
     }
 

@@ -2,7 +2,7 @@
 module GeneratedCircleKitShowcase {
     const PRODUCT_ID = "circlekit-showcase";
     const PRODUCT_LABEL = "CIRCLEKIT";
-    const PRODUCT_SPEC_VERSION = "0.3.47";
+    const PRODUCT_SPEC_VERSION = "0.3.48";
     const ARTIFACT_ID = "garmin-limited-ui";
     const RENDERER_ID = "garmin-connectiq-monkeyc";
     const SCREEN_ID = "artifact.garmin-limited-ui";
@@ -27,8 +27,50 @@ module GeneratedCircleKitShowcase {
     const COLOR_LINE = 0x232527;
     const COLOR_ICON = 0xF1EFE9;
     var NATIVE_COMPONENTS = [
-        { "componentId" => COMPONENT_ID, "rendererId" => "CircleKitShowcaseView.drawProgressDial" },
-        { "componentId" => "showcase.page-host", "rendererId" => "CircleKitShowcaseView" }
+        {
+            "instanceRef" => COMPONENT_ID,
+            "typeRef" => COMPONENT_ID,
+            "mounts" => [{
+                "profileRef" => ARTIFACT_ID,
+                "pageRef" => SCREEN_ID,
+                "surface" => SURFACE_CLASS,
+                "mountRef" => COMPONENT_ID,
+                "mount" => method(:mountProgress)
+            }],
+            "immutableInputs" => [
+                { "consumerPortRef" => COMPONENT_ID + ".catalog", "producerPortRef" => "catalog.model", "contractRef" => "showcase.catalog-presentation", "required" => true, "read" => method(:catalogModel) },
+                { "consumerPortRef" => COMPONENT_ID + ".navigation", "producerPortRef" => "navigation.presentation.model", "contractRef" => "showcase.navigation-presentation", "required" => true, "read" => method(:navigationModel) },
+                { "consumerPortRef" => COMPONENT_ID + ".renderer", "producerPortRef" => "renderer.presentation.model", "contractRef" => "showcase.renderer-presentation", "required" => true, "read" => method(:rendererModel) }
+            ],
+            "eventEmitter" => {
+                "kind" => "typed",
+                "bindings" => [{
+                    "sourcePortRef" => COMPONENT_ID + ".action",
+                    "targetPortRef" => "renderer." + OPEN_PORT,
+                    "contractRef" => "showcase.renderer-action",
+                    "emit" => method(:emitProgressAction)
+                }]
+            }
+        },
+        {
+            "instanceRef" => "page.host",
+            "typeRef" => "showcase.page-host",
+            "mounts" => [{
+                "profileRef" => ARTIFACT_ID,
+                "pageRef" => SCREEN_ID,
+                "surface" => SURFACE_CLASS,
+                "mountRef" => "page.host",
+                "mount" => method(:mountPageHost)
+            }],
+            "immutableInputs" => [{
+                "consumerPortRef" => "page.host.activePage",
+                "producerPortRef" => "navigation.activePage",
+                "contractRef" => "showcase.navigation.active-page",
+                "required" => true,
+                "read" => method(:activePage)
+            }],
+            "eventEmitter" => { "kind" => "empty", "emit" => method(:emitReadOnly) }
+        }
     ];
     var NATIVE_ICONS = [
         {
@@ -158,6 +200,18 @@ module GeneratedCircleKitShowcase {
             "nativePortId" => "GeneratedCircleKitShowcase.navigationModel",
             "inputPorts" => ["destination"],
             "outputPorts" => ["model"]
+        },
+        {
+            "nodeId" => "renderer",
+            "nativePortId" => "GeneratedCircleKitShowcase.emitProgressAction",
+            "inputPorts" => ["atomIconAction", "controlActionRow", "controlChoiceRow", "controlAdjustment", "controlProgress", "controlPressRing", "inputText", "mediaCapture", "mediaPlayback", "templateScreens", "flowSource", "flowUpdate", "flowService"],
+            "outputPorts" => ["model"]
+        },
+        {
+            "nodeId" => "renderer.presentation",
+            "nativePortId" => "GeneratedCircleKitShowcase.rendererModel",
+            "inputPorts" => ["model"],
+            "outputPorts" => ["model"]
         }
     ];
     var NATIVE_NAVIGATION_ARTIFACTS = [
@@ -177,7 +231,7 @@ module GeneratedCircleKitShowcase {
         {
             "artifactRef" => "garmin-limited-ui",
             "componentInstanceRef" => "control.progress",
-            "actions" => [{ "sourcePortRef" => "control.progress.open", "targetPortRef" => "navigation.controlProgress", "effect" => "dispatch" }]
+            "actions" => [{ "sourcePortRef" => "control.progress.action", "targetPortRef" => "renderer.controlProgress", "effect" => "dispatch" }]
         }
     ];
     var _destination = null;
@@ -196,10 +250,31 @@ module GeneratedCircleKitShowcase {
     function catalogModel() {
         var component = NATIVE_COMPONENTS[0];
         return {
-            "componentId" => component["componentId"],
+            "componentId" => component["instanceRef"],
             "scenarioId" => SCENARIO_ID,
             "iconAssetRef" => ICON_ASSET_REF
         };
+    }
+
+    function rendererModel() {
+        return { "activeTicks" => ACTIVE_TICKS, "scenarioId" => SCENARIO_ID };
+    }
+
+    function mountProgress(inputs, emitter) {
+        return { "inputs" => inputs, "emitter" => emitter, "componentId" => COMPONENT_ID };
+    }
+
+    function mountPageHost(inputs, emitter) {
+        return { "inputs" => inputs, "emitter" => emitter, "componentId" => "page.host" };
+    }
+
+    function emitProgressAction(payload) {
+        open("renderer." + OPEN_PORT, COMPONENT_ID);
+        return payload;
+    }
+
+    function emitReadOnly(event) {
+        return null;
     }
 
     function open(portId, componentId) {
@@ -250,6 +325,15 @@ module GeneratedCircleKitShowcase {
             if (node["nativePortId"] == null) {
                 return null;
             }
+        }
+        for (var componentIndex = 0; componentIndex < NATIVE_COMPONENTS.size(); componentIndex += 1) {
+            var registration = NATIVE_COMPONENTS[componentIndex];
+            var values = {};
+            for (var inputIndex = 0; inputIndex < registration["immutableInputs"].size(); inputIndex += 1) {
+                var input = registration["immutableInputs"][inputIndex];
+                values[input["consumerPortRef"]] = input["read"].invoke();
+            }
+            registration["mounts"][0]["mount"].invoke(values, registration["eventEmitter"]);
         }
         var catalog = catalogModel();
         dispatch(catalog["componentId"]);

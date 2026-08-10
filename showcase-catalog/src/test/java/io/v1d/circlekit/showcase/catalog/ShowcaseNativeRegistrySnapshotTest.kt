@@ -45,8 +45,29 @@ class ShowcaseNativeRegistrySnapshotTest {
 
     private fun snapshot(): String {
         val components = ShowcaseNativeBindings.components.joinToString(",\n") { binding ->
-            val profiles = binding.profiles.joinToString(", ") { it.json() }
-            "    { \"componentId\": ${binding.componentId.json()}, \"rendererId\": ${binding.renderer.id.json()}, \"profiles\": [$profiles] }"
+            val mounts = binding.mounts.joinToString(", ") { mount ->
+                "{ \"profileRef\": ${mount.profileRef.json()}, \"pageRef\": ${mount.pageRef.json()}, " +
+                    "\"surface\": ${mount.surface.json()}, \"mountRef\": ${mount.mountRef.json()} }"
+            }
+            val inputs = binding.immutableInputs.joinToString(", ") { input ->
+                "{ \"consumerPortRef\": ${input.consumerPortRef.json()}, " +
+                    "\"producerPortRef\": ${input.producerPortRef.json()}, " +
+                    "\"contractRef\": ${input.contractRef.json()}, \"required\": ${input.required} }"
+            }
+            val emitter = when (val eventEmitter = binding.eventEmitter) {
+                is ShowcaseNativeEventEmitterBinding.Empty -> "{ \"kind\": \"empty\" }"
+                is ShowcaseNativeEventEmitterBinding.Typed -> {
+                    val events = eventEmitter.bindings.joinToString(", ") { event ->
+                        "{ \"sourcePortRef\": ${event.sourcePortRef.json()}, " +
+                            "\"targetPortRef\": ${event.targetPortRef.json()}, " +
+                            "\"contractRef\": ${event.contractRef.json()} }"
+                    }
+                    "{ \"kind\": \"typed\", \"bindings\": [$events] }"
+                }
+            }
+            "    { \"component\": { \"instanceRef\": ${binding.componentId.json()}, " +
+                "\"typeRef\": ${binding.componentTypeRef.json()} }, \"mounts\": [$mounts], " +
+                "\"immutableInputs\": [$inputs], \"eventEmitter\": $emitter }"
         }
         val icons = ShowcaseNativeBindings.icons.joinToString(",\n") { binding ->
             "    { \"iconId\": ${binding.iconId.json()}, \"nativeSymbol\": ${binding.nativeSymbol.json()} }"

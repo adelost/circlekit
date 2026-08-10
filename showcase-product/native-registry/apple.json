@@ -1,6 +1,6 @@
 {
   "stage": "native-export",
-  "schemaVersion": 5,
+  "schemaVersion": 6,
   "sourceFile": "showcase-iphone/Sources/Generated/GeneratedShowcaseProduct.swift",
   "profiles": [
     "iphone-full-ui",
@@ -8,140 +8,1183 @@
   ],
   "components": [
     {
-      "componentId": "foundation.colors",
-      "rendererId": "ShowcaseComponentScreen",
-      "profiles": [
-        "iphone-full-ui",
-        "watchos-full-ui"
-      ]
+      "component": {
+        "instanceRef": "foundation.colors",
+        "typeRef": "foundation.colors"
+      },
+      "mounts": [
+        {
+          "profileRef": "iphone-full-ui",
+          "pageRef": "section.foundations",
+          "surface": "compact",
+          "mountRef": "foundation.colors"
+        },
+        {
+          "profileRef": "iphone-full-ui",
+          "pageRef": "section.foundations",
+          "surface": "wide",
+          "mountRef": "foundation.colors"
+        },
+        {
+          "profileRef": "watchos-full-ui",
+          "pageRef": "section.foundations",
+          "surface": "round",
+          "mountRef": "foundation.colors"
+        }
+      ],
+      "immutableInputs": [
+        {
+          "consumerPortRef": "foundation.colors.catalog",
+          "producerPortRef": "catalog.model",
+          "contractRef": "showcase.catalog-presentation",
+          "required": true
+        },
+        {
+          "consumerPortRef": "foundation.colors.navigation",
+          "producerPortRef": "navigation.presentation.model",
+          "contractRef": "showcase.navigation-presentation",
+          "required": true
+        }
+      ],
+      "eventEmitter": {
+        "kind": "empty"
+      }
     },
     {
-      "componentId": "foundation.geometry",
-      "rendererId": "ShowcaseComponentScreen",
-      "profiles": [
-        "iphone-full-ui",
-        "watchos-full-ui"
-      ]
+      "component": {
+        "instanceRef": "foundation.geometry",
+        "typeRef": "foundation.geometry"
+      },
+      "mounts": [
+        {
+          "profileRef": "iphone-full-ui",
+          "pageRef": "section.foundations",
+          "surface": "compact",
+          "mountRef": "foundation.geometry"
+        },
+        {
+          "profileRef": "iphone-full-ui",
+          "pageRef": "section.foundations",
+          "surface": "wide",
+          "mountRef": "foundation.geometry"
+        },
+        {
+          "profileRef": "watchos-full-ui",
+          "pageRef": "section.foundations",
+          "surface": "round",
+          "mountRef": "foundation.geometry"
+        }
+      ],
+      "immutableInputs": [
+        {
+          "consumerPortRef": "foundation.geometry.catalog",
+          "producerPortRef": "catalog.model",
+          "contractRef": "showcase.catalog-presentation",
+          "required": true
+        },
+        {
+          "consumerPortRef": "foundation.geometry.navigation",
+          "producerPortRef": "navigation.presentation.model",
+          "contractRef": "showcase.navigation-presentation",
+          "required": true
+        }
+      ],
+      "eventEmitter": {
+        "kind": "empty"
+      }
     },
     {
-      "componentId": "showcase.page-menu",
-      "rendererId": "ShowcasePageMenu",
-      "profiles": [
-        "iphone-full-ui",
-        "watchos-full-ui"
-      ]
+      "component": {
+        "instanceRef": "page.menu",
+        "typeRef": "showcase.page-menu"
+      },
+      "mounts": [
+        {
+          "profileRef": "iphone-full-ui",
+          "pageRef": "section.foundations",
+          "surface": "compact",
+          "mountRef": "page.menu"
+        },
+        {
+          "profileRef": "iphone-full-ui",
+          "pageRef": "section.foundations",
+          "surface": "wide",
+          "mountRef": "page.menu"
+        },
+        {
+          "profileRef": "iphone-full-ui",
+          "pageRef": "section.atoms",
+          "surface": "compact",
+          "mountRef": "page.menu"
+        },
+        {
+          "profileRef": "iphone-full-ui",
+          "pageRef": "section.atoms",
+          "surface": "wide",
+          "mountRef": "page.menu"
+        },
+        {
+          "profileRef": "iphone-full-ui",
+          "pageRef": "section.controls",
+          "surface": "compact",
+          "mountRef": "page.menu"
+        },
+        {
+          "profileRef": "iphone-full-ui",
+          "pageRef": "section.controls",
+          "surface": "wide",
+          "mountRef": "page.menu"
+        },
+        {
+          "profileRef": "iphone-full-ui",
+          "pageRef": "section.input",
+          "surface": "compact",
+          "mountRef": "page.menu"
+        },
+        {
+          "profileRef": "iphone-full-ui",
+          "pageRef": "section.input",
+          "surface": "wide",
+          "mountRef": "page.menu"
+        },
+        {
+          "profileRef": "iphone-full-ui",
+          "pageRef": "section.media",
+          "surface": "compact",
+          "mountRef": "page.menu"
+        },
+        {
+          "profileRef": "iphone-full-ui",
+          "pageRef": "section.media",
+          "surface": "wide",
+          "mountRef": "page.menu"
+        },
+        {
+          "profileRef": "iphone-full-ui",
+          "pageRef": "section.templates",
+          "surface": "compact",
+          "mountRef": "page.menu"
+        },
+        {
+          "profileRef": "iphone-full-ui",
+          "pageRef": "section.templates",
+          "surface": "wide",
+          "mountRef": "page.menu"
+        },
+        {
+          "profileRef": "iphone-full-ui",
+          "pageRef": "section.flows",
+          "surface": "compact",
+          "mountRef": "page.menu"
+        },
+        {
+          "profileRef": "iphone-full-ui",
+          "pageRef": "section.flows",
+          "surface": "wide",
+          "mountRef": "page.menu"
+        },
+        {
+          "profileRef": "watchos-full-ui",
+          "pageRef": "section.foundations",
+          "surface": "round",
+          "mountRef": "page.menu"
+        },
+        {
+          "profileRef": "watchos-full-ui",
+          "pageRef": "section.atoms",
+          "surface": "round",
+          "mountRef": "page.menu"
+        },
+        {
+          "profileRef": "watchos-full-ui",
+          "pageRef": "section.controls",
+          "surface": "round",
+          "mountRef": "page.menu"
+        },
+        {
+          "profileRef": "watchos-full-ui",
+          "pageRef": "section.input",
+          "surface": "round",
+          "mountRef": "page.menu"
+        },
+        {
+          "profileRef": "watchos-full-ui",
+          "pageRef": "section.media",
+          "surface": "round",
+          "mountRef": "page.menu"
+        },
+        {
+          "profileRef": "watchos-full-ui",
+          "pageRef": "section.templates",
+          "surface": "round",
+          "mountRef": "page.menu"
+        },
+        {
+          "profileRef": "watchos-full-ui",
+          "pageRef": "section.flows",
+          "surface": "round",
+          "mountRef": "page.menu"
+        }
+      ],
+      "immutableInputs": [],
+      "eventEmitter": {
+        "kind": "typed",
+        "bindings": [
+          {
+            "sourcePortRef": "page.menu.route",
+            "targetPortRef": "navigation.route",
+            "contractRef": "showcase.navigation.route-intent"
+          },
+          {
+            "sourcePortRef": "page.menu.foundationColors",
+            "targetPortRef": "navigation.foundationColors",
+            "contractRef": "showcase.open-action"
+          },
+          {
+            "sourcePortRef": "page.menu.foundationGeometry",
+            "targetPortRef": "navigation.foundationGeometry",
+            "contractRef": "showcase.open-action"
+          },
+          {
+            "sourcePortRef": "page.menu.atomIconAction",
+            "targetPortRef": "navigation.atomIconAction",
+            "contractRef": "showcase.open-action"
+          },
+          {
+            "sourcePortRef": "page.menu.controlActionRow",
+            "targetPortRef": "navigation.controlActionRow",
+            "contractRef": "showcase.open-action"
+          },
+          {
+            "sourcePortRef": "page.menu.controlChoiceRow",
+            "targetPortRef": "navigation.controlChoiceRow",
+            "contractRef": "showcase.open-action"
+          },
+          {
+            "sourcePortRef": "page.menu.controlAdjustment",
+            "targetPortRef": "navigation.controlAdjustment",
+            "contractRef": "showcase.open-action"
+          },
+          {
+            "sourcePortRef": "page.menu.controlProgress",
+            "targetPortRef": "navigation.controlProgress",
+            "contractRef": "showcase.open-action"
+          },
+          {
+            "sourcePortRef": "page.menu.controlPressRing",
+            "targetPortRef": "navigation.controlPressRing",
+            "contractRef": "showcase.open-action"
+          },
+          {
+            "sourcePortRef": "page.menu.inputText",
+            "targetPortRef": "navigation.inputText",
+            "contractRef": "showcase.open-action"
+          },
+          {
+            "sourcePortRef": "page.menu.mediaCapture",
+            "targetPortRef": "navigation.mediaCapture",
+            "contractRef": "showcase.open-action"
+          },
+          {
+            "sourcePortRef": "page.menu.mediaPlayback",
+            "targetPortRef": "navigation.mediaPlayback",
+            "contractRef": "showcase.open-action"
+          },
+          {
+            "sourcePortRef": "page.menu.templateScreens",
+            "targetPortRef": "navigation.templateScreens",
+            "contractRef": "showcase.open-action"
+          },
+          {
+            "sourcePortRef": "page.menu.flowSource",
+            "targetPortRef": "navigation.flowSource",
+            "contractRef": "showcase.open-action"
+          },
+          {
+            "sourcePortRef": "page.menu.flowUpdate",
+            "targetPortRef": "navigation.flowUpdate",
+            "contractRef": "showcase.open-action"
+          },
+          {
+            "sourcePortRef": "page.menu.flowService",
+            "targetPortRef": "navigation.flowService",
+            "contractRef": "showcase.open-action"
+          }
+        ]
+      }
     },
     {
-      "componentId": "showcase.page-host",
-      "rendererId": "ShowcasePageHost",
-      "profiles": [
-        "iphone-full-ui",
-        "watchos-full-ui"
-      ]
+      "component": {
+        "instanceRef": "page.host",
+        "typeRef": "showcase.page-host"
+      },
+      "mounts": [
+        {
+          "profileRef": "iphone-full-ui",
+          "pageRef": "section.foundations",
+          "surface": "compact",
+          "mountRef": "page.host"
+        },
+        {
+          "profileRef": "iphone-full-ui",
+          "pageRef": "section.foundations",
+          "surface": "wide",
+          "mountRef": "page.host"
+        },
+        {
+          "profileRef": "iphone-full-ui",
+          "pageRef": "section.atoms",
+          "surface": "compact",
+          "mountRef": "page.host"
+        },
+        {
+          "profileRef": "iphone-full-ui",
+          "pageRef": "section.atoms",
+          "surface": "wide",
+          "mountRef": "page.host"
+        },
+        {
+          "profileRef": "iphone-full-ui",
+          "pageRef": "section.controls",
+          "surface": "compact",
+          "mountRef": "page.host"
+        },
+        {
+          "profileRef": "iphone-full-ui",
+          "pageRef": "section.controls",
+          "surface": "wide",
+          "mountRef": "page.host"
+        },
+        {
+          "profileRef": "iphone-full-ui",
+          "pageRef": "section.input",
+          "surface": "compact",
+          "mountRef": "page.host"
+        },
+        {
+          "profileRef": "iphone-full-ui",
+          "pageRef": "section.input",
+          "surface": "wide",
+          "mountRef": "page.host"
+        },
+        {
+          "profileRef": "iphone-full-ui",
+          "pageRef": "section.media",
+          "surface": "compact",
+          "mountRef": "page.host"
+        },
+        {
+          "profileRef": "iphone-full-ui",
+          "pageRef": "section.media",
+          "surface": "wide",
+          "mountRef": "page.host"
+        },
+        {
+          "profileRef": "iphone-full-ui",
+          "pageRef": "section.templates",
+          "surface": "compact",
+          "mountRef": "page.host"
+        },
+        {
+          "profileRef": "iphone-full-ui",
+          "pageRef": "section.templates",
+          "surface": "wide",
+          "mountRef": "page.host"
+        },
+        {
+          "profileRef": "iphone-full-ui",
+          "pageRef": "section.flows",
+          "surface": "compact",
+          "mountRef": "page.host"
+        },
+        {
+          "profileRef": "iphone-full-ui",
+          "pageRef": "section.flows",
+          "surface": "wide",
+          "mountRef": "page.host"
+        },
+        {
+          "profileRef": "watchos-full-ui",
+          "pageRef": "section.foundations",
+          "surface": "round",
+          "mountRef": "page.host"
+        },
+        {
+          "profileRef": "watchos-full-ui",
+          "pageRef": "section.atoms",
+          "surface": "round",
+          "mountRef": "page.host"
+        },
+        {
+          "profileRef": "watchos-full-ui",
+          "pageRef": "section.controls",
+          "surface": "round",
+          "mountRef": "page.host"
+        },
+        {
+          "profileRef": "watchos-full-ui",
+          "pageRef": "section.input",
+          "surface": "round",
+          "mountRef": "page.host"
+        },
+        {
+          "profileRef": "watchos-full-ui",
+          "pageRef": "section.media",
+          "surface": "round",
+          "mountRef": "page.host"
+        },
+        {
+          "profileRef": "watchos-full-ui",
+          "pageRef": "section.templates",
+          "surface": "round",
+          "mountRef": "page.host"
+        },
+        {
+          "profileRef": "watchos-full-ui",
+          "pageRef": "section.flows",
+          "surface": "round",
+          "mountRef": "page.host"
+        }
+      ],
+      "immutableInputs": [
+        {
+          "consumerPortRef": "page.host.activePage",
+          "producerPortRef": "navigation.activePage",
+          "contractRef": "showcase.navigation.active-page",
+          "required": true
+        }
+      ],
+      "eventEmitter": {
+        "kind": "empty"
+      }
     },
     {
-      "componentId": "atom.icon-action",
-      "rendererId": "ShowcaseComponentScreen",
-      "profiles": [
-        "iphone-full-ui",
-        "watchos-full-ui"
-      ]
+      "component": {
+        "instanceRef": "atom.icon-action",
+        "typeRef": "atom.icon-action"
+      },
+      "mounts": [
+        {
+          "profileRef": "iphone-full-ui",
+          "pageRef": "section.atoms",
+          "surface": "compact",
+          "mountRef": "atom.icon-action"
+        },
+        {
+          "profileRef": "iphone-full-ui",
+          "pageRef": "section.atoms",
+          "surface": "wide",
+          "mountRef": "atom.icon-action"
+        },
+        {
+          "profileRef": "watchos-full-ui",
+          "pageRef": "section.atoms",
+          "surface": "round",
+          "mountRef": "atom.icon-action"
+        }
+      ],
+      "immutableInputs": [
+        {
+          "consumerPortRef": "atom.icon-action.catalog",
+          "producerPortRef": "catalog.model",
+          "contractRef": "showcase.catalog-presentation",
+          "required": true
+        },
+        {
+          "consumerPortRef": "atom.icon-action.navigation",
+          "producerPortRef": "navigation.presentation.model",
+          "contractRef": "showcase.navigation-presentation",
+          "required": true
+        },
+        {
+          "consumerPortRef": "atom.icon-action.renderer",
+          "producerPortRef": "renderer.presentation.model",
+          "contractRef": "showcase.renderer-presentation",
+          "required": true
+        }
+      ],
+      "eventEmitter": {
+        "kind": "typed",
+        "bindings": [
+          {
+            "sourcePortRef": "atom.icon-action.action",
+            "targetPortRef": "renderer.atomIconAction",
+            "contractRef": "showcase.renderer-action"
+          }
+        ]
+      }
     },
     {
-      "componentId": "control.action-row",
-      "rendererId": "ShowcaseComponentScreen",
-      "profiles": [
-        "iphone-full-ui",
-        "watchos-full-ui"
-      ]
+      "component": {
+        "instanceRef": "control.action-row",
+        "typeRef": "control.action-row"
+      },
+      "mounts": [
+        {
+          "profileRef": "iphone-full-ui",
+          "pageRef": "section.controls",
+          "surface": "compact",
+          "mountRef": "control.action-row"
+        },
+        {
+          "profileRef": "iphone-full-ui",
+          "pageRef": "section.controls",
+          "surface": "wide",
+          "mountRef": "control.action-row"
+        },
+        {
+          "profileRef": "watchos-full-ui",
+          "pageRef": "section.controls",
+          "surface": "round",
+          "mountRef": "control.action-row"
+        }
+      ],
+      "immutableInputs": [
+        {
+          "consumerPortRef": "control.action-row.catalog",
+          "producerPortRef": "catalog.model",
+          "contractRef": "showcase.catalog-presentation",
+          "required": true
+        },
+        {
+          "consumerPortRef": "control.action-row.navigation",
+          "producerPortRef": "navigation.presentation.model",
+          "contractRef": "showcase.navigation-presentation",
+          "required": true
+        },
+        {
+          "consumerPortRef": "control.action-row.renderer",
+          "producerPortRef": "renderer.presentation.model",
+          "contractRef": "showcase.renderer-presentation",
+          "required": true
+        }
+      ],
+      "eventEmitter": {
+        "kind": "typed",
+        "bindings": [
+          {
+            "sourcePortRef": "control.action-row.action",
+            "targetPortRef": "renderer.controlActionRow",
+            "contractRef": "showcase.renderer-action"
+          }
+        ]
+      }
     },
     {
-      "componentId": "control.choice-row",
-      "rendererId": "ShowcaseComponentScreen",
-      "profiles": [
-        "iphone-full-ui",
-        "watchos-full-ui"
-      ]
+      "component": {
+        "instanceRef": "control.choice-row",
+        "typeRef": "control.choice-row"
+      },
+      "mounts": [
+        {
+          "profileRef": "iphone-full-ui",
+          "pageRef": "section.controls",
+          "surface": "compact",
+          "mountRef": "control.choice-row"
+        },
+        {
+          "profileRef": "iphone-full-ui",
+          "pageRef": "section.controls",
+          "surface": "wide",
+          "mountRef": "control.choice-row"
+        },
+        {
+          "profileRef": "watchos-full-ui",
+          "pageRef": "section.controls",
+          "surface": "round",
+          "mountRef": "control.choice-row"
+        }
+      ],
+      "immutableInputs": [
+        {
+          "consumerPortRef": "control.choice-row.catalog",
+          "producerPortRef": "catalog.model",
+          "contractRef": "showcase.catalog-presentation",
+          "required": true
+        },
+        {
+          "consumerPortRef": "control.choice-row.navigation",
+          "producerPortRef": "navigation.presentation.model",
+          "contractRef": "showcase.navigation-presentation",
+          "required": true
+        },
+        {
+          "consumerPortRef": "control.choice-row.renderer",
+          "producerPortRef": "renderer.presentation.model",
+          "contractRef": "showcase.renderer-presentation",
+          "required": true
+        }
+      ],
+      "eventEmitter": {
+        "kind": "typed",
+        "bindings": [
+          {
+            "sourcePortRef": "control.choice-row.action",
+            "targetPortRef": "renderer.controlChoiceRow",
+            "contractRef": "showcase.renderer-action"
+          }
+        ]
+      }
     },
     {
-      "componentId": "control.adjustment",
-      "rendererId": "ShowcaseComponentScreen",
-      "profiles": [
-        "iphone-full-ui",
-        "watchos-full-ui"
-      ]
+      "component": {
+        "instanceRef": "control.adjustment",
+        "typeRef": "control.adjustment"
+      },
+      "mounts": [
+        {
+          "profileRef": "iphone-full-ui",
+          "pageRef": "section.controls",
+          "surface": "compact",
+          "mountRef": "control.adjustment"
+        },
+        {
+          "profileRef": "iphone-full-ui",
+          "pageRef": "section.controls",
+          "surface": "wide",
+          "mountRef": "control.adjustment"
+        },
+        {
+          "profileRef": "watchos-full-ui",
+          "pageRef": "section.controls",
+          "surface": "round",
+          "mountRef": "control.adjustment"
+        }
+      ],
+      "immutableInputs": [
+        {
+          "consumerPortRef": "control.adjustment.catalog",
+          "producerPortRef": "catalog.model",
+          "contractRef": "showcase.catalog-presentation",
+          "required": true
+        },
+        {
+          "consumerPortRef": "control.adjustment.navigation",
+          "producerPortRef": "navigation.presentation.model",
+          "contractRef": "showcase.navigation-presentation",
+          "required": true
+        },
+        {
+          "consumerPortRef": "control.adjustment.renderer",
+          "producerPortRef": "renderer.presentation.model",
+          "contractRef": "showcase.renderer-presentation",
+          "required": true
+        }
+      ],
+      "eventEmitter": {
+        "kind": "typed",
+        "bindings": [
+          {
+            "sourcePortRef": "control.adjustment.action",
+            "targetPortRef": "renderer.controlAdjustment",
+            "contractRef": "showcase.renderer-action"
+          }
+        ]
+      }
     },
     {
-      "componentId": "control.progress",
-      "rendererId": "ShowcaseComponentScreen",
-      "profiles": [
-        "iphone-full-ui",
-        "watchos-full-ui"
-      ]
+      "component": {
+        "instanceRef": "control.progress",
+        "typeRef": "control.progress"
+      },
+      "mounts": [
+        {
+          "profileRef": "iphone-full-ui",
+          "pageRef": "section.controls",
+          "surface": "compact",
+          "mountRef": "control.progress"
+        },
+        {
+          "profileRef": "iphone-full-ui",
+          "pageRef": "section.controls",
+          "surface": "wide",
+          "mountRef": "control.progress"
+        },
+        {
+          "profileRef": "watchos-full-ui",
+          "pageRef": "section.controls",
+          "surface": "round",
+          "mountRef": "control.progress"
+        }
+      ],
+      "immutableInputs": [
+        {
+          "consumerPortRef": "control.progress.catalog",
+          "producerPortRef": "catalog.model",
+          "contractRef": "showcase.catalog-presentation",
+          "required": true
+        },
+        {
+          "consumerPortRef": "control.progress.navigation",
+          "producerPortRef": "navigation.presentation.model",
+          "contractRef": "showcase.navigation-presentation",
+          "required": true
+        },
+        {
+          "consumerPortRef": "control.progress.renderer",
+          "producerPortRef": "renderer.presentation.model",
+          "contractRef": "showcase.renderer-presentation",
+          "required": true
+        }
+      ],
+      "eventEmitter": {
+        "kind": "typed",
+        "bindings": [
+          {
+            "sourcePortRef": "control.progress.action",
+            "targetPortRef": "renderer.controlProgress",
+            "contractRef": "showcase.renderer-action"
+          }
+        ]
+      }
     },
     {
-      "componentId": "control.press-ring",
-      "rendererId": "ShowcaseComponentScreen",
-      "profiles": [
-        "iphone-full-ui",
-        "watchos-full-ui"
-      ]
+      "component": {
+        "instanceRef": "control.press-ring",
+        "typeRef": "control.press-ring"
+      },
+      "mounts": [
+        {
+          "profileRef": "iphone-full-ui",
+          "pageRef": "section.controls",
+          "surface": "compact",
+          "mountRef": "control.press-ring"
+        },
+        {
+          "profileRef": "iphone-full-ui",
+          "pageRef": "section.controls",
+          "surface": "wide",
+          "mountRef": "control.press-ring"
+        },
+        {
+          "profileRef": "watchos-full-ui",
+          "pageRef": "section.controls",
+          "surface": "round",
+          "mountRef": "control.press-ring"
+        }
+      ],
+      "immutableInputs": [
+        {
+          "consumerPortRef": "control.press-ring.catalog",
+          "producerPortRef": "catalog.model",
+          "contractRef": "showcase.catalog-presentation",
+          "required": true
+        },
+        {
+          "consumerPortRef": "control.press-ring.navigation",
+          "producerPortRef": "navigation.presentation.model",
+          "contractRef": "showcase.navigation-presentation",
+          "required": true
+        },
+        {
+          "consumerPortRef": "control.press-ring.renderer",
+          "producerPortRef": "renderer.presentation.model",
+          "contractRef": "showcase.renderer-presentation",
+          "required": true
+        }
+      ],
+      "eventEmitter": {
+        "kind": "typed",
+        "bindings": [
+          {
+            "sourcePortRef": "control.press-ring.action",
+            "targetPortRef": "renderer.controlPressRing",
+            "contractRef": "showcase.renderer-action"
+          }
+        ]
+      }
     },
     {
-      "componentId": "input.text",
-      "rendererId": "ShowcaseComponentScreen",
-      "profiles": [
-        "iphone-full-ui",
-        "watchos-full-ui"
-      ]
+      "component": {
+        "instanceRef": "input.text",
+        "typeRef": "input.text"
+      },
+      "mounts": [
+        {
+          "profileRef": "iphone-full-ui",
+          "pageRef": "section.input",
+          "surface": "compact",
+          "mountRef": "input.text"
+        },
+        {
+          "profileRef": "iphone-full-ui",
+          "pageRef": "section.input",
+          "surface": "wide",
+          "mountRef": "input.text"
+        },
+        {
+          "profileRef": "watchos-full-ui",
+          "pageRef": "section.input",
+          "surface": "round",
+          "mountRef": "input.text"
+        }
+      ],
+      "immutableInputs": [
+        {
+          "consumerPortRef": "input.text.catalog",
+          "producerPortRef": "catalog.model",
+          "contractRef": "showcase.catalog-presentation",
+          "required": true
+        },
+        {
+          "consumerPortRef": "input.text.navigation",
+          "producerPortRef": "navigation.presentation.model",
+          "contractRef": "showcase.navigation-presentation",
+          "required": true
+        },
+        {
+          "consumerPortRef": "input.text.renderer",
+          "producerPortRef": "renderer.presentation.model",
+          "contractRef": "showcase.renderer-presentation",
+          "required": true
+        }
+      ],
+      "eventEmitter": {
+        "kind": "typed",
+        "bindings": [
+          {
+            "sourcePortRef": "input.text.action",
+            "targetPortRef": "renderer.inputText",
+            "contractRef": "showcase.renderer-action"
+          }
+        ]
+      }
     },
     {
-      "componentId": "media.capture",
-      "rendererId": "ShowcaseComponentScreen",
-      "profiles": [
-        "iphone-full-ui",
-        "watchos-full-ui"
-      ]
+      "component": {
+        "instanceRef": "media.capture",
+        "typeRef": "media.capture"
+      },
+      "mounts": [
+        {
+          "profileRef": "iphone-full-ui",
+          "pageRef": "section.media",
+          "surface": "compact",
+          "mountRef": "media.capture"
+        },
+        {
+          "profileRef": "iphone-full-ui",
+          "pageRef": "section.media",
+          "surface": "wide",
+          "mountRef": "media.capture"
+        },
+        {
+          "profileRef": "watchos-full-ui",
+          "pageRef": "section.media",
+          "surface": "round",
+          "mountRef": "media.capture"
+        }
+      ],
+      "immutableInputs": [
+        {
+          "consumerPortRef": "media.capture.catalog",
+          "producerPortRef": "catalog.model",
+          "contractRef": "showcase.catalog-presentation",
+          "required": true
+        },
+        {
+          "consumerPortRef": "media.capture.navigation",
+          "producerPortRef": "navigation.presentation.model",
+          "contractRef": "showcase.navigation-presentation",
+          "required": true
+        },
+        {
+          "consumerPortRef": "media.capture.renderer",
+          "producerPortRef": "renderer.presentation.model",
+          "contractRef": "showcase.renderer-presentation",
+          "required": true
+        }
+      ],
+      "eventEmitter": {
+        "kind": "typed",
+        "bindings": [
+          {
+            "sourcePortRef": "media.capture.action",
+            "targetPortRef": "renderer.mediaCapture",
+            "contractRef": "showcase.renderer-action"
+          }
+        ]
+      }
     },
     {
-      "componentId": "media.playback",
-      "rendererId": "ShowcaseComponentScreen",
-      "profiles": [
-        "iphone-full-ui",
-        "watchos-full-ui"
-      ]
+      "component": {
+        "instanceRef": "media.playback",
+        "typeRef": "media.playback"
+      },
+      "mounts": [
+        {
+          "profileRef": "iphone-full-ui",
+          "pageRef": "section.media",
+          "surface": "compact",
+          "mountRef": "media.playback"
+        },
+        {
+          "profileRef": "iphone-full-ui",
+          "pageRef": "section.media",
+          "surface": "wide",
+          "mountRef": "media.playback"
+        },
+        {
+          "profileRef": "watchos-full-ui",
+          "pageRef": "section.media",
+          "surface": "round",
+          "mountRef": "media.playback"
+        }
+      ],
+      "immutableInputs": [
+        {
+          "consumerPortRef": "media.playback.catalog",
+          "producerPortRef": "catalog.model",
+          "contractRef": "showcase.catalog-presentation",
+          "required": true
+        },
+        {
+          "consumerPortRef": "media.playback.navigation",
+          "producerPortRef": "navigation.presentation.model",
+          "contractRef": "showcase.navigation-presentation",
+          "required": true
+        },
+        {
+          "consumerPortRef": "media.playback.renderer",
+          "producerPortRef": "renderer.presentation.model",
+          "contractRef": "showcase.renderer-presentation",
+          "required": true
+        }
+      ],
+      "eventEmitter": {
+        "kind": "typed",
+        "bindings": [
+          {
+            "sourcePortRef": "media.playback.action",
+            "targetPortRef": "renderer.mediaPlayback",
+            "contractRef": "showcase.renderer-action"
+          }
+        ]
+      }
     },
     {
-      "componentId": "template.screens",
-      "rendererId": "ShowcaseComponentScreen",
-      "profiles": [
-        "iphone-full-ui",
-        "watchos-full-ui"
-      ]
+      "component": {
+        "instanceRef": "template.screens",
+        "typeRef": "template.screens"
+      },
+      "mounts": [
+        {
+          "profileRef": "iphone-full-ui",
+          "pageRef": "section.templates",
+          "surface": "compact",
+          "mountRef": "template.screens"
+        },
+        {
+          "profileRef": "iphone-full-ui",
+          "pageRef": "section.templates",
+          "surface": "wide",
+          "mountRef": "template.screens"
+        },
+        {
+          "profileRef": "watchos-full-ui",
+          "pageRef": "section.templates",
+          "surface": "round",
+          "mountRef": "template.screens"
+        }
+      ],
+      "immutableInputs": [
+        {
+          "consumerPortRef": "template.screens.catalog",
+          "producerPortRef": "catalog.model",
+          "contractRef": "showcase.catalog-presentation",
+          "required": true
+        },
+        {
+          "consumerPortRef": "template.screens.navigation",
+          "producerPortRef": "navigation.presentation.model",
+          "contractRef": "showcase.navigation-presentation",
+          "required": true
+        },
+        {
+          "consumerPortRef": "template.screens.renderer",
+          "producerPortRef": "renderer.presentation.model",
+          "contractRef": "showcase.renderer-presentation",
+          "required": true
+        }
+      ],
+      "eventEmitter": {
+        "kind": "typed",
+        "bindings": [
+          {
+            "sourcePortRef": "template.screens.action",
+            "targetPortRef": "renderer.templateScreens",
+            "contractRef": "showcase.renderer-action"
+          }
+        ]
+      }
     },
     {
-      "componentId": "flow.source",
-      "rendererId": "ShowcaseComponentScreen",
-      "profiles": [
-        "iphone-full-ui",
-        "watchos-full-ui"
-      ]
+      "component": {
+        "instanceRef": "flow.source",
+        "typeRef": "flow.source"
+      },
+      "mounts": [
+        {
+          "profileRef": "iphone-full-ui",
+          "pageRef": "section.flows",
+          "surface": "compact",
+          "mountRef": "flow.source"
+        },
+        {
+          "profileRef": "iphone-full-ui",
+          "pageRef": "section.flows",
+          "surface": "wide",
+          "mountRef": "flow.source"
+        },
+        {
+          "profileRef": "watchos-full-ui",
+          "pageRef": "section.flows",
+          "surface": "round",
+          "mountRef": "flow.source"
+        }
+      ],
+      "immutableInputs": [
+        {
+          "consumerPortRef": "flow.source.catalog",
+          "producerPortRef": "catalog.model",
+          "contractRef": "showcase.catalog-presentation",
+          "required": true
+        },
+        {
+          "consumerPortRef": "flow.source.navigation",
+          "producerPortRef": "navigation.presentation.model",
+          "contractRef": "showcase.navigation-presentation",
+          "required": true
+        },
+        {
+          "consumerPortRef": "flow.source.renderer",
+          "producerPortRef": "renderer.presentation.model",
+          "contractRef": "showcase.renderer-presentation",
+          "required": true
+        }
+      ],
+      "eventEmitter": {
+        "kind": "typed",
+        "bindings": [
+          {
+            "sourcePortRef": "flow.source.action",
+            "targetPortRef": "renderer.flowSource",
+            "contractRef": "showcase.renderer-action"
+          }
+        ]
+      }
     },
     {
-      "componentId": "flow.update",
-      "rendererId": "ShowcaseComponentScreen",
-      "profiles": [
-        "iphone-full-ui",
-        "watchos-full-ui"
-      ]
+      "component": {
+        "instanceRef": "flow.update",
+        "typeRef": "flow.update"
+      },
+      "mounts": [
+        {
+          "profileRef": "iphone-full-ui",
+          "pageRef": "section.flows",
+          "surface": "compact",
+          "mountRef": "flow.update"
+        },
+        {
+          "profileRef": "iphone-full-ui",
+          "pageRef": "section.flows",
+          "surface": "wide",
+          "mountRef": "flow.update"
+        },
+        {
+          "profileRef": "watchos-full-ui",
+          "pageRef": "section.flows",
+          "surface": "round",
+          "mountRef": "flow.update"
+        }
+      ],
+      "immutableInputs": [
+        {
+          "consumerPortRef": "flow.update.catalog",
+          "producerPortRef": "catalog.model",
+          "contractRef": "showcase.catalog-presentation",
+          "required": true
+        },
+        {
+          "consumerPortRef": "flow.update.navigation",
+          "producerPortRef": "navigation.presentation.model",
+          "contractRef": "showcase.navigation-presentation",
+          "required": true
+        },
+        {
+          "consumerPortRef": "flow.update.renderer",
+          "producerPortRef": "renderer.presentation.model",
+          "contractRef": "showcase.renderer-presentation",
+          "required": true
+        }
+      ],
+      "eventEmitter": {
+        "kind": "typed",
+        "bindings": [
+          {
+            "sourcePortRef": "flow.update.action",
+            "targetPortRef": "renderer.flowUpdate",
+            "contractRef": "showcase.renderer-action"
+          }
+        ]
+      }
     },
     {
-      "componentId": "flow.service",
-      "rendererId": "ShowcaseComponentScreen",
-      "profiles": [
-        "iphone-full-ui",
-        "watchos-full-ui"
-      ]
+      "component": {
+        "instanceRef": "flow.service",
+        "typeRef": "flow.service"
+      },
+      "mounts": [
+        {
+          "profileRef": "iphone-full-ui",
+          "pageRef": "section.flows",
+          "surface": "compact",
+          "mountRef": "flow.service"
+        },
+        {
+          "profileRef": "iphone-full-ui",
+          "pageRef": "section.flows",
+          "surface": "wide",
+          "mountRef": "flow.service"
+        },
+        {
+          "profileRef": "watchos-full-ui",
+          "pageRef": "section.flows",
+          "surface": "round",
+          "mountRef": "flow.service"
+        }
+      ],
+      "immutableInputs": [
+        {
+          "consumerPortRef": "flow.service.catalog",
+          "producerPortRef": "catalog.model",
+          "contractRef": "showcase.catalog-presentation",
+          "required": true
+        },
+        {
+          "consumerPortRef": "flow.service.navigation",
+          "producerPortRef": "navigation.presentation.model",
+          "contractRef": "showcase.navigation-presentation",
+          "required": true
+        },
+        {
+          "consumerPortRef": "flow.service.renderer",
+          "producerPortRef": "renderer.presentation.model",
+          "contractRef": "showcase.renderer-presentation",
+          "required": true
+        }
+      ],
+      "eventEmitter": {
+        "kind": "typed",
+        "bindings": [
+          {
+            "sourcePortRef": "flow.service.action",
+            "targetPortRef": "renderer.flowService",
+            "contractRef": "showcase.renderer-action"
+          }
+        ]
+      }
     }
   ],
   "icons": [
@@ -246,6 +1289,46 @@
       ],
       "inputPorts": [
         "destination"
+      ],
+      "outputPorts": [
+        "model"
+      ]
+    },
+    {
+      "nodeId": "renderer",
+      "nativePortId": "ShowcaseNativeEnvironment",
+      "profiles": [
+        "iphone-full-ui",
+        "watchos-full-ui"
+      ],
+      "inputPorts": [
+        "atomIconAction",
+        "controlActionRow",
+        "controlChoiceRow",
+        "controlAdjustment",
+        "controlProgress",
+        "controlPressRing",
+        "inputText",
+        "mediaCapture",
+        "mediaPlayback",
+        "templateScreens",
+        "flowSource",
+        "flowUpdate",
+        "flowService"
+      ],
+      "outputPorts": [
+        "model"
+      ]
+    },
+    {
+      "nodeId": "renderer.presentation",
+      "nativePortId": "ShowcaseNativeEnvironment",
+      "profiles": [
+        "iphone-full-ui",
+        "watchos-full-ui"
+      ],
+      "inputPorts": [
+        "model"
       ],
       "outputPorts": [
         "model"
@@ -375,45 +1458,87 @@
     "actionGroups": [
       {
         "artifactRef": "iphone-full-ui",
-        "componentInstanceRef": "foundation.colors",
+        "componentInstanceRef": "page.menu",
         "actions": [
           {
-            "sourcePortRef": "foundation.colors.open",
+            "sourcePortRef": "page.menu.foundationColors",
             "targetPortRef": "navigation.foundationColors",
             "effect": "dispatch"
-          }
-        ]
-      },
-      {
-        "artifactRef": "watchos-full-ui",
-        "componentInstanceRef": "foundation.colors",
-        "actions": [
+          },
           {
-            "sourcePortRef": "foundation.colors.open",
-            "targetPortRef": "navigation.foundationColors",
-            "effect": "dispatch"
-          }
-        ]
-      },
-      {
-        "artifactRef": "iphone-full-ui",
-        "componentInstanceRef": "foundation.geometry",
-        "actions": [
-          {
-            "sourcePortRef": "foundation.geometry.open",
+            "sourcePortRef": "page.menu.foundationGeometry",
             "targetPortRef": "navigation.foundationGeometry",
             "effect": "dispatch"
-          }
-        ]
-      },
-      {
-        "artifactRef": "watchos-full-ui",
-        "componentInstanceRef": "foundation.geometry",
-        "actions": [
+          },
           {
-            "sourcePortRef": "foundation.geometry.open",
-            "targetPortRef": "navigation.foundationGeometry",
+            "sourcePortRef": "page.menu.atomIconAction",
+            "targetPortRef": "navigation.atomIconAction",
             "effect": "dispatch"
+          },
+          {
+            "sourcePortRef": "page.menu.controlActionRow",
+            "targetPortRef": "navigation.controlActionRow",
+            "effect": "dispatch"
+          },
+          {
+            "sourcePortRef": "page.menu.controlChoiceRow",
+            "targetPortRef": "navigation.controlChoiceRow",
+            "effect": "dispatch"
+          },
+          {
+            "sourcePortRef": "page.menu.controlAdjustment",
+            "targetPortRef": "navigation.controlAdjustment",
+            "effect": "dispatch"
+          },
+          {
+            "sourcePortRef": "page.menu.controlProgress",
+            "targetPortRef": "navigation.controlProgress",
+            "effect": "dispatch"
+          },
+          {
+            "sourcePortRef": "page.menu.controlPressRing",
+            "targetPortRef": "navigation.controlPressRing",
+            "effect": "dispatch"
+          },
+          {
+            "sourcePortRef": "page.menu.inputText",
+            "targetPortRef": "navigation.inputText",
+            "effect": "dispatch"
+          },
+          {
+            "sourcePortRef": "page.menu.mediaCapture",
+            "targetPortRef": "navigation.mediaCapture",
+            "effect": "dispatch"
+          },
+          {
+            "sourcePortRef": "page.menu.mediaPlayback",
+            "targetPortRef": "navigation.mediaPlayback",
+            "effect": "dispatch"
+          },
+          {
+            "sourcePortRef": "page.menu.templateScreens",
+            "targetPortRef": "navigation.templateScreens",
+            "effect": "dispatch"
+          },
+          {
+            "sourcePortRef": "page.menu.flowSource",
+            "targetPortRef": "navigation.flowSource",
+            "effect": "dispatch"
+          },
+          {
+            "sourcePortRef": "page.menu.flowUpdate",
+            "targetPortRef": "navigation.flowUpdate",
+            "effect": "dispatch"
+          },
+          {
+            "sourcePortRef": "page.menu.flowService",
+            "targetPortRef": "navigation.flowService",
+            "effect": "dispatch"
+          },
+          {
+            "sourcePortRef": "page.menu.route",
+            "targetPortRef": "navigation.route",
+            "effect": "push"
           }
         ]
       },
@@ -422,19 +1547,8 @@
         "componentInstanceRef": "atom.icon-action",
         "actions": [
           {
-            "sourcePortRef": "atom.icon-action.open",
-            "targetPortRef": "navigation.atomIconAction",
-            "effect": "dispatch"
-          }
-        ]
-      },
-      {
-        "artifactRef": "watchos-full-ui",
-        "componentInstanceRef": "atom.icon-action",
-        "actions": [
-          {
-            "sourcePortRef": "atom.icon-action.open",
-            "targetPortRef": "navigation.atomIconAction",
+            "sourcePortRef": "atom.icon-action.action",
+            "targetPortRef": "renderer.atomIconAction",
             "effect": "dispatch"
           }
         ]
@@ -444,8 +1558,226 @@
         "componentInstanceRef": "control.action-row",
         "actions": [
           {
-            "sourcePortRef": "control.action-row.open",
+            "sourcePortRef": "control.action-row.action",
+            "targetPortRef": "renderer.controlActionRow",
+            "effect": "dispatch"
+          }
+        ]
+      },
+      {
+        "artifactRef": "iphone-full-ui",
+        "componentInstanceRef": "control.choice-row",
+        "actions": [
+          {
+            "sourcePortRef": "control.choice-row.action",
+            "targetPortRef": "renderer.controlChoiceRow",
+            "effect": "dispatch"
+          }
+        ]
+      },
+      {
+        "artifactRef": "iphone-full-ui",
+        "componentInstanceRef": "control.adjustment",
+        "actions": [
+          {
+            "sourcePortRef": "control.adjustment.action",
+            "targetPortRef": "renderer.controlAdjustment",
+            "effect": "dispatch"
+          }
+        ]
+      },
+      {
+        "artifactRef": "iphone-full-ui",
+        "componentInstanceRef": "control.progress",
+        "actions": [
+          {
+            "sourcePortRef": "control.progress.action",
+            "targetPortRef": "renderer.controlProgress",
+            "effect": "dispatch"
+          }
+        ]
+      },
+      {
+        "artifactRef": "iphone-full-ui",
+        "componentInstanceRef": "control.press-ring",
+        "actions": [
+          {
+            "sourcePortRef": "control.press-ring.action",
+            "targetPortRef": "renderer.controlPressRing",
+            "effect": "dispatch"
+          }
+        ]
+      },
+      {
+        "artifactRef": "iphone-full-ui",
+        "componentInstanceRef": "input.text",
+        "actions": [
+          {
+            "sourcePortRef": "input.text.action",
+            "targetPortRef": "renderer.inputText",
+            "effect": "dispatch"
+          }
+        ]
+      },
+      {
+        "artifactRef": "iphone-full-ui",
+        "componentInstanceRef": "media.capture",
+        "actions": [
+          {
+            "sourcePortRef": "media.capture.action",
+            "targetPortRef": "renderer.mediaCapture",
+            "effect": "dispatch"
+          }
+        ]
+      },
+      {
+        "artifactRef": "iphone-full-ui",
+        "componentInstanceRef": "media.playback",
+        "actions": [
+          {
+            "sourcePortRef": "media.playback.action",
+            "targetPortRef": "renderer.mediaPlayback",
+            "effect": "dispatch"
+          }
+        ]
+      },
+      {
+        "artifactRef": "iphone-full-ui",
+        "componentInstanceRef": "template.screens",
+        "actions": [
+          {
+            "sourcePortRef": "template.screens.action",
+            "targetPortRef": "renderer.templateScreens",
+            "effect": "dispatch"
+          }
+        ]
+      },
+      {
+        "artifactRef": "iphone-full-ui",
+        "componentInstanceRef": "flow.source",
+        "actions": [
+          {
+            "sourcePortRef": "flow.source.action",
+            "targetPortRef": "renderer.flowSource",
+            "effect": "dispatch"
+          }
+        ]
+      },
+      {
+        "artifactRef": "iphone-full-ui",
+        "componentInstanceRef": "flow.update",
+        "actions": [
+          {
+            "sourcePortRef": "flow.update.action",
+            "targetPortRef": "renderer.flowUpdate",
+            "effect": "dispatch"
+          }
+        ]
+      },
+      {
+        "artifactRef": "iphone-full-ui",
+        "componentInstanceRef": "flow.service",
+        "actions": [
+          {
+            "sourcePortRef": "flow.service.action",
+            "targetPortRef": "renderer.flowService",
+            "effect": "dispatch"
+          }
+        ]
+      },
+      {
+        "artifactRef": "watchos-full-ui",
+        "componentInstanceRef": "page.menu",
+        "actions": [
+          {
+            "sourcePortRef": "page.menu.foundationColors",
+            "targetPortRef": "navigation.foundationColors",
+            "effect": "dispatch"
+          },
+          {
+            "sourcePortRef": "page.menu.foundationGeometry",
+            "targetPortRef": "navigation.foundationGeometry",
+            "effect": "dispatch"
+          },
+          {
+            "sourcePortRef": "page.menu.atomIconAction",
+            "targetPortRef": "navigation.atomIconAction",
+            "effect": "dispatch"
+          },
+          {
+            "sourcePortRef": "page.menu.controlActionRow",
             "targetPortRef": "navigation.controlActionRow",
+            "effect": "dispatch"
+          },
+          {
+            "sourcePortRef": "page.menu.controlChoiceRow",
+            "targetPortRef": "navigation.controlChoiceRow",
+            "effect": "dispatch"
+          },
+          {
+            "sourcePortRef": "page.menu.controlAdjustment",
+            "targetPortRef": "navigation.controlAdjustment",
+            "effect": "dispatch"
+          },
+          {
+            "sourcePortRef": "page.menu.controlProgress",
+            "targetPortRef": "navigation.controlProgress",
+            "effect": "dispatch"
+          },
+          {
+            "sourcePortRef": "page.menu.controlPressRing",
+            "targetPortRef": "navigation.controlPressRing",
+            "effect": "dispatch"
+          },
+          {
+            "sourcePortRef": "page.menu.inputText",
+            "targetPortRef": "navigation.inputText",
+            "effect": "dispatch"
+          },
+          {
+            "sourcePortRef": "page.menu.mediaCapture",
+            "targetPortRef": "navigation.mediaCapture",
+            "effect": "dispatch"
+          },
+          {
+            "sourcePortRef": "page.menu.mediaPlayback",
+            "targetPortRef": "navigation.mediaPlayback",
+            "effect": "dispatch"
+          },
+          {
+            "sourcePortRef": "page.menu.templateScreens",
+            "targetPortRef": "navigation.templateScreens",
+            "effect": "dispatch"
+          },
+          {
+            "sourcePortRef": "page.menu.flowSource",
+            "targetPortRef": "navigation.flowSource",
+            "effect": "dispatch"
+          },
+          {
+            "sourcePortRef": "page.menu.flowUpdate",
+            "targetPortRef": "navigation.flowUpdate",
+            "effect": "dispatch"
+          },
+          {
+            "sourcePortRef": "page.menu.flowService",
+            "targetPortRef": "navigation.flowService",
+            "effect": "dispatch"
+          },
+          {
+            "sourcePortRef": "page.menu.route",
+            "targetPortRef": "navigation.route",
+            "effect": "push"
+          }
+        ]
+      },
+      {
+        "artifactRef": "watchos-full-ui",
+        "componentInstanceRef": "atom.icon-action",
+        "actions": [
+          {
+            "sourcePortRef": "atom.icon-action.action",
+            "targetPortRef": "renderer.atomIconAction",
             "effect": "dispatch"
           }
         ]
@@ -455,19 +1787,8 @@
         "componentInstanceRef": "control.action-row",
         "actions": [
           {
-            "sourcePortRef": "control.action-row.open",
-            "targetPortRef": "navigation.controlActionRow",
-            "effect": "dispatch"
-          }
-        ]
-      },
-      {
-        "artifactRef": "iphone-full-ui",
-        "componentInstanceRef": "control.choice-row",
-        "actions": [
-          {
-            "sourcePortRef": "control.choice-row.open",
-            "targetPortRef": "navigation.controlChoiceRow",
+            "sourcePortRef": "control.action-row.action",
+            "targetPortRef": "renderer.controlActionRow",
             "effect": "dispatch"
           }
         ]
@@ -477,19 +1798,8 @@
         "componentInstanceRef": "control.choice-row",
         "actions": [
           {
-            "sourcePortRef": "control.choice-row.open",
-            "targetPortRef": "navigation.controlChoiceRow",
-            "effect": "dispatch"
-          }
-        ]
-      },
-      {
-        "artifactRef": "iphone-full-ui",
-        "componentInstanceRef": "control.adjustment",
-        "actions": [
-          {
-            "sourcePortRef": "control.adjustment.open",
-            "targetPortRef": "navigation.controlAdjustment",
+            "sourcePortRef": "control.choice-row.action",
+            "targetPortRef": "renderer.controlChoiceRow",
             "effect": "dispatch"
           }
         ]
@@ -499,19 +1809,8 @@
         "componentInstanceRef": "control.adjustment",
         "actions": [
           {
-            "sourcePortRef": "control.adjustment.open",
-            "targetPortRef": "navigation.controlAdjustment",
-            "effect": "dispatch"
-          }
-        ]
-      },
-      {
-        "artifactRef": "iphone-full-ui",
-        "componentInstanceRef": "control.progress",
-        "actions": [
-          {
-            "sourcePortRef": "control.progress.open",
-            "targetPortRef": "navigation.controlProgress",
+            "sourcePortRef": "control.adjustment.action",
+            "targetPortRef": "renderer.controlAdjustment",
             "effect": "dispatch"
           }
         ]
@@ -521,19 +1820,8 @@
         "componentInstanceRef": "control.progress",
         "actions": [
           {
-            "sourcePortRef": "control.progress.open",
-            "targetPortRef": "navigation.controlProgress",
-            "effect": "dispatch"
-          }
-        ]
-      },
-      {
-        "artifactRef": "iphone-full-ui",
-        "componentInstanceRef": "control.press-ring",
-        "actions": [
-          {
-            "sourcePortRef": "control.press-ring.open",
-            "targetPortRef": "navigation.controlPressRing",
+            "sourcePortRef": "control.progress.action",
+            "targetPortRef": "renderer.controlProgress",
             "effect": "dispatch"
           }
         ]
@@ -543,19 +1831,8 @@
         "componentInstanceRef": "control.press-ring",
         "actions": [
           {
-            "sourcePortRef": "control.press-ring.open",
-            "targetPortRef": "navigation.controlPressRing",
-            "effect": "dispatch"
-          }
-        ]
-      },
-      {
-        "artifactRef": "iphone-full-ui",
-        "componentInstanceRef": "input.text",
-        "actions": [
-          {
-            "sourcePortRef": "input.text.open",
-            "targetPortRef": "navigation.inputText",
+            "sourcePortRef": "control.press-ring.action",
+            "targetPortRef": "renderer.controlPressRing",
             "effect": "dispatch"
           }
         ]
@@ -565,19 +1842,8 @@
         "componentInstanceRef": "input.text",
         "actions": [
           {
-            "sourcePortRef": "input.text.open",
-            "targetPortRef": "navigation.inputText",
-            "effect": "dispatch"
-          }
-        ]
-      },
-      {
-        "artifactRef": "iphone-full-ui",
-        "componentInstanceRef": "media.capture",
-        "actions": [
-          {
-            "sourcePortRef": "media.capture.open",
-            "targetPortRef": "navigation.mediaCapture",
+            "sourcePortRef": "input.text.action",
+            "targetPortRef": "renderer.inputText",
             "effect": "dispatch"
           }
         ]
@@ -587,19 +1853,8 @@
         "componentInstanceRef": "media.capture",
         "actions": [
           {
-            "sourcePortRef": "media.capture.open",
-            "targetPortRef": "navigation.mediaCapture",
-            "effect": "dispatch"
-          }
-        ]
-      },
-      {
-        "artifactRef": "iphone-full-ui",
-        "componentInstanceRef": "media.playback",
-        "actions": [
-          {
-            "sourcePortRef": "media.playback.open",
-            "targetPortRef": "navigation.mediaPlayback",
+            "sourcePortRef": "media.capture.action",
+            "targetPortRef": "renderer.mediaCapture",
             "effect": "dispatch"
           }
         ]
@@ -609,19 +1864,8 @@
         "componentInstanceRef": "media.playback",
         "actions": [
           {
-            "sourcePortRef": "media.playback.open",
-            "targetPortRef": "navigation.mediaPlayback",
-            "effect": "dispatch"
-          }
-        ]
-      },
-      {
-        "artifactRef": "iphone-full-ui",
-        "componentInstanceRef": "template.screens",
-        "actions": [
-          {
-            "sourcePortRef": "template.screens.open",
-            "targetPortRef": "navigation.templateScreens",
+            "sourcePortRef": "media.playback.action",
+            "targetPortRef": "renderer.mediaPlayback",
             "effect": "dispatch"
           }
         ]
@@ -631,19 +1875,8 @@
         "componentInstanceRef": "template.screens",
         "actions": [
           {
-            "sourcePortRef": "template.screens.open",
-            "targetPortRef": "navigation.templateScreens",
-            "effect": "dispatch"
-          }
-        ]
-      },
-      {
-        "artifactRef": "iphone-full-ui",
-        "componentInstanceRef": "flow.source",
-        "actions": [
-          {
-            "sourcePortRef": "flow.source.open",
-            "targetPortRef": "navigation.flowSource",
+            "sourcePortRef": "template.screens.action",
+            "targetPortRef": "renderer.templateScreens",
             "effect": "dispatch"
           }
         ]
@@ -653,19 +1886,8 @@
         "componentInstanceRef": "flow.source",
         "actions": [
           {
-            "sourcePortRef": "flow.source.open",
-            "targetPortRef": "navigation.flowSource",
-            "effect": "dispatch"
-          }
-        ]
-      },
-      {
-        "artifactRef": "iphone-full-ui",
-        "componentInstanceRef": "flow.update",
-        "actions": [
-          {
-            "sourcePortRef": "flow.update.open",
-            "targetPortRef": "navigation.flowUpdate",
+            "sourcePortRef": "flow.source.action",
+            "targetPortRef": "renderer.flowSource",
             "effect": "dispatch"
           }
         ]
@@ -675,19 +1897,8 @@
         "componentInstanceRef": "flow.update",
         "actions": [
           {
-            "sourcePortRef": "flow.update.open",
-            "targetPortRef": "navigation.flowUpdate",
-            "effect": "dispatch"
-          }
-        ]
-      },
-      {
-        "artifactRef": "iphone-full-ui",
-        "componentInstanceRef": "flow.service",
-        "actions": [
-          {
-            "sourcePortRef": "flow.service.open",
-            "targetPortRef": "navigation.flowService",
+            "sourcePortRef": "flow.update.action",
+            "targetPortRef": "renderer.flowUpdate",
             "effect": "dispatch"
           }
         ]
@@ -697,31 +1908,9 @@
         "componentInstanceRef": "flow.service",
         "actions": [
           {
-            "sourcePortRef": "flow.service.open",
-            "targetPortRef": "navigation.flowService",
+            "sourcePortRef": "flow.service.action",
+            "targetPortRef": "renderer.flowService",
             "effect": "dispatch"
-          }
-        ]
-      },
-      {
-        "artifactRef": "iphone-full-ui",
-        "componentInstanceRef": "page.menu",
-        "actions": [
-          {
-            "sourcePortRef": "page.menu.route",
-            "targetPortRef": "navigation.route",
-            "effect": "push"
-          }
-        ]
-      },
-      {
-        "artifactRef": "watchos-full-ui",
-        "componentInstanceRef": "page.menu",
-        "actions": [
-          {
-            "sourcePortRef": "page.menu.route",
-            "targetPortRef": "navigation.route",
-            "effect": "push"
           }
         ]
       }

@@ -194,8 +194,12 @@ class ShowcaseSession(
         return ShowcaseNativeBindings.dispatchOpen(this, caseId, scenarioId)
     }
 
-    internal fun commitOpen(caseId: ShowcaseCaseId, scenarioId: ShowcaseScenarioId): Boolean {
-        ShowcaseProductInspectorRegistry.requireOpenTarget(caseId)
+    internal fun commitOpen(
+        caseId: ShowcaseCaseId,
+        scenarioId: ShowcaseScenarioId,
+        targetPortRef: String,
+    ): Boolean {
+        ShowcaseProductInspectorRegistry.requireOpenTarget(caseId, targetPortRef)
         interaction.prepare(caseId, scenarioId)
         media.prepare(caseId, scenarioId)
         flows.prepare(caseId, scenarioId)

@@ -10,23 +10,24 @@ const val SHOWCASE_WEAR_PROFILE = "wear-full-ui"
 enum class ShowcaseNativeRenderer(
     val id: String,
     val navigationInputPort: String? = null,
+    val pageRef: String? = null,
     val interactive: Boolean = true,
 ) {
-    COLORS("colors", "foundationColors", interactive = false),
-    GEOMETRY("geometry", "foundationGeometry", interactive = false),
-    ICON_ACTIONS("icon-actions", "atomIconAction"),
-    ACTION_ROWS("action-rows", "controlActionRow"),
-    CHOICE_ROWS("choice-rows", "controlChoiceRow"),
-    ADJUSTMENT("adjustment", "controlAdjustment"),
-    PROGRESS("progress", "controlProgress"),
-    PRESS("press", "controlPressRing"),
-    TEXT("text", "inputText"),
-    CAPTURE("capture", "mediaCapture"),
-    PLAYBACK("playback", "mediaPlayback"),
-    SCREEN_TEMPLATES("screen-templates", "templateScreens"),
-    SOURCE("source", "flowSource"),
-    UPDATE("update", "flowUpdate"),
-    SERVICE("service", "flowService"),
+    COLORS("colors", "foundationColors", "section.foundations", interactive = false),
+    GEOMETRY("geometry", "foundationGeometry", "section.foundations", interactive = false),
+    ICON_ACTIONS("icon-actions", "atomIconAction", "section.atoms"),
+    ACTION_ROWS("action-rows", "controlActionRow", "section.controls"),
+    CHOICE_ROWS("choice-rows", "controlChoiceRow", "section.controls"),
+    ADJUSTMENT("adjustment", "controlAdjustment", "section.controls"),
+    PROGRESS("progress", "controlProgress", "section.controls"),
+    PRESS("press", "controlPressRing", "section.controls"),
+    TEXT("text", "inputText", "section.input"),
+    CAPTURE("capture", "mediaCapture", "section.media"),
+    PLAYBACK("playback", "mediaPlayback", "section.media"),
+    SCREEN_TEMPLATES("screen-templates", "templateScreens", "section.templates"),
+    SOURCE("source", "flowSource", "section.flows"),
+    UPDATE("update", "flowUpdate", "section.flows"),
+    SERVICE("service", "flowService", "section.flows"),
     PAGE_HOST("page-host"),
     PAGE_MENU("page-menu"),
 }
@@ -128,6 +129,15 @@ object ShowcaseNativeBindings {
         "showcase-catalog/src/main/java/io/v1d/circlekit/showcase/catalog/ShowcaseNativeBindings.kt"
 
     private val bothProfiles = setOf(SHOWCASE_PHONE_PROFILE, SHOWCASE_WEAR_PROFILE)
+
+    private val pages: List<ShowcaseNativePageRegistration> = ShowcaseFamily.entries.map { family ->
+        val entry = family == ShowcaseFamily.FOUNDATIONS
+        ShowcaseNativePageRegistration(
+            page = ShowcaseNativePageValue.entries.single { it.name == family.name },
+            restore = if (entry) "root" else "process",
+            back = if (entry) ShowcaseNativePageBack.SYSTEM else ShowcaseNativePageBack.PREVIOUS,
+        )
+    }
 
     /**
      * The artifact profiles THIS host renders, which is two of the product's five.
@@ -241,15 +251,6 @@ object ShowcaseNativeBindings {
         ),
     )
 
-    private val pages: List<ShowcaseNativePageRegistration> = ShowcaseFamily.entries.map { family ->
-        val entry = family == ShowcaseFamily.FOUNDATIONS
-        ShowcaseNativePageRegistration(
-            page = ShowcaseNativePageValue.entries.single { it.name == family.name },
-            restore = if (entry) "root" else "process",
-            back = if (entry) ShowcaseNativePageBack.SYSTEM else ShowcaseNativePageBack.PREVIOUS,
-        )
-    }
-
     val finiteValues: List<ShowcaseFiniteValueBinding> = listOf(
         ShowcaseFiniteValueBinding(
             id = "showcase.navigation.page",
@@ -272,24 +273,29 @@ object ShowcaseNativeBindings {
     )
 
     val navigationActionGroups: List<ShowcaseNavigationActionGroup> = profiles.flatMap { profile ->
+        val menuEvents = (requireComponent("page.menu").eventEmitter as ShowcaseNativeEventEmitterBinding.Typed)
+            .bindings
         listOf(ShowcaseNavigationActionGroup(
             artifactRef = profile,
             componentInstanceRef = "page.menu",
-            actions = listOf(ShowcaseNavigationAction("page.menu.route", "navigation.route", "push")) +
-                ShowcaseManifest.cases.map { case ->
-                    val target = requireNotNull(requireComponent(case.id.value).renderer.navigationInputPort)
-                    ShowcaseNavigationAction("page.menu.$target", "navigation.$target", "dispatch")
-                },
+            actions = menuEvents.map { event ->
+                ShowcaseNavigationAction(
+                    event.sourcePortRef,
+                    event.targetPortRef,
+                    if (event.sourcePortRef == "page.menu.route") "push" else "dispatch",
+                )
+            },
         )) + components.filter { it.renderer.interactive && it.renderer !in setOf(
             ShowcaseNativeRenderer.PAGE_HOST,
             ShowcaseNativeRenderer.PAGE_MENU,
         ) }.map { registration ->
+            val event = (registration.eventEmitter as ShowcaseNativeEventEmitterBinding.Typed).bindings.single()
             ShowcaseNavigationActionGroup(
                 artifactRef = profile,
                 componentInstanceRef = registration.componentId,
                 actions = listOf(ShowcaseNavigationAction(
-                    "${registration.componentId}.action",
-                    "renderer.${registration.renderer.navigationInputPort}",
+                    event.sourcePortRef,
+                    event.targetPortRef,
                     "dispatch",
                 )),
             )
@@ -411,7 +417,7 @@ object ShowcaseNativeBindings {
             componentId = id,
             componentTypeRef = id,
             renderer = renderer,
-            mounts = mounts(id, listOf("section.${requireNotNull(ShowcaseManifest.find(ShowcaseCaseId(id))).family.id}")),
+            mounts = mounts(id, listOf(requireNotNull(renderer.pageRef))),
             immutableInputs = if (renderer.interactive) {
                 commonInputs + input("$id.renderer", "renderer.presentation.model", "showcase.renderer-presentation")
             } else {
@@ -434,7 +440,7 @@ object ShowcaseNativeBindings {
         componentId = "page.host",
         componentTypeRef = "showcase.page-host",
         renderer = ShowcaseNativeRenderer.PAGE_HOST,
-        mounts = mounts("page.host", ShowcaseFamily.entries.map { "section.${it.id}" }),
+        mounts = mounts("page.host", pages.map(ShowcaseNativePageRegistration::pageRef)),
         immutableInputs = listOf(input(
             "page.host.activePage",
             "navigation.activePage",
@@ -447,7 +453,7 @@ object ShowcaseNativeBindings {
         componentId = "page.menu",
         componentTypeRef = "showcase.page-menu",
         renderer = ShowcaseNativeRenderer.PAGE_MENU,
-        mounts = mounts("page.menu", ShowcaseFamily.entries.map { "section.${it.id}" }),
+        mounts = mounts("page.menu", pages.map(ShowcaseNativePageRegistration::pageRef)),
         immutableInputs = emptyList(),
         eventEmitter = ShowcaseNativeEventEmitterBinding.Typed(
             listOf(ShowcaseNativeEventBinding(
@@ -455,14 +461,8 @@ object ShowcaseNativeBindings {
                 targetPortRef = "navigation.route",
                 contractRef = "showcase.navigation.route-intent",
                 emit = { producer, payload -> producer.emitNavigation("navigation.route", payload) },
-            )) + ShowcaseManifest.cases.map { case ->
-                val target = requireNotNull(rendererForCase(case.id.value).navigationInputPort)
-                ShowcaseNativeEventBinding(
-                    sourcePortRef = "page.menu.$target",
-                    targetPortRef = "navigation.$target",
-                    contractRef = "showcase.open-action",
-                    emit = { producer, payload -> producer.emitNavigation("navigation.$target", payload) },
-                )
+            )) + ShowcaseNativeRenderer.entries.mapNotNull { renderer ->
+                renderer.navigationInputPort?.let(::navigationEvent)
             },
         ),
     )
@@ -500,25 +500,6 @@ object ShowcaseNativeBindings {
             else -> error("No compile-bound Showcase mount for $componentId")
         }
 
-    private fun rendererForCase(componentId: String): ShowcaseNativeRenderer = when (componentId) {
-        "foundation.colors" -> ShowcaseNativeRenderer.COLORS
-        "foundation.geometry" -> ShowcaseNativeRenderer.GEOMETRY
-        "atom.icon-action" -> ShowcaseNativeRenderer.ICON_ACTIONS
-        "control.action-row" -> ShowcaseNativeRenderer.ACTION_ROWS
-        "control.choice-row" -> ShowcaseNativeRenderer.CHOICE_ROWS
-        "control.adjustment" -> ShowcaseNativeRenderer.ADJUSTMENT
-        "control.progress" -> ShowcaseNativeRenderer.PROGRESS
-        "control.press-ring" -> ShowcaseNativeRenderer.PRESS
-        "input.text" -> ShowcaseNativeRenderer.TEXT
-        "media.capture" -> ShowcaseNativeRenderer.CAPTURE
-        "media.playback" -> ShowcaseNativeRenderer.PLAYBACK
-        "template.screens" -> ShowcaseNativeRenderer.SCREEN_TEMPLATES
-        "flow.source" -> ShowcaseNativeRenderer.SOURCE
-        "flow.update" -> ShowcaseNativeRenderer.UPDATE
-        "flow.service" -> ShowcaseNativeRenderer.SERVICE
-        else -> error("No Showcase renderer for $componentId")
-    }
-
     private fun input(consumer: String, producer: String, contract: String) = ShowcaseNativeInputBinding(
         consumerPortRef = consumer,
         producerPortRef = producer,
@@ -529,6 +510,13 @@ object ShowcaseNativeBindings {
 
     private fun event(source: String, target: String, contract: String, componentId: String) =
         ShowcaseNativeEventBinding(source, target, contract) { ports, payload -> ports.emit(componentId, payload) }
+
+    private fun navigationEvent(target: String) = ShowcaseNativeEventBinding(
+        sourcePortRef = "page.menu.$target",
+        targetPortRef = "navigation.$target",
+        contractRef = "showcase.open-action",
+        emit = { producer, payload -> producer.emitNavigation("navigation.$target", payload) },
+    )
 
     private fun emptyEmitter(): ShowcaseNativeEventEmitterBinding.Empty {
         val endpoint = ShowcaseEmptyRendererEmitter()

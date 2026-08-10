@@ -116,7 +116,7 @@ class ShowcaseGeneratedImmutableInputBundle private constructor(
         ): ShowcaseGeneratedImmutableInputBundle {
             val expected = contract.inputs.mapTo(linkedSetOf(), ShowcaseGeneratedInputSlot::consumerPortRef)
             require(values.keys == expected) {
-                "Renderer ${contract.componentInstanceRef} input keys ${values.keys} do not equal $expected"
+                "Renderer \${contract.componentInstanceRef} input keys \${values.keys} do not equal $expected"
             }
             return ShowcaseGeneratedImmutableInputBundle(contract, values.toMap())
         }

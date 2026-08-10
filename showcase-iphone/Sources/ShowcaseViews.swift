@@ -40,7 +40,7 @@ struct ShowcaseRootView: View {
                 case .page(let pageRef):
                     ShowcasePageHostView(pageRef: pageRef, environment: environment)
                 case .component(let id):
-                    ShowcaseComponentScreen(mounted: environment.mountComponent(id), environment: environment)
+                    ShowcaseComponentScreen(mounted: environment.mountComponent(id))
                 }
             }
         }
@@ -185,18 +185,19 @@ private struct ShowcaseMenuRow: View {
 
 private struct ShowcaseComponentScreen: View {
     let mounted: ShowcaseMountedRenderer
-    let environment: ShowcaseNativeEnvironment
     @State private var scenarioIndex = 0
 
-    private var component: ShowcaseComponent { mounted.component }
+    private var component: ShowcaseComponent {
+        let components = mounted.inputs.require("\(mounted.componentId.rawValue).catalog") as! [ShowcaseComponent]
+        return components.first(where: { $0.id == mounted.componentId })!
+    }
 
-    init(mounted: ShowcaseMountedRenderer, environment: ShowcaseNativeEnvironment) {
+    init(mounted: ShowcaseMountedRenderer) {
         self.mounted = mounted
-        self.environment = environment
-        _ = mounted.inputs.require("\(mounted.component.id.rawValue).catalog")
-        _ = mounted.inputs.require("\(mounted.component.id.rawValue).navigation")
+        _ = mounted.inputs.require("\(mounted.componentId.rawValue).catalog")
+        _ = mounted.inputs.require("\(mounted.componentId.rawValue).navigation")
         if case .typed = mounted.emitter {
-            _ = mounted.inputs.require("\(mounted.component.id.rawValue).renderer")
+            _ = mounted.inputs.require("\(mounted.componentId.rawValue).renderer")
         }
     }
 
@@ -241,8 +242,7 @@ private struct ShowcaseComponentScreen: View {
         .navigationTitle(component.title)
         .onChange(of: scenarioIndex) { _, next in
             guard case .typed = mounted.emitter else { return }
-            environment.emit(
-                componentId: component.id,
+            mounted.emit(
                 sourcePortRef: "\(component.id.rawValue).action",
                 payload: ["actionId": "scenario", "value": component.scenarios[next].id]
             )

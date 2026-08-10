@@ -36,6 +36,8 @@ enum GeneratedShowcaseNodeId: String, CaseIterable, Hashable {
     case catalog = "catalog"
     case navigation = "navigation"
     case navigationPresentation = "navigation.presentation"
+    case renderer = "renderer"
+    case rendererPresentation = "renderer.presentation"
 }
 
 enum GeneratedShowcasePortId: String, CaseIterable, Hashable {
@@ -60,58 +62,99 @@ enum GeneratedShowcasePortId: String, CaseIterable, Hashable {
     case navigationDestination = "navigation.destination"
     case navigationPresentationDestination = "navigation.presentation.destination"
     case navigationPresentationModel = "navigation.presentation.model"
+    case rendererAtomIconAction = "renderer.atomIconAction"
+    case rendererControlActionRow = "renderer.controlActionRow"
+    case rendererControlChoiceRow = "renderer.controlChoiceRow"
+    case rendererControlAdjustment = "renderer.controlAdjustment"
+    case rendererControlProgress = "renderer.controlProgress"
+    case rendererControlPressRing = "renderer.controlPressRing"
+    case rendererInputText = "renderer.inputText"
+    case rendererMediaCapture = "renderer.mediaCapture"
+    case rendererMediaPlayback = "renderer.mediaPlayback"
+    case rendererTemplateScreens = "renderer.templateScreens"
+    case rendererFlowSource = "renderer.flowSource"
+    case rendererFlowUpdate = "renderer.flowUpdate"
+    case rendererFlowService = "renderer.flowService"
+    case rendererModel = "renderer.model"
+    case rendererPresentationModel = "renderer.presentation.model"
     case foundationColorsCatalog = "foundation.colors.catalog"
     case foundationColorsNavigation = "foundation.colors.navigation"
-    case foundationColorsOpen = "foundation.colors.open"
     case foundationGeometryCatalog = "foundation.geometry.catalog"
     case foundationGeometryNavigation = "foundation.geometry.navigation"
-    case foundationGeometryOpen = "foundation.geometry.open"
     case atomIconActionCatalog = "atom.icon-action.catalog"
     case atomIconActionNavigation = "atom.icon-action.navigation"
-    case atomIconActionOpen = "atom.icon-action.open"
+    case atomIconActionRenderer = "atom.icon-action.renderer"
+    case atomIconActionAction = "atom.icon-action.action"
     case controlActionRowCatalog = "control.action-row.catalog"
     case controlActionRowNavigation = "control.action-row.navigation"
-    case controlActionRowOpen = "control.action-row.open"
+    case controlActionRowRenderer = "control.action-row.renderer"
+    case controlActionRowAction = "control.action-row.action"
     case controlChoiceRowCatalog = "control.choice-row.catalog"
     case controlChoiceRowNavigation = "control.choice-row.navigation"
-    case controlChoiceRowOpen = "control.choice-row.open"
+    case controlChoiceRowRenderer = "control.choice-row.renderer"
+    case controlChoiceRowAction = "control.choice-row.action"
     case controlAdjustmentCatalog = "control.adjustment.catalog"
     case controlAdjustmentNavigation = "control.adjustment.navigation"
-    case controlAdjustmentOpen = "control.adjustment.open"
+    case controlAdjustmentRenderer = "control.adjustment.renderer"
+    case controlAdjustmentAction = "control.adjustment.action"
     case controlProgressCatalog = "control.progress.catalog"
     case controlProgressNavigation = "control.progress.navigation"
-    case controlProgressOpen = "control.progress.open"
+    case controlProgressRenderer = "control.progress.renderer"
+    case controlProgressAction = "control.progress.action"
     case controlPressRingCatalog = "control.press-ring.catalog"
     case controlPressRingNavigation = "control.press-ring.navigation"
-    case controlPressRingOpen = "control.press-ring.open"
+    case controlPressRingRenderer = "control.press-ring.renderer"
+    case controlPressRingAction = "control.press-ring.action"
     case inputTextCatalog = "input.text.catalog"
     case inputTextNavigation = "input.text.navigation"
-    case inputTextOpen = "input.text.open"
+    case inputTextRenderer = "input.text.renderer"
+    case inputTextAction = "input.text.action"
     case mediaCaptureCatalog = "media.capture.catalog"
     case mediaCaptureNavigation = "media.capture.navigation"
-    case mediaCaptureOpen = "media.capture.open"
+    case mediaCaptureRenderer = "media.capture.renderer"
+    case mediaCaptureAction = "media.capture.action"
     case mediaPlaybackCatalog = "media.playback.catalog"
     case mediaPlaybackNavigation = "media.playback.navigation"
-    case mediaPlaybackOpen = "media.playback.open"
+    case mediaPlaybackRenderer = "media.playback.renderer"
+    case mediaPlaybackAction = "media.playback.action"
     case templateScreensCatalog = "template.screens.catalog"
     case templateScreensNavigation = "template.screens.navigation"
-    case templateScreensOpen = "template.screens.open"
+    case templateScreensRenderer = "template.screens.renderer"
+    case templateScreensAction = "template.screens.action"
     case flowSourceCatalog = "flow.source.catalog"
     case flowSourceNavigation = "flow.source.navigation"
-    case flowSourceOpen = "flow.source.open"
+    case flowSourceRenderer = "flow.source.renderer"
+    case flowSourceAction = "flow.source.action"
     case flowUpdateCatalog = "flow.update.catalog"
     case flowUpdateNavigation = "flow.update.navigation"
-    case flowUpdateOpen = "flow.update.open"
+    case flowUpdateRenderer = "flow.update.renderer"
+    case flowUpdateAction = "flow.update.action"
     case flowServiceCatalog = "flow.service.catalog"
     case flowServiceNavigation = "flow.service.navigation"
-    case flowServiceOpen = "flow.service.open"
+    case flowServiceRenderer = "flow.service.renderer"
+    case flowServiceAction = "flow.service.action"
     case pageHostActivePage = "page.host.activePage"
     case pageMenuRoute = "page.menu.route"
+    case pageMenuFoundationColors = "page.menu.foundationColors"
+    case pageMenuFoundationGeometry = "page.menu.foundationGeometry"
+    case pageMenuAtomIconAction = "page.menu.atomIconAction"
+    case pageMenuControlActionRow = "page.menu.controlActionRow"
+    case pageMenuControlChoiceRow = "page.menu.controlChoiceRow"
+    case pageMenuControlAdjustment = "page.menu.controlAdjustment"
+    case pageMenuControlProgress = "page.menu.controlProgress"
+    case pageMenuControlPressRing = "page.menu.controlPressRing"
+    case pageMenuInputText = "page.menu.inputText"
+    case pageMenuMediaCapture = "page.menu.mediaCapture"
+    case pageMenuMediaPlayback = "page.menu.mediaPlayback"
+    case pageMenuTemplateScreens = "page.menu.templateScreens"
+    case pageMenuFlowSource = "page.menu.flowSource"
+    case pageMenuFlowUpdate = "page.menu.flowUpdate"
+    case pageMenuFlowService = "page.menu.flowService"
 }
 
 enum GeneratedShowcaseProduct {
     static let productId = "circlekit-showcase"
-    static let productSpecVersion = "0.3.47"
+    static let productSpecVersion = "0.3.48"
     static let artifacts: [ShowcaseArtifact] = [
         ShowcaseArtifact(
             id: .iphoneFullUi,
@@ -147,6 +190,7 @@ enum GeneratedShowcaseProduct {
             rendererId: "ShowcaseComponentScreen",
             title: "COLORS",
             iconId: "palette",
+            openPort: "foundationColors",
             scenarios: [ShowcaseScenario(id: "sea-glass", label: "SEA GLASS"), ShowcaseScenario(id: "flat-cyan", label: "FLAT CYAN"), ShowcaseScenario(id: "muted", label: "MUTED"), ShowcaseScenario(id: "high-contrast", label: "HIGH CONTRAST")]
         ),
         ShowcaseComponent(
@@ -154,6 +198,7 @@ enum GeneratedShowcaseProduct {
             rendererId: "ShowcaseComponentScreen",
             title: "GEOMETRY",
             iconId: "grid",
+            openPort: "foundationGeometry",
             scenarios: [ShowcaseScenario(id: "round-192", label: "ROUND 192"), ShowcaseScenario(id: "phone-compact", label: "PHONE COMPACT"), ShowcaseScenario(id: "phone-wide", label: "PHONE WIDE"), ShowcaseScenario(id: "chrome-x", label: "X @ 9"), ShowcaseScenario(id: "chrome-x-gear", label: "X + GEAR")]
         ),
         ShowcaseComponent(
@@ -161,6 +206,7 @@ enum GeneratedShowcaseProduct {
             rendererId: "ShowcaseComponentScreen",
             title: "ACTIONS",
             iconId: "watch",
+            openPort: "atomIconAction",
             scenarios: [ShowcaseScenario(id: "idle", label: "IDLE"), ShowcaseScenario(id: "active", label: "ACTIVE"), ShowcaseScenario(id: "immediate", label: "IMMEDIATE"), ShowcaseScenario(id: "deliberate", label: "DELIBERATE"), ShowcaseScenario(id: "disabled", label: "DISABLED")]
         ),
         ShowcaseComponent(
@@ -168,6 +214,7 @@ enum GeneratedShowcaseProduct {
             rendererId: "ShowcaseComponentScreen",
             title: "ACTION ROW",
             iconId: "touchdown-run",
+            openPort: "controlActionRow",
             scenarios: [ShowcaseScenario(id: "immediate", label: "IMMEDIATE"), ShowcaseScenario(id: "deliberate", label: "DELIBERATE"), ShowcaseScenario(id: "confirm", label: "CONFIRM"), ShowcaseScenario(id: "recoverable", label: "RECOVERABLE"), ShowcaseScenario(id: "blocked", label: "BLOCKED"), ShowcaseScenario(id: "failure", label: "FAILURE + RETRY")]
         ),
         ShowcaseComponent(
@@ -175,6 +222,7 @@ enum GeneratedShowcaseProduct {
             rendererId: "ShowcaseComponentScreen",
             title: "CHOICES",
             iconId: "grid",
+            openPort: "controlChoiceRow",
             scenarios: [ShowcaseScenario(id: "off", label: "TOGGLE OFF"), ShowcaseScenario(id: "on", label: "TOGGLE ON"), ShowcaseScenario(id: "two", label: "TWO OPTIONS"), ShowcaseScenario(id: "first", label: "SEVEN · FIRST"), ShowcaseScenario(id: "middle", label: "SEVEN · MIDDLE"), ShowcaseScenario(id: "last", label: "SEVEN · LAST")]
         ),
         ShowcaseComponent(
@@ -182,6 +230,7 @@ enum GeneratedShowcaseProduct {
             rendererId: "ShowcaseComponentScreen",
             title: "ADJUST",
             iconId: "sliders",
+            openPort: "controlAdjustment",
             scenarios: [ShowcaseScenario(id: "minimum", label: "MINIMUM"), ShowcaseScenario(id: "middle", label: "MIDDLE"), ShowcaseScenario(id: "maximum", label: "MAXIMUM"), ShowcaseScenario(id: "deliberate", label: "DELIBERATE STEPS")]
         ),
         ShowcaseComponent(
@@ -189,6 +238,7 @@ enum GeneratedShowcaseProduct {
             rendererId: "ShowcaseComponentScreen",
             title: "PROGRESS",
             iconId: "download",
+            openPort: "controlProgress",
             scenarios: [ShowcaseScenario(id: "none", label: "NONE"), ShowcaseScenario(id: "indeterminate", label: "INDETERMINATE"), ShowcaseScenario(id: "empty", label: "0 PERCENT"), ShowcaseScenario(id: "half", label: "50 PERCENT"), ShowcaseScenario(id: "complete", label: "100 PERCENT"), ShowcaseScenario(id: "failed", label: "FAILURE + RETRY")]
         ),
         ShowcaseComponent(
@@ -196,6 +246,7 @@ enum GeneratedShowcaseProduct {
             rendererId: "ShowcaseComponentScreen",
             title: "PRESS",
             iconId: "record",
+            openPort: "controlPressRing",
             scenarios: [ShowcaseScenario(id: "idle", label: "IDLE"), ShowcaseScenario(id: "recording", label: "RECORDING"), ShowcaseScenario(id: "disabled", label: "DISABLED"), ShowcaseScenario(id: "failed", label: "FAILED + RETRY")]
         ),
         ShowcaseComponent(
@@ -203,6 +254,7 @@ enum GeneratedShowcaseProduct {
             rendererId: "ShowcaseComponentScreen",
             title: "TEXT",
             iconId: "pencil",
+            openPort: "inputText",
             scenarios: [ShowcaseScenario(id: "empty", label: "EMPTY"), ShowcaseScenario(id: "filled", label: "FILLED"), ShowcaseScenario(id: "max", label: "MAX LENGTH"), ShowcaseScenario(id: "disabled", label: "DISABLED")]
         ),
         ShowcaseComponent(
@@ -210,6 +262,7 @@ enum GeneratedShowcaseProduct {
             rendererId: "ShowcaseComponentScreen",
             title: "WAVEFORM",
             iconId: "record",
+            openPort: "mediaCapture",
             scenarios: [ShowcaseScenario(id: "silent", label: "NO SAMPLES"), ShowcaseScenario(id: "active", label: "ACTIVE"), ShowcaseScenario(id: "long", label: "LONG DURATION")]
         ),
         ShowcaseComponent(
@@ -217,6 +270,7 @@ enum GeneratedShowcaseProduct {
             rendererId: "ShowcaseComponentScreen",
             title: "PLAYBACK",
             iconId: "play",
+            openPort: "mediaPlayback",
             scenarios: [ShowcaseScenario(id: "ready", label: "READY"), ShowcaseScenario(id: "playing", label: "PLAYING"), ShowcaseScenario(id: "paused", label: "PAUSED"), ShowcaseScenario(id: "complete", label: "COMPLETE"), ShowcaseScenario(id: "failed", label: "FAILED")]
         ),
         ShowcaseComponent(
@@ -224,6 +278,7 @@ enum GeneratedShowcaseProduct {
             rendererId: "ShowcaseComponentScreen",
             title: "SCREENS",
             iconId: "layers",
+            openPort: "templateScreens",
             scenarios: [ShowcaseScenario(id: "hub", label: "HUB"), ShowcaseScenario(id: "detail", label: "DETAIL"), ShowcaseScenario(id: "launcher", label: "LAUNCHER"), ShowcaseScenario(id: "rows", label: "ROWS"), ShowcaseScenario(id: "adjustment", label: "ADJUSTMENT"), ShowcaseScenario(id: "color-picker", label: "COLOR PICKER"), ShowcaseScenario(id: "dial-preview", label: "DIAL PREVIEW"), ShowcaseScenario(id: "empty", label: "EMPTY CONTENT"), ShowcaseScenario(id: "max-capacity", label: "MAX CAPACITY"), ShowcaseScenario(id: "long-content", label: "LONG CONTENT")]
         ),
         ShowcaseComponent(
@@ -231,6 +286,7 @@ enum GeneratedShowcaseProduct {
             rendererId: "ShowcaseComponentScreen",
             title: "SOURCE",
             iconId: "wifi",
+            openPort: "flowSource",
             scenarios: [ShowcaseScenario(id: "off", label: "OFF"), ShowcaseScenario(id: "loading", label: "LOADING"), ShowcaseScenario(id: "fresh", label: "FRESH"), ShowcaseScenario(id: "aging", label: "AGING"), ShowcaseScenario(id: "partial", label: "PARTIAL"), ShowcaseScenario(id: "broken", label: "BROKEN")]
         ),
         ShowcaseComponent(
@@ -238,6 +294,7 @@ enum GeneratedShowcaseProduct {
             rendererId: "ShowcaseComponentScreen",
             title: "UPDATE",
             iconId: "download",
+            openPort: "flowUpdate",
             scenarios: [ShowcaseScenario(id: "checking", label: "CHECKING"), ShowcaseScenario(id: "available", label: "AVAILABLE"), ShowcaseScenario(id: "downloading", label: "DOWNLOADING"), ShowcaseScenario(id: "ready", label: "READY"), ShowcaseScenario(id: "failed", label: "FAILED")]
         ),
         ShowcaseComponent(
@@ -245,6 +302,7 @@ enum GeneratedShowcaseProduct {
             rendererId: "ShowcaseComponentScreen",
             title: "SERVICE",
             iconId: "wrench",
+            openPort: "flowService",
             scenarios: [ShowcaseScenario(id: "idle", label: "IDLE"), ShowcaseScenario(id: "active", label: "ACTIVE"), ShowcaseScenario(id: "success", label: "SUCCESS"), ShowcaseScenario(id: "failed", label: "FAILED"), ShowcaseScenario(id: "cache", label: "CACHE")]
         )
     ]
@@ -773,143 +831,1211 @@ enum GeneratedShowcaseProduct {
             profiles: [.iphoneFullUi, .watchosFullUi],
             inputPorts: ["destination"],
             outputPorts: ["model"]
+        ),
+        ShowcaseNode(
+            id: .renderer,
+            typeRef: "showcase.renderer-service",
+            kind: "service",
+            nativePortId: "ShowcaseNativeEnvironment",
+            profiles: [.iphoneFullUi, .watchosFullUi],
+            inputPorts: ["atomIconAction", "controlActionRow", "controlChoiceRow", "controlAdjustment", "controlProgress", "controlPressRing", "inputText", "mediaCapture", "mediaPlayback", "templateScreens", "flowSource", "flowUpdate", "flowService"],
+            outputPorts: ["model"]
+        ),
+        ShowcaseNode(
+            id: .rendererPresentation,
+            typeRef: "showcase.renderer-presentation",
+            kind: "present",
+            nativePortId: "ShowcaseNativeEnvironment",
+            profiles: [.iphoneFullUi, .watchosFullUi],
+            inputPorts: ["model"],
+            outputPorts: ["model"]
         )
     ]
     static let nativeComponents: [ShowcaseNativeComponentRegistration] = [
         ShowcaseNativeComponentRegistration(
+            componentInstanceRef: .foundationColors,
             componentTypeRef: "foundation.colors",
-            rendererId: "ShowcaseComponentScreen",
-            profiles: [.iphoneFullUi, .watchosFullUi]
+            mounts: [ShowcaseNativeMountRegistration(
+                profileId: .iphoneFullUi,
+                pageRef: "section.foundations",
+                surface: .compact,
+                mountRef: "foundation.colors",
+                mount: { environment in environment.componentValue(.foundationColors) }
+            ), ShowcaseNativeMountRegistration(
+                profileId: .iphoneFullUi,
+                pageRef: "section.foundations",
+                surface: .wide,
+                mountRef: "foundation.colors",
+                mount: { environment in environment.componentValue(.foundationColors) }
+            ), ShowcaseNativeMountRegistration(
+                profileId: .watchosFullUi,
+                pageRef: "section.foundations",
+                surface: .round,
+                mountRef: "foundation.colors",
+                mount: { environment in environment.componentValue(.foundationColors) }
+            )],
+            immutableInputs: [ShowcaseNativeInputRegistration(
+                consumerPortRef: "foundation.colors.catalog",
+                producerPortRef: "catalog.model",
+                contractRef: "showcase.catalog-presentation",
+                required: true,
+                read: { environment in environment.read(producerPortRef: "catalog.model") }
+            ), ShowcaseNativeInputRegistration(
+                consumerPortRef: "foundation.colors.navigation",
+                producerPortRef: "navigation.presentation.model",
+                contractRef: "showcase.navigation-presentation",
+                required: true,
+                read: { environment in environment.read(producerPortRef: "navigation.presentation.model") }
+            )],
+            eventEmitter: .empty({ _ in fatalError("read-only Showcase renderer cannot emit") })
         ),
         ShowcaseNativeComponentRegistration(
+            componentInstanceRef: .foundationGeometry,
             componentTypeRef: "foundation.geometry",
-            rendererId: "ShowcaseComponentScreen",
-            profiles: [.iphoneFullUi, .watchosFullUi]
+            mounts: [ShowcaseNativeMountRegistration(
+                profileId: .iphoneFullUi,
+                pageRef: "section.foundations",
+                surface: .compact,
+                mountRef: "foundation.geometry",
+                mount: { environment in environment.componentValue(.foundationGeometry) }
+            ), ShowcaseNativeMountRegistration(
+                profileId: .iphoneFullUi,
+                pageRef: "section.foundations",
+                surface: .wide,
+                mountRef: "foundation.geometry",
+                mount: { environment in environment.componentValue(.foundationGeometry) }
+            ), ShowcaseNativeMountRegistration(
+                profileId: .watchosFullUi,
+                pageRef: "section.foundations",
+                surface: .round,
+                mountRef: "foundation.geometry",
+                mount: { environment in environment.componentValue(.foundationGeometry) }
+            )],
+            immutableInputs: [ShowcaseNativeInputRegistration(
+                consumerPortRef: "foundation.geometry.catalog",
+                producerPortRef: "catalog.model",
+                contractRef: "showcase.catalog-presentation",
+                required: true,
+                read: { environment in environment.read(producerPortRef: "catalog.model") }
+            ), ShowcaseNativeInputRegistration(
+                consumerPortRef: "foundation.geometry.navigation",
+                producerPortRef: "navigation.presentation.model",
+                contractRef: "showcase.navigation-presentation",
+                required: true,
+                read: { environment in environment.read(producerPortRef: "navigation.presentation.model") }
+            )],
+            eventEmitter: .empty({ _ in fatalError("read-only Showcase renderer cannot emit") })
         ),
         ShowcaseNativeComponentRegistration(
+            componentInstanceRef: .pageMenu,
             componentTypeRef: "showcase.page-menu",
-            rendererId: "ShowcasePageMenu",
-            profiles: [.iphoneFullUi, .watchosFullUi]
+            mounts: [ShowcaseNativeMountRegistration(
+                profileId: .iphoneFullUi,
+                pageRef: "section.foundations",
+                surface: .compact,
+                mountRef: "page.menu",
+                mount: { environment in environment.componentValue(.pageMenu) }
+            ), ShowcaseNativeMountRegistration(
+                profileId: .iphoneFullUi,
+                pageRef: "section.foundations",
+                surface: .wide,
+                mountRef: "page.menu",
+                mount: { environment in environment.componentValue(.pageMenu) }
+            ), ShowcaseNativeMountRegistration(
+                profileId: .iphoneFullUi,
+                pageRef: "section.atoms",
+                surface: .compact,
+                mountRef: "page.menu",
+                mount: { environment in environment.componentValue(.pageMenu) }
+            ), ShowcaseNativeMountRegistration(
+                profileId: .iphoneFullUi,
+                pageRef: "section.atoms",
+                surface: .wide,
+                mountRef: "page.menu",
+                mount: { environment in environment.componentValue(.pageMenu) }
+            ), ShowcaseNativeMountRegistration(
+                profileId: .iphoneFullUi,
+                pageRef: "section.controls",
+                surface: .compact,
+                mountRef: "page.menu",
+                mount: { environment in environment.componentValue(.pageMenu) }
+            ), ShowcaseNativeMountRegistration(
+                profileId: .iphoneFullUi,
+                pageRef: "section.controls",
+                surface: .wide,
+                mountRef: "page.menu",
+                mount: { environment in environment.componentValue(.pageMenu) }
+            ), ShowcaseNativeMountRegistration(
+                profileId: .iphoneFullUi,
+                pageRef: "section.input",
+                surface: .compact,
+                mountRef: "page.menu",
+                mount: { environment in environment.componentValue(.pageMenu) }
+            ), ShowcaseNativeMountRegistration(
+                profileId: .iphoneFullUi,
+                pageRef: "section.input",
+                surface: .wide,
+                mountRef: "page.menu",
+                mount: { environment in environment.componentValue(.pageMenu) }
+            ), ShowcaseNativeMountRegistration(
+                profileId: .iphoneFullUi,
+                pageRef: "section.media",
+                surface: .compact,
+                mountRef: "page.menu",
+                mount: { environment in environment.componentValue(.pageMenu) }
+            ), ShowcaseNativeMountRegistration(
+                profileId: .iphoneFullUi,
+                pageRef: "section.media",
+                surface: .wide,
+                mountRef: "page.menu",
+                mount: { environment in environment.componentValue(.pageMenu) }
+            ), ShowcaseNativeMountRegistration(
+                profileId: .iphoneFullUi,
+                pageRef: "section.templates",
+                surface: .compact,
+                mountRef: "page.menu",
+                mount: { environment in environment.componentValue(.pageMenu) }
+            ), ShowcaseNativeMountRegistration(
+                profileId: .iphoneFullUi,
+                pageRef: "section.templates",
+                surface: .wide,
+                mountRef: "page.menu",
+                mount: { environment in environment.componentValue(.pageMenu) }
+            ), ShowcaseNativeMountRegistration(
+                profileId: .iphoneFullUi,
+                pageRef: "section.flows",
+                surface: .compact,
+                mountRef: "page.menu",
+                mount: { environment in environment.componentValue(.pageMenu) }
+            ), ShowcaseNativeMountRegistration(
+                profileId: .iphoneFullUi,
+                pageRef: "section.flows",
+                surface: .wide,
+                mountRef: "page.menu",
+                mount: { environment in environment.componentValue(.pageMenu) }
+            ), ShowcaseNativeMountRegistration(
+                profileId: .watchosFullUi,
+                pageRef: "section.foundations",
+                surface: .round,
+                mountRef: "page.menu",
+                mount: { environment in environment.componentValue(.pageMenu) }
+            ), ShowcaseNativeMountRegistration(
+                profileId: .watchosFullUi,
+                pageRef: "section.atoms",
+                surface: .round,
+                mountRef: "page.menu",
+                mount: { environment in environment.componentValue(.pageMenu) }
+            ), ShowcaseNativeMountRegistration(
+                profileId: .watchosFullUi,
+                pageRef: "section.controls",
+                surface: .round,
+                mountRef: "page.menu",
+                mount: { environment in environment.componentValue(.pageMenu) }
+            ), ShowcaseNativeMountRegistration(
+                profileId: .watchosFullUi,
+                pageRef: "section.input",
+                surface: .round,
+                mountRef: "page.menu",
+                mount: { environment in environment.componentValue(.pageMenu) }
+            ), ShowcaseNativeMountRegistration(
+                profileId: .watchosFullUi,
+                pageRef: "section.media",
+                surface: .round,
+                mountRef: "page.menu",
+                mount: { environment in environment.componentValue(.pageMenu) }
+            ), ShowcaseNativeMountRegistration(
+                profileId: .watchosFullUi,
+                pageRef: "section.templates",
+                surface: .round,
+                mountRef: "page.menu",
+                mount: { environment in environment.componentValue(.pageMenu) }
+            ), ShowcaseNativeMountRegistration(
+                profileId: .watchosFullUi,
+                pageRef: "section.flows",
+                surface: .round,
+                mountRef: "page.menu",
+                mount: { environment in environment.componentValue(.pageMenu) }
+            )],
+            immutableInputs: [],
+            eventEmitter: .typed([ShowcaseNativeEventBindingRegistration(
+                sourcePortRef: "page.menu.route",
+                targetPortRef: "navigation.route",
+                contractRef: "showcase.navigation.route-intent",
+                emit: { environment, payload in
+                    environment.dispatch(sourcePortRef: "page.menu.route", payload: payload)
+                }
+            ), ShowcaseNativeEventBindingRegistration(
+                sourcePortRef: "page.menu.foundationColors",
+                targetPortRef: "navigation.foundationColors",
+                contractRef: "showcase.open-action",
+                emit: { environment, payload in
+                    environment.dispatch(sourcePortRef: "page.menu.foundationColors", payload: payload)
+                }
+            ), ShowcaseNativeEventBindingRegistration(
+                sourcePortRef: "page.menu.foundationGeometry",
+                targetPortRef: "navigation.foundationGeometry",
+                contractRef: "showcase.open-action",
+                emit: { environment, payload in
+                    environment.dispatch(sourcePortRef: "page.menu.foundationGeometry", payload: payload)
+                }
+            ), ShowcaseNativeEventBindingRegistration(
+                sourcePortRef: "page.menu.atomIconAction",
+                targetPortRef: "navigation.atomIconAction",
+                contractRef: "showcase.open-action",
+                emit: { environment, payload in
+                    environment.dispatch(sourcePortRef: "page.menu.atomIconAction", payload: payload)
+                }
+            ), ShowcaseNativeEventBindingRegistration(
+                sourcePortRef: "page.menu.controlActionRow",
+                targetPortRef: "navigation.controlActionRow",
+                contractRef: "showcase.open-action",
+                emit: { environment, payload in
+                    environment.dispatch(sourcePortRef: "page.menu.controlActionRow", payload: payload)
+                }
+            ), ShowcaseNativeEventBindingRegistration(
+                sourcePortRef: "page.menu.controlChoiceRow",
+                targetPortRef: "navigation.controlChoiceRow",
+                contractRef: "showcase.open-action",
+                emit: { environment, payload in
+                    environment.dispatch(sourcePortRef: "page.menu.controlChoiceRow", payload: payload)
+                }
+            ), ShowcaseNativeEventBindingRegistration(
+                sourcePortRef: "page.menu.controlAdjustment",
+                targetPortRef: "navigation.controlAdjustment",
+                contractRef: "showcase.open-action",
+                emit: { environment, payload in
+                    environment.dispatch(sourcePortRef: "page.menu.controlAdjustment", payload: payload)
+                }
+            ), ShowcaseNativeEventBindingRegistration(
+                sourcePortRef: "page.menu.controlProgress",
+                targetPortRef: "navigation.controlProgress",
+                contractRef: "showcase.open-action",
+                emit: { environment, payload in
+                    environment.dispatch(sourcePortRef: "page.menu.controlProgress", payload: payload)
+                }
+            ), ShowcaseNativeEventBindingRegistration(
+                sourcePortRef: "page.menu.controlPressRing",
+                targetPortRef: "navigation.controlPressRing",
+                contractRef: "showcase.open-action",
+                emit: { environment, payload in
+                    environment.dispatch(sourcePortRef: "page.menu.controlPressRing", payload: payload)
+                }
+            ), ShowcaseNativeEventBindingRegistration(
+                sourcePortRef: "page.menu.inputText",
+                targetPortRef: "navigation.inputText",
+                contractRef: "showcase.open-action",
+                emit: { environment, payload in
+                    environment.dispatch(sourcePortRef: "page.menu.inputText", payload: payload)
+                }
+            ), ShowcaseNativeEventBindingRegistration(
+                sourcePortRef: "page.menu.mediaCapture",
+                targetPortRef: "navigation.mediaCapture",
+                contractRef: "showcase.open-action",
+                emit: { environment, payload in
+                    environment.dispatch(sourcePortRef: "page.menu.mediaCapture", payload: payload)
+                }
+            ), ShowcaseNativeEventBindingRegistration(
+                sourcePortRef: "page.menu.mediaPlayback",
+                targetPortRef: "navigation.mediaPlayback",
+                contractRef: "showcase.open-action",
+                emit: { environment, payload in
+                    environment.dispatch(sourcePortRef: "page.menu.mediaPlayback", payload: payload)
+                }
+            ), ShowcaseNativeEventBindingRegistration(
+                sourcePortRef: "page.menu.templateScreens",
+                targetPortRef: "navigation.templateScreens",
+                contractRef: "showcase.open-action",
+                emit: { environment, payload in
+                    environment.dispatch(sourcePortRef: "page.menu.templateScreens", payload: payload)
+                }
+            ), ShowcaseNativeEventBindingRegistration(
+                sourcePortRef: "page.menu.flowSource",
+                targetPortRef: "navigation.flowSource",
+                contractRef: "showcase.open-action",
+                emit: { environment, payload in
+                    environment.dispatch(sourcePortRef: "page.menu.flowSource", payload: payload)
+                }
+            ), ShowcaseNativeEventBindingRegistration(
+                sourcePortRef: "page.menu.flowUpdate",
+                targetPortRef: "navigation.flowUpdate",
+                contractRef: "showcase.open-action",
+                emit: { environment, payload in
+                    environment.dispatch(sourcePortRef: "page.menu.flowUpdate", payload: payload)
+                }
+            ), ShowcaseNativeEventBindingRegistration(
+                sourcePortRef: "page.menu.flowService",
+                targetPortRef: "navigation.flowService",
+                contractRef: "showcase.open-action",
+                emit: { environment, payload in
+                    environment.dispatch(sourcePortRef: "page.menu.flowService", payload: payload)
+                }
+            )])
         ),
         ShowcaseNativeComponentRegistration(
+            componentInstanceRef: .pageHost,
             componentTypeRef: "showcase.page-host",
-            rendererId: "ShowcasePageHost",
-            profiles: [.iphoneFullUi, .watchosFullUi]
+            mounts: [ShowcaseNativeMountRegistration(
+                profileId: .iphoneFullUi,
+                pageRef: "section.foundations",
+                surface: .compact,
+                mountRef: "page.host",
+                mount: { environment in environment.componentValue(.pageHost) }
+            ), ShowcaseNativeMountRegistration(
+                profileId: .iphoneFullUi,
+                pageRef: "section.foundations",
+                surface: .wide,
+                mountRef: "page.host",
+                mount: { environment in environment.componentValue(.pageHost) }
+            ), ShowcaseNativeMountRegistration(
+                profileId: .iphoneFullUi,
+                pageRef: "section.atoms",
+                surface: .compact,
+                mountRef: "page.host",
+                mount: { environment in environment.componentValue(.pageHost) }
+            ), ShowcaseNativeMountRegistration(
+                profileId: .iphoneFullUi,
+                pageRef: "section.atoms",
+                surface: .wide,
+                mountRef: "page.host",
+                mount: { environment in environment.componentValue(.pageHost) }
+            ), ShowcaseNativeMountRegistration(
+                profileId: .iphoneFullUi,
+                pageRef: "section.controls",
+                surface: .compact,
+                mountRef: "page.host",
+                mount: { environment in environment.componentValue(.pageHost) }
+            ), ShowcaseNativeMountRegistration(
+                profileId: .iphoneFullUi,
+                pageRef: "section.controls",
+                surface: .wide,
+                mountRef: "page.host",
+                mount: { environment in environment.componentValue(.pageHost) }
+            ), ShowcaseNativeMountRegistration(
+                profileId: .iphoneFullUi,
+                pageRef: "section.input",
+                surface: .compact,
+                mountRef: "page.host",
+                mount: { environment in environment.componentValue(.pageHost) }
+            ), ShowcaseNativeMountRegistration(
+                profileId: .iphoneFullUi,
+                pageRef: "section.input",
+                surface: .wide,
+                mountRef: "page.host",
+                mount: { environment in environment.componentValue(.pageHost) }
+            ), ShowcaseNativeMountRegistration(
+                profileId: .iphoneFullUi,
+                pageRef: "section.media",
+                surface: .compact,
+                mountRef: "page.host",
+                mount: { environment in environment.componentValue(.pageHost) }
+            ), ShowcaseNativeMountRegistration(
+                profileId: .iphoneFullUi,
+                pageRef: "section.media",
+                surface: .wide,
+                mountRef: "page.host",
+                mount: { environment in environment.componentValue(.pageHost) }
+            ), ShowcaseNativeMountRegistration(
+                profileId: .iphoneFullUi,
+                pageRef: "section.templates",
+                surface: .compact,
+                mountRef: "page.host",
+                mount: { environment in environment.componentValue(.pageHost) }
+            ), ShowcaseNativeMountRegistration(
+                profileId: .iphoneFullUi,
+                pageRef: "section.templates",
+                surface: .wide,
+                mountRef: "page.host",
+                mount: { environment in environment.componentValue(.pageHost) }
+            ), ShowcaseNativeMountRegistration(
+                profileId: .iphoneFullUi,
+                pageRef: "section.flows",
+                surface: .compact,
+                mountRef: "page.host",
+                mount: { environment in environment.componentValue(.pageHost) }
+            ), ShowcaseNativeMountRegistration(
+                profileId: .iphoneFullUi,
+                pageRef: "section.flows",
+                surface: .wide,
+                mountRef: "page.host",
+                mount: { environment in environment.componentValue(.pageHost) }
+            ), ShowcaseNativeMountRegistration(
+                profileId: .watchosFullUi,
+                pageRef: "section.foundations",
+                surface: .round,
+                mountRef: "page.host",
+                mount: { environment in environment.componentValue(.pageHost) }
+            ), ShowcaseNativeMountRegistration(
+                profileId: .watchosFullUi,
+                pageRef: "section.atoms",
+                surface: .round,
+                mountRef: "page.host",
+                mount: { environment in environment.componentValue(.pageHost) }
+            ), ShowcaseNativeMountRegistration(
+                profileId: .watchosFullUi,
+                pageRef: "section.controls",
+                surface: .round,
+                mountRef: "page.host",
+                mount: { environment in environment.componentValue(.pageHost) }
+            ), ShowcaseNativeMountRegistration(
+                profileId: .watchosFullUi,
+                pageRef: "section.input",
+                surface: .round,
+                mountRef: "page.host",
+                mount: { environment in environment.componentValue(.pageHost) }
+            ), ShowcaseNativeMountRegistration(
+                profileId: .watchosFullUi,
+                pageRef: "section.media",
+                surface: .round,
+                mountRef: "page.host",
+                mount: { environment in environment.componentValue(.pageHost) }
+            ), ShowcaseNativeMountRegistration(
+                profileId: .watchosFullUi,
+                pageRef: "section.templates",
+                surface: .round,
+                mountRef: "page.host",
+                mount: { environment in environment.componentValue(.pageHost) }
+            ), ShowcaseNativeMountRegistration(
+                profileId: .watchosFullUi,
+                pageRef: "section.flows",
+                surface: .round,
+                mountRef: "page.host",
+                mount: { environment in environment.componentValue(.pageHost) }
+            )],
+            immutableInputs: [ShowcaseNativeInputRegistration(
+                consumerPortRef: "page.host.activePage",
+                producerPortRef: "navigation.activePage",
+                contractRef: "showcase.navigation.active-page",
+                required: true,
+                read: { environment in environment.read(producerPortRef: "navigation.activePage") }
+            )],
+            eventEmitter: .empty({ _ in fatalError("read-only Showcase renderer cannot emit") })
         ),
         ShowcaseNativeComponentRegistration(
+            componentInstanceRef: .atomIconAction,
             componentTypeRef: "atom.icon-action",
-            rendererId: "ShowcaseComponentScreen",
-            profiles: [.iphoneFullUi, .watchosFullUi]
+            mounts: [ShowcaseNativeMountRegistration(
+                profileId: .iphoneFullUi,
+                pageRef: "section.atoms",
+                surface: .compact,
+                mountRef: "atom.icon-action",
+                mount: { environment in environment.componentValue(.atomIconAction) }
+            ), ShowcaseNativeMountRegistration(
+                profileId: .iphoneFullUi,
+                pageRef: "section.atoms",
+                surface: .wide,
+                mountRef: "atom.icon-action",
+                mount: { environment in environment.componentValue(.atomIconAction) }
+            ), ShowcaseNativeMountRegistration(
+                profileId: .watchosFullUi,
+                pageRef: "section.atoms",
+                surface: .round,
+                mountRef: "atom.icon-action",
+                mount: { environment in environment.componentValue(.atomIconAction) }
+            )],
+            immutableInputs: [ShowcaseNativeInputRegistration(
+                consumerPortRef: "atom.icon-action.catalog",
+                producerPortRef: "catalog.model",
+                contractRef: "showcase.catalog-presentation",
+                required: true,
+                read: { environment in environment.read(producerPortRef: "catalog.model") }
+            ), ShowcaseNativeInputRegistration(
+                consumerPortRef: "atom.icon-action.navigation",
+                producerPortRef: "navigation.presentation.model",
+                contractRef: "showcase.navigation-presentation",
+                required: true,
+                read: { environment in environment.read(producerPortRef: "navigation.presentation.model") }
+            ), ShowcaseNativeInputRegistration(
+                consumerPortRef: "atom.icon-action.renderer",
+                producerPortRef: "renderer.presentation.model",
+                contractRef: "showcase.renderer-presentation",
+                required: true,
+                read: { environment in environment.read(producerPortRef: "renderer.presentation.model") }
+            )],
+            eventEmitter: .typed([ShowcaseNativeEventBindingRegistration(
+                sourcePortRef: "atom.icon-action.action",
+                targetPortRef: "renderer.atomIconAction",
+                contractRef: "showcase.renderer-action",
+                emit: { environment, payload in
+                    environment.dispatch(sourcePortRef: "atom.icon-action.action", payload: payload)
+                }
+            )])
         ),
         ShowcaseNativeComponentRegistration(
+            componentInstanceRef: .controlActionRow,
             componentTypeRef: "control.action-row",
-            rendererId: "ShowcaseComponentScreen",
-            profiles: [.iphoneFullUi, .watchosFullUi]
+            mounts: [ShowcaseNativeMountRegistration(
+                profileId: .iphoneFullUi,
+                pageRef: "section.controls",
+                surface: .compact,
+                mountRef: "control.action-row",
+                mount: { environment in environment.componentValue(.controlActionRow) }
+            ), ShowcaseNativeMountRegistration(
+                profileId: .iphoneFullUi,
+                pageRef: "section.controls",
+                surface: .wide,
+                mountRef: "control.action-row",
+                mount: { environment in environment.componentValue(.controlActionRow) }
+            ), ShowcaseNativeMountRegistration(
+                profileId: .watchosFullUi,
+                pageRef: "section.controls",
+                surface: .round,
+                mountRef: "control.action-row",
+                mount: { environment in environment.componentValue(.controlActionRow) }
+            )],
+            immutableInputs: [ShowcaseNativeInputRegistration(
+                consumerPortRef: "control.action-row.catalog",
+                producerPortRef: "catalog.model",
+                contractRef: "showcase.catalog-presentation",
+                required: true,
+                read: { environment in environment.read(producerPortRef: "catalog.model") }
+            ), ShowcaseNativeInputRegistration(
+                consumerPortRef: "control.action-row.navigation",
+                producerPortRef: "navigation.presentation.model",
+                contractRef: "showcase.navigation-presentation",
+                required: true,
+                read: { environment in environment.read(producerPortRef: "navigation.presentation.model") }
+            ), ShowcaseNativeInputRegistration(
+                consumerPortRef: "control.action-row.renderer",
+                producerPortRef: "renderer.presentation.model",
+                contractRef: "showcase.renderer-presentation",
+                required: true,
+                read: { environment in environment.read(producerPortRef: "renderer.presentation.model") }
+            )],
+            eventEmitter: .typed([ShowcaseNativeEventBindingRegistration(
+                sourcePortRef: "control.action-row.action",
+                targetPortRef: "renderer.controlActionRow",
+                contractRef: "showcase.renderer-action",
+                emit: { environment, payload in
+                    environment.dispatch(sourcePortRef: "control.action-row.action", payload: payload)
+                }
+            )])
         ),
         ShowcaseNativeComponentRegistration(
+            componentInstanceRef: .controlChoiceRow,
             componentTypeRef: "control.choice-row",
-            rendererId: "ShowcaseComponentScreen",
-            profiles: [.iphoneFullUi, .watchosFullUi]
+            mounts: [ShowcaseNativeMountRegistration(
+                profileId: .iphoneFullUi,
+                pageRef: "section.controls",
+                surface: .compact,
+                mountRef: "control.choice-row",
+                mount: { environment in environment.componentValue(.controlChoiceRow) }
+            ), ShowcaseNativeMountRegistration(
+                profileId: .iphoneFullUi,
+                pageRef: "section.controls",
+                surface: .wide,
+                mountRef: "control.choice-row",
+                mount: { environment in environment.componentValue(.controlChoiceRow) }
+            ), ShowcaseNativeMountRegistration(
+                profileId: .watchosFullUi,
+                pageRef: "section.controls",
+                surface: .round,
+                mountRef: "control.choice-row",
+                mount: { environment in environment.componentValue(.controlChoiceRow) }
+            )],
+            immutableInputs: [ShowcaseNativeInputRegistration(
+                consumerPortRef: "control.choice-row.catalog",
+                producerPortRef: "catalog.model",
+                contractRef: "showcase.catalog-presentation",
+                required: true,
+                read: { environment in environment.read(producerPortRef: "catalog.model") }
+            ), ShowcaseNativeInputRegistration(
+                consumerPortRef: "control.choice-row.navigation",
+                producerPortRef: "navigation.presentation.model",
+                contractRef: "showcase.navigation-presentation",
+                required: true,
+                read: { environment in environment.read(producerPortRef: "navigation.presentation.model") }
+            ), ShowcaseNativeInputRegistration(
+                consumerPortRef: "control.choice-row.renderer",
+                producerPortRef: "renderer.presentation.model",
+                contractRef: "showcase.renderer-presentation",
+                required: true,
+                read: { environment in environment.read(producerPortRef: "renderer.presentation.model") }
+            )],
+            eventEmitter: .typed([ShowcaseNativeEventBindingRegistration(
+                sourcePortRef: "control.choice-row.action",
+                targetPortRef: "renderer.controlChoiceRow",
+                contractRef: "showcase.renderer-action",
+                emit: { environment, payload in
+                    environment.dispatch(sourcePortRef: "control.choice-row.action", payload: payload)
+                }
+            )])
         ),
         ShowcaseNativeComponentRegistration(
+            componentInstanceRef: .controlAdjustment,
             componentTypeRef: "control.adjustment",
-            rendererId: "ShowcaseComponentScreen",
-            profiles: [.iphoneFullUi, .watchosFullUi]
+            mounts: [ShowcaseNativeMountRegistration(
+                profileId: .iphoneFullUi,
+                pageRef: "section.controls",
+                surface: .compact,
+                mountRef: "control.adjustment",
+                mount: { environment in environment.componentValue(.controlAdjustment) }
+            ), ShowcaseNativeMountRegistration(
+                profileId: .iphoneFullUi,
+                pageRef: "section.controls",
+                surface: .wide,
+                mountRef: "control.adjustment",
+                mount: { environment in environment.componentValue(.controlAdjustment) }
+            ), ShowcaseNativeMountRegistration(
+                profileId: .watchosFullUi,
+                pageRef: "section.controls",
+                surface: .round,
+                mountRef: "control.adjustment",
+                mount: { environment in environment.componentValue(.controlAdjustment) }
+            )],
+            immutableInputs: [ShowcaseNativeInputRegistration(
+                consumerPortRef: "control.adjustment.catalog",
+                producerPortRef: "catalog.model",
+                contractRef: "showcase.catalog-presentation",
+                required: true,
+                read: { environment in environment.read(producerPortRef: "catalog.model") }
+            ), ShowcaseNativeInputRegistration(
+                consumerPortRef: "control.adjustment.navigation",
+                producerPortRef: "navigation.presentation.model",
+                contractRef: "showcase.navigation-presentation",
+                required: true,
+                read: { environment in environment.read(producerPortRef: "navigation.presentation.model") }
+            ), ShowcaseNativeInputRegistration(
+                consumerPortRef: "control.adjustment.renderer",
+                producerPortRef: "renderer.presentation.model",
+                contractRef: "showcase.renderer-presentation",
+                required: true,
+                read: { environment in environment.read(producerPortRef: "renderer.presentation.model") }
+            )],
+            eventEmitter: .typed([ShowcaseNativeEventBindingRegistration(
+                sourcePortRef: "control.adjustment.action",
+                targetPortRef: "renderer.controlAdjustment",
+                contractRef: "showcase.renderer-action",
+                emit: { environment, payload in
+                    environment.dispatch(sourcePortRef: "control.adjustment.action", payload: payload)
+                }
+            )])
         ),
         ShowcaseNativeComponentRegistration(
+            componentInstanceRef: .controlProgress,
             componentTypeRef: "control.progress",
-            rendererId: "ShowcaseComponentScreen",
-            profiles: [.iphoneFullUi, .watchosFullUi]
+            mounts: [ShowcaseNativeMountRegistration(
+                profileId: .iphoneFullUi,
+                pageRef: "section.controls",
+                surface: .compact,
+                mountRef: "control.progress",
+                mount: { environment in environment.componentValue(.controlProgress) }
+            ), ShowcaseNativeMountRegistration(
+                profileId: .iphoneFullUi,
+                pageRef: "section.controls",
+                surface: .wide,
+                mountRef: "control.progress",
+                mount: { environment in environment.componentValue(.controlProgress) }
+            ), ShowcaseNativeMountRegistration(
+                profileId: .watchosFullUi,
+                pageRef: "section.controls",
+                surface: .round,
+                mountRef: "control.progress",
+                mount: { environment in environment.componentValue(.controlProgress) }
+            )],
+            immutableInputs: [ShowcaseNativeInputRegistration(
+                consumerPortRef: "control.progress.catalog",
+                producerPortRef: "catalog.model",
+                contractRef: "showcase.catalog-presentation",
+                required: true,
+                read: { environment in environment.read(producerPortRef: "catalog.model") }
+            ), ShowcaseNativeInputRegistration(
+                consumerPortRef: "control.progress.navigation",
+                producerPortRef: "navigation.presentation.model",
+                contractRef: "showcase.navigation-presentation",
+                required: true,
+                read: { environment in environment.read(producerPortRef: "navigation.presentation.model") }
+            ), ShowcaseNativeInputRegistration(
+                consumerPortRef: "control.progress.renderer",
+                producerPortRef: "renderer.presentation.model",
+                contractRef: "showcase.renderer-presentation",
+                required: true,
+                read: { environment in environment.read(producerPortRef: "renderer.presentation.model") }
+            )],
+            eventEmitter: .typed([ShowcaseNativeEventBindingRegistration(
+                sourcePortRef: "control.progress.action",
+                targetPortRef: "renderer.controlProgress",
+                contractRef: "showcase.renderer-action",
+                emit: { environment, payload in
+                    environment.dispatch(sourcePortRef: "control.progress.action", payload: payload)
+                }
+            )])
         ),
         ShowcaseNativeComponentRegistration(
+            componentInstanceRef: .controlPressRing,
             componentTypeRef: "control.press-ring",
-            rendererId: "ShowcaseComponentScreen",
-            profiles: [.iphoneFullUi, .watchosFullUi]
+            mounts: [ShowcaseNativeMountRegistration(
+                profileId: .iphoneFullUi,
+                pageRef: "section.controls",
+                surface: .compact,
+                mountRef: "control.press-ring",
+                mount: { environment in environment.componentValue(.controlPressRing) }
+            ), ShowcaseNativeMountRegistration(
+                profileId: .iphoneFullUi,
+                pageRef: "section.controls",
+                surface: .wide,
+                mountRef: "control.press-ring",
+                mount: { environment in environment.componentValue(.controlPressRing) }
+            ), ShowcaseNativeMountRegistration(
+                profileId: .watchosFullUi,
+                pageRef: "section.controls",
+                surface: .round,
+                mountRef: "control.press-ring",
+                mount: { environment in environment.componentValue(.controlPressRing) }
+            )],
+            immutableInputs: [ShowcaseNativeInputRegistration(
+                consumerPortRef: "control.press-ring.catalog",
+                producerPortRef: "catalog.model",
+                contractRef: "showcase.catalog-presentation",
+                required: true,
+                read: { environment in environment.read(producerPortRef: "catalog.model") }
+            ), ShowcaseNativeInputRegistration(
+                consumerPortRef: "control.press-ring.navigation",
+                producerPortRef: "navigation.presentation.model",
+                contractRef: "showcase.navigation-presentation",
+                required: true,
+                read: { environment in environment.read(producerPortRef: "navigation.presentation.model") }
+            ), ShowcaseNativeInputRegistration(
+                consumerPortRef: "control.press-ring.renderer",
+                producerPortRef: "renderer.presentation.model",
+                contractRef: "showcase.renderer-presentation",
+                required: true,
+                read: { environment in environment.read(producerPortRef: "renderer.presentation.model") }
+            )],
+            eventEmitter: .typed([ShowcaseNativeEventBindingRegistration(
+                sourcePortRef: "control.press-ring.action",
+                targetPortRef: "renderer.controlPressRing",
+                contractRef: "showcase.renderer-action",
+                emit: { environment, payload in
+                    environment.dispatch(sourcePortRef: "control.press-ring.action", payload: payload)
+                }
+            )])
         ),
         ShowcaseNativeComponentRegistration(
+            componentInstanceRef: .inputText,
             componentTypeRef: "input.text",
-            rendererId: "ShowcaseComponentScreen",
-            profiles: [.iphoneFullUi, .watchosFullUi]
+            mounts: [ShowcaseNativeMountRegistration(
+                profileId: .iphoneFullUi,
+                pageRef: "section.input",
+                surface: .compact,
+                mountRef: "input.text",
+                mount: { environment in environment.componentValue(.inputText) }
+            ), ShowcaseNativeMountRegistration(
+                profileId: .iphoneFullUi,
+                pageRef: "section.input",
+                surface: .wide,
+                mountRef: "input.text",
+                mount: { environment in environment.componentValue(.inputText) }
+            ), ShowcaseNativeMountRegistration(
+                profileId: .watchosFullUi,
+                pageRef: "section.input",
+                surface: .round,
+                mountRef: "input.text",
+                mount: { environment in environment.componentValue(.inputText) }
+            )],
+            immutableInputs: [ShowcaseNativeInputRegistration(
+                consumerPortRef: "input.text.catalog",
+                producerPortRef: "catalog.model",
+                contractRef: "showcase.catalog-presentation",
+                required: true,
+                read: { environment in environment.read(producerPortRef: "catalog.model") }
+            ), ShowcaseNativeInputRegistration(
+                consumerPortRef: "input.text.navigation",
+                producerPortRef: "navigation.presentation.model",
+                contractRef: "showcase.navigation-presentation",
+                required: true,
+                read: { environment in environment.read(producerPortRef: "navigation.presentation.model") }
+            ), ShowcaseNativeInputRegistration(
+                consumerPortRef: "input.text.renderer",
+                producerPortRef: "renderer.presentation.model",
+                contractRef: "showcase.renderer-presentation",
+                required: true,
+                read: { environment in environment.read(producerPortRef: "renderer.presentation.model") }
+            )],
+            eventEmitter: .typed([ShowcaseNativeEventBindingRegistration(
+                sourcePortRef: "input.text.action",
+                targetPortRef: "renderer.inputText",
+                contractRef: "showcase.renderer-action",
+                emit: { environment, payload in
+                    environment.dispatch(sourcePortRef: "input.text.action", payload: payload)
+                }
+            )])
         ),
         ShowcaseNativeComponentRegistration(
+            componentInstanceRef: .mediaCapture,
             componentTypeRef: "media.capture",
-            rendererId: "ShowcaseComponentScreen",
-            profiles: [.iphoneFullUi, .watchosFullUi]
+            mounts: [ShowcaseNativeMountRegistration(
+                profileId: .iphoneFullUi,
+                pageRef: "section.media",
+                surface: .compact,
+                mountRef: "media.capture",
+                mount: { environment in environment.componentValue(.mediaCapture) }
+            ), ShowcaseNativeMountRegistration(
+                profileId: .iphoneFullUi,
+                pageRef: "section.media",
+                surface: .wide,
+                mountRef: "media.capture",
+                mount: { environment in environment.componentValue(.mediaCapture) }
+            ), ShowcaseNativeMountRegistration(
+                profileId: .watchosFullUi,
+                pageRef: "section.media",
+                surface: .round,
+                mountRef: "media.capture",
+                mount: { environment in environment.componentValue(.mediaCapture) }
+            )],
+            immutableInputs: [ShowcaseNativeInputRegistration(
+                consumerPortRef: "media.capture.catalog",
+                producerPortRef: "catalog.model",
+                contractRef: "showcase.catalog-presentation",
+                required: true,
+                read: { environment in environment.read(producerPortRef: "catalog.model") }
+            ), ShowcaseNativeInputRegistration(
+                consumerPortRef: "media.capture.navigation",
+                producerPortRef: "navigation.presentation.model",
+                contractRef: "showcase.navigation-presentation",
+                required: true,
+                read: { environment in environment.read(producerPortRef: "navigation.presentation.model") }
+            ), ShowcaseNativeInputRegistration(
+                consumerPortRef: "media.capture.renderer",
+                producerPortRef: "renderer.presentation.model",
+                contractRef: "showcase.renderer-presentation",
+                required: true,
+                read: { environment in environment.read(producerPortRef: "renderer.presentation.model") }
+            )],
+            eventEmitter: .typed([ShowcaseNativeEventBindingRegistration(
+                sourcePortRef: "media.capture.action",
+                targetPortRef: "renderer.mediaCapture",
+                contractRef: "showcase.renderer-action",
+                emit: { environment, payload in
+                    environment.dispatch(sourcePortRef: "media.capture.action", payload: payload)
+                }
+            )])
         ),
         ShowcaseNativeComponentRegistration(
+            componentInstanceRef: .mediaPlayback,
             componentTypeRef: "media.playback",
-            rendererId: "ShowcaseComponentScreen",
-            profiles: [.iphoneFullUi, .watchosFullUi]
+            mounts: [ShowcaseNativeMountRegistration(
+                profileId: .iphoneFullUi,
+                pageRef: "section.media",
+                surface: .compact,
+                mountRef: "media.playback",
+                mount: { environment in environment.componentValue(.mediaPlayback) }
+            ), ShowcaseNativeMountRegistration(
+                profileId: .iphoneFullUi,
+                pageRef: "section.media",
+                surface: .wide,
+                mountRef: "media.playback",
+                mount: { environment in environment.componentValue(.mediaPlayback) }
+            ), ShowcaseNativeMountRegistration(
+                profileId: .watchosFullUi,
+                pageRef: "section.media",
+                surface: .round,
+                mountRef: "media.playback",
+                mount: { environment in environment.componentValue(.mediaPlayback) }
+            )],
+            immutableInputs: [ShowcaseNativeInputRegistration(
+                consumerPortRef: "media.playback.catalog",
+                producerPortRef: "catalog.model",
+                contractRef: "showcase.catalog-presentation",
+                required: true,
+                read: { environment in environment.read(producerPortRef: "catalog.model") }
+            ), ShowcaseNativeInputRegistration(
+                consumerPortRef: "media.playback.navigation",
+                producerPortRef: "navigation.presentation.model",
+                contractRef: "showcase.navigation-presentation",
+                required: true,
+                read: { environment in environment.read(producerPortRef: "navigation.presentation.model") }
+            ), ShowcaseNativeInputRegistration(
+                consumerPortRef: "media.playback.renderer",
+                producerPortRef: "renderer.presentation.model",
+                contractRef: "showcase.renderer-presentation",
+                required: true,
+                read: { environment in environment.read(producerPortRef: "renderer.presentation.model") }
+            )],
+            eventEmitter: .typed([ShowcaseNativeEventBindingRegistration(
+                sourcePortRef: "media.playback.action",
+                targetPortRef: "renderer.mediaPlayback",
+                contractRef: "showcase.renderer-action",
+                emit: { environment, payload in
+                    environment.dispatch(sourcePortRef: "media.playback.action", payload: payload)
+                }
+            )])
         ),
         ShowcaseNativeComponentRegistration(
+            componentInstanceRef: .templateScreens,
             componentTypeRef: "template.screens",
-            rendererId: "ShowcaseComponentScreen",
-            profiles: [.iphoneFullUi, .watchosFullUi]
+            mounts: [ShowcaseNativeMountRegistration(
+                profileId: .iphoneFullUi,
+                pageRef: "section.templates",
+                surface: .compact,
+                mountRef: "template.screens",
+                mount: { environment in environment.componentValue(.templateScreens) }
+            ), ShowcaseNativeMountRegistration(
+                profileId: .iphoneFullUi,
+                pageRef: "section.templates",
+                surface: .wide,
+                mountRef: "template.screens",
+                mount: { environment in environment.componentValue(.templateScreens) }
+            ), ShowcaseNativeMountRegistration(
+                profileId: .watchosFullUi,
+                pageRef: "section.templates",
+                surface: .round,
+                mountRef: "template.screens",
+                mount: { environment in environment.componentValue(.templateScreens) }
+            )],
+            immutableInputs: [ShowcaseNativeInputRegistration(
+                consumerPortRef: "template.screens.catalog",
+                producerPortRef: "catalog.model",
+                contractRef: "showcase.catalog-presentation",
+                required: true,
+                read: { environment in environment.read(producerPortRef: "catalog.model") }
+            ), ShowcaseNativeInputRegistration(
+                consumerPortRef: "template.screens.navigation",
+                producerPortRef: "navigation.presentation.model",
+                contractRef: "showcase.navigation-presentation",
+                required: true,
+                read: { environment in environment.read(producerPortRef: "navigation.presentation.model") }
+            ), ShowcaseNativeInputRegistration(
+                consumerPortRef: "template.screens.renderer",
+                producerPortRef: "renderer.presentation.model",
+                contractRef: "showcase.renderer-presentation",
+                required: true,
+                read: { environment in environment.read(producerPortRef: "renderer.presentation.model") }
+            )],
+            eventEmitter: .typed([ShowcaseNativeEventBindingRegistration(
+                sourcePortRef: "template.screens.action",
+                targetPortRef: "renderer.templateScreens",
+                contractRef: "showcase.renderer-action",
+                emit: { environment, payload in
+                    environment.dispatch(sourcePortRef: "template.screens.action", payload: payload)
+                }
+            )])
         ),
         ShowcaseNativeComponentRegistration(
+            componentInstanceRef: .flowSource,
             componentTypeRef: "flow.source",
-            rendererId: "ShowcaseComponentScreen",
-            profiles: [.iphoneFullUi, .watchosFullUi]
+            mounts: [ShowcaseNativeMountRegistration(
+                profileId: .iphoneFullUi,
+                pageRef: "section.flows",
+                surface: .compact,
+                mountRef: "flow.source",
+                mount: { environment in environment.componentValue(.flowSource) }
+            ), ShowcaseNativeMountRegistration(
+                profileId: .iphoneFullUi,
+                pageRef: "section.flows",
+                surface: .wide,
+                mountRef: "flow.source",
+                mount: { environment in environment.componentValue(.flowSource) }
+            ), ShowcaseNativeMountRegistration(
+                profileId: .watchosFullUi,
+                pageRef: "section.flows",
+                surface: .round,
+                mountRef: "flow.source",
+                mount: { environment in environment.componentValue(.flowSource) }
+            )],
+            immutableInputs: [ShowcaseNativeInputRegistration(
+                consumerPortRef: "flow.source.catalog",
+                producerPortRef: "catalog.model",
+                contractRef: "showcase.catalog-presentation",
+                required: true,
+                read: { environment in environment.read(producerPortRef: "catalog.model") }
+            ), ShowcaseNativeInputRegistration(
+                consumerPortRef: "flow.source.navigation",
+                producerPortRef: "navigation.presentation.model",
+                contractRef: "showcase.navigation-presentation",
+                required: true,
+                read: { environment in environment.read(producerPortRef: "navigation.presentation.model") }
+            ), ShowcaseNativeInputRegistration(
+                consumerPortRef: "flow.source.renderer",
+                producerPortRef: "renderer.presentation.model",
+                contractRef: "showcase.renderer-presentation",
+                required: true,
+                read: { environment in environment.read(producerPortRef: "renderer.presentation.model") }
+            )],
+            eventEmitter: .typed([ShowcaseNativeEventBindingRegistration(
+                sourcePortRef: "flow.source.action",
+                targetPortRef: "renderer.flowSource",
+                contractRef: "showcase.renderer-action",
+                emit: { environment, payload in
+                    environment.dispatch(sourcePortRef: "flow.source.action", payload: payload)
+                }
+            )])
         ),
         ShowcaseNativeComponentRegistration(
+            componentInstanceRef: .flowUpdate,
             componentTypeRef: "flow.update",
-            rendererId: "ShowcaseComponentScreen",
-            profiles: [.iphoneFullUi, .watchosFullUi]
+            mounts: [ShowcaseNativeMountRegistration(
+                profileId: .iphoneFullUi,
+                pageRef: "section.flows",
+                surface: .compact,
+                mountRef: "flow.update",
+                mount: { environment in environment.componentValue(.flowUpdate) }
+            ), ShowcaseNativeMountRegistration(
+                profileId: .iphoneFullUi,
+                pageRef: "section.flows",
+                surface: .wide,
+                mountRef: "flow.update",
+                mount: { environment in environment.componentValue(.flowUpdate) }
+            ), ShowcaseNativeMountRegistration(
+                profileId: .watchosFullUi,
+                pageRef: "section.flows",
+                surface: .round,
+                mountRef: "flow.update",
+                mount: { environment in environment.componentValue(.flowUpdate) }
+            )],
+            immutableInputs: [ShowcaseNativeInputRegistration(
+                consumerPortRef: "flow.update.catalog",
+                producerPortRef: "catalog.model",
+                contractRef: "showcase.catalog-presentation",
+                required: true,
+                read: { environment in environment.read(producerPortRef: "catalog.model") }
+            ), ShowcaseNativeInputRegistration(
+                consumerPortRef: "flow.update.navigation",
+                producerPortRef: "navigation.presentation.model",
+                contractRef: "showcase.navigation-presentation",
+                required: true,
+                read: { environment in environment.read(producerPortRef: "navigation.presentation.model") }
+            ), ShowcaseNativeInputRegistration(
+                consumerPortRef: "flow.update.renderer",
+                producerPortRef: "renderer.presentation.model",
+                contractRef: "showcase.renderer-presentation",
+                required: true,
+                read: { environment in environment.read(producerPortRef: "renderer.presentation.model") }
+            )],
+            eventEmitter: .typed([ShowcaseNativeEventBindingRegistration(
+                sourcePortRef: "flow.update.action",
+                targetPortRef: "renderer.flowUpdate",
+                contractRef: "showcase.renderer-action",
+                emit: { environment, payload in
+                    environment.dispatch(sourcePortRef: "flow.update.action", payload: payload)
+                }
+            )])
         ),
         ShowcaseNativeComponentRegistration(
+            componentInstanceRef: .flowService,
             componentTypeRef: "flow.service",
-            rendererId: "ShowcaseComponentScreen",
-            profiles: [.iphoneFullUi, .watchosFullUi]
+            mounts: [ShowcaseNativeMountRegistration(
+                profileId: .iphoneFullUi,
+                pageRef: "section.flows",
+                surface: .compact,
+                mountRef: "flow.service",
+                mount: { environment in environment.componentValue(.flowService) }
+            ), ShowcaseNativeMountRegistration(
+                profileId: .iphoneFullUi,
+                pageRef: "section.flows",
+                surface: .wide,
+                mountRef: "flow.service",
+                mount: { environment in environment.componentValue(.flowService) }
+            ), ShowcaseNativeMountRegistration(
+                profileId: .watchosFullUi,
+                pageRef: "section.flows",
+                surface: .round,
+                mountRef: "flow.service",
+                mount: { environment in environment.componentValue(.flowService) }
+            )],
+            immutableInputs: [ShowcaseNativeInputRegistration(
+                consumerPortRef: "flow.service.catalog",
+                producerPortRef: "catalog.model",
+                contractRef: "showcase.catalog-presentation",
+                required: true,
+                read: { environment in environment.read(producerPortRef: "catalog.model") }
+            ), ShowcaseNativeInputRegistration(
+                consumerPortRef: "flow.service.navigation",
+                producerPortRef: "navigation.presentation.model",
+                contractRef: "showcase.navigation-presentation",
+                required: true,
+                read: { environment in environment.read(producerPortRef: "navigation.presentation.model") }
+            ), ShowcaseNativeInputRegistration(
+                consumerPortRef: "flow.service.renderer",
+                producerPortRef: "renderer.presentation.model",
+                contractRef: "showcase.renderer-presentation",
+                required: true,
+                read: { environment in environment.read(producerPortRef: "renderer.presentation.model") }
+            )],
+            eventEmitter: .typed([ShowcaseNativeEventBindingRegistration(
+                sourcePortRef: "flow.service.action",
+                targetPortRef: "renderer.flowService",
+                contractRef: "showcase.renderer-action",
+                emit: { environment, payload in
+                    environment.dispatch(sourcePortRef: "flow.service.action", payload: payload)
+                }
+            )])
         )
     ]
     static let portBindings: [ShowcasePortBinding] = [
         ShowcasePortBinding(kind: "component-event", from: .pageMenuRoute, to: .navigationRoute, purpose: "data"),
-        ShowcasePortBinding(kind: "component-event", from: .foundationColorsOpen, to: .navigationFoundationColors, purpose: "data"),
-        ShowcasePortBinding(kind: "component-event", from: .foundationGeometryOpen, to: .navigationFoundationGeometry, purpose: "data"),
-        ShowcasePortBinding(kind: "component-event", from: .atomIconActionOpen, to: .navigationAtomIconAction, purpose: "data"),
-        ShowcasePortBinding(kind: "component-event", from: .controlActionRowOpen, to: .navigationControlActionRow, purpose: "data"),
-        ShowcasePortBinding(kind: "component-event", from: .controlChoiceRowOpen, to: .navigationControlChoiceRow, purpose: "data"),
-        ShowcasePortBinding(kind: "component-event", from: .controlAdjustmentOpen, to: .navigationControlAdjustment, purpose: "data"),
-        ShowcasePortBinding(kind: "component-event", from: .controlProgressOpen, to: .navigationControlProgress, purpose: "data"),
-        ShowcasePortBinding(kind: "component-event", from: .controlPressRingOpen, to: .navigationControlPressRing, purpose: "data"),
-        ShowcasePortBinding(kind: "component-event", from: .inputTextOpen, to: .navigationInputText, purpose: "data"),
-        ShowcasePortBinding(kind: "component-event", from: .mediaCaptureOpen, to: .navigationMediaCapture, purpose: "data"),
-        ShowcasePortBinding(kind: "component-event", from: .mediaPlaybackOpen, to: .navigationMediaPlayback, purpose: "data"),
-        ShowcasePortBinding(kind: "component-event", from: .templateScreensOpen, to: .navigationTemplateScreens, purpose: "data"),
-        ShowcasePortBinding(kind: "component-event", from: .flowSourceOpen, to: .navigationFlowSource, purpose: "data"),
-        ShowcasePortBinding(kind: "component-event", from: .flowUpdateOpen, to: .navigationFlowUpdate, purpose: "data"),
-        ShowcasePortBinding(kind: "component-event", from: .flowServiceOpen, to: .navigationFlowService, purpose: "data"),
+        ShowcasePortBinding(kind: "component-event", from: .pageMenuFoundationColors, to: .navigationFoundationColors, purpose: "data"),
+        ShowcasePortBinding(kind: "component-event", from: .pageMenuFoundationGeometry, to: .navigationFoundationGeometry, purpose: "data"),
+        ShowcasePortBinding(kind: "component-event", from: .pageMenuAtomIconAction, to: .navigationAtomIconAction, purpose: "data"),
+        ShowcasePortBinding(kind: "component-event", from: .pageMenuControlActionRow, to: .navigationControlActionRow, purpose: "data"),
+        ShowcasePortBinding(kind: "component-event", from: .pageMenuControlChoiceRow, to: .navigationControlChoiceRow, purpose: "data"),
+        ShowcasePortBinding(kind: "component-event", from: .pageMenuControlAdjustment, to: .navigationControlAdjustment, purpose: "data"),
+        ShowcasePortBinding(kind: "component-event", from: .pageMenuControlProgress, to: .navigationControlProgress, purpose: "data"),
+        ShowcasePortBinding(kind: "component-event", from: .pageMenuControlPressRing, to: .navigationControlPressRing, purpose: "data"),
+        ShowcasePortBinding(kind: "component-event", from: .pageMenuInputText, to: .navigationInputText, purpose: "data"),
+        ShowcasePortBinding(kind: "component-event", from: .pageMenuMediaCapture, to: .navigationMediaCapture, purpose: "data"),
+        ShowcasePortBinding(kind: "component-event", from: .pageMenuMediaPlayback, to: .navigationMediaPlayback, purpose: "data"),
+        ShowcasePortBinding(kind: "component-event", from: .pageMenuTemplateScreens, to: .navigationTemplateScreens, purpose: "data"),
+        ShowcasePortBinding(kind: "component-event", from: .pageMenuFlowSource, to: .navigationFlowSource, purpose: "data"),
+        ShowcasePortBinding(kind: "component-event", from: .pageMenuFlowUpdate, to: .navigationFlowUpdate, purpose: "data"),
+        ShowcasePortBinding(kind: "component-event", from: .pageMenuFlowService, to: .navigationFlowService, purpose: "data"),
         ShowcasePortBinding(kind: "node-input", from: .navigationDestination, to: .navigationPresentationDestination, purpose: "data"),
+        ShowcasePortBinding(kind: "component-event", from: .atomIconActionAction, to: .rendererAtomIconAction, purpose: "data"),
+        ShowcasePortBinding(kind: "component-event", from: .controlActionRowAction, to: .rendererControlActionRow, purpose: "data"),
+        ShowcasePortBinding(kind: "component-event", from: .controlChoiceRowAction, to: .rendererControlChoiceRow, purpose: "data"),
+        ShowcasePortBinding(kind: "component-event", from: .controlAdjustmentAction, to: .rendererControlAdjustment, purpose: "data"),
+        ShowcasePortBinding(kind: "component-event", from: .controlProgressAction, to: .rendererControlProgress, purpose: "data"),
+        ShowcasePortBinding(kind: "component-event", from: .controlPressRingAction, to: .rendererControlPressRing, purpose: "data"),
+        ShowcasePortBinding(kind: "component-event", from: .inputTextAction, to: .rendererInputText, purpose: "data"),
+        ShowcasePortBinding(kind: "component-event", from: .mediaCaptureAction, to: .rendererMediaCapture, purpose: "data"),
+        ShowcasePortBinding(kind: "component-event", from: .mediaPlaybackAction, to: .rendererMediaPlayback, purpose: "data"),
+        ShowcasePortBinding(kind: "component-event", from: .templateScreensAction, to: .rendererTemplateScreens, purpose: "data"),
+        ShowcasePortBinding(kind: "component-event", from: .flowSourceAction, to: .rendererFlowSource, purpose: "data"),
+        ShowcasePortBinding(kind: "component-event", from: .flowUpdateAction, to: .rendererFlowUpdate, purpose: "data"),
+        ShowcasePortBinding(kind: "component-event", from: .flowServiceAction, to: .rendererFlowService, purpose: "data"),
+        ShowcasePortBinding(kind: "node-input", from: .rendererModel, to: .rendererPresentationModel, purpose: "data"),
         ShowcasePortBinding(kind: "component-input", from: .catalogModel, to: .foundationColorsCatalog, purpose: "data"),
         ShowcasePortBinding(kind: "component-input", from: .navigationPresentationModel, to: .foundationColorsNavigation, purpose: "data"),
         ShowcasePortBinding(kind: "component-input", from: .catalogModel, to: .foundationGeometryCatalog, purpose: "data"),
         ShowcasePortBinding(kind: "component-input", from: .navigationPresentationModel, to: .foundationGeometryNavigation, purpose: "data"),
         ShowcasePortBinding(kind: "component-input", from: .catalogModel, to: .atomIconActionCatalog, purpose: "data"),
         ShowcasePortBinding(kind: "component-input", from: .navigationPresentationModel, to: .atomIconActionNavigation, purpose: "data"),
+        ShowcasePortBinding(kind: "component-input", from: .rendererPresentationModel, to: .atomIconActionRenderer, purpose: "data"),
         ShowcasePortBinding(kind: "component-input", from: .catalogModel, to: .controlActionRowCatalog, purpose: "data"),
         ShowcasePortBinding(kind: "component-input", from: .navigationPresentationModel, to: .controlActionRowNavigation, purpose: "data"),
+        ShowcasePortBinding(kind: "component-input", from: .rendererPresentationModel, to: .controlActionRowRenderer, purpose: "data"),
         ShowcasePortBinding(kind: "component-input", from: .catalogModel, to: .controlChoiceRowCatalog, purpose: "data"),
         ShowcasePortBinding(kind: "component-input", from: .navigationPresentationModel, to: .controlChoiceRowNavigation, purpose: "data"),
+        ShowcasePortBinding(kind: "component-input", from: .rendererPresentationModel, to: .controlChoiceRowRenderer, purpose: "data"),
         ShowcasePortBinding(kind: "component-input", from: .catalogModel, to: .controlAdjustmentCatalog, purpose: "data"),
         ShowcasePortBinding(kind: "component-input", from: .navigationPresentationModel, to: .controlAdjustmentNavigation, purpose: "data"),
+        ShowcasePortBinding(kind: "component-input", from: .rendererPresentationModel, to: .controlAdjustmentRenderer, purpose: "data"),
         ShowcasePortBinding(kind: "component-input", from: .catalogModel, to: .controlProgressCatalog, purpose: "data"),
         ShowcasePortBinding(kind: "component-input", from: .navigationPresentationModel, to: .controlProgressNavigation, purpose: "data"),
+        ShowcasePortBinding(kind: "component-input", from: .rendererPresentationModel, to: .controlProgressRenderer, purpose: "data"),
         ShowcasePortBinding(kind: "component-input", from: .catalogModel, to: .controlPressRingCatalog, purpose: "data"),
         ShowcasePortBinding(kind: "component-input", from: .navigationPresentationModel, to: .controlPressRingNavigation, purpose: "data"),
+        ShowcasePortBinding(kind: "component-input", from: .rendererPresentationModel, to: .controlPressRingRenderer, purpose: "data"),
         ShowcasePortBinding(kind: "component-input", from: .catalogModel, to: .inputTextCatalog, purpose: "data"),
         ShowcasePortBinding(kind: "component-input", from: .navigationPresentationModel, to: .inputTextNavigation, purpose: "data"),
+        ShowcasePortBinding(kind: "component-input", from: .rendererPresentationModel, to: .inputTextRenderer, purpose: "data"),
         ShowcasePortBinding(kind: "component-input", from: .catalogModel, to: .mediaCaptureCatalog, purpose: "data"),
         ShowcasePortBinding(kind: "component-input", from: .navigationPresentationModel, to: .mediaCaptureNavigation, purpose: "data"),
+        ShowcasePortBinding(kind: "component-input", from: .rendererPresentationModel, to: .mediaCaptureRenderer, purpose: "data"),
         ShowcasePortBinding(kind: "component-input", from: .catalogModel, to: .mediaPlaybackCatalog, purpose: "data"),
         ShowcasePortBinding(kind: "component-input", from: .navigationPresentationModel, to: .mediaPlaybackNavigation, purpose: "data"),
+        ShowcasePortBinding(kind: "component-input", from: .rendererPresentationModel, to: .mediaPlaybackRenderer, purpose: "data"),
         ShowcasePortBinding(kind: "component-input", from: .catalogModel, to: .templateScreensCatalog, purpose: "data"),
         ShowcasePortBinding(kind: "component-input", from: .navigationPresentationModel, to: .templateScreensNavigation, purpose: "data"),
+        ShowcasePortBinding(kind: "component-input", from: .rendererPresentationModel, to: .templateScreensRenderer, purpose: "data"),
         ShowcasePortBinding(kind: "component-input", from: .catalogModel, to: .flowSourceCatalog, purpose: "data"),
         ShowcasePortBinding(kind: "component-input", from: .navigationPresentationModel, to: .flowSourceNavigation, purpose: "data"),
+        ShowcasePortBinding(kind: "component-input", from: .rendererPresentationModel, to: .flowSourceRenderer, purpose: "data"),
         ShowcasePortBinding(kind: "component-input", from: .catalogModel, to: .flowUpdateCatalog, purpose: "data"),
         ShowcasePortBinding(kind: "component-input", from: .navigationPresentationModel, to: .flowUpdateNavigation, purpose: "data"),
+        ShowcasePortBinding(kind: "component-input", from: .rendererPresentationModel, to: .flowUpdateRenderer, purpose: "data"),
         ShowcasePortBinding(kind: "component-input", from: .catalogModel, to: .flowServiceCatalog, purpose: "data"),
         ShowcasePortBinding(kind: "component-input", from: .navigationPresentationModel, to: .flowServiceNavigation, purpose: "data"),
+        ShowcasePortBinding(kind: "component-input", from: .rendererPresentationModel, to: .flowServiceRenderer, purpose: "data"),
         ShowcasePortBinding(kind: "component-input", from: .navigationActivePage, to: .pageHostActivePage, purpose: "data")
     ]
     static let navigationArtifacts: [ShowcaseNavigationArtifact] = [
@@ -930,163 +2056,143 @@ enum GeneratedShowcaseProduct {
     static let navigationActionGroups: [ShowcaseNavigationActionGroup] = [
         ShowcaseNavigationActionGroup(
             artifactId: .iphoneFullUi,
-            componentId: .foundationColors,
-            actions: [ShowcaseNavigationAction(sourcePortRef: .foundationColorsOpen, targetPortRef: .navigationFoundationColors, effect: "dispatch")]
-        ),
-        ShowcaseNavigationActionGroup(
-            artifactId: .watchosFullUi,
-            componentId: .foundationColors,
-            actions: [ShowcaseNavigationAction(sourcePortRef: .foundationColorsOpen, targetPortRef: .navigationFoundationColors, effect: "dispatch")]
-        ),
-        ShowcaseNavigationActionGroup(
-            artifactId: .iphoneFullUi,
-            componentId: .foundationGeometry,
-            actions: [ShowcaseNavigationAction(sourcePortRef: .foundationGeometryOpen, targetPortRef: .navigationFoundationGeometry, effect: "dispatch")]
-        ),
-        ShowcaseNavigationActionGroup(
-            artifactId: .watchosFullUi,
-            componentId: .foundationGeometry,
-            actions: [ShowcaseNavigationAction(sourcePortRef: .foundationGeometryOpen, targetPortRef: .navigationFoundationGeometry, effect: "dispatch")]
+            componentId: .pageMenu,
+            actions: [ShowcaseNavigationAction(sourcePortRef: .pageMenuFoundationColors, targetPortRef: .navigationFoundationColors, effect: "dispatch"), ShowcaseNavigationAction(sourcePortRef: .pageMenuFoundationGeometry, targetPortRef: .navigationFoundationGeometry, effect: "dispatch"), ShowcaseNavigationAction(sourcePortRef: .pageMenuAtomIconAction, targetPortRef: .navigationAtomIconAction, effect: "dispatch"), ShowcaseNavigationAction(sourcePortRef: .pageMenuControlActionRow, targetPortRef: .navigationControlActionRow, effect: "dispatch"), ShowcaseNavigationAction(sourcePortRef: .pageMenuControlChoiceRow, targetPortRef: .navigationControlChoiceRow, effect: "dispatch"), ShowcaseNavigationAction(sourcePortRef: .pageMenuControlAdjustment, targetPortRef: .navigationControlAdjustment, effect: "dispatch"), ShowcaseNavigationAction(sourcePortRef: .pageMenuControlProgress, targetPortRef: .navigationControlProgress, effect: "dispatch"), ShowcaseNavigationAction(sourcePortRef: .pageMenuControlPressRing, targetPortRef: .navigationControlPressRing, effect: "dispatch"), ShowcaseNavigationAction(sourcePortRef: .pageMenuInputText, targetPortRef: .navigationInputText, effect: "dispatch"), ShowcaseNavigationAction(sourcePortRef: .pageMenuMediaCapture, targetPortRef: .navigationMediaCapture, effect: "dispatch"), ShowcaseNavigationAction(sourcePortRef: .pageMenuMediaPlayback, targetPortRef: .navigationMediaPlayback, effect: "dispatch"), ShowcaseNavigationAction(sourcePortRef: .pageMenuTemplateScreens, targetPortRef: .navigationTemplateScreens, effect: "dispatch"), ShowcaseNavigationAction(sourcePortRef: .pageMenuFlowSource, targetPortRef: .navigationFlowSource, effect: "dispatch"), ShowcaseNavigationAction(sourcePortRef: .pageMenuFlowUpdate, targetPortRef: .navigationFlowUpdate, effect: "dispatch"), ShowcaseNavigationAction(sourcePortRef: .pageMenuFlowService, targetPortRef: .navigationFlowService, effect: "dispatch"), ShowcaseNavigationAction(sourcePortRef: .pageMenuRoute, targetPortRef: .navigationRoute, effect: "push")]
         ),
         ShowcaseNavigationActionGroup(
             artifactId: .iphoneFullUi,
             componentId: .atomIconAction,
-            actions: [ShowcaseNavigationAction(sourcePortRef: .atomIconActionOpen, targetPortRef: .navigationAtomIconAction, effect: "dispatch")]
+            actions: [ShowcaseNavigationAction(sourcePortRef: .atomIconActionAction, targetPortRef: .rendererAtomIconAction, effect: "dispatch")]
+        ),
+        ShowcaseNavigationActionGroup(
+            artifactId: .iphoneFullUi,
+            componentId: .controlActionRow,
+            actions: [ShowcaseNavigationAction(sourcePortRef: .controlActionRowAction, targetPortRef: .rendererControlActionRow, effect: "dispatch")]
+        ),
+        ShowcaseNavigationActionGroup(
+            artifactId: .iphoneFullUi,
+            componentId: .controlChoiceRow,
+            actions: [ShowcaseNavigationAction(sourcePortRef: .controlChoiceRowAction, targetPortRef: .rendererControlChoiceRow, effect: "dispatch")]
+        ),
+        ShowcaseNavigationActionGroup(
+            artifactId: .iphoneFullUi,
+            componentId: .controlAdjustment,
+            actions: [ShowcaseNavigationAction(sourcePortRef: .controlAdjustmentAction, targetPortRef: .rendererControlAdjustment, effect: "dispatch")]
+        ),
+        ShowcaseNavigationActionGroup(
+            artifactId: .iphoneFullUi,
+            componentId: .controlProgress,
+            actions: [ShowcaseNavigationAction(sourcePortRef: .controlProgressAction, targetPortRef: .rendererControlProgress, effect: "dispatch")]
+        ),
+        ShowcaseNavigationActionGroup(
+            artifactId: .iphoneFullUi,
+            componentId: .controlPressRing,
+            actions: [ShowcaseNavigationAction(sourcePortRef: .controlPressRingAction, targetPortRef: .rendererControlPressRing, effect: "dispatch")]
+        ),
+        ShowcaseNavigationActionGroup(
+            artifactId: .iphoneFullUi,
+            componentId: .inputText,
+            actions: [ShowcaseNavigationAction(sourcePortRef: .inputTextAction, targetPortRef: .rendererInputText, effect: "dispatch")]
+        ),
+        ShowcaseNavigationActionGroup(
+            artifactId: .iphoneFullUi,
+            componentId: .mediaCapture,
+            actions: [ShowcaseNavigationAction(sourcePortRef: .mediaCaptureAction, targetPortRef: .rendererMediaCapture, effect: "dispatch")]
+        ),
+        ShowcaseNavigationActionGroup(
+            artifactId: .iphoneFullUi,
+            componentId: .mediaPlayback,
+            actions: [ShowcaseNavigationAction(sourcePortRef: .mediaPlaybackAction, targetPortRef: .rendererMediaPlayback, effect: "dispatch")]
+        ),
+        ShowcaseNavigationActionGroup(
+            artifactId: .iphoneFullUi,
+            componentId: .templateScreens,
+            actions: [ShowcaseNavigationAction(sourcePortRef: .templateScreensAction, targetPortRef: .rendererTemplateScreens, effect: "dispatch")]
+        ),
+        ShowcaseNavigationActionGroup(
+            artifactId: .iphoneFullUi,
+            componentId: .flowSource,
+            actions: [ShowcaseNavigationAction(sourcePortRef: .flowSourceAction, targetPortRef: .rendererFlowSource, effect: "dispatch")]
+        ),
+        ShowcaseNavigationActionGroup(
+            artifactId: .iphoneFullUi,
+            componentId: .flowUpdate,
+            actions: [ShowcaseNavigationAction(sourcePortRef: .flowUpdateAction, targetPortRef: .rendererFlowUpdate, effect: "dispatch")]
+        ),
+        ShowcaseNavigationActionGroup(
+            artifactId: .iphoneFullUi,
+            componentId: .flowService,
+            actions: [ShowcaseNavigationAction(sourcePortRef: .flowServiceAction, targetPortRef: .rendererFlowService, effect: "dispatch")]
+        ),
+        ShowcaseNavigationActionGroup(
+            artifactId: .watchosFullUi,
+            componentId: .pageMenu,
+            actions: [ShowcaseNavigationAction(sourcePortRef: .pageMenuFoundationColors, targetPortRef: .navigationFoundationColors, effect: "dispatch"), ShowcaseNavigationAction(sourcePortRef: .pageMenuFoundationGeometry, targetPortRef: .navigationFoundationGeometry, effect: "dispatch"), ShowcaseNavigationAction(sourcePortRef: .pageMenuAtomIconAction, targetPortRef: .navigationAtomIconAction, effect: "dispatch"), ShowcaseNavigationAction(sourcePortRef: .pageMenuControlActionRow, targetPortRef: .navigationControlActionRow, effect: "dispatch"), ShowcaseNavigationAction(sourcePortRef: .pageMenuControlChoiceRow, targetPortRef: .navigationControlChoiceRow, effect: "dispatch"), ShowcaseNavigationAction(sourcePortRef: .pageMenuControlAdjustment, targetPortRef: .navigationControlAdjustment, effect: "dispatch"), ShowcaseNavigationAction(sourcePortRef: .pageMenuControlProgress, targetPortRef: .navigationControlProgress, effect: "dispatch"), ShowcaseNavigationAction(sourcePortRef: .pageMenuControlPressRing, targetPortRef: .navigationControlPressRing, effect: "dispatch"), ShowcaseNavigationAction(sourcePortRef: .pageMenuInputText, targetPortRef: .navigationInputText, effect: "dispatch"), ShowcaseNavigationAction(sourcePortRef: .pageMenuMediaCapture, targetPortRef: .navigationMediaCapture, effect: "dispatch"), ShowcaseNavigationAction(sourcePortRef: .pageMenuMediaPlayback, targetPortRef: .navigationMediaPlayback, effect: "dispatch"), ShowcaseNavigationAction(sourcePortRef: .pageMenuTemplateScreens, targetPortRef: .navigationTemplateScreens, effect: "dispatch"), ShowcaseNavigationAction(sourcePortRef: .pageMenuFlowSource, targetPortRef: .navigationFlowSource, effect: "dispatch"), ShowcaseNavigationAction(sourcePortRef: .pageMenuFlowUpdate, targetPortRef: .navigationFlowUpdate, effect: "dispatch"), ShowcaseNavigationAction(sourcePortRef: .pageMenuFlowService, targetPortRef: .navigationFlowService, effect: "dispatch"), ShowcaseNavigationAction(sourcePortRef: .pageMenuRoute, targetPortRef: .navigationRoute, effect: "push")]
         ),
         ShowcaseNavigationActionGroup(
             artifactId: .watchosFullUi,
             componentId: .atomIconAction,
-            actions: [ShowcaseNavigationAction(sourcePortRef: .atomIconActionOpen, targetPortRef: .navigationAtomIconAction, effect: "dispatch")]
-        ),
-        ShowcaseNavigationActionGroup(
-            artifactId: .iphoneFullUi,
-            componentId: .controlActionRow,
-            actions: [ShowcaseNavigationAction(sourcePortRef: .controlActionRowOpen, targetPortRef: .navigationControlActionRow, effect: "dispatch")]
+            actions: [ShowcaseNavigationAction(sourcePortRef: .atomIconActionAction, targetPortRef: .rendererAtomIconAction, effect: "dispatch")]
         ),
         ShowcaseNavigationActionGroup(
             artifactId: .watchosFullUi,
             componentId: .controlActionRow,
-            actions: [ShowcaseNavigationAction(sourcePortRef: .controlActionRowOpen, targetPortRef: .navigationControlActionRow, effect: "dispatch")]
-        ),
-        ShowcaseNavigationActionGroup(
-            artifactId: .iphoneFullUi,
-            componentId: .controlChoiceRow,
-            actions: [ShowcaseNavigationAction(sourcePortRef: .controlChoiceRowOpen, targetPortRef: .navigationControlChoiceRow, effect: "dispatch")]
+            actions: [ShowcaseNavigationAction(sourcePortRef: .controlActionRowAction, targetPortRef: .rendererControlActionRow, effect: "dispatch")]
         ),
         ShowcaseNavigationActionGroup(
             artifactId: .watchosFullUi,
             componentId: .controlChoiceRow,
-            actions: [ShowcaseNavigationAction(sourcePortRef: .controlChoiceRowOpen, targetPortRef: .navigationControlChoiceRow, effect: "dispatch")]
-        ),
-        ShowcaseNavigationActionGroup(
-            artifactId: .iphoneFullUi,
-            componentId: .controlAdjustment,
-            actions: [ShowcaseNavigationAction(sourcePortRef: .controlAdjustmentOpen, targetPortRef: .navigationControlAdjustment, effect: "dispatch")]
+            actions: [ShowcaseNavigationAction(sourcePortRef: .controlChoiceRowAction, targetPortRef: .rendererControlChoiceRow, effect: "dispatch")]
         ),
         ShowcaseNavigationActionGroup(
             artifactId: .watchosFullUi,
             componentId: .controlAdjustment,
-            actions: [ShowcaseNavigationAction(sourcePortRef: .controlAdjustmentOpen, targetPortRef: .navigationControlAdjustment, effect: "dispatch")]
-        ),
-        ShowcaseNavigationActionGroup(
-            artifactId: .iphoneFullUi,
-            componentId: .controlProgress,
-            actions: [ShowcaseNavigationAction(sourcePortRef: .controlProgressOpen, targetPortRef: .navigationControlProgress, effect: "dispatch")]
+            actions: [ShowcaseNavigationAction(sourcePortRef: .controlAdjustmentAction, targetPortRef: .rendererControlAdjustment, effect: "dispatch")]
         ),
         ShowcaseNavigationActionGroup(
             artifactId: .watchosFullUi,
             componentId: .controlProgress,
-            actions: [ShowcaseNavigationAction(sourcePortRef: .controlProgressOpen, targetPortRef: .navigationControlProgress, effect: "dispatch")]
-        ),
-        ShowcaseNavigationActionGroup(
-            artifactId: .iphoneFullUi,
-            componentId: .controlPressRing,
-            actions: [ShowcaseNavigationAction(sourcePortRef: .controlPressRingOpen, targetPortRef: .navigationControlPressRing, effect: "dispatch")]
+            actions: [ShowcaseNavigationAction(sourcePortRef: .controlProgressAction, targetPortRef: .rendererControlProgress, effect: "dispatch")]
         ),
         ShowcaseNavigationActionGroup(
             artifactId: .watchosFullUi,
             componentId: .controlPressRing,
-            actions: [ShowcaseNavigationAction(sourcePortRef: .controlPressRingOpen, targetPortRef: .navigationControlPressRing, effect: "dispatch")]
-        ),
-        ShowcaseNavigationActionGroup(
-            artifactId: .iphoneFullUi,
-            componentId: .inputText,
-            actions: [ShowcaseNavigationAction(sourcePortRef: .inputTextOpen, targetPortRef: .navigationInputText, effect: "dispatch")]
+            actions: [ShowcaseNavigationAction(sourcePortRef: .controlPressRingAction, targetPortRef: .rendererControlPressRing, effect: "dispatch")]
         ),
         ShowcaseNavigationActionGroup(
             artifactId: .watchosFullUi,
             componentId: .inputText,
-            actions: [ShowcaseNavigationAction(sourcePortRef: .inputTextOpen, targetPortRef: .navigationInputText, effect: "dispatch")]
-        ),
-        ShowcaseNavigationActionGroup(
-            artifactId: .iphoneFullUi,
-            componentId: .mediaCapture,
-            actions: [ShowcaseNavigationAction(sourcePortRef: .mediaCaptureOpen, targetPortRef: .navigationMediaCapture, effect: "dispatch")]
+            actions: [ShowcaseNavigationAction(sourcePortRef: .inputTextAction, targetPortRef: .rendererInputText, effect: "dispatch")]
         ),
         ShowcaseNavigationActionGroup(
             artifactId: .watchosFullUi,
             componentId: .mediaCapture,
-            actions: [ShowcaseNavigationAction(sourcePortRef: .mediaCaptureOpen, targetPortRef: .navigationMediaCapture, effect: "dispatch")]
-        ),
-        ShowcaseNavigationActionGroup(
-            artifactId: .iphoneFullUi,
-            componentId: .mediaPlayback,
-            actions: [ShowcaseNavigationAction(sourcePortRef: .mediaPlaybackOpen, targetPortRef: .navigationMediaPlayback, effect: "dispatch")]
+            actions: [ShowcaseNavigationAction(sourcePortRef: .mediaCaptureAction, targetPortRef: .rendererMediaCapture, effect: "dispatch")]
         ),
         ShowcaseNavigationActionGroup(
             artifactId: .watchosFullUi,
             componentId: .mediaPlayback,
-            actions: [ShowcaseNavigationAction(sourcePortRef: .mediaPlaybackOpen, targetPortRef: .navigationMediaPlayback, effect: "dispatch")]
-        ),
-        ShowcaseNavigationActionGroup(
-            artifactId: .iphoneFullUi,
-            componentId: .templateScreens,
-            actions: [ShowcaseNavigationAction(sourcePortRef: .templateScreensOpen, targetPortRef: .navigationTemplateScreens, effect: "dispatch")]
+            actions: [ShowcaseNavigationAction(sourcePortRef: .mediaPlaybackAction, targetPortRef: .rendererMediaPlayback, effect: "dispatch")]
         ),
         ShowcaseNavigationActionGroup(
             artifactId: .watchosFullUi,
             componentId: .templateScreens,
-            actions: [ShowcaseNavigationAction(sourcePortRef: .templateScreensOpen, targetPortRef: .navigationTemplateScreens, effect: "dispatch")]
-        ),
-        ShowcaseNavigationActionGroup(
-            artifactId: .iphoneFullUi,
-            componentId: .flowSource,
-            actions: [ShowcaseNavigationAction(sourcePortRef: .flowSourceOpen, targetPortRef: .navigationFlowSource, effect: "dispatch")]
+            actions: [ShowcaseNavigationAction(sourcePortRef: .templateScreensAction, targetPortRef: .rendererTemplateScreens, effect: "dispatch")]
         ),
         ShowcaseNavigationActionGroup(
             artifactId: .watchosFullUi,
             componentId: .flowSource,
-            actions: [ShowcaseNavigationAction(sourcePortRef: .flowSourceOpen, targetPortRef: .navigationFlowSource, effect: "dispatch")]
-        ),
-        ShowcaseNavigationActionGroup(
-            artifactId: .iphoneFullUi,
-            componentId: .flowUpdate,
-            actions: [ShowcaseNavigationAction(sourcePortRef: .flowUpdateOpen, targetPortRef: .navigationFlowUpdate, effect: "dispatch")]
+            actions: [ShowcaseNavigationAction(sourcePortRef: .flowSourceAction, targetPortRef: .rendererFlowSource, effect: "dispatch")]
         ),
         ShowcaseNavigationActionGroup(
             artifactId: .watchosFullUi,
             componentId: .flowUpdate,
-            actions: [ShowcaseNavigationAction(sourcePortRef: .flowUpdateOpen, targetPortRef: .navigationFlowUpdate, effect: "dispatch")]
-        ),
-        ShowcaseNavigationActionGroup(
-            artifactId: .iphoneFullUi,
-            componentId: .flowService,
-            actions: [ShowcaseNavigationAction(sourcePortRef: .flowServiceOpen, targetPortRef: .navigationFlowService, effect: "dispatch")]
+            actions: [ShowcaseNavigationAction(sourcePortRef: .flowUpdateAction, targetPortRef: .rendererFlowUpdate, effect: "dispatch")]
         ),
         ShowcaseNavigationActionGroup(
             artifactId: .watchosFullUi,
             componentId: .flowService,
-            actions: [ShowcaseNavigationAction(sourcePortRef: .flowServiceOpen, targetPortRef: .navigationFlowService, effect: "dispatch")]
-        ),
-        ShowcaseNavigationActionGroup(
-            artifactId: .iphoneFullUi,
-            componentId: .pageMenu,
-            actions: [ShowcaseNavigationAction(sourcePortRef: .pageMenuRoute, targetPortRef: .navigationRoute, effect: "push")]
-        ),
-        ShowcaseNavigationActionGroup(
-            artifactId: .watchosFullUi,
-            componentId: .pageMenu,
-            actions: [ShowcaseNavigationAction(sourcePortRef: .pageMenuRoute, targetPortRef: .navigationRoute, effect: "push")]
+            actions: [ShowcaseNavigationAction(sourcePortRef: .flowServiceAction, targetPortRef: .rendererFlowService, effect: "dispatch")]
         )
     ]
 }

@@ -269,12 +269,22 @@ function emitSwift(
       entryPageRef: artifact.entryScreen,
       pageRefs: artifact.screenRefs,
     })),
-    product.showcase.cases.map(({ openPort }) => ({
-      artifactRefs: profiles,
-      componentInstanceRef: "page.menu",
-      sourcePortRef: `page.menu.${openPort}`,
-      targetPortRef: `navigation.${openPort}`,
-    })),
+    [
+      ...product.showcase.cases.map(({ openPort }) => ({
+        artifactRefs: profiles,
+        componentInstanceRef: "page.menu",
+        sourcePortRef: `page.menu.${openPort}`,
+        targetPortRef: `navigation.${openPort}`,
+      })),
+      ...componentBindings
+        .filter(({ component }) => component.id !== "foundation.colors" && component.id !== "foundation.geometry")
+        .map(({ component, profiles: artifactRefs }) => ({
+          artifactRefs,
+          componentInstanceRef: component.id,
+          sourcePortRef: `${component.id}.action`,
+          targetPortRef: `renderer.${component.openPort}`,
+        })),
+    ],
   );
   const nativeNavigation = nativeNavigationManifest(swiftNavigationRegistration)!;
   const manifest = {

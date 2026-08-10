@@ -86,19 +86,19 @@ function nativeHosts(
 test("one compiled ProductSpec owns Android, Apple and Garmin Showcase structure", async () => {
   const android = await registry();
   const version = await productSpecVersion();
-  assert.equal(version, "0.3.47");
+  assert.equal(version, "0.3.48");
   const product = compileCircleKitShowcaseProduct(version);
   // Read from the package rather than pinned to a literal: a hardcoded number goes
   // stale on every schema bump and only ever proves which version was current the
   // day the test was written.
   assert.equal(product.schemaVersion, PRODUCT_SPEC_SCHEMA_VERSION);
-  assert.equal(product.schemaVersion, 9);
+  assert.equal(product.schemaVersion, 10);
   assert.deepEqual(product.stateAuthorities, []);
   assert.deepEqual(product.artifacts.map(({ id }) => id), SHOWCASE_ARTIFACT_PROFILES);
   assert.equal(product.showcase.sections.length, 7);
   assert.equal(product.showcase.cases.length, 15);
-  assert.deepEqual(product.nodeTypes.map(({ kind }) => kind), ["present", "service", "present"]);
-  assert.equal(product.nodes.length, 3);
+  assert.deepEqual(product.nodeTypes.map(({ kind }) => kind), ["present", "service", "present", "service", "present"]);
+  assert.equal(product.nodes.length, 5);
   assert.equal(product.componentTypes.length, product.showcase.cases.length + 2);
   assert.equal(product.components.length, product.showcase.cases.length + 2);
   assert.equal(product.componentFamilies.length, product.showcase.sections.length + 1);
@@ -125,9 +125,18 @@ test("one compiled ProductSpec owns Android, Apple and Garmin Showcase structure
       "garmin-limited-ui": 1,
     },
   );
-  assert.equal(product.portRegistry.nodePorts.length, 21);
-  assert.equal(product.portRegistry.componentPorts.length, 47);
-  assert.equal(product.portRegistry.bindings.length, 48);
+  assert.equal(product.portRegistry.nodePorts.length, 37);
+  assert.equal(product.portRegistry.componentPorts.length, 73);
+  assert.equal(product.portRegistry.bindings.length, 75);
+  assert.equal(product.componentRenderContracts.length, 17);
+  for (const componentId of ["foundation.colors", "foundation.geometry"]) {
+    const contract = product.componentRenderContracts.find(({ componentInstanceRef }) =>
+      componentInstanceRef === componentId);
+    assert.deepEqual(contract?.events, []);
+    assert.equal(contract?.inputs.length, 2);
+  }
+  assert.equal(product.componentRenderContracts.find(({ componentInstanceRef }) =>
+    componentInstanceRef === "atom.icon-action")?.events.length, 1);
   assert.equal(product.portRegistry.demandEdges.length, 0);
   assert.equal(product.navigation.activePagePortRef, "navigation.activePage");
   assert.equal(product.navigation.pageHostPortRef, "page.host.activePage");
@@ -141,18 +150,24 @@ test("one compiled ProductSpec owns Android, Apple and Garmin Showcase structure
       })),
     ],
   });
-  assert.deepEqual(product.navigation.actionGroups.find(({ componentInstanceRef }) =>
-    componentInstanceRef === "page.menu")?.actions.map(({ sourcePortRef, targetPortRef, effect }) => ({
-      sourcePortRef, targetPortRef, effect,
-    })), [{ sourcePortRef: "page.menu.route", targetPortRef: "navigation.route", effect: "push" }]);
-  assert.deepEqual(product.navigation.actionGroups.find(({ componentInstanceRef }) =>
-    componentInstanceRef === "foundation.colors")?.actions.map(({ sourcePortRef, targetPortRef, effect }) => ({
-      sourcePortRef, targetPortRef, effect,
-    })), [{
-    sourcePortRef: "foundation.colors.open",
+  const pageMenuActions = product.navigation.actionGroups.find(({ componentInstanceRef }) =>
+    componentInstanceRef === "page.menu")?.actions;
+  assert.equal(pageMenuActions?.length, 16);
+  const actionShape = (action: NonNullable<typeof pageMenuActions>[number] | undefined) => action === undefined
+    ? undefined
+    : { sourcePortRef: action.sourcePortRef, targetPortRef: action.targetPortRef, effect: action.effect };
+  assert.deepEqual(actionShape(pageMenuActions?.find(({ sourcePortRef }) => sourcePortRef === "page.menu.route")), {
+    sourcePortRef: "page.menu.route",
+    targetPortRef: "navigation.route",
+    effect: "push",
+  });
+  assert.deepEqual(actionShape(pageMenuActions?.find(({ sourcePortRef }) => sourcePortRef === "page.menu.foundationColors")), {
+    sourcePortRef: "page.menu.foundationColors",
     targetPortRef: "navigation.foundationColors",
     effect: "dispatch",
-  }]);
+  });
+  assert.equal(product.navigation.actionGroups.some(({ componentInstanceRef }) =>
+    componentInstanceRef === "foundation.colors"), false);
 
   const first = buildOutputManifest(product, [
     productJsonEmitter("generated/showcase-product.json"),
@@ -190,6 +205,9 @@ test("one compiled ProductSpec owns Android, Apple and Garmin Showcase structure
   assert.match(swiftGenerated, /static let navigationArtifacts:/u);
   assert.match(swiftGenerated, /effect: "dispatch"/u);
   assert.match(swiftGenerated, /effect: "push"/u);
+  assert.match(swiftGenerated, /mount: \{ environment in environment\.componentValue/u);
+  assert.match(swiftGenerated, /read: \{ environment in environment\.read/u);
+  assert.match(swiftGenerated, /environment\.dispatch\(sourcePortRef:/u);
   const garminGenerated = output("showcase-garmin-limited-ui").content;
   for (const node of garminRegistry.nodes) {
     assert.match(garminGenerated, new RegExp(`"nativePortId" => "${node.nativePortId.replaceAll(".", "\\.")}"`, "u"));
@@ -199,6 +217,9 @@ test("one compiled ProductSpec owns Android, Apple and Garmin Showcase structure
   }
   assert.match(garminGenerated, /NATIVE_NAVIGATION_ARTIFACTS/u);
   assert.match(garminGenerated, /"effect" => "dispatch"/u);
+  assert.match(garminGenerated, /"mount" => method\(:mountProgress\)/u);
+  assert.match(garminGenerated, /"read" => method\(:rendererModel\)/u);
+  assert.match(garminGenerated, /"emit" => method\(:emitProgressAction\)/u);
 
   const swift = swiftEmitter();
   const swiftSource = swift.emit(product)[0]!.content;
@@ -231,13 +252,28 @@ test("native component, profile and icon drift stops before emission", async () 
   assert.throws(() => validateAndroid({
     ...actual,
     components: actual.components.slice(1),
-  }), /\[component\/missing\].*foundation\.colors@phone-full-ui/);
+  }), /\[component-render\/missing\].*foundation\.colors/);
   assert.throws(() => validateAndroid({
     ...actual,
     components: actual.components.map((binding, index) => index === 0
-      ? { ...binding, profiles: ["phone-full-ui"] }
+      ? { ...binding, mounts: binding.mounts.filter(({ profileRef }) => profileRef === "phone-full-ui") }
       : binding),
   }), /renders on \[phone-full-ui\], but Showcase demonstrates every component/);
+  assert.throws(() => validateAndroid({
+    ...actual,
+    components: actual.components.map((binding) => binding.component.instanceRef === "atom.icon-action"
+      ? { ...binding, immutableInputs: binding.immutableInputs.slice(1) }
+      : binding),
+  }), /\[component-render\/missing\].*atom\.icon-action\.catalog/);
+  assert.throws(() => validateAndroid({
+    ...actual,
+    components: actual.components.map((binding) => binding.component.instanceRef === "atom.icon-action" &&
+        binding.eventEmitter.kind === "typed"
+      ? { ...binding, eventEmitter: { ...binding.eventEmitter, bindings: binding.eventEmitter.bindings.map((event) => ({
+        ...event, targetPortRef: "renderer.controlProgress",
+      })) } }
+      : binding),
+  }), /\[component-render\/mismatch\].*atom\.icon-action/);
   assert.throws(() => validateAndroid({
     ...actual,
     icons: [...actual.icons, { iconId: "orphan", nativeSymbol: "RingIcons.Orphan" }],

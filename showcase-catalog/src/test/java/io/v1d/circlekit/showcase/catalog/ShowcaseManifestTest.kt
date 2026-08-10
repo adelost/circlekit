@@ -13,7 +13,7 @@ class ShowcaseManifestTest {
             ShowcaseManifest.cases.map(ShowcaseCase::family).toSet(),
         )
         assertEquals(
-            ShowcaseManifest.cases.map { it.id.value }.toSet(),
+            ShowcaseManifest.rendererContracts.map { it.componentInstanceRef }.toSet(),
             ShowcaseNativeBindings.components.map { it.componentId }.toSet(),
         )
         assertEquals(
@@ -73,11 +73,15 @@ class ShowcaseManifestTest {
         ShowcaseManifest.cases.forEach { case ->
             case.scenarios.forEach { scenario ->
                 assertTrue(session.open(case.id, scenario.id))
+                val mounted = ShowcaseNativeBindings.mountRenderer(
+                    session,
+                    session.destination.value,
+                    com.adelost.designkit.ui.CircleSurfaceClass.PHONE_COMPACT,
+                    null,
+                )
                 ShowcasePresentations.selected(
-                    destination = session.destination.value,
-                    session = session,
+                    mounted = mounted,
                     surface = com.adelost.designkit.ui.CircleSurfaceClass.PHONE_COMPACT,
-                    textEntryPort = null,
                 )
             }
         }
@@ -92,9 +96,19 @@ class ShowcaseManifestTest {
             .toSet()
 
         assertTrue(ShowcaseScreenCase.entries.all { it.scenarioId in declared })
+        assertTrue(session.open(ShowcaseCaseId("template.screens"), ShowcaseScenarioId("adjustment")))
+        val mounted = ShowcaseNativeBindings.mountRenderer(
+            session,
+            session.destination.value,
+            com.adelost.designkit.ui.CircleSurfaceClass.PHONE_COMPACT,
+            null,
+        )
         assertEquals(
             ShowcaseScreenCase.entries.toSet(),
-            ShowcaseTemplateFixtures.representatives(session)
+            ShowcaseTemplateFixtures.representatives(
+                mounted.inputs.require("template.screens.renderer"),
+                mounted.eventEmitter as ShowcaseTypedRendererEmitter,
+            )
                 .map(ShowcaseTemplateFixtures::kindOf)
                 .toSet(),
         )
