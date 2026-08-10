@@ -2,7 +2,7 @@
 module GeneratedCircleKitShowcase {
     const PRODUCT_ID = "circlekit-showcase";
     const PRODUCT_LABEL = "CIRCLEKIT";
-    const PRODUCT_SPEC_VERSION = "0.3.47";
+    const PRODUCT_SPEC_VERSION = "0.3.52";
     const ARTIFACT_ID = "garmin-limited-ui";
     const RENDERER_ID = "garmin-connectiq-monkeyc";
     const SCREEN_ID = "artifact.garmin-limited-ui";

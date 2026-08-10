@@ -86,7 +86,7 @@ function nativeHosts(
 test("one compiled ProductSpec owns Android, Apple and Garmin Showcase structure", async () => {
   const android = await registry();
   const version = await productSpecVersion();
-  assert.equal(version, "0.3.47");
+  assert.equal(version, "0.3.52");
   const product = compileCircleKitShowcaseProduct(version);
   // Read from the package rather than pinned to a literal: a hardcoded number goes
   // stale on every schema bump and only ever proves which version was current the
