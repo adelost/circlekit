@@ -81,6 +81,15 @@ Each artifact selects its screens from the product's typed component-family
 catalog. Required mounts must be supported by its renderer, while an optional
 `omit` mount is recorded as an explicit artifact-scope outcome in Product IR.
 
+Product IR schema 10 derives one `ComponentRenderContractIr` for every mounted
+component instance. It contains the exact component type and artifact/screen/
+surface/mount scopes, each bound immutable input with its producer, contract
+and requiredness, and each typed event with its service target and contract.
+There is no second authoring field or renderer catalog. Native binding manifest
+schema 6 exports the host's actual instance registrations in the same shape,
+plus the compile-bound native renderer id; shared conformance compares every
+instance, scope, input and event in both directions.
+
 Navigation reuses that catalog rather than declaring another page list.
 `defineProductNavigation(componentFamilies, ...)` requires only `guard` and
 closed `back` semantics for every derived screen id. Each artifact's existing
@@ -99,7 +108,7 @@ menus are ordinary component types, instances and mounts, not a second catalog.
 Guards are service-output state contracts wired into the same navigation
 service, never node-role strings or TypeScript predicates.
 
-Native binding manifest schema 5 requires actual host navigation registrations:
+Native binding manifest schema 6 requires actual host navigation registrations:
 artifact entry/page semantics, the active-page publisher/page-host edge, and
 every action source, service target and effect. Shared conformance compares all
 of these in both directions. Native exporters must build this section from

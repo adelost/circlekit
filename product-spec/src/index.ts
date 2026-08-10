@@ -1,4 +1,5 @@
 export * from "./conformance-model.js";
+export * from "./component-render-contract-model.js";
 export * from "./component-tree-model.js";
 export * from "./invariant-model.js";
 export * from "./node-model.js";

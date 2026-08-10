@@ -1,5 +1,15 @@
 import type { ProductIr } from "./product-model.js";
 import {
+  PORTABLE_SURFACE_CLASSES,
+  type PortableSurfaceClass,
+} from "./component-tree-model.js";
+import {
+  componentRenderScopeKey,
+  type ComponentRenderContractIr,
+  type ComponentRenderEventIr,
+  type ComponentRenderInputIr,
+} from "./component-render-contract-model.js";
+import {
   decodeNativeNavigationBindingManifest,
   navigationConformance,
   type NativeNavigationBindingManifest,
@@ -8,17 +18,21 @@ import {
 /**
  * One product, one compiled IR, one native binding manifest per host.
  *
- * Every app had grown its own copy of this comparison — Skyvw in Kotlin parity
- * tests, Link in a product-local registry decoder, Showcase in a third. Copies of
- * the same contract drift silently, and the first sign is a renderer that stopped
- * binding something the product still declares. The comparison belongs next to
- * the IR it reads.
+ * Applications had grown local copies of this comparison in platform parity
+ * tests and product-local registry decoders. Copies of the same contract drift
+ * silently, and the first sign is a renderer that stopped binding something the
+ * product still declares. The comparison belongs next to the IR it reads.
  *
  * Findings are DATA, not exceptions: a caller that wants the whole picture gets
  * every axis in one pass instead of the first failure, and a test can assert the
  * axis and direction rather than that something threw.
  */
-export const NATIVE_BINDING_MANIFEST_SCHEMA_VERSION = 5 as const;
+export const NATIVE_BINDING_MANIFEST_SCHEMA_VERSION = 6 as const;
+
+export interface NativeComponentRendererRegistration extends ComponentRenderContractIr {
+  /** Compile-bound native implementation symbol; ProductSpec does not author it. */
+  readonly rendererId: string;
+}
 
 export interface NativeBindingManifest {
   readonly stage: "native-export";
@@ -26,11 +40,8 @@ export interface NativeBindingManifest {
   readonly sourceFile: string;
   /** Artifact profile ids this host actually renders. */
   readonly profiles?: readonly string[];
-  readonly components: readonly {
-    readonly componentId: string;
-    readonly rendererId: string;
-    readonly profiles: readonly string[];
-  }[];
+  /** Actual instance registrations exported by the native host. */
+  readonly components: readonly NativeComponentRendererRegistration[];
   readonly icons: readonly { readonly iconId: string; readonly nativeSymbol: string }[];
   /**
    * Exact native node adapters for this host. A node with no ports still has
@@ -55,7 +66,7 @@ export interface NativeBindingManifest {
  */
 export type ConformanceAxis =
   | "artifact"
-  | "component"
+  | "component-render"
   | "icon"
   | "node-port"
   | "finite-value"
@@ -108,10 +119,9 @@ function compareIds(
 }
 
 /**
- * The IR side needs the same defence as the manifest side. CircleKit Showcase
- * compiles an IR with no finiteValues at all — the product predates them — and
- * reading it as an array crashed. A section the PRODUCT omits is unasserted for
- * the same reason a section the manifest omits is.
+ * The IR side needs the same defence as the manifest side. Older Product IR may
+ * omit a section entirely, and reading it as an array would crash. A section the
+ * product omits is unasserted for the same reason a manifest omission is.
  */
 const irSection = <T,>(value: readonly T[] | undefined): readonly T[] => value ?? [];
 
@@ -122,6 +132,117 @@ function portRefs(ir: ProductIr): { inputs: Set<string>; outputs: Set<string> } 
   const outputs = new Set(ir.portRegistry.nodePorts
     .filter(({ direction }) => direction === "output").map(({ ref }) => ref));
   return { inputs, outputs };
+}
+
+function componentRenderConformance(
+  declared: readonly ComponentRenderContractIr[],
+  hostProfiles: ReadonlySet<string>,
+  bound: readonly NativeComponentRendererRegistration[],
+): ConformanceFinding[] {
+  const axis = "component-render" as const;
+  const hostDeclared = declared.flatMap((contract): readonly ComponentRenderContractIr[] => {
+    const scopes = contract.scopes.filter(({ artifactRef }) => hostProfiles.has(artifactRef));
+    return scopes.length === 0 ? [] : [{ ...contract, scopes }];
+  });
+  const declaredByInstance = new Map(hostDeclared.map((contract) => [contract.componentInstanceRef, contract]));
+  const boundByInstance = new Map(bound.map((contract) => [contract.componentInstanceRef, contract]));
+  const out = compareIds(
+    axis,
+    declaredByInstance.keys(),
+    boundByInstance.keys(),
+    "component renderer instance",
+  );
+
+  for (const instanceRef of duplicates(bound.map(({ componentInstanceRef }) => componentInstanceRef))) {
+    out.push(finding(axis, "mismatch", instanceRef,
+      `component renderer instance '${instanceRef}' is registered more than once`));
+  }
+
+  for (const [instanceRef, expected] of [...declaredByInstance].sort(([left], [right]) => left.localeCompare(right))) {
+    const actual = bound.find((registration) => registration.componentInstanceRef === instanceRef);
+    if (actual === undefined) continue;
+    if (actual.componentTypeRef !== expected.componentTypeRef) {
+      out.push(finding(axis, "mismatch", instanceRef,
+        `component renderer instance '${instanceRef}' declares type '${expected.componentTypeRef}' ` +
+        `but native binds '${actual.componentTypeRef}'`));
+    }
+
+    const expectedScopes = new Map(expected.scopes.map((scope) => [componentRenderScopeKey(scope), scope]));
+    const actualScopes = new Map(actual.scopes.map((scope) => [componentRenderScopeKey(scope), scope]));
+    out.push(...compareIds(
+      axis,
+      expectedScopes.keys(),
+      actualScopes.keys(),
+      `component renderer scope for '${instanceRef}'`,
+    ).map((item) => ({ ...item, subject: `${instanceRef}@${item.subject}` })));
+    for (const scope of duplicates(actual.scopes.map(componentRenderScopeKey))) {
+      out.push(finding(axis, "mismatch", `${instanceRef}@${scope}`,
+        `component renderer scope '${scope}' for '${instanceRef}' is registered more than once`));
+    }
+
+    out.push(...compareRenderInputs(instanceRef, expected.inputs, actual.inputs));
+    out.push(...compareRenderEvents(instanceRef, expected.events, actual.events));
+  }
+  return out;
+
+  function compareRenderInputs(
+    instanceRef: string,
+    expected: readonly ComponentRenderInputIr[],
+    actual: readonly ComponentRenderInputIr[],
+  ): ConformanceFinding[] {
+    const findings = compareIds(
+      axis,
+      expected.map(({ inputPortRef }) => inputPortRef),
+      actual.map(({ inputPortRef }) => inputPortRef),
+      `immutable input on '${instanceRef}'`,
+    );
+    for (const portRef of duplicates(actual.map(({ inputPortRef }) => inputPortRef))) {
+      findings.push(finding(axis, "mismatch", portRef,
+        `immutable input '${portRef}' is registered more than once`));
+    }
+    const actualByPort = new Map(actual.map((item) => [item.inputPortRef, item]));
+    for (const item of expected) {
+      const native = actualByPort.get(item.inputPortRef);
+      if (native === undefined) continue;
+      if (native.producerPortRef !== item.producerPortRef ||
+          native.contractRef !== item.contractRef || native.required !== item.required) {
+        findings.push(finding(axis, "mismatch", item.inputPortRef,
+          `immutable input '${item.inputPortRef}' expects producer '${item.producerPortRef}', ` +
+          `contract '${item.contractRef}', required=${String(item.required)} but native binds producer ` +
+          `'${native.producerPortRef}', contract '${native.contractRef}', required=${String(native.required)}`));
+      }
+    }
+    return findings;
+  }
+
+  function compareRenderEvents(
+    instanceRef: string,
+    expected: readonly ComponentRenderEventIr[],
+    actual: readonly ComponentRenderEventIr[],
+  ): ConformanceFinding[] {
+    const findings = compareIds(
+      axis,
+      expected.map(({ eventPortRef }) => eventPortRef),
+      actual.map(({ eventPortRef }) => eventPortRef),
+      `typed event on '${instanceRef}'`,
+    );
+    for (const portRef of duplicates(actual.map(({ eventPortRef }) => eventPortRef))) {
+      findings.push(finding(axis, "mismatch", portRef,
+        `typed event '${portRef}' is registered more than once`));
+    }
+    const actualByPort = new Map(actual.map((item) => [item.eventPortRef, item]));
+    for (const item of expected) {
+      const native = actualByPort.get(item.eventPortRef);
+      if (native === undefined) continue;
+      if (native.targetPortRef !== item.targetPortRef || native.contractRef !== item.contractRef) {
+        findings.push(finding(axis, "mismatch", item.eventPortRef,
+          `typed event '${item.eventPortRef}' expects target '${item.targetPortRef}', ` +
+          `contract '${item.contractRef}' but native binds target '${native.targetPortRef}', ` +
+          `contract '${native.contractRef}'`));
+      }
+    }
+    return findings;
+  }
 }
 
 /**
@@ -137,8 +258,7 @@ export function productArtifactConformance(
   const out: ConformanceFinding[] = [];
   const artifactIds = new Set(irSection(ir.artifacts).map(({ id }) => id));
 
-  // Manifests differ by product: CircleKit Showcase declares components and icons
-  // and nothing else, while Link declares all five sections. An absent section is
+  // Product manifests may assert different section sets. An absent section is
   // neither "conforms" nor "everything is missing" -- both lie. It is UNASSERTED,
   // and it says so in one line, because a silently skipped axis reads as coverage
   // and a flood of false `missing` reads as breakage.
@@ -147,16 +267,13 @@ export function productArtifactConformance(
       `manifest declares no '${section}' section, so the ${axis} axis is not checked here`);
 
   // ONE DIRECTION ONLY, and the asymmetry is the point. A manifest describes one host,
-  // so a profile it does not bind is not a defect: CircleKit Showcase declares five
-  // artifacts across four hosts, and its Android manifest legitimately renders two of
-  // them. Comparing both directions reported the iPhone, watchOS and Garmin artifacts as
-  // missing from Android, which is not a finding, it is the architecture.
+  // so a profile it does not bind is not a defect: a multi-host product may split
+  // five artifacts over several manifests. Comparing both directions per host would
+  // report the other hosts' artifacts as missing, which is architecture, not drift.
   //
   // The reverse is a real defect and stays: a host claiming an artifact the product never
   // declared is a manifest asserting coverage of something that does not exist.
   //
-  // Skyvw hid this for a round because it is a single-host product: one apk that picks
-  // its profile at runtime, so its manifest legitimately carries every artifact.
   // "Which artifacts has no host at all" is a question about the SET of manifests, not
   // about any one of them, and [productArtifactHostCoverage] is where it is asked.
   if (manifest.profiles === undefined) out.push(unasserted("artifact", "profiles"));
@@ -169,71 +286,15 @@ export function productArtifactConformance(
     }
   }
 
-  const componentTypeByInstance = new Map(ir.components.map((item) => [item.id, item.componentTypeRef]));
-  const declaredComponentBindings = new Set<string>();
   const hostProfiles = manifest.profiles === undefined
     ? artifactIds
     : new Set(manifest.profiles);
-  for (const scope of ir.artifactScopes) {
-    if (!hostProfiles.has(scope.artifactRef)) continue;
-    for (const mount of scope.includedMounts) {
-      const componentType = componentTypeByInstance.get(mount.componentInstanceRef);
-      if (componentType === undefined) {
-        throw new Error(`artifact scope uses missing component instance '${mount.componentInstanceRef}'`);
-      }
-      declaredComponentBindings.add(`${componentType}@${scope.artifactRef}`);
-    }
-  }
-  const nativeComponentBindings = manifest.components.flatMap(({ componentId, profiles }) =>
-    profiles.map((profile) => `${componentId}@${profile}`));
-  out.push(...compareIds("component", declaredComponentBindings, nativeComponentBindings, "component binding"));
+  out.push(...componentRenderConformance(ir.componentRenderContracts, hostProfiles, manifest.components));
 
-  // No `renderer` axis. It is tempting to match components[].rendererId against
-  // the product's rendererBindings, and the first version did — but they name
-  // different things. The manifest names a component's native implementation
-  // ("capture", "colors"); rendererBindings names a platform
-  // ("android-phone-compose"). Comparing them produced five false `missing` and a
-  // wall of false `orphan` against CircleKit Showcase. The fixture used one name
-  // for both concepts, which is precisely why it stayed green.
-  //
-  // What the manifest CAN prove is that no component is bound twice for one
-  // profile, which is a real defect and unrepresentable in the IR.
-  const boundOnce = new Set<string>();
-  for (const component of manifest.components) {
-    for (const profile of component.profiles ?? []) {
-      const key = `${component.componentId}@${profile}`;
-      if (boundOnce.has(key)) {
-        out.push(finding("component", "mismatch", key,
-          `component '${component.componentId}' is bound twice for profile '${profile}'`));
-      }
-      boundOnce.add(key);
-    }
-  }
-
-  // A native binding may not invent a profile the product never declared, or the
-  // manifest silently claims coverage on a host that does not exist.
-  for (const component of manifest.components) {
-    for (const profile of component.profiles ?? []) {
-      if (!artifactIds.has(profile)) {
-        out.push(finding(
-          "component",
-          "orphan",
-          `${component.componentId}@${profile}`,
-          `component '${component.componentId}' binds undeclared artifact profile '${profile}'`,
-        ));
-      }
-    }
-  }
-
-  // Both Link and CircleKit Showcase key manifest icons by ASSET ref ("gear",
-  // "palette"), not by product icon ref ("route.settings", "showcase.palette").
-  // Two products agreeing is enough to fix the rule; one was not, which is why
-  // this stayed flagged for a round instead of being guessed.
-  //
+  // Native manifests key icons by ASSET ref ("gear", "palette"), not by product
+  // icon ref ("route.settings", "action.palette").
   // Compare the DISTINCT asset set, because a product may point several icon refs
-  // at one asset — Link uses "gear" for both route.settings and
-  // action.open-settings. Comparing per icon ref would report a false orphan for
-  // every reuse.
+  // at one asset. Comparing per icon ref would report a false orphan for every reuse.
   out.push(...compareIds(
     "icon",
     new Set(irSection(ir.iconRefs).map(({ assetRef }) => assetRef)),
@@ -335,9 +396,35 @@ export function decodeNativeBindingManifest(raw: unknown): NativeBindingManifest
     components: list(root.components, "manifest components").map((value, index) => {
       const item = record(value, `manifest component ${index}`);
       return {
-        componentId: requiredString(item.componentId, `component ${index} componentId`),
+        componentInstanceRef: requiredString(item.componentInstanceRef, `component ${index} componentInstanceRef`),
+        componentTypeRef: requiredString(item.componentTypeRef, `component ${index} componentTypeRef`),
         rendererId: requiredString(item.rendererId, `component ${index} rendererId`),
-        profiles: stringList(item.profiles, `component ${index} profiles`),
+        scopes: list(item.scopes, `component ${index} scopes`).map((scopeValue, scopeIndex) => {
+          const scope = record(scopeValue, `component ${index} scope ${scopeIndex}`);
+          return {
+            artifactRef: requiredString(scope.artifactRef, `component ${index} scope ${scopeIndex} artifactRef`),
+            screenRef: requiredString(scope.screenRef, `component ${index} scope ${scopeIndex} screenRef`),
+            surface: portableSurface(scope.surface, `component ${index} scope ${scopeIndex} surface`),
+            mountRef: requiredString(scope.mountRef, `component ${index} scope ${scopeIndex} mountRef`),
+          };
+        }),
+        inputs: list(item.inputs, `component ${index} inputs`).map((inputValue, inputIndex) => {
+          const nativeInput = record(inputValue, `component ${index} input ${inputIndex}`);
+          return {
+            inputPortRef: requiredString(nativeInput.inputPortRef, `component ${index} input ${inputIndex} inputPortRef`),
+            producerPortRef: requiredString(nativeInput.producerPortRef, `component ${index} input ${inputIndex} producerPortRef`),
+            contractRef: requiredString(nativeInput.contractRef, `component ${index} input ${inputIndex} contractRef`),
+            required: requiredBoolean(nativeInput.required, `component ${index} input ${inputIndex} required`),
+          };
+        }),
+        events: list(item.events, `component ${index} events`).map((eventValue, eventIndex) => {
+          const event = record(eventValue, `component ${index} event ${eventIndex}`);
+          return {
+            eventPortRef: requiredString(event.eventPortRef, `component ${index} event ${eventIndex} eventPortRef`),
+            targetPortRef: requiredString(event.targetPortRef, `component ${index} event ${eventIndex} targetPortRef`),
+            contractRef: requiredString(event.contractRef, `component ${index} event ${eventIndex} contractRef`),
+          };
+        }),
       };
     }),
     icons: list(root.icons, "manifest icons").map((value, index) => {
@@ -387,6 +474,19 @@ function requiredString(value: unknown, owner: string): string {
     throw new Error(`${owner} must be a nonblank string`);
   }
   return value;
+}
+
+function requiredBoolean(value: unknown, owner: string): boolean {
+  if (typeof value !== "boolean") throw new Error(`${owner} must be a boolean`);
+  return value;
+}
+
+function portableSurface(value: unknown, owner: string): PortableSurfaceClass {
+  const surface = requiredString(value, owner);
+  if (!PORTABLE_SURFACE_CLASSES.includes(surface as PortableSurfaceClass)) {
+    throw new Error(`${owner} '${surface}' is not a portable surface`);
+  }
+  return surface as PortableSurfaceClass;
 }
 
 function stringList(value: unknown, owner: string): readonly string[] {

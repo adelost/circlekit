@@ -5,6 +5,10 @@ import type {
   ScreenComponentFamilyRef,
 } from "./component-tree-model.js";
 import {
+  compileComponentRenderContracts,
+  type ComponentRenderContractIr,
+} from "./component-render-contract-model.js";
+import {
   compileProductGraph,
   type MountedComponentScope,
   type ProductPortRegistry,
@@ -45,7 +49,7 @@ import {
   type ProductPalette,
 } from "./visual-model.js";
 
-export const PRODUCT_SPEC_SCHEMA_VERSION = 9 as const;
+export const PRODUCT_SPEC_SCHEMA_VERSION = 10 as const;
 
 export interface RendererBinding<Id extends string = string, Capability extends string = string> {
   readonly id: Id;
@@ -124,6 +128,7 @@ export interface ProductIr {
   readonly componentFamilies: readonly ScreenComponentFamilyRef[];
   readonly artifactScopes: readonly ProductArtifactMountScope[];
   readonly portRegistry: ProductPortRegistry;
+  readonly componentRenderContracts: readonly ComponentRenderContractIr[];
   readonly palette: ProductPalette;
   readonly assetCatalogRef: PortableAssetCatalogRef;
   readonly iconRefs: readonly ProductIconRef[];
@@ -274,6 +279,12 @@ export function defineProduct<
     artifactScopes,
     graph,
   });
+  const componentRenderContracts = compileComponentRenderContracts({
+    componentTypes: graph.componentTypes,
+    components: graph.components,
+    bindings: graph.portRegistry.bindings,
+    artifactScopes,
+  });
   return {
     kind: "product-spec-ir",
     schemaVersion: PRODUCT_SPEC_SCHEMA_VERSION,
@@ -290,6 +301,7 @@ export function defineProduct<
     componentFamilies: declaration.componentFamilies,
     artifactScopes,
     portRegistry: graph.portRegistry,
+    componentRenderContracts,
     palette: declaration.palette,
     assetCatalogRef: declaration.assetCatalogRef,
     iconRefs: declaration.iconRefs,
