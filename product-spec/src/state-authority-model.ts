@@ -15,6 +15,7 @@ import {
   type ProductNodeType,
 } from "./node-model.js";
 import type { CompiledProductGraph, PortBindingIr } from "./port-graph-model.js";
+import { adapterFields } from "./state-authority-internals.js";
 export type StatePresentationFieldValue = LegoPrimitive | LegoFiniteValueDeclaration;
 export interface StatePresentationField<Name extends string = string,
   Value extends StatePresentationFieldValue = StatePresentationFieldValue> {
@@ -106,6 +107,27 @@ export function defineStatePresentation<
   return result;
 }
 
+/**
+ * The wiring a state authority produces, opaque to the surfaces that declare one.
+ *
+ * Products used to reach a presentation as
+ * `someDefinition.authority.adapter.outputPortRef` — three hops to say "this
+ * authority's output", none of which a product has a decision to make about,
+ * and each an opportunity to name the wrong one. The same binding blocks
+ * already accept the validated short port-ref string, so the chain added
+ * autocomplete and nothing else.
+ *
+ * The fields stay exactly as they were at runtime; only their NAMES leave the
+ * public type. A product can still pass an authority wherever a StateAuthority
+ * is required, and reading through the chain is now a compile error instead of
+ * a discouraged habit. The foundation reads them through adapterFields().
+ */
+export interface StateAuthorityAdapter {
+  readonly [stateAuthorityAdapterBrand]?: never;
+}
+
+declare const stateAuthorityAdapterBrand: unique symbol;
+
 export interface StateAuthority {
   readonly id: string;
   readonly source: {
@@ -115,12 +137,7 @@ export interface StateAuthority {
     readonly states: LegoFiniteValueDeclaration;
   };
   readonly presentation: StatePresentation;
-  readonly adapter: {
-    readonly nodeTypeRef: string;
-    readonly nodeInstanceRef: string;
-    readonly inputPortRef: string;
-    readonly outputPortRef: string;
-  };
+  readonly adapter: StateAuthorityAdapter;
 }
 
 export interface CompiledStateAuthority extends Omit<StateAuthority, "presentation"> {
@@ -172,16 +189,42 @@ export function defineStateAuthority<
     config: {},
     bindings: { state: declaration.source.portRef },
   } as const;
-  return {
-    authority: {
-      ...declaration,
-      adapter: {
-        nodeTypeRef: type.id,
-        nodeInstanceRef: node.id,
-        inputPortRef: `${node.id}.state`,
-        outputPortRef: `${node.id}.presentation`,
-      },
+  const authority = {
+    ...declaration,
+    adapter: {
+      nodeTypeRef: type.id,
+      nodeInstanceRef: node.id,
+      inputPortRef: `${node.id}.state`,
+      outputPortRef: `${node.id}.presentation`,
     },
+  } as const;
+  return {
+    /**
+     * The port a product binds: this authority's presentation, named once.
+     *
+     * Products used to reach it as `.authority.adapter.outputPortRef` — three
+     * hops to say "this authority's output", and three chances to land on the
+     * wrong one. The hops carried no information a product could act on, so
+     * they are no longer part of the authoring surface: `authority` is typed
+     * without `adapter` below, and writing the chain from a product file is a
+     * compile error rather than a discouraged habit.
+     *
+     * The adapter value itself is unchanged and still present at runtime —
+     * compileStateAuthorities reads it through the StateAuthority interface,
+     * which is the foundation's view, not the product's.
+     */
+    presentationPortRef: authority.adapter.outputPortRef,
+
+    /**
+     * The declaration, seen through the foundation's own interface.
+     *
+     * Typed as StateAuthority rather than left to inference, because inference
+     * would hand a product the concrete adapter literal and the three-hop chain
+     * would keep compiling. The id stays literal so downstream inference is
+     * unchanged.
+     */
+    authority: authority as StateAuthority & { readonly id: Id },
+
     adapter: { type, node },
   } as const;
 }
@@ -195,7 +238,7 @@ export function compileStateAuthorities(
   requireUnique(declarations.map(({ id }) => id), "state authority");
   requireUnique(declarations.map(axisKey), "state authority axis");
   requireUnique(declarations.map(({ presentation }) => presentation.id), "state presentation");
-  requireUnique(declarations.map(({ adapter }) => adapter.nodeInstanceRef), "state presentation adapter");
+  requireUnique(declarations.map(({ adapter }) => adapterFields(adapter).nodeInstanceRef), "state presentation adapter");
 
   const finiteById = new Map(finiteValues.map((item) => [item.id, item]));
   const contractById = new Map(graph.portRegistry.contracts.map((item) => [item.id, item]));
@@ -222,11 +265,11 @@ export function compileStateAuthorities(
     nodeTypeById.get(node.nodeTypeRef)?.kind === "present").map(({ id }) => id));
   const serviceIds = new Set(graph.nodes.filter((node) =>
     nodeTypeById.get(node.nodeTypeRef)?.kind === "service").map(({ id }) => id));
-  const adapterIds = new Set(declarations.map(({ adapter }) => adapter.nodeInstanceRef));
+  const adapterIds = new Set(declarations.map(({ adapter }) => adapterFields(adapter).nodeInstanceRef));
   const ordinaryPresentIds = new Set([...presentIds].filter((id) => !adapterIds.has(id)));
   const componentIds = new Set(graph.portRegistry.componentPorts.map(({ ownerId }) => ownerId));
   const authorityByAxis = new Map(declarations.map((item) => [axisKey(item), item]));
-  const generatedAdapterOutputs = new Set(declarations.map(({ adapter }) => adapter.outputPortRef));
+  const generatedAdapterOutputs = new Set(declarations.map(({ adapter }) => adapterFields(adapter).outputPortRef));
   const eligibleAxes: { readonly portRef: string; readonly field: string; readonly stateRef: string }[] = [];
 
   for (const output of graph.portRegistry.nodePorts.filter(({ direction }) => direction === "output")) {
@@ -274,17 +317,17 @@ export function compileStateAuthorities(
     const bindings = new Map<string, readonly PortBindingIr[]>();
     for (const authority of declarations) {
       const matches = componentBindings.filter(({ from, to }) =>
-        from === authority.adapter.outputPortRef && ownerOf(to) === componentId);
+        from === adapterFields(authority.adapter).outputPortRef && ownerOf(to) === componentId);
       if (matches.length > 1) {
         throw new Error(
-          `component '${componentId}' binds state presentation '${authority.adapter.outputPortRef}' ${matches.length} times`,
+          `component '${componentId}' binds state presentation '${adapterFields(authority.adapter).outputPortRef}' ${matches.length} times`,
         );
       }
       bindings.set(authority.id, matches);
       if (componentTargets(authority.source.portRef, adapterIds).has(componentId) && matches.length !== 1) {
         throw new Error(
           `component '${componentId}' receives data derived from state authority '${authority.id}' ` +
-          `but does not consume its generated presentation '${authority.adapter.outputPortRef}'`,
+          `but does not consume its generated presentation '${adapterFields(authority.adapter).outputPortRef}'`,
         );
       }
     }
@@ -396,17 +439,17 @@ function validateAdapter(
   contractById: ReadonlyMap<string, LegoContract>,
   bindings: readonly PortBindingIr[],
 ): void {
-  const node = nodeById.get(authority.adapter.nodeInstanceRef);
+  const node = nodeById.get(adapterFields(authority.adapter).nodeInstanceRef);
   const type = node === undefined ? undefined : nodeTypeById.get(node.nodeTypeRef);
-  if (node === undefined || type?.kind !== "present" || node.nodeTypeRef !== authority.adapter.nodeTypeRef) {
+  if (node === undefined || type?.kind !== "present" || node.nodeTypeRef !== adapterFields(authority.adapter).nodeTypeRef) {
     throw new Error(`state authority '${authority.id}' generated adapter is absent from the node graph`);
   }
-  const input = portByRef.get(authority.adapter.inputPortRef);
-  const output = portByRef.get(authority.adapter.outputPortRef);
+  const input = portByRef.get(adapterFields(authority.adapter).inputPortRef);
+  const output = portByRef.get(adapterFields(authority.adapter).outputPortRef);
   if (input?.direction !== "input" || output?.direction !== "output") {
     throw new Error(`state authority '${authority.id}' generated adapter ports are absent from the node graph`);
   }
-  const inputBindings = bindings.filter(({ to }) => to === authority.adapter.inputPortRef);
+  const inputBindings = bindings.filter(({ to }) => to === adapterFields(authority.adapter).inputPortRef);
   if (inputBindings.length !== 1 || inputBindings[0]?.from !== authority.source.portRef) {
     throw new Error(`state authority '${authority.id}' generated adapter does not read its canonical source`);
   }

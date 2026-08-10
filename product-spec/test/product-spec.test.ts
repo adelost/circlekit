@@ -1,4 +1,7 @@
 import assert from "node:assert/strict";
+// The suite reads the adapter through the SAME accessor the emitters use,
+// so an assertion cannot drift from what production actually consumes.
+import { adapterFields } from "../src/state-authority-internals.js";
 import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { resolve } from "node:path";
@@ -172,7 +175,7 @@ const control = {
   bindings: {
     inputs: {
       state: "ui.projection.model",
-      phasePresentation: phaseAuthority.adapter.outputPortRef,
+      phasePresentation: phaseDefinition.presentationPortRef,
     },
     events: { activate: "ui.controller.trigger" },
   },
@@ -772,7 +775,7 @@ test("closed state authority rejects incomplete, invented and overlapping presen
       baseDeclaration.nodes[0], baseDeclaration.nodes[1], baseDeclaration.nodes[2],
       { id: "ui.projection", nodeTypeRef: handwrittenCopy.id, config: {}, bindings: {
         state: "ui.controller.state",
-        generated: phaseAuthority.adapter.outputPortRef,
+        generated: phaseDefinition.presentationPortRef,
       } },
     ],
   }), /presentation-adapter' is present and feeds 'ui.projection'/);
@@ -889,8 +892,8 @@ test("closed state authority rejects incomplete, invented and overlapping presen
     bindings: {
       inputs: {
         model: "ui.independent.model",
-        availabilityPresentation: availabilityDefinition.authority.adapter.outputPortRef,
-        phasePresentation: descendantPhaseDefinition.authority.adapter.outputPortRef,
+        availabilityPresentation: availabilityDefinition.presentationPortRef,
+        phasePresentation: descendantPhaseDefinition.presentationPortRef,
       },
       events: {},
     },
@@ -939,7 +942,7 @@ test("closed state authority rejects incomplete, invented and overlapping presen
   }, assetCatalog);
   for (const authority of independentAxes.stateAuthorities) {
     assert.equal(independentAxes.portRegistry.bindings.filter(({ to }) =>
-      to === authority.adapter.inputPortRef).length, 1);
+      to === adapterFields(authority.adapter).inputPortRef).length, 1);
     assert.deepEqual(authority.presentation.consumers, [
       `control.independent.${authority.id === availabilityDefinition.authority.id
         ? "availabilityPresentation" : "phasePresentation"}`,
@@ -1002,7 +1005,7 @@ test("closed state authority rejects incomplete, invented and overlapping presen
     componentTypeRef: positionControlType.id,
     bindings: { inputs: {
       model: "ui.position.model",
-      availabilityPresentation: availabilityDefinition.authority.adapter.outputPortRef,
+      availabilityPresentation: availabilityDefinition.presentationPortRef,
     }, events: {} },
   } as const;
   const settingsControl = {
@@ -1128,8 +1131,8 @@ test("closed state authority rejects incomplete, invented and overlapping presen
       componentTypeRef: competingControlType.id,
       bindings: { ...control.bindings, inputs: {
         state: "ui.projection.model",
-        phasePresentation: phaseAuthority.adapter.outputPortRef,
-        alternatePresentation: alternateDefinition.authority.adapter.outputPortRef,
+        phasePresentation: phaseDefinition.presentationPortRef,
+        alternatePresentation: alternateDefinition.presentationPortRef,
       } },
     }],
   }), /competing ancestor\/descendant state lineages consumed by component 'control.main'/);
@@ -1181,10 +1184,10 @@ test("one mandatory graph compiles deterministic outputs and a complete port reg
   assert.deepEqual(product.portRegistry.bindings, [
     { kind: "node-input", from: "domain.source.status", to: "ui.controller.sourceState", purpose: "data" },
     { kind: "component-event", from: "control.main.activate", to: "ui.controller.trigger", purpose: "data" },
-    { kind: "node-input", from: "ui.controller.state", to: `${phaseAuthority.adapter.nodeInstanceRef}.state`, purpose: "data" },
+    { kind: "node-input", from: "ui.controller.state", to: `${adapterFields(phaseAuthority.adapter).nodeInstanceRef}.state`, purpose: "data" },
     { kind: "node-input", from: "ui.controller.state", to: "ui.projection.state", purpose: "data" },
     { kind: "component-input", from: "ui.projection.model", to: "control.main.state", purpose: "data" },
-    { kind: "component-input", from: phaseAuthority.adapter.outputPortRef, to: "control.main.phasePresentation", purpose: "data" },
+    { kind: "component-input", from: adapterFields(phaseAuthority.adapter).outputPortRef, to: "control.main.phasePresentation", purpose: "data" },
     { kind: "component-input", from: "navigation.service.activePage", to: "page.host.activePage", purpose: "data" },
   ]);
   assert.equal(product.portRegistry.demandEdges.length, 3);
