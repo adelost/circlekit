@@ -1,4 +1,9 @@
 import type { ProductIr } from "./product-model.js";
+import {
+  decodeNativeNavigationBindingManifest,
+  navigationConformance,
+  type NativeNavigationBindingManifest,
+} from "./navigation-conformance-model.js";
 
 /**
  * One product, one compiled IR, one native binding manifest per host.
@@ -13,7 +18,7 @@ import type { ProductIr } from "./product-model.js";
  * every axis in one pass instead of the first failure, and a test can assert the
  * axis and direction rather than that something threw.
  */
-export const NATIVE_BINDING_MANIFEST_SCHEMA_VERSION = 4 as const;
+export const NATIVE_BINDING_MANIFEST_SCHEMA_VERSION = 5 as const;
 
 export interface NativeBindingManifest {
   readonly stage: "native-export";
@@ -39,6 +44,8 @@ export interface NativeBindingManifest {
     readonly outputPorts: readonly string[];
   }[];
   readonly finiteValues?: readonly { readonly id: string; readonly values: readonly string[] }[];
+  /** Actual host registrations, never copied from expected ProductIr. */
+  readonly navigation: NativeNavigationBindingManifest;
 }
 
 /**
@@ -51,7 +58,8 @@ export type ConformanceAxis =
   | "component"
   | "icon"
   | "node-port"
-  | "finite-value";
+  | "finite-value"
+  | "navigation";
 
 /**
  * `missing` — the product declares it and native does not bind it.
@@ -288,6 +296,8 @@ export function productArtifactConformance(
     }
   }
 
+  out.push(...navigationConformance(ir.navigation, hostProfiles, manifest.navigation));
+
   return out;
 }
 
@@ -356,6 +366,7 @@ export function decodeNativeBindingManifest(raw: unknown): NativeBindingManifest
         };
       }),
     }),
+    navigation: decodeNativeNavigationBindingManifest(root.navigation),
   };
 }
 

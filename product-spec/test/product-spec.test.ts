@@ -31,6 +31,7 @@ import {
   navigationActivePageContract,
   navigationEventContract,
   navigationGuardContract,
+  navigationConformance,
   navigationRouteContract,
   PORTABLE_SURFACE_CLASSES,
   port,
@@ -43,6 +44,7 @@ import {
   validateProductNodeType,
   validateProductIconRendererBindings,
   writeOutputManifest,
+  type NativeNavigationBindingManifest,
 } from "../src/index.js";
 
 const statusContract = {
@@ -77,6 +79,8 @@ const contextContract = {
 } as const;
 const fixturePhases = finiteValues("fixture.phase", ["idle", "active"]);
 const fixtureTones = finiteValues("fixture.tone", ["muted", "ok", "warn"]);
+const baseNavigationId = "fixture.navigation";
+const baseActivePageContract = navigationActivePageContract(baseNavigationId);
 
 const source = service({
   id: "fixture.source",
@@ -145,6 +149,15 @@ const background = service({
     clockDomain: "none", contextInputs: [], effects: ["fixture.background-write"],
   },
 } as const);
+const baseNavigationService = service({
+  id: "fixture.base-navigation-service",
+  inputs: [],
+  outputs: [port("activePage", baseActivePageContract)],
+  runtime: {
+    stateOwner: "instance", lifetime: "instance", durability: "transient",
+    clockDomain: "none", contextInputs: [], effects: ["fixture.navigation"],
+  },
+} as const);
 const controlType = defineComponentType({
   id: "fixture.control",
   requiredCapabilities: ["ui.menu"],
@@ -165,13 +178,27 @@ const control = {
     events: { activate: "ui.controller.trigger" },
   },
 } as const;
-const componentFamilies = defineScreenComponentFamilyRegistry([control], [{
+const basePageHostType = defineComponentType({
+  id: "fixture.page-host",
+  requiredCapabilities: ["ui.menu"],
+  inputs: [componentPort("activePage", baseActivePageContract)],
+  outputs: [],
+} as const);
+const basePageHost = {
+  id: "page.host",
+  componentTypeRef: basePageHostType.id,
+  bindings: { inputs: { activePage: "navigation.service.activePage" }, events: {} },
+} as const;
+const componentFamilies = defineScreenComponentFamilyRegistry([control, basePageHost], [{
   screen: "MAIN",
   family: {
     id: "fixture.main",
     trees: PORTABLE_SURFACE_CLASSES.map((surface) => ({
       surface,
-      mounts: [{ instance: control.id, region: "primary" }],
+      mounts: [
+        { instance: control.id, region: "primary" },
+        { instance: basePageHost.id, region: "page-host" },
+      ],
     })),
   },
 }] as const);
@@ -209,7 +236,7 @@ const baseDeclaration = {
     { id: "phone", rendererRefs: ["renderer.phone"], requiredCapabilities: ["ui.menu"], entryScreen: "MAIN", screenRefs: ["MAIN"], serves: ["compact", "wide"] },
     { id: "wear", rendererRefs: ["renderer.wear"], requiredCapabilities: ["ui.menu"], entryScreen: "MAIN", screenRefs: ["MAIN"], serves: ["round"] },
   ],
-  nodeTypes: [source, controller, phaseDefinition.adapter.type, projection],
+  nodeTypes: [source, controller, phaseDefinition.adapter.type, projection, baseNavigationService],
   nodes: [
     { id: "domain.source", nodeTypeRef: source.id, config: {}, bindings: {}, activation: {
       kind: "leased", port: "demand", lifecycleSources: [],
@@ -224,31 +251,51 @@ const baseDeclaration = {
     { id: "ui.projection", nodeTypeRef: projection.id, config: {}, bindings: {
       state: "ui.controller.state",
     } },
+    { id: "navigation.service", nodeTypeRef: baseNavigationService.id, config: {}, bindings: {}, activation: {
+      kind: "lifetime", lifecycleSources: [],
+    } },
   ],
   configs: [],
   finiteValues: [fixturePhases],
   stateAuthorities: [phaseAuthority],
-  componentTypes: [controlType],
-  components: [control],
+  componentTypes: [controlType, basePageHostType],
+  components: [control, basePageHost],
   componentFamilies,
   palette,
   assetCatalogRef: { id: assetCatalog.id, version: assetCatalog.version },
   iconRefs: [{ id: "status.check", assetRef: "check", accent: "status.ok", artifacts: ["phone", "wear"] }],
   navigation: defineProductNavigation(componentFamilies, {
-    id: "fixture.navigation",
+    id: baseNavigationId,
     pageSemantics: {
-      MAIN: { restore: "root", guard: null, back: "system" },
+      MAIN: { guard: null, back: "system" },
     },
   } as const),
 } as const;
 
 function fixture(overrides: Record<string, unknown> = {}) {
-  return defineProduct({ ...baseDeclaration, ...overrides }, assetCatalog);
+  const declaration = { ...baseDeclaration, ...overrides } as Record<string, unknown>;
+  if (Array.isArray(overrides.nodeTypes)) {
+    declaration.nodeTypes = overrides.nodeTypes.some((item) => (item as { id?: string }).id === baseNavigationService.id)
+      ? overrides.nodeTypes : [...overrides.nodeTypes, baseNavigationService];
+  }
+  if (Array.isArray(overrides.nodes)) {
+    declaration.nodes = overrides.nodes.some((item) => (item as { id?: string }).id === "navigation.service")
+      ? overrides.nodes : [...overrides.nodes, baseDeclaration.nodes[4]];
+  }
+  if (Array.isArray(overrides.componentTypes)) {
+    declaration.componentTypes = overrides.componentTypes.some((item) => (item as { id?: string }).id === basePageHostType.id)
+      ? overrides.componentTypes : [...overrides.componentTypes, basePageHostType];
+  }
+  if (Array.isArray(overrides.components)) {
+    declaration.components = overrides.components.some((item) => (item as { id?: string }).id === basePageHost.id)
+      ? overrides.components : [...overrides.components, basePageHost];
+  }
+  return defineProduct(declaration as never, assetCatalog);
 }
 
 const navigationId = "fixture.closed-navigation";
 const activePageContract = navigationActivePageContract(navigationId);
-const detailsRouteContract = navigationRouteContract(navigationId, "DETAILS");
+const routeIntentContract = navigationRouteContract(navigationId);
 const sessionGuardContract = navigationGuardContract("fixture.session-ready");
 const menuActivateContract = navigationEventContract({
   id: "fixture.menu-activate", kind: "event", boundary: "ui-event", fields: [],
@@ -265,7 +312,7 @@ const guardService = service({
 const navigationService = service({
   id: "fixture.navigation-service",
   inputs: [
-    port("openDetails", detailsRouteContract),
+    port("route", routeIntentContract),
     port("sessionReady", sessionGuardContract),
   ],
   outputs: [port("activePage", activePageContract)],
@@ -284,26 +331,36 @@ const menuEventSink = service({
   },
 } as const);
 const navigationMenuType = defineComponentType({
-  id: "fixture.navigation-menu",
+  id: "fixture.weather-card",
   requiredCapabilities: ["ui.menu"],
   inputs: [],
   outputs: [
-    componentPort("openDetails", detailsRouteContract),
+    componentPort("route", routeIntentContract),
     componentPort("activate", menuActivateContract),
   ],
 } as const);
+const pageHostType = defineComponentType({
+  id: "fixture.closed-page-host",
+  requiredCapabilities: ["ui.menu"],
+  inputs: [componentPort("activePage", activePageContract)],
+  outputs: [],
+} as const);
 const navigationMenu = {
-  id: "menu.main", componentTypeRef: navigationMenuType.id,
+  id: "weather.card", componentTypeRef: navigationMenuType.id,
   bindings: {
     inputs: {},
     events: {
-      openDetails: "navigation.service.openDetails",
-      activate: "menu.event-sink.activate",
+      route: "navigation.service.route",
+      activate: "weather.event-sink.activate",
     },
   },
 } as const;
+const pageHost = {
+  id: "page.closed-host", componentTypeRef: pageHostType.id,
+  bindings: { inputs: { activePage: "navigation.service.activePage" }, events: {} },
+} as const;
 const navigationFamilies = defineScreenComponentFamilyRegistry(
-  [control, navigationMenu],
+  [control, navigationMenu, pageHost],
   [
     { screen: "MAIN", family: {
       id: "fixture.navigation-main",
@@ -312,6 +369,7 @@ const navigationFamilies = defineScreenComponentFamilyRegistry(
         mounts: [
           { instance: control.id, region: "primary" },
           { instance: navigationMenu.id, region: "menu" },
+          { instance: pageHost.id, region: "page-host" },
         ],
       })),
     } },
@@ -321,20 +379,22 @@ const navigationFamilies = defineScreenComponentFamilyRegistry(
         surface,
         mounts: [
           { instance: control.id, region: "primary" },
+          { instance: pageHost.id, region: "page-host" },
         ],
       })),
     } },
   ] as const,
 );
 const navigationNodeTypes = [
-  ...baseDeclaration.nodeTypes, guardService, navigationService, menuEventSink,
+  source, controller, phaseDefinition.adapter.type, projection,
+  guardService, navigationService, menuEventSink,
 ] as const;
 const navigationDeclaration = defineProductNavigation(navigationFamilies, {
   id: navigationId,
   pageSemantics: {
-    MAIN: { restore: "root", guard: null, back: "system" },
+    MAIN: { guard: null, back: "system" },
     DETAILS: {
-      restore: "process", guard: sessionGuardContract, back: "previous",
+      guard: sessionGuardContract, back: "previous",
     },
   },
 } as const);
@@ -345,7 +405,7 @@ const navigationProductDeclaration = {
   })),
   nodeTypes: navigationNodeTypes,
   nodes: [
-    ...baseDeclaration.nodes,
+    baseDeclaration.nodes[0], baseDeclaration.nodes[1], baseDeclaration.nodes[2], baseDeclaration.nodes[3],
     {
       id: "guard.service", nodeTypeRef: guardService.id, config: {}, bindings: {},
       activation: { kind: "lifetime", lifecycleSources: [] },
@@ -353,19 +413,23 @@ const navigationProductDeclaration = {
     {
       id: "navigation.service", nodeTypeRef: navigationService.id, config: {},
       bindings: {
-        openDetails: "menu.main.openDetails",
+        route: "weather.card.route",
         sessionReady: "guard.service.allowed",
       },
       activation: { kind: "lifetime", lifecycleSources: [] },
     },
     {
-      id: "menu.event-sink", nodeTypeRef: menuEventSink.id, config: {},
-      bindings: { activate: "menu.main.activate" },
+      id: "weather.event-sink", nodeTypeRef: menuEventSink.id, config: {},
+      bindings: { activate: "weather.card.activate" },
       activation: { kind: "lifetime", lifecycleSources: [] },
     },
   ],
-  componentTypes: [...baseDeclaration.componentTypes, navigationMenuType],
-  components: [...baseDeclaration.components, navigationMenu],
+  componentTypes: [
+    controlType, navigationMenuType, pageHostType,
+  ],
+  components: [
+    control, navigationMenu, pageHost,
+  ],
   componentFamilies: navigationFamilies,
   navigation: navigationDeclaration,
 } as const;
@@ -374,30 +438,46 @@ function navigationFixture(overrides: Record<string, unknown> = {}) {
   return defineProduct({ ...navigationProductDeclaration, ...overrides }, assetCatalog);
 }
 
-function navigationFixtureWithRouteContract(routeContract: ReturnType<typeof navigationRouteContract>) {
-  const changedNavigationService = service({
-    ...navigationService,
-    inputs: [
-      port("openDetails", routeContract),
-      port("sessionReady", sessionGuardContract),
+const nativeClosedNavigation: NativeNavigationBindingManifest = {
+  artifacts: [
+    {
+      artifactRef: "phone", entryPageRef: "MAIN", pages: [
+        { pageRef: "MAIN", restore: "root", back: "system", guardContractRef: null },
+        { pageRef: "DETAILS", restore: "process", back: "previous", guardContractRef: "fixture.session-ready" },
+      ],
+    },
+    {
+      artifactRef: "wear", entryPageRef: "MAIN", pages: [
+        { pageRef: "MAIN", restore: "root", back: "system", guardContractRef: null },
+        { pageRef: "DETAILS", restore: "process", back: "previous", guardContractRef: "fixture.session-ready" },
+      ],
+    },
+  ],
+  activePageBindings: [{
+    publisherPortRef: "navigation.service.activePage",
+    pageHostPortRef: "page.closed-host.activePage",
+  }],
+  actionGroups: ["phone", "wear"].map((artifactRef) => ({
+    artifactRef,
+    componentInstanceRef: "weather.card",
+    actions: [
+      {
+        sourcePortRef: "weather.card.route",
+        targetPortRef: "navigation.service.route",
+        effect: "push" as const,
+      },
+      {
+        sourcePortRef: "weather.card.activate",
+        targetPortRef: "weather.event-sink.activate",
+        effect: "dispatch" as const,
+      },
     ],
-  } as const);
-  const changedMenuType = defineComponentType({
-    ...navigationMenuType,
-    outputs: [
-      componentPort("openDetails", routeContract),
-      componentPort("activate", menuActivateContract),
-    ],
-  } as const);
-  return navigationFixture({
-    nodeTypes: navigationNodeTypes.map((type) =>
-      type.id === navigationService.id ? changedNavigationService : type),
-    componentTypes: navigationProductDeclaration.componentTypes.map((type) =>
-      type.id === navigationMenuType.id ? changedMenuType : type),
-  });
-}
+  })),
+};
 
 if (false) {
+  // @ts-expect-error RouteIntent has one closed payload; there is no metadata target argument.
+  navigationRouteContract(navigationId, "DETAILS");
   defineProduct({ ...baseDeclaration, nodes: [
     baseDeclaration.nodes[0],
     // @ts-expect-error Every required node input has an exact binding.
@@ -805,13 +885,16 @@ test("closed state authority rejects incomplete, invented and overlapping presen
       events: {},
     },
   } as const;
-  const independentFamilies = defineScreenComponentFamilyRegistry([independentControl], [{
+  const independentFamilies = defineScreenComponentFamilyRegistry([independentControl, basePageHost], [{
     screen: "MAIN",
     family: {
       id: "fixture.independent-main",
       trees: PORTABLE_SURFACE_CLASSES.map((surface) => ({
         surface,
-        mounts: [{ instance: independentControl.id, region: "primary" }],
+        mounts: [
+          { instance: independentControl.id, region: "primary" },
+          { instance: basePageHost.id, region: "page-host" },
+        ],
       })),
     },
   }] as const);
@@ -820,7 +903,7 @@ test("closed state authority rejects incomplete, invented and overlapping presen
     nodeTypes: [
       source, positionPresentation, flightPhase,
       availabilityDefinition.adapter.type, descendantPhaseDefinition.adapter.type,
-      independentProjection,
+      independentProjection, baseNavigationService,
     ],
     nodes: [
       baseDeclaration.nodes[0],
@@ -836,11 +919,12 @@ test("closed state authority rejects incomplete, invented and overlapping presen
         position: "position.presentation.state",
         flight: "flight.runtime.state",
       } },
+      baseDeclaration.nodes[4],
     ],
     finiteValues: [availabilityStates, fixturePhases],
     stateAuthorities: [availabilityDefinition.authority, descendantPhaseDefinition.authority],
-    componentTypes: [independentControlType],
-    components: [independentControl],
+    componentTypes: [independentControlType, basePageHostType],
+    components: [independentControl, basePageHost],
     componentFamilies: independentFamilies,
   }, assetCatalog);
   for (const authority of independentAxes.stateAuthorities) {
@@ -917,7 +1001,7 @@ test("closed state authority rejects incomplete, invented and overlapping presen
     bindings: { inputs: { model: "ui.settings.model" }, events: {} },
   } as const;
   const serviceBoundaryFamilies = defineScreenComponentFamilyRegistry(
-    [positionControl, settingsControl],
+    [positionControl, settingsControl, basePageHost],
     [{ screen: "MAIN", family: {
       id: "fixture.service-boundary-main",
       trees: PORTABLE_SURFACE_CLASSES.map((surface) => ({
@@ -925,6 +1009,7 @@ test("closed state authority rejects incomplete, invented and overlapping presen
         mounts: [
           { instance: positionControl.id, region: "primary" },
           { instance: settingsControl.id, region: "secondary" },
+          { instance: basePageHost.id, region: "page-host" },
         ],
       })),
     } }] as const,
@@ -934,6 +1019,7 @@ test("closed state authority rejects incomplete, invented and overlapping presen
     nodeTypes: [
       source, positionPresentation, availabilityDefinition.adapter.type,
       mapService, positionProjection, settingsProjection,
+      baseNavigationService,
     ],
     nodes: [
       baseDeclaration.nodes[0],
@@ -950,11 +1036,12 @@ test("closed state authority rejects incomplete, invented and overlapping presen
       { id: "ui.settings", nodeTypeRef: settingsProjection.id, config: {}, bindings: {
         cacheStats: "map.service.cacheStats",
       } },
+      baseDeclaration.nodes[4],
     ],
     finiteValues: [availabilityStates],
     stateAuthorities: [availabilityDefinition.authority],
-    componentTypes: [positionControlType, settingsControlType],
-    components: [positionControl, settingsControl],
+    componentTypes: [positionControlType, settingsControlType, basePageHostType],
+    components: [positionControl, settingsControl, basePageHost],
     componentFamilies: serviceBoundaryFamilies,
   }, assetCatalog);
   assert.deepEqual(serviceBoundary.stateAuthorities[0]?.presentation.consumers,
@@ -1076,9 +1163,10 @@ test("one mandatory graph compiles deterministic outputs and a complete port reg
     ...phaseAuthority,
     presentation: { ...phasePresentation, consumers: ["control.main.phasePresentation"] },
   }]);
-  assert.equal(product.nodes.length, 4);
+  assert.equal(product.nodes.length, 5);
   assert.deepEqual(product.portRegistry.contracts, [
     demandContract, internalContract, actionContract, statusContract, phasePresentation.contract,
+    baseActivePageContract,
   ]);
   assert.deepEqual(product.portRegistry.bindings, [
     { kind: "node-input", from: "domain.source.status", to: "ui.controller.sourceState", purpose: "data" },
@@ -1087,6 +1175,7 @@ test("one mandatory graph compiles deterministic outputs and a complete port reg
     { kind: "node-input", from: "ui.controller.state", to: "ui.projection.state", purpose: "data" },
     { kind: "component-input", from: "ui.projection.model", to: "control.main.state", purpose: "data" },
     { kind: "component-input", from: phaseAuthority.adapter.outputPortRef, to: "control.main.phasePresentation", purpose: "data" },
+    { kind: "component-input", from: "navigation.service.activePage", to: "page.host.activePage", purpose: "data" },
   ]);
   assert.equal(product.portRegistry.demandEdges.length, 3);
   assert.deepEqual(new Set(product.portRegistry.demandEdges.map(({ nodeInstanceRef }) => nodeInstanceRef)),
@@ -1112,63 +1201,89 @@ test("one mandatory graph compiles deterministic outputs and a complete port reg
   }
 });
 
-test("page navigation compiles route and event menu actions into the one port graph", () => {
+test("page navigation compiles one RouteIntent and neutral action groups into the port graph", () => {
   const product = navigationFixture();
   assert.equal(product.navigation.pageValuesRef, `${navigationId}.page`);
   assert.deepEqual(product.navigation.pages, [
-    { id: "MAIN", restore: "root", guardContractRef: null, back: "system" },
-    { id: "DETAILS", restore: "process", guardContractRef: "fixture.session-ready", back: "previous" },
+    { id: "MAIN", guardContractRef: null, back: "system" },
+    { id: "DETAILS", guardContractRef: "fixture.session-ready", back: "previous" },
   ]);
+  assert.deepEqual(product.navigation.artifacts, [
+    {
+      artifactRef: "phone", entryPageRef: "MAIN", pages: [
+        { pageRef: "MAIN", restore: "root", guardContractRef: null, back: "system" },
+        { pageRef: "DETAILS", restore: "process", guardContractRef: "fixture.session-ready", back: "previous" },
+      ],
+    },
+    {
+      artifactRef: "wear", entryPageRef: "MAIN", pages: [
+        { pageRef: "MAIN", restore: "root", guardContractRef: null, back: "system" },
+        { pageRef: "DETAILS", restore: "process", guardContractRef: "fixture.session-ready", back: "previous" },
+      ],
+    },
+  ]);
+  assert.deepEqual(product.navigation.routeIntentContract.navigation, { kind: "route", effect: "push" });
+  assert.deepEqual(product.navigation.routeIntentContract.fields, [
+    field("target", finiteValueRef(`${navigationId}.page`)),
+  ]);
+  assert.equal("targetPageRef" in product.navigation.routeIntentContract.navigation, false);
+  assert.equal(product.navigation.activePagePortRef, "navigation.service.activePage");
+  assert.equal(product.navigation.pageHostPortRef, "page.closed-host.activePage");
   assert.deepEqual(product.finiteValues.at(-1), {
     id: `${navigationId}.page`, values: ["MAIN", "DETAILS"],
   });
-  assert.deepEqual(product.navigation.menus, [{
-    componentInstanceRef: "menu.main",
+  assert.equal("menus" in product.navigation, false);
+  assert.deepEqual(product.navigation.actionGroups, [{
+    componentInstanceRef: "weather.card",
     pageRefs: ["MAIN"],
     artifactRefs: ["phone", "wear"],
     actions: [
       {
-        id: "openDetails", kind: "route", sourcePortRef: "menu.main.openDetails",
-        targetPortRef: "navigation.service.openDetails", contractRef: detailsRouteContract.id,
-        targetPageRef: "DETAILS", effect: "push",
+        id: "route", kind: "route", sourcePortRef: "weather.card.route",
+        targetPortRef: "navigation.service.route", contractRef: routeIntentContract.id, effect: "push",
       },
       {
-        id: "activate", kind: "event", sourcePortRef: "menu.main.activate",
-        targetPortRef: "menu.event-sink.activate", contractRef: menuActivateContract.id,
+        id: "activate", kind: "event", sourcePortRef: "weather.card.activate",
+        targetPortRef: "weather.event-sink.activate", contractRef: menuActivateContract.id, effect: "dispatch",
       },
     ],
   }]);
 });
 
-test("navigation mutation rejects an unknown target", () => {
-  assert.throws(() => navigationFixtureWithRouteContract(
-    navigationRouteContract(navigationId, "UNKNOWN"),
-  ), /navigation targets unknown page 'UNKNOWN'/);
+test("route target contradiction is unrepresentable and service-origin route is rejected", () => {
+  assert.deepEqual(Object.keys(routeIntentContract.navigation).sort(), ["effect", "kind"]);
+  assert.throws(() => service({
+    id: "fixture.illegal-route-origin",
+    inputs: [], outputs: [port("route", routeIntentContract)],
+    runtime: {
+      stateOwner: "none", lifetime: "process", durability: "transient",
+      clockDomain: "none", contextInputs: [], effects: ["fixture.route"],
+    },
+  } as const), /service 'fixture.illegal-route-origin' cannot originate ui-event output 'route'/);
 });
 
-test("navigation mutation rejects undeclared entry and a non-root entry", () => {
+test("navigation rejects an undeclared artifact entry", () => {
   assert.throws(() => navigationFixture({
     artifacts: [
       { ...navigationProductDeclaration.artifacts[0], entryScreen: "UNKNOWN" },
       navigationProductDeclaration.artifacts[1],
     ],
   }), /entry screen 'UNKNOWN' is not selected|missing entry screen 'UNKNOWN'|entry 'UNKNOWN' is an undeclared page/);
-  assert.throws(() => navigationFixture({
-    navigation: {
-      ...navigationDeclaration,
-      pages: navigationDeclaration.pages.map((page) =>
-        page.id === "MAIN" ? { ...page, restore: "process" as const } : page),
-    },
-  }), /entry 'MAIN' must use root restore/);
 });
 
-test("navigation mutation rejects menu target drift", () => {
-  const drifted = {
-    ...detailsRouteContract,
-    navigation: { kind: "route", targetPageRef: "MAIN", effect: "push" },
-  } as const;
-  assert.throws(() => navigationFixtureWithRouteContract(drifted),
-    /target drift: 'MAIN' requires contract/);
+test("navigation derives restore independently for artifacts with different entries", () => {
+  const product = navigationFixture({
+    artifacts: [
+      navigationProductDeclaration.artifacts[0],
+      { ...navigationProductDeclaration.artifacts[1], entryScreen: "DETAILS" },
+    ],
+  });
+  assert.deepEqual(product.navigation.artifacts.map(({ artifactRef, entryPageRef, pages }) => ({
+    artifactRef, entryPageRef, restore: pages.map(({ pageRef, restore }) => `${pageRef}:${restore}`),
+  })), [
+    { artifactRef: "phone", entryPageRef: "MAIN", restore: ["MAIN:root", "DETAILS:process"] },
+    { artifactRef: "wear", entryPageRef: "DETAILS", restore: ["MAIN:process", "DETAILS:root"] },
+  ]);
 });
 
 test("navigation mutation rejects an orphan page", () => {
@@ -1182,11 +1297,11 @@ test("navigation mutation rejects an orphan page", () => {
   const orphanNavigation = defineProductNavigation(orphanFamilies, {
     id: navigationId,
     pageSemantics: {
-      MAIN: { restore: "root", guard: null, back: "system" },
+      MAIN: { guard: null, back: "system" },
       DETAILS: {
-        restore: "process", guard: sessionGuardContract, back: "previous",
+        guard: sessionGuardContract, back: "previous",
       },
-      ORPHAN: { restore: "process", guard: null, back: "previous" },
+      ORPHAN: { guard: null, back: "previous" },
     },
   } as const);
   assert.throws(() => navigationFixture({
@@ -1195,24 +1310,45 @@ test("navigation mutation rejects an orphan page", () => {
   }), /orphan page 'ORPHAN' is selected by no artifact/);
 });
 
-test("navigation mutation rejects a menu page missing from one artifact", () => {
+test("navigation mutation rejects an artifact page absent from component families", () => {
   assert.throws(() => navigationFixture({
     artifacts: [
       navigationProductDeclaration.artifacts[0],
-      { ...navigationProductDeclaration.artifacts[1], screenRefs: ["MAIN"] },
+      { ...navigationProductDeclaration.artifacts[1], screenRefs: ["MAIN", "UNKNOWN"] },
     ],
-  }), /targets page 'DETAILS' outside artifact 'wear'/);
+  }), /missing screen 'UNKNOWN'|undeclared page 'UNKNOWN'/);
 });
 
-test("navigation derives mounted actions and rejects a missing typed binding without menu opt-in", () => {
-  assert.equal("menus" in navigationDeclaration, false);
+test("a weather card becomes an actionGroup and a missing binding fails without opt-in", () => {
+  assert.equal("actionGroups" in navigationDeclaration, false);
   assert.throws(() => navigationFixture({
     components: navigationProductDeclaration.components.map((component) =>
       component.id === navigationMenu.id ? {
         ...component,
-        bindings: { ...component.bindings, events: { activate: "menu.event-sink.activate" } },
+        bindings: { ...component.bindings, events: { activate: "weather.event-sink.activate" } },
       } : component),
-  }), /missing event binding 'openDetails'/);
+  }), /missing event binding 'route'/);
+});
+
+test("navigation rejects duplicate page-host presenters", () => {
+  const duplicateHost = { ...pageHost, id: "page.duplicate-host" } as const;
+  const duplicateFamilies = defineScreenComponentFamilyRegistry(
+    [control, navigationMenu, pageHost, duplicateHost],
+    navigationFamilies.map(({ screen, family }) => ({
+      screen,
+      family: {
+        ...family,
+        trees: family.trees.map((tree) => ({
+          ...tree,
+          mounts: [...tree.mounts, { instance: duplicateHost.id, region: "duplicate-host" }],
+        })),
+      },
+    })) as never,
+  );
+  assert.throws(() => navigationFixture({
+    components: [...navigationProductDeclaration.components, duplicateHost],
+    componentFamilies: duplicateFamilies,
+  }), /active page must bind exactly one page-host component input \(found 2\)/);
 });
 
 test("navigation mutation rejects a guard absent from the typed navigation-service graph", () => {
@@ -1224,6 +1360,102 @@ test("navigation mutation rejects a guard absent from the typed navigation-servi
         page.id === "DETAILS" ? { ...page, guard: missingGuard } : page),
     },
   }), /guard 'fixture.missing-guard' must bind exactly one navigation service input/);
+});
+
+test("schema5 native navigation registration conforms exactly", () => {
+  assert.deepEqual(navigationConformance(
+    navigationFixture().navigation,
+    new Set(["phone", "wear"]),
+    nativeClosedNavigation,
+  ), []);
+});
+
+test("schema5 navigation conformance rejects entry, back and guard drift", () => {
+  const product = navigationFixture();
+  const mutatePage = (
+    change: (page: NativeNavigationBindingManifest["artifacts"][number]["pages"][number]) =>
+      NativeNavigationBindingManifest["artifacts"][number]["pages"][number],
+  ): NativeNavigationBindingManifest => ({
+    ...nativeClosedNavigation,
+    artifacts: nativeClosedNavigation.artifacts.map((artifact, index) => index === 0 ? {
+      ...artifact,
+      pages: artifact.pages.map((page, pageIndex) => pageIndex === 0 ? change(page) : page),
+    } : artifact),
+  });
+  const changedEntry: NativeNavigationBindingManifest = {
+    ...nativeClosedNavigation,
+    artifacts: nativeClosedNavigation.artifacts.map((artifact, index) => index === 0
+      ? { ...artifact, entryPageRef: "DETAILS" } : artifact),
+  };
+  for (const manifest of [
+    changedEntry,
+    mutatePage((page) => ({ ...page, back: "consume" })),
+    mutatePage((page) => ({ ...page, guardContractRef: "native.invented-guard" })),
+  ]) {
+    assert.equal(navigationConformance(product.navigation, new Set(["phone", "wear"]), manifest)
+      .some(({ axis, direction }) => axis === "navigation" && direction === "mismatch"), true);
+  }
+});
+
+test("schema5 navigation conformance is two-way for actions and active-page bindings", () => {
+  const product = navigationFixture();
+  const expected = product.navigation;
+  const host = new Set(["phone", "wear"]);
+  const withoutAction: NativeNavigationBindingManifest = {
+    ...nativeClosedNavigation,
+    actionGroups: nativeClosedNavigation.actionGroups.map((group, index) => index === 0
+      ? { ...group, actions: group.actions.slice(1) } : group),
+  };
+  const withExtraAction: NativeNavigationBindingManifest = {
+    ...nativeClosedNavigation,
+    actionGroups: nativeClosedNavigation.actionGroups.map((group, index) => index === 0 ? {
+      ...group,
+      actions: [...group.actions, {
+        sourcePortRef: "weather.card.invented",
+        targetPortRef: "weather.event-sink.activate",
+        effect: "dispatch" as const,
+      }],
+    } : group),
+  };
+  const withoutPage: NativeNavigationBindingManifest = {
+    ...nativeClosedNavigation,
+    artifacts: nativeClosedNavigation.artifacts.map((artifact, index) => index === 0
+      ? { ...artifact, pages: artifact.pages.slice(1) } : artifact),
+  };
+  const withExtraPage: NativeNavigationBindingManifest = {
+    ...nativeClosedNavigation,
+    artifacts: nativeClosedNavigation.artifacts.map((artifact, index) => index === 0 ? {
+      ...artifact,
+      pages: [...artifact.pages, {
+        pageRef: "NATIVE_ONLY", restore: "process" as const,
+        back: "previous" as const, guardContractRef: null,
+      }],
+    } : artifact),
+  };
+  const withoutActive = { ...nativeClosedNavigation, activePageBindings: [] };
+  const duplicateActive = {
+    ...nativeClosedNavigation,
+    activePageBindings: [
+      ...nativeClosedNavigation.activePageBindings,
+      nativeClosedNavigation.activePageBindings[0]!,
+    ],
+  };
+  const wrongPageHost = {
+    ...nativeClosedNavigation,
+    activePageBindings: [{
+      publisherPortRef: "navigation.service.activePage",
+      pageHostPortRef: "page.invented-host.activePage",
+    }],
+  };
+  assert.equal(navigationConformance(expected, host, withoutAction).some(({ direction }) => direction === "missing"), true);
+  assert.equal(navigationConformance(expected, host, withExtraAction).some(({ direction }) => direction === "orphan"), true);
+  assert.equal(navigationConformance(expected, host, withoutPage).some(({ direction }) => direction === "missing"), true);
+  assert.equal(navigationConformance(expected, host, withExtraPage).some(({ direction }) => direction === "orphan"), true);
+  assert.equal(navigationConformance(expected, host, withoutActive).some(({ direction }) => direction === "missing"), true);
+  assert.equal(navigationConformance(expected, host, duplicateActive).some(({ direction }) => direction === "mismatch"), true);
+  const wrongHostFindings = navigationConformance(expected, host, wrongPageHost);
+  assert.equal(wrongHostFindings.some(({ direction }) => direction === "missing"), true);
+  assert.equal(wrongHostFindings.some(({ direction }) => direction === "orphan"), true);
 });
 
 test("demand ports propagate activation forward without becoming data dependencies", () => {
@@ -1500,7 +1732,7 @@ test("mandatory bindings and the component boundary fail before emission", () =>
     componentTypeRef: detailsType.id,
     bindings: { inputs: {}, events: {} },
   } as const;
-  const optionalFamilies = defineScreenComponentFamilyRegistry([control, optional, details], [
+  const optionalFamilies = defineScreenComponentFamilyRegistry([control, optional, details, basePageHost], [
     {
       screen: "MAIN",
       family: {
@@ -1510,6 +1742,7 @@ test("mandatory bindings and the component boundary fail before emission", () =>
           mounts: [
             { instance: control.id, region: "primary" },
             { instance: optional.id, region: "supporting", requirement: { kind: "optional", fallback: "omit" } },
+            { instance: basePageHost.id, region: "page-host" },
           ],
         })),
       },
@@ -1520,7 +1753,10 @@ test("mandatory bindings and the component boundary fail before emission", () =>
         id: "fixture.details",
         trees: PORTABLE_SURFACE_CLASSES.map((surface) => ({
           surface,
-          mounts: [{ instance: details.id, region: "primary" }],
+          mounts: [
+            { instance: details.id, region: "primary" },
+            { instance: basePageHost.id, region: "page-host" },
+          ],
         })),
       },
     },
@@ -1534,14 +1770,14 @@ test("mandatory bindings and the component boundary fail before emission", () =>
       { ...baseDeclaration.artifacts[0], screenRefs: ["MAIN"] },
       { ...baseDeclaration.artifacts[1], screenRefs: ["MAIN", "DETAILS"] },
     ],
-    componentTypes: [controlType, optionalType, detailsType],
-    components: [control, optional, details],
+    componentTypes: [controlType, optionalType, detailsType, basePageHostType],
+    components: [control, optional, details, basePageHost],
     componentFamilies: optionalFamilies,
     navigation: defineProductNavigation(optionalFamilies, {
       id: "fixture.navigation",
       pageSemantics: {
-        MAIN: { restore: "root", guard: null, back: "system" },
-        DETAILS: { restore: "process", guard: null, back: "previous" },
+        MAIN: { guard: null, back: "system" },
+        DETAILS: { guard: null, back: "previous" },
       },
     } as const),
   });
@@ -1552,7 +1788,7 @@ test("mandatory bindings and the component boundary fail before emission", () =>
   assert.deepEqual(scoped.artifactScopes
     .filter(({ artifactRef }) => artifactRef === "wear")
     .flatMap(({ includedMounts }) => includedMounts.map(({ mountRef }) => mountRef)),
-  ["control.main", "control.optional", "details.main"]);
+  ["control.main", "control.optional", "page.host", "details.main", "page.host"]);
   assert.deepEqual(scoped.artifactScopes
     .filter(({ artifactRef }) => artifactRef === "phone")
     .map(({ screenRef }) => screenRef),
@@ -1563,6 +1799,7 @@ test("mandatory bindings and the component boundary fail before emission", () =>
       { componentId: "fixture.control", rendererId: "control", profiles: ["phone", "wear"] },
       { componentId: "fixture.optional", rendererId: "optional", profiles: ["wear"] },
       { componentId: "fixture.details", rendererId: "details", profiles: ["wear"] },
+      { componentId: "fixture.page-host", rendererId: "page-host", profiles: ["phone", "wear"] },
     ],
   }).filter(({ axis }) => axis === "component");
   assert.deepEqual(componentFindings, []);
@@ -1642,12 +1879,13 @@ test("lifecycle demand crosses a lifetime origin and leases only its upstream ta
 
 const conformingManifest: NativeBindingManifest = {
   stage: "native-export",
-  schemaVersion: 4,
+  schemaVersion: 5,
   sourceFile: "fixture/NativeBindings.kt",
   profiles: ["phone", "wear"],
   components: [
     { componentId: "fixture.control", rendererId: "renderer.phone", profiles: ["phone"] },
     { componentId: "fixture.control", rendererId: "renderer.wear", profiles: ["wear"] },
+    { componentId: "fixture.page-host", rendererId: "page-host", profiles: ["phone", "wear"] },
   ],
   icons: [{ iconId: "check", nativeSymbol: "Check" }],
   nodes: [
@@ -1661,11 +1899,31 @@ const conformingManifest: NativeBindingManifest = {
       inputPorts: ["state"],
       outputPorts: ["presentation"],
     },
+    {
+      nodeId: "navigation.service", nativePortId: "NavigationPorts", profiles: ["phone", "wear"],
+      inputPorts: [], outputPorts: ["activePage"],
+    },
   ],
   finiteValues: [
     { id: "fixture.phase", values: ["idle", "active"] },
     { id: "fixture.navigation.page", values: ["MAIN"] },
   ],
+  navigation: {
+    artifacts: [
+      {
+        artifactRef: "phone", entryPageRef: "MAIN",
+        pages: [{ pageRef: "MAIN", restore: "root", back: "system", guardContractRef: null }],
+      },
+      {
+        artifactRef: "wear", entryPageRef: "MAIN",
+        pages: [{ pageRef: "MAIN", restore: "root", back: "system", guardContractRef: null }],
+      },
+    ],
+    activePageBindings: [{
+      publisherPortRef: "navigation.service.activePage", pageHostPortRef: "page.host.activePage",
+    }],
+    actionGroups: [],
+  },
 };
 
 const mutate = (change: (draft: NativeBindingManifest) => NativeBindingManifest): NativeBindingManifest =>
@@ -1773,8 +2031,18 @@ test("one host checks only its component profiles while host coverage checks the
     ...conformingManifest,
     sourceFile,
     profiles,
-    components: [{ componentId: "fixture.control", rendererId: sourceFile, profiles }],
+    components: [
+      { componentId: "fixture.control", rendererId: sourceFile, profiles },
+      { componentId: "fixture.page-host", rendererId: "page-host", profiles },
+    ],
     nodes: conformingManifest.nodes.map((node) => ({ ...node, profiles })),
+    navigation: {
+      ...conformingManifest.navigation,
+      artifacts: profiles.map((artifactRef) => ({
+        artifactRef, entryPageRef: "MAIN",
+        pages: [{ pageRef: "MAIN", restore: "root" as const, back: "system" as const, guardContractRef: null }],
+      })),
+    },
   });
   const apple = host("fixture/AppleBindings.swift", ["iphone", "watchos"]);
   const garmin = host("fixture/GarminBindings.mc", ["garmin"]);
@@ -1795,6 +2063,9 @@ test("native manifest decoding fails loud and requires the node axis", () => {
   const partial = { ...conformingManifest } as Record<string, unknown>;
   delete partial.nodes;
   assert.throws(() => decodeNativeBindingManifest(partial), /manifest nodes must be an array/);
+  const withoutNavigation = { ...conformingManifest } as Record<string, unknown>;
+  delete withoutNavigation.navigation;
+  assert.throws(() => decodeNativeBindingManifest(withoutNavigation), /manifest navigation must be an object/);
 });
 
 test("visual contracts still fail on unknown palette and asset refs", () => {

@@ -149,7 +149,7 @@ export function defineProduct<
   const finiteValues = [...declaration.finiteValues, declaration.navigation.pageValues];
   validateFiniteValues(finiteValues, declaration.nodeTypes, declaration.componentTypes, [
     declaration.navigation.activePageContract,
-    ...declaration.navigation.routeContracts,
+    declaration.navigation.routeIntentContract,
   ]);
   validateVisuals(declaration, assetCatalog);
 
@@ -261,7 +261,6 @@ export function defineProduct<
     componentTypes: declaration.componentTypes,
     components: declaration.components,
     mountedScopes,
-    intrinsicConsumerContractRefs: [declaration.navigation.activePageContract.id],
   });
   const stateAuthorities = compileStateAuthorities(
     declaration.stateAuthorities,

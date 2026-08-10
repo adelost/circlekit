@@ -39,7 +39,7 @@ export type LegoNavigationContract =
   | { readonly kind: "active-page" }
   | { readonly kind: "guard" }
   | { readonly kind: "event" }
-  | { readonly kind: "route"; readonly targetPageRef: string; readonly effect: "push" };
+  | { readonly kind: "route"; readonly effect: "push" };
 
 export function valueRef(ref: string): LegoValueRef {
   requireWireId(ref, "value ref");
@@ -255,6 +255,12 @@ export function present<const T extends ProductNodeDefinition>(
 /** Compiler-side validation for already-authored node types. */
 export function validateProductNodeType<const T extends ProductNodeType>(spec: T): T {
   requireWireId(spec.id, "ProductNodeType");
+  const uiEventOutputs = spec.outputs.filter(({ contract }) => contract.boundary === "ui-event");
+  if (uiEventOutputs.length > 0) {
+    throw new Error(
+      `${spec.kind} '${spec.id}' cannot originate ui-event output '${uiEventOutputs.map(({ id }) => id).join("', '")}'`,
+    );
+  }
   validatePorts(spec.inputs, `${spec.id} input`);
   validatePorts(spec.outputs, `${spec.id} output`);
   validateConfigInputs(spec.configInputs ?? [], spec.id);
@@ -429,8 +435,10 @@ export function validateContract(contract: LegoContract): void {
     if (contract.kind !== "event" || contract.boundary !== "ui-event") {
       throw new Error(`navigation route contract '${contract.id}' must be a ui-event`);
     }
-    if (!/^[A-Za-z][A-Za-z0-9._-]*$/u.test(contract.navigation.targetPageRef)) {
-      throw new Error(`navigation route contract '${contract.id}' has invalid target '${contract.navigation.targetPageRef}'`);
+    const target = contract.fields.filter(({ name }) => name === "target");
+    if (target.length !== 1 || typeof target[0]!.value === "string"
+      || !("finite" in target[0]!.value) || target[0]!.value.finite !== true) {
+      throw new Error(`navigation route contract '${contract.id}' must carry one finite 'target' field`);
     }
   } else if (contract.navigation?.kind === "event"
     && (contract.kind !== "event" || contract.boundary !== "ui-event")) {
