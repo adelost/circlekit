@@ -1,0 +1,1206 @@
+{
+  "artifacts": [
+    {
+      "entryScreen": "POSITION",
+      "id": "link-portable",
+      "rendererRefs": [
+        "link-kotlin"
+      ],
+      "requiredCapabilities": [
+        "ui.component-tree"
+      ],
+      "screenRefs": [
+        "POSITION"
+      ],
+      "serves": [
+        "round",
+        "compact",
+        "wide"
+      ]
+    }
+  ],
+  "artifactScopes": [
+    {
+      "artifactRef": "link-portable",
+      "includedMounts": [
+        {
+          "componentInstanceRef": "position.page",
+          "mountRef": "position.page"
+        },
+        {
+          "componentInstanceRef": "page.host",
+          "mountRef": "page.host"
+        }
+      ],
+      "omittedMounts": [],
+      "screenRef": "POSITION",
+      "surface": "round"
+    },
+    {
+      "artifactRef": "link-portable",
+      "includedMounts": [
+        {
+          "componentInstanceRef": "position.page",
+          "mountRef": "position.page"
+        },
+        {
+          "componentInstanceRef": "page.host",
+          "mountRef": "page.host"
+        }
+      ],
+      "omittedMounts": [],
+      "screenRef": "POSITION",
+      "surface": "compact"
+    },
+    {
+      "artifactRef": "link-portable",
+      "includedMounts": [
+        {
+          "componentInstanceRef": "position.page",
+          "mountRef": "position.page"
+        },
+        {
+          "componentInstanceRef": "page.host",
+          "mountRef": "page.host"
+        }
+      ],
+      "omittedMounts": [],
+      "screenRef": "POSITION",
+      "surface": "wide"
+    }
+  ],
+  "assetCatalogRef": {
+    "id": "circlekit",
+    "version": "0.3.25"
+  },
+  "componentFamilies": [
+    {
+      "family": {
+        "id": "link.position",
+        "trees": [
+          {
+            "mounts": [
+              {
+                "capacity": null,
+                "id": "position.page",
+                "instance": "position.page",
+                "order": 0,
+                "priority": 0,
+                "region": "primary",
+                "requirement": {
+                  "kind": "required"
+                }
+              },
+              {
+                "capacity": null,
+                "id": "page.host",
+                "instance": "page.host",
+                "order": 1,
+                "priority": 0,
+                "region": "page-host",
+                "requirement": {
+                  "kind": "required"
+                }
+              }
+            ],
+            "surface": "round"
+          },
+          {
+            "mounts": [
+              {
+                "capacity": null,
+                "id": "position.page",
+                "instance": "position.page",
+                "order": 0,
+                "priority": 0,
+                "region": "primary",
+                "requirement": {
+                  "kind": "required"
+                }
+              },
+              {
+                "capacity": null,
+                "id": "page.host",
+                "instance": "page.host",
+                "order": 1,
+                "priority": 0,
+                "region": "page-host",
+                "requirement": {
+                  "kind": "required"
+                }
+              }
+            ],
+            "surface": "compact"
+          },
+          {
+            "mounts": [
+              {
+                "capacity": null,
+                "id": "position.page",
+                "instance": "position.page",
+                "order": 0,
+                "priority": 0,
+                "region": "primary",
+                "requirement": {
+                  "kind": "required"
+                }
+              },
+              {
+                "capacity": null,
+                "id": "page.host",
+                "instance": "page.host",
+                "order": 1,
+                "priority": 0,
+                "region": "page-host",
+                "requirement": {
+                  "kind": "required"
+                }
+              }
+            ],
+            "surface": "wide"
+          }
+        ]
+      },
+      "screen": "POSITION"
+    }
+  ],
+  "components": [
+    {
+      "bindings": {
+        "events": {},
+        "inputs": {
+          "availability": "link.position-availability.presentation-adapter.presentation",
+          "fix": "position.fix-presentation.model"
+        }
+      },
+      "componentTypeRef": "link.position-page",
+      "id": "position.page"
+    },
+    {
+      "bindings": {
+        "events": {},
+        "inputs": {
+          "activePage": "navigation.service.activePage"
+        }
+      },
+      "componentTypeRef": "link.page-host",
+      "id": "page.host"
+    }
+  ],
+  "componentTypes": [
+    {
+      "id": "link.position-page",
+      "inputs": [
+        {
+          "contract": {
+            "boundary": "presentation",
+            "fields": [
+              {
+                "clockDomain": "none",
+                "name": "label",
+                "nullable": false,
+                "value": "string"
+              }
+            ],
+            "id": "link.position-availability.payload",
+            "kind": "snapshot"
+          },
+          "id": "availability",
+          "required": true
+        },
+        {
+          "contract": {
+            "boundary": "presentation",
+            "fields": [
+              {
+                "clockDomain": "none",
+                "name": "observation",
+                "nullable": false,
+                "value": {
+                  "ref": "position.observation"
+                }
+              },
+              {
+                "clockDomain": "none",
+                "name": "breakBefore",
+                "nullable": false,
+                "value": "boolean"
+              },
+              {
+                "clockDomain": "none",
+                "name": "gpsStatus",
+                "nullable": false,
+                "value": "string"
+              }
+            ],
+            "id": "link.position-fix-presentation",
+            "kind": "snapshot"
+          },
+          "id": "fix",
+          "required": true
+        }
+      ],
+      "outputs": [],
+      "requiredCapabilities": [
+        "ui.component-tree"
+      ]
+    },
+    {
+      "id": "link.page-host",
+      "inputs": [
+        {
+          "contract": {
+            "boundary": "presentation",
+            "fields": [
+              {
+                "clockDomain": "none",
+                "name": "page",
+                "nullable": false,
+                "value": {
+                  "finite": true,
+                  "ref": "link.navigation.page"
+                }
+              }
+            ],
+            "id": "link.navigation.active-page",
+            "kind": "state",
+            "navigation": {
+              "kind": "active-page"
+            }
+          },
+          "id": "activePage",
+          "required": true
+        }
+      ],
+      "outputs": [],
+      "requiredCapabilities": [
+        "ui.component-tree"
+      ]
+    }
+  ],
+  "configs": [
+    {
+      "id": "link.position-acquisition",
+      "values": {
+        "balancedIntervalMs": 30000,
+        "highIntervalMs": 2000
+      }
+    },
+    {
+      "id": "link.position-presentation-policy",
+      "values": {
+        "coarseAccuracyM": 100,
+        "displayStaleAgeMs": 60000,
+        "maxAccuracyM": 10000,
+        "staleFixAgeMs": 5000
+      }
+    },
+    {
+      "id": "link.position-flight-policy"
+    }
+  ],
+  "finiteValues": [
+    {
+      "id": "link.navigation.page",
+      "values": [
+        "POSITION"
+      ]
+    }
+  ],
+  "iconRefs": [],
+  "id": "link",
+  "kind": "product-spec-ir",
+  "navigation": {
+    "actionGroups": [],
+    "activePageContract": {
+      "boundary": "presentation",
+      "fields": [
+        {
+          "clockDomain": "none",
+          "name": "page",
+          "nullable": false,
+          "value": {
+            "finite": true,
+            "ref": "link.navigation.page"
+          }
+        }
+      ],
+      "id": "link.navigation.active-page",
+      "kind": "state",
+      "navigation": {
+        "kind": "active-page"
+      }
+    },
+    "activePagePortRef": "navigation.service.activePage",
+    "artifacts": [
+      {
+        "artifactRef": "link-portable",
+        "entryPageRef": "POSITION",
+        "pages": [
+          {
+            "back": "system",
+            "guardContractRef": null,
+            "pageRef": "POSITION",
+            "restore": "root"
+          }
+        ]
+      }
+    ],
+    "id": "link.navigation",
+    "pageHostPortRef": "page.host.activePage",
+    "pages": [
+      {
+        "back": "system",
+        "guardContractRef": null,
+        "id": "POSITION"
+      }
+    ],
+    "pageValuesRef": "link.navigation.page",
+    "routeIntentContract": {
+      "boundary": "ui-event",
+      "fields": [
+        {
+          "clockDomain": "none",
+          "name": "target",
+          "nullable": false,
+          "value": {
+            "finite": true,
+            "ref": "link.navigation.page"
+          }
+        }
+      ],
+      "id": "link.navigation.route-intent",
+      "kind": "event",
+      "navigation": {
+        "effect": "push",
+        "kind": "route"
+      }
+    }
+  },
+  "nodes": [
+    {
+      "activation": {
+        "kind": "leased",
+        "lifecycleSources": [],
+        "port": "demand"
+      },
+      "bindings": {},
+      "config": {
+        "acquisition": "link.position-acquisition",
+        "flightPolicy": "link.position-flight-policy",
+        "presentationPolicy": "link.position-presentation-policy"
+      },
+      "id": "position.service",
+      "nodeTypeRef": "position.service"
+    },
+    {
+      "bindings": {
+        "fix": "position.service.flightFix"
+      },
+      "config": {},
+      "id": "position.fix-presentation",
+      "nodeTypeRef": "link.position-fix-presentation"
+    },
+    {
+      "bindings": {
+        "state": "position.service.presentation"
+      },
+      "config": {},
+      "id": "link.position-availability.presentation-adapter",
+      "nodeTypeRef": "link.position-availability.presentation-adapter"
+    },
+    {
+      "activation": {
+        "kind": "lifetime",
+        "lifecycleSources": []
+      },
+      "bindings": {},
+      "config": {},
+      "id": "navigation.service",
+      "nodeTypeRef": "link.navigation-service"
+    }
+  ],
+  "nodeTypes": [
+    {
+      "configInputs": [
+        {
+          "fields": [
+            {
+              "name": "highIntervalMs",
+              "positive": true,
+              "unit": "si.millisecond",
+              "value": "integer"
+            },
+            {
+              "name": "balancedIntervalMs",
+              "positive": true,
+              "unit": "si.millisecond",
+              "value": "integer"
+            }
+          ],
+          "id": "acquisition"
+        },
+        {
+          "fields": [
+            {
+              "name": "maxAccuracyM",
+              "positive": true,
+              "unit": "si.meter",
+              "value": "number"
+            },
+            {
+              "name": "staleFixAgeMs",
+              "positive": true,
+              "unit": "si.millisecond",
+              "value": "integer"
+            },
+            {
+              "name": "coarseAccuracyM",
+              "positive": true,
+              "unit": "si.meter",
+              "value": "number"
+            },
+            {
+              "name": "displayStaleAgeMs",
+              "positive": true,
+              "unit": "si.millisecond",
+              "value": "integer"
+            }
+          ],
+          "id": "presentationPolicy"
+        },
+        {
+          "fields": [],
+          "id": "flightPolicy"
+        }
+      ],
+      "id": "position.service",
+      "inputs": [
+        {
+          "contract": {
+            "boundary": "service-internal",
+            "fields": [
+              {
+                "clockDomain": "none",
+                "name": "owner",
+                "nullable": false,
+                "value": "string"
+              },
+              {
+                "clockDomain": "none",
+                "name": "active",
+                "nullable": false,
+                "value": "boolean"
+              }
+            ],
+            "id": "service.demand",
+            "kind": "event"
+          },
+          "id": "demand",
+          "purpose": "demand"
+        }
+      ],
+      "kind": "service",
+      "outputs": [
+        {
+          "contract": {
+            "boundary": "presentation",
+            "fields": [
+              {
+                "clockDomain": "none",
+                "name": "availability",
+                "nullable": false,
+                "value": {
+                  "finite": true,
+                  "ref": "position.availability"
+                }
+              },
+              {
+                "clockDomain": "none",
+                "name": "observation",
+                "nullable": true,
+                "value": {
+                  "ref": "position.observation"
+                }
+              }
+            ],
+            "id": "position.presentation",
+            "kind": "state"
+          },
+          "id": "presentation",
+          "purpose": "data"
+        },
+        {
+          "contract": {
+            "boundary": "service-internal",
+            "fields": [
+              {
+                "clockDomain": "none",
+                "name": "observation",
+                "nullable": false,
+                "value": {
+                  "ref": "position.observation"
+                }
+              },
+              {
+                "clockDomain": "none",
+                "name": "breakBefore",
+                "nullable": false,
+                "value": "boolean"
+              },
+              {
+                "clockDomain": "none",
+                "name": "gpsStatus",
+                "nullable": false,
+                "value": "string"
+              }
+            ],
+            "id": "position.flight-fix",
+            "kind": "observation"
+          },
+          "id": "flightFix",
+          "purpose": "data"
+        }
+      ],
+      "runtime": {
+        "clockDomain": "monotonic",
+        "contextInputs": [
+          "device.location",
+          "permission.location",
+          "clock.monotonic",
+          "recording.policy"
+        ],
+        "durability": "transient",
+        "effects": [
+          "location.subscription"
+        ],
+        "lifetime": "process",
+        "stateOwner": "instance"
+      }
+    },
+    {
+      "id": "link.position-fix-presentation",
+      "inputs": [
+        {
+          "contract": {
+            "boundary": "service-internal",
+            "fields": [
+              {
+                "clockDomain": "none",
+                "name": "observation",
+                "nullable": false,
+                "value": {
+                  "ref": "position.observation"
+                }
+              },
+              {
+                "clockDomain": "none",
+                "name": "breakBefore",
+                "nullable": false,
+                "value": "boolean"
+              },
+              {
+                "clockDomain": "none",
+                "name": "gpsStatus",
+                "nullable": false,
+                "value": "string"
+              }
+            ],
+            "id": "position.flight-fix",
+            "kind": "observation"
+          },
+          "id": "fix",
+          "purpose": "data"
+        }
+      ],
+      "kind": "present",
+      "outputs": [
+        {
+          "contract": {
+            "boundary": "presentation",
+            "fields": [
+              {
+                "clockDomain": "none",
+                "name": "observation",
+                "nullable": false,
+                "value": {
+                  "ref": "position.observation"
+                }
+              },
+              {
+                "clockDomain": "none",
+                "name": "breakBefore",
+                "nullable": false,
+                "value": "boolean"
+              },
+              {
+                "clockDomain": "none",
+                "name": "gpsStatus",
+                "nullable": false,
+                "value": "string"
+              }
+            ],
+            "id": "link.position-fix-presentation",
+            "kind": "snapshot"
+          },
+          "id": "model",
+          "purpose": "data"
+        }
+      ],
+      "runtime": {
+        "clockDomain": "none",
+        "contextInputs": [],
+        "durability": "transient",
+        "effects": [],
+        "lifetime": "call",
+        "stateOwner": "none"
+      }
+    },
+    {
+      "id": "link.position-availability.presentation-adapter",
+      "inputs": [
+        {
+          "contract": {
+            "boundary": "presentation",
+            "fields": [
+              {
+                "clockDomain": "none",
+                "name": "availability",
+                "nullable": false,
+                "value": {
+                  "finite": true,
+                  "ref": "position.availability"
+                }
+              },
+              {
+                "clockDomain": "none",
+                "name": "observation",
+                "nullable": true,
+                "value": {
+                  "ref": "position.observation"
+                }
+              }
+            ],
+            "id": "position.presentation",
+            "kind": "state"
+          },
+          "id": "state",
+          "purpose": "data"
+        }
+      ],
+      "kind": "present",
+      "outputs": [
+        {
+          "contract": {
+            "boundary": "presentation",
+            "fields": [
+              {
+                "clockDomain": "none",
+                "name": "label",
+                "nullable": false,
+                "value": "string"
+              }
+            ],
+            "id": "link.position-availability.payload",
+            "kind": "snapshot"
+          },
+          "id": "presentation",
+          "purpose": "data"
+        }
+      ],
+      "runtime": {
+        "clockDomain": "none",
+        "contextInputs": [],
+        "durability": "transient",
+        "effects": [],
+        "lifetime": "call",
+        "stateOwner": "none"
+      }
+    },
+    {
+      "id": "link.navigation-service",
+      "inputs": [],
+      "kind": "service",
+      "outputs": [
+        {
+          "contract": {
+            "boundary": "presentation",
+            "fields": [
+              {
+                "clockDomain": "none",
+                "name": "page",
+                "nullable": false,
+                "value": {
+                  "finite": true,
+                  "ref": "link.navigation.page"
+                }
+              }
+            ],
+            "id": "link.navigation.active-page",
+            "kind": "state",
+            "navigation": {
+              "kind": "active-page"
+            }
+          },
+          "id": "activePage",
+          "purpose": "data"
+        }
+      ],
+      "runtime": {
+        "clockDomain": "none",
+        "contextInputs": [],
+        "durability": "transient",
+        "effects": [
+          "ui.navigation"
+        ],
+        "lifetime": "instance",
+        "stateOwner": "instance"
+      }
+    }
+  ],
+  "palette": {
+    "variants": []
+  },
+  "portRegistry": {
+    "bindings": [
+      {
+        "from": "position.service.flightFix",
+        "kind": "node-input",
+        "purpose": "data",
+        "to": "position.fix-presentation.fix"
+      },
+      {
+        "from": "position.service.presentation",
+        "kind": "node-input",
+        "purpose": "data",
+        "to": "link.position-availability.presentation-adapter.state"
+      },
+      {
+        "from": "link.position-availability.presentation-adapter.presentation",
+        "kind": "component-input",
+        "purpose": "data",
+        "to": "position.page.availability"
+      },
+      {
+        "from": "position.fix-presentation.model",
+        "kind": "component-input",
+        "purpose": "data",
+        "to": "position.page.fix"
+      },
+      {
+        "from": "navigation.service.activePage",
+        "kind": "component-input",
+        "purpose": "data",
+        "to": "page.host.activePage"
+      }
+    ],
+    "componentPorts": [
+      {
+        "boundary": "presentation",
+        "contractRef": "link.position-availability.payload",
+        "direction": "input",
+        "ownerId": "position.page",
+        "ownerKind": "component",
+        "portId": "availability",
+        "purpose": "data",
+        "ref": "position.page.availability",
+        "required": true,
+        "typeRef": "link.position-page"
+      },
+      {
+        "boundary": "presentation",
+        "contractRef": "link.position-fix-presentation",
+        "direction": "input",
+        "ownerId": "position.page",
+        "ownerKind": "component",
+        "portId": "fix",
+        "purpose": "data",
+        "ref": "position.page.fix",
+        "required": true,
+        "typeRef": "link.position-page"
+      },
+      {
+        "boundary": "presentation",
+        "contractRef": "link.navigation.active-page",
+        "direction": "input",
+        "ownerId": "page.host",
+        "ownerKind": "component",
+        "portId": "activePage",
+        "purpose": "data",
+        "ref": "page.host.activePage",
+        "required": true,
+        "typeRef": "link.page-host"
+      }
+    ],
+    "contracts": [
+      {
+        "boundary": "service-internal",
+        "fields": [
+          {
+            "clockDomain": "none",
+            "name": "owner",
+            "nullable": false,
+            "value": "string"
+          },
+          {
+            "clockDomain": "none",
+            "name": "active",
+            "nullable": false,
+            "value": "boolean"
+          }
+        ],
+        "id": "service.demand",
+        "kind": "event"
+      },
+      {
+        "boundary": "presentation",
+        "fields": [
+          {
+            "clockDomain": "none",
+            "name": "availability",
+            "nullable": false,
+            "value": {
+              "finite": true,
+              "ref": "position.availability"
+            }
+          },
+          {
+            "clockDomain": "none",
+            "name": "observation",
+            "nullable": true,
+            "value": {
+              "ref": "position.observation"
+            }
+          }
+        ],
+        "id": "position.presentation",
+        "kind": "state"
+      },
+      {
+        "boundary": "service-internal",
+        "fields": [
+          {
+            "clockDomain": "none",
+            "name": "observation",
+            "nullable": false,
+            "value": {
+              "ref": "position.observation"
+            }
+          },
+          {
+            "clockDomain": "none",
+            "name": "breakBefore",
+            "nullable": false,
+            "value": "boolean"
+          },
+          {
+            "clockDomain": "none",
+            "name": "gpsStatus",
+            "nullable": false,
+            "value": "string"
+          }
+        ],
+        "id": "position.flight-fix",
+        "kind": "observation"
+      },
+      {
+        "boundary": "presentation",
+        "fields": [
+          {
+            "clockDomain": "none",
+            "name": "observation",
+            "nullable": false,
+            "value": {
+              "ref": "position.observation"
+            }
+          },
+          {
+            "clockDomain": "none",
+            "name": "breakBefore",
+            "nullable": false,
+            "value": "boolean"
+          },
+          {
+            "clockDomain": "none",
+            "name": "gpsStatus",
+            "nullable": false,
+            "value": "string"
+          }
+        ],
+        "id": "link.position-fix-presentation",
+        "kind": "snapshot"
+      },
+      {
+        "boundary": "presentation",
+        "fields": [
+          {
+            "clockDomain": "none",
+            "name": "label",
+            "nullable": false,
+            "value": "string"
+          }
+        ],
+        "id": "link.position-availability.payload",
+        "kind": "snapshot"
+      },
+      {
+        "boundary": "presentation",
+        "fields": [
+          {
+            "clockDomain": "none",
+            "name": "page",
+            "nullable": false,
+            "value": {
+              "finite": true,
+              "ref": "link.navigation.page"
+            }
+          }
+        ],
+        "id": "link.navigation.active-page",
+        "kind": "state",
+        "navigation": {
+          "kind": "active-page"
+        }
+      }
+    ],
+    "demandEdges": [
+      {
+        "artifactRef": "link-portable",
+        "componentInstanceRef": "position.page",
+        "kind": "component-mount",
+        "mountRef": "position.page",
+        "nodeInstanceRef": "position.service",
+        "screenRef": "POSITION",
+        "surface": "round",
+        "targetPortRef": "position.service.demand"
+      },
+      {
+        "artifactRef": "link-portable",
+        "componentInstanceRef": "position.page",
+        "kind": "component-mount",
+        "mountRef": "position.page",
+        "nodeInstanceRef": "position.service",
+        "screenRef": "POSITION",
+        "surface": "compact",
+        "targetPortRef": "position.service.demand"
+      },
+      {
+        "artifactRef": "link-portable",
+        "componentInstanceRef": "position.page",
+        "kind": "component-mount",
+        "mountRef": "position.page",
+        "nodeInstanceRef": "position.service",
+        "screenRef": "POSITION",
+        "surface": "wide",
+        "targetPortRef": "position.service.demand"
+      }
+    ],
+    "nodePorts": [
+      {
+        "boundary": "service-internal",
+        "contractRef": "service.demand",
+        "direction": "input",
+        "ownerId": "position.service",
+        "ownerKind": "node",
+        "portId": "demand",
+        "purpose": "demand",
+        "ref": "position.service.demand",
+        "required": true,
+        "typeRef": "position.service"
+      },
+      {
+        "boundary": "presentation",
+        "contractRef": "position.presentation",
+        "direction": "output",
+        "ownerId": "position.service",
+        "ownerKind": "node",
+        "portId": "presentation",
+        "purpose": "data",
+        "ref": "position.service.presentation",
+        "required": true,
+        "typeRef": "position.service"
+      },
+      {
+        "boundary": "service-internal",
+        "contractRef": "position.flight-fix",
+        "direction": "output",
+        "ownerId": "position.service",
+        "ownerKind": "node",
+        "portId": "flightFix",
+        "purpose": "data",
+        "ref": "position.service.flightFix",
+        "required": true,
+        "typeRef": "position.service"
+      },
+      {
+        "boundary": "service-internal",
+        "contractRef": "position.flight-fix",
+        "direction": "input",
+        "ownerId": "position.fix-presentation",
+        "ownerKind": "node",
+        "portId": "fix",
+        "purpose": "data",
+        "ref": "position.fix-presentation.fix",
+        "required": true,
+        "typeRef": "link.position-fix-presentation"
+      },
+      {
+        "boundary": "presentation",
+        "contractRef": "link.position-fix-presentation",
+        "direction": "output",
+        "ownerId": "position.fix-presentation",
+        "ownerKind": "node",
+        "portId": "model",
+        "purpose": "data",
+        "ref": "position.fix-presentation.model",
+        "required": true,
+        "typeRef": "link.position-fix-presentation"
+      },
+      {
+        "boundary": "presentation",
+        "contractRef": "position.presentation",
+        "direction": "input",
+        "ownerId": "link.position-availability.presentation-adapter",
+        "ownerKind": "node",
+        "portId": "state",
+        "purpose": "data",
+        "ref": "link.position-availability.presentation-adapter.state",
+        "required": true,
+        "typeRef": "link.position-availability.presentation-adapter"
+      },
+      {
+        "boundary": "presentation",
+        "contractRef": "link.position-availability.payload",
+        "direction": "output",
+        "ownerId": "link.position-availability.presentation-adapter",
+        "ownerKind": "node",
+        "portId": "presentation",
+        "purpose": "data",
+        "ref": "link.position-availability.presentation-adapter.presentation",
+        "required": true,
+        "typeRef": "link.position-availability.presentation-adapter"
+      },
+      {
+        "boundary": "presentation",
+        "contractRef": "link.navigation.active-page",
+        "direction": "output",
+        "ownerId": "navigation.service",
+        "ownerKind": "node",
+        "portId": "activePage",
+        "purpose": "data",
+        "ref": "navigation.service.activePage",
+        "required": true,
+        "typeRef": "link.navigation-service"
+      }
+    ]
+  },
+  "rendererBindings": [
+    {
+      "capabilities": [
+        "ui.component-tree"
+      ],
+      "id": "link-kotlin"
+    }
+  ],
+  "schemaVersion": 9,
+  "stateAuthorities": [
+    {
+      "adapter": {
+        "inputPortRef": "link.position-availability.presentation-adapter.state",
+        "nodeInstanceRef": "link.position-availability.presentation-adapter",
+        "nodeTypeRef": "link.position-availability.presentation-adapter",
+        "outputPortRef": "link.position-availability.presentation-adapter.presentation"
+      },
+      "id": "link.position-availability",
+      "presentation": {
+        "cases": {
+          "coarse": {
+            "label": "GPS COARSE"
+          },
+          "failed": {
+            "label": "GPS ERROR"
+          },
+          "live": {
+            "label": "GPS LIVE"
+          },
+          "off": {
+            "label": "GPS OFF"
+          },
+          "precise-required": {
+            "label": "PRECISE REQUIRED"
+          },
+          "stale": {
+            "label": "LAST SEEN"
+          },
+          "subscribing": {
+            "label": "SEARCHING"
+          }
+        },
+        "consumers": [
+          "position.page.availability"
+        ],
+        "contract": {
+          "boundary": "presentation",
+          "fields": [
+            {
+              "clockDomain": "none",
+              "name": "label",
+              "nullable": false,
+              "value": "string"
+            }
+          ],
+          "id": "link.position-availability.payload",
+          "kind": "snapshot"
+        },
+        "fields": [
+          {
+            "name": "label",
+            "value": "string"
+          }
+        ],
+        "id": "link.position-availability",
+        "stateRef": "position.availability"
+      },
+      "source": {
+        "contract": {
+          "boundary": "presentation",
+          "fields": [
+            {
+              "clockDomain": "none",
+              "name": "availability",
+              "nullable": false,
+              "value": {
+                "finite": true,
+                "ref": "position.availability"
+              }
+            },
+            {
+              "clockDomain": "none",
+              "name": "observation",
+              "nullable": true,
+              "value": {
+                "ref": "position.observation"
+              }
+            }
+          ],
+          "id": "position.presentation",
+          "kind": "state"
+        },
+        "portRef": "position.service.presentation",
+        "stateField": "availability",
+        "states": {
+          "id": "position.availability",
+          "values": [
+            "off",
+            "precise-required",
+            "subscribing",
+            "live",
+            "coarse",
+            "stale",
+            "failed"
+          ]
+        }
+      }
+    }
+  ]
+}
