@@ -23,6 +23,7 @@ dependencyResolutionManagement {
 rootProject.name = "CircleKit"
 include(
     ":designkit",
+    ":renderkit",
     ":ringkit",
     ":releasekit",
     ":releasekit-ui",

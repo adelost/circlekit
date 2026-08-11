@@ -10,7 +10,7 @@ REMOTE_REPOSITORY="${CIRCLEKIT_REMOTE_REPOSITORY:-https://circlekit.pages.dev}"
 AXIS="${CIRCLEKIT_RELEASE_AXIS:-maven}"
 VERSION="${1:-}"
 MODE="${2:-}"
-MODULES=(designkit ringkit releasekit releasekit-ui servicekit)
+MODULES=(designkit renderkit ringkit releasekit releasekit-ui servicekit)
 EXTENSIONS=(aar pom module)
 CHECKSUM_SUFFIXES=("" .md5 .sha1 .sha256 .sha512)
 NPM_PACKAGES=(
@@ -235,6 +235,7 @@ if [[ "$AXIS" == maven ]]; then
     "-PcirclekitVersion=$VERSION" \
     "-PcirclekitPublishDir=$new_repository" \
     :designkit:publishReleasePublicationToCirclekitRepository \
+    :renderkit:publishReleasePublicationToCirclekitRepository \
     :ringkit:publishReleasePublicationToCirclekitRepository \
     :releasekit:publishReleasePublicationToCirclekitRepository \
     :releasekit-ui:publishReleasePublicationToCirclekitRepository \
