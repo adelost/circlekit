@@ -1,6 +1,6 @@
 {
   "name": "@v1d/skydiving-legos",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "The skydiving domain as a reserved ProductSpec library catalog: contracts, node types and finite spaces",
   "type": "module",
   "files": [
@@ -21,7 +21,7 @@
     "pack:release": "npm run test && npm pack"
   },
   "dependencies": {
-    "@v1d/product-spec": "https://circlekit.pages.dev/npm/v1d/product-spec/0.3.51/v1d-product-spec-0.3.51.tgz"
+    "@v1d/product-spec": "https://circlekit.pages.dev/npm/v1d/product-spec/0.3.52/v1d-product-spec-0.3.52.tgz"
   },
   "devDependencies": {
     "@types/node": "^24.3.0",
