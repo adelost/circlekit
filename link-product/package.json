@@ -1,0 +1,28 @@
+{
+  "name": "@v1d/link-product",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "clean": "node -e \"require('node:fs').rmSync('dist',{recursive:true,force:true})\"",
+    "check:dag": "node scripts/check-import-dag.mjs",
+    "build": "npm run clean && npm run check:dag && tsc -p tsconfig.json",
+    "generate": "npm run build && node dist/src/generate.js",
+    "check-generated": "npm run build && node dist/src/generate.js --check",
+    "test": "npm run build && node --test dist/test/*.test.js",
+    "check:pins": "v1d-check-pins"
+  },
+  "dependencies": {
+    "@v1d/circlekit-assets": "https://circlekit.pages.dev/npm/v1d/circlekit-assets/0.3.43/v1d-circlekit-assets-0.3.43.tgz",
+    "@v1d/product-emit": "https://circlekit.pages.dev/npm/v1d/product-emit/0.1.2/v1d-product-emit-0.1.2.tgz",
+    "@v1d/product-spec": "https://circlekit.pages.dev/npm/v1d/product-spec/0.3.52/v1d-product-spec-0.3.52.tgz",
+    "@v1d/skydiving-legos": "https://circlekit.pages.dev/npm/v1d/skydiving-legos/0.1.2/v1d-skydiving-legos-0.1.2.tgz"
+  },
+  "devDependencies": {
+    "@types/node": "^24.3.0",
+    "typescript": "^5.9.3"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}

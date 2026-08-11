@@ -1,4 +1,6 @@
 .gradle/
 **/build/
+**/dist/
+**/node_modules/
 local.properties
 *.iml

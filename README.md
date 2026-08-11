@@ -11,6 +11,9 @@ Shared Android foundations used by Skyvw and Agentmux Link.
   manifests, published as the versioned `@v1d/product-spec` npm tarball.
 - `product-emit`: deterministic ProductSpec emitters with separate
   product-neutral `/core` and skydiving `/skydiving` entrypoints.
+- `skydiving-legos`: the published skydiving domain catalog shared by products.
+- `link-product`: a one-Lego, one-page consumer proving that the shared catalog
+  and emitters compose a second product without Skyvw source.
 - `showcase-product`: CircleKit-owned, data-only Showcase ProductConfig. Its
   one generated descriptor drives both Android Showcase hosts.
 - `circlekit-assets`: CircleKit-owned portable vector geometry, published as
