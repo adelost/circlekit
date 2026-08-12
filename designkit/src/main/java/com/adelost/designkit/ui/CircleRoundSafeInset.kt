@@ -107,6 +107,46 @@ fun roundSafeHorizontalInsetsDp(
 }
 
 /**
+ * Directional clearance for a rectangle, including every point across its
+ * height. This is the stable-plot counterpart to [roundSafeHorizontalInsetsDp]:
+ * a tall plot must clear rim chrome that intersects its top or bottom even
+ * when the plot centre itself is outside the button's band.
+ */
+fun roundSafeRectHorizontalInsetsDp(
+    viewportWidthDp: Float,
+    viewportHeightDp: Float,
+    contentCenterYDp: Float,
+    contentHeightDp: Float,
+    reservedSlots: List<CircleChromeSlot>,
+    buttonDiameterDp: Float = MenuDesign.watchActionRingDiameter.value,
+    gapDp: Float = ROUND_SAFE_CONTENT_GAP_DP,
+): CircleHorizontalInsetsDp {
+    if (viewportWidthDp <= 0f || viewportHeightDp <= 0f || contentHeightDp <= 0f) {
+        return CircleHorizontalInsetsDp(0f, 0f)
+    }
+    val halfHeightDp = contentHeightDp / 2f
+    val topDp = contentCenterYDp - halfHeightDp
+    val bottomDp = contentCenterYDp + halfHeightDp
+    val chord = maxOf(
+        roundChordInsetDp(viewportWidthDp, viewportHeightDp, topDp),
+        roundChordInsetDp(viewportWidthDp, viewportHeightDp, bottomDp),
+    )
+    val chrome = roundChromeHorizontalInsetsForHalfHeightDp(
+        viewportWidthDp = viewportWidthDp,
+        viewportHeightDp = viewportHeightDp,
+        contentCenterYDp = contentCenterYDp,
+        contentHalfHeightDp = halfHeightDp,
+        reservedSlots = reservedSlots,
+        buttonDiameterDp = buttonDiameterDp,
+        gapDp = gapDp,
+    )
+    return CircleHorizontalInsetsDp(
+        start = maxOf(chord, chrome.start),
+        end = maxOf(chord, chrome.end),
+    )
+}
+
+/**
  * Half the chord of a circle at [distanceFromCenter] from its centre.
  *
  * The one primitive every round-geometry question reduces to. Unit-neutral:
@@ -161,6 +201,24 @@ fun roundChromeHorizontalInsetsDp(
     reservedSlots: List<CircleChromeSlot>,
     buttonDiameterDp: Float = MenuDesign.watchActionRingDiameter.value,
     gapDp: Float = ROUND_SAFE_CONTENT_GAP_DP,
+): CircleHorizontalInsetsDp = roundChromeHorizontalInsetsForHalfHeightDp(
+    viewportWidthDp = viewportWidthDp,
+    viewportHeightDp = viewportHeightDp,
+    contentCenterYDp = contentCenterYDp,
+    contentHalfHeightDp = 0f,
+    reservedSlots = reservedSlots,
+    buttonDiameterDp = buttonDiameterDp,
+    gapDp = gapDp,
+)
+
+private fun roundChromeHorizontalInsetsForHalfHeightDp(
+    viewportWidthDp: Float,
+    viewportHeightDp: Float,
+    contentCenterYDp: Float,
+    contentHalfHeightDp: Float,
+    reservedSlots: List<CircleChromeSlot>,
+    buttonDiameterDp: Float,
+    gapDp: Float,
 ): CircleHorizontalInsetsDp {
     if (viewportWidthDp <= 0f || viewportHeightDp <= 0f || reservedSlots.isEmpty()) {
         return CircleHorizontalInsetsDp(0f, 0f)
@@ -176,7 +234,7 @@ fun roundChromeHorizontalInsetsDp(
         val angleRad = Math.toRadians(slot.angleFromTopDeg.toDouble())
         val slotXDp = centerXDp + slotRadiusDp * sin(angleRad).toFloat()
         val slotYDp = centerYDp - slotRadiusDp * cos(angleRad).toFloat()
-        if (abs(contentCenterYDp - slotYDp) <= buttonRadiusDp + gapDp) {
+        if (abs(contentCenterYDp - slotYDp) <= contentHalfHeightDp + buttonRadiusDp + gapDp) {
             if (slotXDp <= centerXDp) {
                 start = maxOf(start, (slotXDp + buttonRadiusDp + gapDp).coerceAtLeast(0f))
             } else {
