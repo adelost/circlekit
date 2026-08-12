@@ -98,6 +98,27 @@ class CircleRoundSafeInsetTest {
     }
 
     @Test
+    fun `a tall plot clears chrome intersecting any part of its envelope`() {
+        val point = roundSafeHorizontalInsetsDp(
+            face,
+            face,
+            contentCenterYDp = 140f,
+            reservedSlots = x9,
+        )
+        val plot = roundSafeRectHorizontalInsetsDp(
+            face,
+            face,
+            contentCenterYDp = face / 2f,
+            contentHeightDp = 130f,
+            reservedSlots = x9,
+        )
+
+        assertEquals("a point row below X is free", point.start, point.end, 0.001f)
+        assertTrue("the tall plot must reserve X on the left", plot.start > plot.end)
+        assertTrue("the plot still clears the round edge on the right", plot.end > 0f)
+    }
+
+    @Test
     fun `a degenerate viewport asks for nothing instead of crashing`() {
         assertEquals(0f, roundSafeInsetDp(0f, 0f, 0f, x9), 0.001f)
     }
