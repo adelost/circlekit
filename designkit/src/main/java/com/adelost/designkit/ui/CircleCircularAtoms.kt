@@ -127,6 +127,8 @@ fun CircleIconDisc(
     iconTint: Color? = null,
     accent: CircleAccent = ringIconAccent(icon),
     choiceState: CircleChoiceState? = null,
+    /** Optional asynchronous work on the same contour as the action. */
+    labelProgress: CircleLabelProgress? = null,
     timing: CircleActionTiming = CircleActionTiming.DELIBERATE,
 ) {
     val feedback = rememberCircleActionFeedbackState()
@@ -144,6 +146,11 @@ fun CircleIconDisc(
         scrim = scrim,
         activeContour = activeContour,
     )
+    val progressSweep = rememberCircleFeedbackSweep(
+        progress = labelProgress,
+        pressed = feedback.pressed,
+        pressHoldMs = timing.holdMs,
+    )
     val scale by animateFloatAsState(chrome.scale, label = "circleIconDiscPress")
     Box(
         contentAlignment = Alignment.Center,
@@ -153,6 +160,7 @@ fun CircleIconDisc(
             .clip(CircleShape)
             .background(chrome.fill)
             .circleRingContour(chrome.contour)
+            .circleProgressContour(progressSweep.takeIf { it > 0f }, circleBrandColor())
             .circleSafeTap(
                 feedback = feedback,
                 enabled = enabled,
