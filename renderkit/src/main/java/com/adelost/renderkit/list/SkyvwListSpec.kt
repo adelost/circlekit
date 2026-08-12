@@ -2,6 +2,7 @@ package com.adelost.renderkit.list
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
+import com.adelost.renderkit.data.OledDataPlotSpec
 
 /**
  * The wear-free list contract between shared Skyvw screens and their hosts
@@ -87,6 +88,11 @@ class SkyvwListItem(
     val key: Any,
     val contentType: Any? = null,
     /**
+     * Non-null only for a real data plot. Round hosts keep this item at one
+     * stable chord width and clamp its centre; linear hosts ignore it.
+     */
+    val oledDataPlot: OledDataPlotSpec? = null,
+    /**
      * Set by [SkyvwListScope.group]; screens never pass it. Consecutive items
      * sharing a non-null key are one indivisible cell — see [SkyvwListPolicy.columns].
      */
@@ -94,7 +100,13 @@ class SkyvwListItem(
     val content: @Composable () -> Unit,
 ) {
     internal fun inGroup(key: Any): SkyvwListItem =
-        SkyvwListItem(key = this.key, contentType = contentType, groupKey = key, content = content)
+        SkyvwListItem(
+            key = this.key,
+            contentType = contentType,
+            oledDataPlot = oledDataPlot,
+            groupKey = key,
+            content = content,
+        )
 }
 
 /**
