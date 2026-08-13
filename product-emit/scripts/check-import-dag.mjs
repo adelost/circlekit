@@ -18,11 +18,11 @@ const expectedCore = new Set([
 ]);
 const expectedSkydiving = new Set([
   "compile-interactions", "compile-settings", "emit-home-actions-kotlin",
-  "emit-interaction-kotlin", "emit-iso-options-kotlin", "emit-kotlin",
+  "emit-interaction-kotlin", "emit-iso-options-kotlin", "emit-jump-tags-kotlin", "emit-kotlin",
   "emit-map-object-presets-kotlin", "emit-map-product-kotlin", "emit-product-icons-kotlin",
   "emit-product-menus-kotlin", "emit-settings-components-kotlin",
   "emit-surface-components-kotlin", "emit-watch-chrome-slots-kotlin", "home-action-model",
-  "index", "interaction-model", "iso-option-model", "menu-text-budget", "model",
+  "index", "interaction-model", "iso-option-model", "jump-tag-model", "menu-text-budget", "model",
   "native-symbols", "normalize-setting", "product-menu-model", "product-menu-types",
   "setting-mount-model", "surface-component-model", "validate-iso-options",
   "validate-product-menus", "validate-setting-groups", "watch-chrome-slot-model",
