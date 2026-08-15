@@ -97,11 +97,12 @@ test("the catalog declares the skydiving domain and validates on its own", () =>
   assert.equal(skydivingFiniteValues.length, 19);
 });
 
-test("auto zero config describes saved-reference expiry, not sensor recency", () => {
+test("auto zero config describes app inactivity, not zero age or sensor recency", () => {
   const input = instrumentRuntimeOwner.configInputs.find(({ id }) => id === "autoZeroPolicy");
   assert.ok(input?.fields);
   const names = input.fields.map(({ name }) => name);
-  assert.ok(names.includes("expireReferenceAfterMs"));
+  assert.ok(names.includes("expireAfterAppInactivityMs"));
+  assert.ok(!names.includes("expireReferenceAfterMs"));
   assert.ok(!names.includes("rearmAfterIdleMs"));
   assert.ok(!names.includes("pressureRecencyWriteIntervalMs"));
 });
