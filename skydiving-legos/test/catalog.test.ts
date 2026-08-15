@@ -19,6 +19,7 @@ import {
   skydivingNodeTypes, unreservedContractIds, unreservedNodeTypeIds,
 } from "../src/catalog.js";
 import { skydivingFiniteValues } from "../src/finite-values.js";
+import { instrumentRuntimeOwner } from "../src/legos/flight.js";
 
 const assets = { id: "assets", version: "0.0.0", icons: [] };
 
@@ -94,6 +95,15 @@ test("the catalog declares the skydiving domain and validates on its own", () =>
   assert.ok(skydivingContracts.length > 70, `only ${skydivingContracts.length} contracts`);
   assert.ok(skydivingNodeTypes.length > 30, `only ${skydivingNodeTypes.length} node types`);
   assert.equal(skydivingFiniteValues.length, 19);
+});
+
+test("auto zero config describes saved-reference expiry, not sensor recency", () => {
+  const input = instrumentRuntimeOwner.configInputs.find(({ id }) => id === "autoZeroPolicy");
+  assert.ok(input?.fields);
+  const names = input.fields.map(({ name }) => name);
+  assert.ok(names.includes("expireReferenceAfterMs"));
+  assert.ok(!names.includes("rearmAfterIdleMs"));
+  assert.ok(!names.includes("pressureRecencyWriteIntervalMs"));
 });
 
 test("a product may be built against the catalog", () => {
