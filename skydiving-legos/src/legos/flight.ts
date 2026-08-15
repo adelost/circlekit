@@ -151,14 +151,11 @@ export const instrumentRuntimeOwner = service({
         unit: "si.millisecond", gteField: "startupWindowMs",
       }),
       configField("airborneAmbiguousOffsetM", "number", { unit: "si.meter", min: 0 }),
-      configField("rearmAfterIdleMs", "integer", { unit: "si.millisecond", min: 0 }),
+      configField("expireReferenceAfterMs", "integer", { unit: "si.millisecond", min: 0 }),
       configField("minimumCorrectionM", "number", { unit: "si.meter", min: 0 }),
       configField("takeoffAltitudeM", "number", { unit: "si.meter", min: 0 }),
       configField("takeoffVerticalSpeedMs", "number", { unit: "si.meter-per-second", min: 0 }),
       configField("takeoffDebounceMs", "integer", { unit: "si.millisecond", min: 0 }),
-      configField("pressureRecencyWriteIntervalMs", "integer", {
-        unit: "si.millisecond", positive: true,
-      }),
     ]),
   ],
   runtime: {
