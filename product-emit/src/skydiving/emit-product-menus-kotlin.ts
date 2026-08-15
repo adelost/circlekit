@@ -120,19 +120,29 @@ data class ${generated}ProductMenu(
     val elements: List<${generated}MenuElement>,
 )
 
+/** Why a generated menu row may bypass the safe deliberate default. */
+enum class ${generated}MenuImmediateReason { READ_ONLY_NAVIGATION }
+
 data class ${generated}MenuItem(
     val key: MenuActionKey,
     val label: String,
     val hint: String?,
     val icon: MenuIconToken,
     val accent: MenuAccentToken = icon.defaultAccent,
-    val timing: CircleActionTiming = CircleActionTiming.IMMEDIATE,
+    val timing: CircleActionTiming = CircleActionTiming.DELIBERATE,
+    val immediateReason: ${generated}MenuImmediateReason? = null,
     val destructive: Boolean = false,
     val target: ${generated}MenuTarget,
 ) {
     init {
         require(!destructive || timing == CircleActionTiming.DELIBERATE) {
             "destructive generated menu actions must use deliberate timing"
+        }
+        require((timing == CircleActionTiming.IMMEDIATE) == (immediateReason != null)) {
+            "immediate generated menu actions must carry a closed reason"
+        }
+        require(immediateReason == null || target is ${generated}MenuTarget.Destination) {
+            "immediate generated menu actions are read-only navigation only"
         }
     }
 }
@@ -142,13 +152,12 @@ internal fun localItem(
     label: String,
     icon: MenuIconToken,
     accent: MenuAccentToken = icon.defaultAccent,
-    timing: CircleActionTiming = CircleActionTiming.IMMEDIATE,
     destructive: Boolean = false,
     target: (MenuActionKey) -> ${generated}MenuTarget,
     hint: String? = null,
 ): ${generated}MenuItem {
     val key = MenuActionKey(id)
-    return ${generated}MenuItem(key, label, hint, icon, accent, timing, destructive, target(key))
+    return ${generated}MenuItem(key, label, hint, icon, accent, destructive = destructive, target = target(key))
 }
 
 internal fun settingsItem(
@@ -156,18 +165,16 @@ internal fun settingsItem(
     label: String,
     icon: MenuIconToken,
     accent: MenuAccentToken = icon.defaultAccent,
-    timing: CircleActionTiming = CircleActionTiming.IMMEDIATE,
     destructive: Boolean = false,
-) = localItem(id, label, icon, accent, timing, destructive, ${generated}MenuTarget::SettingsSection)
+) = localItem(id, label, icon, accent, destructive, ${generated}MenuTarget::SettingsSection)
 
 internal fun mapItem(
     id: String,
     label: String,
     icon: MenuIconToken,
     accent: MenuAccentToken = icon.defaultAccent,
-    timing: CircleActionTiming = CircleActionTiming.IMMEDIATE,
     destructive: Boolean = false,
-) = localItem(id, label, icon, accent, timing, destructive, ${generated}MenuTarget::MapControl)
+) = localItem(id, label, icon, accent, destructive, ${generated}MenuTarget::MapControl)
 
 internal fun actionItem(
     id: String,
@@ -175,10 +182,9 @@ internal fun actionItem(
     hint: String?,
     icon: MenuIconToken,
     accent: MenuAccentToken = icon.defaultAccent,
-    timing: CircleActionTiming = CircleActionTiming.IMMEDIATE,
     destructive: Boolean = false,
     target: (MenuActionKey) -> ${generated}MenuTarget,
-) = localItem(id, label, icon, accent, timing, destructive, target, hint)
+) = localItem(id, label, icon, accent, destructive, target, hint)
 
 internal fun informationItem(
     id: String,
@@ -203,11 +209,14 @@ internal fun surfaceDestinationItem(
     icon: MenuIconToken,
     screen: ${generated}PageRef,
     accent: MenuAccentToken = icon.defaultAccent,
-    timing: CircleActionTiming = CircleActionTiming.IMMEDIATE,
+    immediateReason: ${generated}MenuImmediateReason? = null,
     destructive: Boolean = false,
 ) = ${generated}MenuItem(
-    MenuActionKey(id), label, hint, icon, accent, timing, destructive,
-    ${generated}MenuTarget.Destination(screen),
+    MenuActionKey(id), label, hint, icon, accent,
+    timing = if (immediateReason == null) CircleActionTiming.DELIBERATE else CircleActionTiming.IMMEDIATE,
+    immediateReason = immediateReason,
+    destructive = destructive,
+    target = ${generated}MenuTarget.Destination(screen),
 )
 
 internal fun menuDestinationItem(
@@ -217,11 +226,14 @@ internal fun menuDestinationItem(
     icon: MenuIconToken,
     menu: ${generated}MenuRef,
     accent: MenuAccentToken = icon.defaultAccent,
-    timing: CircleActionTiming = CircleActionTiming.IMMEDIATE,
+    immediateReason: ${generated}MenuImmediateReason? = null,
     destructive: Boolean = false,
 ) = ${generated}MenuItem(
-    MenuActionKey(id), label, hint, icon, accent, timing, destructive,
-    ${generated}MenuTarget.Destination(${generated}DiscreteActionDestination.Menu(menu)),
+    MenuActionKey(id), label, hint, icon, accent,
+    timing = if (immediateReason == null) CircleActionTiming.DELIBERATE else CircleActionTiming.IMMEDIATE,
+    immediateReason = immediateReason,
+    destructive = destructive,
+    target = ${generated}MenuTarget.Destination(${generated}DiscreteActionDestination.Menu(menu)),
 )
 
 /**
@@ -338,7 +350,7 @@ function emitItem<EffectRef extends string>(
   }
   const key = kotlinStringLiteral(wireId(menu, id, item));
   const accent = item.accent ? `, accent = MenuAccentToken.${item.accent}` : "";
-  const interaction = interactionArguments(item);
+  const interaction = interactionArguments(item, generated);
   const label = kotlinStringLiteral(item.label ?? kotlinLabel(id));
   let constructor: string;
   if ("routeRef" in item && item.routeRef !== undefined) {
@@ -400,11 +412,11 @@ function emitHostActionTarget(menu: AnyProductMenu, generated: string): string {
 
 
 
-function interactionArguments(item: AnyProductMenuVisualItem): string {
-  const timing = item.confirmation === "hold" || item.destructive === true
-    ? ", timing = CircleActionTiming.DELIBERATE"
+function interactionArguments(item: AnyProductMenuVisualItem, generated: string): string {
+  const immediateReason = "cadence" in item && item.cadence !== undefined
+    ? `, immediateReason = ${generated}MenuImmediateReason.READ_ONLY_NAVIGATION`
     : "";
-  return item.destructive === true ? `${timing}, destructive = true` : timing;
+  return item.destructive === true ? `${immediateReason}, destructive = true` : immediateReason;
 }
 
 function nullableQuoted(value: string | undefined): string {

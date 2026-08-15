@@ -122,6 +122,17 @@ export function validate<EffectRef extends string>(
       if (item.destructive === true && item.confirmation !== "hold") {
         throw new Error(`product menu '${menu.id}' item '${id}' is destructive without hold confirmation`);
       }
+      if ("cadence" in item && item.cadence !== undefined) {
+        if (
+          item.cadence.timing !== "immediate" ||
+          item.cadence.reason !== "read-only-navigation" ||
+          (item.routeRef === undefined && item.menuRef === undefined)
+        ) {
+          throw new Error(
+            `product menu '${menu.id}' item '${id}' may use immediate cadence only for read-only navigation`,
+          );
+        }
+      }
       if (menu.requireItemHint === true && (item.hint === undefined || item.hint.trim() === "")) {
         throw new Error(`product menu '${menu.id}' item '${id}' has no required hint copy`);
       }

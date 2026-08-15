@@ -1,6 +1,13 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { emitHomeActionsKotlin, emitSettingsKotlin, type SkydivingNativeSymbols } from "../src/skydiving/index.js";
+import {
+  emitHomeActionsKotlin,
+  emitProductMenusKotlin,
+  emitSettingsKotlin,
+  type ProductMenuDeclaration,
+  type SkydivingNativeSymbols,
+  validate as validateProductMenus,
+} from "../src/skydiving/index.js";
 
 const acmeSymbols = {
   homeActions: { homeActionId: "io.acme.ui.home.HomeActionId" },
@@ -96,4 +103,38 @@ test("settings aggregate uses the required product-owned descriptor symbol", () 
     nativeSymbols: acmeSymbols.settings,
   });
   assert.match(output, /import io\.acme\.appspec\.AppSpecSettingDescriptor/u);
+});
+
+const productMenuFixture = (item: ProductMenuDeclaration["items"][string]): ProductMenuDeclaration => ({
+  id: "root",
+  localTarget: "settings-section",
+  items: { fixture: item },
+});
+
+test("product menu actions default to deliberate timing", () => {
+  const menu = productMenuFixture({ icon: "SETTINGS", label: "FIXTURE" });
+  validateProductMenus([menu], []);
+  const output = emitProductMenusKotlin([menu], [], {
+    packageName: "io.acme.generated",
+    symbolPrefix: "Acme",
+    sourceFile: "product/menus.ts",
+    sourceSha: "fixture",
+    nativeSymbols: acmeSymbols.productMenus,
+  });
+  assert.match(
+    output.contracts,
+    /val timing: CircleActionTiming = CircleActionTiming\.DELIBERATE/u,
+  );
+});
+
+test("product menu rejects immediate cadence on a mutating action", () => {
+  const menu = productMenuFixture({
+    icon: "SETTINGS",
+    label: "FIXTURE",
+    cadence: { timing: "immediate", reason: "read-only-navigation" },
+  } as ProductMenuDeclaration["items"][string]);
+  assert.throws(
+    () => validateProductMenus([menu], []),
+    /immediate cadence.*read-only navigation/u,
+  );
 });
