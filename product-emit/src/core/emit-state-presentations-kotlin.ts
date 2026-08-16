@@ -1,5 +1,6 @@
 import type {
   CompiledStateAuthority,
+  LegoField,
   LegoFiniteValueDeclaration,
   StatePresentationField,
 } from "@v1d/product-spec";
@@ -30,9 +31,12 @@ export function emitStatePresentationsKotlinFiles(
   options: StatePresentationKotlinOptions,
 ): GeneratedStatePresentationFiles {
   const finiteValues = uniqueFiniteValues(authorities);
+  const opaqueSourceValues = uniqueOpaqueSourceValues(authorities);
   const header = statePresentationHeader(options);
   const aggregate = `${header}
 ${finiteValues.map((declaration) => emitFiniteEnum(declaration, options)).join("\n")}
+${opaqueSourceValues.map((ref) => `internal sealed interface ${opaqueSourceValueName(ref, options)}`).join("\n")}
+${authorities.map((authority) => emitSourcePayload(authority, options)).join("\n")}
 ${authorities.map((authority) => emitPayload(authority, options)).join("\n")}
 internal data class GeneratedStatePresentationFiniteValue(
     val id: String,
@@ -133,18 +137,31 @@ ${fields.map((field) => `    val ${kotlinIdentifier(field.name)}: ${kotlinType(f
 )`;
 }
 
+/**
+ * The adapter input is a real generated contract type, not an erased registry
+ * placeholder. Primitive and finite state fields stay concrete. A referenced
+ * value whose schema is intentionally external to this contract remains an
+ * opaque nominal type: the emitter must not invent its fields or fall back to
+ * Any merely because the reference is opaque here.
+ */
+function emitSourcePayload(authority: CompiledStateAuthority, options: KotlinEmissionOptions): string {
+  return `internal data class ${sourcePayloadName(authority)}(
+${authority.source.contract.fields.map((field) =>
+    `    val ${kotlinIdentifier(field.name)}: ${sourceFieldType(field, authority, options)}${field.nullable ? "?" : ""},`
+  ).join("\n")}
+)`;
+}
+
 function emitLookup(authority: CompiledStateAuthority, options: StatePresentationKotlinOptions): string {
   const name = lookupName(authority);
   const payload = payloadName(authority);
+  const sourcePayload = sourcePayloadName(authority);
   const cases = Object.entries(authority.presentation.cases);
   return `    internal object ${name} {
-        val nativeInputPort: ${options.nativePortPackageName}.ProductDataInput<Any> =
-            object : ${options.nativePortPackageName}.ProductDataInput<Any>(
+        val nativeInputPort: ${options.nativePortPackageName}.ProductDataInput<${sourcePayload}> =
+            object : ${options.nativePortPackageName}.ProductDataInput<${sourcePayload}>(
                 Generated${options.symbolPrefix}NativeLegoCatalog.PortIds.${kotlinEnumToken(adapterFields(authority.adapter).inputPortRef)},
             ) {}
-        @Suppress("UNCHECKED_CAST")
-        fun <T : Any> inputPort(): ${options.nativePortPackageName}.ProductDataInput<T> =
-            nativeInputPort as ${options.nativePortPackageName}.ProductDataInput<T>
         val outputPort: ${options.nativePortPackageName}.ProductOutputPort<${payload}> =
             object : ${options.nativePortPackageName}.ProductOutputPort<${payload}>(
                 Generated${options.symbolPrefix}NativeLegoCatalog.PortIds.${kotlinEnumToken(adapterFields(authority.adapter).outputPortRef)},
@@ -227,16 +244,58 @@ function uniqueFiniteValues(
 ): readonly LegoFiniteValueDeclaration[] {
   const values = new Map<string, LegoFiniteValueDeclaration>();
   for (const authority of authorities) {
+    addFiniteValue(values, authority.source.states);
     for (const field of authority.presentation.fields) {
       if (typeof field.value === "string") continue;
-      const previous = values.get(field.value.id);
-      if (previous !== undefined && !sameValues(previous.values, field.value.values)) {
-        throw new Error(`State presentation finite '${field.value.id}' has conflicting values`);
-      }
-      values.set(field.value.id, field.value);
+      addFiniteValue(values, field.value);
     }
   }
   return [...values.values()];
+}
+
+function addFiniteValue(
+  values: Map<string, LegoFiniteValueDeclaration>,
+  declaration: LegoFiniteValueDeclaration,
+): void {
+  const previous = values.get(declaration.id);
+  if (previous !== undefined && !sameValues(previous.values, declaration.values)) {
+    throw new Error(`State presentation finite '${declaration.id}' has conflicting values`);
+  }
+  values.set(declaration.id, declaration);
+}
+
+function uniqueOpaqueSourceValues(authorities: readonly CompiledStateAuthority[]): readonly string[] {
+  const finiteIds = new Set(authorities.map(({ source }) => source.states.id));
+  const refs = new Set<string>();
+  for (const authority of authorities) {
+    for (const field of authority.source.contract.fields) {
+      if (typeof field.value === "string" || finiteIds.has(field.value.ref)) continue;
+      refs.add(field.value.ref);
+    }
+  }
+  return [...refs].sort();
+}
+
+function sourceFieldType(
+  field: LegoField,
+  authority: CompiledStateAuthority,
+  options: KotlinEmissionOptions,
+): string {
+  if (typeof field.value !== "string") {
+    return field.value.ref === authority.source.states.id
+      ? finiteEnumName(authority.source.states, options)
+      : opaqueSourceValueName(field.value.ref, options);
+  }
+  switch (field.value) {
+    case "boolean": return "Boolean";
+    case "integer": return "Long";
+    case "number": return "Double";
+    case "string": return "String";
+  }
+}
+
+function opaqueSourceValueName(ref: string, options: KotlinEmissionOptions): string {
+  return `Generated${options.symbolPrefix}${kotlinIdentifier(ref)}Value`;
 }
 
 function sameValues(left: readonly string[], right: readonly string[]): boolean {
@@ -252,6 +311,10 @@ function finiteEnumName(
 
 function payloadName(authority: CompiledStateAuthority): string {
   return `Generated${kotlinIdentifier(authority.presentation.id)}Payload`;
+}
+
+function sourcePayloadName(authority: CompiledStateAuthority): string {
+  return `Generated${kotlinIdentifier(authority.id)}SourcePayload`;
 }
 
 function lookupName(authority: CompiledStateAuthority): string {
