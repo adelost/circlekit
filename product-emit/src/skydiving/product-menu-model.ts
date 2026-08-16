@@ -31,6 +31,11 @@ export type ProductMenuAction<
   | { readonly kind: "port"; readonly ref: ActionPortRef };
 
 export type ProductMenuConfirmation = "hold";
+export type ProductMenuImmediateReason = "read-only-navigation";
+export interface ProductMenuImmediateCadence {
+  readonly timing: "immediate";
+  readonly reason: ProductMenuImmediateReason;
+}
 
 interface ProductMenuItemBase<IconRef extends string = string> {
   readonly wireId?: string;
@@ -56,6 +61,7 @@ export interface ProductMenuSettingItemDeclaration<SettingRef extends string = s
   readonly settingValueRef?: never;
   readonly nativeRowsRef?: never; readonly nativeToggleRef?: never;
   readonly action?: never;
+  readonly cadence?: never;
 }
 
 /**
@@ -88,6 +94,7 @@ export interface ProductMenuNativeRowsItemDeclaration<PortRef extends string = s
   readonly routeRef?: never;
   readonly menuRef?: never;
   readonly action?: never;
+  readonly cadence?: never;
 }
 
 /**
@@ -123,6 +130,7 @@ export interface ProductMenuNativeToggleItemDeclaration<
   readonly routeRef?: never;
   readonly menuRef?: never;
   readonly action?: never;
+  readonly cadence?: never;
 }
 
 export interface ProductMenuSettingValueRef<SettingRef extends string = string> {
@@ -138,12 +146,12 @@ export type ProductMenuVisualItemDeclaration<
   IconRef extends string = string,
   RouteRef extends string = string,
 > = ProductMenuItemBase<IconRef> & (
-  | { readonly routeRef?: never; readonly menuRef?: never; readonly settingRef?: never; readonly settingValueRef?: never; readonly nativeRowsRef?: never; readonly nativeToggleRef?: never; readonly action?: never }
-  | { readonly routeRef: RouteRef; readonly menuRef?: never; readonly settingRef?: never; readonly settingValueRef?: never; readonly nativeRowsRef?: never; readonly nativeToggleRef?: never; readonly action?: never }
-  | { readonly routeRef?: never; readonly menuRef: MenuRef; readonly settingRef?: never; readonly settingValueRef?: never; readonly nativeRowsRef?: never; readonly nativeToggleRef?: never; readonly action?: never }
-  | { readonly routeRef?: never; readonly menuRef?: never; readonly settingRef?: never; readonly settingValueRef?: never; readonly nativeRowsRef?: never; readonly nativeToggleRef?: never; readonly information: string; readonly action?: never; readonly confirmation?: never; readonly destructive?: never }
-  | { readonly routeRef?: never; readonly menuRef?: never; readonly settingRef?: never; readonly settingValueRef: ProductMenuSettingValueRef<SettingRef>; readonly nativeRowsRef?: never; readonly nativeToggleRef?: never; readonly action?: never }
-  | { readonly routeRef?: never; readonly menuRef?: never; readonly settingRef?: never; readonly settingValueRef?: never; readonly nativeRowsRef?: never; readonly nativeToggleRef?: never; readonly action: ProductMenuAction<ActionPortRef, NativeActionRef> }
+  | { readonly routeRef?: never; readonly menuRef?: never; readonly settingRef?: never; readonly settingValueRef?: never; readonly nativeRowsRef?: never; readonly nativeToggleRef?: never; readonly action?: never; readonly cadence?: never }
+  | { readonly routeRef: RouteRef; readonly menuRef?: never; readonly settingRef?: never; readonly settingValueRef?: never; readonly nativeRowsRef?: never; readonly nativeToggleRef?: never; readonly action?: never; readonly cadence?: ProductMenuImmediateCadence }
+  | { readonly routeRef?: never; readonly menuRef: MenuRef; readonly settingRef?: never; readonly settingValueRef?: never; readonly nativeRowsRef?: never; readonly nativeToggleRef?: never; readonly action?: never; readonly cadence?: ProductMenuImmediateCadence }
+  | { readonly routeRef?: never; readonly menuRef?: never; readonly settingRef?: never; readonly settingValueRef?: never; readonly nativeRowsRef?: never; readonly nativeToggleRef?: never; readonly information: string; readonly action?: never; readonly confirmation?: never; readonly destructive?: never; readonly cadence?: never }
+  | { readonly routeRef?: never; readonly menuRef?: never; readonly settingRef?: never; readonly settingValueRef: ProductMenuSettingValueRef<SettingRef>; readonly nativeRowsRef?: never; readonly nativeToggleRef?: never; readonly action?: never; readonly cadence?: never }
+  | { readonly routeRef?: never; readonly menuRef?: never; readonly settingRef?: never; readonly settingValueRef?: never; readonly nativeRowsRef?: never; readonly nativeToggleRef?: never; readonly action: ProductMenuAction<ActionPortRef, NativeActionRef>; readonly cadence?: never }
 );
 
 export type ProductMenuItemDeclaration<

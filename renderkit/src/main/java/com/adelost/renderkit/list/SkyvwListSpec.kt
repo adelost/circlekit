@@ -2,6 +2,9 @@ package com.adelost.renderkit.list
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
+import androidx.compose.runtime.staticCompositionLocalOf
+import com.adelost.renderkit.data.OledDataPlotModuleLayout
+import com.adelost.renderkit.data.OledDataPlotModuleSpec
 import com.adelost.renderkit.data.OledDataPlotSpec
 
 /**
@@ -81,6 +84,13 @@ enum class SkyvwListAnchor {
     ITEM_CENTER,
 }
 
+/**
+ * Geometry supplied while a host translates the actual module list item.
+ * The content reads each named child's width/centre from here; it never draws
+ * a duplicate overlay beside the list. Rectangular hosts leave it null.
+ */
+val LocalOledDataPlotModuleLayout = staticCompositionLocalOf<OledDataPlotModuleLayout?> { null }
+
 /** One list row: stable identity + content. The content lambda renders
  *  designkit/skyvwui composables only — the host container provides no
  *  scope, so items cannot depend on platform list DSLs. */
@@ -93,17 +103,31 @@ class SkyvwListItem(
      */
     val oledDataPlot: OledDataPlotSpec? = null,
     /**
+     * One typed, vertically clamped plot module. A round host computes its
+     * [OledDataPlotModuleLayout], translates this same list item, and provides
+     * the result through [LocalOledDataPlotModuleLayout]. Activation and
+     * release remain host policy, not model state.
+     */
+    val oledDataPlotModule: OledDataPlotModuleSpec? = null,
+    /**
      * Set by [SkyvwListScope.group]; screens never pass it. Consecutive items
      * sharing a non-null key are one indivisible cell — see [SkyvwListPolicy.columns].
      */
     val groupKey: Any? = null,
     val content: @Composable () -> Unit,
 ) {
+    init {
+        require(oledDataPlot == null || oledDataPlotModule == null) {
+            "a list item cannot declare both legacy plot and plot-module geometry"
+        }
+    }
+
     internal fun inGroup(key: Any): SkyvwListItem =
         SkyvwListItem(
             key = this.key,
             contentType = contentType,
             oledDataPlot = oledDataPlot,
+            oledDataPlotModule = oledDataPlotModule,
             groupKey = key,
             content = content,
         )

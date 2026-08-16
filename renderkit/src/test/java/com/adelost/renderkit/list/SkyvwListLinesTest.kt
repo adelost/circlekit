@@ -1,5 +1,8 @@
 package com.adelost.renderkit.list
 
+import com.adelost.renderkit.data.OledDataPlotModuleSpec
+import com.adelost.renderkit.data.OledDataPlotSpec
+import com.adelost.renderkit.data.PlotPresentation
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -148,6 +151,32 @@ class SkyvwListLinesTest {
         assertTrue(
             runCatching { SkyvwListPolicy(columns = 0) }.exceptionOrNull()
                 is IllegalArgumentException,
+        )
+    }
+
+    @Test
+    fun `one list item cannot carry two competing plot geometry truths`() {
+        val module = OledDataPlotModuleSpec(
+            presentation = PlotPresentation.CompactGlyph("plot", "plot"),
+            roundCenterTravelDp = 0f,
+            children = listOf(
+                com.adelost.renderkit.data.OledDataPlotChildSpec(
+                    id = "plot",
+                    heightDp = 20f,
+                    centerOffsetDp = 0f,
+                    widthPolicy = com.adelost.renderkit.data.OledPlotChildWidthPolicy.STABLE_ACROSS_CLAMP,
+                ),
+            ),
+        )
+
+        assertTrue(
+            runCatching {
+                SkyvwListItem(
+                    key = "plot",
+                    oledDataPlot = OledDataPlotSpec(20f, 0f),
+                    oledDataPlotModule = module,
+                ) {}
+            }.exceptionOrNull() is IllegalArgumentException,
         )
     }
 }

@@ -7,10 +7,10 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.text.BasicText
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.getValue
@@ -27,14 +27,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
@@ -210,7 +205,6 @@ fun CircleValueDisc(
     enabled: Boolean = true,
     timing: CircleActionTiming = CircleActionTiming.DELIBERATE,
 ) {
-    val fontScale = LocalDensity.current.fontScale
     val feedback = rememberCircleActionFeedbackState()
     val activeContour = circleBrandColor()
     val cue = rememberCircleActionCueController(
@@ -246,19 +240,21 @@ fun CircleValueDisc(
             )
             .semantics { this.contentDescription = contentDescription },
     ) {
-        BasicText(
-            text = value,
-            style = TextStyle(
-                color = when {
+        CircleDiscArtwork(
+            spec = CircleDiscArtworkSpec(
+                primaryValue = value,
+                primaryColor = when {
                     !enabled -> RingTokens.Off
                     active || feedback.pressed -> RingTokens.Ink
                     else -> RingTokens.Dim
                 },
-                fontSize = fixedCircleUiSp(valueSize.value, fontScale).sp,
-                fontWeight = FontWeight.Bold,
-                textAlign = TextAlign.Center,
+                contour = Color.Transparent,
             ),
-            maxLines = 1,
+            textBudget = CircleDiscTextBudget(
+                maximumPrimarySp = valueSize.value,
+                minimumPrimarySp = minOf(9f, valueSize.value),
+            ),
+            modifier = Modifier.fillMaxSize(),
         )
     }
 }
