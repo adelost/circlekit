@@ -122,8 +122,7 @@ fun CircleDiscArtwork(
         modifier = modifier
             .clip(CircleShape)
             .background(spec.background)
-            .circleRingContour(spec.contour)
-            .then(spec.secondaryRimColor?.let { Modifier.circleRingContour(it) } ?: Modifier),
+            .circleRingContour(spec.secondaryRimColor ?: spec.contour),
     ) {
         val availableWidthPx = with(density) { maxWidth.toPx() } * textBudget.horizontalFraction
         val fit = remember(spec.primaryValue, spec.unit, availableWidthPx, textBudget, fontScale) {
