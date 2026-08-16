@@ -138,3 +138,21 @@ test("product menu rejects immediate cadence on a mutating action", () => {
     /immediate cadence.*read-only navigation/u,
   );
 });
+
+test("read-only navigation can declare immediate cadence with its closed reason", () => {
+  const menu = productMenuFixture({
+    icon: "SETTINGS",
+    label: "OPEN",
+    routeRef: "HOME",
+    cadence: { timing: "immediate", reason: "read-only-navigation" },
+  });
+  validateProductMenus([menu], []);
+  const output = emitProductMenusKotlin([menu], [], {
+    packageName: "io.acme.generated",
+    symbolPrefix: "Acme",
+    sourceFile: "product/menus.ts",
+    sourceSha: "fixture",
+    nativeSymbols: acmeSymbols.productMenus,
+  });
+  assert.match(output.menus, /immediateReason = GeneratedAcmeMenuImmediateReason\.READ_ONLY_NAVIGATION/u);
+});

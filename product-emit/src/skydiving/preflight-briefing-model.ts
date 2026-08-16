@@ -67,6 +67,7 @@ export function validatePreflightBriefingCatalog(catalog: PreflightBriefingCatal
     }
     switch (definition.rule.kind) {
       case "circular-delta":
+        nonBlank(definition.rule.metricRef, definition.id, "metricRef");
         finite(definition.rule.minimumMagnitude, definition.id, "minimumMagnitude");
         finite(definition.rule.deltaDeg, definition.id, "deltaDeg");
         if (definition.rule.minimumMagnitude < 0) {

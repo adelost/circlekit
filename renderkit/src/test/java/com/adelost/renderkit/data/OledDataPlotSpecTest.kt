@@ -39,4 +39,43 @@ class OledDataPlotSpecTest {
             0f,
         )
     }
+
+    @Test
+    fun `one clamped module gives every child its own chord`() {
+        val module = OledDataPlotModuleSpec(
+            presentation = PlotPresentation.CompactGlyph("trend", "pressure trend"),
+            roundCenterTravelDp = 20f,
+            children = listOf(
+                OledDataPlotChildSpec("plot", 90f, 0f, OledPlotChildWidthPolicy.STABLE_ACROSS_CLAMP),
+                OledDataPlotChildSpec("legend", 12f, 58f, OledPlotChildWidthPolicy.CURRENT_CHORD),
+            ),
+        )
+
+        val layout = module.roundLayout(requestedModuleCenterDp = 180f, viewportDiameterDp = 192f)
+
+        assertEquals(116f, layout.moduleCenterDp, 0f)
+        assertEquals(116f, layout.children.single { it.id == "plot" }.centerDp, 0f)
+        assertEquals(174f, layout.children.single { it.id == "legend" }.centerDp, 0f)
+        assertTrue(layout.children.single { it.id == "plot" }.widthDp > 0f)
+        assertTrue(layout.children.single { it.id == "legend" }.widthDp > 0f)
+    }
+
+    @Test
+    fun `axis bearing child keeps one width through module travel`() {
+        val module = OledDataPlotModuleSpec(
+            presentation = PlotPresentation.CartesianTime(
+                PlotQuantityRef("time"), PlotWindow(0.0, 1.0), PlotFormatterRef("time"),
+                PlotQuantityRef("value"), PlotUnitRef("1"), PlotRange(0.0, 1.0), PlotFormatterRef("value"),
+            ),
+            roundCenterTravelDp = 20f,
+            children = listOf(OledDataPlotChildSpec("plot", 90f, 0f, OledPlotChildWidthPolicy.STABLE_ACROSS_CLAMP)),
+        )
+
+        val top = module.roundLayout(0f, 192f).children.single().widthDp
+        val middle = module.roundLayout(96f, 192f).children.single().widthDp
+        val bottom = module.roundLayout(192f, 192f).children.single().widthDp
+
+        assertEquals(top, middle, 0f)
+        assertEquals(middle, bottom, 0f)
+    }
 }
