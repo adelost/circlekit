@@ -27,9 +27,8 @@ export interface StatusIndicatorDeclaration<SeatRef extends string = string> {
    * The fixed place this indicator renders in when it renders at all.
    *
    * A seat, not a coordinate. Hand-picked offsets are how two indicators came
-   * to share one position on the Skyvw home face with neither of them able to
-   * know it: four siblings were placed at 30 / 43 / 55 / 55 dp, and the two at
-   * 55 drew straight through each other.
+   * to share one position on a product surface with neither of them able to
+   * know it: independent coordinate offsets let both draw through each other.
    */
   readonly seat: SeatRef;
   /**
