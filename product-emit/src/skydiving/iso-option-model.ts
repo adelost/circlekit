@@ -28,6 +28,35 @@ export type IsoOptionTierRef =
 /** How many answers the question has — a property of the question. */
 export type IsoOptionKindRef = "ACTION" | "TOGGLE" | "CHOICE_OF_N";
 
+/** A semantic pigment, or the product icon catalogue's own pigment. */
+export type IsoOptionTintRef =
+  | "ICON"
+  | "POSITIVE"
+  | "CAUTION"
+  | "DANGER"
+  | "NEUTRAL"
+  | "COMPOSITE";
+
+/** Everything a host needs to present one answer without renderer guesses. */
+export interface IsoOptionStateFace<IconRef extends string = string> {
+  readonly icon: IconRef;
+  readonly tint: IsoOptionTintRef;
+  readonly explanation: string;
+  /** Whether this answer may offer RESET TO DEFAULT in its info card. */
+  readonly resettable: boolean;
+}
+
+/** Finite choices name every answer; runtime choices carry one total face. */
+export type IsoOptionStatePresentation<IconRef extends string = string> =
+  | {
+      readonly kind: "FINITE";
+      readonly states: Readonly<Record<string, IsoOptionStateFace<IconRef>>>;
+    }
+  | {
+      readonly kind: "DYNAMIC";
+      readonly face: IsoOptionStateFace<IconRef>;
+    };
+
 /**
  * Whether answering this question takes you off the surface that asked it.
  *
@@ -68,25 +97,8 @@ export interface DeclaredIsoOption<IconRef extends string = string> extends IsoO
    * klickar på en knapp är att man kanske inte vet riktigt vad den gör").
    */
   readonly hint: string;
-  /**
-   * The icon per ANSWER, when the icon should BE the state.
-   *
-   * Mattias 2026-08-06: "att allt som inte är simpelt on off, istället har en
-   * snygg ikon som representerar vad den gör". A cycling row that keeps one
-   * glyph through every answer says what the QUESTION is and nothing about
-   * where you currently are in it — the dot rail carries that alone, and a
-   * dot rail is four pixels on a watch.
-   *
-   * Keyed by the answer as the host prints it, so the two cannot drift into
-   * different vocabularies. Omitted means the option keeps [icon] throughout,
-   * which is the honest choice when the icon catalogue has no way to draw the
-   * difference (CELL SIZE's five densities are one GRID glyph today).
-   *
-   * Totality is enforced where the answers exist: the host builds the row from
-   * a live list of labels, so a map that names some of them and not others is
-   * refused there rather than rendering a row with a missing icon.
-   */
-  readonly stateIcons?: Readonly<Record<string, IconRef>>;
+  /** Complete answer faces; totality is checked again against each live host. */
+  readonly statePresentation?: IsoOptionStatePresentation<IconRef>;
   readonly settingRef?: never;
 }
 
@@ -97,17 +109,18 @@ export interface DeclaredIsoOption<IconRef extends string = string> extends IsoO
  * create a second copy that drifts the first time the setting is reworded —
  * exactly the drift this file exists to end. Only the placement is ours.
  */
-export interface SettingIsoOption extends IsoOptionPlacement {
+export interface SettingIsoOption<IconRef extends string = string> extends IsoOptionPlacement {
   readonly settingRef: string;
   readonly key?: never;
   readonly label?: never;
   readonly icon?: never;
   readonly hint?: never;
+  readonly statePresentation?: IsoOptionStatePresentation<IconRef>;
 }
 
 export type IsoOptionDeclaration<IconRef extends string = string> =
   | DeclaredIsoOption<IconRef>
-  | SettingIsoOption;
+  | SettingIsoOption<IconRef>;
 
 /**
  * Six rings fit one 192 dp face without scrolling. The cap is the whole point
