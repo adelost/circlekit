@@ -66,6 +66,10 @@ export interface SettingsComponentsNativeSymbols {
   readonly isoChoiceOption: string;
 }
 
+export interface StatusIndicatorsNativeSymbols {
+  readonly statusIndicatorId: string;
+}
+
 export interface SurfaceComponentsNativeSymbols {
   readonly ringSurface: string;
   readonly spatialMode: string;
@@ -80,5 +84,6 @@ export interface SkydivingNativeSymbols {
   readonly productIcons: ProductIconsNativeSymbols;
   readonly productMenus: ProductMenusNativeSymbols;
   readonly settingsComponents: SettingsComponentsNativeSymbols;
+  readonly statusIndicators: StatusIndicatorsNativeSymbols;
   readonly surfaceComponents: SurfaceComponentsNativeSymbols;
 }

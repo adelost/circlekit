@@ -61,6 +61,7 @@ const symbols = {
     settingWrite: "dev.acme.native.Write", isoToggleOption: "dev.acme.native.toggleOption",
     isoChoiceOption: "dev.acme.native.choiceOption",
   },
+  statusIndicators: { statusIndicatorId: "dev.acme.ui.AcmeStatusIndicatorId" },
   surfaceComponents: { ringSurface: "dev.acme.native.Surface", spatialMode: "dev.acme.native.SpatialMode" },
 } as const satisfies SkydivingNativeSymbols;
 

@@ -4,8 +4,10 @@ import {
   emitHomeActionsKotlin,
   emitProductMenusKotlin,
   emitSettingsKotlin,
+  emitStatusIndicatorsKotlin,
   type ProductMenuDeclaration,
   type SkydivingNativeSymbols,
+  type StatusIndicatorDeclaration,
   validate as validateProductMenus,
 } from "../src/skydiving/index.js";
 
@@ -70,6 +72,7 @@ const acmeSymbols = {
     ringSurface: "io.acme.surface.RingSurface",
     spatialMode: "io.acme.surface.SpatialMode",
   },
+  statusIndicators: { statusIndicatorId: "io.acme.ui.status.StatusIndicatorId" },
 } as const satisfies SkydivingNativeSymbols;
 
 test("renamed consumers supply their own package and native symbols", () => {
@@ -88,6 +91,49 @@ test("renamed consumers supply their own package and native symbols", () => {
   assert.match(output, /package io\.acme\.generated/u);
   assert.match(output, /import io\.acme\.ui\.home\.HomeActionId/u);
   assert.match(output, /GeneratedAcmeHomeActions/u);
+});
+
+const statusOptions = {
+  packageName: "io.acme.generated",
+  symbolPrefix: "Acme",
+  sourceFile: "product/status-indicators.ts",
+  sourceSha: "fixture",
+  nativeSymbols: acmeSymbols.statusIndicators,
+} as const;
+
+test("status indicators emit a catalogue the host iterates, with seats derived", () => {
+  const output = emitStatusIndicatorsKotlin([
+    { id: "RECORDING", seat: "FLIGHT_STATE", priority: 30, disclosure: "GLANCE_ONLY", reason: "the act of the jump day" },
+    { id: "BATTERY", seat: "DEVICE", priority: 20, disclosure: "ON_REVEAL", reason: "endurance is not flight" },
+  ], statusOptions);
+  assert.match(output, /import io\.acme\.ui\.status\.StatusIndicatorId/u);
+  assert.match(output, /enum class GeneratedAcmeStatusSeat \{ FLIGHT_STATE, DEVICE \}/u);
+  // Both disclosure levels cross over even though one product uses one of
+  // them, so a native branch breaks when the grammar grows, not when a
+  // product starts using what it already declared.
+  assert.match(output, /enum class GeneratedAcmeStatusDisclosure \{ GLANCE_ONLY, ON_REVEAL \}/u);
+  assert.match(output, /GeneratedAcmeStatusIndicator\(StatusIndicatorId\.RECORDING, GeneratedAcmeStatusSeat\.FLIGHT_STATE, 30, GeneratedAcmeStatusDisclosure\.GLANCE_ONLY\)/u);
+  // The reason is the declaration's, not native's.
+  assert.doesNotMatch(output, /the act of the jump day/u);
+});
+
+test("two indicators cannot hold one seat at one priority", () => {
+  const contested: readonly StatusIndicatorDeclaration[] = [
+    { id: "AUTOLOCK", seat: "TRANSIENT_CUE", priority: 10, disclosure: "GLANCE_ONLY", reason: "relock countdown" },
+    { id: "INSTRUMENT_REASON", seat: "TRANSIENT_CUE", priority: 10, disclosure: "GLANCE_ONLY", reason: "why an instrument is quiet" },
+  ];
+  assert.throws(
+    () => emitStatusIndicatorsKotlin(contested, statusOptions),
+    /both claim priority 10 in seat TRANSIENT_CUE/u,
+  );
+});
+
+test("one priority may repeat across different seats", () => {
+  const output = emitStatusIndicatorsKotlin([
+    { id: "RECORDING", seat: "FLIGHT_STATE", priority: 10, disclosure: "GLANCE_ONLY", reason: "recording" },
+    { id: "BATTERY", seat: "DEVICE", priority: 10, disclosure: "GLANCE_ONLY", reason: "battery" },
+  ], statusOptions);
+  assert.match(output, /AcmeStatusIndicators/u);
 });
 
 test("settings aggregate uses the required product-owned descriptor symbol", () => {
