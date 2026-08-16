@@ -9,6 +9,9 @@ import type { IsoOptionDeclaration } from "./iso-option-model.js";
  */
 export interface EmittableSetting {
   readonly id: string;
+  readonly kind: "enum-setting" | "boolean-setting";
+  readonly values?: readonly { readonly id: string; readonly label: string }[];
+  readonly defaultValueId?: string;
   readonly control: {
     readonly id: string;
     readonly title: { readonly text: string };
@@ -22,8 +25,7 @@ export interface ResolvedIsoOption {
   readonly label: string;
   readonly icon: string;
   readonly hint: string;
-  /** Answer -> icon, empty when the option wears one glyph throughout. */
-  readonly stateIcons: Readonly<Record<string, string>>;
+  readonly statePresentation: IsoOptionDeclaration["statePresentation"];
 }
 
 export function validateIsoOptions(
@@ -47,21 +49,48 @@ export function validateIsoOptions(
       if (setting.control.iconId.trim() === "") {
         throw new Error(`setting '${setting.id}' has no icon for its iso option to wear`);
       }
-    } else if (option.stateIcons !== undefined) {
-      // An icon per answer only means something where there is more than one
-      // answer. On an ACTION or a TOGGLE it would be a state map nobody reads.
-      if (option.kind !== "CHOICE_OF_N") {
+    }
+    const presentation = option.statePresentation;
+    if (option.kind === "CHOICE_OF_N") {
+      if (presentation === undefined) {
         throw new Error(
-          `iso option '${option.key}' declares stateIcons but is ${option.kind ?? "ACTION"}; ` +
-            "an icon per answer belongs to a CHOICE_OF_N",
+          `iso choice '${option.settingRef ?? option.key}' needs a total state presentation`,
         );
       }
-      if (Object.keys(option.stateIcons).length < 2) {
+      if (presentation.kind === "FINITE" && Object.keys(presentation.states).length < 2) {
         throw new Error(
-          `iso option '${option.key}' declares stateIcons for fewer than two answers; ` +
-            "one icon for every answer is just the option's icon",
+          `iso choice '${option.settingRef ?? option.key}' declares fewer than two state faces`,
         );
       }
+      if (option.settingRef !== undefined && presentation.kind === "FINITE") {
+        const setting = settingById.get(option.settingRef)!;
+        if (setting.kind !== "enum-setting" || setting.values === undefined || setting.defaultValueId === undefined) {
+          throw new Error(`iso choice '${option.settingRef}' must borrow an enum setting`);
+        }
+        const declaredLabels = Object.keys(presentation.states).sort();
+        const settingLabels = setting.values.map(({ label }) => label).sort();
+        if (JSON.stringify(declaredLabels) !== JSON.stringify(settingLabels)) {
+          throw new Error(
+            `iso choice '${option.settingRef}' state faces ${declaredLabels.join(", ")} do not exactly match ` +
+              `setting answers ${settingLabels.join(", ")}`,
+          );
+        }
+        for (const value of setting.values) {
+          const resettable = presentation.states[value.label]!.resettable;
+          const expected = value.id !== setting.defaultValueId;
+          if (resettable !== expected) {
+            throw new Error(
+              `iso choice '${option.settingRef}' answer '${value.label}' declares resettable=${resettable}; ` +
+                `its default is '${setting.defaultValueId}', so resettable must be ${expected}`,
+            );
+          }
+        }
+      }
+    } else if (presentation !== undefined) {
+      throw new Error(
+        `iso option '${option.settingRef ?? option.key}' declares state presentation but is ` +
+          `${option.kind ?? "ACTION"}; state faces belong to a CHOICE_OF_N`,
+      );
     }
     const { key } = resolveIsoOption(option, settingById);
     if (claimed.has(key)) {
@@ -87,7 +116,7 @@ export function resolveIsoOption(
       label: option.label,
       icon: option.icon,
       hint: option.hint,
-      stateIcons: option.stateIcons ?? {},
+      statePresentation: option.statePresentation,
     };
   }
   const setting = settingById.get(option.settingRef)!;
@@ -96,8 +125,6 @@ export function resolveIsoOption(
     label: setting.control.title.text,
     icon: kotlinEnumToken(setting.control.iconId),
     hint: setting.control.hint.text,
-    // A borrowed setting brings its own single icon; an icon per answer would
-    // be a second identity for a control that already has one.
-    stateIcons: {},
+    statePresentation: option.statePresentation,
   };
 }

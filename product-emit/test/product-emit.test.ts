@@ -2,13 +2,16 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import {
   emitHomeActionsKotlin,
+  emitIsoOptionsKotlin,
   emitProductMenusKotlin,
   emitSettingsKotlin,
   emitStatusIndicatorsKotlin,
   type ProductMenuDeclaration,
+  type IsoOptionDeclaration,
   type SkydivingNativeSymbols,
   type StatusIndicatorDeclaration,
   validate as validateProductMenus,
+  validateIsoOptions,
 } from "../src/skydiving/index.js";
 
 const acmeSymbols = {
@@ -134,6 +137,60 @@ test("one priority may repeat across different seats", () => {
     { id: "BATTERY", seat: "DEVICE", priority: 10, disclosure: "GLANCE_ONLY", reason: "battery" },
   ], statusOptions);
   assert.match(output, /AcmeStatusIndicators/u);
+});
+
+test("an iso choice emits total state faces and derives reset from the setting default", () => {
+  const options: readonly IsoOptionDeclaration<"MAP" | "LAYERS" | "EYE_OFF">[] = [{
+    settingRef: "map.detail",
+    tier: "SETTINGS",
+    kind: "CHOICE_OF_N",
+    dismissal: "STAYS_ON_SURFACE",
+    statePresentation: { kind: "FINITE", states: {
+      NONE: { icon: "EYE_OFF", tint: "NEUTRAL", explanation: "Fetches no imagery.", resettable: true },
+      LOW: { icon: "MAP", tint: "ICON", explanation: "Fetches base imagery.", resettable: true },
+      HIGH: { icon: "LAYERS", tint: "ICON", explanation: "Fetches detailed imagery.", resettable: false },
+    } },
+  }];
+  const settings = [{
+    id: "map.detail",
+    kind: "enum-setting" as const,
+    values: [
+      { id: "NONE", label: "NONE" },
+      { id: "LOW", label: "LOW" },
+      { id: "HIGH", label: "HIGH" },
+    ],
+    defaultValueId: "HIGH",
+    control: {
+      id: "map-detail",
+      title: { text: "MAP DETAIL" },
+      hint: { text: "How much imagery to fetch." },
+      iconId: "LAYERS",
+    },
+  }];
+
+  validateIsoOptions(options, settings);
+  const output = emitIsoOptionsKotlin(options, settings, [
+    { state: "FLOWING", glyph: null, accent: "NEUTRAL", meaning: "Flowing." },
+    { state: "LOADING", glyph: "MAP", accent: "NEUTRAL", meaning: "Loading." },
+    { state: "OFF", glyph: "EYE_OFF", accent: "NEUTRAL", meaning: "Off." },
+    { state: "MISSING", glyph: "LAYERS", accent: "CAUTION", meaning: "Missing." },
+  ], {
+    packageName: "io.acme.generated",
+    symbolPrefix: "Acme",
+    sourceFile: "product/iso.ts",
+    sourceSha: "fixture",
+    nativeSymbols: acmeSymbols.isoOptions,
+  });
+  assert.match(output, /"NONE" to GeneratedAcmeIsoOptionStateFace\(MenuIconToken\.EYE_OFF, MenuAccentToken\.NEUTRAL, "Fetches no imagery\.", true\)/u);
+  assert.match(output, /"HIGH" to GeneratedAcmeIsoOptionStateFace\(MenuIconToken\.LAYERS, null, "Fetches detailed imagery\.", false\)/u);
+
+  const wrongDefault = structuredClone(options) as IsoOptionDeclaration[];
+  (wrongDefault[0]!.statePresentation as { kind: "FINITE"; states: Record<string, { resettable: boolean }> })
+    .states.HIGH!.resettable = true;
+  assert.throws(
+    () => validateIsoOptions(wrongDefault, settings),
+    /answer 'HIGH' declares resettable=true.*default is 'HIGH'/u,
+  );
 });
 
 test("settings aggregate uses the required product-owned descriptor symbol", () => {

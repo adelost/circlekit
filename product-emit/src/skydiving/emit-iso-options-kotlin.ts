@@ -27,9 +27,17 @@ export function emitIsoOptionsKotlin(
   const settingById = new Map(settings.map((setting) => [setting.id, setting]));
   const rows = options.map((option) => {
     const resolved = resolveIsoOption(option, settingById);
-    const stateIcons = Object.entries(resolved.stateIcons)
-      .map(([answer, icon]) => `${kotlinStringLiteral(answer)} to MenuIconToken.${icon}`)
-      .join(", ");
+    const presentation = resolved.statePresentation;
+    const face = (value: { icon: string; tint: string; explanation: string; resettable: boolean }) =>
+      `${generated}IsoOptionStateFace(MenuIconToken.${value.icon}, ` +
+      `${value.tint === "ICON" ? "null" : `MenuAccentToken.${value.tint}`}, ` +
+      `${kotlinStringLiteral(value.explanation)}, ${value.resettable})`;
+    const stateFaces = presentation?.kind === "FINITE"
+      ? Object.entries(presentation.states)
+        .map(([answer, value]) => `${kotlinStringLiteral(answer)} to ${face(value)}`)
+        .join(", ")
+      : "";
+    const dynamicStateFace = presentation?.kind === "DYNAMIC" ? face(presentation.face) : "null";
     return (
       `        ${generated}IsoOption(${kotlinStringLiteral(resolved.key)}, ` +
       `${generated}IsoOptionTier.${option.tier}, ` +
@@ -37,7 +45,7 @@ export function emitIsoOptionsKotlin(
       `${generated}IsoOptionDismissal.${option.dismissal}, ` +
       `${kotlinStringLiteral(resolved.label)}, MenuIconToken.${resolved.icon}, ` +
       `${kotlinStringLiteral(resolved.hint)}, ` +
-      `${stateIcons === "" ? "emptyMap()" : `mapOf(${stateIcons})`}),`
+      `${stateFaces === "" ? "emptyMap()" : `mapOf(${stateFaces})`}, ${dynamicStateFace}),`
     );
   }).join("\n");
 
@@ -92,14 +100,31 @@ internal data class ${generated}IsoOption(
     val label: String,
     val icon: MenuIconToken,
     val hint: String,
-    /**
-     * The icon per ANSWER. Empty means the option wears [icon] throughout.
-     *
-     * Keyed by the answer as the host prints it. The host holds the live list
-     * of answers, so it is the host's builder that refuses a map naming some
-     * of them and not others.
-     */
-    val stateIcons: Map<String, MenuIconToken>,
+    /** Finite answer faces, keyed by the exact label the host prints. */
+    val stateFaces: Map<String, ${generated}IsoOptionStateFace>,
+    /** One total face where the answers are runtime product data. */
+    val dynamicStateFace: ${generated}IsoOptionStateFace?,
+) {
+    init {
+        if (kind == RowKind.CHOICE_OF_N) {
+            require((stateFaces.isNotEmpty()) xor (dynamicStateFace != null)) {
+                "Choice '$key' needs either finite state faces or one dynamic face"
+            }
+        } else {
+            require(stateFaces.isEmpty() && dynamicStateFace == null) {
+                "Only choices may carry state faces"
+            }
+        }
+    }
+}
+
+/** Icon, semantic tint, state-specific explanation and reset policy. */
+internal data class ${generated}IsoOptionStateFace(
+    val icon: MenuIconToken,
+    /** Null means the icon catalogue's own semantic pigment. */
+    val accentOverride: MenuAccentToken?,
+    val explanation: String,
+    val resettable: Boolean,
 )
 
 /**
