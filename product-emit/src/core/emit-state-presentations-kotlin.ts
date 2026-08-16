@@ -31,13 +31,19 @@ export function emitStatePresentationsKotlinFiles(
   options: StatePresentationKotlinOptions,
 ): GeneratedStatePresentationFiles {
   const finiteValues = uniqueFiniteValues(authorities);
+  const finiteValuesById = new Map(finiteValues.map((value) => [value.id, value] as const));
   const opaqueSourceValues = uniqueOpaqueSourceValues(authorities);
   const header = statePresentationHeader(options);
   const aggregate = `${header}
 ${finiteValues.map((declaration) => emitFiniteEnum(declaration, options)).join("\n")}
 ${opaqueSourceValues.map((ref) => `internal sealed interface ${opaqueSourceValueName(ref, options)}`).join("\n")}
-${authorities.map((authority) => emitSourcePayload(authority, options)).join("\n")}
+${authorities.map((authority) => emitSourcePayload(authority, finiteValuesById, options)).join("\n")}
 ${authorities.map((authority) => emitPayload(authority, options)).join("\n")}
+internal data class GeneratedStatePresentationBinding<S : Any, P : Any>(
+    val inputPort: ${options.nativePortPackageName}.ProductDataInput<S>,
+    val present: (S) -> P,
+)
+
 internal data class GeneratedStatePresentationFiniteValue(
     val id: String,
     val values: Set<String>,
@@ -68,10 +74,10 @@ ${finiteValues.map((declaration) => `        GeneratedStatePresentationFiniteVal
         ),`).join("\n")}
     )
 
-    val nativePortsByBinding: Map<String, List<${options.nativePortPackageName}.NativeProductPortRegistration>> = mapOf(
-${authorities.map((authority) => `        ${kotlinStringLiteral(lookupName(authority))} to listOf(
-            ${lookupName(authority)}.nativeInputPort,
-            ${lookupName(authority)}.outputPort,
+    val nativePortIdsByBinding: Map<String, Set<GeneratedProductPortId>> = mapOf(
+${authorities.map((authority) => `        ${kotlinStringLiteral(lookupName(authority))} to setOf(
+            ${lookupName(authority)}.authority.inputPort,
+            ${lookupName(authority)}.authority.outputPort,
         ),`).join("\n")}
     )
 }
@@ -144,10 +150,14 @@ ${fields.map((field) => `    val ${kotlinIdentifier(field.name)}: ${kotlinType(f
  * opaque nominal type: the emitter must not invent its fields or fall back to
  * Any merely because the reference is opaque here.
  */
-function emitSourcePayload(authority: CompiledStateAuthority, options: KotlinEmissionOptions): string {
+function emitSourcePayload(
+  authority: CompiledStateAuthority,
+  finiteValuesById: ReadonlyMap<string, LegoFiniteValueDeclaration>,
+  options: KotlinEmissionOptions,
+): string {
   return `internal data class ${sourcePayloadName(authority)}(
 ${authority.source.contract.fields.map((field) =>
-    `    val ${kotlinIdentifier(field.name)}: ${sourceFieldType(field, authority, options)}${field.nullable ? "?" : ""},`
+    `    val ${kotlinIdentifier(field.name)}: ${sourceFieldType(field, finiteValuesById, options)}${field.nullable ? "?" : ""},`
   ).join("\n")}
 )`;
 }
@@ -155,13 +165,17 @@ ${authority.source.contract.fields.map((field) =>
 function emitLookup(authority: CompiledStateAuthority, options: StatePresentationKotlinOptions): string {
   const name = lookupName(authority);
   const payload = payloadName(authority);
-  const sourcePayload = sourcePayloadName(authority);
+  const sourceState = finiteEnumName(authority.source.states, options);
   const cases = Object.entries(authority.presentation.cases);
   return `    internal object ${name} {
-        val nativeInputPort: ${options.nativePortPackageName}.ProductDataInput<${sourcePayload}> =
-            object : ${options.nativePortPackageName}.ProductDataInput<${sourcePayload}>(
+        fun <S : Any> bind(
+            state: (S) -> ${sourceState},
+        ): GeneratedStatePresentationBinding<S, ${payload}> = GeneratedStatePresentationBinding(
+            inputPort = object : ${options.nativePortPackageName}.ProductDataInput<S>(
                 Generated${options.symbolPrefix}NativeLegoCatalog.PortIds.${kotlinEnumToken(adapterFields(authority.adapter).inputPortRef)},
-            ) {}
+            ) {},
+            present = { source -> require(state(source)) },
+        )
         val outputPort: ${options.nativePortPackageName}.ProductOutputPort<${payload}> =
             object : ${options.nativePortPackageName}.ProductOutputPort<${payload}>(
                 Generated${options.symbolPrefix}NativeLegoCatalog.PortIds.${kotlinEnumToken(adapterFields(authority.adapter).outputPortRef)},
@@ -182,14 +196,23 @@ ${authority.presentation.consumers.map((ref) => `            Generated${options.
 ${authority.presentation.consumers.map((ref) => `                Generated${options.symbolPrefix}NativeLegoCatalog.PortIds.${kotlinEnumToken(ref)},`).join("\n")}
             ),
         )
-        private val cases: Map<String, ${payload}> = mapOf(
-${cases.map(([state, value]) => `            ${kotlinStringLiteral(state)} to ${payload}(${emitArguments(authority.presentation.fields, value, options)}),`).join("\n")}
+        private val statesById: Map<String, ${sourceState}> = mapOf(
+${authority.source.states.values.map((state) => `            ${kotlinStringLiteral(state)} to ${sourceState}.${kotlinEnumToken(state)},`).join("\n")}
         )
-        val stateIds: Set<String> get() = cases.keys
+        private val cases: Map<${sourceState}, ${payload}> = mapOf(
+${cases.map(([state, value]) => `            ${sourceState}.${kotlinEnumToken(state)} to ${payload}(${emitArguments(authority.presentation.fields, value, options)}),`).join("\n")}
+        )
+        val stateIds: Set<String> get() = statesById.keys
 
-        fun require(stateId: String): ${payload} = requireNotNull(cases[stateId]) {
+        fun state(stateId: String): ${sourceState} = requireNotNull(statesById[stateId]) {
             "Unknown ${authority.id} state '$stateId'"
         }
+
+        fun require(state: ${sourceState}): ${payload} = requireNotNull(cases[state]) {
+            "Missing ${authority.id} presentation for '$state'"
+        }
+
+        fun require(stateId: String): ${payload} = require(state(stateId))
     }`;
 }
 
@@ -278,12 +301,13 @@ function uniqueOpaqueSourceValues(authorities: readonly CompiledStateAuthority[]
 
 function sourceFieldType(
   field: LegoField,
-  authority: CompiledStateAuthority,
+  finiteValuesById: ReadonlyMap<string, LegoFiniteValueDeclaration>,
   options: KotlinEmissionOptions,
 ): string {
   if (typeof field.value !== "string") {
-    return field.value.ref === authority.source.states.id
-      ? finiteEnumName(authority.source.states, options)
+    const finiteValue = finiteValuesById.get(field.value.ref);
+    return finiteValue !== undefined
+      ? finiteEnumName(finiteValue, options)
       : opaqueSourceValueName(field.value.ref, options);
   }
   switch (field.value) {
