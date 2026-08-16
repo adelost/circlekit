@@ -105,6 +105,36 @@ fun fitCircleDiscText(
 }
 
 /**
+ * Layout boundary between Compose constraints and the strict text fitter.
+ * A list row outside the round chord can legitimately be measured at zero;
+ * that means no visible content, not malformed text input.
+ */
+internal fun fitCircleDiscTextForBounds(
+    primaryValue: String,
+    unit: String?,
+    containerWidthPx: Float,
+    containerHeightPx: Float,
+    budget: CircleDiscTextBudget,
+    measureWidthPx: (text: String, sizeSp: Float) -> Float,
+): CircleDiscTextFit? {
+    if (
+        !containerWidthPx.isFinite() || containerWidthPx <= 0f ||
+        !containerHeightPx.isFinite() || containerHeightPx <= 0f
+    ) {
+        return null
+    }
+    val availableWidthPx = containerWidthPx * budget.horizontalFraction
+    if (!availableWidthPx.isFinite() || availableWidthPx <= 0f) return null
+    return fitCircleDiscText(
+        primaryValue = primaryValue,
+        unit = unit,
+        availableWidthPx = availableWidthPx,
+        budget = budget,
+        measureWidthPx = measureWidthPx,
+    )
+}
+
+/**
  * Shared, gesture-free disc artwork. Callers may place it in an app-owned dial;
  * only the artwork and measured fitting stay authoritative here.
  */
@@ -124,12 +154,21 @@ fun CircleDiscArtwork(
             .background(spec.background)
             .circleRingContour(spec.secondaryRimColor ?: spec.contour),
     ) {
-        val availableWidthPx = with(density) { maxWidth.toPx() } * textBudget.horizontalFraction
-        val fit = remember(spec.primaryValue, spec.unit, availableWidthPx, textBudget, fontScale) {
-            fitCircleDiscText(
+        val containerWidthPx = with(density) { maxWidth.toPx() }
+        val containerHeightPx = with(density) { maxHeight.toPx() }
+        val fit = remember(
+            spec.primaryValue,
+            spec.unit,
+            containerWidthPx,
+            containerHeightPx,
+            textBudget,
+            fontScale,
+        ) {
+            fitCircleDiscTextForBounds(
                 primaryValue = spec.primaryValue,
                 unit = spec.unit,
-                availableWidthPx = availableWidthPx,
+                containerWidthPx = containerWidthPx,
+                containerHeightPx = containerHeightPx,
                 budget = textBudget,
                 measureWidthPx = { text, sizeSp ->
                     measurer.measure(
@@ -144,7 +183,7 @@ fun CircleDiscArtwork(
                     ).size.width.toFloat()
                 },
             )
-        }
+        } ?: return@BoxWithConstraints
         Row(verticalAlignment = Alignment.CenterVertically) {
             BasicText(
                 text = spec.primaryValue,

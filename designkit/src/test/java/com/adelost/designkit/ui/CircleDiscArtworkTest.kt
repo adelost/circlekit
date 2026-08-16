@@ -28,6 +28,26 @@ class CircleDiscArtworkTest {
         assertFalse(narrow.measuredWidthPx == wide.measuredWidthPx)
     }
 
+    @Test
+    fun `zero width renders no disc content without measuring text`() {
+        var measured = false
+
+        val fit = fitCircleDiscTextForBounds(
+            primaryValue = "1008.1",
+            unit = "hPa",
+            containerWidthPx = 0f,
+            containerHeightPx = 40f,
+            budget = budget,
+            measureWidthPx = { _, _ ->
+                measured = true
+                error("zero-width disc must not ask the fitter to measure")
+            },
+        )
+
+        assertEquals(null, fit)
+        assertFalse(measured)
+    }
+
     private fun measuredWidth(text: String, sizeSp: Float): Float = text.sumOf { glyph ->
         when (glyph) {
             '1' -> 0.35
