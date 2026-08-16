@@ -15,7 +15,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.composed
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.onClick
+import androidx.compose.ui.semantics.onLongClick
 import androidx.compose.ui.semantics.semantics
 import kotlinx.coroutines.withTimeoutOrNull
 
@@ -56,6 +58,10 @@ internal fun continuousPressMayBegin(
  * A touch a scroll container claims is a cancel, never an action. Releasing
  * early cancels too, by construction: nothing has fired yet.
  *
+ * When [label] is declared this atom owns both the spoken name and the action.
+ * A visual child must then be semantically silent; relying on arbitrary child
+ * semantics to merge can leave a named inert node beside an unnamed action.
+ *
  * Assistive technology activates the same production action through the
  * standard semantics click. That accommodation is intentionally immediate:
  * a screen-reader action is already an explicit decision and cannot perform
@@ -71,14 +77,18 @@ fun Modifier.circleSafeTap(
     enabled: Boolean = true,
     holdMs: Long = MenuDesign.tapHoldMs,
     consumeDown: Boolean = false,
+    label: String? = null,
     onTap: () -> Unit,
 ): Modifier = composed {
     if (!enabled) {
-        Modifier
+        if (label == null) Modifier else Modifier.semantics(mergeDescendants = true) {
+            contentDescription = label
+        }
     } else {
         val latestTap = rememberUpdatedState(onTap)
         Modifier
             .semantics(mergeDescendants = true) {
+                label?.let { contentDescription = it }
                 onClick {
                     latestTap.value()
                     true
@@ -181,6 +191,9 @@ fun Modifier.circlePressLifecycle(
  * be told apart by a human thumb; the require below refuses a configuration
  * where the long press is unreachable rather than shipping a control whose
  * second gesture can never win.
+ *
+ * When [label] is declared the same named node exposes the ordinary action as
+ * a click and the longer action as a long click. Pointer timing is unchanged.
  */
 fun Modifier.circleSafeTapOrHold(
     feedback: CircleActionFeedbackState,
@@ -188,6 +201,7 @@ fun Modifier.circleSafeTapOrHold(
     holdMs: Long = MenuDesign.tapHoldMs,
     longPressMs: Long = MenuDesign.holdDestructiveMs,
     consumeDown: Boolean = false,
+    label: String? = null,
     onLongPress: () -> Unit,
     onTap: () -> Unit,
 ): Modifier = composed {
@@ -195,11 +209,28 @@ fun Modifier.circleSafeTapOrHold(
         "long press ($longPressMs ms) must outlast the action rung ($holdMs ms)"
     }
     if (!enabled) {
-        Modifier
+        if (label == null) Modifier else Modifier.semantics(mergeDescendants = true) {
+            contentDescription = label
+        }
     } else {
         val latestTap = rememberUpdatedState(onTap)
         val latestLongPress = rememberUpdatedState(onLongPress)
-        Modifier
+        val semantics = if (label == null) {
+            Modifier
+        } else {
+            Modifier.semantics(mergeDescendants = true) {
+                contentDescription = label
+                onClick {
+                    latestTap.value()
+                    true
+                }
+                onLongClick {
+                    latestLongPress.value()
+                    true
+                }
+            }
+        }
+        semantics
             .pointerInput(holdMs, longPressMs, consumeDown) {
             awaitEachGesture {
                 val down = awaitFirstDown(requireUnconsumed = !consumeDown)
