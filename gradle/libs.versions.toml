@@ -9,6 +9,7 @@ wearCompose = "1.4.0"
 playServicesLocation = "21.3.0"
 playServicesWearable = "20.0.1"
 junit = "4.13.2"
+androidxTestRunner = "1.6.2"
 orgJson = "20240303"
 coil = "2.7.0"
 wearOngoing = "1.0.0"
@@ -50,6 +51,9 @@ androidx-wear-input = { group = "androidx.wear", name = "wear-input", version.re
 androidx-wear-watchface-complications-data-source-ktx = { group = "androidx.wear.watchface", name = "watchface-complications-data-source-ktx", version.ref = "wearWatchface" }
 
 junit = { group = "junit", name = "junit", version.ref = "junit" }
+androidx-test-runner = { group = "androidx.test", name = "runner", version.ref = "androidxTestRunner" }
+androidx-compose-ui-test-junit4 = { group = "androidx.compose.ui", name = "ui-test-junit4" }
+androidx-compose-ui-test-manifest = { group = "androidx.compose.ui", name = "ui-test-manifest" }
 org-json = { group = "org.json", name = "json", version.ref = "orgJson" }
 kotlinx-coroutines-core = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-core", version.ref = "coroutines" }
 kotlinx-coroutines-android = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-android", version.ref = "coroutines" }

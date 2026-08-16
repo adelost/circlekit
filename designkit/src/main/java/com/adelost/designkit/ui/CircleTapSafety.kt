@@ -15,6 +15,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.composed
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.semantics.onClick
+import androidx.compose.ui.semantics.semantics
 import kotlinx.coroutines.withTimeoutOrNull
 
 /** Product action timing is semantic data, not a per-screen millisecond.
@@ -54,6 +56,11 @@ internal fun continuousPressMayBegin(
  * A touch a scroll container claims is a cancel, never an action. Releasing
  * early cancels too, by construction: nothing has fired yet.
  *
+ * Assistive technology activates the same production action through the
+ * standard semantics click. That accommodation is intentionally immediate:
+ * a screen-reader action is already an explicit decision and cannot perform
+ * the raw pointer hold. Pointer input still follows the unchanged hold gate.
+ *
  * [feedback] is the sole press state for the control. The gesture never draws
  * into its own bounds: the component renders that state once, on its label (or
  * as a pressed affordance when it has no label). This prevents a button-wide
@@ -71,6 +78,12 @@ fun Modifier.circleSafeTap(
     } else {
         val latestTap = rememberUpdatedState(onTap)
         Modifier
+            .semantics(mergeDescendants = true) {
+                onClick {
+                    latestTap.value()
+                    true
+                }
+            }
             .pointerInput(holdMs, consumeDown) {
                 awaitEachGesture {
                     val down = awaitFirstDown(requireUnconsumed = !consumeDown)
