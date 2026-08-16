@@ -19,6 +19,7 @@ import {
   skydivingNodeTypes, unreservedContractIds, unreservedNodeTypeIds,
 } from "../src/catalog.js";
 import { skydivingFiniteValues } from "../src/finite-values.js";
+import { recordingStages } from "../src/finite-values.js";
 import { instrumentRuntimeOwner } from "../src/legos/flight.js";
 
 const assets = { id: "assets", version: "0.0.0", icons: [] };
@@ -95,6 +96,13 @@ test("the catalog declares the skydiving domain and validates on its own", () =>
   assert.ok(skydivingContracts.length > 70, `only ${skydivingContracts.length} contracts`);
   assert.ok(skydivingNodeTypes.length > 30, `only ${skydivingNodeTypes.length} node types`);
   assert.equal(skydivingFiniteValues.length, 19);
+});
+
+test("recording stage distinguishes unconfirmed buffering from confirmed recording", () => {
+  assert.deepEqual(
+    recordingStages.values,
+    ["stopped", "armed", "buffering", "recording"],
+  );
 });
 
 test("auto zero config describes app inactivity, not zero age or sensor recency", () => {

@@ -59,7 +59,7 @@ export const positionWeatherReadinesses = finiteValues(
 
 export const recordingStages = finiteValues(
   "recording.stage",
-  ["stopped", "armed", "recording"],
+  ["stopped", "armed", "buffering", "recording"],
 );
 
 export const flightPhases = finiteValues(

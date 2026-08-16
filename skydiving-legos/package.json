@@ -1,6 +1,6 @@
 {
   "name": "@v1d/skydiving-legos",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "description": "The skydiving domain as a reserved ProductSpec library catalog: contracts, node types and finite spaces",
   "type": "module",
   "files": [
