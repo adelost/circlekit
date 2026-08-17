@@ -274,7 +274,13 @@ private fun StepperPillRow(
                     .weight(1f)
                     .then(
                         if (onToggle != null) {
-                            Modifier.circleSafeTap(feedback = centreFeedback, onTap = onToggle)
+                            // The value/supporting children are the intended
+                            // merged name for this data-shaped control.
+                            Modifier.circleSafeTap(
+                                feedback = centreFeedback,
+                                label = null,
+                                onTap = onToggle,
+                            )
                         } else {
                             Modifier
                         },
@@ -321,7 +327,8 @@ private fun StepCircle(
             .size(MenuDesign.iconRingDiameter)
             .clip(CircleShape)
             .border(MenuDesign.contourStroke, RingTokens.Outline, CircleShape)
-            .circleSafeTap(feedback = feedback, onTap = onTap),
+            // The visible +/− text is the complete merged action name.
+            .circleSafeTap(feedback = feedback, label = null, onTap = onTap),
         contentAlignment = Alignment.Center,
     ) {
         Text(

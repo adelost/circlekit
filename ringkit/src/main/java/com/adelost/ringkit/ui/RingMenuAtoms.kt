@@ -31,6 +31,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.onLongClick
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
@@ -93,10 +94,17 @@ private fun TapBackRing(
                 .circleSafeTap(
                     feedback = feedback,
                     enabled = enabled,
+                    label = "Back",
                     onTap = onBack,
                 ),
         )
-        BackDisc(enabled = enabled, pressed = feedback.pressed, scrim = scrim, diameter = diameter)
+        BackDisc(
+            enabled = enabled,
+            pressed = feedback.pressed,
+            scrim = scrim,
+            diameter = diameter,
+            modifier = Modifier.clearAndSetSemantics { },
+        )
     }
 }
 
@@ -140,12 +148,14 @@ private fun BackDisc(
     pressed: Boolean,
     scrim: Boolean,
     diameter: Dp,
+    modifier: Modifier = Modifier,
 ) {
     CircleBackDisc(
         enabled = enabled,
         pressed = pressed,
         scrim = scrim,
         diameter = diameter,
+        modifier = modifier,
         chevronSize = MenuDesign.backChevronSize,
         pressScale = MenuDesign.backPressScale,
         scrimColor = MenuDesign.overlayScrim,
@@ -166,7 +176,12 @@ fun TextAction(
     Box(
         modifier = modifier
             .clip(RoundedCornerShape(8.dp))
-            .circleSafeTap(feedback = feedback, enabled = enabled, onTap = onTap)
+            .circleSafeTap(
+                feedback = feedback,
+                enabled = enabled,
+                label = text,
+                onTap = onTap,
+            )
             .padding(horizontal = 18.dp, vertical = 7.dp),
         contentAlignment = Alignment.Center,
     ) {
@@ -179,7 +194,7 @@ fun TextAction(
             modifier = Modifier.circleLabelProgress(
                 progress = labelProgress,
                 pressed = feedback.pressed,
-            ),
+            ).clearAndSetSemantics { },
         )
     }
 }

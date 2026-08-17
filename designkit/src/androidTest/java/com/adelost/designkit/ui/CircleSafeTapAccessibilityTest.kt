@@ -10,11 +10,13 @@ import androidx.compose.ui.test.assertHasClickAction
 import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
+import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performSemanticsAction
 import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.unit.dp
 import androidx.wear.compose.material.Icon
+import androidx.wear.compose.material.Text
 import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
@@ -92,6 +94,37 @@ class CircleSafeTapAccessibilityTest {
         assertEquals(1, longPresses)
         assertEquals("there is one named node", 1, namedNodes())
         assertEquals("there is no unnamed actionable sibling", 1, actionableNodes())
+    }
+
+    @Test
+    fun explicitNullDeliberatelyMergesTheChildNameWithBothActions() {
+        var taps = 0
+        var longPresses = 0
+        compose.setContent {
+            val feedback = rememberCircleActionFeedbackState()
+            Box(
+                Modifier
+                    .size(48.dp)
+                    .circleSafeTapOrHold(
+                        feedback = feedback,
+                        label = null,
+                        onTap = { taps++ },
+                        onLongPress = { longPresses++ },
+                    ),
+            ) {
+                Text(MERGED_CHILD_DESCRIPTION)
+            }
+        }
+
+        val node = compose.onNodeWithText(MERGED_CHILD_DESCRIPTION)
+            .assertHasClickAction()
+            .assert(SemanticsMatcher.keyIsDefined(SemanticsActions.OnLongClick))
+        node.performSemanticsAction(SemanticsActions.OnClick)
+        node.performSemanticsAction(SemanticsActions.OnLongClick)
+        compose.waitForIdle()
+
+        assertEquals(1, taps)
+        assertEquals(1, longPresses)
     }
 
     @Test
@@ -204,5 +237,6 @@ class CircleSafeTapAccessibilityTest {
     private companion object {
         const val TARGET = "circle-safe-tap"
         const val CONTROL_DESCRIPTION = "Named child action"
+        const val MERGED_CHILD_DESCRIPTION = "Merged child action"
     }
 }
