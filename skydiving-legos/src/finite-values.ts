@@ -84,7 +84,12 @@ export const pressureAccuracies = finiteValues(
   "pressure.accuracy",
   ["unreliable", "low", "medium", "high", "unknown"],
 );
-export const pressureSources = finiteValues("pressure.source", ["physical", "debug"]);
+// "simulated", not "debug": the app's sensor port renamed the value when the
+// simulator became a first-class source (skyvw #1064), and the attested native
+// manifest followed. The library lagged, so conformance was red on skyvw main:
+// declaration said debug, native said simulated. The value names what the
+// observation IS, not which build produced it.
+export const pressureSources = finiteValues("pressure.source", ["physical", "simulated"]);
 export const flightAltitudeTrends = finiteValues(
   "flight.altitude-trend",
   ["ascending", "descending", "stable"],

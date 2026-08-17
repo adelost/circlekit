@@ -12,6 +12,7 @@ import {
   type StatusIndicatorDeclaration,
   validate as validateProductMenus,
   validateIsoOptions,
+  validateSettingMountSeats,
 } from "../src/skydiving/index.js";
 
 const acmeSymbols = {
@@ -258,4 +259,25 @@ test("read-only navigation can declare immediate cadence with its closed reason"
     nativeSymbols: acmeSymbols.productMenus,
   });
   assert.match(output.menus, /immediateReason = GeneratedAcmeMenuImmediateReason\.READ_ONLY_NAVIGATION/u);
+});
+
+test("a settings-section seat holds exactly one setting", () => {
+  const seat = { kind: "settings-section", section: "DISPLAY", order: 6 } as const;
+  const held = [
+    { setting: { id: "display.color-theme" }, mount: seat },
+    { setting: { id: "view.gesture.drag" }, mount: seat },
+  ];
+  assert.throws(
+    () => validateSettingMountSeats(held),
+    (error: Error) =>
+      error.message.includes("DISPLAY order 6") &&
+      error.message.includes("display.color-theme") &&
+      error.message.includes("view.gesture.drag"),
+  );
+  // Distinct seats — and every non-section mount kind — pass untouched.
+  validateSettingMountSeats([
+    { setting: { id: "display.color-theme" }, mount: seat },
+    { setting: { id: "view.gesture.drag" }, mount: { kind: "settings-section", section: "DISPLAY", order: 7 } },
+    { setting: { id: "iso.spot" }, mount: { kind: "iso-scene-option" } },
+  ]);
 });
