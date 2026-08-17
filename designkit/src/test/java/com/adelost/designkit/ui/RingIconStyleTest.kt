@@ -12,7 +12,12 @@ import org.junit.Test
  * EvenOdd holes only for recognition, and line motifs drawn as thick strokes.
  * An object drawn as an outline (the wireframe cube was the one that got
  * caught on glass) reads as a different style family next to the filled set.
- * This test makes the next one a red build instead of a visual review finding.
+ * This test makes the next fully-stroked object a red build instead of a
+ * visual review finding. Its limit is deliberate: fill() presence is a proxy,
+ * not a measurement, so a wireframe carrying one token filled dot still
+ * passes — a sun IS a filled disc with stroked rays, and any fill/stroke
+ * ratio strict enough to catch the fake would also condemn Sun, Gps, Freefly
+ * and HeadDown. That remainder stays a visual review question.
  */
 class RingIconStyleTest {
 
