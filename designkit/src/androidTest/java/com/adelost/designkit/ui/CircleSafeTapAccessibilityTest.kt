@@ -50,8 +50,9 @@ class CircleSafeTapAccessibilityTest {
         var actions = 0
         setControl { actions++ }
 
-        compose.onNodeWithContentDescription(CONTROL_DESCRIPTION)
+        namedNode()
             .assertHasClickAction()
+            .assert(nonMergingActionNode())
             .performSemanticsAction(SemanticsActions.OnClick)
         compose.waitForIdle()
 
@@ -65,8 +66,9 @@ class CircleSafeTapAccessibilityTest {
         var actions = 0
         setControl(enabled = false) { actions++ }
 
-        compose.onNodeWithContentDescription(CONTROL_DESCRIPTION)
+        namedNode()
             .assert(SemanticsMatcher.keyNotDefined(SemanticsActions.OnClick))
+            .assert(nonMergingActionNode())
         compose.waitForIdle()
 
         assertEquals(0, actions)
@@ -78,9 +80,10 @@ class CircleSafeTapAccessibilityTest {
         var longPresses = 0
         setDualControl(onTap = { taps++ }, onLongPress = { longPresses++ })
 
-        val node = compose.onNodeWithContentDescription(CONTROL_DESCRIPTION)
+        val node = namedNode()
             .assertHasClickAction()
             .assert(SemanticsMatcher.keyIsDefined(SemanticsActions.OnLongClick))
+            .assert(nonMergingActionNode())
         node.performSemanticsAction(SemanticsActions.OnClick)
         node.performSemanticsAction(SemanticsActions.OnLongClick)
         compose.waitForIdle()
@@ -177,6 +180,7 @@ class CircleSafeTapAccessibilityTest {
                 androidx.compose.ui.semantics.SemanticsProperties.ContentDescription,
                 listOf(CONTROL_DESCRIPTION),
             ),
+            useUnmergedTree = true,
         )
         .fetchSemanticsNodes().size
 
@@ -184,8 +188,18 @@ class CircleSafeTapAccessibilityTest {
         .onAllNodes(
             SemanticsMatcher.keyIsDefined(SemanticsActions.OnClick)
                 .or(SemanticsMatcher.keyIsDefined(SemanticsActions.OnLongClick)),
+            useUnmergedTree = true,
         )
         .fetchSemanticsNodes().size
+
+    private fun namedNode() = compose.onNodeWithContentDescription(
+        CONTROL_DESCRIPTION,
+        useUnmergedTree = true,
+    )
+
+    private fun nonMergingActionNode() = SemanticsMatcher(
+        "the named action node does not depend on descendant merging",
+    ) { node -> !node.config.isMergingSemanticsOfDescendants }
 
     private companion object {
         const val TARGET = "circle-safe-tap"

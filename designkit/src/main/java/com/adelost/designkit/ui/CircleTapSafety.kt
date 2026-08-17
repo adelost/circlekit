@@ -81,13 +81,13 @@ fun Modifier.circleSafeTap(
     onTap: () -> Unit,
 ): Modifier = composed {
     if (!enabled) {
-        if (label == null) Modifier else Modifier.semantics(mergeDescendants = true) {
+        if (label == null) Modifier else Modifier.semantics(mergeDescendants = false) {
             contentDescription = label
         }
     } else {
         val latestTap = rememberUpdatedState(onTap)
         Modifier
-            .semantics(mergeDescendants = true) {
+            .semantics(mergeDescendants = label == null) {
                 label?.let { contentDescription = it }
                 onClick {
                     latestTap.value()
@@ -209,7 +209,7 @@ fun Modifier.circleSafeTapOrHold(
         "long press ($longPressMs ms) must outlast the action rung ($holdMs ms)"
     }
     if (!enabled) {
-        if (label == null) Modifier else Modifier.semantics(mergeDescendants = true) {
+        if (label == null) Modifier else Modifier.semantics(mergeDescendants = false) {
             contentDescription = label
         }
     } else {
@@ -218,7 +218,7 @@ fun Modifier.circleSafeTapOrHold(
         val semantics = if (label == null) {
             Modifier
         } else {
-            Modifier.semantics(mergeDescendants = true) {
+            Modifier.semantics(mergeDescendants = false) {
                 contentDescription = label
                 onClick {
                     latestTap.value()

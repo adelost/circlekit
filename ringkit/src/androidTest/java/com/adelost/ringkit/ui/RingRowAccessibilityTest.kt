@@ -27,9 +27,10 @@ class RingRowAccessibilityTest {
         var confirmations = 0
         setHoldRow { confirmations++ }
 
-        val node = compose.onNodeWithContentDescription(LABEL)
+        val node = compose.onNodeWithContentDescription(LABEL, useUnmergedTree = true)
             .assert(SemanticsMatcher.keyIsDefined(SemanticsActions.OnLongClick))
             .assert(SemanticsMatcher.keyNotDefined(SemanticsActions.OnClick))
+            .assert(nonMergingActionNode())
             .assert(SemanticsMatcher("long click announces the declared hold hint") { semanticNode ->
                 semanticNode.config.getOrNull(SemanticsActions.OnLongClick)?.label == HOLD_HINT
             })
@@ -88,7 +89,7 @@ class RingRowAccessibilityTest {
             )
         }
 
-        compose.onNodeWithContentDescription(LEGACY_TITLE)
+        compose.onNodeWithContentDescription(LEGACY_TITLE, useUnmergedTree = true)
             .assert(SemanticsMatcher("long click reuses the only declared copy") { node ->
                 node.config.getOrNull(SemanticsActions.OnLongClick)?.label == LEGACY_TITLE
             })
@@ -115,6 +116,7 @@ class RingRowAccessibilityTest {
             SemanticsProperties.ContentDescription,
             listOf(LABEL),
         ),
+        useUnmergedTree = true,
     ).fetchSemanticsNodes().size
 
     private fun hasNoDuplicateChildCopy() = SemanticsMatcher(
@@ -127,7 +129,12 @@ class RingRowAccessibilityTest {
     private fun actionableNodes(): Int = compose.onAllNodes(
         SemanticsMatcher.keyIsDefined(SemanticsActions.OnClick)
             .or(SemanticsMatcher.keyIsDefined(SemanticsActions.OnLongClick)),
+        useUnmergedTree = true,
     ).fetchSemanticsNodes().size
+
+    private fun nonMergingActionNode() = SemanticsMatcher(
+        "the named action node does not depend on descendant merging",
+    ) { node -> !node.config.isMergingSemanticsOfDescendants }
 
     private companion object {
         const val TITLE = "UNDERSTAND"
