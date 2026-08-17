@@ -24,6 +24,7 @@ val RING_ICON_OUTLINE_BY_NAME: Map<String, ImageVector> by lazy {
         RingIconsOutline.Rain, RingIconsOutline.Snow, RingIconsOutline.Storm, RingIconsOutline.Fog,
         RingIconsOutline.Thermometer, RingIconsOutline.ChevronLeft, RingIconsOutline.Freefly,
         RingIconsOutline.HeadDown, RingIconsOutline.BellyArch, RingIconsOutline.Pencil,
+        RingIconsOutline.Info,
         RingIconsOutline.Zigzag, RingIconsOutline.Cross, RingIconsOutline.ChevronRight,
         RingIconsOutline.ChevronUp, RingIconsOutline.ChevronDown, RingIconsOutline.Home,
         RingIconsOutline.Lock, RingIconsOutline.Record, RingIconsOutline.Stop, RingIconsOutline.Grid,
