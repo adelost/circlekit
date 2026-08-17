@@ -30,8 +30,9 @@ class CircleRingRowAccessibilityTest {
             )
         }
 
-        compose.onNodeWithContentDescription(LABEL)
+        compose.onNodeWithContentDescription(LABEL, useUnmergedTree = true)
             .assertHasClickAction()
+            .assert(nonMergingActionNode())
             .assert(hasNoDuplicateChildCopy())
             .performSemanticsAction(SemanticsActions.OnClick)
         compose.waitForIdle()
@@ -63,6 +64,7 @@ class CircleRingRowAccessibilityTest {
             SemanticsProperties.ContentDescription,
             listOf(LABEL),
         ),
+        useUnmergedTree = true,
     ).fetchSemanticsNodes().size
 
     private fun hasNoDuplicateChildCopy() = SemanticsMatcher(
@@ -75,13 +77,19 @@ class CircleRingRowAccessibilityTest {
     private fun actionableNodes(): Int = compose.onAllNodes(
         SemanticsMatcher.keyIsDefined(SemanticsActions.OnClick)
             .or(SemanticsMatcher.keyIsDefined(SemanticsActions.OnLongClick)),
+        useUnmergedTree = true,
     ).fetchSemanticsNodes().size
 
     private fun textNodesContaining(text: String): Int = compose.onAllNodes(
         SemanticsMatcher("text contains $text") { node ->
             AnnotatedString(text) in node.config.getOrNull(SemanticsProperties.Text).orEmpty()
         },
+        useUnmergedTree = true,
     ).fetchSemanticsNodes().size
+
+    private fun nonMergingActionNode() = SemanticsMatcher(
+        "the named action node does not depend on descendant merging",
+    ) { node -> !node.config.isMergingSemanticsOfDescendants }
 
     private companion object {
         const val TITLE = "RECORD"

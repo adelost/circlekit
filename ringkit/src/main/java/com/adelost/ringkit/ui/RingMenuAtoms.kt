@@ -273,7 +273,7 @@ fun RingRow(
             background = Color.Transparent,
             shape = RectangleShape,
             holdMs = holdMs,
-            modifier = rowModifier.semantics(mergeDescendants = true) {
+            modifier = rowModifier.semantics(mergeDescendants = false) {
                 contentDescription = circleRingRowAccessibilityLabel(title, sub)
                 // Reuse the declared hold hint when the product has one. The
                 // value line carries onboarding's declared guidance; legacy
