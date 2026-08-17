@@ -37,6 +37,9 @@ import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.onLongClick
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
@@ -159,6 +162,9 @@ fun HoldPill(
 ) {
     val fill = if (destructive) RingTokens.Broken else circleBrandColor()
     HoldFillBox(
+        // The visible text is this control's complete merged name.
+        label = null,
+        onLongClickLabel = text,
         onConfirm = onConfirm,
         fill = fill,
         background = Color.Transparent,
@@ -202,6 +208,18 @@ internal fun holdProgressRoute(feedback: HoldProgressFeedback): HoldProgressRout
 
 @Composable
 fun HoldFillBox(
+    /**
+     * Required name ownership decision. A non-null value makes this atom the
+     * named, non-merging action node; explicit null deliberately merges the
+     * visible children as its name. Omission is not a third, silent state.
+     */
+    label: String?,
+    /**
+     * The already-declared phrase TalkBack uses for the long-click action.
+     * Required-but-nullable keeps the absence deliberate for compact controls
+     * whose visible symbol is their complete action vocabulary.
+     */
+    onLongClickLabel: String?,
     onConfirm: () -> Unit,
     fill: Color,
     background: Color,
@@ -222,6 +240,7 @@ fun HoldFillBox(
     val progressRoute = holdProgressRoute(progressFeedback)
     val progressPublisher = (progressFeedback as? HoldProgressFeedback.External)?.publish
     val latestProgressPublisher = rememberUpdatedState(progressPublisher)
+    val latestConfirm = rememberUpdatedState(onConfirm)
 
     DisposableEffect(Unit) {
         onDispose { latestProgressPublisher.value?.invoke(null) }
@@ -240,10 +259,19 @@ fun HoldFillBox(
             }
         }
         pressed = false
-        onConfirm()
+        latestConfirm.value()
     }
     Box(
         modifier = modifier
+            .semantics(mergeDescendants = label == null) {
+                if (label != null) contentDescription = label
+                if (enabled) {
+                    onLongClick(label = onLongClickLabel) {
+                        latestConfirm.value()
+                        true
+                    }
+                }
+            }
             .clip(shape)
             .then(if (outline != null) Modifier.border(MenuDesign.contourStroke, outline, shape) else Modifier)
             .background(background)

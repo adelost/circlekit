@@ -30,10 +30,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.clearAndSetSemantics
-import androidx.compose.ui.semantics.onLongClick
-import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -59,9 +56,11 @@ import androidx.wear.compose.material.Text
  *  0..1 to [onHoldProgress] — render it at the SCREEN CENTRE where the
  *  eye is, never under the finger — and only a completed hold fires
  *  [onBack]. Early release cancels and reports null. Null [holdMs]
- *  keeps the plain single-tap back. */
+ *  keeps the plain single-tap back. [label] is required product vocabulary;
+ *  the shared kit never invents a language for navigation. */
 @Composable
 fun BackRing(
+    label: String,
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
@@ -71,14 +70,15 @@ fun BackRing(
     onHoldProgress: ((Float?) -> Unit)? = null,
 ) {
     if (holdMs != null && enabled) {
-        HoldBackRing(onBack, scrim, diameter, holdMs, onHoldProgress, modifier)
+        HoldBackRing(label, onBack, scrim, diameter, holdMs, onHoldProgress, modifier)
     } else {
-        TapBackRing(onBack, enabled, scrim, diameter, modifier)
+        TapBackRing(label, onBack, enabled, scrim, diameter, modifier)
     }
 }
 
 @Composable
 private fun TapBackRing(
+    label: String,
     onBack: () -> Unit,
     enabled: Boolean,
     scrim: Boolean,
@@ -94,7 +94,7 @@ private fun TapBackRing(
                 .circleSafeTap(
                     feedback = feedback,
                     enabled = enabled,
-                    label = "Back",
+                    label = label,
                     onTap = onBack,
                 ),
         )
@@ -112,6 +112,7 @@ private fun TapBackRing(
  *  the whole disc, so progress belongs in the caller's centre overlay. */
 @Composable
 private fun HoldBackRing(
+    label: String,
     onBack: () -> Unit,
     scrim: Boolean,
     diameter: Dp,
@@ -122,6 +123,8 @@ private fun HoldBackRing(
     var holding by remember { mutableStateOf(false) }
     Box(modifier = modifier.size(diameter), contentAlignment = Alignment.Center) {
         HoldFillBox(
+            label = label,
+            onLongClickLabel = label,
             onConfirm = onBack,
             fill = Color.Transparent,
             background = Color.Transparent,
@@ -135,7 +138,13 @@ private fun HoldBackRing(
                 onHoldProgress?.invoke(progress)
             },
         ) {
-            BackDisc(enabled = true, pressed = holding, scrim = scrim, diameter = diameter)
+            BackDisc(
+                enabled = true,
+                pressed = holding,
+                scrim = scrim,
+                diameter = diameter,
+                modifier = Modifier.clearAndSetSemantics { },
+            )
         }
     }
 }
@@ -155,6 +164,7 @@ private fun BackDisc(
         pressed = pressed,
         scrim = scrim,
         diameter = diameter,
+        contentDescription = null,
         modifier = modifier,
         chevronSize = MenuDesign.backChevronSize,
         pressScale = MenuDesign.backPressScale,
@@ -283,22 +293,14 @@ fun RingRow(
             }
         }
         HoldFillBox(
+            label = circleRingRowAccessibilityLabel(title, sub),
+            onLongClickLabel = holdActionLabel,
             onConfirm = completeConfirmation,
             fill = brandColor,
             background = Color.Transparent,
             shape = RectangleShape,
             holdMs = holdMs,
-            modifier = rowModifier.semantics(mergeDescendants = false) {
-                contentDescription = circleRingRowAccessibilityLabel(title, sub)
-                // Reuse the declared hold hint when the product has one. The
-                // value line carries onboarding's declared guidance; legacy
-                // ActionSpec rows expose only their declared title. This
-                // argument is explicit and has no invented default string.
-                onLongClick(label = holdActionLabel) {
-                    completeConfirmation()
-                    true
-                }
-            },
+            modifier = rowModifier,
             contentPaddingH = MenuDesign.rowPaddingH,
             contentPaddingV = MenuDesign.rowPaddingV,
             contentAlignment = Alignment.CenterStart,

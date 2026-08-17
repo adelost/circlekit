@@ -392,6 +392,7 @@ fun CircleBackDisc(
     pressed: Boolean,
     scrim: Boolean,
     diameter: Dp,
+    contentDescription: String?,
     modifier: Modifier = Modifier,
     chevronSize: Dp = 18.dp,
     pressScale: Float = 0.93f,
@@ -417,7 +418,7 @@ fun CircleBackDisc(
     ) {
         Image(
             imageVector = RingIcons.ChevronLeft,
-            contentDescription = "Back",
+            contentDescription = contentDescription,
             colorFilter = ColorFilter.tint(
                 when {
                     !enabled -> RingTokens.NeutralRing

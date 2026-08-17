@@ -386,9 +386,10 @@ class RingNavigator(root: RingScreen) {
 fun RenderRingScreen(
     nav: RingNavigator,
     onExit: () -> Unit,
+    backLabel: String,
 ) {
     if (LocalCircleSurfaceLayout.current.surfaceClass != CircleSurfaceClass.ROUND) {
-        PhoneRingScreen(nav = nav, onExit = onExit)
+        PhoneRingScreen(nav = nav, onExit = onExit, backLabel = backLabel)
         return
     }
     val s = nav.current

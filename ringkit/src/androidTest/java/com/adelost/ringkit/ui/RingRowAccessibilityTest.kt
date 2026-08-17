@@ -41,6 +41,12 @@ class RingRowAccessibilityTest {
         assertEquals(1, confirmations)
         assertEquals(1, namedNodes())
         assertEquals(1, actionableNodes())
+        assertEquals(
+            "moving semantics into the hold engine must not shrink the row focus bounds",
+            compose.onNodeWithTag(TARGET, useUnmergedTree = true)
+                .fetchSemanticsNode().boundsInRoot,
+            node.fetchSemanticsNode().boundsInRoot,
+        )
     }
 
     @Test
