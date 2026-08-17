@@ -22,6 +22,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -29,6 +30,9 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.onLongClick
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -237,6 +241,9 @@ fun RingRow(
     }
     if (holdToConfirm) {
         val confirm = requireNotNull(onTap) { "A hold row requires an action" }
+        val holdActionLabel = hint.takeIf { it.isNotBlank() }
+            ?: sub.takeIf { it.isNotBlank() }
+            ?: title
         val brandColor = circleBrandColor()
         var holdProgress by remember { mutableStateOf<Float?>(null) }
         val cue = if (icon != null) {
@@ -252,39 +259,56 @@ fun RingRow(
         } else {
             null
         }
+        val latestConfirm = rememberUpdatedState(confirm)
+        val latestCue = rememberUpdatedState(cue)
+        val completeConfirmation = remember {
+            {
+                latestCue.value?.confirm()
+                latestConfirm.value()
+            }
+        }
         HoldFillBox(
-            onConfirm = {
-                cue?.confirm()
-                confirm()
-            },
+            onConfirm = completeConfirmation,
             fill = brandColor,
             background = Color.Transparent,
             shape = RectangleShape,
             holdMs = holdMs,
-            modifier = rowModifier,
+            modifier = rowModifier.semantics(mergeDescendants = true) {
+                contentDescription = title
+                // Reuse the declared hold hint when the product has one. The
+                // value line carries onboarding's declared guidance; legacy
+                // ActionSpec rows expose only their declared title. This
+                // argument is explicit and has no invented default string.
+                onLongClick(label = holdActionLabel) {
+                    completeConfirmation()
+                    true
+                }
+            },
             contentPaddingH = MenuDesign.rowPaddingH,
             contentPaddingV = MenuDesign.rowPaddingV,
             contentAlignment = Alignment.CenterStart,
             progressFeedback = HoldProgressFeedback.External { holdProgress = it },
         ) {
-            CircleRingRowContent(
-                title = title,
-                sub = sub,
-                icon = icon,
-                ringActive = ringActive,
-                // A hold row is defined by having something to confirm; the
-                // require above is what proves it, and the ring says so.
-                affordance = CircleRowAffordance.of(confirm),
-                accent = accent,
-                semanticColor = semanticColor,
-                leading = leading,
-                trailing = rowTrailing,
-                labelProgress = labelProgress ?: holdProgress?.let {
-                    CircleLabelProgress.Determinate(it.coerceIn(0f, 1f))
-                },
-                pressHoldMs = holdMs,
-                centerValue = centerValue,
-            )
+            CircleRingRowActionContent {
+                CircleRingRowContent(
+                    title = title,
+                    sub = sub,
+                    icon = icon,
+                    ringActive = ringActive,
+                    // A hold row is defined by having something to confirm; the
+                    // require above is what proves it, and the ring says so.
+                    affordance = CircleRowAffordance.of(confirm),
+                    accent = accent,
+                    semanticColor = semanticColor,
+                    leading = leading,
+                    trailing = rowTrailing,
+                    labelProgress = labelProgress ?: holdProgress?.let {
+                        CircleLabelProgress.Determinate(it.coerceIn(0f, 1f))
+                    },
+                    pressHoldMs = holdMs,
+                    centerValue = centerValue,
+                )
+            }
         }
         return
     }
