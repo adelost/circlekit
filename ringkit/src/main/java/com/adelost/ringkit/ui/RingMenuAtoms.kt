@@ -274,7 +274,7 @@ fun RingRow(
             shape = RectangleShape,
             holdMs = holdMs,
             modifier = rowModifier.semantics(mergeDescendants = true) {
-                contentDescription = title
+                contentDescription = circleRingRowAccessibilityLabel(title, sub)
                 // Reuse the declared hold hint when the product has one. The
                 // value line carries onboarding's declared guidance; legacy
                 // ActionSpec rows expose only their declared title. This

@@ -90,13 +90,13 @@ fun CircleRingRow(
         onLongPress == null -> modifier.circleSafeTap(
             feedback = feedback,
             holdMs = actionHoldMs,
-            label = title,
+            label = circleRingRowAccessibilityLabel(title, sub),
             onTap = confirmedTap,
         )
         else -> modifier.circleSafeTapOrHold(
             feedback = feedback,
             holdMs = actionHoldMs,
-            label = title,
+            label = circleRingRowAccessibilityLabel(title, sub),
             onLongPress = onLongPress,
             onTap = confirmedTap,
         )
@@ -137,18 +137,23 @@ fun CircleRingRow(
 }
 
 /**
- * Content placed beneath a row action keeps the value semantics but lets the
- * action node own the title exactly once.
+ * Content placed beneath a row action lets the action node own the visible
+ * title and value exactly once. Other descendants, including explicit
+ * trailing controls, keep their own semantics.
  *
  * RingKit's hold renderer uses the same content outside [CircleRingRow], so
  * this wrapper is public without changing the existing content function's ABI.
  */
 @Composable
 fun CircleRingRowActionContent(content: @Composable () -> Unit) {
-    CompositionLocalProvider(LocalActionParentOwnsRowTitle provides true, content = content)
+    CompositionLocalProvider(LocalActionParentOwnsRowCopy provides true, content = content)
 }
 
-private val LocalActionParentOwnsRowTitle = staticCompositionLocalOf { false }
+/** The exact spoken row grammar, independent of platform merge precedence. */
+fun circleRingRowAccessibilityLabel(title: String, sub: String): String =
+    sub.takeIf { it.isNotBlank() }?.let { "$title · $it" } ?: title
+
+private val LocalActionParentOwnsRowCopy = staticCompositionLocalOf { false }
 
 /** Same pixels without gesture/padding, used inside Watch hold feedback. */
 @Composable
@@ -225,7 +230,7 @@ fun CircleRingRowContent(
                     if (icon == null) MenuDesign.titleSizeNoIcon else MenuDesign.titleSize
                     ).value,
                 maxLines = if (multiline) MULTILINE_TITLE_LINES else 1,
-                spoken = !LocalActionParentOwnsRowTitle.current,
+                spoken = !LocalActionParentOwnsRowCopy.current,
             )
             // The state indicator rides the VALUE line, not the whole row.
             // Sitting beside both lines, it charged the TITLE for width the
@@ -243,7 +248,14 @@ fun CircleRingRowContent(
                     fontSizeSp = phoneDesign?.rowSubtitleSize?.value ?: MenuDesign.subSize.value,
                     maxLines = if (multiline) MULTILINE_SUB_LINES else 1,
                     overflow = TextOverflow.Ellipsis,
-                    modifier = if (trailing != null) Modifier.weight(1f) else Modifier,
+                    modifier = (if (trailing != null) Modifier.weight(1f) else Modifier)
+                        .then(
+                            if (LocalActionParentOwnsRowCopy.current) {
+                                Modifier.clearAndSetSemantics { }
+                            } else {
+                                Modifier
+                            },
+                        ),
                 )
                 if (trailing != null) {
                     Spacer(Modifier.size(6.dp))

@@ -27,13 +27,13 @@ class RingRowAccessibilityTest {
         var confirmations = 0
         setHoldRow { confirmations++ }
 
-        val node = compose.onNodeWithContentDescription(TITLE)
+        val node = compose.onNodeWithContentDescription(LABEL)
             .assert(SemanticsMatcher.keyIsDefined(SemanticsActions.OnLongClick))
             .assert(SemanticsMatcher.keyNotDefined(SemanticsActions.OnClick))
             .assert(SemanticsMatcher("long click announces the declared hold hint") { semanticNode ->
                 semanticNode.config.getOrNull(SemanticsActions.OnLongClick)?.label == HOLD_HINT
             })
-            .assert(hasValueButNotDuplicateTitle())
+            .assert(hasNoDuplicateChildCopy())
         node.performSemanticsAction(SemanticsActions.OnLongClick)
         compose.waitForIdle()
 
@@ -113,15 +113,15 @@ class RingRowAccessibilityTest {
     private fun namedNodes(): Int = compose.onAllNodes(
         SemanticsMatcher.expectValue(
             SemanticsProperties.ContentDescription,
-            listOf(TITLE),
+            listOf(LABEL),
         ),
     ).fetchSemanticsNodes().size
 
-    private fun hasValueButNotDuplicateTitle() = SemanticsMatcher(
-        "the value is spoken and the title is owned only by contentDescription",
+    private fun hasNoDuplicateChildCopy() = SemanticsMatcher(
+        "the complete spoken copy is owned only by contentDescription",
     ) { node ->
         val text = node.config.getOrNull(SemanticsProperties.Text).orEmpty()
-        AnnotatedString(SUB) in text && AnnotatedString(TITLE) !in text
+        AnnotatedString(SUB) !in text && AnnotatedString(TITLE) !in text
     }
 
     private fun actionableNodes(): Int = compose.onAllNodes(
@@ -132,6 +132,7 @@ class RingRowAccessibilityTest {
     private companion object {
         const val TITLE = "UNDERSTAND"
         const val SUB = "HOLD TO CONFIRM"
+        const val LABEL = "$TITLE · $SUB"
         const val HOLD_HINT = "Hold to start or stop recording."
         const val TARGET = "hold-row"
         const val HOLD_MS = 900L

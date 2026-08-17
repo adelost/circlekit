@@ -30,9 +30,9 @@ class CircleRingRowAccessibilityTest {
             )
         }
 
-        compose.onNodeWithContentDescription(TITLE)
+        compose.onNodeWithContentDescription(LABEL)
             .assertHasClickAction()
-            .assert(hasValueButNotDuplicateTitle())
+            .assert(hasNoDuplicateChildCopy())
             .performSemanticsAction(SemanticsActions.OnClick)
         compose.waitForIdle()
 
@@ -61,15 +61,15 @@ class CircleRingRowAccessibilityTest {
     private fun namedNodes(): Int = compose.onAllNodes(
         SemanticsMatcher.expectValue(
             SemanticsProperties.ContentDescription,
-            listOf(TITLE),
+            listOf(LABEL),
         ),
     ).fetchSemanticsNodes().size
 
-    private fun hasValueButNotDuplicateTitle() = SemanticsMatcher(
-        "the value is spoken and the title is owned only by contentDescription",
+    private fun hasNoDuplicateChildCopy() = SemanticsMatcher(
+        "the complete spoken copy is owned only by contentDescription",
     ) { node ->
         val text = node.config.getOrNull(SemanticsProperties.Text).orEmpty()
-        AnnotatedString(SUB) in text && AnnotatedString(TITLE) !in text
+        AnnotatedString(SUB) !in text && AnnotatedString(TITLE) !in text
     }
 
     private fun actionableNodes(): Int = compose.onAllNodes(
@@ -86,6 +86,7 @@ class CircleRingRowAccessibilityTest {
     private companion object {
         const val TITLE = "RECORD"
         const val SUB = "HOLD · AUTO READY"
+        const val LABEL = "$TITLE · $SUB"
         const val PASSIVE_TITLE = "CERTIFIED"
         const val PASSIVE_SUB = "NEVER REPLACE EQUIPMENT"
     }
