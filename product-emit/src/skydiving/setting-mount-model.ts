@@ -45,6 +45,34 @@ export type SettingMount<
 };
 
 /**
+ * A settings-section seat is (section, order): the generated menu renders rows
+ * by that number, so a tie hands the order of two rows to their accidental
+ * declaration position. Exactly that shipped once in skyvw — two mounts held
+ * DISPLAY seat 6 and the emitter tie-broke silently. Product-independent law,
+ * same shape as the status-indicator emitter's seat refusal: refuse the tie at
+ * compile, naming both holders.
+ */
+export function validateSettingMountSeats(
+  components: readonly {
+    readonly setting: { readonly id: string };
+    readonly mount: SettingMount;
+  }[],
+): void {
+  const seats = new Map<string, string>();
+  for (const { setting, mount } of components) {
+    if (mount.kind !== "settings-section") continue;
+    const seat = `${mount.section} order ${mount.order}`;
+    const holder = seats.get(seat);
+    if (holder !== undefined) {
+      throw new Error(
+        `settings-section seat collision: ${seat} is held by both ${holder} and ${setting.id}`,
+      );
+    }
+    seats.set(seat, setting.id);
+  }
+}
+
+/**
  * One setting and where the product mounts it.
  *
  * The mount union is the parameter, because a product may bind kinds this
