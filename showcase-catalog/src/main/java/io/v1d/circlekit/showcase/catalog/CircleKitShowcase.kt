@@ -94,10 +94,12 @@ fun CircleKitShowcase(
                         null -> RenderRingScreen(
                             nav = rootNavigator,
                             onExit = { if (!navigateBack()) onExit() },
+                            backLabel = "Back",
                         )
                         is ShowcasePresentation.Screen -> RenderRingScreen(
                             nav = requireNotNull(selectedNavigator),
                             onExit = { if (!navigateBack()) onExit() },
+                            backLabel = "Back",
                         )
                         is ShowcasePresentation.Component -> ShowcasePresentations.ComponentPreview(
                             destination = destination,

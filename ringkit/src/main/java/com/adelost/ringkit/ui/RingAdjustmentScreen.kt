@@ -138,13 +138,14 @@ internal fun RingAdjustmentScreen(screen: RingScreen.Adjustment) {
 internal fun PhoneAdjustmentScreen(
     screen: RingScreen.Adjustment,
     back: () -> Unit,
+    backLabel: String,
 ) {
     val row = screen.row.collectAsState(initial = screen.initial).value
     Column(
         modifier = Modifier.fillMaxSize().widthIn(max = 640.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        PhoneScreenHeader(screen.title, back)
+        PhoneScreenHeader(screen.title, back, backLabel)
         Spacer(Modifier.height(28.dp))
         StepperPillRow(
             title = "VALUE",
@@ -260,6 +261,10 @@ private fun StepperPillRow(
         val centreHoldMs = centerHoldMs ?: adjustHoldMs
         if (onToggle != null && centreHoldMs != null) {
             HoldFillBox(
+                // Value/supporting children are the same intentional merged
+                // name as the tap variant below.
+                label = null,
+                onLongClickLabel = null,
                 onConfirm = onToggle,
                 fill = brandColor,
                 background = Color.Transparent,
@@ -274,7 +279,13 @@ private fun StepperPillRow(
                     .weight(1f)
                     .then(
                         if (onToggle != null) {
-                            Modifier.circleSafeTap(feedback = centreFeedback, onTap = onToggle)
+                            // The value/supporting children are the intended
+                            // merged name for this data-shaped control.
+                            Modifier.circleSafeTap(
+                                feedback = centreFeedback,
+                                label = null,
+                                onTap = onToggle,
+                            )
                         } else {
                             Modifier
                         },
@@ -301,6 +312,9 @@ private fun StepCircle(
     val brandColor = circleBrandColor()
     if (holdMs != null) {
         HoldFillBox(
+            // The visible +/− text is the complete merged action name.
+            label = null,
+            onLongClickLabel = text,
             onConfirm = onTap,
             fill = brandColor,
             background = Color.Transparent,
@@ -321,7 +335,8 @@ private fun StepCircle(
             .size(MenuDesign.iconRingDiameter)
             .clip(CircleShape)
             .border(MenuDesign.contourStroke, RingTokens.Outline, CircleShape)
-            .circleSafeTap(feedback = feedback, onTap = onTap),
+            // The visible +/− text is the complete merged action name.
+            .circleSafeTap(feedback = feedback, label = null, onTap = onTap),
         contentAlignment = Alignment.Center,
     ) {
         Text(

@@ -58,9 +58,12 @@ internal fun continuousPressMayBegin(
  * A touch a scroll container claims is a cancel, never an action. Releasing
  * early cancels too, by construction: nothing has fired yet.
  *
- * When [label] is declared this atom owns both the spoken name and the action.
- * A visual child must then be semantically silent; relying on arbitrary child
- * semantics to merge can leave a named inert node beside an unnamed action.
+ * [label] is required-but-nullable so every caller must choose its semantic
+ * owner explicitly. A string means this atom owns both the spoken name and the
+ * action; visual children carrying the same copy must then be silent. Explicit
+ * null means the caller intentionally derives the name from merged child
+ * semantics. Omitting the decision is a compile error: relying accidentally on
+ * arbitrary child merging left named inert nodes beside unnamed actions.
  *
  * Assistive technology activates the same production action through the
  * standard semantics click. That accommodation is intentionally immediate:
@@ -77,7 +80,7 @@ fun Modifier.circleSafeTap(
     enabled: Boolean = true,
     holdMs: Long = MenuDesign.tapHoldMs,
     consumeDown: Boolean = false,
-    label: String? = null,
+    label: String?,
     onTap: () -> Unit,
 ): Modifier = composed {
     if (!enabled) {
@@ -192,8 +195,9 @@ fun Modifier.circlePressLifecycle(
  * where the long press is unreachable rather than shipping a control whose
  * second gesture can never win.
  *
- * When [label] is declared the same named node exposes the ordinary action as
- * a click and the longer action as a long click. Pointer timing is unchanged.
+ * [label] has the same required semantic-owner contract as [circleSafeTap]. A
+ * string makes this node own both actions; explicit null deliberately derives
+ * the name from merged children. Pointer timing is unchanged.
  */
 fun Modifier.circleSafeTapOrHold(
     feedback: CircleActionFeedbackState,
@@ -201,7 +205,7 @@ fun Modifier.circleSafeTapOrHold(
     holdMs: Long = MenuDesign.tapHoldMs,
     longPressMs: Long = MenuDesign.holdDestructiveMs,
     consumeDown: Boolean = false,
-    label: String? = null,
+    label: String?,
     onLongPress: () -> Unit,
     onTap: () -> Unit,
 ): Modifier = composed {
@@ -215,19 +219,15 @@ fun Modifier.circleSafeTapOrHold(
     } else {
         val latestTap = rememberUpdatedState(onTap)
         val latestLongPress = rememberUpdatedState(onLongPress)
-        val semantics = if (label == null) {
-            Modifier
-        } else {
-            Modifier.semantics(mergeDescendants = false) {
-                contentDescription = label
-                onClick {
-                    latestTap.value()
-                    true
-                }
-                onLongClick {
-                    latestLongPress.value()
-                    true
-                }
+        val semantics = Modifier.semantics(mergeDescendants = label == null) {
+            label?.let { contentDescription = it }
+            onClick {
+                latestTap.value()
+                true
+            }
+            onLongClick {
+                latestLongPress.value()
+                true
             }
         }
         semantics

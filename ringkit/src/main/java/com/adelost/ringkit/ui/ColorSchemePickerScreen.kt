@@ -81,13 +81,14 @@ internal fun PhoneColorPickerScreen(
     screen: RingScreen.ColorPicker,
     nav: RingNavigator,
     onBack: () -> Unit,
+    backLabel: String,
 ) {
     val selected = screen.selected.collectAsState(initial = CircleColorTheme.SEA_GLASS).value
     Column(
         modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        PhoneScreenHeader(screen.title, onBack)
+        PhoneScreenHeader(screen.title, onBack, backLabel)
         ColorPickerContent(
             title = screen.title,
             selected = selected,
@@ -334,12 +335,13 @@ internal fun DialPreviewScreen(screen: RingScreen.DialPreview) {
 internal fun PhoneDialPreviewScreen(
     screen: RingScreen.DialPreview,
     onBack: () -> Unit,
+    backLabel: String,
 ) {
     Column(
         modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        PhoneScreenHeader(screen.title, onBack)
+        PhoneScreenHeader(screen.title, onBack, backLabel)
         Box(
             modifier = Modifier
                 .fillMaxWidth()

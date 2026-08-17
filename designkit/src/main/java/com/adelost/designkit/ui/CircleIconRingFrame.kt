@@ -16,6 +16,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
@@ -79,7 +80,7 @@ internal fun CircleIconRingFrame(
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 CircleStyledIcon(
                     style = ringIconStyle(icon, accent),
-                    contentDescription = label,
+                    contentDescription = label.takeUnless { LocalActionParentOwnsRowCopy.current },
                     tintOverride = when {
                         !enabled -> RingTokens.Off
                         centerValue != null -> RingTokens.Ink
@@ -131,7 +132,15 @@ internal fun CircleIconRingFrame(
             ),
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.padding(top = 4.dp),
+            modifier = Modifier
+                .padding(top = 4.dp)
+                .then(
+                    if (LocalActionParentOwnsRowCopy.current) {
+                        Modifier.clearAndSetSemantics { }
+                    } else {
+                        Modifier
+                    },
+                ),
         )
         sub?.let {
             BasicText(
@@ -144,7 +153,15 @@ internal fun CircleIconRingFrame(
                 ),
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.padding(top = 1.dp),
+                modifier = Modifier
+                    .padding(top = 1.dp)
+                    .then(
+                        if (LocalActionParentOwnsRowCopy.current) {
+                            Modifier.clearAndSetSemantics { }
+                        } else {
+                            Modifier
+                        },
+                    ),
             )
         }
     }

@@ -153,7 +153,7 @@ fun CircleRingRowActionContent(content: @Composable () -> Unit) {
 fun circleRingRowAccessibilityLabel(title: String, sub: String): String =
     sub.takeIf { it.isNotBlank() }?.let { "$title · $it" } ?: title
 
-private val LocalActionParentOwnsRowCopy = staticCompositionLocalOf { false }
+internal val LocalActionParentOwnsRowCopy = staticCompositionLocalOf { false }
 
 /** Same pixels without gesture/padding, used inside Watch hold feedback. */
 @Composable

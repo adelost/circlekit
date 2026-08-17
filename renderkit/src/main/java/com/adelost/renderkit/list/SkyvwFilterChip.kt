@@ -16,7 +16,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
@@ -173,11 +173,11 @@ fun SkyvwFilterChip(
             )
             .semantics {
                 this.selected = chip.selected
-                contentDescription = chip.label
             }
             .circleSafeTap(
                 feedback = feedback,
                 holdMs = design.actionTiming.holdMs,
+                label = chip.label,
                 onTap = {
                     cue.confirm()
                     chip.onSelect()
@@ -197,6 +197,7 @@ fun SkyvwFilterChip(
                 letterSpacingSp = 0.7f,
                 lineHeightSp = design.lineHeightSp,
                 tabularNumerals = true,
+                modifier = Modifier.clearAndSetSemantics { },
             )
         }
     }

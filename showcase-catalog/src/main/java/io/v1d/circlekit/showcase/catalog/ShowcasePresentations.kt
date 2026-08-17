@@ -139,7 +139,7 @@ object ShowcasePresentations {
             }
         } else {
             Column(Modifier.fillMaxSize()) {
-                PhoneScreenHeader(title = title, onBack = onBack)
+                PhoneScreenHeader(title = title, onBack = onBack, backLabel = "Back")
                 Box(
                     modifier = Modifier.weight(1f).fillMaxWidth().padding(horizontal = 16.dp),
                     contentAlignment = Alignment.Center,

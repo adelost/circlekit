@@ -48,6 +48,7 @@ import com.adelost.ringkit.data.Progress
 internal fun PhoneRingScreen(
     nav: RingNavigator,
     onExit: () -> Unit,
+    backLabel: String,
 ) {
     val back: () -> Unit = { if (!nav.back()) onExit() }
     Box(
@@ -55,12 +56,12 @@ internal fun PhoneRingScreen(
         contentAlignment = Alignment.TopCenter,
     ) {
         when (val screen = nav.current) {
-            is RingScreen.Hub -> PhoneHubScreen(screen, nav, back)
-            is RingScreen.Detail -> PhoneDetailScreen(screen, back)
-            is RingScreen.Menu -> PhoneMenuScreen(screen, nav, back)
-            is RingScreen.Adjustment -> PhoneAdjustmentScreen(screen, back)
-            is RingScreen.ColorPicker -> PhoneColorPickerScreen(screen, nav, back)
-            is RingScreen.DialPreview -> PhoneDialPreviewScreen(screen, back)
+            is RingScreen.Hub -> PhoneHubScreen(screen, nav, back, backLabel)
+            is RingScreen.Detail -> PhoneDetailScreen(screen, back, backLabel)
+            is RingScreen.Menu -> PhoneMenuScreen(screen, nav, back, backLabel)
+            is RingScreen.Adjustment -> PhoneAdjustmentScreen(screen, back, backLabel)
+            is RingScreen.ColorPicker -> PhoneColorPickerScreen(screen, nav, back, backLabel)
+            is RingScreen.DialPreview -> PhoneDialPreviewScreen(screen, back, backLabel)
         }
     }
 }
@@ -70,10 +71,11 @@ private fun PhoneMenuScreen(
     screen: RingScreen.Menu,
     nav: RingNavigator,
     back: () -> Unit,
+    backLabel: String,
 ) {
     when (screen) {
-        is RingScreen.Launcher -> PhoneLauncherScreen(screen, nav, back, screen.gridRole)
-        is RingScreen.Rows -> PhoneRowsScreen(screen, nav, back.takeIf { screen.showBack })
+        is RingScreen.Launcher -> PhoneLauncherScreen(screen, nav, back, backLabel, screen.gridRole)
+        is RingScreen.Rows -> PhoneRowsScreen(screen, nav, back.takeIf { screen.showBack }, backLabel)
     }
 }
 
@@ -81,6 +83,7 @@ private fun PhoneMenuScreen(
 fun PhoneScreenHeader(
     title: String,
     onBack: (() -> Unit)?,
+    backLabel: String,
     icon: ImageVector? = null,
     actions: List<PhoneHeaderAction> = emptyList(),
     modifier: Modifier = Modifier,
@@ -94,7 +97,7 @@ fun PhoneScreenHeader(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        onBack?.let { BackRing(onBack = it, diameter = design.actionDiameter) }
+        onBack?.let { BackRing(label = backLabel, onBack = it, diameter = design.actionDiameter) }
         icon?.let {
             Icon(
                 it,
@@ -147,6 +150,7 @@ private fun PhoneHubScreen(
     screen: RingScreen.Hub,
     nav: RingNavigator,
     back: () -> Unit,
+    backLabel: String,
 ) {
     val design = phoneSurfaceDesign()
     val grid = design.hubGrid
@@ -154,7 +158,7 @@ private fun PhoneHubScreen(
         modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        PhoneScreenHeader(screen.title, back)
+        PhoneScreenHeader(screen.title, back, backLabel)
         Spacer(Modifier.height(design.hubTopGap))
         RingMenuGrid(items = screen.rows, spec = grid) { row ->
             val value = row.value.collectAsState(initial = "–").value
@@ -186,6 +190,7 @@ private fun PhoneHubScreen(
 private fun PhoneDetailScreen(
     screen: RingScreen.Detail,
     back: () -> Unit,
+    backLabel: String,
 ) {
     val hero = screen.hero.collectAsState(initial = "–").value
     val sub = screen.sub.collectAsState(initial = "").value
@@ -200,7 +205,7 @@ private fun PhoneDetailScreen(
             .verticalScroll(rememberScrollState()),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        PhoneScreenHeader(screen.title, back, screen.icon)
+        PhoneScreenHeader(screen.title, back, backLabel, screen.icon)
         Spacer(Modifier.height(24.dp))
         Text(hero, color = RingTokens.Ink, fontSize = 38.sp, fontWeight = FontWeight.Black)
         if (sub.isNotEmpty()) {
@@ -239,6 +244,7 @@ private fun PhoneLauncherScreen(
     screen: RingScreen.Launcher,
     nav: RingNavigator,
     back: () -> Unit,
+    backLabel: String,
     gridRole: MenuGridRole,
 ) {
     val grid = menuGridSpec(
@@ -250,7 +256,7 @@ private fun PhoneLauncherScreen(
         modifier = Modifier.fillMaxSize(),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        PhoneScreenHeader(screen.title, back)
+        PhoneScreenHeader(screen.title, back, backLabel)
         Spacer(Modifier.height(22.dp))
         RingMenuGrid(items = screen.entries, spec = grid) { entry ->
             val active = entry.active.collectAsState(initial = null).value
@@ -275,6 +281,7 @@ private fun PhoneRowsScreen(
     screen: RingScreen.Rows,
     nav: RingNavigator,
     back: (() -> Unit)?,
+    backLabel: String,
 ) {
     val rows: State<List<RowSpec>> = screen.items.collectAsState(initial = emptyList())
     var infoSelection by remember(screen) { mutableStateOf(RingRowInfoSelection()) }
@@ -285,7 +292,7 @@ private fun PhoneRowsScreen(
         contentPadding = PaddingValues(bottom = 28.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        item("header") { PhoneScreenHeader(screen.title, back) }
+        item("header") { PhoneScreenHeader(screen.title, back, backLabel) }
         items(rows.value, key = RowSpec::key) { row ->
             val infoSelected = infoSelection.selectedRowKey == row.key
             val onInfoTouch = {

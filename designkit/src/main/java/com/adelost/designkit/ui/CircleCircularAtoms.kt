@@ -27,8 +27,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.TextUnit
@@ -160,16 +158,17 @@ fun CircleIconDisc(
                 feedback = feedback,
                 enabled = enabled,
                 holdMs = timing.holdMs,
+                label = contentDescription,
                 onTap = {
                     cue.confirm()
                     onTap()
                 },
-            )
-            .semantics { this.contentDescription = contentDescription },
+            ),
     ) {
         CircleStyledIcon(
             style = ringIconStyle(icon, accent),
-            contentDescription = contentDescription,
+            // The labelled action parent owns this exact name.
+            contentDescription = null,
             tintOverride = iconTint,
             modifier = Modifier.size(iconSize),
         )
@@ -233,12 +232,12 @@ fun CircleValueDisc(
                 feedback = feedback,
                 enabled = enabled,
                 holdMs = timing.holdMs,
+                label = contentDescription,
                 onTap = {
                     cue.confirm()
                     onTap()
                 },
-            )
-            .semantics { this.contentDescription = contentDescription },
+            ),
     ) {
         CircleDiscArtwork(
             spec = CircleDiscArtworkSpec(
@@ -296,31 +295,34 @@ fun CircleIconRing(
         timing = timing,
         pressed = feedback.pressed,
     )
-    CircleIconRingFrame(
-        icon = icon,
-        label = label,
-        modifier = modifier,
-        diameter = diameter,
-        active = active,
-        accent = accent,
-        fontFamily = fontFamily,
-        labelSize = labelSize,
-        centerValue = centerValue,
-        contourColor = contourColor,
-        iconRotationDegrees = iconRotationDegrees,
-        choiceState = choiceState,
-        sub = sub,
-        enabled = enabled,
-        gestureModifier = Modifier.circleSafeTap(
-            feedback = feedback,
+    CircleRingRowActionContent {
+        CircleIconRingFrame(
+            icon = icon,
+            label = label,
+            modifier = modifier,
+            diameter = diameter,
+            active = active,
+            accent = accent,
+            fontFamily = fontFamily,
+            labelSize = labelSize,
+            centerValue = centerValue,
+            contourColor = contourColor,
+            iconRotationDegrees = iconRotationDegrees,
+            choiceState = choiceState,
+            sub = sub,
             enabled = enabled,
-            holdMs = timing.holdMs,
-            onTap = {
-                cue.confirm()
-                onTap()
-            },
-        ),
-    )
+            gestureModifier = Modifier.circleSafeTap(
+                feedback = feedback,
+                enabled = enabled,
+                holdMs = timing.holdMs,
+                label = circleRingRowAccessibilityLabel(label, sub.orEmpty()),
+                onTap = {
+                    cue.confirm()
+                    onTap()
+                },
+            ),
+        )
+    }
 }
 
 /**
@@ -390,6 +392,7 @@ fun CircleBackDisc(
     pressed: Boolean,
     scrim: Boolean,
     diameter: Dp,
+    contentDescription: String?,
     modifier: Modifier = Modifier,
     chevronSize: Dp = 18.dp,
     pressScale: Float = 0.93f,
@@ -415,7 +418,7 @@ fun CircleBackDisc(
     ) {
         Image(
             imageVector = RingIcons.ChevronLeft,
-            contentDescription = "Back",
+            contentDescription = contentDescription,
             colorFilter = ColorFilter.tint(
                 when {
                     !enabled -> RingTokens.NeutralRing
