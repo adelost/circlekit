@@ -10,14 +10,17 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -87,11 +90,13 @@ fun CircleRingRow(
         onLongPress == null -> modifier.circleSafeTap(
             feedback = feedback,
             holdMs = actionHoldMs,
+            label = circleRingRowAccessibilityLabel(title, sub),
             onTap = confirmedTap,
         )
         else -> modifier.circleSafeTapOrHold(
             feedback = feedback,
             holdMs = actionHoldMs,
+            label = circleRingRowAccessibilityLabel(title, sub),
             onLongPress = onLongPress,
             onTap = confirmedTap,
         )
@@ -102,27 +107,53 @@ fun CircleRingRow(
             vertical = phoneDesign?.rowPaddingVertical ?: MenuDesign.rowPaddingV,
         ),
     ) {
-        CircleRingRowContent(
-            title = title,
-            sub = sub,
-            icon = icon,
-            ringActive = ringActive,
-            // Read off the same action that decides whether anything happens
-            // when the row is pressed, so the ring cannot promise a gesture
-            // this row does not have.
-            affordance = CircleRowAffordance.of(onTap),
-            accent = accent,
-            semanticColor = semanticColor,
-            leading = leading,
-            trailing = trailing,
-            labelProgress = labelProgress,
-            pressed = feedback.pressed,
-            pressHoldMs = actionHoldMs,
-            centerValue = centerValue,
-            multiline = multiline,
-        )
+        val rowContent: @Composable () -> Unit = {
+            CircleRingRowContent(
+                title = title,
+                sub = sub,
+                icon = icon,
+                ringActive = ringActive,
+                // Read off the same action that decides whether anything happens
+                // when the row is pressed, so the ring cannot promise a gesture
+                // this row does not have.
+                affordance = CircleRowAffordance.of(onTap),
+                accent = accent,
+                semanticColor = semanticColor,
+                leading = leading,
+                trailing = trailing,
+                labelProgress = labelProgress,
+                pressed = feedback.pressed,
+                pressHoldMs = actionHoldMs,
+                centerValue = centerValue,
+                multiline = multiline,
+            )
+        }
+        if (confirmedTap != null) {
+            CircleRingRowActionContent(rowContent)
+        } else {
+            rowContent()
+        }
     }
 }
+
+/**
+ * Content placed beneath a row action lets the action node own the visible
+ * title and value exactly once. Other descendants, including explicit
+ * trailing controls, keep their own semantics.
+ *
+ * RingKit's hold renderer uses the same content outside [CircleRingRow], so
+ * this wrapper is public without changing the existing content function's ABI.
+ */
+@Composable
+fun CircleRingRowActionContent(content: @Composable () -> Unit) {
+    CompositionLocalProvider(LocalActionParentOwnsRowCopy provides true, content = content)
+}
+
+/** The exact spoken row grammar, independent of platform merge precedence. */
+fun circleRingRowAccessibilityLabel(title: String, sub: String): String =
+    sub.takeIf { it.isNotBlank() }?.let { "$title · $it" } ?: title
+
+private val LocalActionParentOwnsRowCopy = staticCompositionLocalOf { false }
 
 /** Same pixels without gesture/padding, used inside Watch hold feedback. */
 @Composable
@@ -199,6 +230,7 @@ fun CircleRingRowContent(
                     if (icon == null) MenuDesign.titleSizeNoIcon else MenuDesign.titleSize
                     ).value,
                 maxLines = if (multiline) MULTILINE_TITLE_LINES else 1,
+                spoken = !LocalActionParentOwnsRowCopy.current,
             )
             // The state indicator rides the VALUE line, not the whole row.
             // Sitting beside both lines, it charged the TITLE for width the
@@ -216,7 +248,14 @@ fun CircleRingRowContent(
                     fontSizeSp = phoneDesign?.rowSubtitleSize?.value ?: MenuDesign.subSize.value,
                     maxLines = if (multiline) MULTILINE_SUB_LINES else 1,
                     overflow = TextOverflow.Ellipsis,
-                    modifier = if (trailing != null) Modifier.weight(1f) else Modifier,
+                    modifier = (if (trailing != null) Modifier.weight(1f) else Modifier)
+                        .then(
+                            if (LocalActionParentOwnsRowCopy.current) {
+                                Modifier.clearAndSetSemantics { }
+                            } else {
+                                Modifier
+                            },
+                        ),
                 )
                 if (trailing != null) {
                     Spacer(Modifier.size(6.dp))
@@ -235,7 +274,12 @@ fun CircleRingRowContent(
  * an honest "…".
  */
 @Composable
-private fun CircleFittedTitle(text: String, fontSizeSp: Float, maxLines: Int = 1) {
+private fun CircleFittedTitle(
+    text: String,
+    fontSizeSp: Float,
+    maxLines: Int = 1,
+    spoken: Boolean = true,
+) {
     var sizeSp by remember(text, fontSizeSp, maxLines) { mutableFloatStateOf(fontSizeSp) }
     CircleText(
         text = text,
@@ -245,6 +289,7 @@ private fun CircleFittedTitle(text: String, fontSizeSp: Float, maxLines: Int = 1
         letterSpacingSp = MenuDesign.titleTracking.value,
         maxLines = maxLines,
         overflow = TextOverflow.Ellipsis,
+        modifier = if (spoken) Modifier else Modifier.clearAndSetSemantics { },
         onTextLayout = { result ->
             if (result.hasVisualOverflow && sizeSp > CIRCLE_TITLE_MIN_SIZE_SP) {
                 sizeSp = (sizeSp - CIRCLE_TITLE_SHRINK_STEP_SP)
