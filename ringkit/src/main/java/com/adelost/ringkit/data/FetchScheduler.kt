@@ -224,7 +224,11 @@ class FetchScheduler(
                     onFetchDone(row, result)
                     when (result) {
                         is FetchResult.Success -> operation.success(
-                            if (result.coverage < 1f) "PARTIAL" else null,
+                            when {
+                                result.coverage < 1f -> "PARTIAL"
+                                result.valueAgeMs > 0L -> "CACHE"
+                                else -> null
+                            },
                         )
                         is FetchResult.Failure -> operation.failed(result.error.word)
                     }
@@ -259,8 +263,11 @@ class FetchScheduler(
                 is FetchResult.Success -> {
                     stateFlow.value = SourceState(
                         value = result.value,
-                        fetchedAtMono = clock.nowMs(),
-                        fetchedAtWall = clock.wallMs(),
+                        // The stamp is the VALUE's age, not the attempt's: an
+                        // adapter that served an existing cache reports its
+                        // age, and the value keeps aging on its own clock.
+                        fetchedAtMono = clock.nowMs() - result.valueAgeMs,
+                        fetchedAtWall = clock.wallMs() - result.valueAgeMs,
                         coverage = result.coverage,
                     )
                     failureCount.remove(id)
