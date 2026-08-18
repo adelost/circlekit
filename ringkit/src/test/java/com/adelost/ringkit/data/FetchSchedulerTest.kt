@@ -432,6 +432,26 @@ class FetchSchedulerTest {
     }
 
     @Test
+    fun `a served cache ages on the value's clock, not the attempt's`() {
+        // The adapter answered with a 10-minute-old cache (valueAgeMs), so
+        // with a 15-minute TTL the source must come due 5 minutes later —
+        // NOT 15 minutes after the attempt that merely delivered it.
+        val a = FakeSource("a")
+        a.nextResult = FetchResult.Success("cached", valueAgeMs = 10 * 60_000L)
+        val h = Harness(listOf(SchedulerRow(a, visiblePolicy(ttlMinutes = 15))))
+        h.visible.value = setOf(a.id)
+        assertEquals(1, a.calls)
+
+        a.nextResult = FetchResult.Success("fresh")
+        h.clock.advanceMinutes(6)
+        h.tick()
+
+        assertEquals("10 + 6 > 15: the served value's own age expired the TTL", 2, a.calls)
+        val stamped = h.scheduler.state(a.id).value
+        assertEquals("a genuinely fetched value is stamped at the attempt", h.clock.mono, stamped.fetchedAtMono)
+    }
+
+    @Test
     fun `every scheduled attempt publishes one durable service operation outcome`() {
         val source = FakeSource("weather")
         val h = Harness(listOf(SchedulerRow(source, visiblePolicy())))

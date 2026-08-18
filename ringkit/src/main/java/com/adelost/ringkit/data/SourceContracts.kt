@@ -125,9 +125,30 @@ sealed class FetchError(val word: String) {
  * tiles returns Success(coverage = 6/9f) — the value is kept and health reads
  * AGING until a later attempt completes it. BROKEN is reserved for "no usable
  * value at all".
+ *
+ * [Success.valueAgeMs] is how old the delivered value already was at delivery:
+ * 0 (the default) means the attempt fetched it; a positive age means the
+ * adapter served an existing value (a repository cache decision). The
+ * scheduler stamps freshness from the VALUE's age, never from the attempt's
+ * wall time, so a served cache ages out on the value's real clock instead of
+ * being re-declared fresh by every attempt that merely delivered it.
+ *
+ * The age must come from the same clock family as the row's scheduler TTL:
+ * an adapter whose repository serves caches OLDER than that TTL makes the
+ * source due again on every tick (a serve-loop at tick cadence). Serving
+ * stale cache is not a success — report it as [Failure] (typically
+ * [FetchError.Offline]) and let the retry backoff own the cadence.
  */
 sealed interface FetchResult<out T> {
-    data class Success<T>(val value: T, val coverage: Float = 1f) : FetchResult<T>
+    data class Success<T>(
+        val value: T,
+        val coverage: Float = 1f,
+        val valueAgeMs: Long = 0L,
+    ) : FetchResult<T> {
+        init {
+            require(valueAgeMs >= 0L) { "a value cannot come from the future (valueAgeMs=$valueAgeMs)" }
+        }
+    }
     data class Failure(val error: FetchError) : FetchResult<Nothing>
 }
 
