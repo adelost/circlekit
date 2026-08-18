@@ -166,6 +166,21 @@ grep -q 'fun filterChipDesign(' "$RENDER_LIST/SkyvwFilterChip.kt" \
 grep -q 'horizontalScroll' "$RENDER_LIST/SkyvwFilterChip.kt" \
   || fail "filter chips lost their explicit scrollable row"
 
+RENDER_GESTURES="renderkit/src/main/java/com/adelost/renderkit/gestures"
+# Second wave of the #1036 follow: the pager gesture sources. Same two rules.
+for src in "$RENDER_GESTURES/PagerFriendlyTap.kt" "$RENDER_GESTURES/PagerMapTransform.kt"; do
+  [ -f "$src" ] || fail "pager gesture source missing: $src (renamed? follow it)"
+done
+grep -q 'PagerMapMotionIntent.PAN_ZOOM' "$RENDER_GESTURES/PagerMapTransform.kt" \
+  || fail "pager transform lost its PAN_ZOOM motion intent"
+grep -q 'PagerMapMotionIntent.ORBIT' "$RENDER_GESTURES/PagerMapTransform.kt" \
+  || fail "pager transform lost its ORBIT motion intent"
+grep -q 'awaitFirstDown(requireUnconsumed = false' "$RENDER_GESTURES/PagerMapTransform.kt" \
+  || fail "pager transform no longer accepts an already-consumed first down"
+if grep -q 'detectTransformGestures' "$RENDER_GESTURES/PagerMapTransform.kt"; then
+  fail "pager transform forked back to detectTransformGestures"
+fi
+
 echo "ok    adaptive contract holds: 3 surface classes, 192dp canon, atomScale 1,"
 echo "      one renderer, one clip boundary, declarative viewports, pure modules,"
 echo "      one atom per shape, RingScreen cases $SCREEN_CASES (baseline $SCREEN_CASE_BASELINE)"
