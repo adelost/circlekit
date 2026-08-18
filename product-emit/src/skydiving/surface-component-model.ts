@@ -1,3 +1,5 @@
+import { MENU_LABEL_MAX_CHARS, SURFACE_SUMMARY_MAX_CHARS } from "./menu-text-budget.js";
+
 /**
  * A declared surface: which screen, what kind of data it shows, and whether it
  * is a debug-only route.
@@ -12,6 +14,22 @@ interface SurfaceComponentBase<
   SpatialModeRef extends string = string,
 > {
   readonly screen: string;
+  /**
+   * What the page calls itself on its own header. Display copy, not a wire
+   * name: uppercase display grammar, and no single word longer than
+   * {@link MENU_LABEL_MAX_CHARS} because a word past that breaks mid-word on
+   * the round face instead of shrinking. Declared here so a host reads the
+   * title instead of restating it (the "SETTINGS"/"Skyvw Log" literals were
+   * exactly this field missing).
+   */
+  readonly title: string;
+  /**
+   * One line saying what the page is for. Any menu row that links to this
+   * surface inherits it as the row's inline sub, so the copy lives with the
+   * page it describes instead of being re-written at every door.
+   * Budget: {@link SURFACE_SUMMARY_MAX_CHARS}.
+   */
+  readonly summary: string;
   readonly dataSurface: DataSurfaceRef;
   readonly spatialMode: SpatialModeRef | null;
   readonly roundBackChrome: boolean;
@@ -25,3 +43,37 @@ export type SurfaceComponent<
   | { readonly debugOnly: false; readonly componentFamilyPolicy: "portable" }
   | { readonly debugOnly: true; readonly componentFamilyPolicy: "native-only" }
 );
+
+/** Uppercase display grammar: letters, digits, and the separators titles ship. */
+const TITLE_GRAMMAR = /^[A-Z0-9][A-Z0-9 ·+\-/']*$/u;
+
+/**
+ * Refuse bad surface copy at the declaration (D4), never downstream.
+ * The word cap reuses the measured round-face law: a single word longer than
+ * {@link MENU_LABEL_MAX_CHARS} breaks mid-word rather than shrinking, and a
+ * page title is subject to the same glass as a row label.
+ */
+export function validateSurfaceCopy(surfaces: readonly SurfaceComponent[]): void {
+  for (const surface of surfaces) {
+    const where = `surface '${surface.screen}'`;
+    if (surface.title.trim().length === 0) throw new Error(`${where} has a blank title`);
+    if (!TITLE_GRAMMAR.test(surface.title)) {
+      throw new Error(`${where} title '${surface.title}' is not uppercase display grammar`);
+    }
+    for (const word of surface.title.split(" ")) {
+      if (word.length > MENU_LABEL_MAX_CHARS) {
+        throw new Error(
+          `${where} title word '${word}' is ${word.length} chars; ` +
+            `a word past ${MENU_LABEL_MAX_CHARS} breaks mid-word on the round face`,
+        );
+      }
+    }
+    if (surface.summary.trim().length === 0) throw new Error(`${where} has a blank summary`);
+    if (surface.summary.length > SURFACE_SUMMARY_MAX_CHARS) {
+      throw new Error(
+        `${where} summary is ${surface.summary.length} chars; ` +
+          `the inline-sub budget is ${SURFACE_SUMMARY_MAX_CHARS}`,
+      );
+    }
+  }
+}

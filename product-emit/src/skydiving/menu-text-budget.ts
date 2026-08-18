@@ -23,3 +23,13 @@ export const MENU_LABEL_MAX_CHARS = 11;
  * circle has closed in. Grow this and the last line clips against the curve.
  */
 export const MENU_HINT_MAX_CHARS = 90;
+
+/**
+ * A surface's one-line summary renders as the inline sub of any row that
+ * links to it, one line on the round face. The longest shipped sub that
+ * renders whole is 33 characters ("PHONE + WEB / ONE PRIVATE LOGBOOK");
+ * 40 leaves headroom without permitting a second line. A cap here only
+ * refuses NEW copy at the declaration — widening it later, from a real
+ * glass measurement, breaks nothing.
+ */
+export const SURFACE_SUMMARY_MAX_CHARS = 40;
