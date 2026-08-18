@@ -281,3 +281,74 @@ test("a settings-section seat holds exactly one setting", () => {
     { setting: { id: "iso.spot" }, mount: { kind: "iso-scene-option" } },
   ]);
 });
+
+// --- surface copy fields (title + summary on the declaration) --------------
+
+import {
+  emitSurfaceComponentsKotlin,
+  validateSurfaceCopy,
+  type SurfaceComponent,
+} from "../src/skydiving/index.js";
+
+const surfaceSymbols = {
+  ringSurface: "io.acme.ui.RingSurface",
+  spatialMode: "io.acme.ui.SpatialMode",
+};
+
+const surfaceOptions = {
+  packageName: "io.acme.appspec.generated",
+  symbolPrefix: "Acme",
+  sourceFile: "app.ts",
+  sourceSha: "deadbeef",
+  nativeSymbols: surfaceSymbols,
+};
+
+const productionSurface = (over: Partial<SurfaceComponent> = {}): SurfaceComponent => ({
+  screen: "FLIGHTS",
+  title: "JUMP LOG",
+  summary: "Your saved jumps, newest first",
+  dataSurface: "FLIGHTS",
+  spatialMode: null,
+  roundBackChrome: true,
+  debugOnly: false,
+  componentFamilyPolicy: "portable",
+  ...over,
+} as SurfaceComponent);
+
+test("surface title and summary are emitted onto the metadata row", () => {
+  const kotlin = emitSurfaceComponentsKotlin([productionSurface()], surfaceOptions);
+  assert.match(kotlin, /"JUMP LOG", "Your saved jumps, newest first"/u);
+  assert.match(kotlin, /val title: String/u);
+  assert.match(kotlin, /val summary: String/u);
+  assert.match(kotlin, /fun metadataFor\(/u);
+});
+
+test("a blank surface title is refused at the declaration", () => {
+  assert.throws(
+    () => validateSurfaceCopy([productionSurface({ title: "  " })]),
+    /blank title/u,
+  );
+});
+
+test("a lowercase surface title is refused as wire-name leakage", () => {
+  assert.throws(
+    () => validateSurfaceCopy([productionSurface({ title: "Skyvw Log" })]),
+    /uppercase display grammar/u,
+  );
+});
+
+test("a title word past the measured round-face cap is refused", () => {
+  assert.throws(
+    () => validateSurfaceCopy([productionSurface({ title: "PERFORMANCES" })]),
+    /breaks mid-word/u,
+  );
+});
+
+test("a summary past the inline-sub budget is refused", () => {
+  assert.throws(
+    () => validateSurfaceCopy([
+      productionSurface({ summary: "A very long sentence that would need two rendered lines on glass" }),
+    ]),
+    /inline-sub budget/u,
+  );
+});
