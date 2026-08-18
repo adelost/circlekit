@@ -30,6 +30,15 @@ interface SurfaceComponentBase<
    * Budget: {@link SURFACE_SUMMARY_MAX_CHARS}.
    */
   readonly summary: string;
+  /**
+   * The one line the page shows when it has nothing to show — "NO JUMPS
+   * INDEXED YET", "LONG-PRESS TO PIN". Null is a statement, not an omission:
+   * the declaration says this page has no empty condition, so a host that
+   * invents one anyway is restating copy the surface refused to carry.
+   * Same glass as the summary: display grammar, {@link MENU_LABEL_MAX_CHARS}
+   * word cap, {@link SURFACE_SUMMARY_MAX_CHARS} budget.
+   */
+  readonly emptyState: string | null;
   readonly dataSurface: DataSurfaceRef;
   readonly spatialMode: SpatialModeRef | null;
   readonly roundBackChrome: boolean;
@@ -74,6 +83,28 @@ export function validateSurfaceCopy(surfaces: readonly SurfaceComponent[]): void
         `${where} summary is ${surface.summary.length} chars; ` +
           `the inline-sub budget is ${SURFACE_SUMMARY_MAX_CHARS}`,
       );
+    }
+    if (surface.emptyState !== null) {
+      if (surface.emptyState.trim().length === 0) {
+        throw new Error(`${where} empty-state is blank; declare null when the page cannot be empty`);
+      }
+      if (!TITLE_GRAMMAR.test(surface.emptyState)) {
+        throw new Error(`${where} empty-state '${surface.emptyState}' is not uppercase display grammar`);
+      }
+      for (const word of surface.emptyState.split(" ")) {
+        if (word.length > MENU_LABEL_MAX_CHARS) {
+          throw new Error(
+            `${where} empty-state word '${word}' is ${word.length} chars; ` +
+              `a word past ${MENU_LABEL_MAX_CHARS} breaks mid-word on the round face`,
+          );
+        }
+      }
+      if (surface.emptyState.length > SURFACE_SUMMARY_MAX_CHARS) {
+        throw new Error(
+          `${where} empty-state is ${surface.emptyState.length} chars; ` +
+            `the one-line budget is ${SURFACE_SUMMARY_MAX_CHARS}`,
+        );
+      }
     }
   }
 }
