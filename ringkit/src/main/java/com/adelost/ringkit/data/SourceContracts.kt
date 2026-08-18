@@ -132,6 +132,12 @@ sealed class FetchError(val word: String) {
  * scheduler stamps freshness from the VALUE's age, never from the attempt's
  * wall time, so a served cache ages out on the value's real clock instead of
  * being re-declared fresh by every attempt that merely delivered it.
+ *
+ * The age must come from the same clock family as the row's scheduler TTL:
+ * an adapter whose repository serves caches OLDER than that TTL makes the
+ * source due again on every tick (a serve-loop at tick cadence). Serving
+ * stale cache is not a success — report it as [Failure] (typically
+ * [FetchError.Offline]) and let the retry backoff own the cadence.
  */
 sealed interface FetchResult<out T> {
     data class Success<T>(
