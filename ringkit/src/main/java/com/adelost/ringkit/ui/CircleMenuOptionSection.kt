@@ -27,15 +27,22 @@ fun CircleMenuOptionSection(
         modifier = modifier,
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        CircleText(
-            text = section.label,
-            color = GraphiteTokens.Muted,
-            fontSizeSp = layout.sectionLabelSizeSp,
-            fontWeight = FontWeight.Bold,
-            letterSpacingSp = 0.8f,
-            lineHeightSp = layout.sectionLabelSizeSp + 3f,
-            modifier = Modifier.padding(top = layout.verticalGap / 2),
-        )
+        // A section never restates what its only option already says: with one
+        // option whose own label equals the section's, the header printed the
+        // same word twice, stacked (Skyvw's phone JUMP DETAILS read
+        // VIEW / [disc] / VIEW — Mattias 2026-08-17). The header is grouping
+        // chrome, and one option is not a group.
+        if (!sectionHeaderEchoesOnlyOption(section)) {
+            CircleText(
+                text = section.label,
+                color = GraphiteTokens.Muted,
+                fontSizeSp = layout.sectionLabelSizeSp,
+                fontWeight = FontWeight.Bold,
+                letterSpacingSp = 0.8f,
+                lineHeightSp = layout.sectionLabelSizeSp + 3f,
+                modifier = Modifier.padding(top = layout.verticalGap / 2),
+            )
+        }
         CircleMenuOptionRows(
             options = section.options,
             layout = layout,
@@ -43,6 +50,10 @@ fun CircleMenuOptionSection(
         )
     }
 }
+
+/** True when the header would print exactly what the sole option prints. */
+fun sectionHeaderEchoesOnlyOption(section: EdgeMenuSection): Boolean =
+    section.options.size == 1 && section.options.single().label == section.label
 
 @Composable
 internal fun CircleMenuOptionRows(

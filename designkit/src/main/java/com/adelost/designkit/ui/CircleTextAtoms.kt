@@ -3,6 +3,10 @@ package com.adelost.designkit.ui
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.text.BasicText
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
@@ -81,6 +85,50 @@ fun CircleText(
         maxLines = maxLines,
         overflow = overflow,
         onTextLayout = onTextLayout,
+    )
+}
+
+/**
+ * Text that stays whole: renders at [fontSizeSp] and steps down as far as
+ * [minFontSizeSp] when the measured line would not fit, so a wide surface is
+ * unaffected and a narrow one loses weight instead of letters. Below the
+ * floor it ellipsises — an unreadable label is worse than an honest "…".
+ *
+ * This is the row-title mechanism promoted to a shared atom: labels that
+ * ellipsised mid-word ("GREAT VISIBILI…") did so because only CircleRingRow
+ * could reach the shrink (Mattias 2026-08-17: labels truncate mid-word).
+ */
+@Composable
+fun CircleFittedText(
+    text: String,
+    color: Color,
+    fontSizeSp: Float,
+    modifier: Modifier = Modifier,
+    minFontSizeSp: Float = fontSizeSp * 0.75f,
+    shrinkStepSp: Float = 0.5f,
+    fontWeight: FontWeight = FontWeight.Normal,
+    letterSpacingSp: Float = 0f,
+    maxLines: Int = 1,
+    tabularNumerals: Boolean = false,
+    lineHeightSp: Float? = null,
+) {
+    var sizeSp by remember(text, fontSizeSp, maxLines) { mutableFloatStateOf(fontSizeSp) }
+    CircleText(
+        text = text,
+        color = color,
+        fontSizeSp = sizeSp,
+        fontWeight = fontWeight,
+        letterSpacingSp = letterSpacingSp,
+        maxLines = maxLines,
+        overflow = TextOverflow.Ellipsis,
+        tabularNumerals = tabularNumerals,
+        lineHeightSp = lineHeightSp,
+        modifier = modifier,
+        onTextLayout = { result ->
+            if (result.hasVisualOverflow && sizeSp > minFontSizeSp) {
+                sizeSp = (sizeSp - shrinkStepSp).coerceAtLeast(minFontSizeSp)
+            }
+        },
     )
 }
 
