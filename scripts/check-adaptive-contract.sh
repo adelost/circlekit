@@ -147,6 +147,25 @@ if [ -n "$CHORD_MATH" ]; then
   fail "chord/chrome clearance math outside CircleRoundSafeInset.kt"
 fi
 
+RENDER_LIST="renderkit/src/main/java/com/adelost/renderkit/list"
+# Moved from Skyvw's check-mobile-design-contract.sh when #1036 made the
+# linear list host and chip catalog CircleKit source (rules 1+2 above): the
+# consumer now pins only its own pivot and fork detectors.
+for src in "$RENDER_LIST/SkyvwLinearListHost.kt" "$RENDER_LIST/SkyvwListSpec.kt" "$RENDER_LIST/SkyvwFilterChip.kt"; do
+  [ -f "$src" ] || fail "list contract source missing: $src (renamed? follow it)"
+done
+grep -q 'background(spec.policy.background.color())' "$RENDER_LIST/SkyvwLinearListHost.kt" \
+  || fail "linear list host bypasses the declarative list background"
+if grep -q 'background(GraphiteTokens.Canvas)' "$RENDER_LIST/SkyvwLinearListHost.kt"; then
+  fail "linear list host regressed to an unconditional grey canvas"
+fi
+grep -q 'background: SkyvwListBackground = SkyvwListBackground.OLED' "$RENDER_LIST/SkyvwListSpec.kt" \
+  || fail "shared lists lost the OLED-black default"
+grep -q 'fun filterChipDesign(' "$RENDER_LIST/SkyvwFilterChip.kt" \
+  || fail "filter-chip metrics are no longer a surface-keyed table"
+grep -q 'horizontalScroll' "$RENDER_LIST/SkyvwFilterChip.kt" \
+  || fail "filter chips lost their explicit scrollable row"
+
 echo "ok    adaptive contract holds: 3 surface classes, 192dp canon, atomScale 1,"
 echo "      one renderer, one clip boundary, declarative viewports, pure modules,"
 echo "      one atom per shape, RingScreen cases $SCREEN_CASES (baseline $SCREEN_CASE_BASELINE)"
