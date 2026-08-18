@@ -36,7 +36,6 @@ object RingIconsOutline {
 
     /** Direction arrow (rotate it to the bearing — arrows, never letters). */
     val Arrow: ImageVector by lazy { stroke("arrow", "M12 20V5", "M5 11l7 -7l7 7") }
-
     val Cloud: ImageVector by lazy {
         stroke("cloud", "M17.5 19H9a7 7 0 1 1 6.71 -9h1.79a4.5 4.5 0 1 1 0 9Z")
     }

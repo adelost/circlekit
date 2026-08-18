@@ -11,10 +11,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableFloatStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -280,22 +276,18 @@ private fun CircleFittedTitle(
     maxLines: Int = 1,
     spoken: Boolean = true,
 ) {
-    var sizeSp by remember(text, fontSizeSp, maxLines) { mutableFloatStateOf(fontSizeSp) }
-    CircleText(
+    // Delegates to the shared fitted-text atom so there is ONE shrink
+    // mechanism; this wrapper only owns the row-title styling choices.
+    CircleFittedText(
         text = text,
         color = RingTokens.Ink,
-        fontSizeSp = sizeSp,
+        fontSizeSp = fontSizeSp,
+        minFontSizeSp = CIRCLE_TITLE_MIN_SIZE_SP,
+        shrinkStepSp = CIRCLE_TITLE_SHRINK_STEP_SP,
         fontWeight = FontWeight.Bold,
         letterSpacingSp = MenuDesign.titleTracking.value,
         maxLines = maxLines,
-        overflow = TextOverflow.Ellipsis,
         modifier = if (spoken) Modifier else Modifier.clearAndSetSemantics { },
-        onTextLayout = { result ->
-            if (result.hasVisualOverflow && sizeSp > CIRCLE_TITLE_MIN_SIZE_SP) {
-                sizeSp = (sizeSp - CIRCLE_TITLE_SHRINK_STEP_SP)
-                    .coerceAtLeast(CIRCLE_TITLE_MIN_SIZE_SP)
-            }
-        },
     )
 }
 
