@@ -15,13 +15,14 @@ export function emitSurfaceComponentsKotlin(
     screen,
     title,
     summary,
+    emptyState,
     dataSurface,
     spatialMode,
     debugOnly,
     componentFamilyPolicy,
     roundBackChrome,
   }) =>
-    `        ${generated}SurfaceMetadata(${generated}PageRef.${screen}, ${kotlinStringLiteral(title)}, ${kotlinStringLiteral(summary)}, RingSurface.${dataSurface}, ${spatialMode === null ? "null" : `SpatialMode.${spatialMode}`}, ${debugOnly}, ${generated}ComponentFamilyPolicy.${kotlinEnumToken(componentFamilyPolicy)}, ${roundBackChrome}),`
+    `        ${generated}SurfaceMetadata(${generated}PageRef.${screen}, ${kotlinStringLiteral(title)}, ${kotlinStringLiteral(summary)}, ${emptyState === null ? "null" : kotlinStringLiteral(emptyState)}, RingSurface.${dataSurface}, ${spatialMode === null ? "null" : `SpatialMode.${spatialMode}`}, ${debugOnly}, ${generated}ComponentFamilyPolicy.${kotlinEnumToken(componentFamilyPolicy)}, ${roundBackChrome}),`
   ).join("\n");
 
   return `// GENERATED FILE. DO NOT EDIT.
@@ -40,6 +41,8 @@ data class ${generated}SurfaceMetadata(
     val title: String,
     /** One line saying what the page is for; rows linking here inherit it. */
     val summary: String,
+    /** The page's static empty line; null = none declared (cannot be empty, or state-owned empty copy). */
+    val emptyState: String?,
     val dataSurface: RingSurface,
     val spatialMode: SpatialMode?,
     val debugOnly: Boolean,

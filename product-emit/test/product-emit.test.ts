@@ -307,6 +307,7 @@ const productionSurface = (over: Partial<SurfaceComponent> = {}): SurfaceCompone
   screen: "FLIGHTS",
   title: "JUMP LOG",
   summary: "Your saved jumps, newest first",
+  emptyState: null,
   dataSurface: "FLIGHTS",
   spatialMode: null,
   roundBackChrome: true,
@@ -350,5 +351,45 @@ test("a summary past the inline-sub budget is refused", () => {
       productionSurface({ summary: "A very long sentence that would need two rendered lines on glass" }),
     ]),
     /inline-sub budget/u,
+  );
+});
+
+test("a declared empty state is emitted; null stays null on the row", () => {
+  const kotlin = emitSurfaceComponentsKotlin([
+    productionSurface(),
+    productionSurface({ screen: "ACTIVITY", dataSurface: "OTHER", emptyState: "NO JUMPS INDEXED YET" }),
+  ], surfaceOptions);
+  assert.match(kotlin, /"JUMP LOG", "Your saved jumps, newest first", null, RingSurface/u);
+  assert.match(kotlin, /"NO JUMPS INDEXED YET", RingSurface/u);
+  assert.match(kotlin, /val emptyState: String\?/u);
+});
+
+test("a blank empty state is refused — null is the statement, not a blank", () => {
+  assert.throws(
+    () => validateSurfaceCopy([productionSurface({ emptyState: " " })]),
+    /declare null when no static empty line exists/u,
+  );
+});
+
+test("a lowercase empty state is refused as wire-name leakage", () => {
+  assert.throws(
+    () => validateSurfaceCopy([productionSurface({ emptyState: "No jumps yet" })]),
+    /uppercase display grammar/u,
+  );
+});
+
+test("an empty-state word past the round-face cap is refused", () => {
+  assert.throws(
+    () => validateSurfaceCopy([productionSurface({ emptyState: "UNCATEGORIZABLE" })]),
+    /breaks mid-word/u,
+  );
+});
+
+test("an empty state past the one-line budget is refused", () => {
+  assert.throws(
+    () => validateSurfaceCopy([
+      productionSurface({ emptyState: "NOTHING HAS EVER BEEN RECORDED ON THIS PAGE SO FAR" }),
+    ]),
+    /one-line budget/u,
   );
 });

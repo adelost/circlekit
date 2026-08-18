@@ -30,6 +30,18 @@ interface SurfaceComponentBase<
    * Budget: {@link SURFACE_SUMMARY_MAX_CHARS}.
    */
   readonly summary: string;
+  /**
+   * The one line the page shows when it has nothing to show — "NO JUMPS
+   * INDEXED YET", "LONG-PRESS TO PIN". Null is a statement, not an omission:
+   * this declaration carries no STATIC empty line — either the page cannot
+   * be empty, or its empty copy is state-dependent and owned by its state
+   * authority (the flight log's reason-based empty state is the shipped
+   * example). A host hand-writing a STATIC line for a null surface is
+   * restating copy that belongs here.
+   * Same glass as the summary: display grammar, {@link MENU_LABEL_MAX_CHARS}
+   * word cap, {@link SURFACE_SUMMARY_MAX_CHARS} budget.
+   */
+  readonly emptyState: string | null;
   readonly dataSurface: DataSurfaceRef;
   readonly spatialMode: SpatialModeRef | null;
   readonly roundBackChrome: boolean;
@@ -74,6 +86,28 @@ export function validateSurfaceCopy(surfaces: readonly SurfaceComponent[]): void
         `${where} summary is ${surface.summary.length} chars; ` +
           `the inline-sub budget is ${SURFACE_SUMMARY_MAX_CHARS}`,
       );
+    }
+    if (surface.emptyState !== null) {
+      if (surface.emptyState.trim().length === 0) {
+        throw new Error(`${where} empty-state is blank; declare null when no static empty line exists`);
+      }
+      if (!TITLE_GRAMMAR.test(surface.emptyState)) {
+        throw new Error(`${where} empty-state '${surface.emptyState}' is not uppercase display grammar`);
+      }
+      for (const word of surface.emptyState.split(" ")) {
+        if (word.length > MENU_LABEL_MAX_CHARS) {
+          throw new Error(
+            `${where} empty-state word '${word}' is ${word.length} chars; ` +
+              `a word past ${MENU_LABEL_MAX_CHARS} breaks mid-word on the round face`,
+          );
+        }
+      }
+      if (surface.emptyState.length > SURFACE_SUMMARY_MAX_CHARS) {
+        throw new Error(
+          `${where} empty-state is ${surface.emptyState.length} chars; ` +
+            `the one-line budget is ${SURFACE_SUMMARY_MAX_CHARS}`,
+        );
+      }
     }
   }
 }
