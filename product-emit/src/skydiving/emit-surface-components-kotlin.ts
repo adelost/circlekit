@@ -41,7 +41,7 @@ data class ${generated}SurfaceMetadata(
     val title: String,
     /** One line saying what the page is for; rows linking here inherit it. */
     val summary: String,
-    /** What the page says when it has nothing to show; null = the page has no empty condition. */
+    /** The page's static empty line; null = none declared (cannot be empty, or state-owned empty copy). */
     val emptyState: String?,
     val dataSurface: RingSurface,
     val spatialMode: SpatialMode?,

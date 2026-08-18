@@ -367,7 +367,7 @@ test("a declared empty state is emitted; null stays null on the row", () => {
 test("a blank empty state is refused — null is the statement, not a blank", () => {
   assert.throws(
     () => validateSurfaceCopy([productionSurface({ emptyState: " " })]),
-    /declare null when the page cannot be empty/u,
+    /declare null when no static empty line exists/u,
   );
 });
 
