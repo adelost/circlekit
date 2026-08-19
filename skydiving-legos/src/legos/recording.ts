@@ -1,4 +1,6 @@
 import {
+  configField,
+  configInput,
   demandPort,
   service,
   field,
@@ -93,6 +95,30 @@ export const foregroundIngestionOwner = service({
     port("position", positionFlightFixContract),
   ],
   outputs: [],
+  // The automatic jump algorithm as data: start/stop thresholds, debounces,
+  // fail-safe bounds and the armed-stage pre-roll window. Sink thresholds are
+  // positive magnitudes ("falling faster than N"); the native binding owns
+  // the sign convention. The state machine itself (phases, candidates,
+  // debounce mechanics, fall-departure landing) stays native.
+  configInputs: [configInput("flightTransitions", [
+    configField("climbThresholdMs", "number", { unit: "si.meter-per-second", min: 0 }),
+    configField("ascentFloorM", "number", { unit: "si.meter", min: 0 }),
+    configField("ascentDebounceMs", "integer", { unit: "si.millisecond", min: 0 }),
+    configField("freefallSinkMs", "number", { unit: "si.meter-per-second", positive: true }),
+    configField("directFreefallDebounceMs", "integer", { unit: "si.millisecond", min: 0 }),
+    configField("ascentCanopyDropM", "number", { unit: "si.meter", min: 0 }),
+    configField("canopySinkMs", "number", { unit: "si.meter-per-second", min: 0 }),
+    configField("canopyDebounceMs", "integer", { unit: "si.millisecond", min: 0 }),
+    configField("landingAltitudeM", "number", { unit: "si.meter", min: 0 }),
+    configField("minimumLandingDescentM", "number", { unit: "si.meter", min: 0 }),
+    configField("landingVerticalSpeedMs", "number", { unit: "si.meter-per-second", min: 0 }),
+    configField("landingGroundSpeedMs", "number", { unit: "si.meter-per-second", min: 0 }),
+    configField("landingDebounceMs", "integer", { unit: "si.millisecond", min: 0 }),
+    configField("minimumRecordingMs", "integer", { unit: "si.millisecond", min: 0 }),
+    configField("ascentStillTimeoutMs", "integer", { unit: "si.millisecond", positive: true }),
+    configField("preRollKeepMs", "integer", { unit: "si.millisecond", positive: true }),
+    configField("preRollPrependMs", "integer", { unit: "si.millisecond", positive: true }),
+  ])],
   runtime: {
     stateOwner: "instance",
     lifetime: "operation",
