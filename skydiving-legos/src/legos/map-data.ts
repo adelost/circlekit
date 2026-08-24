@@ -146,7 +146,13 @@ export const mapRenderScaleContract = {
   id: "map.render-scale-event",
   kind: "event",
   boundary: "ui-event",
-  fields: [field("event", valueRef("map.render-scale"))],
+  fields: [
+    field("pxPerM", "number"),
+    field("centerEastM", "number", { unit: "si.meter" }),
+    field("centerNorthM", "number", { unit: "si.meter" }),
+    field("viewportWidthPx", "number"),
+    field("viewportHeightPx", "number"),
+  ],
 } as const;
 
 /** One portable product answer to map.base, shared by live and replay maps. */
