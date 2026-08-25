@@ -21,6 +21,7 @@ import {
 import { skydivingFiniteValues } from "../src/finite-values.js";
 import { recordingStages } from "../src/finite-values.js";
 import { instrumentRuntimeOwner } from "../src/legos/flight.js";
+import { mapRenderScaleContract } from "../src/legos/map-data.js";
 
 const assets = { id: "assets", version: "0.0.0", icons: [] };
 
@@ -113,6 +114,14 @@ test("auto zero config describes app inactivity, not zero age or sensor recency"
   assert.ok(!names.includes("expireReferenceAfterMs"));
   assert.ok(!names.includes("rearmAfterIdleMs"));
   assert.ok(!names.includes("pressureRecencyWriteIntervalMs"));
+});
+
+test("map render event carries the complete measured viewport", () => {
+  assert.deepEqual(
+    mapRenderScaleContract.fields.map(({ name }) => name),
+    ["pxPerM", "centerEastM", "centerNorthM", "viewportWidthPx", "viewportHeightPx"],
+  );
+  assert.ok(!mapRenderScaleContract.fields.some(({ name }) => name === "event"));
 });
 
 test("a product may be built against the catalog", () => {
