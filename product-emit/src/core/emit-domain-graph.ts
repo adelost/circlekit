@@ -142,8 +142,15 @@ function feedbackEdges(
 const shortContract = (ref: string): string => ref.replace(/^[a-z0-9-]+\./u, "");
 const mermaidId = (id: string): string => id.replace(/[^A-Za-z0-9]/gu, "_");
 const unique = <T>(items: readonly T[]): readonly T[] => [...new Set(items)];
+/**
+ * Code-unit order, never locale collation: the graph is committed, and a
+ * collation that depends on the generating process's locale reorders
+ * `flight_log` against `flight-detail` between two machines that both call
+ * the output correct.
+ */
+const byCodeUnit = (a: string, b: string): number => (a < b ? -1 : a > b ? 1 : 0);
 const sortedEntries = <T>(map: ReadonlyMap<string, T>): readonly (readonly [string, T])[] =>
-  [...map.entries()].sort(([a], [b]) => a.localeCompare(b));
+  [...map.entries()].sort(([a], [b]) => byCodeUnit(a, b));
 
 function label(contracts: readonly string[], max = 3): string {
   const names = [...unique(contracts.map(shortContract))].sort();
@@ -229,7 +236,7 @@ export function emitFullGraph(product: DomainGraphSource, productJsonPath: strin
   ];
   for (const [domain, members] of sortedEntries(byDomain)) {
     lines.push(`  subgraph ${mermaidId(domain)}["${domain}"]`);
-    for (const owner of [...members].sort((a, b) => a.id.localeCompare(b.id))) {
+    for (const owner of [...members].sort((a, b) => byCodeUnit(a.id, b.id))) {
       const shape = owner.kind === "component" ? ["([", "])"] : ["[", "]"];
       const name = owner.id.slice(domain.length + 1) || owner.id;
       lines.push(`    ${mermaidId(owner.id)}${shape[0]}"${name}<br/><i>${owner.kind}</i>"${shape[1]}`);
