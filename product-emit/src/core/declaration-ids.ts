@@ -85,3 +85,15 @@ export function validateDeclarationIds(groups: DeclarationIdGroups): void {
 export function idRefs(subject: string, ids: Iterable<string>): IdRef[] {
   return [...ids].map((id) => ({ id, subject }));
 }
+
+/**
+ * The domain an owner id belongs to: its first dot segment, or the whole id
+ * when it has none. `map.camera` -> `map`, `talk` -> `talk`.
+ *
+ * This is the only grouping the DSL has above a node. Kotlin files, the
+ * generated domain graph and the capability law all group by it, so it lives
+ * here once instead of being re-derived by each consumer.
+ */
+export function domainOf(ownerId: string): string {
+  return ownerId.split(".")[0] ?? ownerId;
+}
