@@ -1,0 +1,39 @@
+%% GENERATED FILE. DO NOT EDIT.
+%% GENERATED FROM showcase-product/generated/showcase-product.json (port bindings) and
+%% showcase-product/src/capabilities.ts (STATE_FEEDBACK rows, dashed).
+%% A dashed red domain has no port binding in or out. A dashed edge is state read
+%% or written without a port: the distance between the declared graph and the app.
+graph LR
+  atom["atom<br/>1 component"]
+  catalog["catalog<br/>1 node"]
+  control["control<br/>5 components"]
+  flow["flow<br/>3 components"]
+  foundation["foundation<br/>2 components"]
+  input["input<br/>1 component"]
+  media["media<br/>2 components"]
+  navigation["navigation<br/>2 nodes"]
+  page["page<br/>2 components"]
+  template["template<br/>1 component"]
+  atom -->|"open-action"| navigation
+  catalog -->|"catalog-presentation"| atom
+  catalog -->|"catalog-presentation"| control
+  catalog -->|"catalog-presentation"| flow
+  catalog -->|"catalog-presentation"| foundation
+  catalog -->|"catalog-presentation"| input
+  catalog -->|"catalog-presentation"| media
+  catalog -->|"catalog-presentation"| template
+  control -->|"open-action"| navigation
+  flow -->|"open-action"| navigation
+  foundation -->|"open-action"| navigation
+  input -->|"open-action"| navigation
+  media -->|"open-action"| navigation
+  navigation -->|"navigation-presentation"| atom
+  navigation -->|"navigation-presentation"| control
+  navigation -->|"navigation-presentation"| flow
+  navigation -->|"navigation-presentation"| foundation
+  navigation -->|"navigation-presentation"| input
+  navigation -->|"navigation-presentation"| media
+  navigation -->|"navigation.active-page"| page
+  navigation -->|"navigation-presentation"| template
+  page -->|"navigation.route-intent"| navigation
+  template -->|"open-action"| navigation

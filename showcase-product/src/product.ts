@@ -7,6 +7,8 @@ import {
   type ProductIr,
 } from "@v1d/product-spec";
 import { CIRCLEKIT_ASSET_CATALOG } from "@v1d/circlekit-assets";
+import { validateCapabilities } from "@v1d/product-emit/core";
+import { showcaseCapabilityTable } from "./capabilities.js";
 import { showcaseCases, showcaseSections } from "./catalog.js";
 import { showcaseAllComponentInstances, showcaseAllComponentTypes } from "./graph-components.js";
 import { showcaseComponentFamilies } from "./graph-families.js";
@@ -154,6 +156,7 @@ export function compileCircleKitShowcaseProduct(
   productSpecVersion: string,
 ): CircleKitShowcaseProductIr {
   requireCatalogSound();
+  requireCapabilitiesDeclared();
   if (productSpecVersion.trim() === "") throw new Error("ProductSpec package version is blank");
   const ir: CircleKitShowcaseProductIr = {
     ...baseProduct,
@@ -228,4 +231,13 @@ function requireCatalogSound(): void {
 
 function requireUnique(values: readonly string[], owner: string): void {
   if (new Set(values).size !== values.length) throw new Error(`duplicate ${owner}`);
+}
+
+/** Every context input and effect a Showcase node spells is a declared row, and every row is used. */
+function requireCapabilitiesDeclared(): void {
+  const diagnostics = validateCapabilities(baseProduct, showcaseCapabilityTable);
+  if (diagnostics.length === 0) return;
+  throw new Error(`Showcase capabilities failed:\n${diagnostics
+    .map(({ rule, declarationId, message }) => `${rule} · ${declarationId} · ${message}`)
+    .join("\n")}`);
 }
