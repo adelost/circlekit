@@ -61,10 +61,10 @@ test("the header names the product JSON and the capability table as its sources"
 
 test("the full graph puts every node and component inside its domain subgraph", () => {
   const full = emitFullGraph(fixtureProduct, JSON_PATH);
-  for (const { id } of owners) assert.ok(full.includes(id.replace(".", "_")), id);
+  for (const { id } of owners) assert.ok(full.includes(`n_${id.replace(".", "_")}`), id);
   assert.equal((full.match(/^  subgraph /gmu) ?? []).length, 5);
-  assert.match(full, /dial_face\(\["face<br\/><i>component<\/i>"\]\)/u);
-  assert.match(full, /dial_present\["present<br\/><i>present<\/i>"\]/u);
+  assert.match(full, /n_dial_face\(\["face<br\/><i>component<\/i>"\]\)/u);
+  assert.match(full, /n_dial_present\["present<br\/><i>present<\/i>"\]/u);
 });
 
 test("the emitter writes both pictures as mermaid artifacts", () => {
@@ -115,4 +115,18 @@ test("ordering is by code unit, so two machines with different locales commit th
   assert.ok(hyphen > 0 && underscore > 0);
   // '-' is U+002D and '_' is U+005F; a locale collation may put them the other way round.
   assert.ok(hyphen < underscore, "hyphen sorts before underscore under code-unit order");
+});
+
+
+test("a member named like its own domain still gets a distinct mermaid id", () => {
+  const present = fixtureProduct.nodeTypes[4]!;
+  const undotted = {
+    ...fixtureProduct,
+    nodeTypes: [...fixtureProduct.nodeTypes, { id: "catalog", kind: "present" as const, runtime: present.runtime }],
+    nodes: [...fixtureProduct.nodes, { id: "catalog", nodeTypeRef: "catalog" }],
+  };
+  const full = emitFullGraph(undotted, JSON_PATH);
+  assert.match(full, /^  subgraph catalog\["catalog"\]$/mu);
+  assert.match(full, /^    n_catalog\["catalog<br\/><i>present<\/i>"\]$/mu);
+  assert.doesNotMatch(full, /^    catalog\[/mu);
 });

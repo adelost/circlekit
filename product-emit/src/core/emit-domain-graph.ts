@@ -244,7 +244,7 @@ export function emitFullGraph(product: DomainGraphSource, productJsonPath: strin
     for (const owner of [...members].sort((a, b) => byCodeUnit(a.id, b.id))) {
       const shape = owner.kind === "component" ? ["([", "])"] : ["[", "]"];
       const name = owner.id.slice(domain.length + 1) || owner.id;
-      lines.push(`    ${mermaidId(owner.id)}${shape[0]}"${name}<br/><i>${owner.kind}</i>"${shape[1]}`);
+      lines.push(`    ${memberId(owner.id)}${shape[0]}"${name}<br/><i>${owner.kind}</i>"${shape[1]}`);
     }
     lines.push("  end");
   }
@@ -255,7 +255,14 @@ export function emitFullGraph(product: DomainGraphSource, productJsonPath: strin
   }
   for (const [key, contracts] of sortedEntries(seen)) {
     const [a, b] = key.split(" ");
-    lines.push(`  ${mermaidId(a!)} -->|"${label(contracts, 2)}"| ${mermaidId(b!)}`);
+    lines.push(`  ${memberId(a!)} -->|"${label(contracts, 2)}"| ${memberId(b!)}`);
   }
   return `${lines.join("\n")}\n`;
 }
+
+/**
+ * A member's mermaid id carries a prefix so it can never equal its own
+ * subgraph's id. Showcase's node `catalog` sits in domain `catalog`, and
+ * mermaid refuses a node whose id is the id of the subgraph it is in.
+ */
+const memberId = (id: string): string => `n_${mermaidId(id)}`;
