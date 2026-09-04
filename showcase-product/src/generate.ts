@@ -10,6 +10,8 @@ import {
   writeOutputManifest,
 } from "@v1d/product-spec";
 import { CIRCLEKIT_ASSET_CATALOG, CIRCLEKIT_STYLE } from "@v1d/circlekit-assets";
+import { domainGraphEmitter } from "@v1d/product-emit/core";
+import { showcaseCapabilityTable } from "./capabilities.js";
 import { showcaseKotlinEmitter } from "./emit-kotlin.js";
 import { showcaseSwiftEmitter } from "./emit-swift.js";
 import { showcaseGarminEmitter } from "./emit-monkeyc.js";
@@ -23,6 +25,8 @@ const repoRoot = resolve(packageRoot, "..");
 const androidRegistryPath = resolve(packageRoot, "native-registry/showcase.json");
 const productSpecPackagePath = resolve(packageRoot, "node_modules/@v1d/product-spec/package.json");
 const jsonPath = "showcase-product/generated/showcase-product.json";
+const domainsPath = "showcase-product/generated/showcase-product.domains.mmd";
+const graphPath = "showcase-product/generated/showcase-product.graph.mmd";
 const kotlinPath = "showcase-catalog/src/main/java/io/v1d/circlekit/showcase/catalog/generated/GeneratedShowcaseProduct.kt";
 const swiftPath = "showcase-iphone/Sources/Generated/GeneratedShowcaseProduct.swift";
 const garminPath = "showcase-garmin/source/GeneratedCircleKitShowcase.mc";
@@ -44,8 +48,9 @@ const manifest = buildOutputManifest(
       { id: "apple-watchos-swiftui", surfaces: ["round"] },
     ], CIRCLEKIT_ASSET_CATALOG, CIRCLEKIT_STYLE),
     showcaseGarminEmitter(garminPath, garminRegistryPath, CIRCLEKIT_ASSET_CATALOG, CIRCLEKIT_STYLE),
+    domainGraphEmitter({ domains: domainsPath, full: graphPath, productJsonPath: jsonPath }, showcaseCapabilityTable),
   ],
-  [jsonPath, kotlinPath, swiftPath, garminPath, appleRegistryPath, garminRegistryPath],
+  [jsonPath, domainsPath, graphPath, kotlinPath, swiftPath, garminPath, appleRegistryPath, garminRegistryPath],
 );
 const emittedRegistry = (id: string) => {
   const output = manifest.artifacts.find((artifact) => artifact.id === id);

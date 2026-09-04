@@ -1,0 +1,92 @@
+%% GENERATED FILE. DO NOT EDIT.
+%% GENERATED FROM showcase-product/generated/showcase-product.json (nodes, components, port bindings).
+%% Read one subgraph at a time; the whole is not meant to be read at once.
+graph LR
+  subgraph atom["atom"]
+    atom_icon_action(["icon-action<br/><i>component</i>"])
+  end
+  subgraph catalog["catalog"]
+    catalog["catalog<br/><i>present</i>"]
+  end
+  subgraph control["control"]
+    control_action_row(["action-row<br/><i>component</i>"])
+    control_adjustment(["adjustment<br/><i>component</i>"])
+    control_choice_row(["choice-row<br/><i>component</i>"])
+    control_press_ring(["press-ring<br/><i>component</i>"])
+    control_progress(["progress<br/><i>component</i>"])
+  end
+  subgraph flow["flow"]
+    flow_service(["service<br/><i>component</i>"])
+    flow_source(["source<br/><i>component</i>"])
+    flow_update(["update<br/><i>component</i>"])
+  end
+  subgraph foundation["foundation"]
+    foundation_colors(["colors<br/><i>component</i>"])
+    foundation_geometry(["geometry<br/><i>component</i>"])
+  end
+  subgraph input["input"]
+    input_text(["text<br/><i>component</i>"])
+  end
+  subgraph media["media"]
+    media_capture(["capture<br/><i>component</i>"])
+    media_playback(["playback<br/><i>component</i>"])
+  end
+  subgraph navigation["navigation"]
+    navigation["navigation<br/><i>service</i>"]
+    navigation_presentation["presentation<br/><i>present</i>"]
+  end
+  subgraph page["page"]
+    page_host(["host<br/><i>component</i>"])
+    page_menu(["menu<br/><i>component</i>"])
+  end
+  subgraph template["template"]
+    template_screens(["screens<br/><i>component</i>"])
+  end
+  atom_icon_action -->|"open-action"| navigation
+  catalog -->|"catalog-presentation"| atom_icon_action
+  catalog -->|"catalog-presentation"| control_action_row
+  catalog -->|"catalog-presentation"| control_adjustment
+  catalog -->|"catalog-presentation"| control_choice_row
+  catalog -->|"catalog-presentation"| control_press_ring
+  catalog -->|"catalog-presentation"| control_progress
+  catalog -->|"catalog-presentation"| flow_service
+  catalog -->|"catalog-presentation"| flow_source
+  catalog -->|"catalog-presentation"| flow_update
+  catalog -->|"catalog-presentation"| foundation_colors
+  catalog -->|"catalog-presentation"| foundation_geometry
+  catalog -->|"catalog-presentation"| input_text
+  catalog -->|"catalog-presentation"| media_capture
+  catalog -->|"catalog-presentation"| media_playback
+  catalog -->|"catalog-presentation"| template_screens
+  control_action_row -->|"open-action"| navigation
+  control_adjustment -->|"open-action"| navigation
+  control_choice_row -->|"open-action"| navigation
+  control_press_ring -->|"open-action"| navigation
+  control_progress -->|"open-action"| navigation
+  flow_service -->|"open-action"| navigation
+  flow_source -->|"open-action"| navigation
+  flow_update -->|"open-action"| navigation
+  foundation_colors -->|"open-action"| navigation
+  foundation_geometry -->|"open-action"| navigation
+  input_text -->|"open-action"| navigation
+  media_capture -->|"open-action"| navigation
+  media_playback -->|"open-action"| navigation
+  navigation -->|"navigation-presentation"| navigation_presentation
+  navigation -->|"navigation.active-page"| page_host
+  navigation_presentation -->|"navigation-presentation"| atom_icon_action
+  navigation_presentation -->|"navigation-presentation"| control_action_row
+  navigation_presentation -->|"navigation-presentation"| control_adjustment
+  navigation_presentation -->|"navigation-presentation"| control_choice_row
+  navigation_presentation -->|"navigation-presentation"| control_press_ring
+  navigation_presentation -->|"navigation-presentation"| control_progress
+  navigation_presentation -->|"navigation-presentation"| flow_service
+  navigation_presentation -->|"navigation-presentation"| flow_source
+  navigation_presentation -->|"navigation-presentation"| flow_update
+  navigation_presentation -->|"navigation-presentation"| foundation_colors
+  navigation_presentation -->|"navigation-presentation"| foundation_geometry
+  navigation_presentation -->|"navigation-presentation"| input_text
+  navigation_presentation -->|"navigation-presentation"| media_capture
+  navigation_presentation -->|"navigation-presentation"| media_playback
+  navigation_presentation -->|"navigation-presentation"| template_screens
+  page_menu -->|"navigation.route-intent"| navigation
+  template_screens -->|"open-action"| navigation
