@@ -1,8 +1,11 @@
 %% GENERATED FILE. DO NOT EDIT.
 %% GENERATED FROM showcase-product/generated/showcase-product.json (port bindings) and
 %% showcase-product/src/capabilities.ts (STATE_FEEDBACK rows, dashed).
-%% A dashed red domain has no port binding in or out. A dashed edge is state read
-%% or written without a port: the distance between the declared graph and the app.
+%% A dashed red domain has no port binding at all, not even inside itself: nothing
+%% reaches it and it reaches nothing. A domain wired only inside itself is an island
+%% and is drawn like any other; islands are modules, not debt. A dashed edge is
+%% state read or written without a port: the distance between the declared graph
+%% and the app.
 graph LR
   atom["atom<br/>1 component"]
   catalog["catalog<br/>1 node"]
