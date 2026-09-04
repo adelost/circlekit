@@ -6,6 +6,7 @@ import type {
   ProductIr,
   ProductNodeInstance,
 } from "@v1d/product-spec";
+import { domainOf } from "./declaration-ids.js";
 
 /**
  * Readable Kotlin files remain split by product-owned domain labels. The
@@ -38,13 +39,13 @@ export function projectNativeLegoDomains(
   // instance already has one stable dotted ID, so its leading segment is the
   // only domain label the emitter needs. A hand-authored domain list could
   // omit a real node while leaving the compiled graph green.
-  const domainIds = [...new Set(product.nodes.map(({ id }) => domainOf(id)))];
+  const domainIds = [...new Set(product.nodes.map(({ id }) => nativeLegoDomainOf(id)))];
   const typeById = new Map(product.nodeTypes.map((item) => [item.id, item]));
   const configById = new Map(product.configs.map((item) => [item.id, item]));
   const nodeDomain = new Map<string, string>();
 
   for (const node of product.nodes) {
-    const domain = domainOf(node.id);
+    const domain = nativeLegoDomainOf(node.id);
     if (!typeById.has(node.nodeTypeRef)) {
       throw new Error(`node instance '${node.id}' uses missing node type '${node.nodeTypeRef}'`);
     }
@@ -86,9 +87,11 @@ export function projectNativeLegoDomains(
   return { aggregate: product.portRegistry, domains };
 }
 
-function domainOf(value: string): string {
-  const [domain, member] = value.split(".");
-  if (domain === undefined || member === undefined || domain.length === 0 || member.length === 0) {
+/** A native Lego domain is a file, so an undotted id has nowhere to go. */
+function nativeLegoDomainOf(value: string): string {
+  const domain = domainOf(value);
+  const member = value.slice(domain.length + 1);
+  if (domain.length === 0 || member.length === 0) {
     throw new Error(`node instance '${value}' must use a dotted product ID`);
   }
   return domain;

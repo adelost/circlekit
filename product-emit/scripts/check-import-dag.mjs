@@ -8,12 +8,12 @@ const coreRoot = join(sourceRoot, "core");
 const skydivingRoot = join(sourceRoot, "skydiving");
 
 const expectedCore = new Set([
-  "compile-theme", "component-copy-model", "declaration-ids", "decode-theme-registry",
+  "capability-model", "compile-theme", "component-copy-model", "declaration-ids", "decode-theme-registry",
   "diagnostics", "emission-options", "emit-component-copy-kotlin",
   "emit-component-family-registry-kotlin", "emit-component-trees-kotlin",
-  "emit-config-values-kotlin", "emit-native-lego-kotlin", "emit-navigation-kotlin",
+  "emit-config-values-kotlin", "emit-domain-graph", "emit-native-lego-kotlin", "emit-navigation-kotlin",
   "emit-profile-table-js", "emit-state-presentations-kotlin", "emit-theme", "index",
-  "kotlin-syntax", "model", "profile-table-model", "theme-model", "validate-invariants",
+  "kotlin-syntax", "model", "profile-table-model", "theme-model", "validate-capabilities", "validate-invariants",
   "validate-native-legos", "validate-profile-table",
 ]);
 const expectedSkydiving = new Set([
