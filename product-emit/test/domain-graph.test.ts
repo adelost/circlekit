@@ -24,10 +24,30 @@ test("only cross-domain bindings are edges, labelled with the contract that cros
   ]);
 });
 
-test("a domain nothing binds to is drawn dashed red instead of being left out", () => {
+test("a domain with no port binding at all is drawn dashed red instead of being left out", () => {
   assert.match(graph(), /^  style weather stroke-dasharray/mu);
   assert.match(graph(), /^  style watchface stroke-dasharray/mu);
   assert.doesNotMatch(graph(), /style (dial|flight|sensor) stroke-dasharray/u);
+});
+
+test("a domain wired only inside itself is an island, drawn like any other domain", () => {
+  const present = fixtureProduct.nodeTypes[4]!;
+  const island = {
+    ...fixtureProduct,
+    nodeTypes: [...fixtureProduct.nodeTypes, { id: "logbook.present", kind: "present" as const, runtime: present.runtime }],
+    nodes: [...fixtureProduct.nodes, { id: "logbook.present", nodeTypeRef: "logbook.present" }],
+    components: [...fixtureProduct.components, { id: "logbook.list" }],
+    portRegistry: {
+      ...fixtureProduct.portRegistry,
+      nodePorts: [...fixtureProduct.portRegistry.nodePorts, { ref: "logbook.present.model", ownerId: "logbook.present", contractRef: "logbook.model" }],
+      componentPorts: [...fixtureProduct.portRegistry.componentPorts, { ref: "logbook.list.model", ownerId: "logbook.list", contractRef: "logbook.model" }],
+      bindings: [...fixtureProduct.portRegistry.bindings, { from: "logbook.present.model", to: "logbook.list.model" }],
+    },
+  };
+  const out = emitDomainGraph(island, fixtureTable, JSON_PATH);
+  assert.match(out, /^  logbook\["logbook<br\/>1 node, 1 component"\]$/mu);
+  assert.doesNotMatch(out, /style logbook stroke-dasharray/u);
+  assert.doesNotMatch(out, /logbook -->/u);
 });
 
 test("state read without a port is a dashed edge from the domain that owns it", () => {

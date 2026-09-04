@@ -16,8 +16,9 @@ import { domainOf } from "./declaration-ids.js";
  *
  * Two files. The DOMAIN graph is the one to read: every first id segment is a
  * node, every port binding that crosses two of them is an edge labelled with
- * the contract that crosses, and a domain nothing binds to is drawn dashed
- * red rather than left out. The FULL graph is every node and component inside
+ * the contract that crosses, and a domain with no port binding at all, not
+ * even inside itself, is drawn dashed red rather than left out. A domain wired
+ * only inside itself is an island: a module, drawn like any other. The FULL graph is every node and component inside
  * its domain and is for reading one domain at a time, not the whole.
  *
  * A STATE_FEEDBACK capability is a read of another domain's state that has no
@@ -177,12 +178,14 @@ export function emitDomainGraph(
     domains.set(owner.domain, count);
   }
   const solid = new Map<string, string[]>();
+  const bound = new Set<string>();
   for (const edge of edges(product)) {
     const a = byId.get(edge.from)?.domain;
     const b = byId.get(edge.to)?.domain;
     if (a === undefined || b === undefined) {
       throw new Error(`port binding '${edge.from}' -> '${edge.to}' names an owner that is not a node or component`);
     }
+    bound.add(a).add(b);
     if (a === b) continue;
     const key = `${a} ${b}`;
     solid.set(key, [...(solid.get(key) ?? []), edge.contractRef]);
@@ -192,13 +195,15 @@ export function emitDomainGraph(
     const key = `${edge.from} ${edge.to}`;
     dashed.set(key, [...(dashed.get(key) ?? []), edge.label]);
   }
-  const connected = new Set([...solid.keys()].flatMap((key) => key.split(" ")));
   const lines = [
     "%% GENERATED FILE. DO NOT EDIT.",
     `%% GENERATED FROM ${productJsonPath} (port bindings) and`,
     `%% ${table.sourceFile} (STATE_FEEDBACK rows, dashed).`,
-    "%% A dashed red domain has no port binding in or out. A dashed edge is state read",
-    "%% or written without a port: the distance between the declared graph and the app.",
+    "%% A dashed red domain has no port binding at all, not even inside itself: nothing",
+    "%% reaches it and it reaches nothing. A domain wired only inside itself is an island",
+    "%% and is drawn like any other; islands are modules, not debt. A dashed edge is",
+    "%% state read or written without a port: the distance between the declared graph",
+    "%% and the app.",
     "graph LR",
   ];
   for (const [domain, count] of sortedEntries(domains)) {
@@ -215,7 +220,7 @@ export function emitDomainGraph(
     lines.push(`  ${mermaidId(a!)} -.->|"${label(labels)}"| ${mermaidId(b!)}`);
   }
   for (const [domain] of sortedEntries(domains)) {
-    if (!connected.has(domain)) {
+    if (!bound.has(domain)) {
       lines.push(`  style ${mermaidId(domain)} stroke-dasharray: 5 5,stroke:#c33`);
     }
   }
