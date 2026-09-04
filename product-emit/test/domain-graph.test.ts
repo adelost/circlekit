@@ -73,3 +73,26 @@ test("emission is deterministic", () => {
   assert.equal(graph(), graph());
   assert.equal(emitFullGraph(fixtureProduct, JSON_PATH), emitFullGraph(fixtureProduct, JSON_PATH));
 });
+
+test("ordering is by code unit, so two machines with different locales commit the same file", () => {
+  const present = fixtureProduct.nodeTypes[4]!;
+  const punctuated = {
+    ...fixtureProduct,
+    nodeTypes: [
+      ...fixtureProduct.nodeTypes,
+      { id: "flight-detail.x", kind: "present" as const, runtime: present.runtime },
+      { id: "flight_log.x", kind: "present" as const, runtime: present.runtime },
+    ],
+    nodes: [
+      ...fixtureProduct.nodes,
+      { id: "flight-detail.x", nodeTypeRef: "flight-detail.x" },
+      { id: "flight_log.x", nodeTypeRef: "flight_log.x" },
+    ],
+  };
+  const lines = emitDomainGraph(punctuated, fixtureTable, JSON_PATH).split("\n");
+  const hyphen = lines.findIndex((line) => line.startsWith('  flight_detail["flight-detail'));
+  const underscore = lines.findIndex((line) => line.startsWith('  flight_log["flight_log'));
+  assert.ok(hyphen > 0 && underscore > 0);
+  // '-' is U+002D and '_' is U+005F; a locale collation may put them the other way round.
+  assert.ok(hyphen < underscore, "hyphen sorts before underscore under code-unit order");
+});
