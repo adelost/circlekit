@@ -130,7 +130,7 @@ internal fun CircleIconRingFrame(
                 letterSpacing = 1.sp,
                 textAlign = TextAlign.Center,
             ),
-            maxLines = 1,
+            maxLines = 2,
             overflow = TextOverflow.Ellipsis,
             modifier = Modifier
                 .padding(top = 4.dp)

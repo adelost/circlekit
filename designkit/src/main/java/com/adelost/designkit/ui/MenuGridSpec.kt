@@ -37,9 +37,7 @@ data class MenuGridSpec(
      * where the physical face is its own boundary. */
     val contentMaxWidth: Dp?,
     /** Label text size under each ring. Cells are strict equal-width, so this
-     * size must let the role's longest label fit the narrowest cell — on
-     * ROUND that is "RECORDING" in the ~45.3 dp cell left by the declared
-     * 75% width policy: (192 × 0.75 − 2 × 4) / 3. */
+     * size must remain readable after the host reserves its chrome. */
     val labelSize: TextUnit = 9.5.sp,
 ) {
     init {
@@ -60,21 +58,19 @@ object MenuGridCatalog {
     // hemskärmen") — HOME_SLOT_BUTTON_DP app-side; one ring size across the
     // watch's home and menu surfaces.
     //
-    // 6 sp labels with the tight 4 dp gap: the strict ~45.3 dp cell left by
-    // the symmetric width policy shows even "RECORDING" (9 tracked glyphs)
-    // unclipped (Mattias 2026-07-23: "går det få dem symmetriska?") — the
-    // the dial's compact chrome typography remains readable on the round face.
-    val RoundTrio = MenuGridSpec(
-        columns = 3,
+    // The former three-up/6 sp layout did not reserve X@10 and covered the
+    // first action. Two columns keep the same 30 dp atom, readable labels and
+    // room for real chrome. More rows are reached by scroll/crown, never by
+    // making the label smaller to claim more visible capacity.
+    val RoundPair = MenuGridSpec(
+        columns = 2,
         diameter = MenuDesign.watchActionRingDiameter,
         horizontalGap = 4.dp,
         verticalGap = 4.dp,
-        // 12.5% of the physical face on each side. The former 0.9 fraction
-        // meant only 5% per side and still let the X@9 disc visually merge
-        // with the first column.
+        // Base symmetric margin; the renderer also honours occupied slots.
         contentWidthFraction = MenuDesign.centeredGridWidthFraction,
         contentMaxWidth = null,
-        labelSize = 6.sp,
+        labelSize = 8.sp,
     )
 
     // Phone portrait. ONE ring size on every rectangular surface — the start
@@ -118,7 +114,7 @@ fun menuGridSpec(
     // Role deliberately does not branch here: on the watch both grids ARE the
     // same layout item. It stays in the signature so a future round-only
     // divergence is a row in the catalog, never an inline ternary.
-    CircleSurfaceClass.ROUND -> MenuGridCatalog.RoundTrio
+    CircleSurfaceClass.ROUND -> MenuGridCatalog.RoundPair
     CircleSurfaceClass.PHONE_COMPACT -> when (density) {
         CircleMenuDensity.REGULAR -> MenuGridCatalog.PhoneRegular
         CircleMenuDensity.COMPACT -> MenuGridCatalog.PhoneCompact
