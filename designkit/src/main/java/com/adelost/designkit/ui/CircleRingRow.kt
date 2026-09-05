@@ -244,7 +244,7 @@ fun CircleRingRowContent(
                     fontSizeSp = phoneDesign?.rowSubtitleSize?.value ?: MenuDesign.subSize.value,
                     maxLines = if (multiline) Int.MAX_VALUE else 1,
                     overflow = TextOverflow.Ellipsis,
-                    modifier = (if (trailing != null) Modifier.weight(1f) else Modifier)
+                    modifier = (if (trailing != null && phoneDesign == null) Modifier.weight(1f) else Modifier)
                         .then(
                             if (LocalActionParentOwnsRowCopy.current) {
                                 Modifier.clearAndSetSemantics { }
@@ -253,11 +253,15 @@ fun CircleRingRowContent(
                             },
                         ),
                 )
-                if (trailing != null) {
+                if (trailing != null && phoneDesign == null) {
                     Spacer(Modifier.size(6.dp))
                     trailing()
                 }
             }
+        }
+        if (trailing != null && phoneDesign != null) {
+            Spacer(Modifier.size(phoneDesign.controlGap))
+            trailing()
         }
     }
 }

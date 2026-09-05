@@ -30,23 +30,4 @@ class RingRowInfoTest {
         )
     }
 
-    @Test
-    fun `short release and cancellation never open row information`() {
-        assertEquals(
-            RingRowInfoPressCompletion.NONE,
-            ringRowInfoPressCompletion(releasedBeforeHold = true, cancelled = false),
-        )
-        assertEquals(
-            RingRowInfoPressCompletion.NONE,
-            ringRowInfoPressCompletion(releasedBeforeHold = false, cancelled = true),
-        )
-    }
-
-    @Test
-    fun `only completing the dedicated info hold opens the explanation`() {
-        assertEquals(
-            RingRowInfoPressCompletion.OPEN,
-            ringRowInfoPressCompletion(releasedBeforeHold = false, cancelled = false),
-        )
-    }
 }

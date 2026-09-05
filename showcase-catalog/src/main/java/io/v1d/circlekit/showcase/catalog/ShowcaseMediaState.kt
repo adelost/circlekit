@@ -89,6 +89,7 @@ class ShowcaseMediaState {
 
     fun togglePlayback() {
         mutablePlaybackState.value = when (mutablePlaybackState.value) {
+            RingPlaybackState.LOADING -> RingPlaybackState.LOADING
             RingPlaybackState.READY, RingPlaybackState.PAUSED -> RingPlaybackState.PLAYING
             RingPlaybackState.PLAYING -> RingPlaybackState.PAUSED
             RingPlaybackState.COMPLETE, RingPlaybackState.FAILED -> RingPlaybackState.READY

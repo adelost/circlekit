@@ -14,6 +14,7 @@ data class RingSelectionOption(
     val title: String,
     val detail: String = "",
     val enabled: Boolean = true,
+    val icon: ImageVector? = null,
 )
 
 /** Selection is by stable identity; identical names never select the wrong item. */
@@ -29,11 +30,8 @@ fun ringSelectionRows(
         RowSpec(
             key = option.id,
             title = option.title,
-            sub = listOfNotNull(
-                "Selected".takeIf { option.id == selectedId },
-                option.detail.takeIf(String::isNotBlank),
-            ).joinToString(" · "),
-            icon = if (option.id == selectedId) RingIcons.Check else icon,
+            sub = option.detail,
+            icon = if (option.id == selectedId) RingIcons.Check else option.icon ?: icon,
             onTap = if (option.enabled) ({ onSelect(option.id) }) else null,
             actionTiming = CircleActionTiming.IMMEDIATE,
             multiline = true,
@@ -51,14 +49,15 @@ fun RingSelectionScreen(
     onSelect: (String) -> Unit,
     onBack: () -> Unit,
     emptyLabel: String,
+    extraRows: List<RowSpec> = emptyList(),
 ) {
     val items = remember { MutableStateFlow(emptyList<RowSpec>()) }
     val navigator = remember(title) {
         RingNavigator(RingScreen.Rows(title, items, showBack = true))
     }
-    LaunchedEffect(options, selectedId, onSelect) {
-        items.value = ringSelectionRows(options, selectedId, icon, onSelect)
-            .ifEmpty { listOf(RowSpec("empty", emptyLabel, "", icon)) }
+    LaunchedEffect(options, selectedId, onSelect, extraRows) {
+        items.value = extraRows + (ringSelectionRows(options, selectedId, icon, onSelect)
+            .ifEmpty { listOf(RowSpec("empty", emptyLabel, "", icon)) })
     }
     RingRoundBackHost(onBack) {
         RenderRingScreen(nav = navigator, backLabel = "Back", onExit = onBack)

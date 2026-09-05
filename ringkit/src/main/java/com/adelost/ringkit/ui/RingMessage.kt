@@ -28,7 +28,7 @@ fun RingMessage(spec: RingMessageSpec, modifier: Modifier = Modifier) {
         modifier = modifier.fillMaxWidth().padding(vertical = 12.dp),
         verticalArrangement = Arrangement.spacedBy(6.dp),
     ) {
-        Text(
+        if (spec.author.isNotBlank()) Text(
             text = spec.author,
             color = RingTokens.Dim,
             fontSize = if (round) 10.sp else 12.sp,

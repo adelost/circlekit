@@ -115,9 +115,11 @@ internal fun ringCueSurface(cue: CircleActionCue): RingCueSurface =
 
 @Composable
 private fun RingExplanationCue(cue: CircleActionCue) {
+    val round = com.adelost.designkit.ui.LocalCircleSurfaceLayout.current.surfaceClass ==
+        com.adelost.designkit.ui.CircleSurfaceClass.ROUND
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = Modifier.widthIn(max = 150.dp).padding(horizontal = 12.dp),
+        modifier = Modifier.widthIn(max = if (round) 150.dp else 340.dp).padding(horizontal = 12.dp),
     ) {
         Icon(
             imageVector = cue.icon,
@@ -128,7 +130,7 @@ private fun RingExplanationCue(cue: CircleActionCue) {
         Text(
             text = cue.label,
             color = RingTokens.Ink,
-            fontSize = 11.sp,
+            fontSize = if (round) 11.sp else 18.sp,
             fontWeight = FontWeight.Bold,
             letterSpacing = 0.5.sp,
             textAlign = TextAlign.Center,
@@ -139,7 +141,7 @@ private fun RingExplanationCue(cue: CircleActionCue) {
             Text(
                 text = value,
                 color = circleBrandColor(),
-                fontSize = 10.sp,
+                fontSize = if (round) 10.sp else 14.sp,
                 fontWeight = FontWeight.Bold,
                 textAlign = TextAlign.Center,
                 maxLines = 1,
@@ -149,7 +151,7 @@ private fun RingExplanationCue(cue: CircleActionCue) {
         Text(
             text = requireNotNull(cue.hint),
             color = RingTokens.Dim,
-            fontSize = 9.sp,
+            fontSize = if (round) 9.sp else 16.sp,
             textAlign = TextAlign.Center,
             maxLines = 5,
             overflow = TextOverflow.Ellipsis,

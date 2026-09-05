@@ -29,6 +29,10 @@ enum class CircleActionTiming(val holdMs: Long) {
     IMMEDIATE(0L),
 }
 
+/** Product-level policy for ordinary taps only. Explicit confirmation/press
+ * lifecycles keep their own duration; the default preserves instrument UX. */
+val LocalCircleTapTiming = androidx.compose.runtime.compositionLocalOf<CircleActionTiming?> { null }
+
 /**
  * What makes a press count: it lasted at least [holdMs]. THE rule, so the
  * rung cannot drift between the gates below.
@@ -83,6 +87,7 @@ fun Modifier.circleSafeTap(
     label: String?,
     onTap: () -> Unit,
 ): Modifier = composed {
+    val effectiveHoldMs = LocalCircleTapTiming.current?.holdMs ?: holdMs
     if (!enabled) {
         if (label == null) Modifier else Modifier.semantics(mergeDescendants = false) {
             contentDescription = label
@@ -97,21 +102,27 @@ fun Modifier.circleSafeTap(
                     true
                 }
             }
-            .pointerInput(holdMs, consumeDown) {
+            .pointerInput(effectiveHoldMs, consumeDown) {
                 awaitEachGesture {
                     val down = awaitFirstDown(requireUnconsumed = !consumeDown)
                     if (consumeDown) down.consume()
                     feedback.pressed = true
                     var commits = false
                     try {
+                        if (effectiveHoldMs == 0L) {
+                            // A normal click commits on release, so starting a
+                            // scroll over a row cannot accidentally select it.
+                            commits = waitForUpOrCancellation() != null
+                        } else {
                         var cancelled = false
-                        val releasedEarly = withTimeoutOrNull(holdMs) {
+                        val releasedEarly = withTimeoutOrNull(effectiveHoldMs) {
                             val release = waitForUpOrCancellation()
                             cancelled = release == null
                             release
                         }
                         // Timing out with the finger still down IS completion.
                         commits = releasedEarly == null && !cancelled
+                        }
                     } finally {
                         // Cancellation, navigation and disabled-state changes
                         // can all dispose pointer input mid-press. Never leave

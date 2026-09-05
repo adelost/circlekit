@@ -351,6 +351,7 @@ fun CirclePressIconRing(
     val feedback = rememberCircleActionFeedbackState()
     val timing = if (holdMs == 0L) CircleActionTiming.IMMEDIATE else CircleActionTiming.DELIBERATE
     val cue = rememberCircleActionCueController(
+        ordinaryTap = false,
         icon = icon,
         label = label,
         timing = timing,

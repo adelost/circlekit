@@ -275,6 +275,7 @@ fun RingRow(
         var holdProgress by remember { mutableStateOf<Float?>(null) }
         val cue = if (icon != null) {
             rememberCircleActionCueController(
+                ordinaryTap = false,
                 icon = icon,
                 label = title,
                 timing = CircleActionTiming.DELIBERATE,
