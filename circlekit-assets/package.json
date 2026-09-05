@@ -1,6 +1,6 @@
 {
   "name": "@v1d/circlekit-assets",
-  "version": "0.3.58",
+  "version": "0.3.59",
   "description": "Portable immutable CircleKit asset catalog",
   "type": "module",
   "files": [
