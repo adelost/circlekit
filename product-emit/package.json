@@ -1,6 +1,6 @@
 {
   "name": "@v1d/product-emit",
-  "version": "0.1.16",
+  "version": "0.1.17",
   "description": "Typed Kotlin emission for v1d ProductSpec products",
   "type": "module",
   "files": [
