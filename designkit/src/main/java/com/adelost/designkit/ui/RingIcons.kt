@@ -33,6 +33,7 @@ object RingIcons {
         )
     }
 
+    val Data: ImageVector by lazy { glyph("data") { fill("M4 6C4 3.8 7.6 2.5 12 2.5S20 3.8 20 6S16.4 9.5 12 9.5S4 8.2 4 6ZM4 9C6 10.5 9 11.3 12 11.3S18 10.5 20 9V12.6C20 14.6 16.4 16 12 16S4 14.6 4 12.6ZM4 15.7C6 17.2 9 18 12 18S18 17.2 20 15.7V19.2C20 21 16.4 22 12 22S4 21 4 19.2Z", PathFillType.NonZero) } }
     val Arrow: ImageVector by lazy { glyph("arrow") { stroke("M12 20V5", 3.2f); stroke("M5 11l7 -7l7 7", 3.2f) } }
     val Cloud: ImageVector by lazy { glyph("cloud") { fill("M7.6 18h9.3a3.6 3.6 0 0 0 0.6 -7.2a5.1 5.1 0 0 0 -9.9 -1.2A3.9 3.9 0 0 0 7.6 18Z", PathFillType.NonZero) } }
     val Plane: ImageVector by lazy { glyph("plane") { fill("M21 15.2v-2.4l-8 -4.8V3.4a1.4 1.4 0 0 0 -2.8 0V8l-8 4.8v2.4l8 -2.4v4.6l-2.4 1.8v1.8l3.8 -1.1l3.8 1.1v-1.8L13 17.4v-4.6Z", PathFillType.NonZero) } }
