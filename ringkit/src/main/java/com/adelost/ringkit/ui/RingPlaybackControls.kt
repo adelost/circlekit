@@ -28,6 +28,7 @@ import com.adelost.designkit.ui.phoneSurfaceDesignFor
 import com.adelost.designkit.ui.circleBrandColor
 
 enum class RingPlaybackState {
+    LOADING,
     READY,
     PLAYING,
     PAUSED,
@@ -71,7 +72,7 @@ fun RingPlaybackControls(
     val brand = circleBrandColor()
     val playing = spec.state == RingPlaybackState.PLAYING
     val canStop = spec.state == RingPlaybackState.PLAYING ||
-        spec.state == RingPlaybackState.PAUSED
+        spec.state == RingPlaybackState.PAUSED || spec.state == RingPlaybackState.LOADING
     val statusColor = when (spec.state) {
         RingPlaybackState.FAILED -> RingTokens.Broken
         RingPlaybackState.COMPLETE -> RingTokens.Fresh
@@ -106,6 +107,9 @@ fun RingPlaybackControls(
             iconSize = controlIconSize,
             active = playing,
             timing = CircleActionTiming.IMMEDIATE,
+            enabled = spec.state != RingPlaybackState.LOADING,
+            labelProgress = com.adelost.designkit.ui.CircleLabelProgress.Indeterminate.takeIf {
+                spec.state == RingPlaybackState.LOADING },
         )
         Column(
             modifier = Modifier.weight(1f),
@@ -175,7 +179,8 @@ private fun RoundPlaybackControls(
             horizontalArrangement = Arrangement.spacedBy(MenuDesign.iconTextGap),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            PlaybackAction(playing = playing, onTap = spec.onPlayPause)
+            PlaybackAction(playing = playing, loading = spec.state == RingPlaybackState.LOADING,
+                onTap = spec.onPlayPause)
             if (canStop) {
                 CircleIconDisc(
                     icon = RingIcons.Stop,
@@ -192,7 +197,7 @@ private fun RoundPlaybackControls(
 }
 
 @Composable
-private fun PlaybackAction(playing: Boolean, onTap: () -> Unit) {
+private fun PlaybackAction(playing: Boolean, loading: Boolean, onTap: () -> Unit) {
     CircleIconDisc(
         icon = if (playing) RingIcons.Pause else RingIcons.Play,
         contentDescription = if (playing) "Pause playback" else "Play audio",
@@ -201,6 +206,8 @@ private fun PlaybackAction(playing: Boolean, onTap: () -> Unit) {
         diameter = MenuDesign.watchActionRingDiameter,
         iconSize = MenuDesign.iconSize,
         active = playing,
+        enabled = !loading,
+        labelProgress = com.adelost.designkit.ui.CircleLabelProgress.Indeterminate.takeIf { loading },
         timing = CircleActionTiming.IMMEDIATE,
     )
 }
@@ -235,7 +242,8 @@ fun playbackStatusLabel(
     state: RingPlaybackState,
     positionMs: Long,
     durationMs: Long,
-): String = "${state.name} · ${playbackTimeLabel(positionMs, durationMs)}"
+): String = if (state == RingPlaybackState.LOADING) "Loading audio…"
+    else "${state.name} · ${playbackTimeLabel(positionMs, durationMs)}"
 
 fun playbackProgressFraction(positionMs: Long, durationMs: Long): Float {
     require(positionMs >= 0L)

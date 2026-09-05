@@ -7,6 +7,11 @@ import org.junit.Test
 
 class CircleActionCueTest {
     @Test
+    fun `immediate playback and navigation do not flash a hold receipt`() {
+        assertEquals(CircleCuePlan.Clear, circleCuePlan(RingIcons.Play, "PLAY", null,
+            CircleActionTiming.IMMEDIATE, pressed = false, confirmed = true, determinateProgress = null))
+    }
+    @Test
     fun `the two action categories keep one data-owned timing ladder`() {
         assertEquals(0L, CircleActionTiming.IMMEDIATE.holdMs)
         assertEquals(MenuDesign.tapHoldMs, CircleActionTiming.DELIBERATE.holdMs)

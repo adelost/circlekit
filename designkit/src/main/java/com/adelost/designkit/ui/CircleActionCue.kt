@@ -143,7 +143,8 @@ internal fun circleCuePlan(
     fun cue(progress: Float, isConfirmed: Boolean) =
         CircleActionCue(icon, label, progress, isConfirmed, value)
     return when {
-        confirmed -> CircleCuePlan.Settle(cue(progress = 1f, isConfirmed = true))
+        confirmed && timing == CircleActionTiming.DELIBERATE ->
+            CircleCuePlan.Settle(cue(progress = 1f, isConfirmed = true))
         determinateProgress != null ->
             CircleCuePlan.Show(cue(determinateProgress, isConfirmed = false))
         pressed && timing == CircleActionTiming.DELIBERATE -> CircleCuePlan.Sweep
@@ -174,7 +175,9 @@ fun rememberCircleActionCueController(
     determinateProgress: Float? = null,
     /** Where this control stands. Rendered while held and after it commits. */
     stateValue: String? = null,
+    ordinaryTap: Boolean = true,
 ): CircleActionCueController {
+    val effectiveTiming = if (ordinaryTap) LocalCircleTapTiming.current ?: timing else timing
     require(holdDurationMs >= 0L) { "Action cue hold duration cannot be negative" }
     require(determinateProgress == null || determinateProgress.isFinite() && determinateProgress in 0f..1f) {
         "Action cue progress must be null or a finite fraction in 0..1"
@@ -187,7 +190,7 @@ fun rememberCircleActionCueController(
     LaunchedEffect(
         icon,
         label,
-        timing,
+        effectiveTiming,
         pressed,
         holdDurationMs,
         determinateProgress,
@@ -199,7 +202,7 @@ fun rememberCircleActionCueController(
             icon = icon,
             label = label,
             value = state,
-            timing = timing,
+            timing = effectiveTiming,
             pressed = pressed,
             confirmed = controller.confirmed,
             determinateProgress = determinateProgress,
@@ -235,7 +238,10 @@ fun rememberCircleActionCueController(
                 }
             }
 
-            CircleCuePlan.Clear -> publish(CircleActionCueEvent(owner, null))
+            CircleCuePlan.Clear -> {
+                publish(CircleActionCueEvent(owner, null))
+                controller.confirmed = false
+            }
         }
     }
     DisposableEffect(owner, publish) {

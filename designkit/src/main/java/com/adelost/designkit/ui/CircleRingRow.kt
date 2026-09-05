@@ -225,7 +225,7 @@ fun CircleRingRowContent(
                 fontSizeSp = phoneDesign?.rowTitleSize?.value ?: (
                     if (icon == null) MenuDesign.titleSizeNoIcon else MenuDesign.titleSize
                     ).value,
-                maxLines = if (multiline) MULTILINE_TITLE_LINES else 1,
+                maxLines = if (multiline) Int.MAX_VALUE else 1,
                 spoken = !LocalActionParentOwnsRowCopy.current,
             )
             // The state indicator rides the VALUE line, not the whole row.
@@ -242,9 +242,9 @@ fun CircleRingRowContent(
                     text = sub,
                     color = RingTokens.Dim,
                     fontSizeSp = phoneDesign?.rowSubtitleSize?.value ?: MenuDesign.subSize.value,
-                    maxLines = if (multiline) MULTILINE_SUB_LINES else 1,
+                    maxLines = if (multiline) Int.MAX_VALUE else 1,
                     overflow = TextOverflow.Ellipsis,
-                    modifier = (if (trailing != null) Modifier.weight(1f) else Modifier)
+                    modifier = (if (trailing != null && phoneDesign == null) Modifier.weight(1f) else Modifier)
                         .then(
                             if (LocalActionParentOwnsRowCopy.current) {
                                 Modifier.clearAndSetSemantics { }
@@ -253,11 +253,15 @@ fun CircleRingRowContent(
                             },
                         ),
                 )
-                if (trailing != null) {
+                if (trailing != null && phoneDesign == null) {
                     Spacer(Modifier.size(6.dp))
                     trailing()
                 }
             }
+        }
+        if (trailing != null && phoneDesign != null) {
+            Spacer(Modifier.size(phoneDesign.controlGap))
+            trailing()
         }
     }
 }
@@ -290,11 +294,6 @@ private fun CircleFittedTitle(
         modifier = if (spoken) Modifier else Modifier.clearAndSetSemantics { },
     )
 }
-
-/** A passive row may take a second line for its name and three for its
- *  explanation. Past that it is not a row any more, it is a page. */
-private const val MULTILINE_TITLE_LINES = 2
-private const val MULTILINE_SUB_LINES = 3
 
 /** The smallest a row title may shrink before ellipsis takes over. */
 private const val CIRCLE_TITLE_MIN_SIZE_SP = 7.5f

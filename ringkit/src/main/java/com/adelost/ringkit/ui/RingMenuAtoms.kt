@@ -241,6 +241,8 @@ fun RingRow(
     infoSelected: Boolean = false,
     /** Observes touch without replacing or delaying the row's real action. */
     onInfoTouch: (() -> Unit)? = null,
+    /** Named selections need their complete identity, even when actionable. */
+    multiline: Boolean = onTap == null,
 ) {
     val explanation = hint.takeIf { it.isNotBlank() }
     require(!infoSelected || explanation != null) {
@@ -273,6 +275,7 @@ fun RingRow(
         var holdProgress by remember { mutableStateOf<Float?>(null) }
         val cue = if (icon != null) {
             rememberCircleActionCueController(
+                ordinaryTap = false,
                 icon = icon,
                 label = title,
                 timing = CircleActionTiming.DELIBERATE,
@@ -324,6 +327,7 @@ fun RingRow(
                     },
                     pressHoldMs = holdMs,
                     centerValue = centerValue,
+                    multiline = multiline,
                 )
             }
         }
@@ -345,11 +349,7 @@ fun RingRow(
         centerValue = centerValue,
         actionTiming = actionTiming,
         actionHoldMs = actionHoldMs,
-        // DERIVED, not passed: a row with no tap cannot publish its title to
-        // the centre cue, so an ellipsis there is the last word rather than a
-        // summary. Reading it off the row's own data means no caller can
-        // forget it — the same reason RowKind is derived instead of declared.
-        multiline = onTap == null,
+        multiline = multiline,
     )
 }
 

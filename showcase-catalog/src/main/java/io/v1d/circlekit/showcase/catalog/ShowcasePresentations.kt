@@ -153,6 +153,15 @@ object ShowcasePresentations {
     @Composable
     private fun TextPreview(scenario: String, state: ShowcaseMediaState) {
         val text by state.text.collectAsState()
+        val sent by state.submitCount.collectAsState()
+        Column {
+        com.adelost.ringkit.ui.RingMessage(
+            com.adelost.ringkit.ui.RingMessageSpec(
+                author = "MESSAGE",
+                body = "Readable sentences keep their original spelling and wrap naturally. The same component works in a conversation, notes or a preview.",
+                status = if (sent == 0) "Write below to try the composer" else "Sent $sent",
+            ),
+        )
         RingTextComposer(
             spec = textSpec(
                 ShowcaseScenario(ShowcaseScenarioId(scenario), scenario.uppercase()),
@@ -160,6 +169,7 @@ object ShowcasePresentations {
                 text,
             ),
         )
+        }
     }
 
     @Composable

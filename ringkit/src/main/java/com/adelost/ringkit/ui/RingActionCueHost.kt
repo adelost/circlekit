@@ -1,14 +1,14 @@
 package com.adelost.ringkit.ui
 
 import androidx.compose.foundation.background
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
@@ -18,6 +18,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.ProgressBarRangeInfo
+import androidx.compose.ui.semantics.progressBarRangeInfo
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -31,6 +34,11 @@ import com.adelost.designkit.ui.LocalCircleActionCuePublisher
 import com.adelost.designkit.ui.MenuDesign
 import com.adelost.designkit.ui.RingTokens
 import com.adelost.designkit.ui.circleBrandColor
+import com.adelost.designkit.ui.CircleActionTiming
+import com.adelost.designkit.ui.CircleIconDisc
+import com.adelost.designkit.ui.RingIcons
+import com.adelost.designkit.ui.circleSafeTap
+import com.adelost.designkit.ui.rememberCircleActionFeedbackState
 import kotlinx.coroutines.delay
 
 /** Durable ownership state for the single centre action cue. */
@@ -86,6 +94,7 @@ fun RingActionCueHost(
     LaunchedEffect(state.settledOwner, settledCue) {
         val scheduledOwner = state.settledOwner ?: return@LaunchedEffect
         val scheduledCue = settledCue ?: return@LaunchedEffect
+        if (scheduledCue.hint != null) return@LaunchedEffect
         delay(scheduledCue.dwellMs)
         if (ringCueReceiptStillCurrent(state, scheduledOwner, scheduledCue)) {
             state = RingCueHostState()
@@ -95,10 +104,17 @@ fun RingActionCueHost(
         Box(modifier = modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             content()
             state.cue?.let { cue ->
-                Box(Modifier.fillMaxSize().background(MenuDesign.actionCueScrim))
+                val explanation = cue.hint != null
+                val dismiss = { state = RingCueHostState() }
+                if (explanation) BackHandler(onBack = dismiss)
+                Box(Modifier.fillMaxSize().background(MenuDesign.actionCueScrim)
+                    .then(if (explanation) Modifier.circleSafeTap(
+                        feedback = rememberCircleActionFeedbackState(),
+                        holdMs = 0L, consumeDown = true, label = null, onTap = dismiss,
+                    ) else Modifier))
                 when (ringCueSurface(cue)) {
                     RingCueSurface.ACTION -> RingActionCue(cue)
-                    RingCueSurface.EXPLANATION -> RingExplanationCue(cue)
+                    RingCueSurface.EXPLANATION -> RingExplanationCue(cue, dismiss)
                 }
             }
         }
@@ -112,10 +128,12 @@ internal fun ringCueSurface(cue: CircleActionCue): RingCueSurface =
     if (cue.hint == null) RingCueSurface.ACTION else RingCueSurface.EXPLANATION
 
 @Composable
-private fun RingExplanationCue(cue: CircleActionCue) {
+private fun RingExplanationCue(cue: CircleActionCue, onDismiss: () -> Unit) {
+    val round = com.adelost.designkit.ui.LocalCircleSurfaceLayout.current.surfaceClass ==
+        com.adelost.designkit.ui.CircleSurfaceClass.ROUND
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = Modifier.widthIn(max = 150.dp).padding(horizontal = 12.dp),
+        modifier = Modifier.widthIn(max = if (round) 150.dp else 340.dp).padding(horizontal = 12.dp),
     ) {
         Icon(
             imageVector = cue.icon,
@@ -126,7 +144,7 @@ private fun RingExplanationCue(cue: CircleActionCue) {
         Text(
             text = cue.label,
             color = RingTokens.Ink,
-            fontSize = 11.sp,
+            fontSize = if (round) 11.sp else 18.sp,
             fontWeight = FontWeight.Bold,
             letterSpacing = 0.5.sp,
             textAlign = TextAlign.Center,
@@ -137,7 +155,7 @@ private fun RingExplanationCue(cue: CircleActionCue) {
             Text(
                 text = value,
                 color = circleBrandColor(),
-                fontSize = 10.sp,
+                fontSize = if (round) 10.sp else 14.sp,
                 fontWeight = FontWeight.Bold,
                 textAlign = TextAlign.Center,
                 maxLines = 1,
@@ -147,7 +165,7 @@ private fun RingExplanationCue(cue: CircleActionCue) {
         Text(
             text = requireNotNull(cue.hint),
             color = RingTokens.Dim,
-            fontSize = 9.sp,
+            fontSize = if (round) 9.sp else 16.sp,
             textAlign = TextAlign.Center,
             maxLines = 5,
             overflow = TextOverflow.Ellipsis,
@@ -161,42 +179,57 @@ private fun RingExplanationCue(cue: CircleActionCue) {
                 modifier = Modifier.padding(top = 7.dp),
             )
         }
+        CircleIconDisc(
+            icon = RingIcons.Cross, contentDescription = "Close information",
+            actionLabel = "CLOSE", onTap = onDismiss,
+            timing = CircleActionTiming.IMMEDIATE,
+            modifier = Modifier.padding(top = 8.dp),
+            diameter = if (round) MenuDesign.watchActionRingDiameter else 44.dp,
+            iconSize = MenuDesign.iconSize,
+        )
     }
 }
 
 /** The canonical centre ring used for deliberate progress and confirmation. */
 @Composable
 private fun RingActionCue(cue: CircleActionCue) {
-    val ringSize = 88.dp
+    val round = com.adelost.designkit.ui.LocalCircleSurfaceLayout.current.surfaceClass ==
+        com.adelost.designkit.ui.CircleSurfaceClass.ROUND
+    val ringSize = if (round) 64.dp else 80.dp
     val pigment = if (cue.confirmed) RingTokens.Fresh else circleBrandColor()
     val ink = if (cue.confirmed) RingTokens.Fresh else RingTokens.Ink
-    Box(contentAlignment = Alignment.Center) {
-        Box(
-            Modifier
-                .size(ringSize + 26.dp)
-                .background(RingTokens.ProgressSurface, CircleShape),
-        )
-        ProgressRing(
-            progress = cue.progress,
-            diameter = ringSize,
-            trackWidth = 6.dp,
-            progressWidth = 6.dp,
-            progressColor = pigment,
-        )
-        Icon(
-            imageVector = cue.icon,
-            contentDescription = cue.label,
-            tint = ink,
-            modifier = Modifier.size(32.dp),
-        )
+    // The ring and its caption own disjoint measured bounds. An offset inside
+    // a fixed ring lets a second label line cross its stroke on every host.
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(10.dp),
+        modifier = Modifier.widthIn(max = if (round) 132.dp else 280.dp),
+    ) {
+        Box(contentAlignment = Alignment.Center) {
+            ProgressRing(
+                progress = cue.progress,
+                diameter = ringSize,
+                trackWidth = 4.dp,
+                progressWidth = 4.dp,
+                progressColor = pigment,
+                modifier = Modifier.semantics {
+                    progressBarRangeInfo = ProgressBarRangeInfo(cue.progress, 0f..1f)
+                },
+            )
+            Icon(
+                imageVector = cue.icon,
+                contentDescription = null,
+                tint = ink,
+                modifier = Modifier.size(28.dp),
+            )
+        }
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
-            modifier = Modifier.offset(y = 24.dp).widthIn(max = 96.dp),
         ) {
             Text(
                 text = cue.label,
                 color = ink,
-                fontSize = 10.sp,
+                fontSize = if (round) 11.sp else 16.sp,
                 fontWeight = FontWeight.SemiBold,
                 letterSpacing = 0.5.sp,
                 textAlign = TextAlign.Center,
@@ -207,11 +240,11 @@ private fun RingActionCue(cue: CircleActionCue) {
                 Text(
                     text = value,
                     color = pigment,
-                    fontSize = 10.sp,
+                    fontSize = if (round) 10.sp else 14.sp,
                     fontWeight = FontWeight.Bold,
                     letterSpacing = 0.5.sp,
                     textAlign = TextAlign.Center,
-                    maxLines = 1,
+                    maxLines = 2,
                     overflow = TextOverflow.Ellipsis,
                 )
             }

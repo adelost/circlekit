@@ -145,6 +145,7 @@ export const showcaseCases = [
       { id: "empty", label: "EMPTY CONTENT" },
       { id: "max-capacity", label: "MAX CAPACITY" },
       { id: "long-content", label: "LONG CONTENT" },
+      { id: "named-selection", label: "NAMED SELECTION" },
     ],
   },
   {

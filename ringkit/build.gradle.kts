@@ -11,6 +11,9 @@ android {
 
     defaultConfig {
         minSdk = 26
+        // The self-targeted instrumentation APK must not open Android's
+        // obsolete-target warning over subsequent host screenshots.
+        targetSdk = 35
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
@@ -61,6 +64,7 @@ dependencies {
     implementation(libs.androidx.compose.ui)
     implementation(libs.androidx.compose.ui.graphics)
     implementation(libs.androidx.compose.foundation)
+    implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.wear.compose.material)
     implementation(libs.androidx.wear.compose.foundation)
     implementation(libs.kotlinx.coroutines.core)

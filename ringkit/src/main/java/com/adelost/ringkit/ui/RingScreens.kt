@@ -303,6 +303,8 @@ data class RowSpec(
     /** Optional value replacing the icon inside the row's standard ring.
      *  Used for data that is clearer as itself than as a pictogram. */
     val centerValue: String? = null,
+    /** Long identities (people, places, devices) must stay readable on selection. */
+    val multiline: Boolean = onTap == null,
 ) {
     /**
      * Semantic row role, DERIVED from the interaction data — never passed in.
