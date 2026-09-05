@@ -40,7 +40,7 @@ fun releaseUpdateScreen(port: ReleaseUpdatePort): RingScreen.Rows = RingScreen.R
             RowSpec(
                 key = "update-explanation",
                 title = "HOW IT WORKS",
-                sub = "When ON, checks on app start and downloads verified updates. Tap INSTALL to confirm in Android. OFF keeps manual checks available.",
+                sub = "When ON, checks on app start and downloads verified updates. When READY, tap VERSION, then confirm in Android. OFF keeps manual checks available.",
                 icon = null,
             ),
         )

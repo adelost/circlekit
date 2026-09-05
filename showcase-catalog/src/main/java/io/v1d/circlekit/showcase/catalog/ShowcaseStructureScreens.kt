@@ -23,15 +23,26 @@ internal object ShowcaseStructureScreens {
                         "This is the generated demo catalog, not a health graph. Android host tools and the app updater run outside this catalog.", null),
                 )))
             }),
-            LaunchSpec(RingIcons.Grid, "COMPONENTS", open = { owners("component") }),
+            LaunchSpec(RingIcons.Grid, "COMPONENTS", open = ::components),
             LaunchSpec(RingIcons.Wrench, "DATA PATH", open = { owners("node") }),
         ),
     )
 
-    private fun owners(kind: String): RingScreen = RingScreen.Launcher(
+    private fun components(): RingScreen = RingScreen.Launcher(
+        title = "COMPONENTS",
+        gridRole = MenuGridRole.SETTINGS,
+        entries = ShowcaseFamily.entries.map { family ->
+            LaunchSpec(ShowcaseNativeBindings.requireIcon(family.iconId), family.menuLabel,
+                open = { owners("component") { id -> ShowcaseManifest.find(ShowcaseCaseId(id))?.family == family } })
+        } + LaunchSpec(RingIcons.Grid, "PAGE FRAME", open = {
+            owners("component") { id -> ShowcaseManifest.find(ShowcaseCaseId(id)) == null }
+        }),
+    )
+
+    private fun owners(kind: String, include: (String) -> Boolean = { true }): RingScreen = RingScreen.Launcher(
         title = if (kind == "component") "COMPONENTS" else "DATA PATH",
         gridRole = MenuGridRole.SETTINGS,
-        entries = registry.ports.filter { it.ownerKind == kind }.map { it.ownerId }.distinct().map { id ->
+        entries = registry.ports.filter { it.ownerKind == kind }.map { it.ownerId }.distinct().filter(include).map { id ->
             val case = ShowcaseManifest.find(ShowcaseCaseId(id))
             LaunchSpec(
                 icon = case?.let { ShowcaseNativeBindings.requireIcon(it.iconId) } ?: RingIcons.Grid,

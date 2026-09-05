@@ -4,8 +4,27 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.runBlocking
+import com.adelost.ringkit.ui.RingScreen
 
 class ShowcaseManifestTest {
+    @Test
+    fun `structure drilldown fits real launcher capacity and reaches every port owner`() = runBlocking {
+        val found = mutableSetOf<String>()
+        suspend fun visit(screen: RingScreen) {
+            when (screen) {
+                is RingScreen.Launcher -> screen.entries.forEach { visit(requireNotNull(it.open())) }
+                is RingScreen.Rows -> screen.items.first().singleOrNull { it.key == "owner" }?.let {
+                    found += it.sub
+                }
+                else -> error("Unexpected structure presentation")
+            }
+        }
+        visit(ShowcaseStructureScreens.root())
+        assertEquals(ShowcaseProductInspectorRegistry.ports.map { it.ownerId }.toSet(), found)
+    }
+
     @Test
     fun `generated manifest and independent native bindings are reciprocal`() {
         assertEquals(

@@ -29,17 +29,17 @@ export interface ShowcaseCaseDeclaration {
 export const showcaseCases = [
   {
     id: "foundation.colors", openPort: "foundationColors", section: "foundations", title: "COLORS", iconId: "palette",
-    purpose: "Compare shared OLED style and semantic accent palettes. Preview only; no app setting changes.",
+    purpose: "Shared OLED style and accent samples. Preview only.",
     scenarios: [
       { id: "sea-glass", label: "SEA GLASS", description: "Warm-white actions with green semantic accents" },
-      { id: "flat-cyan", label: "CYAN", description: "Shared base with cyan semantic accents" },
-      { id: "muted", label: "STEEL", description: "Subdued semantic accent range" },
-      { id: "high-contrast", label: "VIOLET", description: "Violet semantic accent range" },
+      { id: "flat-cyan", label: "FLAT CYAN", description: "Shared base with cyan semantic accents" },
+      { id: "muted", label: "MUTED", description: "Subdued semantic accent range" },
+      { id: "high-contrast", label: "HIGH CONTRAST", description: "Strong separation between semantic accent roles" },
     ],
   },
   {
     id: "foundation.geometry", openPort: "foundationGeometry", section: "foundations", title: "GEOMETRY", iconId: "grid",
-    purpose: "Inspect layout dimensions and reserved controls. For a real viewport change, use DEV / HOST.",
+    purpose: "Layout metrics. Real viewport changes: DEV / HOST.",
     scenarios: [
       { id: "round-192", label: "WATCH METRICS", description: "Calculated fit for a 192 dp round screen" },
       { id: "phone-compact", label: "PORTRAIT METRICS", description: "Calculated fit for 390 × 844 dp" },
@@ -50,7 +50,7 @@ export const showcaseCases = [
   },
   {
     id: "atom.icon-action", openPort: "atomIconAction", section: "atoms", title: "ACTIONS", iconId: "watch",
-    purpose: "Try shared icon actions. Live examples toggle the shared demo state; static examples show appearance only.",
+    purpose: "Shared demo toggle, static looks and disabled actions.",
     scenarios: [
       { id: "idle", label: "INACTIVE LOOK", description: "Static appearance; no command runs" },
       { id: "active", label: "ACTIVE LOOK", description: "Static active appearance; no command runs" },
@@ -61,7 +61,7 @@ export const showcaseCases = [
   },
   {
     id: "control.action-row", openPort: "controlActionRow", section: "controls", title: "ACTION ROW", iconId: "touchdown-run",
-    purpose: "Try action timing, confirmation and recovery. Counts show real local callbacks; no data is sent or deleted.",
+    purpose: "Local action counts. Nothing is sent or deleted.",
     scenarios: [
       { id: "immediate", label: "TAP ACTION", description: "A tap increments the action count" },
       { id: "deliberate", label: "HOLD ACTION", description: "A completed hold increments the count" },
@@ -73,7 +73,7 @@ export const showcaseCases = [
   },
   {
     id: "control.choice-row", openPort: "controlChoiceRow", section: "controls", title: "CHOICES", iconId: "grid",
-    purpose: "Change a local demo choice. Values and selection marks use the same controls as product settings.",
+    purpose: "Try selection marks and local demo choices.",
     scenarios: [
       { id: "off", label: "START OFF", description: "Switch a two-state setting on" },
       { id: "on", label: "START ON", description: "Switch a two-state setting off" },
@@ -85,7 +85,7 @@ export const showcaseCases = [
   },
   {
     id: "control.adjustment", openPort: "controlAdjustment", section: "controls", title: "ADJUST", iconId: "sliders",
-    purpose: "Adjust a demo value from 0 to 1000 in steps of 100. End stops must remain understandable.",
+    purpose: "Demo range: 0–1000, in steps of 100.",
     scenarios: [
       { id: "minimum", label: "LOWER LIMIT", description: "Start at zero; decrease cannot go further" },
       { id: "middle", label: "MID RANGE", description: "Increase and decrease from 500" },
@@ -95,7 +95,7 @@ export const showcaseCases = [
   },
   {
     id: "control.progress", openPort: "controlProgress", section: "controls", title: "PROGRESS", iconId: "download",
-    purpose: "Compare unknown and measured progress. Each tap advances a local demo; nothing downloads.",
+    purpose: "Tap to advance example progress. No download.",
     scenarios: [
       { id: "none", label: "NOT STARTED", description: "No work means no progress indicator" },
       { id: "indeterminate", label: "UNKNOWN TOTAL", description: "Activity without an invented percentage" },
@@ -107,7 +107,7 @@ export const showcaseCases = [
   },
   {
     id: "control.press-ring", openPort: "controlPressRing", section: "controls", title: "PRESS", iconId: "record",
-    purpose: "Try press, release and cancellation. Local audio simulation: the microphone is never opened.",
+    purpose: "Press, release and cancel. No microphone is used.",
     scenarios: [
       { id: "idle", label: "READY TO HOLD", description: "Hold to start; release to stop the demo" },
       { id: "recording", label: "RECORDING LOOK", description: "Frozen 7.8-second recording example" },
@@ -117,7 +117,7 @@ export const showcaseCases = [
   },
   {
     id: "input.text", openPort: "inputText", section: "input", title: "TEXT", iconId: "pencil",
-    purpose: "Type and submit locally. The watch uses its system editor when available; nothing is sent to a server.",
+    purpose: "Type up to 24 characters. Local submission only.",
     scenarios: [
       { id: "empty", label: "START WRITING", description: "Empty composer with a useful prompt" },
       { id: "filled", label: "EDIT A MESSAGE", description: "Existing text stays editable" },
@@ -127,7 +127,7 @@ export const showcaseCases = [
   },
   {
     id: "media.capture", openPort: "mediaCapture", section: "media", title: "WAVEFORM", iconId: "record",
-    purpose: "Inspect frozen sample waveforms. No microphone, live audio or elapsed-time claim.",
+    purpose: "Frozen waveform samples. No microphone or live audio.",
     scenarios: [
       { id: "silent", label: "NO SAMPLES", description: "Empty waveform without fabricated signal" },
       { id: "active", label: "SAMPLE WAVEFORM", description: "Frozen 7.8-second example levels" },
@@ -136,10 +136,10 @@ export const showcaseCases = [
   },
   {
     id: "media.playback", openPort: "mediaPlayback", section: "media", title: "PLAYBACK", iconId: "play",
-    purpose: "Try player controls on frozen audio data. No sound is played; seek and transport update local state.",
+    purpose: "Try play, pause and stop. Frozen data; no sound.",
     scenarios: [
       { id: "ready", label: "READY TO PLAY", description: "Start the silent player demo" },
-      { id: "playing", label: "PLAYING LOOK", description: "Frozen play position; try pause or seek" },
+      { id: "playing", label: "PLAYING LOOK", description: "Frozen play position; try pause or stop" },
       { id: "paused", label: "PAUSED", description: "Resume from the retained position" },
       { id: "complete", label: "FINISHED", description: "Playback at its end point" },
       { id: "failed", label: "PLAYBACK FAILED", description: "A visible error can be retried" },
@@ -147,7 +147,7 @@ export const showcaseCases = [
   },
   {
     id: "template.screens", openPort: "templateScreens", section: "templates", title: "SCREENS", iconId: "layers",
-    purpose: "Try reusable page layouts with local example data. Empty, long and round cases are intentional.",
+    purpose: "Reusable layouts with local example data.",
     scenarios: [
       { id: "hub", label: "DATA OVERVIEW", description: "Open each source and keep its identity" },
       { id: "detail", label: "VALUE + ACTIONS", description: "Try refresh, use and clear on demo data" },
@@ -164,7 +164,7 @@ export const showcaseCases = [
   },
   {
     id: "flow.source", openPort: "flowSource", section: "flows", title: "DATA AGE", iconId: "wifi",
-    purpose: "Example weather data, not local weather. Compare last value, its age, coverage and the latest request.",
+    purpose: "Example data: value, age, coverage and errors.",
     scenarios: [
       { id: "off", label: "SOURCE OFF", description: "No value; this source is disabled" },
       { id: "loading", label: "FIRST REQUEST", description: "Fetching before any value has arrived" },
@@ -176,7 +176,7 @@ export const showcaseCases = [
   },
   {
     id: "flow.update", openPort: "flowUpdate", section: "flows", title: "UPDATE DEMO", iconId: "download",
-    purpose: "A safe ReleaseKit simulation. Nothing downloads or installs. To update Showcase, use APP UPDATE on the home menu.",
+    purpose: "No download or install. Real updates: home / APP UPDATE.",
     scenarios: [
       { id: "checking", label: "CHECKING", description: "Waiting for release information" },
       { id: "available", label: "UPDATE FOUND", description: "A newer version can be downloaded" },
@@ -187,7 +187,7 @@ export const showcaseCases = [
   },
   {
     id: "flow.service", openPort: "flowService", section: "flows", title: "WORK + CACHE", iconId: "wrench",
-    purpose: "Simulated service work and cache use. Request outcome is not the same as the age of a saved value.",
+    purpose: "Simulated work and cache use. No network requests.",
     scenarios: [
       { id: "idle", label: "NO WORK", description: "No request has run yet" },
       { id: "active", label: "WORK IN PROGRESS", description: "One operation and one transfer are active" },

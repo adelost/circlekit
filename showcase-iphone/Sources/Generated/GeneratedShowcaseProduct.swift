@@ -147,7 +147,7 @@ enum GeneratedShowcaseProduct {
             rendererId: "ShowcaseComponentScreen",
             title: "COLORS",
             iconId: "palette",
-            scenarios: [ShowcaseScenario(id: "sea-glass", label: "SEA GLASS"), ShowcaseScenario(id: "flat-cyan", label: "CYAN"), ShowcaseScenario(id: "muted", label: "STEEL"), ShowcaseScenario(id: "high-contrast", label: "VIOLET")]
+            scenarios: [ShowcaseScenario(id: "sea-glass", label: "SEA GLASS"), ShowcaseScenario(id: "flat-cyan", label: "FLAT CYAN"), ShowcaseScenario(id: "muted", label: "MUTED"), ShowcaseScenario(id: "high-contrast", label: "HIGH CONTRAST")]
         ),
         ShowcaseComponent(
             id: .foundationGeometry,

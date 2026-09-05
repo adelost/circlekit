@@ -30,6 +30,7 @@ import io.v1d.circlekit.showcase.catalog.ShowcaseReleaseHost
 import io.v1d.circlekit.showcase.catalog.ShowcaseSession
 import io.v1d.circlekit.showcase.catalog.ShowcaseScreens
 import io.v1d.circlekit.showcase.catalog.ShowcaseUpdateController
+import io.v1d.circlekit.showcase.catalog.ShowcaseMenuProbe
 import com.adelost.ringkit.ui.RingTextEntryPort
 import com.adelost.ringkit.ui.RingTextInputSpec
 import kotlinx.coroutines.MainScope
@@ -71,6 +72,8 @@ class WearShowcaseActivity : ComponentActivity() {
         textEntryLauncher.launch(intent)
     }
     private var probeRegistered = false
+    private val devPort by lazy { ShowcaseDevPort(host.port, update.port) }
+    private val rootNavigator by lazy { RingNavigator(ShowcaseScreens.root(session, devPort)) }
     private val probeReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
             val command = ShowcaseProbeCommand(
@@ -80,13 +83,13 @@ class WearShowcaseActivity : ComponentActivity() {
                 actionId = intent?.getStringExtra("action"),
                 value = intent?.getStringExtra("value"),
             )
-            val handled = host.handleProbe(command)
+            val handled = host.handleProbe(command) ?: ShowcaseMenuProbe.handle(command, session, rootNavigator)
             val result = if (handled == null) {
                 session.handle(command)
             } else {
                 session.handle(ShowcaseProbeCommand("dump")).copy(
                     ok = handled,
-                    message = if (handled) "host updated" else "invalid host value",
+                    message = if (handled) "host/menu updated" else "invalid host/menu value",
                 )
             }
             val json = result.toJson()
@@ -102,8 +105,6 @@ class WearShowcaseActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         setContent {
             val preview by host.state.collectAsState()
-            val devPort = remember { ShowcaseDevPort(host.port, update.port) }
-            val rootNavigator = remember { RingNavigator(ShowcaseScreens.root(session, devPort)) }
             BackHandler {
                 if (!session.back()) finish()
             }

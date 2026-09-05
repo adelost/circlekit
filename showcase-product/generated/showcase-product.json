@@ -6653,7 +6653,7 @@
         "iconId": "palette",
         "id": "foundation.colors",
         "openPort": "foundationColors",
-        "purpose": "Compare shared OLED style and semantic accent palettes. Preview only; no app setting changes.",
+        "purpose": "Shared OLED style and accent samples. Preview only.",
         "scenarios": [
           {
             "description": "Warm-white actions with green semantic accents",
@@ -6663,17 +6663,17 @@
           {
             "description": "Shared base with cyan semantic accents",
             "id": "flat-cyan",
-            "label": "CYAN"
+            "label": "FLAT CYAN"
           },
           {
             "description": "Subdued semantic accent range",
             "id": "muted",
-            "label": "STEEL"
+            "label": "MUTED"
           },
           {
-            "description": "Violet semantic accent range",
+            "description": "Strong separation between semantic accent roles",
             "id": "high-contrast",
-            "label": "VIOLET"
+            "label": "HIGH CONTRAST"
           }
         ],
         "section": "foundations",
@@ -6683,7 +6683,7 @@
         "iconId": "grid",
         "id": "foundation.geometry",
         "openPort": "foundationGeometry",
-        "purpose": "Inspect layout dimensions and reserved controls. For a real viewport change, use DEV / HOST.",
+        "purpose": "Layout metrics. Real viewport changes: DEV / HOST.",
         "scenarios": [
           {
             "description": "Calculated fit for a 192 dp round screen",
@@ -6718,7 +6718,7 @@
         "iconId": "watch",
         "id": "atom.icon-action",
         "openPort": "atomIconAction",
-        "purpose": "Try shared icon actions. Live examples toggle the shared demo state; static examples show appearance only.",
+        "purpose": "Shared demo toggle, static looks and disabled actions.",
         "scenarios": [
           {
             "description": "Static appearance; no command runs",
@@ -6753,7 +6753,7 @@
         "iconId": "touchdown-run",
         "id": "control.action-row",
         "openPort": "controlActionRow",
-        "purpose": "Try action timing, confirmation and recovery. Counts show real local callbacks; no data is sent or deleted.",
+        "purpose": "Local action counts. Nothing is sent or deleted.",
         "scenarios": [
           {
             "description": "A tap increments the action count",
@@ -6793,7 +6793,7 @@
         "iconId": "grid",
         "id": "control.choice-row",
         "openPort": "controlChoiceRow",
-        "purpose": "Change a local demo choice. Values and selection marks use the same controls as product settings.",
+        "purpose": "Try selection marks and local demo choices.",
         "scenarios": [
           {
             "description": "Switch a two-state setting on",
@@ -6833,7 +6833,7 @@
         "iconId": "sliders",
         "id": "control.adjustment",
         "openPort": "controlAdjustment",
-        "purpose": "Adjust a demo value from 0 to 1000 in steps of 100. End stops must remain understandable.",
+        "purpose": "Demo range: 0–1000, in steps of 100.",
         "scenarios": [
           {
             "description": "Start at zero; decrease cannot go further",
@@ -6863,7 +6863,7 @@
         "iconId": "download",
         "id": "control.progress",
         "openPort": "controlProgress",
-        "purpose": "Compare unknown and measured progress. Each tap advances a local demo; nothing downloads.",
+        "purpose": "Tap to advance example progress. No download.",
         "scenarios": [
           {
             "description": "No work means no progress indicator",
@@ -6903,7 +6903,7 @@
         "iconId": "record",
         "id": "control.press-ring",
         "openPort": "controlPressRing",
-        "purpose": "Try press, release and cancellation. Local audio simulation: the microphone is never opened.",
+        "purpose": "Press, release and cancel. No microphone is used.",
         "scenarios": [
           {
             "description": "Hold to start; release to stop the demo",
@@ -6933,7 +6933,7 @@
         "iconId": "pencil",
         "id": "input.text",
         "openPort": "inputText",
-        "purpose": "Type and submit locally. The watch uses its system editor when available; nothing is sent to a server.",
+        "purpose": "Type up to 24 characters. Local submission only.",
         "scenarios": [
           {
             "description": "Empty composer with a useful prompt",
@@ -6963,7 +6963,7 @@
         "iconId": "record",
         "id": "media.capture",
         "openPort": "mediaCapture",
-        "purpose": "Inspect frozen sample waveforms. No microphone, live audio or elapsed-time claim.",
+        "purpose": "Frozen waveform samples. No microphone or live audio.",
         "scenarios": [
           {
             "description": "Empty waveform without fabricated signal",
@@ -6988,7 +6988,7 @@
         "iconId": "play",
         "id": "media.playback",
         "openPort": "mediaPlayback",
-        "purpose": "Try player controls on frozen audio data. No sound is played; seek and transport update local state.",
+        "purpose": "Try play, pause and stop. Frozen data; no sound.",
         "scenarios": [
           {
             "description": "Start the silent player demo",
@@ -6996,7 +6996,7 @@
             "label": "READY TO PLAY"
           },
           {
-            "description": "Frozen play position; try pause or seek",
+            "description": "Frozen play position; try pause or stop",
             "id": "playing",
             "label": "PLAYING LOOK"
           },
@@ -7023,7 +7023,7 @@
         "iconId": "layers",
         "id": "template.screens",
         "openPort": "templateScreens",
-        "purpose": "Try reusable page layouts with local example data. Empty, long and round cases are intentional.",
+        "purpose": "Reusable layouts with local example data.",
         "scenarios": [
           {
             "description": "Open each source and keep its identity",
@@ -7088,7 +7088,7 @@
         "iconId": "wifi",
         "id": "flow.source",
         "openPort": "flowSource",
-        "purpose": "Example weather data, not local weather. Compare last value, its age, coverage and the latest request.",
+        "purpose": "Example data: value, age, coverage and errors.",
         "scenarios": [
           {
             "description": "No value; this source is disabled",
@@ -7128,7 +7128,7 @@
         "iconId": "download",
         "id": "flow.update",
         "openPort": "flowUpdate",
-        "purpose": "A safe ReleaseKit simulation. Nothing downloads or installs. To update Showcase, use APP UPDATE on the home menu.",
+        "purpose": "No download or install. Real updates: home / APP UPDATE.",
         "scenarios": [
           {
             "description": "Waiting for release information",
@@ -7163,7 +7163,7 @@
         "iconId": "wrench",
         "id": "flow.service",
         "openPort": "flowService",
-        "purpose": "Simulated service work and cache use. Request outcome is not the same as the age of a saved value.",
+        "purpose": "Simulated work and cache use. No network requests.",
         "scenarios": [
           {
             "description": "No request has run yet",

@@ -49,12 +49,12 @@ object ShowcaseManifest {
             family = ShowcaseFamily.FOUNDATIONS,
             title = "COLORS",
             iconId = "palette",
-            purpose = "Compare shared OLED style and semantic accent palettes. Preview only; no app setting changes.",
+            purpose = "Shared OLED style and accent samples. Preview only.",
             scenarios = listOf(
                 ShowcaseScenario(ShowcaseScenarioId("sea-glass"), "SEA GLASS", "Warm-white actions with green semantic accents"),
-                ShowcaseScenario(ShowcaseScenarioId("flat-cyan"), "CYAN", "Shared base with cyan semantic accents"),
-                ShowcaseScenario(ShowcaseScenarioId("muted"), "STEEL", "Subdued semantic accent range"),
-                ShowcaseScenario(ShowcaseScenarioId("high-contrast"), "VIOLET", "Violet semantic accent range"),
+                ShowcaseScenario(ShowcaseScenarioId("flat-cyan"), "FLAT CYAN", "Shared base with cyan semantic accents"),
+                ShowcaseScenario(ShowcaseScenarioId("muted"), "MUTED", "Subdued semantic accent range"),
+                ShowcaseScenario(ShowcaseScenarioId("high-contrast"), "HIGH CONTRAST", "Strong separation between semantic accent roles"),
             ),
         ),
         ShowcaseCase(
@@ -62,7 +62,7 @@ object ShowcaseManifest {
             family = ShowcaseFamily.FOUNDATIONS,
             title = "GEOMETRY",
             iconId = "grid",
-            purpose = "Inspect layout dimensions and reserved controls. For a real viewport change, use DEV / HOST.",
+            purpose = "Layout metrics. Real viewport changes: DEV / HOST.",
             scenarios = listOf(
                 ShowcaseScenario(ShowcaseScenarioId("round-192"), "WATCH METRICS", "Calculated fit for a 192 dp round screen"),
                 ShowcaseScenario(ShowcaseScenarioId("phone-compact"), "PORTRAIT METRICS", "Calculated fit for 390 × 844 dp"),
@@ -76,7 +76,7 @@ object ShowcaseManifest {
             family = ShowcaseFamily.ATOMS,
             title = "ACTIONS",
             iconId = "watch",
-            purpose = "Try shared icon actions. Live examples toggle the shared demo state; static examples show appearance only.",
+            purpose = "Shared demo toggle, static looks and disabled actions.",
             scenarios = listOf(
                 ShowcaseScenario(ShowcaseScenarioId("idle"), "INACTIVE LOOK", "Static appearance; no command runs"),
                 ShowcaseScenario(ShowcaseScenarioId("active"), "ACTIVE LOOK", "Static active appearance; no command runs"),
@@ -90,7 +90,7 @@ object ShowcaseManifest {
             family = ShowcaseFamily.CONTROLS,
             title = "ACTION ROW",
             iconId = "touchdown-run",
-            purpose = "Try action timing, confirmation and recovery. Counts show real local callbacks; no data is sent or deleted.",
+            purpose = "Local action counts. Nothing is sent or deleted.",
             scenarios = listOf(
                 ShowcaseScenario(ShowcaseScenarioId("immediate"), "TAP ACTION", "A tap increments the action count"),
                 ShowcaseScenario(ShowcaseScenarioId("deliberate"), "HOLD ACTION", "A completed hold increments the count"),
@@ -105,7 +105,7 @@ object ShowcaseManifest {
             family = ShowcaseFamily.CONTROLS,
             title = "CHOICES",
             iconId = "grid",
-            purpose = "Change a local demo choice. Values and selection marks use the same controls as product settings.",
+            purpose = "Try selection marks and local demo choices.",
             scenarios = listOf(
                 ShowcaseScenario(ShowcaseScenarioId("off"), "START OFF", "Switch a two-state setting on"),
                 ShowcaseScenario(ShowcaseScenarioId("on"), "START ON", "Switch a two-state setting off"),
@@ -120,7 +120,7 @@ object ShowcaseManifest {
             family = ShowcaseFamily.CONTROLS,
             title = "ADJUST",
             iconId = "sliders",
-            purpose = "Adjust a demo value from 0 to 1000 in steps of 100. End stops must remain understandable.",
+            purpose = "Demo range: 0–1000, in steps of 100.",
             scenarios = listOf(
                 ShowcaseScenario(ShowcaseScenarioId("minimum"), "LOWER LIMIT", "Start at zero; decrease cannot go further"),
                 ShowcaseScenario(ShowcaseScenarioId("middle"), "MID RANGE", "Increase and decrease from 500"),
@@ -133,7 +133,7 @@ object ShowcaseManifest {
             family = ShowcaseFamily.CONTROLS,
             title = "PROGRESS",
             iconId = "download",
-            purpose = "Compare unknown and measured progress. Each tap advances a local demo; nothing downloads.",
+            purpose = "Tap to advance example progress. No download.",
             scenarios = listOf(
                 ShowcaseScenario(ShowcaseScenarioId("none"), "NOT STARTED", "No work means no progress indicator"),
                 ShowcaseScenario(ShowcaseScenarioId("indeterminate"), "UNKNOWN TOTAL", "Activity without an invented percentage"),
@@ -148,7 +148,7 @@ object ShowcaseManifest {
             family = ShowcaseFamily.CONTROLS,
             title = "PRESS",
             iconId = "record",
-            purpose = "Try press, release and cancellation. Local audio simulation: the microphone is never opened.",
+            purpose = "Press, release and cancel. No microphone is used.",
             scenarios = listOf(
                 ShowcaseScenario(ShowcaseScenarioId("idle"), "READY TO HOLD", "Hold to start; release to stop the demo"),
                 ShowcaseScenario(ShowcaseScenarioId("recording"), "RECORDING LOOK", "Frozen 7.8-second recording example"),
@@ -161,7 +161,7 @@ object ShowcaseManifest {
             family = ShowcaseFamily.INPUT,
             title = "TEXT",
             iconId = "pencil",
-            purpose = "Type and submit locally. The watch uses its system editor when available; nothing is sent to a server.",
+            purpose = "Type up to 24 characters. Local submission only.",
             scenarios = listOf(
                 ShowcaseScenario(ShowcaseScenarioId("empty"), "START WRITING", "Empty composer with a useful prompt"),
                 ShowcaseScenario(ShowcaseScenarioId("filled"), "EDIT A MESSAGE", "Existing text stays editable"),
@@ -174,7 +174,7 @@ object ShowcaseManifest {
             family = ShowcaseFamily.MEDIA,
             title = "WAVEFORM",
             iconId = "record",
-            purpose = "Inspect frozen sample waveforms. No microphone, live audio or elapsed-time claim.",
+            purpose = "Frozen waveform samples. No microphone or live audio.",
             scenarios = listOf(
                 ShowcaseScenario(ShowcaseScenarioId("silent"), "NO SAMPLES", "Empty waveform without fabricated signal"),
                 ShowcaseScenario(ShowcaseScenarioId("active"), "SAMPLE WAVEFORM", "Frozen 7.8-second example levels"),
@@ -186,10 +186,10 @@ object ShowcaseManifest {
             family = ShowcaseFamily.MEDIA,
             title = "PLAYBACK",
             iconId = "play",
-            purpose = "Try player controls on frozen audio data. No sound is played; seek and transport update local state.",
+            purpose = "Try play, pause and stop. Frozen data; no sound.",
             scenarios = listOf(
                 ShowcaseScenario(ShowcaseScenarioId("ready"), "READY TO PLAY", "Start the silent player demo"),
-                ShowcaseScenario(ShowcaseScenarioId("playing"), "PLAYING LOOK", "Frozen play position; try pause or seek"),
+                ShowcaseScenario(ShowcaseScenarioId("playing"), "PLAYING LOOK", "Frozen play position; try pause or stop"),
                 ShowcaseScenario(ShowcaseScenarioId("paused"), "PAUSED", "Resume from the retained position"),
                 ShowcaseScenario(ShowcaseScenarioId("complete"), "FINISHED", "Playback at its end point"),
                 ShowcaseScenario(ShowcaseScenarioId("failed"), "PLAYBACK FAILED", "A visible error can be retried"),
@@ -200,7 +200,7 @@ object ShowcaseManifest {
             family = ShowcaseFamily.TEMPLATES,
             title = "SCREENS",
             iconId = "layers",
-            purpose = "Try reusable page layouts with local example data. Empty, long and round cases are intentional.",
+            purpose = "Reusable layouts with local example data.",
             scenarios = listOf(
                 ShowcaseScenario(ShowcaseScenarioId("hub"), "DATA OVERVIEW", "Open each source and keep its identity"),
                 ShowcaseScenario(ShowcaseScenarioId("detail"), "VALUE + ACTIONS", "Try refresh, use and clear on demo data"),
@@ -220,7 +220,7 @@ object ShowcaseManifest {
             family = ShowcaseFamily.FLOWS,
             title = "DATA AGE",
             iconId = "wifi",
-            purpose = "Example weather data, not local weather. Compare last value, its age, coverage and the latest request.",
+            purpose = "Example data: value, age, coverage and errors.",
             scenarios = listOf(
                 ShowcaseScenario(ShowcaseScenarioId("off"), "SOURCE OFF", "No value; this source is disabled"),
                 ShowcaseScenario(ShowcaseScenarioId("loading"), "FIRST REQUEST", "Fetching before any value has arrived"),
@@ -235,7 +235,7 @@ object ShowcaseManifest {
             family = ShowcaseFamily.FLOWS,
             title = "UPDATE DEMO",
             iconId = "download",
-            purpose = "A safe ReleaseKit simulation. Nothing downloads or installs. To update Showcase, use APP UPDATE on the home menu.",
+            purpose = "No download or install. Real updates: home / APP UPDATE.",
             scenarios = listOf(
                 ShowcaseScenario(ShowcaseScenarioId("checking"), "CHECKING", "Waiting for release information"),
                 ShowcaseScenario(ShowcaseScenarioId("available"), "UPDATE FOUND", "A newer version can be downloaded"),
@@ -249,7 +249,7 @@ object ShowcaseManifest {
             family = ShowcaseFamily.FLOWS,
             title = "WORK + CACHE",
             iconId = "wrench",
-            purpose = "Simulated service work and cache use. Request outcome is not the same as the age of a saved value.",
+            purpose = "Simulated work and cache use. No network requests.",
             scenarios = listOf(
                 ShowcaseScenario(ShowcaseScenarioId("idle"), "NO WORK", "No request has run yet"),
                 ShowcaseScenario(ShowcaseScenarioId("active"), "WORK IN PROGRESS", "One operation and one transfer are active"),
