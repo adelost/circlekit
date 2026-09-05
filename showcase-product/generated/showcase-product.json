@@ -6653,20 +6653,25 @@
         "iconId": "palette",
         "id": "foundation.colors",
         "openPort": "foundationColors",
+        "purpose": "Shared OLED style and accent samples. Preview only.",
         "scenarios": [
           {
+            "description": "Warm-white actions with green semantic accents",
             "id": "sea-glass",
             "label": "SEA GLASS"
           },
           {
+            "description": "Shared base with cyan semantic accents",
             "id": "flat-cyan",
             "label": "FLAT CYAN"
           },
           {
+            "description": "Subdued semantic accent range",
             "id": "muted",
             "label": "MUTED"
           },
           {
+            "description": "Strong separation between semantic accent roles",
             "id": "high-contrast",
             "label": "HIGH CONTRAST"
           }
@@ -6678,26 +6683,32 @@
         "iconId": "grid",
         "id": "foundation.geometry",
         "openPort": "foundationGeometry",
+        "purpose": "Layout metrics. Real viewport changes: DEV / HOST.",
         "scenarios": [
           {
+            "description": "Calculated fit for a 192 dp round screen",
             "id": "round-192",
-            "label": "ROUND 192"
+            "label": "WATCH METRICS"
           },
           {
+            "description": "Calculated fit for 390 × 844 dp",
             "id": "phone-compact",
-            "label": "PHONE COMPACT"
+            "label": "PORTRAIT METRICS"
           },
           {
+            "description": "Calculated fit for 1280 × 800 dp",
             "id": "phone-wide",
-            "label": "PHONE WIDE"
+            "label": "WIDE METRICS"
           },
           {
+            "description": "Reserve the left edge for Back",
             "id": "chrome-x",
-            "label": "X @ 9"
+            "label": "BACK CLEARANCE"
           },
           {
+            "description": "Reserve both round edge controls",
             "id": "chrome-x-gear",
-            "label": "X + GEAR"
+            "label": "BACK + SETTINGS"
           }
         ],
         "section": "foundations",
@@ -6707,26 +6718,32 @@
         "iconId": "watch",
         "id": "atom.icon-action",
         "openPort": "atomIconAction",
+        "purpose": "Shared demo toggle, static looks and disabled actions.",
         "scenarios": [
           {
+            "description": "Static appearance; no command runs",
             "id": "idle",
-            "label": "IDLE"
+            "label": "INACTIVE LOOK"
           },
           {
+            "description": "Static active appearance; no command runs",
             "id": "active",
-            "label": "ACTIVE"
+            "label": "ACTIVE LOOK"
           },
           {
+            "description": "The icons respond immediately",
             "id": "immediate",
-            "label": "IMMEDIATE"
+            "label": "TAP TO TOGGLE"
           },
           {
+            "description": "Progress confirms an intentional press",
             "id": "deliberate",
-            "label": "DELIBERATE"
+            "label": "HOLD TO TOGGLE"
           },
           {
+            "description": "The icons cannot be activated",
             "id": "disabled",
-            "label": "DISABLED"
+            "label": "UNAVAILABLE"
           }
         ],
         "section": "atoms",
@@ -6736,28 +6753,35 @@
         "iconId": "touchdown-run",
         "id": "control.action-row",
         "openPort": "controlActionRow",
+        "purpose": "Local action counts. Nothing is sent or deleted.",
         "scenarios": [
           {
+            "description": "A tap increments the action count",
             "id": "immediate",
-            "label": "IMMEDIATE"
+            "label": "TAP ACTION"
           },
           {
+            "description": "A completed hold increments the count",
             "id": "deliberate",
-            "label": "DELIBERATE"
+            "label": "HOLD ACTION"
           },
           {
+            "description": "A longer hold protects a destructive action",
             "id": "confirm",
-            "label": "CONFIRM"
+            "label": "CONFIRM ACTION"
           },
           {
+            "description": "A simulated permission can be enabled",
             "id": "recoverable",
-            "label": "RECOVERABLE"
+            "label": "RECOVER ACCESS"
           },
           {
+            "description": "Show the reason without a false action",
             "id": "blocked",
-            "label": "BLOCKED"
+            "label": "MISSING TARGET"
           },
           {
+            "description": "A failed action can be retried in place",
             "id": "failure",
             "label": "FAILURE + RETRY"
           }
@@ -6769,30 +6793,37 @@
         "iconId": "grid",
         "id": "control.choice-row",
         "openPort": "controlChoiceRow",
+        "purpose": "Try selection marks and local demo choices.",
         "scenarios": [
           {
+            "description": "Switch a two-state setting on",
             "id": "off",
-            "label": "TOGGLE OFF"
+            "label": "START OFF"
           },
           {
+            "description": "Switch a two-state setting off",
             "id": "on",
-            "label": "TOGGLE ON"
+            "label": "START ON"
           },
           {
+            "description": "Choose metres or feet",
             "id": "two",
-            "label": "TWO OPTIONS"
+            "label": "TWO UNITS"
           },
           {
+            "description": "Seven choices, starting at the beginning",
             "id": "first",
-            "label": "SEVEN · FIRST"
+            "label": "FIRST CHOICE"
           },
           {
+            "description": "Seven choices, starting in the middle",
             "id": "middle",
-            "label": "SEVEN · MIDDLE"
+            "label": "MIDDLE CHOICE"
           },
           {
+            "description": "Seven choices, starting at the end",
             "id": "last",
-            "label": "SEVEN · LAST"
+            "label": "LAST CHOICE"
           }
         ],
         "section": "controls",
@@ -6802,22 +6833,27 @@
         "iconId": "sliders",
         "id": "control.adjustment",
         "openPort": "controlAdjustment",
+        "purpose": "Demo range: 0–1000, in steps of 100.",
         "scenarios": [
           {
+            "description": "Start at zero; decrease cannot go further",
             "id": "minimum",
-            "label": "MINIMUM"
+            "label": "LOWER LIMIT"
           },
           {
+            "description": "Increase and decrease from 500",
             "id": "middle",
-            "label": "MIDDLE"
+            "label": "MID RANGE"
           },
           {
+            "description": "Start at 1000; increase cannot go further",
             "id": "maximum",
-            "label": "MAXIMUM"
+            "label": "UPPER LIMIT"
           },
           {
+            "description": "Each change needs a deliberate press",
             "id": "deliberate",
-            "label": "DELIBERATE STEPS"
+            "label": "HOLD EACH STEP"
           }
         ],
         "section": "controls",
@@ -6827,28 +6863,35 @@
         "iconId": "download",
         "id": "control.progress",
         "openPort": "controlProgress",
+        "purpose": "Tap to advance example progress. No download.",
         "scenarios": [
           {
+            "description": "No work means no progress indicator",
             "id": "none",
-            "label": "NONE"
+            "label": "NOT STARTED"
           },
           {
+            "description": "Activity without an invented percentage",
             "id": "indeterminate",
-            "label": "INDETERMINATE"
+            "label": "UNKNOWN TOTAL"
           },
           {
+            "description": "The amount is known, but nothing is done",
             "id": "empty",
-            "label": "0 PERCENT"
+            "label": "ZERO COMPLETE"
           },
           {
+            "description": "Measured work at 50 percent",
             "id": "half",
-            "label": "50 PERCENT"
+            "label": "HALF COMPLETE"
           },
           {
+            "description": "Measured work at 100 percent",
             "id": "complete",
-            "label": "100 PERCENT"
+            "label": "COMPLETE"
           },
           {
+            "description": "Keep the failure visible until retried",
             "id": "failed",
             "label": "FAILURE + RETRY"
           }
@@ -6860,20 +6903,25 @@
         "iconId": "record",
         "id": "control.press-ring",
         "openPort": "controlPressRing",
+        "purpose": "Press, release and cancel. No microphone is used.",
         "scenarios": [
           {
+            "description": "Hold to start; release to stop the demo",
             "id": "idle",
-            "label": "IDLE"
+            "label": "READY TO HOLD"
           },
           {
+            "description": "Frozen 7.8-second recording example",
             "id": "recording",
-            "label": "RECORDING"
+            "label": "RECORDING LOOK"
           },
           {
+            "description": "No recording gesture is accepted",
             "id": "disabled",
-            "label": "DISABLED"
+            "label": "UNAVAILABLE"
           },
           {
+            "description": "Retry the simulated capture failure",
             "id": "failed",
             "label": "FAILED + RETRY"
           }
@@ -6885,22 +6933,27 @@
         "iconId": "pencil",
         "id": "input.text",
         "openPort": "inputText",
+        "purpose": "Type up to 24 characters. Local submission only.",
         "scenarios": [
           {
+            "description": "Empty composer with a useful prompt",
             "id": "empty",
-            "label": "EMPTY"
+            "label": "START WRITING"
           },
           {
+            "description": "Existing text stays editable",
             "id": "filled",
-            "label": "FILLED"
+            "label": "EDIT A MESSAGE"
           },
           {
+            "description": "A filled 24-character field",
             "id": "max",
-            "label": "MAX LENGTH"
+            "label": "TEXT LIMIT"
           },
           {
+            "description": "Content stays visible without input",
             "id": "disabled",
-            "label": "DISABLED"
+            "label": "READ ONLY"
           }
         ],
         "section": "input",
@@ -6910,18 +6963,22 @@
         "iconId": "record",
         "id": "media.capture",
         "openPort": "mediaCapture",
+        "purpose": "Frozen waveform samples. No microphone or live audio.",
         "scenarios": [
           {
+            "description": "Empty waveform without fabricated signal",
             "id": "silent",
             "label": "NO SAMPLES"
           },
           {
+            "description": "Frozen 7.8-second example levels",
             "id": "active",
-            "label": "ACTIVE"
+            "label": "SAMPLE WAVEFORM"
           },
           {
+            "description": "Large elapsed time with the same layout",
             "id": "long",
-            "label": "LONG DURATION"
+            "label": "LONG RECORDING"
           }
         ],
         "section": "media",
@@ -6931,26 +6988,32 @@
         "iconId": "play",
         "id": "media.playback",
         "openPort": "mediaPlayback",
+        "purpose": "Try play, pause and stop. Frozen data; no sound.",
         "scenarios": [
           {
+            "description": "Start the silent player demo",
             "id": "ready",
-            "label": "READY"
+            "label": "READY TO PLAY"
           },
           {
+            "description": "Frozen play position; try pause or stop",
             "id": "playing",
-            "label": "PLAYING"
+            "label": "PLAYING LOOK"
           },
           {
+            "description": "Resume from the retained position",
             "id": "paused",
             "label": "PAUSED"
           },
           {
+            "description": "Playback at its end point",
             "id": "complete",
-            "label": "COMPLETE"
+            "label": "FINISHED"
           },
           {
+            "description": "A visible error can be retried",
             "id": "failed",
-            "label": "FAILED"
+            "label": "PLAYBACK FAILED"
           }
         ],
         "section": "media",
@@ -6960,50 +7023,62 @@
         "iconId": "layers",
         "id": "template.screens",
         "openPort": "templateScreens",
+        "purpose": "Reusable layouts with local example data.",
         "scenarios": [
           {
+            "description": "Open each source and keep its identity",
             "id": "hub",
-            "label": "HUB"
+            "label": "DATA OVERVIEW"
           },
           {
+            "description": "Try refresh, use and clear on demo data",
             "id": "detail",
-            "label": "DETAIL"
+            "label": "VALUE + ACTIONS"
           },
           {
+            "description": "Each icon opens a working example",
             "id": "launcher",
-            "label": "LAUNCHER"
+            "label": "APP MENU"
           },
           {
+            "description": "Read, run an action and toggle a choice",
             "id": "rows",
-            "label": "ROWS"
+            "label": "SETTINGS LIST"
           },
           {
+            "description": "One value with bounded increase/decrease",
             "id": "adjustment",
-            "label": "ADJUSTMENT"
+            "label": "ADJUST VALUE"
           },
           {
+            "description": "Choose a local preview palette",
             "id": "color-picker",
-            "label": "COLOR PICKER"
+            "label": "PALETTE PICKER"
           },
           {
+            "description": "Simulated height; not a sensor reading",
             "id": "dial-preview",
             "label": "DIAL PREVIEW"
           },
           {
+            "description": "Intentionally blank; Back must still work",
             "id": "empty",
-            "label": "EMPTY CONTENT"
+            "label": "EMPTY PAGE"
           },
           {
+            "description": "18 rows to test scroll and round clipping",
             "id": "max-capacity",
-            "label": "MAX CAPACITY"
+            "label": "LONG LIST"
           },
           {
+            "description": "Check wrapping at the round screen edge",
             "id": "long-content",
-            "label": "LONG CONTENT"
+            "label": "LONG TEXT"
           },
           {
+            "description": "Named choices with descriptions and a disabled option",
             "id": "named-selection",
-            "label": "NAMED SELECTION"
+            "label": "CHOOSE DEVICE"
           }
         ],
         "section": "templates",
@@ -7013,106 +7088,132 @@
         "iconId": "wifi",
         "id": "flow.source",
         "openPort": "flowSource",
+        "purpose": "Example data: value, age, coverage and errors.",
         "scenarios": [
           {
+            "description": "No value; this source is disabled",
             "id": "off",
-            "label": "OFF"
+            "label": "SOURCE OFF"
           },
           {
+            "description": "Fetching before any value has arrived",
             "id": "loading",
-            "label": "LOADING"
+            "label": "FIRST REQUEST"
           },
           {
+            "description": "A completed request with recent data",
             "id": "fresh",
-            "label": "FRESH"
+            "label": "CURRENT VALUE"
           },
           {
+            "description": "Keep the last value and show its age",
             "id": "aging",
-            "label": "AGING"
+            "label": "OLD VALUE"
           },
           {
+            "description": "Only 3 of 5 requested parts are available",
             "id": "partial",
-            "label": "PARTIAL"
+            "label": "PARTIAL COVERAGE"
           },
           {
+            "description": "Timeout with no usable value",
             "id": "broken",
-            "label": "BROKEN"
+            "label": "REQUEST FAILED"
           }
         ],
         "section": "flows",
-        "title": "SOURCE"
+        "title": "DATA AGE"
       },
       {
         "iconId": "download",
         "id": "flow.update",
         "openPort": "flowUpdate",
+        "purpose": "No download or install. Real updates: home / APP UPDATE.",
         "scenarios": [
           {
+            "description": "Waiting for release information",
             "id": "checking",
             "label": "CHECKING"
           },
           {
+            "description": "A newer version can be downloaded",
             "id": "available",
-            "label": "AVAILABLE"
+            "label": "UPDATE FOUND"
           },
           {
+            "description": "Measured bytes; installation unavailable",
             "id": "downloading",
             "label": "DOWNLOADING"
           },
           {
+            "description": "Verified download awaiting your action",
             "id": "ready",
-            "label": "READY"
+            "label": "READY TO INSTALL"
           },
           {
+            "description": "A network error with a retry action",
             "id": "failed",
-            "label": "FAILED"
+            "label": "CHECK FAILED"
           }
         ],
         "section": "flows",
-        "title": "UPDATE"
+        "title": "UPDATE DEMO"
       },
       {
         "iconId": "wrench",
         "id": "flow.service",
         "openPort": "flowService",
+        "purpose": "Simulated work and cache use. No network requests.",
         "scenarios": [
           {
+            "description": "No request has run yet",
             "id": "idle",
-            "label": "IDLE"
+            "label": "NO WORK"
           },
           {
+            "description": "One operation and one transfer are active",
             "id": "active",
-            "label": "ACTIVE"
+            "label": "WORK IN PROGRESS"
           },
           {
+            "description": "Last operation completed in 420 ms",
             "id": "success",
-            "label": "SUCCESS"
+            "label": "REQUEST FINISHED"
           },
           {
+            "description": "Last operation timed out",
             "id": "failed",
-            "label": "FAILED"
+            "label": "REQUEST FAILED"
           },
           {
+            "description": "128 cached items; no active transfer",
             "id": "cache",
-            "label": "CACHE"
+            "label": "SAVED LOCALLY"
           }
         ],
         "section": "flows",
-        "title": "SERVICE"
+        "title": "WORK + CACHE"
       }
     ],
+    "release": {
+      "assets": {
+        "phone-full-ui": "circlekit-showcase-phone",
+        "wear-full-ui": "circlekit-showcase-wear"
+      },
+      "repository": "adelost/circlekit"
+    },
     "sections": [
       {
         "iconId": "palette",
         "id": "foundations",
-        "menuLabel": "TOKENS",
-        "title": "FOUNDATIONS"
+        "menuLabel": "STYLE",
+        "title": "STYLE"
       },
       {
         "iconId": "grid",
         "id": "atoms",
-        "menuLabel": "ATOMS",
-        "title": "ATOMS"
+        "menuLabel": "ICONS",
+        "title": "ICON ACTIONS"
       },
       {
         "iconId": "touchdown-run",
@@ -7123,26 +7224,26 @@
       {
         "iconId": "pencil",
         "id": "input",
-        "menuLabel": "INPUT",
-        "title": "INPUT"
+        "menuLabel": "TEXT",
+        "title": "TEXT INPUT"
       },
       {
         "iconId": "play",
         "id": "media",
-        "menuLabel": "MEDIA",
-        "title": "MEDIA"
+        "menuLabel": "AUDIO",
+        "title": "AUDIO DEMOS"
       },
       {
         "iconId": "layers",
         "id": "templates",
-        "menuLabel": "TEMPLATES",
-        "title": "TEMPLATES"
+        "menuLabel": "LAYOUTS",
+        "title": "PAGE LAYOUTS"
       },
       {
         "iconId": "wifi",
         "id": "flows",
-        "menuLabel": "FLOWS",
-        "title": "FLOWS"
+        "menuLabel": "DATA",
+        "title": "DATA DEMOS"
       }
     ]
   },

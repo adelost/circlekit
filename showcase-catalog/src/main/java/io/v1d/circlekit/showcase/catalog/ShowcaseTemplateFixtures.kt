@@ -10,7 +10,6 @@ import com.adelost.designkit.ui.CircleColorTheme
 import com.adelost.designkit.ui.MenuGridRole
 import com.adelost.designkit.ui.RingIcons
 import com.adelost.ringkit.data.Health
-import com.adelost.ringkit.data.Progress
 import com.adelost.ringkit.data.SourceId
 import com.adelost.ringkit.ui.ActionSpec
 import com.adelost.ringkit.ui.AdjustmentValuePresentation
@@ -24,6 +23,8 @@ import com.adelost.ringkit.ui.RingSelectionOption
 import com.adelost.ringkit.ui.ringSelectionRows
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.combine
 
 enum class ShowcaseScreenCase(val scenarioId: String) {
     HUB("hub"),
@@ -38,10 +39,10 @@ enum class ShowcaseScreenCase(val scenarioId: String) {
 /** Deterministic specs for every public RingScreen case. */
 object ShowcaseTemplateFixtures {
     fun screen(scenario: ShowcaseScenario, session: ShowcaseSession): RingScreen = when (scenario.id.value) {
-        ShowcaseScreenCase.HUB.scenarioId -> hub()
-        ShowcaseScreenCase.DETAIL.scenarioId -> detail(Health.FRESH, Progress(3, 5)) {}
-        ShowcaseScreenCase.LAUNCHER.scenarioId -> launcher()
-        ShowcaseScreenCase.ROWS.scenarioId -> rows()
+        ShowcaseScreenCase.HUB.scenarioId -> hub(session)
+        ShowcaseScreenCase.DETAIL.scenarioId -> detail(session)
+        ShowcaseScreenCase.LAUNCHER.scenarioId -> launcher(session)
+        ShowcaseScreenCase.ROWS.scenarioId -> rows(session)
         ShowcaseScreenCase.ADJUSTMENT.scenarioId -> adjustment(session)
         ShowcaseScreenCase.COLOR_PICKER.scenarioId -> colorPicker(session)
         ShowcaseScreenCase.DIAL_PREVIEW.scenarioId -> dialPreview(CircleColorTheme.SEA_GLASS)
@@ -78,33 +79,34 @@ object ShowcaseTemplateFixtures {
     }
 
     fun representatives(session: ShowcaseSession): List<RingScreen> = listOf(
-        hub(),
-        detail(Health.FRESH, null) {},
-        launcher(),
-        rows(),
+        hub(session),
+        detail(session),
+        launcher(session),
+        rows(session),
         adjustment(session),
         colorPicker(session),
         dialPreview(CircleColorTheme.SEA_GLASS),
     )
 
-    private fun hub(): RingScreen.Hub = RingScreen.Hub(
-        title = "SOURCE HUB",
+    private fun hub(session: ShowcaseSession): RingScreen.Hub = RingScreen.Hub(
+        title = "DATA DEMO",
         rows = listOf(
-            stat("weather", "WEATHER", "18°", Health.FRESH, RingIcons.Cloud),
-            stat("wind", "WIND", "6 M/S", Health.AGING, RingIcons.Wind),
-            stat("position", "POSITION", "±12 M", Health.FRESH, RingIcons.Gps),
-            stat("terrain", "TERRAIN", "82%", Health.AGING, RingIcons.Mountain),
-            stat("sync", "SYNC", "OFF", Health.OFF, RingIcons.Link),
-            stat("forecast", "FORECAST", "ERROR", Health.BROKEN, RingIcons.Warning),
+            stat(session, "weather", "WEATHER", "18°", Health.FRESH, RingIcons.Cloud),
+            stat(session, "wind", "WIND", "6 M/S", Health.AGING, RingIcons.Wind),
+            stat(session, "position", "POSITION", "±12 M", Health.FRESH, RingIcons.Gps),
+            stat(session, "terrain", "TERRAIN", "82%", Health.AGING, RingIcons.Mountain),
+            stat(session, "sync", "SYNC", "OFF", Health.OFF, RingIcons.Link),
+            stat(session, "forecast", "FORECAST", "ERROR", Health.BROKEN, RingIcons.Warning),
         ),
         corner = LaunchSpec(
             icon = RingIcons.Gear,
             label = "SETTINGS",
-            open = { rows() },
+            open = { rows(session) },
         ),
     )
 
     private fun stat(
+        session: ShowcaseSession,
         id: String,
         label: String,
         value: String,
@@ -116,56 +118,68 @@ object ShowcaseTemplateFixtures {
         label = label,
         value = flowOf(value),
         health = flowOf(health),
-        detail = { detail(health, null) {} },
+        detail = { detail(session, label, value, icon, health) },
     )
 
     private fun detail(
-        health: Health,
-        progress: Progress?,
-        onRefresh: () -> Unit,
-    ): RingScreen.Detail = RingScreen.Detail(
-        title = "SOURCE DETAIL",
-        icon = RingIcons.Cloud,
+        session: ShowcaseSession,
+        label: String = "WEATHER",
+        value: String = "18°",
+        icon: androidx.compose.ui.graphics.vector.ImageVector = RingIcons.Cloud,
+        health: Health = Health.FRESH,
+    ): RingScreen.Detail {
+        val displayed = MutableStateFlow(value)
+        return RingScreen.Detail(
+        title = "$label DEMO",
+        icon = icon,
         sourceId = SourceId("showcase-source"),
-        hero = flowOf("18°"),
-        sub = flowOf("DETERMINISTIC FIXTURE"),
-        freshness = flowOf(if (health == Health.BROKEN) "TIMEOUT" else "UPDATED 2 MIN AGO"),
+        hero = displayed,
+        sub = session.interaction.actionCount.map { "LOCAL EXAMPLE · USED $it" },
+        freshness = flowOf(when (health) {
+            Health.FRESH -> "RECENT EXAMPLE VALUE"
+            Health.AGING -> "OLD EXAMPLE VALUE"
+            Health.OFF -> "SOURCE DISABLED"
+            Health.BROKEN -> "REQUEST FAILED"
+            else -> "EXAMPLE DATA"
+        }),
         health = flowOf(health),
-        progress = flowOf(progress),
+        progress = flowOf(null),
         actions = listOf(
-            ActionSpec("USE VALUE", RingIcons.Check, {}),
-            ActionSpec("CLEAR", RingIcons.Trash, {}, holdToConfirm = true, destructive = true),
+            ActionSpec("USE VALUE", RingIcons.Check, { session.interaction.runAction() }),
+            ActionSpec("CLEAR", RingIcons.Trash, { displayed.value = "—" }, holdToConfirm = true, destructive = true),
         ),
-        onRefresh = onRefresh,
-        refreshEnabled = flowOf(progress == null),
+        onRefresh = { displayed.value = value },
     )
+    }
 
-    private fun launcher(): RingScreen.Launcher = RingScreen.Launcher(
-        title = "LAUNCHER",
+    private fun launcher(session: ShowcaseSession): RingScreen.Launcher = RingScreen.Launcher(
+        title = "MENU DEMO",
         gridRole = MenuGridRole.COMPONENT_GALLERY,
         entries = listOf(
-            LaunchSpec(RingIcons.Cloud, "DETAIL", open = { detail(Health.FRESH, null) {} }),
-            LaunchSpec(RingIcons.Book, "ROWS", open = ::rows),
-            LaunchSpec(RingIcons.Sliders, "ADJUST", open = { null }, run = {}),
+            LaunchSpec(RingIcons.Cloud, "DETAIL", open = { detail(session) }),
+            LaunchSpec(RingIcons.Book, "ROWS", open = { rows(session) }),
+            LaunchSpec(RingIcons.Sliders, "ADJUST", open = { adjustment(session) }),
         ),
     )
 
-    private fun rows(): RingScreen.Rows = RingScreen.Rows(
-        title = "ROWS",
-        items = flowOf(
+    private fun rows(session: ShowcaseSession): RingScreen.Rows = RingScreen.Rows(
+        title = "SETTINGS DEMO",
+        items = combine(session.interaction.actionCount, session.interaction.choiceIndex) { count, selected ->
             listOf(
-                RowSpec("info", "INFORMATION", "PASSIVE", RingIcons.Check),
-                RowSpec("action", "ACTION", "TAP", RingIcons.Play, onTap = {}),
+                RowSpec("info", "LOCAL EXAMPLE", "No product settings are changed", icon = null),
+                RowSpec("action", "RUN ACTION", "RAN $count TIMES", RingIcons.Play,
+                    onTap = { session.interaction.runAction() }),
                 RowSpec(
                     "toggle",
                     "TOGGLE",
-                    "ON",
+                    if (selected == 0) "OFF" else "ON",
                     RingIcons.Eye,
                     choices = listOf("OFF", "ON"),
-                    onSelect = {},
+                    onSelect = { session.interaction.selectChoice(if (it == "ON") 1 else 0, 2) },
+                    choiceRole = com.adelost.designkit.ui.CircleChoiceRole.TOGGLE,
                 ),
-            ),
-        ),
+            )
+        },
     )
 
     private fun adjustment(session: ShowcaseSession): RingScreen.Adjustment {
@@ -219,7 +233,7 @@ object ShowcaseTemplateFixtures {
     }
 
     private fun maxCapacityRows(): RingScreen.Rows = RingScreen.Rows(
-        title = "MAX CAPACITY",
+        title = "18 ROWS DEMO",
         items = flowOf(
             (1..18).map { index ->
                 RowSpec("row-$index", "ROW ${index.toString().padStart(2, '0')}", "SCROLLABLE", RingIcons.Book)

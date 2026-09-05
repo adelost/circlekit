@@ -7,6 +7,7 @@ import com.adelost.releasekit.UpdateState
 import java.time.Instant
 import java.time.ZoneId
 import java.util.Locale
+import kotlinx.coroutines.flow.first
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
@@ -14,6 +15,27 @@ import org.junit.Assert.assertSame
 import org.junit.Test
 
 class ReleaseUpdateRowsTest {
+    @Test
+    fun `app update page keeps real commands distinct from status and automatic preference`() = kotlinx.coroutines.runBlocking {
+        val state = kotlinx.coroutines.flow.MutableStateFlow<UpdateState>(UpdateState.Idle)
+        val automatic = kotlinx.coroutines.flow.MutableStateFlow(true)
+        var checks = 0
+        var installs = 0
+        val port = ReleaseUpdatePort("1.0", state, automatic, { automatic.value = it },
+            { checks++ }, { installs++ })
+        val screen = releaseUpdateScreen(port)
+        suspend fun rows() = screen.items.first()
+        rows().single { it.key == "auto-update" }.onSelect!!("OFF")
+        assertEquals(false, automatic.value)
+        rows().single { it.key == "update" }.onTap!!.invoke()
+        assertEquals(1, checks)
+        state.value = UpdateState.Checking
+        assertNull(rows().single { it.key == "update" }.onTap)
+        state.value = UpdateState.Available("1.1", 1000L)
+        rows().single { it.key == "update" }.onTap!!.invoke()
+        assertEquals(1, installs)
+    }
+
     @Test
     fun `up to date release keeps its localized publication row`() {
         val publishedAt = Instant.parse("2026-08-02T16:24:31.289Z").toEpochMilli()

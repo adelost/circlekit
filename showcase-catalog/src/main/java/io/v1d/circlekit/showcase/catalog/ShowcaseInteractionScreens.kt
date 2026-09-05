@@ -31,7 +31,11 @@ object ShowcaseInteractionScreens {
                 listOf(
                     RowSpec(
                         key = "choice",
-                        title = if (options.size == 2 && options == TOGGLE_OPTIONS) "SATELLITE" else "DISPLAY MODE",
+                        title = when {
+                            options == TOGGLE_OPTIONS -> "SATELLITE"
+                            scenario.id.value == "two" -> "UNITS"
+                            else -> "DAY"
+                        },
                         sub = options[selectedIndex],
                         icon = RingIcons.Grid,
                         hint = "Cycles through the declared finite choices.",
@@ -169,7 +173,7 @@ object ShowcaseInteractionScreens {
     private fun choiceOptions(scenario: String): List<String> = when (scenario) {
         "off", "on" -> TOGGLE_OPTIONS
         "two" -> listOf("METRES", "FEET")
-        "first", "middle", "last" -> listOf("A", "B", "C", "D", "E", "F", "G")
+        "first", "middle", "last" -> listOf("MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN")
         else -> error("Unknown choice scenario $scenario")
     }
 

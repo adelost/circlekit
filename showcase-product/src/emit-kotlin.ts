@@ -24,6 +24,16 @@ function requireShowcaseProduct(product: ProductIr): CircleKitShowcaseProductIr 
 }
 
 function emitKotlin(product: CircleKitShowcaseProductIr): string {
+  const release = product.showcase.release;
+  if (!/^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/u.test(release.repository)) {
+    throw new Error("Invalid GitHub release repository");
+  }
+  const releaseAssets = Object.entries(release.assets).map(([artifactRef, prefix]) => {
+    if (!product.artifacts.some(({ id }) => id === artifactRef) || !/^[a-z0-9-]+$/u.test(prefix)) {
+      throw new Error(`Invalid release artifact ${artifactRef}/${prefix}`);
+    }
+    return `        ShowcaseArtifactProfile.${enumName(artifactRef)} to ${kotlinString(prefix)},`;
+  }).join("\n");
   const profiles = product.artifacts.map((artifact) =>
     `    ${enumName(artifact.id)}(${kotlinString(artifact.id)}),`).join("\n");
   const families = product.showcase.sections.map((section) =>
@@ -31,13 +41,14 @@ function emitKotlin(product: CircleKitShowcaseProductIr): string {
     .join("\n");
   const cases = product.showcase.cases.map((item) => {
     const scenarios = item.scenarios.map((scenario) =>
-      `                ShowcaseScenario(ShowcaseScenarioId(${kotlinString(scenario.id)}), ${kotlinString(scenario.label)}),`)
+      `                ShowcaseScenario(ShowcaseScenarioId(${kotlinString(scenario.id)}), ${kotlinString(scenario.label)}, ${kotlinString(scenario.description)}),`)
       .join("\n");
     return `        ShowcaseCase(
             id = ShowcaseCaseId(${kotlinString(item.id)}),
             family = ShowcaseFamily.${enumName(item.section)},
             title = ${kotlinString(item.title)},
             iconId = ${kotlinString(item.iconId)},
+            purpose = ${kotlinString(item.purpose)},
             scenarios = listOf(
 ${scenarios}
             ),
@@ -82,6 +93,10 @@ ${families}
 object ShowcaseManifest {
     const val PRODUCT_ID: String = ${kotlinString(product.id)}
     const val PRODUCT_SPEC_VERSION: String = ${kotlinString(product.productSpecVersion)}
+    const val RELEASE_REPOSITORY: String = ${kotlinString(release.repository)}
+    val releaseAssetPrefixes: Map<ShowcaseArtifactProfile, String> = mapOf(
+${releaseAssets}
+    )
 
     val profiles: Set<String> = ShowcaseArtifactProfile.entries.mapTo(linkedSetOf(), ShowcaseArtifactProfile::id)
 

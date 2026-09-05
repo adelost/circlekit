@@ -64,8 +64,11 @@ class ShowcaseFlowScreensTest {
         assertNull(row.onTap)
         assertTrue(rows.any { it.key == "update-published" })
 
+        rows.single { it.key == "demo-next" }.onTap!!.invoke()
+        assertTrue(state.update.value is UpdateState.ReadyToInstall)
+
         state.prepare(ShowcaseCaseId("flow.update"), ShowcaseScenarioId("failed"))
-        val failed = ShowcaseFlowScreens.update(state).items.first().single()
+        val failed = ShowcaseFlowScreens.update(state).items.first().single { it.key == "update" }
         assertNotNull(failed.onTap)
         failed.onTap?.invoke()
         assertEquals(UpdateState.Checking, state.update.value)
@@ -83,8 +86,31 @@ class ShowcaseFlowScreensTest {
 
         state.prepare(ShowcaseCaseId("flow.service"), ShowcaseScenarioId("cache"))
         val cached = ShowcaseFlowScreens.service(state).items.first()
-        assertTrue(cached.last().sub.contains("24 MB"))
+        assertTrue(cached.single { it.key == "cache" }.sub.contains("24 MB"))
         assertFalse(cached.any { it.sub.contains("https://") })
+    }
+
+    @Test
+    fun `templates perform visible local actions and keep the selected source`() = runBlocking {
+        val session = ShowcaseSession(ShowcaseArtifactProfile.PHONE_FULL_UI)
+        val screens = ShowcaseTemplateFixtures.representatives(session)
+        val hub = screens.filterIsInstance<RingScreen.Hub>().single()
+        hub.rows.forEach { row ->
+            val detail = row.detail() as RingScreen.Detail
+            assertEquals(row.value.first(), detail.hero.first())
+            assertEquals(row.health.first(), detail.health.first())
+            assertTrue(detail.title.startsWith(row.label))
+            detail.actions.first().onRun()
+            detail.actions.last().onRun()
+            assertEquals("—", detail.hero.first())
+            detail.onRefresh!!.invoke()
+            assertEquals(row.value.first(), detail.hero.first())
+        }
+        val rows = screens.filterIsInstance<RingScreen.Rows>().single()
+        rows.items.first().single { it.key == "toggle" }.onSelect!!("ON")
+        assertEquals("ON", rows.items.first().single { it.key == "toggle" }.sub)
+        assertTrue((screens.filterIsInstance<RingScreen.Launcher>().single().entries
+            .single { it.label == "ADJUST" }.open()) is RingScreen.Adjustment)
     }
 
     @Test

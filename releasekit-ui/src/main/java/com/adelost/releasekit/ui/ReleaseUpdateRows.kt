@@ -46,6 +46,7 @@ fun releaseUpdateRows(
             UpdateRowAction.INSTALL -> onInstall
         },
         labelProgress = model.progress.toLabelProgress(),
+        multiline = true,
     )
     val publishedRow = model.releaseInfo
         ?.let { releaseInfoPresentation(it, zoneId, locale) }

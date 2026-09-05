@@ -14,7 +14,7 @@ module GeneratedCircleKitShowcase {
     const COMPONENT_LABEL = "PROGRESS";
     const COMPONENT_ORDER = 0;
     const SCENARIO_ID = "none";
-    const SCENARIO_LABEL = "NONE";
+    const SCENARIO_LABEL = "NOT STARTED";
     const ACTIVE_TICKS = 0;
     const PALETTE_REF = "";
     const FOOTER_LABEL = "INHERITED  ORDER 0";

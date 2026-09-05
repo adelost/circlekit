@@ -22,6 +22,7 @@ class ShowcaseFlowState {
     private val mutableUpdate = MutableStateFlow<UpdateState>(UpdateState.Idle)
     private val mutableService = MutableStateFlow(ServiceSnapshot(SERVICE_ID))
     private val mutableTheme = MutableStateFlow(CircleColorTheme.SEA_GLASS)
+    private var sourceScenarioId = "off"
 
     val source: StateFlow<SourceState<String>> = mutableSource.asStateFlow()
     val sourceEnabled: StateFlow<Boolean> = mutableSourceEnabled.asStateFlow()
@@ -46,12 +47,19 @@ class ShowcaseFlowState {
     }
 
     fun refreshSource() {
+        sourceScenarioId = "fresh"
         mutableSourceEnabled.value = true
         mutableSource.value = SourceState(
             value = "18°",
             fetchedAtMono = NOW_MONO_MS,
             fetchedAtWall = NOW_WALL_MS,
         )
+    }
+
+    fun advanceSource() {
+        val cases = requireNotNull(ShowcaseManifest.find(ShowcaseCaseId("flow.source"))).scenarios
+        val index = cases.indexOfFirst { it.id.value == sourceScenarioId }
+        prepareSource(cases[(index + 1) % cases.size].id.value)
     }
 
     fun advanceUpdate() {
@@ -104,6 +112,7 @@ class ShowcaseFlowState {
     }
 
     private fun prepareSource(scenario: String) {
+        sourceScenarioId = scenario
         mutableSourceEnabled.value = scenario != "off"
         mutableSource.value = when (scenario) {
             "off" -> SourceState()

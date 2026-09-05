@@ -2,6 +2,7 @@ package io.v1d.circlekit.showcase.catalog
 
 import android.content.Context
 import com.adelost.releasekit.UpdateController
+import com.adelost.releasekit.ui.ReleaseUpdatePort
 import kotlinx.coroutines.CoroutineScope
 
 class ShowcaseUpdateController(
@@ -19,7 +20,7 @@ class ShowcaseUpdateController(
         currentVersionCode = currentVersionCode,
     )
 
-    val port = ShowcaseUpdatePort(
+    val port = ReleaseUpdatePort(
         currentVersionName = currentVersionName,
         state = controller.state,
         autoUpdate = controller.autoUpdate,

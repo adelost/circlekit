@@ -14,6 +14,7 @@ import { showcaseAllComponentInstances, showcaseAllComponentTypes } from "./grap
 import { showcaseComponentFamilies } from "./graph-families.js";
 import { SHOWCASE_NAVIGATION_ID } from "./graph-contracts.js";
 import { showcaseNodes, showcaseNodeTypes } from "./graph-nodes.js";
+import { showcaseRelease } from "./release.js";
 
 const SHOWCASE_ANDROID_ARTIFACT_PROFILES = ["phone-full-ui", "wear-full-ui"] as const;
 const SHOWCASE_FULL_UI_ARTIFACT_PROFILES = [
@@ -149,6 +150,7 @@ export interface CircleKitShowcaseProductIr extends ProductIr {
   readonly showcase: {
     readonly sections: typeof showcaseSections;
     readonly cases: typeof showcaseCases;
+    readonly release: typeof showcaseRelease;
   };
 }
 
@@ -161,7 +163,7 @@ export function compileCircleKitShowcaseProduct(
   const ir: CircleKitShowcaseProductIr = {
     ...baseProduct,
     productSpecVersion,
-    showcase: { sections: showcaseSections, cases: showcaseCases },
+    showcase: { sections: showcaseSections, cases: showcaseCases, release: showcaseRelease },
   };
   return ir;
 }

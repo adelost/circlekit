@@ -26,7 +26,7 @@ class ShowcaseInteractionState {
 
     fun prepare(caseId: ShowcaseCaseId, scenarioId: ShowcaseScenarioId) {
         mutableActionCount.value = 0
-        mutableActionFailed.value = false
+        mutableActionFailed.value = caseId.value == "control.action-row" && scenarioId.value == "failure"
         mutableAvailability.value = when (scenarioId.value) {
             "recoverable" -> ShowcaseAvailability.RECOVERABLE
             "blocked" -> ShowcaseAvailability.BLOCKED

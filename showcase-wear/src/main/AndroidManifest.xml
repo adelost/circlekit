@@ -4,6 +4,8 @@
     <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
 
     <application
+        android:icon="@mipmap/ic_showcase"
+        android:roundIcon="@mipmap/ic_showcase"
         android:label="CircleKit Showcase"
         android:theme="@style/Theme.CircleKitShowcase">
         <activity

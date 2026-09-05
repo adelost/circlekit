@@ -5,7 +5,7 @@ Shared Android foundations used by Skyvw and Agentmux Link.
 - `designkit`: adaptive phone and round-Wear visual language.
 - `ringkit`: spec-driven phone/watch screens and controls.
 - `releasekit`: update state, download, APK verification and install flow.
-- `releasekit-ui`: canonical ReleaseKit rows for Phone and round Wear hosts.
+- `releasekit-ui`: canonical ReleaseKit rows and a shared app-update screen/typed port for Phone and round Wear.
 - `servicekit`: bounded telemetry used by the shared modules.
 - `product-spec`: product-neutral TypeScript authoring, validation and output
   manifests, published as the versioned `@v1d/product-spec` npm tarball.
@@ -75,3 +75,21 @@ The command emits signed Phone/Wear APKs, SHA-256 digests and a provenance
 report under `build/showcase-release/X.Y.Z/`. The showcase uses the stable
 Android developer signer intentionally: it is a side-effect-free laboratory,
 never a trusted product/update authority.
+
+### Using Showcase
+
+STYLE, ICONS, CONTROLS, TEXT, AUDIO, LAYOUTS and DATA contain labelled local
+examples. Scenario descriptions say what to try; audio fixtures never open a
+microphone or play sound. DATA / UPDATE DEMO does not download anything.
+
+APP UPDATE on the home menu is the real ReleaseKit updater. AUTO-UPDATE
+defaults ON: app start checks the public feed and downloads a verified newer
+APK. When READY, tap VERSION and confirm installation in Android. OFF keeps
+manual checks available. Both hosts consume the same typed ReleaseUpdatePort
+and screen; TypeScript `showcase-product/src/release.ts` owns repository and
+per-artifact APK names. Native identity/signer verification remains ReleaseKit's
+responsibility. The update page is a host facility, not a demo graph node.
+
+DEV / STRUCTURE groups the generated demo catalog and its declared connections.
+It is not a live health graph. DEV / HOST controls the actual responsive or
+WatchExact viewport, while STYLE / GEOMETRY shows labelled calculated metrics.
