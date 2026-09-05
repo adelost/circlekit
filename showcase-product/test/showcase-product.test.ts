@@ -88,6 +88,13 @@ test("one compiled ProductSpec owns Android, Apple and Garmin Showcase structure
   const version = await productSpecVersion();
   assert.equal(version, "0.3.52");
   const product = compileCircleKitShowcaseProduct(version);
+  const recoloured = { ...product, palette: { variants: product.palette.variants.map((variant) => ({
+    ...variant,
+    categories: variant.categories.map((category, index) => index === 0 ? { ...category, hex: "#123456" } : category),
+  })) } };
+  const colourEmitter = showcaseKotlinEmitter("generated/Showcase.kt");
+  assert.notEqual(colourEmitter.emit(product)[0]!.content, colourEmitter.emit(recoloured)[0]!.content);
+  assert.match(colourEmitter.emit(recoloured)[0]!.content, /0xFF123456/u);
   // Read from the package rather than pinned to a literal: a hardcoded number goes
   // stale on every schema bump and only ever proves which version was current the
   // day the test was written.

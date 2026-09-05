@@ -1167,7 +1167,7 @@
   ],
   "assetCatalogRef": {
     "id": "circlekit",
-    "version": "0.3.25"
+    "version": "0.3.61"
   },
   "componentFamilies": [
     {
@@ -4081,8 +4081,8 @@
         "iphone-full-ui",
         "watchos-full-ui"
       ],
-      "assetRef": "wifi",
-      "id": "showcase.wifi"
+      "assetRef": "data",
+      "id": "showcase.data"
     },
     {
       "artifacts": [
@@ -5382,7 +5382,41 @@
     }
   ],
   "palette": {
-    "variants": []
+    "variants": [
+      {
+        "categories": [
+          {
+            "hex": "#63c899",
+            "id": "style",
+            "meaning": "Visual style and layout examples"
+          },
+          {
+            "hex": "#e7bc64",
+            "id": "actions",
+            "meaning": "Interactive controls and icon actions"
+          },
+          {
+            "hex": "#7ea9ee",
+            "id": "text",
+            "meaning": "Text entry and editing"
+          },
+          {
+            "hex": "#b09adb",
+            "id": "audio",
+            "meaning": "Audio capture and playback"
+          },
+          {
+            "hex": "#57bed5",
+            "id": "data",
+            "meaning": "Data, freshness and background work examples"
+          }
+        ],
+        "id": "oled-categories",
+        "identity": {},
+        "ramps": [],
+        "status": {}
+      }
+    ]
   },
   "portRegistry": {
     "bindings": [
@@ -7085,7 +7119,7 @@
         "title": "SCREENS"
       },
       {
-        "iconId": "wifi",
+        "iconId": "data",
         "id": "flow.source",
         "openPort": "flowSource",
         "purpose": "Example data: value, age, coverage and errors.",
@@ -7204,43 +7238,50 @@
     },
     "sections": [
       {
+        "category": "style",
         "iconId": "palette",
         "id": "foundations",
         "menuLabel": "STYLE",
         "title": "STYLE"
       },
       {
+        "category": "actions",
         "iconId": "grid",
         "id": "atoms",
         "menuLabel": "ICONS",
         "title": "ICON ACTIONS"
       },
       {
+        "category": "actions",
         "iconId": "touchdown-run",
         "id": "controls",
         "menuLabel": "CONTROLS",
         "title": "CONTROLS"
       },
       {
+        "category": "text",
         "iconId": "pencil",
         "id": "input",
         "menuLabel": "TEXT",
         "title": "TEXT INPUT"
       },
       {
+        "category": "audio",
         "iconId": "play",
         "id": "media",
         "menuLabel": "AUDIO",
         "title": "AUDIO DEMOS"
       },
       {
+        "category": "style",
         "iconId": "layers",
         "id": "templates",
         "menuLabel": "LAYOUTS",
         "title": "PAGE LAYOUTS"
       },
       {
-        "iconId": "wifi",
+        "category": "data",
+        "iconId": "data",
         "id": "flows",
         "menuLabel": "DATA",
         "title": "DATA DEMOS"

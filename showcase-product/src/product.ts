@@ -15,6 +15,7 @@ import { showcaseComponentFamilies } from "./graph-families.js";
 import { SHOWCASE_NAVIGATION_ID } from "./graph-contracts.js";
 import { showcaseNodes, showcaseNodeTypes } from "./graph-nodes.js";
 import { showcaseRelease } from "./release.js";
+import { showcasePalette } from "./palette.js";
 
 const SHOWCASE_ANDROID_ARTIFACT_PROFILES = ["phone-full-ui", "wear-full-ui"] as const;
 const SHOWCASE_FULL_UI_ARTIFACT_PROFILES = [
@@ -27,7 +28,6 @@ export const SHOWCASE_ARTIFACT_PROFILES = [
   "garmin-limited-ui",
 ] as const;
 
-const showcasePalette = { variants: [] } as const;
 const showcaseFullUiScreens = showcaseComponentFamilies
   .map(({ screen }) => screen)
   .filter((screen) => screen.startsWith("section."));

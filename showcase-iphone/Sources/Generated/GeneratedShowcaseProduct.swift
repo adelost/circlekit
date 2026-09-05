@@ -136,9 +136,13 @@ enum GeneratedShowcaseProduct {
         lineHex: "#232527"
     )
     static let palette = ShowcasePalette(
-        id: nil,
+        id: "oled-categories",
         tokens: [
-
+            ShowcasePaletteToken(id: "category.style", kind: .category, hex: "#63c899"),
+            ShowcasePaletteToken(id: "category.actions", kind: .category, hex: "#e7bc64"),
+            ShowcasePaletteToken(id: "category.text", kind: .category, hex: "#7ea9ee"),
+            ShowcasePaletteToken(id: "category.audio", kind: .category, hex: "#b09adb"),
+            ShowcasePaletteToken(id: "category.data", kind: .category, hex: "#57bed5")
         ]
     )
     static let components: [ShowcaseComponent] = [
@@ -230,7 +234,7 @@ enum GeneratedShowcaseProduct {
             id: .flowSource,
             rendererId: "ShowcaseComponentScreen",
             title: "DATA AGE",
-            iconId: "wifi",
+            iconId: "data",
             scenarios: [ShowcaseScenario(id: "off", label: "SOURCE OFF"), ShowcaseScenario(id: "loading", label: "FIRST REQUEST"), ShowcaseScenario(id: "fresh", label: "CURRENT VALUE"), ShowcaseScenario(id: "aging", label: "OLD VALUE"), ShowcaseScenario(id: "partial", label: "PARTIAL COVERAGE"), ShowcaseScenario(id: "broken", label: "REQUEST FAILED")]
         ),
         ShowcaseComponent(
@@ -702,27 +706,32 @@ enum GeneratedShowcaseProduct {
             ]
         ),
         ShowcaseIconAsset(
-            id: "wifi",
+            id: "data",
             nativeSymbol: "ShowcaseVectorIcon",
             viewportWidth: 24.0,
             viewportHeight: 24.0,
             paths: [
                 ShowcaseIconPath(style: ShowcaseIconPathStyle.fill(evenOdd: false), commands: [
-                    .move(x: 12.0, y: 17.8),
-                    .arc(radiusX: 1.9, radiusY: 1.9, rotation: 0.0, largeArc: true, sweep: false, x: 12.001, y: 17.8),
+                    .move(x: 4.0, y: 6.0),
+                    .cubic(x1: 4.0, y1: 3.8, x2: 7.6, y2: 2.5, x: 12.0, y: 2.5),
+                    .cubic(x1: 16.4, y1: 2.5, x2: 20.0, y2: 3.8, x: 20.0, y: 6.0),
+                    .cubic(x1: 20.0, y1: 8.2, x2: 16.4, y2: 9.5, x: 12.0, y: 9.5),
+                    .cubic(x1: 7.600000000000001, y1: 9.5, x2: 4.0, y2: 8.2, x: 4.0, y: 6.0),
+                    .close,
+                    .move(x: 4.0, y: 9.0),
+                    .cubic(x1: 6.0, y1: 10.5, x2: 9.0, y2: 11.3, x: 12.0, y: 11.3),
+                    .cubic(x1: 15.0, y1: 11.3, x2: 18.0, y2: 10.5, x: 20.0, y: 9.0),
+                    .line(x: 20.0, y: 12.6),
+                    .cubic(x1: 20.0, y1: 14.6, x2: 16.4, y2: 16.0, x: 12.0, y: 16.0),
+                    .cubic(x1: 7.600000000000001, y1: 16.0, x2: 4.0, y2: 14.6, x: 4.0, y: 12.6),
+                    .close,
+                    .move(x: 4.0, y: 15.7),
+                    .cubic(x1: 6.0, y1: 17.2, x2: 9.0, y2: 18.0, x: 12.0, y: 18.0),
+                    .cubic(x1: 15.0, y1: 18.0, x2: 18.0, y2: 17.2, x: 20.0, y: 15.7),
+                    .line(x: 20.0, y: 19.2),
+                    .cubic(x1: 20.0, y1: 21.0, x2: 16.4, y2: 22.0, x: 12.0, y: 22.0),
+                    .cubic(x1: 7.600000000000001, y1: 22.0, x2: 4.0, y2: 21.0, x: 4.0, y: 19.2),
                     .close
-                ]),
-                ShowcaseIconPath(style: ShowcaseIconPathStyle.stroke(width: 3.0), commands: [
-                    .move(x: 2.5, y: 9.3),
-                    .arc(radiusX: 14.5, radiusY: 14.5, rotation: 0.0, largeArc: false, sweep: true, x: 21.5, y: 9.3)
-                ]),
-                ShowcaseIconPath(style: ShowcaseIconPathStyle.stroke(width: 3.0), commands: [
-                    .move(x: 5.5, y: 13.0),
-                    .arc(radiusX: 10.0, radiusY: 10.0, rotation: 0.0, largeArc: false, sweep: true, x: 18.5, y: 13.0)
-                ]),
-                ShowcaseIconPath(style: ShowcaseIconPathStyle.stroke(width: 3.0), commands: [
-                    .move(x: 8.7, y: 16.6),
-                    .arc(radiusX: 5.0, radiusY: 5.0, rotation: 0.0, largeArc: false, sweep: true, x: 15.299999999999999, y: 16.6)
                 ])
             ]
         ),

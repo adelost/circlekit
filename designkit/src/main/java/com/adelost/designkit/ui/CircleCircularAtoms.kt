@@ -289,6 +289,7 @@ fun CircleIconRing(
     sub: String? = null,
     timing: CircleActionTiming = CircleActionTiming.DELIBERATE,
     enabled: Boolean = true,
+    semanticColor: Color? = null,
 ) {
     val feedback = rememberCircleActionFeedbackState()
     val cue = rememberCircleActionCueController(
@@ -305,6 +306,7 @@ fun CircleIconRing(
             diameter = diameter,
             active = active,
             accent = accent,
+            semanticColor = semanticColor,
             fontFamily = fontFamily,
             labelSize = labelSize,
             centerValue = centerValue,

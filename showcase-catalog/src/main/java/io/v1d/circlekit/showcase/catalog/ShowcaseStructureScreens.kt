@@ -33,6 +33,7 @@ internal object ShowcaseStructureScreens {
         gridRole = MenuGridRole.SETTINGS,
         entries = ShowcaseFamily.entries.map { family ->
             LaunchSpec(ShowcaseNativeBindings.requireIcon(family.iconId), family.menuLabel,
+                semanticColor = androidx.compose.ui.graphics.Color(family.categoryArgb),
                 open = { owners("component") { id -> ShowcaseManifest.find(ShowcaseCaseId(id))?.family == family } })
         } + LaunchSpec(RingIcons.Grid, "PAGE FRAME", open = {
             owners("component") { id -> ShowcaseManifest.find(ShowcaseCaseId(id)) == null }
@@ -47,6 +48,7 @@ internal object ShowcaseStructureScreens {
             LaunchSpec(
                 icon = case?.let { ShowcaseNativeBindings.requireIcon(it.iconId) } ?: RingIcons.Grid,
                 label = case?.title ?: id.substringAfterLast('.').replace('-', ' ').uppercase(),
+                semanticColor = case?.let { androidx.compose.ui.graphics.Color(it.family.categoryArgb) },
                 open = { detail(id) },
             )
         },

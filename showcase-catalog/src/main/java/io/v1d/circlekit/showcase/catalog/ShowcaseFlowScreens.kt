@@ -89,7 +89,7 @@ object ShowcaseFlowScreens {
                     outcome == ServiceOutcome.FAILED -> "FAILED · ${lastAttempt.detail ?: "UNKNOWN"}"
                     else -> "IDLE"
                 },
-                icon = if (outcome == ServiceOutcome.FAILED) RingIcons.Warning else RingIcons.Wifi,
+                icon = if (outcome == ServiceOutcome.FAILED) RingIcons.Warning else RingIcons.Data,
                 onTap = state::advanceService.takeIf { !active },
                 labelProgress = CircleLabelProgress.Indeterminate.takeIf { active },
                 semanticColor = RingTokens.Broken.takeIf { outcome == ServiceOutcome.FAILED },

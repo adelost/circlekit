@@ -204,6 +204,8 @@ data class LaunchSpec(
      * invent different gating for the same semantic action. */
     val enabled: Flow<Boolean> = flowOf(true),
     val actionTiming: CircleActionTiming = CircleActionTiming.DELIBERATE,
+    /** Optional product category pigment for this occurrence, not an icon identity default. */
+    val semanticColor: Color? = null,
 )
 
 /**

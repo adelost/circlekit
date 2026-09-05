@@ -136,7 +136,7 @@ object ShowcaseNativeBindings {
         icon("pencil", "RingIcons.Pencil", RingIcons.Pencil),
         icon("play", "RingIcons.Play", RingIcons.Play),
         icon("layers", "RingIcons.Layers", RingIcons.Layers),
-        icon("wifi", "RingIcons.Wifi", RingIcons.Wifi),
+        icon("data", "RingIcons.Data", RingIcons.Data),
         icon("watch", "RingIcons.Watch", RingIcons.Watch),
         icon("sliders", "RingIcons.Sliders", RingIcons.Sliders),
         icon("download", "RingIcons.Download", RingIcons.Download),
