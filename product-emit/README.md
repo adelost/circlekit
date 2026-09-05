@@ -13,6 +13,13 @@ entrypoint owns its closed Phone/Wear settings grammar and requires the product
 to supply every native Kotlin symbol explicitly; the package contains no
 consumer package names or fallback symbols.
 
+`emitStatePresentationsKotlinFiles` keeps the registry API in `aggregate` and
+returns typed declarations, source/presentation payloads, lookup tables and
+registry entries through the existing `shards` list. Write every returned
+suffix; file boundaries are not API. Complete declarations/entries are packed
+below 500 lines without compressing Kotlin. A single oversized declaration or
+the public accessor facade fails explicitly instead of emitting a monolith.
+
 ## Reading the product as a graph
 
 `core` can draw any compiled product as two Mermaid files, generated from the
