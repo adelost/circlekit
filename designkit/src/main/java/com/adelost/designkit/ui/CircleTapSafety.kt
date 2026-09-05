@@ -112,7 +112,9 @@ fun Modifier.circleSafeTap(
                         if (effectiveHoldMs == 0L) {
                             // A normal click commits on release, so starting a
                             // scroll over a row cannot accidentally select it.
-                            commits = waitForUpOrCancellation() != null
+                            val up = waitForUpOrCancellation()
+                            commits = up != null
+                            up?.consume()
                         } else {
                         var cancelled = false
                         val releasedEarly = withTimeoutOrNull(effectiveHoldMs) {

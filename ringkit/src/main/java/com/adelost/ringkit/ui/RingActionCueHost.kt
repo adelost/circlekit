@@ -1,6 +1,7 @@
 package com.adelost.ringkit.ui
 
 import androidx.compose.foundation.background
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Arrangement
@@ -33,6 +34,11 @@ import com.adelost.designkit.ui.LocalCircleActionCuePublisher
 import com.adelost.designkit.ui.MenuDesign
 import com.adelost.designkit.ui.RingTokens
 import com.adelost.designkit.ui.circleBrandColor
+import com.adelost.designkit.ui.CircleActionTiming
+import com.adelost.designkit.ui.CircleIconDisc
+import com.adelost.designkit.ui.RingIcons
+import com.adelost.designkit.ui.circleSafeTap
+import com.adelost.designkit.ui.rememberCircleActionFeedbackState
 import kotlinx.coroutines.delay
 
 /** Durable ownership state for the single centre action cue. */
@@ -88,6 +94,7 @@ fun RingActionCueHost(
     LaunchedEffect(state.settledOwner, settledCue) {
         val scheduledOwner = state.settledOwner ?: return@LaunchedEffect
         val scheduledCue = settledCue ?: return@LaunchedEffect
+        if (scheduledCue.hint != null) return@LaunchedEffect
         delay(scheduledCue.dwellMs)
         if (ringCueReceiptStillCurrent(state, scheduledOwner, scheduledCue)) {
             state = RingCueHostState()
@@ -97,10 +104,17 @@ fun RingActionCueHost(
         Box(modifier = modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             content()
             state.cue?.let { cue ->
-                Box(Modifier.fillMaxSize().background(MenuDesign.actionCueScrim))
+                val explanation = cue.hint != null
+                val dismiss = { state = RingCueHostState() }
+                if (explanation) BackHandler(onBack = dismiss)
+                Box(Modifier.fillMaxSize().background(MenuDesign.actionCueScrim)
+                    .then(if (explanation) Modifier.circleSafeTap(
+                        feedback = rememberCircleActionFeedbackState(),
+                        holdMs = 0L, consumeDown = true, label = null, onTap = dismiss,
+                    ) else Modifier))
                 when (ringCueSurface(cue)) {
                     RingCueSurface.ACTION -> RingActionCue(cue)
-                    RingCueSurface.EXPLANATION -> RingExplanationCue(cue)
+                    RingCueSurface.EXPLANATION -> RingExplanationCue(cue, dismiss)
                 }
             }
         }
@@ -114,7 +128,7 @@ internal fun ringCueSurface(cue: CircleActionCue): RingCueSurface =
     if (cue.hint == null) RingCueSurface.ACTION else RingCueSurface.EXPLANATION
 
 @Composable
-private fun RingExplanationCue(cue: CircleActionCue) {
+private fun RingExplanationCue(cue: CircleActionCue, onDismiss: () -> Unit) {
     val round = com.adelost.designkit.ui.LocalCircleSurfaceLayout.current.surfaceClass ==
         com.adelost.designkit.ui.CircleSurfaceClass.ROUND
     Column(
@@ -165,6 +179,14 @@ private fun RingExplanationCue(cue: CircleActionCue) {
                 modifier = Modifier.padding(top = 7.dp),
             )
         }
+        CircleIconDisc(
+            icon = RingIcons.Cross, contentDescription = "Close information",
+            actionLabel = "CLOSE", onTap = onDismiss,
+            timing = CircleActionTiming.IMMEDIATE,
+            modifier = Modifier.padding(top = 8.dp),
+            diameter = if (round) MenuDesign.watchActionRingDiameter else 44.dp,
+            iconSize = MenuDesign.iconSize,
+        )
     }
 }
 

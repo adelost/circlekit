@@ -157,6 +157,8 @@ fun CircleIconDisc(
             .circleSafeTap(
                 feedback = feedback,
                 enabled = enabled,
+                // A trailing icon is its own action, never also its parent row.
+                consumeDown = true,
                 holdMs = timing.holdMs,
                 label = contentDescription,
                 onTap = {
@@ -350,12 +352,12 @@ fun CirclePressIconRing(
 ) {
     val feedback = rememberCircleActionFeedbackState()
     val timing = if (holdMs == 0L) CircleActionTiming.IMMEDIATE else CircleActionTiming.DELIBERATE
-    val cue = rememberCircleActionCueController(
+    rememberCircleActionCueController(
         ordinaryTap = false,
         icon = icon,
         label = label,
         timing = timing,
-        pressed = feedback.pressed,
+        pressed = feedback.pressed && !active,
         holdDurationMs = holdMs,
     )
     CircleIconRingFrame(
@@ -377,9 +379,7 @@ fun CirclePressIconRing(
             feedback = feedback,
             enabled = enabled,
             holdMs = holdMs,
-            onBegin = {
-                onBegin().also { started -> if (started) cue.confirm() }
-            },
+            onBegin = onBegin,
             onRelease = onRelease,
             onCancel = onCancel,
         ),
