@@ -4,10 +4,10 @@ import com.adelost.designkit.ui.CircleLabelProgress
 import com.adelost.designkit.ui.RingIcons
 import com.adelost.designkit.ui.RingTokens
 import com.adelost.releasekit.ui.releaseUpdateRows
-import com.adelost.ringkit.data.FetchError
 import com.adelost.ringkit.data.Health
 import com.adelost.ringkit.data.SourceId
 import com.adelost.ringkit.data.SourcePolicy
+import com.adelost.ringkit.data.SourceState
 import com.adelost.ringkit.data.Trigger
 import com.adelost.ringkit.data.healthOf
 import com.adelost.ringkit.ui.RingScreen
@@ -37,16 +37,9 @@ object ShowcaseFlowScreens {
             icon = RingIcons.Cloud,
             sourceId = SourceId("showcase-flow"),
             hero = state.source.map { it.value ?: "—" },
-            sub = state.source.map { source -> sourceCopy(source.lastError, source.coverage) },
+            sub = state.source.map(::sourceCopy),
             freshness = combine(state.source, health) { source, sourceHealth ->
-                when {
-                    source.inFlight -> "FETCHING ${source.progress?.done ?: 0}/${source.progress?.total ?: 0}"
-                    sourceHealth == Health.OFF -> "DISABLED"
-                    sourceHealth == Health.FRESH -> "FRESH · JUST NOW"
-                    sourceHealth == Health.AGING && source.value != null -> "AGING · LAST GOOD KEPT"
-                    sourceHealth == Health.BROKEN -> source.lastError?.word ?: "BROKEN"
-                    else -> "WAITING FOR FIRST VALUE"
-                }
+                sourceFreshness(source, sourceHealth)
             },
             health = health,
             progress = state.source.map { it.progress },
@@ -109,10 +102,32 @@ object ShowcaseFlowScreens {
         )
     }
 
-    private fun sourceCopy(error: FetchError?, coverage: Float): String = when {
-        error != null -> "NO USABLE VALUE · ${error.word}"
-        coverage < 1f -> "PARTIAL · ${(coverage * 100).toInt()}% COVERAGE"
-        else -> "DETERMINISTIC FIXTURE"
+    internal fun sourceCopy(source: SourceState<*>): String {
+        val error = source.lastError
+        return when {
+            error != null -> "${if (source.value == null) "NO VALUE" else "UPDATE FAILED"} · ${error.word}"
+            source.coverage < 1f -> "PARTIAL · ${(source.coverage * 100).toInt()}% COVERAGE"
+            else -> "DETERMINISTIC FIXTURE"
+        }
     }
 
+    internal fun sourceFreshness(source: SourceState<*>, health: Health): String {
+        val data = when {
+            health == Health.OFF -> "DISABLED"
+            source.value == null -> "NO VALUE"
+            else -> {
+                val age = source.fetchedAtWall?.let {
+                    "${((ShowcaseFlowState.NOW_WALL_MS - it) / 60_000L).coerceAtLeast(0L)} MIN AGO"
+                } ?: "AGE UNKNOWN"
+                "${if (health == Health.FRESH) "FRESH" else "LAST VALUE"} · $age"
+            }
+        }
+        val attempt = if (source.inFlight) {
+            source.progress?.takeIf { it.total > 0 }?.let { "FETCHING ${it.done}/${it.total}" }
+                ?: "FETCHING · RESPONSE PENDING"
+        } else {
+            source.lastError?.word
+        }
+        return listOfNotNull(data, attempt).joinToString(" · ")
+    }
 }

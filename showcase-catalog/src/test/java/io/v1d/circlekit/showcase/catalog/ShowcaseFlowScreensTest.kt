@@ -3,6 +3,8 @@ package io.v1d.circlekit.showcase.catalog
 import com.adelost.designkit.ui.CircleLabelProgress
 import com.adelost.releasekit.UpdateState
 import com.adelost.ringkit.data.Health
+import com.adelost.ringkit.data.FetchError
+import com.adelost.ringkit.data.SourceState
 import com.adelost.ringkit.ui.RingScreen
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
@@ -31,6 +33,23 @@ class ShowcaseFlowScreensTest {
         state.refreshSource()
         assertEquals(Health.FRESH, screen.health.first())
         assertEquals("18°", screen.hero.first())
+
+        val retained = SourceState(
+            value = "18°",
+            fetchedAtWall = ShowcaseFlowState.NOW_WALL_MS - 120_000L,
+            lastError = FetchError.Timeout,
+        )
+        assertEquals("UPDATE FAILED · TIMEOUT", ShowcaseFlowScreens.sourceCopy(retained))
+        assertEquals("FRESH · 2 MIN AGO · TIMEOUT", ShowcaseFlowScreens.sourceFreshness(retained, Health.FRESH))
+        assertEquals(
+            "LAST VALUE · 2 MIN AGO · FETCHING · RESPONSE PENDING",
+            ShowcaseFlowScreens.sourceFreshness(retained.copy(inFlight = true), Health.AGING),
+        )
+        assertEquals("NO VALUE · TIMEOUT", ShowcaseFlowScreens.sourceCopy(retained.copy(value = null)))
+
+        state.prepare(ShowcaseCaseId("flow.source"), ShowcaseScenarioId("aging"))
+        assertEquals(Health.AGING, screen.health.first())
+        assertEquals("LAST VALUE · 60 MIN AGO", screen.freshness.first())
     }
 
     @Test
