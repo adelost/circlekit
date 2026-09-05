@@ -109,7 +109,7 @@ class ShowcaseFlowState {
             "off" -> SourceState()
             "loading" -> SourceState(inFlight = true, progress = Progress(2, 5))
             "fresh" -> SourceState(value = "18°", fetchedAtMono = NOW_MONO_MS, fetchedAtWall = NOW_WALL_MS)
-            "aging" -> SourceState(value = "17°", fetchedAtMono = 1_000L, fetchedAtWall = NOW_WALL_MS - 3_600_000L)
+            "aging" -> SourceState(value = "17°", fetchedAtMono = NOW_MONO_MS - 3_600_000L, fetchedAtWall = NOW_WALL_MS - 3_600_000L)
             "partial" -> SourceState(
                 value = "16°",
                 fetchedAtMono = NOW_MONO_MS,
@@ -192,7 +192,7 @@ class ShowcaseFlowState {
     }
 
     companion object {
-        const val NOW_MONO_MS = 10_000L
+        const val NOW_MONO_MS = 4_000_000L
         const val NOW_WALL_MS = 1_800_000_000_000L
         const val FIXTURE_PUBLISHED_AT_MS = 1_785_648_800_000L
         private const val FIXTURE_APK = "/showcase/fixture.apk"
