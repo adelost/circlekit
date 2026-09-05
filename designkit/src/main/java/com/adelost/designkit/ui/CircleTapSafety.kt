@@ -16,6 +16,7 @@ import androidx.compose.ui.composed
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.disabled
 import androidx.compose.ui.semantics.onClick
 import androidx.compose.ui.semantics.onLongClick
 import androidx.compose.ui.semantics.semantics
@@ -89,8 +90,9 @@ fun Modifier.circleSafeTap(
 ): Modifier = composed {
     val effectiveHoldMs = LocalCircleTapTiming.current?.holdMs ?: holdMs
     if (!enabled) {
-        if (label == null) Modifier else Modifier.semantics(mergeDescendants = false) {
-            contentDescription = label
+        Modifier.semantics(mergeDescendants = label == null) {
+            label?.let { contentDescription = it }
+            disabled()
         }
     } else {
         val latestTap = rememberUpdatedState(onTap)
@@ -154,7 +156,7 @@ fun Modifier.circlePressLifecycle(
 ): Modifier = composed {
     require(holdMs >= 0L) { "Press lifecycle hold duration cannot be negative" }
     if (!enabled) {
-        Modifier
+        Modifier.semantics { disabled() }
     } else {
         val view = LocalView.current
         val latestBegin = rememberUpdatedState(onBegin)
@@ -226,8 +228,9 @@ fun Modifier.circleSafeTapOrHold(
         "long press ($longPressMs ms) must outlast the action rung ($holdMs ms)"
     }
     if (!enabled) {
-        if (label == null) Modifier else Modifier.semantics(mergeDescendants = false) {
-            contentDescription = label
+        Modifier.semantics(mergeDescendants = label == null) {
+            label?.let { contentDescription = it }
+            disabled()
         }
     } else {
         val latestTap = rememberUpdatedState(onTap)

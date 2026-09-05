@@ -2,11 +2,15 @@ package com.adelost.designkit.ui
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.size
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assertHasClickAction
+import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
@@ -69,6 +73,7 @@ class CircleSafeTapAccessibilityTest {
         setControl(enabled = false) { actions++ }
 
         namedNode()
+            .assertIsNotEnabled()
             .assert(SemanticsMatcher.keyNotDefined(SemanticsActions.OnClick))
             .assert(nonMergingActionNode())
         compose.waitForIdle()
@@ -100,6 +105,7 @@ class CircleSafeTapAccessibilityTest {
     fun explicitNullDeliberatelyMergesTheChildNameWithBothActions() {
         var taps = 0
         var longPresses = 0
+        var enabled by mutableStateOf(true)
         compose.setContent {
             val feedback = rememberCircleActionFeedbackState()
             Box(
@@ -107,6 +113,7 @@ class CircleSafeTapAccessibilityTest {
                     .size(48.dp)
                     .circleSafeTapOrHold(
                         feedback = feedback,
+                        enabled = enabled,
                         label = null,
                         onTap = { taps++ },
                         onLongPress = { longPresses++ },
@@ -125,6 +132,10 @@ class CircleSafeTapAccessibilityTest {
 
         assertEquals(1, taps)
         assertEquals(1, longPresses)
+        compose.runOnIdle { enabled = false }
+        node.assertIsNotEnabled()
+            .assert(SemanticsMatcher.keyNotDefined(SemanticsActions.OnClick))
+            .assert(SemanticsMatcher.keyNotDefined(SemanticsActions.OnLongClick))
     }
 
     @Test
