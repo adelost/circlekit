@@ -7000,6 +7000,10 @@
           {
             "id": "long-content",
             "label": "LONG CONTENT"
+          },
+          {
+            "id": "named-selection",
+            "label": "NAMED SELECTION"
           }
         ],
         "section": "templates",

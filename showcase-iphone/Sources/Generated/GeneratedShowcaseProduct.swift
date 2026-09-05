@@ -224,7 +224,7 @@ enum GeneratedShowcaseProduct {
             rendererId: "ShowcaseComponentScreen",
             title: "SCREENS",
             iconId: "layers",
-            scenarios: [ShowcaseScenario(id: "hub", label: "HUB"), ShowcaseScenario(id: "detail", label: "DETAIL"), ShowcaseScenario(id: "launcher", label: "LAUNCHER"), ShowcaseScenario(id: "rows", label: "ROWS"), ShowcaseScenario(id: "adjustment", label: "ADJUSTMENT"), ShowcaseScenario(id: "color-picker", label: "COLOR PICKER"), ShowcaseScenario(id: "dial-preview", label: "DIAL PREVIEW"), ShowcaseScenario(id: "empty", label: "EMPTY CONTENT"), ShowcaseScenario(id: "max-capacity", label: "MAX CAPACITY"), ShowcaseScenario(id: "long-content", label: "LONG CONTENT")]
+            scenarios: [ShowcaseScenario(id: "hub", label: "HUB"), ShowcaseScenario(id: "detail", label: "DETAIL"), ShowcaseScenario(id: "launcher", label: "LAUNCHER"), ShowcaseScenario(id: "rows", label: "ROWS"), ShowcaseScenario(id: "adjustment", label: "ADJUSTMENT"), ShowcaseScenario(id: "color-picker", label: "COLOR PICKER"), ShowcaseScenario(id: "dial-preview", label: "DIAL PREVIEW"), ShowcaseScenario(id: "empty", label: "EMPTY CONTENT"), ShowcaseScenario(id: "max-capacity", label: "MAX CAPACITY"), ShowcaseScenario(id: "long-content", label: "LONG CONTENT"), ShowcaseScenario(id: "named-selection", label: "NAMED SELECTION")]
         ),
         ShowcaseComponent(
             id: .flowSource,

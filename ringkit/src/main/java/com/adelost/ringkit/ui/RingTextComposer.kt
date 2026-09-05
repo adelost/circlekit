@@ -22,6 +22,8 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.wear.compose.material.Text
 import com.adelost.designkit.ui.CircleStyleTokens
+import com.adelost.designkit.ui.CircleActionTiming
+import com.adelost.designkit.ui.CircleIconDisc
 import com.adelost.designkit.ui.GraphiteTokens
 import com.adelost.designkit.ui.RingIcons
 import com.adelost.designkit.ui.RingTokens
@@ -78,6 +80,7 @@ fun RingTextComposer(
                 if (next.length <= spec.maxLength) spec.onValueChange(next)
             },
             enabled = spec.enabled,
+            maxLines = 5,
             cursorBrush = SolidColor(CircleStyleTokens.Action),
             textStyle = TextStyle(
                 color = RingTokens.Ink,
@@ -92,7 +95,7 @@ fun RingTextComposer(
                 .weight(1f)
                 .heightIn(min = 56.dp)
                 .border(1.dp, RingTokens.Outline, RoundedCornerShape(14.dp))
-                .background(GraphiteTokens.Surface.copy(alpha = 0.45f), RoundedCornerShape(14.dp)),
+                .background(GraphiteTokens.Canvas, RoundedCornerShape(14.dp)),
             decorationBox = { field ->
                 Box(
                     modifier = Modifier.padding(horizontal = 16.dp, vertical = 14.dp),
@@ -109,14 +112,14 @@ fun RingTextComposer(
                 }
             },
         )
-        IconRing(
+        CircleIconDisc(
             icon = RingIcons.Arrow,
-            label = "SEND",
+            contentDescription = "Send message",
+            actionLabel = "SEND",
             onTap = spec.onSubmit,
-            diameter = design.actionDiameter,
-            active = canSubmit,
+            diameter = 48.dp,
             enabled = canSubmit,
-            iconRotationDegrees = 90f,
+            timing = CircleActionTiming.IMMEDIATE,
         )
     }
 }

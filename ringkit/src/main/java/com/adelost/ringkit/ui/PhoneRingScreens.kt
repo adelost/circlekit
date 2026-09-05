@@ -352,6 +352,7 @@ private fun PhoneRowsScreen(
                     holdToConfirm = row.holdToConfirm,
                     holdMs = row.holdMs,
                     centerValue = row.centerValue,
+                    multiline = row.multiline,
                     actionTiming = row.actionTiming,
                     hint = row.hint,
                     infoAction = row.infoAction,

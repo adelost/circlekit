@@ -195,6 +195,7 @@ object ShowcaseManifest {
                 ShowcaseScenario(ShowcaseScenarioId("empty"), "EMPTY CONTENT"),
                 ShowcaseScenario(ShowcaseScenarioId("max-capacity"), "MAX CAPACITY"),
                 ShowcaseScenario(ShowcaseScenarioId("long-content"), "LONG CONTENT"),
+                ShowcaseScenario(ShowcaseScenarioId("named-selection"), "NAMED SELECTION"),
             ),
         ),
         ShowcaseCase(

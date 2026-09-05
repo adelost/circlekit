@@ -20,6 +20,8 @@ import com.adelost.ringkit.ui.RingScreen
 import com.adelost.ringkit.ui.RowSpec
 import com.adelost.ringkit.ui.StatRowSpec
 import com.adelost.ringkit.ui.IconRing
+import com.adelost.ringkit.ui.RingSelectionOption
+import com.adelost.ringkit.ui.ringSelectionRows
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 
@@ -46,6 +48,21 @@ object ShowcaseTemplateFixtures {
         "empty" -> RingScreen.Rows("EMPTY", flowOf(emptyList()))
         "max-capacity" -> maxCapacityRows()
         "long-content" -> longContentRows()
+        "named-selection" -> RingScreen.Rows(
+            "CHOOSE DEVICE",
+            session.interaction.choiceIndex.map { index ->
+                ringSelectionRows(
+                    options = listOf(
+                        RingSelectionOption("watch", "Watch", "A long device description stays readable beside its selection mark"),
+                        RingSelectionOption("phone", "Phone", "The same list and stable identity on every screen size"),
+                        RingSelectionOption("offline", "Other device", "Not connected", enabled = false),
+                    ),
+                    selectedId = if (index == 0) "watch" else "phone",
+                    icon = RingIcons.Phone,
+                    onSelect = { session.interaction.selectChoice(if (it == "watch") 0 else 1, 2) },
+                )
+            },
+        )
         else -> error("Unknown screen fixture ${scenario.id.value}")
     }
 

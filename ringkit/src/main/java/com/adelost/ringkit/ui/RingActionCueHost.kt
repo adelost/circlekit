@@ -3,8 +3,8 @@ package com.adelost.ringkit.ui
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
@@ -167,36 +167,40 @@ private fun RingExplanationCue(cue: CircleActionCue) {
 /** The canonical centre ring used for deliberate progress and confirmation. */
 @Composable
 private fun RingActionCue(cue: CircleActionCue) {
-    val ringSize = 88.dp
+    val round = com.adelost.designkit.ui.LocalCircleSurfaceLayout.current.surfaceClass ==
+        com.adelost.designkit.ui.CircleSurfaceClass.ROUND
+    val ringSize = if (round) 64.dp else 80.dp
     val pigment = if (cue.confirmed) RingTokens.Fresh else circleBrandColor()
     val ink = if (cue.confirmed) RingTokens.Fresh else RingTokens.Ink
-    Box(contentAlignment = Alignment.Center) {
-        Box(
-            Modifier
-                .size(ringSize + 26.dp)
-                .background(RingTokens.ProgressSurface, CircleShape),
-        )
-        ProgressRing(
-            progress = cue.progress,
-            diameter = ringSize,
-            trackWidth = 6.dp,
-            progressWidth = 6.dp,
-            progressColor = pigment,
-        )
-        Icon(
-            imageVector = cue.icon,
-            contentDescription = cue.label,
-            tint = ink,
-            modifier = Modifier.size(32.dp),
-        )
+    // The ring and its caption own disjoint measured bounds. An offset inside
+    // a fixed ring lets a second label line cross its stroke on every host.
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(10.dp),
+        modifier = Modifier.widthIn(max = if (round) 132.dp else 280.dp),
+    ) {
+        Box(contentAlignment = Alignment.Center) {
+            ProgressRing(
+                progress = cue.progress,
+                diameter = ringSize,
+                trackWidth = 4.dp,
+                progressWidth = 4.dp,
+                progressColor = pigment,
+            )
+            Icon(
+                imageVector = cue.icon,
+                contentDescription = null,
+                tint = ink,
+                modifier = Modifier.size(28.dp),
+            )
+        }
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
-            modifier = Modifier.offset(y = 24.dp).widthIn(max = 96.dp),
         ) {
             Text(
                 text = cue.label,
                 color = ink,
-                fontSize = 10.sp,
+                fontSize = if (round) 11.sp else 16.sp,
                 fontWeight = FontWeight.SemiBold,
                 letterSpacing = 0.5.sp,
                 textAlign = TextAlign.Center,
@@ -207,11 +211,11 @@ private fun RingActionCue(cue: CircleActionCue) {
                 Text(
                     text = value,
                     color = pigment,
-                    fontSize = 10.sp,
+                    fontSize = if (round) 10.sp else 14.sp,
                     fontWeight = FontWeight.Bold,
                     letterSpacing = 0.5.sp,
                     textAlign = TextAlign.Center,
-                    maxLines = 1,
+                    maxLines = 2,
                     overflow = TextOverflow.Ellipsis,
                 )
             }
