@@ -103,3 +103,69 @@ test("shared source contracts reuse every declared finite type in every payload"
   assert.match(all, /data class GeneratedSampleOtherAuthoritySourcePayload\([\s\S]*val Status: GeneratedAcmeSampleState,[\s\S]*val Other: GeneratedAcmeSampleOther,/u);
   assert.doesNotMatch(all, /GeneratedAcmeSample(?:State|Other)Value/u);
 });
+
+test("growing state vocabulary stays in bounded files with each declaration and registry entry once", () => {
+  for (const count of [0, 1, 40]) {
+    const authorities = Array.from({ length: count }, (_, index) => {
+      const states = finiteValues(`sample.state${index}`, Array.from(
+        { length: 70 }, (_, state) => `state${state}`,
+      ));
+      const definition = defineStateAuthority({
+        id: `sample.authority${index}`,
+        source: {
+          portRef: `sample.service${index}.state`, stateField: "status", states,
+          contract: { ...sourceContract, fields: [
+            field("status", finiteValueRef(states.id)),
+            field("snapshot", valueRef("sample.snapshot"), { nullable: true }),
+          ] },
+        },
+        presentation: {
+          ...presentation, id: `sample.presentation${index}`, stateRef: states.id,
+          contract: { ...presentation.contract, id: `sample.presentation${index}.payload` },
+          cases: Object.fromEntries(states.values.map((state) => [state, { label: state }])),
+        },
+      });
+      return {
+        ...definition.authority,
+        presentation: { ...definition.authority.presentation, consumers: [] },
+      };
+    });
+    const options = {
+      packageName: "io.acme.generated", symbolPrefix: "Acme",
+      sourceSha: "fixture", nativePortPackageName: "io.acme.ports",
+    };
+    const output = emitStatePresentationsKotlinFiles(authorities, options);
+    assert.deepEqual(emitStatePresentationsKotlinFiles(authorities, options), output);
+    const files = [{ suffix: "aggregate", content: output.aggregate }, ...output.shards];
+    assert.equal(new Set(files.map(({ suffix }) => suffix)).size, files.length);
+    for (const { suffix, content } of files) {
+      assert.ok(content.trimEnd().split("\n").length < 500, `${count} authorities: ${suffix} exceeds cap`);
+    }
+    const all = files.map(({ content }) => content).join("\n");
+    const once = (text: string) => assert.equal(all.split(text).length - 1, 1, text);
+    if (count > 0) once("sealed interface GeneratedAcmeSampleSnapshotValue");
+    for (let index = 0; index < count; index++) {
+      once(`enum class GeneratedAcmeSampleState${index} {`);
+      once(`data class GeneratedSampleAuthority${index}SourcePayload(`);
+      once(`data class GeneratedSamplePresentation${index}Payload(`);
+      once(`object GeneratedAcmeStatePresentationSampleAuthority${index} {`);
+      once(`val SampleAuthority${index} get() = GeneratedAcmeStatePresentationSampleAuthority${index}`);
+      once(`id = "sample.authority${index}",`);
+      once(`SampleAuthority${index}.authority,`);
+      once(`id = "sample.state${index}",`);
+      once(`nativeSymbol = GeneratedAcmeSampleState${index}::class,`);
+      once(`"SampleAuthority${index}" to setOf(`);
+      // Whole readable declarations/cases survive the split, including the last finite value.
+      once(`GeneratedAcmeSampleState${index}.STATE69 to GeneratedSamplePresentation${index}Payload(Label = "state69")`);
+    }
+  }
+  assert.throws(() => emitStatePresentationsKotlinFiles([{
+    ...authority,
+    source: { ...authority.source, states: { ...states,
+      values: Array.from({ length: 500 }, (_, index) => `state${index}`),
+    } },
+  }], {
+    packageName: "io.acme.generated", symbolPrefix: "Acme",
+    sourceSha: "fixture", nativePortPackageName: "io.acme.ports",
+  }), /Types declaration\/entry exceeds 499 lines/u);
+});

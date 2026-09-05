@@ -22,9 +22,8 @@ interface GeneratedStatePresentationFiles {
 }
 
 /**
- * Keep the public generated registry stable while placing executable lookup
- * tables in bounded files. Authorities grow with product vocabulary; they must
- * not turn one generated Kotlin object into a new monolith.
+ * Keep the public generated registry stable. Types, payloads, lookup tables and
+ * registry entries each have bounded, readable shards as the vocabulary grows.
  */
 export function emitStatePresentationsKotlinFiles(
   authorities: readonly CompiledStateAuthority[],
@@ -34,11 +33,40 @@ export function emitStatePresentationsKotlinFiles(
   const finiteValuesById = new Map(finiteValues.map((value) => [value.id, value] as const));
   const opaqueSourceValues = uniqueOpaqueSourceValues(authorities);
   const header = statePresentationHeader(options);
+  const declarations = boundedShards("Types", [
+    ...finiteValues.map((declaration) => emitFiniteEnum(declaration, options)),
+    ...opaqueSourceValues.map((ref) => `internal sealed interface ${opaqueSourceValueName(ref, options)}`),
+  ], header);
+  const payloads = boundedShards("Payloads", authorities.map((authority) =>
+    `${emitSourcePayload(authority, finiteValuesById, options)}\n\n${emitPayload(authority, options)}`
+  ), header);
+  const lookups = boundedShards("Lookups", authorities.map((authority) =>
+    emitTopLevelLookup(authority, options)
+  ), header);
+  const registryName = (suffix: string) => `Generated${options.symbolPrefix}StatePresentation${suffix}`;
+  const authorityEntries = boundedShards("Authorities", authorities.map((authority) =>
+    `    ${topLevelLookupName(authority, options)}.authority,`
+  ), header, (entries, suffix) => `internal val ${registryName(suffix)}: List<GeneratedStatePresentationAuthority> = listOf(
+${entries.join("\n")}
+)`);
+  const finiteEntries = boundedShards("FiniteValues", finiteValues.map((declaration) =>
+    `    GeneratedStatePresentationFiniteValue(
+        id = ${kotlinStringLiteral(declaration.id)},
+        values = setOf(${declaration.values.map(kotlinStringLiteral).join(", ")}),
+        nativeSymbol = ${finiteEnumName(declaration, options)}::class,
+    ),`
+  ), header, (entries, suffix) => `internal val ${registryName(suffix)}: List<GeneratedStatePresentationFiniteValue> = listOf(
+${entries.join("\n")}
+)`);
+  const nativeEntries = boundedShards("NativePorts", authorities.map((authority) =>
+    `    ${kotlinStringLiteral(lookupName(authority))} to setOf(
+        ${topLevelLookupName(authority, options)}.authority.inputPort,
+        ${topLevelLookupName(authority, options)}.authority.outputPort,
+    ),`
+  ), header, (entries, suffix) => `internal val ${registryName(suffix)}: Map<String, Set<GeneratedProductPortId>> = mapOf(
+${entries.join("\n")}
+)`);
   const aggregate = `${header}
-${finiteValues.map((declaration) => emitFiniteEnum(declaration, options)).join("\n")}
-${opaqueSourceValues.map((ref) => `internal sealed interface ${opaqueSourceValueName(ref, options)}`).join("\n")}
-${authorities.map((authority) => emitSourcePayload(authority, finiteValuesById, options)).join("\n")}
-${authorities.map((authority) => emitPayload(authority, options)).join("\n")}
 internal data class GeneratedStatePresentationBinding<S : Any, P : Any>(
     val inputPort: ${options.nativePortPackageName}.ProductDataInput<S>,
     val present: (S) -> P,
@@ -62,33 +90,23 @@ internal data class GeneratedStatePresentationAuthority(
 internal object Generated${options.symbolPrefix}StatePresentations {
 ${authorities.map((authority) => `    val ${lookupName(authority)} get() = ${topLevelLookupName(authority, options)}`).join("\n")}
 
-    val authorities: List<GeneratedStatePresentationAuthority> = listOf(
-${authorities.map((authority) => `        ${lookupName(authority)}.authority,`).join("\n")}
-    )
+    val authorities: List<GeneratedStatePresentationAuthority> = buildList {
+${authorityEntries.map(({ suffix }) => `        addAll(${registryName(suffix)})`).join("\n")}
+    }
 
-    val finiteValues: List<GeneratedStatePresentationFiniteValue> = listOf(
-${finiteValues.map((declaration) => `        GeneratedStatePresentationFiniteValue(
-            id = ${kotlinStringLiteral(declaration.id)},
-            values = setOf(${declaration.values.map(kotlinStringLiteral).join(", ")}),
-            nativeSymbol = ${finiteEnumName(declaration, options)}::class,
-        ),`).join("\n")}
-    )
+    val finiteValues: List<GeneratedStatePresentationFiniteValue> = buildList {
+${finiteEntries.map(({ suffix }) => `        addAll(${registryName(suffix)})`).join("\n")}
+    }
 
-    val nativePortIdsByBinding: Map<String, Set<GeneratedProductPortId>> = mapOf(
-${authorities.map((authority) => `        ${kotlinStringLiteral(lookupName(authority))} to setOf(
-            ${lookupName(authority)}.authority.inputPort,
-            ${lookupName(authority)}.authority.outputPort,
-        ),`).join("\n")}
-    )
+    val nativePortIdsByBinding: Map<String, Set<GeneratedProductPortId>> = buildMap {
+${nativeEntries.map(({ suffix }) => `        putAll(${registryName(suffix)})`).join("\n")}
+    }
 }
 `;
-  const shards = chunks(authorities, 4).map((group, index) => ({
-    suffix: `Lookups${index}`,
-    content: `${header}
-${group.map((authority) => emitTopLevelLookup(authority, options)).join("\n")}
-`,
-  }));
-  return { aggregate, shards };
+  requireBoundedFile(aggregate, "aggregate (public authority accessors)");
+  return { aggregate, shards: [
+    ...declarations, ...payloads, ...lookups, ...authorityEntries, ...finiteEntries, ...nativeEntries,
+  ] };
 }
 
 function statePresentationHeader(options: StatePresentationKotlinOptions): string {
@@ -117,12 +135,39 @@ function topLevelLookupName(
   return `Generated${options.symbolPrefix}StatePresentation${lookupName(authority)}`;
 }
 
-function chunks<T>(values: readonly T[], size: number): readonly (readonly T[])[] {
-  const result: T[][] = [];
-  for (let index = 0; index < values.length; index += size) {
-    result.push(values.slice(index, index + size));
+/** Split at complete Kotlin declarations/entries, never by slicing source lines. */
+function boundedShards(
+  kind: string,
+  blocks: readonly string[],
+  header: string,
+  wrap = (entries: readonly string[], _suffix: string) => entries.join("\n\n"),
+): GeneratedStatePresentationFiles["shards"] {
+  const shards: { suffix: string; content: string }[] = [];
+  let pending: string[] = [];
+  const render = (entries: readonly string[]) => {
+    const suffix = `${kind}${shards.length}`;
+    return { suffix, content: `${header}\n${wrap(entries, suffix)}\n` };
+  };
+  for (const block of blocks) {
+    if (pending.length > 0 && lineCount(render([...pending, block]).content) >= 500) {
+      shards.push(render(pending));
+      pending = [];
+    }
+    pending.push(block);
+    requireBoundedFile(render(pending).content, `${kind} declaration/entry`);
   }
-  return result;
+  if (pending.length > 0) shards.push(render(pending));
+  return shards;
+}
+
+function lineCount(content: string): number {
+  return content.trimEnd().split("\n").length;
+}
+
+function requireBoundedFile(content: string, label: string): void {
+  if (lineCount(content) >= 500) {
+    throw new Error(`State presentations ${label} exceeds 499 lines; split the product declaration`);
+  }
 }
 
 function emitFiniteEnum(
