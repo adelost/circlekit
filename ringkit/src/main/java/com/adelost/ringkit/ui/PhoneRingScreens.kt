@@ -247,13 +247,14 @@ private fun PhoneLauncherScreen(
     backLabel: String,
     gridRole: MenuGridRole,
 ) {
+    val scrollState = rememberScrollState()
     val grid = menuGridSpec(
         LocalCircleSurfaceLayout.current.surfaceClass,
         LocalCircleMenuDensity.current,
         gridRole,
     )
     Column(
-        modifier = Modifier.fillMaxSize(),
+        modifier = Modifier.fillMaxSize().verticalScroll(scrollState).rotaryScroll(scrollState),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         PhoneScreenHeader(screen.title, back, backLabel)
