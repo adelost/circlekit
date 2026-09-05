@@ -1,9 +1,7 @@
 package io.v1d.circlekit.showcase.catalog
 
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.offset
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
@@ -12,24 +10,19 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
-import com.adelost.designkit.ui.CircleActionTiming
 import com.adelost.designkit.ui.CircleChromeSlot
 import com.adelost.designkit.ui.CircleColorSchemeProvider
 import com.adelost.designkit.ui.CircleColorTheme
-import com.adelost.designkit.ui.CircleIconDisc
 import com.adelost.designkit.ui.CircleSurfaceClass
 import com.adelost.designkit.ui.LocalCircleSurfaceLayout
 import com.adelost.designkit.ui.LocalRoundChromeReservation
-import com.adelost.designkit.ui.MenuDesign
-import com.adelost.designkit.ui.RadialChromeDesign
 import com.adelost.designkit.ui.RingIcons
 import com.adelost.ringkit.ui.RenderRingScreen
 import com.adelost.ringkit.ui.RingActionCueHost
 import com.adelost.ringkit.ui.RingNavigator
 import com.adelost.ringkit.ui.RingTextEntryPort
-import kotlin.math.cos
-import kotlin.math.sin
+import com.adelost.ringkit.ui.RingRoundChrome
+import com.adelost.ringkit.ui.RingChromeAction
 
 @Composable
 fun CircleKitShowcase(
@@ -127,25 +120,11 @@ private fun RoundShowcaseChrome(
     slots: List<CircleChromeSlot>,
     onBack: () -> Unit,
 ) {
-    BoxWithConstraints(Modifier.fillMaxSize()) {
-        slots.forEach { slot ->
-            val diameter = MenuDesign.watchActionRingDiameter
-            val radius = minOf(maxWidth.value, maxHeight.value) / 2f * RadialChromeDesign.slotRadiusFraction
-            val angle = Math.toRadians(slot.angleFromTopDeg.toDouble())
-            val x = maxWidth.value / 2f + radius * sin(angle).toFloat() - diameter.value / 2f
-            val y = maxHeight.value / 2f - radius * cos(angle).toFloat() - diameter.value / 2f
-            val isBack = slot == CircleChromeSlot.HOUR_9
-            CircleIconDisc(
-                icon = if (isBack) RingIcons.Cross else RingIcons.Gear,
-                contentDescription = if (isBack) "Back" else "Chrome reservation",
-                actionLabel = if (isBack) "BACK" else "GEAR",
-                onTap = if (isBack) onBack else ({ }),
-                diameter = diameter,
-                timing = CircleActionTiming.DELIBERATE,
-                modifier = Modifier.offset(x.dp, y.dp),
-            )
-        }
-    }
+    RingRoundChrome(slots.map { slot ->
+        val isBack = slot == CircleChromeSlot.HOUR_9
+        RingChromeAction(slot, if (isBack) RingIcons.Cross else RingIcons.Gear,
+            if (isBack) "Back" else "Chrome reservation", if (isBack) onBack else ({ }))
+    })
 }
 
 private fun ShowcaseDestination.colorTheme(): CircleColorTheme = when (scenarioId?.value) {

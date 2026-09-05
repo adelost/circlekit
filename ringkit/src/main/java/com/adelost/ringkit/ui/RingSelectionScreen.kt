@@ -60,5 +60,7 @@ fun RingSelectionScreen(
         items.value = ringSelectionRows(options, selectedId, icon, onSelect)
             .ifEmpty { listOf(RowSpec("empty", emptyLabel, "", icon)) }
     }
-    RenderRingScreen(nav = navigator, backLabel = "Back", onExit = onBack)
+    RingRoundBackHost(onBack) {
+        RenderRingScreen(nav = navigator, backLabel = "Back", onExit = onBack)
+    }
 }
