@@ -4,6 +4,7 @@ import com.adelost.designkit.ui.*
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -12,17 +13,9 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.layout.findRootCoordinates
-import androidx.compose.ui.layout.onGloballyPositioned
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 
@@ -58,40 +51,33 @@ internal fun <T> RingMenuGrid(
 ) {
     val round = LocalCircleSurfaceLayout.current.surfaceClass == CircleSurfaceClass.ROUND
     val reserved = LocalRoundChromeReservation.current
-    val density = LocalDensity.current.density
-    var insets by remember(spec, round, reserved) {
-        mutableStateOf(CircleHorizontalInsetsDp(0f, 0f))
-    }
+    val faceSideDp = LocalCircleFaceShortSideDp.current
     Box(
         modifier = Modifier.fillMaxWidth(),
         contentAlignment = Alignment.TopCenter,
     ) {
-        Box(
+        BoxWithConstraints(
             modifier = Modifier
                 .then(spec.contentMaxWidth?.let { Modifier.widthIn(max = it) } ?: Modifier)
-                .fillMaxWidth()
-                .onGloballyPositioned { coordinates ->
-                    val width = coordinates.size.width / density
-                    val base = width * (1f - resolvedCircleGridWidthFraction(spec)) / 2f
-                    val root = coordinates.findRootCoordinates()
-                    val x = root.localPositionOf(coordinates, Offset.Zero).x / density
-                    val safe = if (round) rowsListInsetsDp(
-                        viewportWidthDp = root.size.width / density,
-                        viewportHeightDp = root.size.height / density,
-                        titleBandBottomDp = (MenuDesign.roundTitleTopPadding + MenuDesign.roundTitleHeight).value,
-                        baseInsetDp = 0f,
-                        reservedSlots = reserved,
-                    ).let { CircleHorizontalInsetsDp(it.start.value, it.end.value) }
-                    else CircleHorizontalInsetsDp(0f, 0f)
-                    // Reserve the whole reading band, not the grid's changing
-                    // centre while it scrolls. Cell widths never ripple.
-                    insets = CircleHorizontalInsetsDp(
-                        maxOf(base, safe.start - x),
-                        maxOf(base, safe.end - (root.size.width / density - x - width)),
-                    )
-                },
+                .fillMaxWidth(),
             contentAlignment = Alignment.TopCenter,
         ) {
+            val base = maxWidth.value * (1f - resolvedCircleGridWidthFraction(spec)) / 2f
+            // The round host owns a local canonical face (also inside a Phone
+            // WatchExact preview). Android's outer root is NOT that viewport.
+            val outerInset = (faceSideDp - maxWidth.value) / 2f
+            val safe = if (round) rowsListInsetsDp(
+                viewportWidthDp = faceSideDp,
+                viewportHeightDp = faceSideDp,
+                titleBandBottomDp = (MenuDesign.roundTitleTopPadding + MenuDesign.roundTitleHeight).value,
+                baseInsetDp = 0f,
+                reservedSlots = reserved,
+            ) else RingRowHorizontalInsets(0.dp, 0.dp)
+            // Stable widths through the whole scrollable reading band.
+            val insets = CircleHorizontalInsetsDp(
+                maxOf(base, safe.start.value - outerInset),
+                maxOf(base, safe.end.value - outerInset),
+            )
             Column(
                 modifier = Modifier.fillMaxWidth().padding(start = insets.start.dp, end = insets.end.dp),
             ) {

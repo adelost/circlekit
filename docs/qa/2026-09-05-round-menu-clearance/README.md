@@ -32,6 +32,12 @@ like Rows; bottom entries are not permanently stranded outside the viewport.
   circular top/bottom while scrolling are naturally clipped; simultaneous
   visibility of the entire menu is neither claimed nor required.
 - Named menu navigation still invokes the real entry callbacks.
+- Phone WATCH EXACT at 192 dp uses the same two-column scene (`phone-exact.png`).
+  Before publication, the grid was corrected to use the host's canonical face
+  instead of Android root-window coordinates: the preview is only a small part
+  of that window. This also removes the measurement/recomposition state loop.
+  The first publication attempt was stopped while 0.3.59 remained HTTP 404;
+  only the corrected fresh merge may be published.
 
 84 existing icon geometries were additionally inspected at 18 and 30 px from
 their actual asset paths. This is vector preview, not native renderer coverage.
