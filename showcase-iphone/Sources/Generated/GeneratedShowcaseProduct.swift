@@ -147,105 +147,105 @@ enum GeneratedShowcaseProduct {
             rendererId: "ShowcaseComponentScreen",
             title: "COLORS",
             iconId: "palette",
-            scenarios: [ShowcaseScenario(id: "sea-glass", label: "SEA GLASS"), ShowcaseScenario(id: "flat-cyan", label: "FLAT CYAN"), ShowcaseScenario(id: "muted", label: "MUTED"), ShowcaseScenario(id: "high-contrast", label: "HIGH CONTRAST")]
+            scenarios: [ShowcaseScenario(id: "sea-glass", label: "SEA GLASS"), ShowcaseScenario(id: "flat-cyan", label: "CYAN"), ShowcaseScenario(id: "muted", label: "STEEL"), ShowcaseScenario(id: "high-contrast", label: "VIOLET")]
         ),
         ShowcaseComponent(
             id: .foundationGeometry,
             rendererId: "ShowcaseComponentScreen",
             title: "GEOMETRY",
             iconId: "grid",
-            scenarios: [ShowcaseScenario(id: "round-192", label: "ROUND 192"), ShowcaseScenario(id: "phone-compact", label: "PHONE COMPACT"), ShowcaseScenario(id: "phone-wide", label: "PHONE WIDE"), ShowcaseScenario(id: "chrome-x", label: "X @ 9"), ShowcaseScenario(id: "chrome-x-gear", label: "X + GEAR")]
+            scenarios: [ShowcaseScenario(id: "round-192", label: "WATCH METRICS"), ShowcaseScenario(id: "phone-compact", label: "PORTRAIT METRICS"), ShowcaseScenario(id: "phone-wide", label: "WIDE METRICS"), ShowcaseScenario(id: "chrome-x", label: "BACK CLEARANCE"), ShowcaseScenario(id: "chrome-x-gear", label: "BACK + SETTINGS")]
         ),
         ShowcaseComponent(
             id: .atomIconAction,
             rendererId: "ShowcaseComponentScreen",
             title: "ACTIONS",
             iconId: "watch",
-            scenarios: [ShowcaseScenario(id: "idle", label: "IDLE"), ShowcaseScenario(id: "active", label: "ACTIVE"), ShowcaseScenario(id: "immediate", label: "IMMEDIATE"), ShowcaseScenario(id: "deliberate", label: "DELIBERATE"), ShowcaseScenario(id: "disabled", label: "DISABLED")]
+            scenarios: [ShowcaseScenario(id: "idle", label: "INACTIVE LOOK"), ShowcaseScenario(id: "active", label: "ACTIVE LOOK"), ShowcaseScenario(id: "immediate", label: "TAP TO TOGGLE"), ShowcaseScenario(id: "deliberate", label: "HOLD TO TOGGLE"), ShowcaseScenario(id: "disabled", label: "UNAVAILABLE")]
         ),
         ShowcaseComponent(
             id: .controlActionRow,
             rendererId: "ShowcaseComponentScreen",
             title: "ACTION ROW",
             iconId: "touchdown-run",
-            scenarios: [ShowcaseScenario(id: "immediate", label: "IMMEDIATE"), ShowcaseScenario(id: "deliberate", label: "DELIBERATE"), ShowcaseScenario(id: "confirm", label: "CONFIRM"), ShowcaseScenario(id: "recoverable", label: "RECOVERABLE"), ShowcaseScenario(id: "blocked", label: "BLOCKED"), ShowcaseScenario(id: "failure", label: "FAILURE + RETRY")]
+            scenarios: [ShowcaseScenario(id: "immediate", label: "TAP ACTION"), ShowcaseScenario(id: "deliberate", label: "HOLD ACTION"), ShowcaseScenario(id: "confirm", label: "CONFIRM ACTION"), ShowcaseScenario(id: "recoverable", label: "RECOVER ACCESS"), ShowcaseScenario(id: "blocked", label: "MISSING TARGET"), ShowcaseScenario(id: "failure", label: "FAILURE + RETRY")]
         ),
         ShowcaseComponent(
             id: .controlChoiceRow,
             rendererId: "ShowcaseComponentScreen",
             title: "CHOICES",
             iconId: "grid",
-            scenarios: [ShowcaseScenario(id: "off", label: "TOGGLE OFF"), ShowcaseScenario(id: "on", label: "TOGGLE ON"), ShowcaseScenario(id: "two", label: "TWO OPTIONS"), ShowcaseScenario(id: "first", label: "SEVEN · FIRST"), ShowcaseScenario(id: "middle", label: "SEVEN · MIDDLE"), ShowcaseScenario(id: "last", label: "SEVEN · LAST")]
+            scenarios: [ShowcaseScenario(id: "off", label: "START OFF"), ShowcaseScenario(id: "on", label: "START ON"), ShowcaseScenario(id: "two", label: "TWO UNITS"), ShowcaseScenario(id: "first", label: "FIRST CHOICE"), ShowcaseScenario(id: "middle", label: "MIDDLE CHOICE"), ShowcaseScenario(id: "last", label: "LAST CHOICE")]
         ),
         ShowcaseComponent(
             id: .controlAdjustment,
             rendererId: "ShowcaseComponentScreen",
             title: "ADJUST",
             iconId: "sliders",
-            scenarios: [ShowcaseScenario(id: "minimum", label: "MINIMUM"), ShowcaseScenario(id: "middle", label: "MIDDLE"), ShowcaseScenario(id: "maximum", label: "MAXIMUM"), ShowcaseScenario(id: "deliberate", label: "DELIBERATE STEPS")]
+            scenarios: [ShowcaseScenario(id: "minimum", label: "LOWER LIMIT"), ShowcaseScenario(id: "middle", label: "MID RANGE"), ShowcaseScenario(id: "maximum", label: "UPPER LIMIT"), ShowcaseScenario(id: "deliberate", label: "HOLD EACH STEP")]
         ),
         ShowcaseComponent(
             id: .controlProgress,
             rendererId: "ShowcaseComponentScreen",
             title: "PROGRESS",
             iconId: "download",
-            scenarios: [ShowcaseScenario(id: "none", label: "NONE"), ShowcaseScenario(id: "indeterminate", label: "INDETERMINATE"), ShowcaseScenario(id: "empty", label: "0 PERCENT"), ShowcaseScenario(id: "half", label: "50 PERCENT"), ShowcaseScenario(id: "complete", label: "100 PERCENT"), ShowcaseScenario(id: "failed", label: "FAILURE + RETRY")]
+            scenarios: [ShowcaseScenario(id: "none", label: "NOT STARTED"), ShowcaseScenario(id: "indeterminate", label: "UNKNOWN TOTAL"), ShowcaseScenario(id: "empty", label: "ZERO COMPLETE"), ShowcaseScenario(id: "half", label: "HALF COMPLETE"), ShowcaseScenario(id: "complete", label: "COMPLETE"), ShowcaseScenario(id: "failed", label: "FAILURE + RETRY")]
         ),
         ShowcaseComponent(
             id: .controlPressRing,
             rendererId: "ShowcaseComponentScreen",
             title: "PRESS",
             iconId: "record",
-            scenarios: [ShowcaseScenario(id: "idle", label: "IDLE"), ShowcaseScenario(id: "recording", label: "RECORDING"), ShowcaseScenario(id: "disabled", label: "DISABLED"), ShowcaseScenario(id: "failed", label: "FAILED + RETRY")]
+            scenarios: [ShowcaseScenario(id: "idle", label: "READY TO HOLD"), ShowcaseScenario(id: "recording", label: "RECORDING LOOK"), ShowcaseScenario(id: "disabled", label: "UNAVAILABLE"), ShowcaseScenario(id: "failed", label: "FAILED + RETRY")]
         ),
         ShowcaseComponent(
             id: .inputText,
             rendererId: "ShowcaseComponentScreen",
             title: "TEXT",
             iconId: "pencil",
-            scenarios: [ShowcaseScenario(id: "empty", label: "EMPTY"), ShowcaseScenario(id: "filled", label: "FILLED"), ShowcaseScenario(id: "max", label: "MAX LENGTH"), ShowcaseScenario(id: "disabled", label: "DISABLED")]
+            scenarios: [ShowcaseScenario(id: "empty", label: "START WRITING"), ShowcaseScenario(id: "filled", label: "EDIT A MESSAGE"), ShowcaseScenario(id: "max", label: "TEXT LIMIT"), ShowcaseScenario(id: "disabled", label: "READ ONLY")]
         ),
         ShowcaseComponent(
             id: .mediaCapture,
             rendererId: "ShowcaseComponentScreen",
             title: "WAVEFORM",
             iconId: "record",
-            scenarios: [ShowcaseScenario(id: "silent", label: "NO SAMPLES"), ShowcaseScenario(id: "active", label: "ACTIVE"), ShowcaseScenario(id: "long", label: "LONG DURATION")]
+            scenarios: [ShowcaseScenario(id: "silent", label: "NO SAMPLES"), ShowcaseScenario(id: "active", label: "SAMPLE WAVEFORM"), ShowcaseScenario(id: "long", label: "LONG RECORDING")]
         ),
         ShowcaseComponent(
             id: .mediaPlayback,
             rendererId: "ShowcaseComponentScreen",
             title: "PLAYBACK",
             iconId: "play",
-            scenarios: [ShowcaseScenario(id: "ready", label: "READY"), ShowcaseScenario(id: "playing", label: "PLAYING"), ShowcaseScenario(id: "paused", label: "PAUSED"), ShowcaseScenario(id: "complete", label: "COMPLETE"), ShowcaseScenario(id: "failed", label: "FAILED")]
+            scenarios: [ShowcaseScenario(id: "ready", label: "READY TO PLAY"), ShowcaseScenario(id: "playing", label: "PLAYING LOOK"), ShowcaseScenario(id: "paused", label: "PAUSED"), ShowcaseScenario(id: "complete", label: "FINISHED"), ShowcaseScenario(id: "failed", label: "PLAYBACK FAILED")]
         ),
         ShowcaseComponent(
             id: .templateScreens,
             rendererId: "ShowcaseComponentScreen",
             title: "SCREENS",
             iconId: "layers",
-            scenarios: [ShowcaseScenario(id: "hub", label: "HUB"), ShowcaseScenario(id: "detail", label: "DETAIL"), ShowcaseScenario(id: "launcher", label: "LAUNCHER"), ShowcaseScenario(id: "rows", label: "ROWS"), ShowcaseScenario(id: "adjustment", label: "ADJUSTMENT"), ShowcaseScenario(id: "color-picker", label: "COLOR PICKER"), ShowcaseScenario(id: "dial-preview", label: "DIAL PREVIEW"), ShowcaseScenario(id: "empty", label: "EMPTY CONTENT"), ShowcaseScenario(id: "max-capacity", label: "MAX CAPACITY"), ShowcaseScenario(id: "long-content", label: "LONG CONTENT"), ShowcaseScenario(id: "named-selection", label: "NAMED SELECTION")]
+            scenarios: [ShowcaseScenario(id: "hub", label: "DATA OVERVIEW"), ShowcaseScenario(id: "detail", label: "VALUE + ACTIONS"), ShowcaseScenario(id: "launcher", label: "APP MENU"), ShowcaseScenario(id: "rows", label: "SETTINGS LIST"), ShowcaseScenario(id: "adjustment", label: "ADJUST VALUE"), ShowcaseScenario(id: "color-picker", label: "PALETTE PICKER"), ShowcaseScenario(id: "dial-preview", label: "DIAL PREVIEW"), ShowcaseScenario(id: "empty", label: "EMPTY PAGE"), ShowcaseScenario(id: "max-capacity", label: "LONG LIST"), ShowcaseScenario(id: "long-content", label: "LONG TEXT"), ShowcaseScenario(id: "named-selection", label: "CHOOSE DEVICE")]
         ),
         ShowcaseComponent(
             id: .flowSource,
             rendererId: "ShowcaseComponentScreen",
-            title: "SOURCE",
+            title: "DATA AGE",
             iconId: "wifi",
-            scenarios: [ShowcaseScenario(id: "off", label: "OFF"), ShowcaseScenario(id: "loading", label: "LOADING"), ShowcaseScenario(id: "fresh", label: "FRESH"), ShowcaseScenario(id: "aging", label: "AGING"), ShowcaseScenario(id: "partial", label: "PARTIAL"), ShowcaseScenario(id: "broken", label: "BROKEN")]
+            scenarios: [ShowcaseScenario(id: "off", label: "SOURCE OFF"), ShowcaseScenario(id: "loading", label: "FIRST REQUEST"), ShowcaseScenario(id: "fresh", label: "CURRENT VALUE"), ShowcaseScenario(id: "aging", label: "OLD VALUE"), ShowcaseScenario(id: "partial", label: "PARTIAL COVERAGE"), ShowcaseScenario(id: "broken", label: "REQUEST FAILED")]
         ),
         ShowcaseComponent(
             id: .flowUpdate,
             rendererId: "ShowcaseComponentScreen",
-            title: "UPDATE",
+            title: "UPDATE DEMO",
             iconId: "download",
-            scenarios: [ShowcaseScenario(id: "checking", label: "CHECKING"), ShowcaseScenario(id: "available", label: "AVAILABLE"), ShowcaseScenario(id: "downloading", label: "DOWNLOADING"), ShowcaseScenario(id: "ready", label: "READY"), ShowcaseScenario(id: "failed", label: "FAILED")]
+            scenarios: [ShowcaseScenario(id: "checking", label: "CHECKING"), ShowcaseScenario(id: "available", label: "UPDATE FOUND"), ShowcaseScenario(id: "downloading", label: "DOWNLOADING"), ShowcaseScenario(id: "ready", label: "READY TO INSTALL"), ShowcaseScenario(id: "failed", label: "CHECK FAILED")]
         ),
         ShowcaseComponent(
             id: .flowService,
             rendererId: "ShowcaseComponentScreen",
-            title: "SERVICE",
+            title: "WORK + CACHE",
             iconId: "wrench",
-            scenarios: [ShowcaseScenario(id: "idle", label: "IDLE"), ShowcaseScenario(id: "active", label: "ACTIVE"), ShowcaseScenario(id: "success", label: "SUCCESS"), ShowcaseScenario(id: "failed", label: "FAILED"), ShowcaseScenario(id: "cache", label: "CACHE")]
+            scenarios: [ShowcaseScenario(id: "idle", label: "NO WORK"), ShowcaseScenario(id: "active", label: "WORK IN PROGRESS"), ShowcaseScenario(id: "success", label: "REQUEST FINISHED"), ShowcaseScenario(id: "failed", label: "REQUEST FAILED"), ShowcaseScenario(id: "cache", label: "SAVED LOCALLY")]
         )
     ]
     static let trees: [ShowcaseTree] = [

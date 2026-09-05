@@ -19,6 +19,7 @@ value class ShowcaseActionId(val value: String)
 data class ShowcaseScenario(
     val id: ShowcaseScenarioId,
     val label: String,
+    val description: String = "",
 )
 
 data class ShowcaseCase(
@@ -27,6 +28,7 @@ data class ShowcaseCase(
     val title: String,
     val iconId: String,
     val scenarios: List<ShowcaseScenario>,
+    val purpose: String,
 )
 
 data class ShowcaseComponentTree(

@@ -5,7 +5,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -14,6 +13,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.adelost.designkit.ui.CircleSurfaceClass
+import com.adelost.designkit.ui.CircleText
+import com.adelost.designkit.ui.MenuDesign
+import com.adelost.designkit.ui.RingTokens
+import androidx.compose.ui.text.style.TextAlign
 import com.adelost.designkit.ui.RingIcons
 import com.adelost.ringkit.ui.PhoneScreenHeader
 import com.adelost.ringkit.ui.RingAudioCaptureFeedback
@@ -106,13 +109,14 @@ object ShowcasePresentations {
         val scenario = requireNotNull(destination.scenarioId).value
         ComponentFrame(
             title = ShowcaseManifest.find(requireNotNull(destination.caseId))?.title.orEmpty(),
+            note = if (kind == ShowcaseComponentKind.TEXT) "LOCAL TEXT DEMO" else "DEMO · NO AUDIO",
             surface = surface,
             onBack = onBack,
         ) {
             when (kind) {
                 ShowcaseComponentKind.TEXT -> TextPreview(scenario, state)
                 ShowcaseComponentKind.PRESS -> PressPreview(state)
-                ShowcaseComponentKind.CAPTURE -> CapturePreview(state, surface)
+                ShowcaseComponentKind.CAPTURE -> CapturePreview(state)
                 ShowcaseComponentKind.PLAYBACK -> PlaybackPreview(state)
             }
         }
@@ -121,6 +125,7 @@ object ShowcasePresentations {
     @Composable
     private fun ComponentFrame(
         title: String,
+        note: String,
         surface: CircleSurfaceClass,
         onBack: () -> Unit,
         content: @Composable () -> Unit,
@@ -130,10 +135,12 @@ object ShowcasePresentations {
                 modifier = Modifier.fillMaxSize(),
                 contentAlignment = Alignment.Center,
             ) {
-                Box(
+                Column(
                     modifier = Modifier.fillMaxWidth(),
-                    contentAlignment = Alignment.Center,
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(MenuDesign.mediaContentGap),
                 ) {
+                    DemoNote(note)
                     content()
                 }
             }
@@ -144,11 +151,23 @@ object ShowcasePresentations {
                     modifier = Modifier.weight(1f).fillMaxWidth().padding(horizontal = 16.dp),
                     contentAlignment = Alignment.Center,
                 ) {
-                    content()
+                    Column(horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(MenuDesign.mediaContentGap)) {
+                        DemoNote(note)
+                        content()
+                    }
                 }
             }
         }
     }
+
+    @Composable
+    private fun DemoNote(text: String) = CircleText(
+        text = text,
+        color = RingTokens.Dim,
+        fontSizeSp = MenuDesign.subSize.value,
+        textAlign = TextAlign.Center,
+    )
 
     @Composable
     private fun TextPreview(scenario: String, state: ShowcaseMediaState) {
@@ -198,7 +217,7 @@ object ShowcasePresentations {
     }
 
     @Composable
-    private fun CapturePreview(state: ShowcaseMediaState, surface: CircleSurfaceClass) {
+    private fun CapturePreview(state: ShowcaseMediaState) {
         val active by state.captureActive.collectAsState()
         val elapsedMs by state.captureElapsedMs.collectAsState()
         val levels by state.captureLevels.collectAsState()
@@ -208,9 +227,7 @@ object ShowcasePresentations {
                 levels = levels,
                 active = active,
             ),
-            modifier = Modifier
-                .fillMaxWidth()
-                .offset(y = if (surface == CircleSurfaceClass.ROUND) (-42).dp else 0.dp),
+            modifier = Modifier.fillMaxWidth(),
         )
     }
 

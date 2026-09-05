@@ -11,6 +11,7 @@ import com.adelost.ringkit.data.SourceState
 import com.adelost.ringkit.data.Trigger
 import com.adelost.ringkit.data.healthOf
 import com.adelost.ringkit.ui.RingScreen
+import com.adelost.ringkit.ui.ActionSpec
 import com.adelost.ringkit.ui.RowSpec
 import com.adelost.servicekit.ServiceOutcome
 import com.adelost.servicekit.ServiceSnapshot
@@ -33,11 +34,11 @@ object ShowcaseFlowScreens {
             )
         }
         return RingScreen.Detail(
-            title = "SOURCE HEALTH",
+            title = "DATA AGE DEMO",
             icon = RingIcons.Cloud,
             sourceId = SourceId("showcase-flow"),
             hero = state.source.map { it.value ?: "—" },
-            sub = state.source.map(::sourceCopy),
+            sub = state.source.map { "DEMO · ${sourceCopy(it)}" },
             freshness = combine(state.source, health) { source, sourceHealth ->
                 sourceFreshness(source, sourceHealth)
             },
@@ -45,13 +46,14 @@ object ShowcaseFlowScreens {
             progress = state.source.map { it.progress },
             onRefresh = state::refreshSource,
             refreshEnabled = state.source.map { !it.inFlight },
+            actions = listOf(ActionSpec("NEXT EXAMPLE", RingIcons.ChevronRight, state::advanceSource)),
         )
     }
 
     fun update(state: ShowcaseFlowState): RingScreen.Rows = RingScreen.Rows(
-        title = "UPDATE FLOW",
+        title = "UPDATE DEMO",
         items = state.update.map { updateState ->
-            releaseUpdateRows(
+            listOf(RowSpec("demo-note", "SIMULATION", "No download or installation", icon = null)) + releaseUpdateRows(
                 state = updateState,
                 currentVersionName = "0.3.9",
                 updateKey = "update",
@@ -59,13 +61,18 @@ object ShowcaseFlowScreens {
                 onCheck = state::advanceUpdate,
                 onInstall = state::advanceUpdate,
                 hint = "Advances only deterministic update data; no download or install is performed.",
-            )
+            ) + demoStep(state::advanceUpdate)
         },
     )
 
     fun service(state: ShowcaseFlowState): RingScreen.Rows = RingScreen.Rows(
-        title = "SERVICE STATUS",
-        items = state.service.map { snapshot -> serviceRows(snapshot, state) },
+        title = "WORK DEMO",
+        items = state.service.map { snapshot -> serviceRows(snapshot, state) + demoStep(state::advanceService) },
+    )
+
+    private fun demoStep(next: () -> Unit) = RowSpec(
+        "demo-next", "NEXT DEMO STEP", "Local simulation; no network request", RingIcons.ChevronRight,
+        onTap = next, multiline = true,
     )
 
     private fun serviceRows(snapshot: ServiceSnapshot, state: ShowcaseFlowState): List<RowSpec> {
@@ -107,7 +114,7 @@ object ShowcaseFlowScreens {
         return when {
             error != null -> "${if (source.value == null) "NO VALUE" else "UPDATE FAILED"} · ${error.word}"
             source.coverage < 1f -> "PARTIAL · ${(source.coverage * 100).toInt()}% COVERAGE"
-            else -> "DETERMINISTIC FIXTURE"
+            else -> "EXAMPLE DATA"
         }
     }
 

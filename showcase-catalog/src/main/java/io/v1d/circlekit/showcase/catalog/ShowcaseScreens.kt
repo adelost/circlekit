@@ -15,6 +15,7 @@ import androidx.compose.ui.graphics.toArgb
 import com.adelost.ringkit.ui.LaunchSpec
 import com.adelost.ringkit.ui.RingScreen
 import com.adelost.ringkit.ui.RowSpec
+import com.adelost.releasekit.ui.releaseUpdateScreen
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
@@ -37,6 +38,9 @@ object ShowcaseScreens {
                 },
             )
         } + listOfNotNull(
+            dev?.let { port ->
+                LaunchSpec(RingIcons.Download, "APP UPDATE", open = { releaseUpdateScreen(port.update) })
+            },
             dev?.let { port ->
                 LaunchSpec(RingIcons.Wrench, "DEV", open = { ShowcaseDevScreens.root(port) })
             },
@@ -73,15 +77,19 @@ object ShowcaseScreens {
         }
     }
 
-    private fun familyScreen(
+    internal fun familyScreen(
         screen: String,
         family: ShowcaseFamily,
         session: ShowcaseSession,
-    ): RingScreen = RingScreen.Launcher(
+    ): RingScreen {
+        val cases = ShowcaseCatalogRuntime.componentIds(session.artifactProfile.id, screen).map { componentId ->
+            requireNotNull(ShowcaseCatalogRuntime.find(ShowcaseCaseId(componentId)))
+        }
+        if (cases.size == 1) return scenarios(cases.single(), session)
+        return RingScreen.Launcher(
         title = family.title,
         gridRole = MenuGridRole.COMPONENT_GALLERY,
-        entries = ShowcaseCatalogRuntime.componentIds(session.artifactProfile.id, screen).map { componentId ->
-            val case = requireNotNull(ShowcaseCatalogRuntime.find(ShowcaseCaseId(componentId)))
+        entries = cases.map { case ->
             LaunchSpec(
                 icon = ShowcaseNativeBindings.requireIcon(case.iconId),
                 label = case.title,
@@ -89,6 +97,7 @@ object ShowcaseScreens {
             )
         },
     )
+    }
 
     fun reservedChrome(destination: ShowcaseDestination): List<CircleChromeSlot> = buildList {
         add(CircleChromeSlot.HOUR_9)
@@ -100,16 +109,17 @@ object ShowcaseScreens {
         }
     }
 
-    private fun scenarios(case: ShowcaseCase, session: ShowcaseSession): RingScreen = RingScreen.Rows(
+    internal fun scenarios(case: ShowcaseCase, session: ShowcaseSession): RingScreen = RingScreen.Rows(
         title = case.title,
         items = flowOf(
-            case.scenarios.map { scenario ->
+            listOf(RowSpec("demo-purpose", "TRY THIS", case.purpose, icon = null)) + case.scenarios.map { scenario ->
                 RowSpec(
                     key = "${case.id.value}/${scenario.id.value}",
                     title = scenario.label,
-                    sub = scenario.id.value.uppercase(),
+                    sub = scenario.description,
                     icon = ShowcaseNativeBindings.requireIcon(case.iconId),
                     onTap = { session.open(case.id, scenario.id) },
+                    multiline = true,
                 )
             },
         ),
@@ -128,6 +138,9 @@ object ShowcaseScreens {
             title = theme.optionLabel,
             items = flowOf(
                 listOf(
+                    colorRow("surface", "OLED BACKGROUND", com.adelost.designkit.ui.CircleStyleTokens.Surface),
+                    colorRow("action", "ACTIONS + TEXT", com.adelost.designkit.ui.CircleStyleTokens.Action),
+                    colorRow("muted-text", "SUPPORTING TEXT", com.adelost.designkit.ui.CircleStyleTokens.ActionMuted),
                     colorRow("highlight", "HIGHLIGHT", scheme.highlight),
                     colorRow("active", "ACTIVE", scheme.active),
                     colorRow("supporting", "SUPPORT", scheme.supporting),
@@ -214,19 +227,19 @@ object ShowcaseScreens {
                 RingIcons.Cloud to "CLOUD",
                 RingIcons.Rain to "RAIN",
                 RingIcons.Clown to "CLOWN",
-            ).mapIndexed { index, (icon, label) ->
+            ).map { (icon, label) ->
                 LaunchSpec(
                     icon = icon,
                     label = label,
                     open = { null },
-                    run = {
-                        if (scenario.id.value in setOf("immediate", "deliberate") && index == 0) {
+                    run = if (scenario.id.value in setOf("immediate", "deliberate")) {
+                        {
                             session.invoke(ShowcaseActionId(ShowcaseSession.ACTION_TOGGLE_ICON))
                             session.invoke(ShowcaseActionId(ShowcaseSession.ACTION_RUN))
                         }
-                    },
-                    active = if (index == 0) active else flowOf(false),
-                    enabled = flowOf(scenario.id.value != "disabled" || index != 0),
+                    } else null,
+                    active = active,
+                    enabled = flowOf(scenario.id.value != "disabled"),
                     actionTiming = timing,
                 )
             },

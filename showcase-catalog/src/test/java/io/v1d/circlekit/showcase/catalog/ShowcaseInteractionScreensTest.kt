@@ -37,7 +37,7 @@ class ShowcaseInteractionScreensTest {
         state.prepare(ShowcaseCaseId("control.choice-row"), last.id)
         val choice = ShowcaseInteractionScreens.choiceRows(last, state).items.first().single()
         assertEquals(7, choice.choices.size)
-        assertEquals("G", choice.sub)
+        assertEquals("SUN", choice.sub)
         assertEquals(CircleChoiceRole.STEPPED, choice.choiceRole)
 
         val adjustmentScenario = scenario("control.adjustment", "deliberate")

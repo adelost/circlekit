@@ -13,7 +13,7 @@ class ShowcaseManifestTest {
             ShowcaseManifest.cases.map(ShowcaseCase::family).toSet(),
         )
         assertEquals(
-            ShowcaseManifest.cases.map { it.id.value }.toSet(),
+            ShowcaseManifest.ports.filter { it.ownerKind == "component" }.map { it.typeRef }.toSet(),
             ShowcaseNativeBindings.components.map { it.componentId }.toSet(),
         )
         assertEquals(
@@ -22,6 +22,8 @@ class ShowcaseManifestTest {
         )
         ShowcaseManifest.cases.forEach { case ->
             assertTrue(case.scenarios.isNotEmpty())
+            assertTrue(case.purpose.isNotBlank())
+            assertTrue(case.scenarios.all { it.description.isNotBlank() && it.description != it.label })
             assertEquals(
                 case.scenarios.size,
                 case.scenarios.map { it.id.value }.distinct().size,
@@ -107,10 +109,15 @@ class ShowcaseManifestTest {
         ) as com.adelost.ringkit.ui.RingScreen.Launcher
 
         assertEquals(ShowcaseFamily.entries.size, root.entries.size)
-        assertEquals("TOKENS", root.entries.first().label)
+        assertEquals(ShowcaseFamily.entries.first().menuLabel, root.entries.first().label)
         assertTrue(root.entries.all { it.label.length <= 9 })
-        root.entries.forEach { entry ->
-            assertTrue(entry.open() is com.adelost.ringkit.ui.RingScreen.Launcher)
+        root.entries.zip(ShowcaseFamily.entries).forEach { (entry, family) ->
+            val screen = entry.open()
+            if (ShowcaseManifest.cases.count { it.family == family } == 1) {
+                assertTrue(screen is com.adelost.ringkit.ui.RingScreen.Rows)
+            } else {
+                assertTrue(screen is com.adelost.ringkit.ui.RingScreen.Launcher)
+            }
         }
     }
 
