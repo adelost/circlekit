@@ -64,6 +64,26 @@ export function validateCapabilities(
   const typeById = new Map(product.nodeTypes.map((type) => [type.id, type]));
   const artifactIds = product.artifacts.map(({ id }) => id);
   const overrides = table.hostOverrides ?? {};
+  for (const row of table.capabilities) {
+    for (const host of row.providedBy ?? []) {
+      if (!artifactIds.includes(host)) {
+        problem("capability.provider-artifact", row.id, `providedBy names unknown artifact '${host}'`);
+      }
+    }
+  }
+  for (const [id, artifacts] of Object.entries(overrides)) {
+    if (artifacts.length === 0) {
+      problem("capability.override-empty", id, "a host override must name at least one artifact");
+    }
+    for (const host of artifacts) {
+      if (!artifactIds.includes(host)) {
+        problem("capability.override-artifact", id, `host override names unknown artifact '${host}'`);
+      }
+    }
+    if (product.portRegistry.demandEdges.some((edge) => edge.nodeInstanceRef === id)) {
+      problem("capability.override-derived", id, "hosts already follow demand edges; an override cannot replace them");
+    }
+  }
   const hosts = nodeHosts(product, artifactIds, overrides);
   for (const node of product.nodes) {
     const type = typeById.get(node.nodeTypeRef);
@@ -126,11 +146,13 @@ export function nodeHosts(
     else artifactIds.forEach((id) => set.add(id));
     hosts.set(edge.nodeInstanceRef, set);
   }
+  for (const [id, artifacts] of Object.entries(overrides)) {
+    // An OS-owned node may supply hosts only where the graph supplies none.
+    // Even a direct caller cannot erase a mounted/lifecycle host's needs.
+    if (!hosts.has(id)) hosts.set(id, new Set(artifacts));
+  }
   for (const node of product.nodes) {
     if (!hosts.has(node.id)) hosts.set(node.id, new Set(artifactIds));
-  }
-  for (const [id, artifacts] of Object.entries(overrides)) {
-    hosts.set(id, new Set(artifacts));
   }
   return hosts;
 }

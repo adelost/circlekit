@@ -61,3 +61,46 @@ test("a host override for a node that does not exist is a diagnostic", () => {
   });
   assert.ok(rules(diagnostics).includes("capability.override-orphan"));
 });
+
+test("host declarations cannot hide a missing capability on a mounted or lifecycle host", () => {
+  const table = {
+    ...fixtureTable,
+    capabilities: fixtureTable.capabilities.map((row) =>
+      row.id === "device.pressure-sensor" ? { ...row, providedBy: ["wear"] } : row),
+  };
+  for (const kind of ["component-mount", "lifecycle"] as const) {
+    const product = {
+      ...fixtureProduct,
+      portRegistry: {
+        ...fixtureProduct.portRegistry,
+        demandEdges: [{ kind, artifactRef: "phone", nodeInstanceRef: "sensor.pressure" }],
+      },
+    };
+    for (const override of [[], ["wear"]]) {
+      const overrides = { ...table.hostOverrides, "sensor.pressure": override };
+      const diagnostics = rules(validateCapabilities(product, { ...table, hostOverrides: overrides }));
+      assert.ok(diagnostics.includes("capability.override-derived"), `${kind}: override rejected`);
+      assert.ok(diagnostics.includes("capability.not-provided"), `${kind}: phone requirement preserved`);
+      assert.ok(nodeHosts(product, ["phone", "wear"], overrides).get("sensor.pressure")?.has("phone"));
+    }
+  }
+});
+
+test("OS host overrides are nonempty and every host reference names a product artifact", () => {
+  for (const [hosts, rule] of [
+    [[], "capability.override-empty"],
+    [["weaar"], "capability.override-artifact"],
+  ] as const) {
+    const diagnostics = validateCapabilities(fixtureProduct, {
+      ...fixtureTable,
+      hostOverrides: { "watchface.complication": hosts },
+    });
+    assert.ok(rules(diagnostics).includes(rule));
+  }
+  const diagnostics = validateCapabilities(fixtureProduct, {
+    ...fixtureTable,
+    capabilities: fixtureTable.capabilities.map((row) =>
+      row.id === "host.complication-request" ? { ...row, providedBy: ["wear", "weaar"] } : row),
+  });
+  assert.ok(rules(diagnostics).includes("capability.provider-artifact"));
+});

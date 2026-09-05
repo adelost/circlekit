@@ -57,7 +57,8 @@ export interface EffectDeclaration {
  * `hostOverrides` exists for the one kind of node the demand graph cannot see
  * the host of: a service the operating system instantiates on its own, such
  * as a watch-face complication. Everything else derives its hosts from where
- * its consuming components are mounted.
+ * its consuming components are mounted. Overrides must name existing artifacts
+ * and cannot replace any component-mount or lifecycle demand edge.
  */
 export interface CapabilityTable {
   readonly sourceFile: string;
