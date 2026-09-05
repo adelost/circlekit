@@ -1,5 +1,6 @@
 package com.adelost.designkit.ui
 
+import androidx.compose.ui.graphics.Color
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotEquals
 import org.junit.Test
@@ -33,5 +34,12 @@ class CircleActionDiscChromeTest {
 
         assertEquals(MenuDesign.ringActive, active.contour)
         assertEquals(RingTokens.Off, disabled.contour)
+        // Empty SEND is unavailable even when its caller supplies a bright tint.
+        for (tint in listOf(null, Color.White, Color.Magenta)) {
+            assertEquals(RingTokens.Off,
+                circleActionDiscChrome(false, true, false, false, iconTint = tint).iconTint)
+            assertEquals(tint,
+                circleActionDiscChrome(true, false, false, false, iconTint = tint).iconTint)
+        }
     }
 }

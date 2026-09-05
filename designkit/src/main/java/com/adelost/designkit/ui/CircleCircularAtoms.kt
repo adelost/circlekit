@@ -61,6 +61,7 @@ data class CircleActionDiscChrome(
     val fill: Color,
     val contour: Color,
     val scale: Float,
+    val iconTint: Color? = null,
 )
 
 /**
@@ -74,6 +75,7 @@ fun circleActionDiscChrome(
     pressed: Boolean,
     scrim: Boolean,
     activeContour: Color = MenuDesign.ringActive,
+    iconTint: Color? = null,
 ): CircleActionDiscChrome = CircleActionDiscChrome(
     fill = when {
         pressed -> RingTokens.ProgressSurface.copy(alpha = 0.78f)
@@ -87,6 +89,8 @@ fun circleActionDiscChrome(
         else -> MenuDesign.ringNeutral
     },
     scale = if (pressed) MenuDesign.backPressScale else 1f,
+    // Unavailable actions must not look enabled through a semantic/custom tint.
+    iconTint = if (enabled) iconTint else RingTokens.Off,
 )
 
 /**
@@ -138,6 +142,7 @@ fun CircleIconDisc(
         pressed = feedback.pressed,
         scrim = scrim,
         activeContour = activeContour,
+        iconTint = iconTint,
     )
     val progressSweep = rememberCircleFeedbackSweep(
         progress = labelProgress,
@@ -171,7 +176,7 @@ fun CircleIconDisc(
             style = ringIconStyle(icon, accent),
             // The labelled action parent owns this exact name.
             contentDescription = null,
-            tintOverride = iconTint,
+            tintOverride = chrome.iconTint,
             modifier = Modifier.size(iconSize),
         )
         choiceState?.let { state ->
