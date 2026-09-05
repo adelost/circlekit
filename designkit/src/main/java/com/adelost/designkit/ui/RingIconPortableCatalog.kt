@@ -2,6 +2,7 @@
 package com.adelost.designkit.ui
 
 internal val PORTABLE_RING_ICON_CATALOG = listOf(
+    RingIcons.Data,
     RingIcons.Arrow,
     RingIcons.Cloud,
     RingIcons.Plane,
