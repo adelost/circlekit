@@ -32,6 +32,7 @@ object ShowcaseScreens {
             LaunchSpec(
                 icon = ShowcaseNativeBindings.requireIcon(family.iconId),
                 label = family.menuLabel,
+                semanticColor = androidx.compose.ui.graphics.Color(family.categoryArgb),
                 open = {
                     check(session.route(screen))
                     familyScreen(screen, family, session)
@@ -93,6 +94,7 @@ object ShowcaseScreens {
             LaunchSpec(
                 icon = ShowcaseNativeBindings.requireIcon(case.iconId),
                 label = case.title,
+                semanticColor = androidx.compose.ui.graphics.Color(case.family.categoryArgb),
                 open = { scenarios(case, session) },
             )
         },
@@ -118,6 +120,7 @@ object ShowcaseScreens {
                     title = scenario.label,
                     sub = scenario.description,
                     icon = ShowcaseNativeBindings.requireIcon(case.iconId),
+                    semanticColor = androidx.compose.ui.graphics.Color(case.family.categoryArgb),
                     onTap = { session.open(case.id, scenario.id) },
                     multiline = true,
                 )

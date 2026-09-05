@@ -45,6 +45,7 @@ internal fun CircleIconRingFrame(
     sub: String?,
     enabled: Boolean,
     gestureModifier: Modifier,
+    semanticColor: Color? = null,
 ) {
     val fontScale = LocalDensity.current.fontScale
     val activeContour = circleBrandColor()
@@ -84,7 +85,7 @@ internal fun CircleIconRingFrame(
                     tintOverride = when {
                         !enabled -> RingTokens.Off
                         centerValue != null -> RingTokens.Ink
-                        else -> null
+                        else -> semanticColor
                     },
                     modifier = Modifier
                         .size(

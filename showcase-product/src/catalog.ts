@@ -1,12 +1,14 @@
+import type { ShowcaseCategory } from "./palette.js";
+
 export const showcaseSections = [
-  { id: "foundations", title: "STYLE", menuLabel: "STYLE", iconId: "palette" },
-  { id: "atoms", title: "ICON ACTIONS", menuLabel: "ICONS", iconId: "grid" },
-  { id: "controls", title: "CONTROLS", menuLabel: "CONTROLS", iconId: "touchdown-run" },
-  { id: "input", title: "TEXT INPUT", menuLabel: "TEXT", iconId: "pencil" },
-  { id: "media", title: "AUDIO DEMOS", menuLabel: "AUDIO", iconId: "play" },
-  { id: "templates", title: "PAGE LAYOUTS", menuLabel: "LAYOUTS", iconId: "layers" },
-  { id: "flows", title: "DATA DEMOS", menuLabel: "DATA", iconId: "wifi" },
-] as const;
+  { id: "foundations", title: "STYLE", menuLabel: "STYLE", iconId: "palette", category: "style" },
+  { id: "atoms", title: "ICON ACTIONS", menuLabel: "ICONS", iconId: "grid", category: "actions" },
+  { id: "controls", title: "CONTROLS", menuLabel: "CONTROLS", iconId: "touchdown-run", category: "actions" },
+  { id: "input", title: "TEXT INPUT", menuLabel: "TEXT", iconId: "pencil", category: "text" },
+  { id: "media", title: "AUDIO DEMOS", menuLabel: "AUDIO", iconId: "play", category: "audio" },
+  { id: "templates", title: "PAGE LAYOUTS", menuLabel: "LAYOUTS", iconId: "layers", category: "style" },
+  { id: "flows", title: "DATA DEMOS", menuLabel: "DATA", iconId: "data", category: "data" },
+] as const satisfies readonly { id: string; title: string; menuLabel: string; iconId: string; category: ShowcaseCategory }[];
 
 export type ShowcaseSectionId = (typeof showcaseSections)[number]["id"];
 
@@ -163,7 +165,7 @@ export const showcaseCases = [
     ],
   },
   {
-    id: "flow.source", openPort: "flowSource", section: "flows", title: "DATA AGE", iconId: "wifi",
+    id: "flow.source", openPort: "flowSource", section: "flows", title: "DATA AGE", iconId: "data",
     purpose: "Example data: value, age, coverage and errors.",
     scenarios: [
       { id: "off", label: "SOURCE OFF", description: "No value; this source is disabled" },

@@ -126,6 +126,7 @@ fun IconRing(
     iconRotationDegrees: Float = 0f,
     actionTiming: CircleActionTiming = CircleActionTiming.DELIBERATE,
     enabled: Boolean = true,
+    semanticColor: Color? = null,
 ) {
     CircleIconRing(
         icon = icon,
@@ -143,6 +144,7 @@ fun IconRing(
         iconRotationDegrees = iconRotationDegrees,
         timing = actionTiming,
         enabled = enabled,
+        semanticColor = semanticColor,
     )
 }
 

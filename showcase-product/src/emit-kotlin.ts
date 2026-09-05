@@ -36,8 +36,11 @@ function emitKotlin(product: CircleKitShowcaseProductIr): string {
   }).join("\n");
   const profiles = product.artifacts.map((artifact) =>
     `    ${enumName(artifact.id)}(${kotlinString(artifact.id)}),`).join("\n");
-  const families = product.showcase.sections.map((section) =>
-    `    ${enumName(section.id)}(${kotlinString(section.id)}, ${kotlinString(section.title)}, ${kotlinString(section.menuLabel)}, ${kotlinString(section.iconId)}),`)
+  const families = product.showcase.sections.map((section) => {
+    const colour = product.palette.variants[0]?.categories.find(({ id }) => id === section.category);
+    if (!colour) throw new Error(`Unknown Showcase category: ${section.category}`);
+    return `    ${enumName(section.id)}(${kotlinString(section.id)}, ${kotlinString(section.title)}, ${kotlinString(section.menuLabel)}, ${kotlinString(section.iconId)}, 0xFF${colour.hex.substring(1)}),`;
+  })
     .join("\n");
   const cases = product.showcase.cases.map((item) => {
     const scenarios = item.scenarios.map((scenario) =>
@@ -86,6 +89,7 @@ enum class ShowcaseFamily(
     val title: String,
     val menuLabel: String,
     val iconId: String,
+    val categoryArgb: Long,
 ) {
 ${families}
 }

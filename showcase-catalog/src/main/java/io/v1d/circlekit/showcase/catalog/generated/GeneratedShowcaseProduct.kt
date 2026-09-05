@@ -14,14 +14,15 @@ enum class ShowcaseFamily(
     val title: String,
     val menuLabel: String,
     val iconId: String,
+    val categoryArgb: Long,
 ) {
-    FOUNDATIONS("foundations", "STYLE", "STYLE", "palette"),
-    ATOMS("atoms", "ICON ACTIONS", "ICONS", "grid"),
-    CONTROLS("controls", "CONTROLS", "CONTROLS", "touchdown-run"),
-    INPUT("input", "TEXT INPUT", "TEXT", "pencil"),
-    MEDIA("media", "AUDIO DEMOS", "AUDIO", "play"),
-    TEMPLATES("templates", "PAGE LAYOUTS", "LAYOUTS", "layers"),
-    FLOWS("flows", "DATA DEMOS", "DATA", "wifi"),
+    FOUNDATIONS("foundations", "STYLE", "STYLE", "palette", 0xFF63c899),
+    ATOMS("atoms", "ICON ACTIONS", "ICONS", "grid", 0xFFe7bc64),
+    CONTROLS("controls", "CONTROLS", "CONTROLS", "touchdown-run", 0xFFe7bc64),
+    INPUT("input", "TEXT INPUT", "TEXT", "pencil", 0xFF7ea9ee),
+    MEDIA("media", "AUDIO DEMOS", "AUDIO", "play", 0xFFb09adb),
+    TEMPLATES("templates", "PAGE LAYOUTS", "LAYOUTS", "layers", 0xFF63c899),
+    FLOWS("flows", "DATA DEMOS", "DATA", "data", 0xFF57bed5),
 }
 
 object ShowcaseManifest {
@@ -219,7 +220,7 @@ object ShowcaseManifest {
             id = ShowcaseCaseId("flow.source"),
             family = ShowcaseFamily.FLOWS,
             title = "DATA AGE",
-            iconId = "wifi",
+            iconId = "data",
             purpose = "Example data: value, age, coverage and errors.",
             scenarios = listOf(
                 ShowcaseScenario(ShowcaseScenarioId("off"), "SOURCE OFF", "No value; this source is disabled"),

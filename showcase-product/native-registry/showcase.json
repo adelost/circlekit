@@ -29,7 +29,7 @@
     { "iconId": "pencil", "nativeSymbol": "RingIcons.Pencil" },
     { "iconId": "play", "nativeSymbol": "RingIcons.Play" },
     { "iconId": "layers", "nativeSymbol": "RingIcons.Layers" },
-    { "iconId": "wifi", "nativeSymbol": "RingIcons.Wifi" },
+    { "iconId": "data", "nativeSymbol": "RingIcons.Data" },
     { "iconId": "watch", "nativeSymbol": "RingIcons.Watch" },
     { "iconId": "sliders", "nativeSymbol": "RingIcons.Sliders" },
     { "iconId": "download", "nativeSymbol": "RingIcons.Download" },

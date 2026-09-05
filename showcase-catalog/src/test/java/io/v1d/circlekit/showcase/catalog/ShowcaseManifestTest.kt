@@ -131,6 +131,7 @@ class ShowcaseManifestTest {
         assertEquals(ShowcaseFamily.entries.first().menuLabel, root.entries.first().label)
         assertTrue(root.entries.all { it.label.length <= 9 })
         root.entries.zip(ShowcaseFamily.entries).forEach { (entry, family) ->
+            assertEquals(androidx.compose.ui.graphics.Color(family.categoryArgb), entry.semanticColor)
             val screen = entry.open()
             if (ShowcaseManifest.cases.count { it.family == family } == 1) {
                 assertTrue(screen is com.adelost.ringkit.ui.RingScreen.Rows)

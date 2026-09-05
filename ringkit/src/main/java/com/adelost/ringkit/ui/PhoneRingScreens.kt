@@ -265,6 +265,7 @@ private fun PhoneLauncherScreen(
             val label = entry.liveLabel?.collectAsState(initial = entry.label)?.value ?: entry.label
             IconRing(
                 icon = entry.icon,
+                semanticColor = entry.semanticColor,
                 label = label,
                 active = active,
                 enabled = enabled,
