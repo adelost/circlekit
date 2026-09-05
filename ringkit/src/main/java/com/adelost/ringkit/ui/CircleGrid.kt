@@ -9,11 +9,20 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.layout.findRootCoordinates
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 
@@ -47,6 +56,12 @@ internal fun <T> RingMenuGrid(
     spec: MenuGridSpec,
     itemContent: @Composable (T) -> Unit,
 ) {
+    val round = LocalCircleSurfaceLayout.current.surfaceClass == CircleSurfaceClass.ROUND
+    val reserved = LocalRoundChromeReservation.current
+    val density = LocalDensity.current.density
+    var insets by remember(spec, round, reserved) {
+        mutableStateOf(CircleHorizontalInsetsDp(0f, 0f))
+    }
     Box(
         modifier = Modifier.fillMaxWidth(),
         contentAlignment = Alignment.TopCenter,
@@ -54,11 +69,31 @@ internal fun <T> RingMenuGrid(
         Box(
             modifier = Modifier
                 .then(spec.contentMaxWidth?.let { Modifier.widthIn(max = it) } ?: Modifier)
-                .fillMaxWidth(),
+                .fillMaxWidth()
+                .onGloballyPositioned { coordinates ->
+                    val width = coordinates.size.width / density
+                    val base = width * (1f - resolvedCircleGridWidthFraction(spec)) / 2f
+                    val root = coordinates.findRootCoordinates()
+                    val x = root.localPositionOf(coordinates, Offset.Zero).x / density
+                    val safe = if (round) rowsListInsetsDp(
+                        viewportWidthDp = root.size.width / density,
+                        viewportHeightDp = root.size.height / density,
+                        titleBandBottomDp = (MenuDesign.roundTitleTopPadding + MenuDesign.roundTitleHeight).value,
+                        baseInsetDp = 0f,
+                        reservedSlots = reserved,
+                    ).let { CircleHorizontalInsetsDp(it.start.value, it.end.value) }
+                    else CircleHorizontalInsetsDp(0f, 0f)
+                    // Reserve the whole reading band, not the grid's changing
+                    // centre while it scrolls. Cell widths never ripple.
+                    insets = CircleHorizontalInsetsDp(
+                        maxOf(base, safe.start - x),
+                        maxOf(base, safe.end - (root.size.width / density - x - width)),
+                    )
+                },
             contentAlignment = Alignment.TopCenter,
         ) {
             Column(
-                modifier = Modifier.fillMaxWidth(resolvedCircleGridWidthFraction(spec)),
+                modifier = Modifier.fillMaxWidth().padding(start = insets.start.dp, end = insets.end.dp),
             ) {
                 items.chunked(spec.columns).forEach { chunk ->
                     // A short last row is CENTRED, not left-aligned. The
@@ -66,13 +101,8 @@ internal fun <T> RingMenuGrid(
                     // settings circle (DEV) sat alone under the left column
                     // looking like it had been dropped there.
                     val emptyCells = spec.columns - chunk.size
-                    // Deliberately NOT roundSafeContentInset here, though the
-                    // outer columns' labels do get clipped by the arc while
-                    // scrolling. Tried it: the cells are weight(1f), so
-                    // insetting the row narrows every cell, and SYSTEM/ABOUT
-                    // went from occasionally clipped to permanently ellipsised
-                    // ("SYST…", "AB…"). A grid trades width for columns; the
-                    // row atom can afford the inset because it has one column.
+                    // Capacity belongs to MenuGridSpec. Chrome clearance must
+                    // not be bought by silently shrinking labels or icons.
                     Row(
                         horizontalArrangement = Arrangement.spacedBy(spec.horizontalGap),
                         modifier = Modifier.fillMaxWidth(),

@@ -260,9 +260,10 @@ internal fun LauncherScreen(
         LocalCircleMenuDensity.current,
         gridRole,
     )
+    val scrollState = remember(s) { ScrollState(0) }
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = Modifier.fillMaxSize(),
+        modifier = Modifier.fillMaxSize().verticalScroll(scrollState).rotaryScroll(scrollState),
     ) {
         ScreenTitle(s.title)
         Spacer(Modifier.height(8.dp))

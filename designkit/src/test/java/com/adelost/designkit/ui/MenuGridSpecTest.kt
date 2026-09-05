@@ -20,13 +20,13 @@ class MenuGridSpecTest {
     }
 
     @Test
-    fun `every round menu grid is the same three-up layout item`() {
+    fun `every round menu grid is the same readable two-up layout item`() {
         val logbook = menuGridSpec(CircleSurfaceClass.ROUND, CircleMenuDensity.REGULAR, MenuGridRole.LOGBOOK)
-        assertEquals(3, logbook.columns)
+        assertEquals(2, logbook.columns)
         assertEquals(0.75f, logbook.contentWidthFraction, 0.001f)
         // The one watch action-ring standard: the home rim buttons' 30 dp.
         assertEquals(MenuDesign.watchActionRingDiameter, logbook.diameter)
-        assertEquals(6f, logbook.labelSize.value)
+        assertEquals(8f, logbook.labelSize.value)
         // SETTINGS is not a second composition: same columns, same ring, same
         // gaps. A watch screen shows one rhythm, never two.
         MenuGridRole.entries.forEach { role ->
@@ -38,7 +38,7 @@ class MenuGridSpecTest {
     fun `the strict centred round cell never squeezes the ring`() {
         // The explicit 75% role policy reserves 12.5% per side.
         // Equal-width cells must still keep the canonical 30 dp ring intact.
-        val spec = MenuGridCatalog.RoundTrio
+        val spec = MenuGridCatalog.RoundPair
         val contentWidthDp = 192f * spec.contentWidthFraction
         val worstCellDp =
             (contentWidthDp - (spec.columns - 1) * spec.horizontalGap.value) / spec.columns
@@ -104,7 +104,7 @@ class MenuGridSpecTest {
     fun `menu width policy refuses impossible fractions`() {
         listOf(0f, -0.1f, 1.1f).forEach { fraction ->
             assertThrows(IllegalArgumentException::class.java) {
-                MenuGridCatalog.RoundTrio.copy(contentWidthFraction = fraction)
+                MenuGridCatalog.RoundPair.copy(contentWidthFraction = fraction)
             }
         }
     }
