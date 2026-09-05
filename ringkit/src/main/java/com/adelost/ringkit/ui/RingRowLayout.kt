@@ -5,8 +5,7 @@ import androidx.compose.ui.unit.dp
 import com.adelost.designkit.ui.CircleActionTiming
 import com.adelost.designkit.ui.CircleChoiceRole
 import com.adelost.designkit.ui.CircleChromeSlot
-import com.adelost.designkit.ui.roundChordInsetDp
-import com.adelost.designkit.ui.roundSafeHorizontalInsetsDp
+import com.adelost.designkit.ui.roundSafeRectHorizontalInsetsDp
 import com.adelost.designkit.ui.roundSafeInsetDp
 
 /**
@@ -152,20 +151,17 @@ internal fun rowsListInsetsDp(
     baseInsetDp: Float,
     reservedSlots: List<CircleChromeSlot>,
 ): RingRowHorizontalInsets {
-    val chord = roundChordInsetDp(
+    // Reserve the entire reading band. Sampling only its centre misses an
+    // escape at ten/two even though it intersects the first visible rows.
+    val band = roundSafeRectHorizontalInsetsDp(
         viewportWidthDp = viewportWidthDp,
         viewportHeightDp = viewportHeightDp,
-        contentCenterYDp = titleBandBottomDp,
-    )
-    val chrome = roundSafeHorizontalInsetsDp(
-        viewportWidthDp = viewportWidthDp,
-        viewportHeightDp = viewportHeightDp,
-        // The chrome bites hardest beside the viewport centre, where X sits.
         contentCenterYDp = viewportHeightDp / 2f,
+        contentHeightDp = (viewportHeightDp - 2f * titleBandBottomDp).coerceAtLeast(1f),
         reservedSlots = reservedSlots,
     )
     return RingRowHorizontalInsets(
-        start = maxOf(baseInsetDp, chord, chrome.start).dp,
-        end = maxOf(baseInsetDp, chord, chrome.end).dp,
+        start = maxOf(baseInsetDp, band.start).dp,
+        end = maxOf(baseInsetDp, band.end).dp,
     )
 }

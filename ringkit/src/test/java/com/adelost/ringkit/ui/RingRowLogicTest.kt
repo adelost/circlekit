@@ -338,6 +338,18 @@ class RingRowLogicTest {
             narrowFaceDp - bare.start.value - bare.end.value,
         )
         assertTrue("$firstFitsAtDp <= $titleBandBottom", firstFitsAtDp <= titleBandBottom + 1f)
+
+        // A declared escape at ten intersects the top rows, not the centre.
+        // Straight list edges must clear it over the entire reading band.
+        for (face in listOf(192f, 216f)) {
+            val slots = listOf(CircleChromeSlot.HOUR_10)
+            val actual = rowsListInsetsDp(face, face, titleBandBottom, roundRowInsetH.value, slots)
+            for (y in titleBandBottom.toInt()..(face - titleBandBottom).toInt()) {
+                val required = roundChromeHorizontalInsetsDp(face, face, y.toFloat(), slots)
+                assertTrue("$face dp, y=$y: $actual must clear $required", actual.start.value >= required.start)
+                assertTrue(actual.end.value >= required.end)
+            }
+        }
     }
 
     @Test
