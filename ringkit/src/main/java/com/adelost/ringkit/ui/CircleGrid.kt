@@ -38,6 +38,12 @@ data class CircleUiModel(
 internal fun resolvedCircleGridWidthFraction(spec: MenuGridSpec): Float =
     spec.contentWidthFraction
 
+/** The declared capacity is an upper bound. Preserve the physical action atom
+ * when the host's real content column is narrower than its surface-class cap. */
+internal fun resolvedCircleGridColumns(spec: MenuGridSpec, availableWidthDp: Float): Int =
+    ((availableWidthDp + spec.horizontalGap.value) / (spec.diameter.value + spec.horizontalGap.value))
+        .toInt().coerceIn(1, spec.columns)
+
 /** The single row/column renderer for ring-based menus on every host.
  *
  * Every host gets equal-width cells, a declarative content cap and the same
@@ -78,15 +84,16 @@ internal fun <T> RingMenuGrid(
                 maxOf(base, safe.start.value - outerInset),
                 maxOf(base, safe.end.value - outerInset),
             )
+            val columns = resolvedCircleGridColumns(spec, maxWidth.value - insets.start - insets.end)
             Column(
                 modifier = Modifier.fillMaxWidth().padding(start = insets.start.dp, end = insets.end.dp),
             ) {
-                items.chunked(spec.columns).forEach { chunk ->
+                items.chunked(columns).forEach { chunk ->
                     // A short last row is CENTRED, not left-aligned. The
                     // padding used to go entirely on the right, so the tenth
                     // settings circle (DEV) sat alone under the left column
                     // looking like it had been dropped there.
-                    val emptyCells = spec.columns - chunk.size
+                    val emptyCells = columns - chunk.size
                     // Capacity belongs to MenuGridSpec. Chrome clearance must
                     // not be bought by silently shrinking labels or icons.
                     Row(

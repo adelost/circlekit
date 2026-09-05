@@ -23,6 +23,8 @@ enum class MenuGridRole {
 
 @Immutable
 data class MenuGridSpec(
+    /** Maximum capacity; the renderer may use fewer columns when the actual
+     * content width cannot fit these physical atoms and declared gaps. */
     val columns: Int,
     val diameter: Dp,
     val horizontalGap: Dp,
