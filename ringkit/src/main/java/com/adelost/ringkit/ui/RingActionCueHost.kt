@@ -105,17 +105,13 @@ fun RingActionCueHost(
         Box(modifier = modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             content()
             state.cue?.let { cue ->
-                val explanation = cue.hint != null
                 val dismiss = { state = RingCueHostState() }
-                if (explanation) BackHandler(onBack = dismiss)
-                Box(Modifier.fillMaxSize().background(MenuDesign.actionCueScrim)
-                    .then(if (explanation) Modifier.circleSafeTap(
-                        feedback = rememberCircleActionFeedbackState(),
-                        holdMs = 0L, consumeDown = true, label = null, onTap = dismiss,
-                    ) else Modifier))
                 when (ringCueSurface(cue)) {
-                    RingCueSurface.ACTION -> RingActionCue(cue)
-                    RingCueSurface.EXPLANATION -> RingExplanationCue(cue, dismiss)
+                    RingCueSurface.ACTION -> {
+                        Box(Modifier.fillMaxSize().background(MenuDesign.actionCueScrim))
+                        RingActionCue(cue)
+                    }
+                    RingCueSurface.EXPLANATION -> RingActionExplanation(cue, dismiss)
                 }
             }
         }
@@ -127,6 +123,20 @@ internal enum class RingCueSurface { ACTION, EXPLANATION }
 /** Explanatory copy has one deliberate entry point and one shared renderer. */
 internal fun ringCueSurface(cue: CircleActionCue): RingCueSurface =
     if (cue.hint == null) RingCueSurface.ACTION else RingCueSurface.EXPLANATION
+
+/** Same closeable information surface for instrument hosts and menu hosts. */
+@Composable
+fun RingActionExplanation(cue: CircleActionCue, onDismiss: () -> Unit) {
+    require(cue.hint != null) { "An information surface needs explanatory copy" }
+    BackHandler(onBack = onDismiss)
+    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+        Box(Modifier.fillMaxSize().background(MenuDesign.actionCueScrim).circleSafeTap(
+            feedback = rememberCircleActionFeedbackState(),
+            holdMs = 0L, consumeDown = true, label = null, onTap = onDismiss,
+        ))
+        RingExplanationCue(cue, onDismiss)
+    }
+}
 
 @Composable
 private fun RingExplanationCue(cue: CircleActionCue, onDismiss: () -> Unit) {

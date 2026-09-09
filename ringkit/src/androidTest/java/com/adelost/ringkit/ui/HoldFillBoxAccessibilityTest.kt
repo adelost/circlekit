@@ -1,6 +1,14 @@
 package com.adelost.ringkit.ui
 
 import androidx.compose.ui.Modifier
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.hapticfeedback.HapticFeedback
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
+import com.adelost.designkit.ui.CircleTouchFeedback
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.semantics.getOrNull
@@ -21,6 +29,13 @@ import org.junit.Test
 class HoldFillBoxAccessibilityTest {
     @get:Rule
     val compose = createComposeRule()
+    private var touchFeedbackEnabled by mutableStateOf(true)
+    private val feedback = mutableListOf<HapticFeedbackType>()
+    private val haptics = object : HapticFeedback {
+        override fun performHapticFeedback(hapticFeedbackType: HapticFeedbackType) {
+            feedback += hapticFeedbackType
+        }
+    }
 
     @Test
     fun labelledHoldOwnsOneNonMergingLongClick() {
@@ -93,6 +108,8 @@ class HoldFillBoxAccessibilityTest {
         compose.waitForIdle()
         assertEquals(0, confirmations)
 
+        assertEquals(0, feedback.size)
+
         compose.mainClock.autoAdvance = false
         node.performTouchInput { down(center) }
         compose.mainClock.advanceTimeByFrame()
@@ -101,6 +118,17 @@ class HoldFillBoxAccessibilityTest {
         compose.mainClock.autoAdvance = true
         compose.waitForIdle()
         assertEquals(1, confirmations)
+        assertEquals(listOf(HapticFeedbackType.LongPress), feedback)
+        compose.runOnIdle { touchFeedbackEnabled = false }
+        compose.mainClock.autoAdvance = false
+        node.performTouchInput { down(center) }
+        compose.mainClock.advanceTimeByFrame()
+        compose.mainClock.advanceTimeBy(HOLD_MS + 32L)
+        node.performTouchInput { up() }
+        compose.mainClock.autoAdvance = true
+        compose.waitForIdle()
+        assertEquals(2, confirmations)
+        assertEquals(1, feedback.size)
     }
 
     private fun setHold(
@@ -110,6 +138,8 @@ class HoldFillBoxAccessibilityTest {
         onConfirm: () -> Unit,
     ) {
         compose.setContent {
+            CompositionLocalProvider(LocalHapticFeedback provides haptics) {
+            CircleTouchFeedback(touchFeedbackEnabled) {
             HoldFillBox(
                 label = label,
                 onLongClickLabel = onLongClickLabel,
@@ -121,6 +151,8 @@ class HoldFillBoxAccessibilityTest {
                 enabled = enabled,
             ) {
                 Text(MERGED_NAME)
+            }
+            }
             }
         }
     }

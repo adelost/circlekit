@@ -93,3 +93,22 @@ responsibility. The update page is a host facility, not a demo graph node.
 DEV / STRUCTURE groups the generated demo catalog and its declared connections.
 It is not a live health graph. DEV / HOST controls the actual responsive or
 WatchExact viewport, while STYLE / GEOMETRY shows labelled calculated metrics.
+
+### Touch feedback and information
+
+Wrap the product UI once in `CircleTouchFeedback(enabled = yourStoredChoice)`.
+Ordinary, dual-action and confirmation holds and continuous presses all use
+Compose's `LocalHapticFeedback`, including an injected host used for testing.
+Only an accepted pointer action requests feedback; grazes, disabled controls
+and rejected continuous starts do not. Assistive actions retain the platform's
+own feedback. This switch never controls flight/audio alarms, and a request is
+not evidence that a device has vibrated.
+
+`RingActionCueHost` owns the common acknowledgement and closeable information
+surface. Instrument hosts that must also dim their own readouts can reuse
+`RingActionExplanation(cue, onDismiss)`. Explicit explanations stay until
+closed. Custom cue hosts must respect `CircleActionCueEvent.updateOnly`: accept
+such a value refresh only if `event.owner === current.owner`. The initial
+receipt is synchronous before the action; the later OFF→ON value refresh must
+not steal information the action just opened. This is why INFO and a setting
+change cannot share an unqualified, delayed receipt.
