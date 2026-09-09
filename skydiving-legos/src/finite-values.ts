@@ -90,7 +90,6 @@ export const pressureAccuracies = finiteValues(
 // declaration said debug, native said simulated. The value names what the
 // observation IS, not which build produced it.
 export const pressureSources = finiteValues("pressure.source", ["physical", "simulated"]);
-export const positionSources = finiteValues("position.source", ["physical", "simulated"]);
 export const flightAltitudeTrends = finiteValues(
   "flight.altitude-trend",
   ["ascending", "descending", "stable"],
@@ -151,7 +150,6 @@ export const skydivingFiniteValues = [
   weatherSelectedTimeStates,
   weatherPriorities,
   positionAvailabilities,
-  positionSources,
   positionWeatherReadinesses,
   recordingStages,
   flightPhases,

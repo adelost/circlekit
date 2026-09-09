@@ -26,7 +26,7 @@ export const positionObservationContract = {
     field("bearingDeg", "number", { unit: "geo.degree", nullable: true }),
     field("speedMs", "number", { unit: "si.meter-per-second", nullable: true }),
     field("provider", "string"),
-    field("source", finiteValueRef("position.source"), { nullable: true }),
+    field("isMock", "boolean", { nullable: true }),
   ],
 } as const;
 
@@ -37,6 +37,7 @@ export const positionPresentationContract = {
   fields: [
     field("availability", finiteValueRef("position.availability")),
     field("observation", valueRef(positionObservationContract.id), { nullable: true }),
+    field("isMock", "boolean", { nullable: true }),
   ],
 } as const;
 
