@@ -5,6 +5,10 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.ui.hapticfeedback.HapticFeedback
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.SemanticsActions
@@ -28,6 +32,44 @@ import org.junit.Test
 class CircleSafeTapAccessibilityTest {
     @get:Rule
     val compose = createComposeRule()
+
+    @Test
+    fun acceptedTouchesUseTheHostFeedbackButGrazesAndDisabledTouchesDoNot() {
+        val requests = mutableListOf<HapticFeedbackType>()
+        var actions = 0
+        var enabled by mutableStateOf(true)
+        val haptics = object : HapticFeedback {
+            override fun performHapticFeedback(hapticFeedbackType: HapticFeedbackType) {
+                requests += hapticFeedbackType
+            }
+        }
+        compose.setContent {
+            CompositionLocalProvider(LocalHapticFeedback provides haptics) {
+                Box(Modifier.size(48.dp).testTag(TARGET).circleSafeTap(
+                    feedback = rememberCircleActionFeedbackState(), enabled = enabled,
+                    label = CONTROL_DESCRIPTION, onTap = { actions++ },
+                ))
+            }
+        }
+        compose.onNodeWithTag(TARGET).performTouchInput {
+            down(center); advanceEventTime(MenuDesign.tapHoldMs - 1L); up()
+        }
+        compose.waitForIdle()
+        assertEquals(0, requests.size)
+        compose.onNodeWithTag(TARGET).performTouchInput {
+            down(center); advanceEventTime(MenuDesign.tapHoldMs + 1L); up()
+        }
+        compose.waitForIdle()
+        assertEquals(1, actions)
+        assertEquals(listOf(HapticFeedbackType.TextHandleMove), requests)
+        compose.runOnIdle { enabled = false }
+        compose.onNodeWithTag(TARGET).performTouchInput {
+            down(center); advanceEventTime(MenuDesign.tapHoldMs + 1L); up()
+        }
+        compose.waitForIdle()
+        assertEquals(1, actions)
+        assertEquals(1, requests.size)
+    }
 
     @Test
     fun pointerStillRequiresTheDeclaredHoldAndCommitsExactlyOnce() {
