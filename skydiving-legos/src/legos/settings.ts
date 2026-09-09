@@ -46,6 +46,14 @@ export const powerSettingsPresentationContract = {
   fields: [field("value", valueRef("settings.power-state"))],
 } as const;
 
+/** Selected flight profile from the same durable settings owner, not a UI copy. */
+export const flightSettingsPresentationContract = {
+  id: "settings.flight-presentation",
+  kind: "snapshot",
+  boundary: "presentation",
+  fields: [field("value", valueRef("settings.flight-state"))],
+} as const;
+
 export const devSettingsPresentationContract = {
   id: "settings.dev-presentation",
   kind: "snapshot",
@@ -89,6 +97,7 @@ export const settingsRuntimeOwner = service({
     port("continuousTrack", continuousTrackStateContract),
     port("mapBase", mapBaseStateContract),
     port("presentation", powerSettingsPresentationContract),
+    port("flightPresentation", flightSettingsPresentationContract),
   ],
   runtime: {
     stateOwner: "instance", lifetime: "process", durability: "durable", clockDomain: "none",

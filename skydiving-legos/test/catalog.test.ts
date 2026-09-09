@@ -13,6 +13,7 @@ import test from "node:test";
 import {
   componentPort, defineProduct, defineProductNavigation, port, service,
 } from "@v1d/product-spec";
+import type { LegoContract } from "@v1d/product-spec";
 
 import {
   SKYDIVING_LEGO_MODULE_COUNT, skydivingContracts, skydivingLegoCatalog,
@@ -22,6 +23,7 @@ import { skydivingFiniteValues } from "../src/finite-values.js";
 import { recordingStages } from "../src/finite-values.js";
 import { instrumentRuntimeOwner } from "../src/legos/flight.js";
 import { mapRenderScaleContract } from "../src/legos/map-data.js";
+import { settingsRuntimeOwner } from "../src/legos/settings.js";
 
 const assets = { id: "assets", version: "0.0.0", icons: [] };
 
@@ -122,6 +124,21 @@ test("map render event carries the complete measured viewport", () => {
     ["pxPerM", "centerEastM", "centerNorthM", "viewportWidthPx", "viewportHeightPx"],
   );
   assert.ok(!mapRenderScaleContract.fields.some(({ name }) => name === "event"));
+});
+
+test("one settings owner exposes flight and power without duplicating persistence", () => {
+  const outputs: readonly { id: string; contract: LegoContract }[] = settingsRuntimeOwner.outputs;
+  const flight = outputs.find(({ id }) => id === "flightPresentation");
+  assert.ok(flight, "the persisted flight profile must have a declared output");
+  assert.equal(flight.contract.id, "settings.flight-presentation");
+  assert.deepEqual(flight.contract.fields, [{ name: "value", value: { ref: "settings.flight-state" },
+    nullable: false, clockDomain: "none" }]);
+  assert.equal(flight.contract.boundary, "presentation");
+  assert.equal(flight.contract.kind, "snapshot");
+  assert.ok(skydivingContracts.includes(flight.contract));
+  assert.deepEqual(settingsRuntimeOwner.outputs.map(({ id }) => id),
+    ["continuousTrack", "mapBase", "presentation", "flightPresentation"]);
+  assert.ok(settingsRuntimeOwner.runtime.contextInputs.includes("storage.flight-settings"));
 });
 
 test("a product may be built against the catalog", () => {
