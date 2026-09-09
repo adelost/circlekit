@@ -27,6 +27,17 @@ written list is a second place to forget a file and the failure is silent: the
 lego still compiles, the catalog just stops reserving its ids, and the collision
 this package exists to cause never happens.
 
+## Selected flight settings
+
+`settings.runtime-owner.flightPresentation` publishes
+`flightSettingsPresentationContract` (`settings.flight-presentation`), whose
+`value` references `settings.flight-state`. The native adapter binds that value
+to the existing persisted `SettingsRuntime.flight` profile. The existing power
+`presentation`, `continuousTrack` and `mapBase` outputs are unchanged. This is a
+new output on the same owner, not another store, calculation or UI settings copy.
+Consumers must adopt the public package and bind their native payload type;
+publishing the declaration alone does not deliver HOME reach or warning logic.
+
 ## Four contracts ship unreserved
 
 `attitude.observation`, `recording.host-command`, `runtime.battery-observation`
