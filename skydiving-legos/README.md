@@ -38,6 +38,16 @@ new output on the same owner, not another store, calculation or UI settings copy
 Consumers must adopt the public package and bind their native payload type;
 publishing the declaration alone does not deliver HOME reach or warning logic.
 
+## Geographic datum evidence
+
+`home.reference-point` and `home.guidance-presentation` carry optional
+`hereCapture` (`home.datum-capture`). It is a receipt of an explicit HERE
+calibration against the instrument's actual `barometricDatum`, not a coordinate
+match, GNSS altitude or inferred ground elevation. Missing evidence stays null.
+Position `isMock` is the source-reported flag (null when unreported); availability
+alone cannot prove a physical observation. Native owners retain capture, restore
+and invalidation policy. Publishing these fields does not qualify a range estimate.
+
 ## Four contracts ship unreserved
 
 `attitude.observation`, `recording.host-command`, `runtime.battery-observation`

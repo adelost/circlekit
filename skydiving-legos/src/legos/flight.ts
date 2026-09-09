@@ -28,6 +28,8 @@ export const flightAltimeterStateContract = {
     field("trend", finiteValueRef("flight.altitude-trend")),
     field("pressureHpa", "number", { unit: "si.hectopascal", nullable: true }),
     field("staleSensor", "boolean"),
+    // Actual instrument datum with mutation identity; not HOME/terrain elevation.
+    field("barometricDatum", valueRef("instrument.barometric-datum"), { nullable: true }),
   ],
 } as const;
 
