@@ -7,6 +7,15 @@ import org.junit.Test
 
 class CircleActionCueTest {
     @Test
+    fun `confirmation publishes before an action can open its explanation`() {
+        val events = mutableListOf<String>()
+        val controller = CircleActionCueController { events += "receipt" }
+        controller.confirm()
+        events += "explanation"
+        assertEquals(listOf("receipt", "explanation"), events)
+    }
+
+    @Test
     fun `immediate playback and navigation do not flash a hold receipt`() {
         assertEquals(CircleCuePlan.Clear, circleCuePlan(RingIcons.Play, "PLAY", null,
             CircleActionTiming.IMMEDIATE, pressed = false, confirmed = true, determinateProgress = null))

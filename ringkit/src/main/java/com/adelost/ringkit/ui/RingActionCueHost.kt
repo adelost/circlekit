@@ -55,6 +55,7 @@ internal fun nextRingCueHostState(
 ): RingCueHostState {
     val cue = event.cue
     return when {
+        event.updateOnly && current.owner !== event.owner -> current
         cue != null -> RingCueHostState(
             cue = cue,
             owner = event.owner,

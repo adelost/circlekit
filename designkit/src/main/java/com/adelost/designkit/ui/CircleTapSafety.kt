@@ -1,6 +1,5 @@
 package com.adelost.designkit.ui
 
-import android.view.HapticFeedbackConstants
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.waitForUpOrCancellation
@@ -14,7 +13,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.composed
 import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.disabled
 import androidx.compose.ui.semantics.onClick
@@ -96,6 +96,7 @@ fun Modifier.circleSafeTap(
         }
     } else {
         val latestTap = rememberUpdatedState(onTap)
+        val haptics = rememberUpdatedState(LocalHapticFeedback.current)
         Modifier
             .semantics(mergeDescendants = label == null) {
                 label?.let { contentDescription = it }
@@ -133,7 +134,10 @@ fun Modifier.circleSafeTap(
                         // the shared label state stuck on.
                         feedback.pressed = false
                     }
-                    if (commits) latestTap.value()
+                    if (commits) {
+                        haptics.value.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                        latestTap.value()
+                    }
                 }
             }
     }
@@ -158,7 +162,7 @@ fun Modifier.circlePressLifecycle(
     if (!enabled) {
         Modifier.semantics { disabled() }
     } else {
-        val view = LocalView.current
+        val haptics = rememberUpdatedState(LocalHapticFeedback.current)
         val latestBegin = rememberUpdatedState(onBegin)
         val latestRelease = rememberUpdatedState(onRelease)
         val latestCancel = rememberUpdatedState(onCancel)
@@ -184,7 +188,7 @@ fun Modifier.circlePressLifecycle(
                     // visible active phase; leaving this true would restart
                     // the 0→1 arming cue throughout a long recording.
                     feedback.pressed = false
-                    view.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS)
+                    haptics.value.performHapticFeedback(HapticFeedbackType.LongPress)
                     val release = waitForUpOrCancellation()
                     // Terminal ownership ends before application code runs.
                     // A throwing callback must never make finally emit a
@@ -235,6 +239,7 @@ fun Modifier.circleSafeTapOrHold(
     } else {
         val latestTap = rememberUpdatedState(onTap)
         val latestLongPress = rememberUpdatedState(onLongPress)
+        val haptics = rememberUpdatedState(LocalHapticFeedback.current)
         val semantics = Modifier.semantics(mergeDescendants = label == null) {
             label?.let { contentDescription = it }
             onClick {
@@ -274,8 +279,14 @@ fun Modifier.circleSafeTapOrHold(
                 }
                 when (completion) {
                     CircleGestureCompletion.NONE -> Unit
-                    CircleGestureCompletion.TAP -> latestTap.value()
-                    CircleGestureCompletion.LONG_PRESS -> latestLongPress.value()
+                    CircleGestureCompletion.TAP -> {
+                        haptics.value.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                        latestTap.value()
+                    }
+                    CircleGestureCompletion.LONG_PRESS -> {
+                        haptics.value.performHapticFeedback(HapticFeedbackType.LongPress)
+                        latestLongPress.value()
+                    }
                 }
             }
         }

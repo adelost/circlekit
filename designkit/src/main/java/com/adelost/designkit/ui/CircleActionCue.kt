@@ -11,6 +11,7 @@ import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -102,6 +103,8 @@ class CircleActionCueInfoAction(
 data class CircleActionCueEvent(
     val owner: Any,
     val cue: CircleActionCue?,
+    /** Refresh a receipt's recomposed value only while it still owns the host. */
+    val updateOnly: Boolean = false,
 )
 
 val LocalCircleActionCuePublisher =
@@ -153,11 +156,14 @@ internal fun circleCuePlan(
 }
 
 @Stable
-class CircleActionCueController internal constructor() {
+class CircleActionCueController internal constructor(private val publishReceipt: () -> Unit) {
     internal var confirmed by mutableStateOf(false)
 
     fun confirm() {
         confirmed = true
+        // Publish BEFORE the product action. That action may open information
+        // using the same host; a later effect must not overwrite it with ACK.
+        publishReceipt()
     }
 }
 
@@ -184,8 +190,13 @@ fun rememberCircleActionCueController(
     }
     val publish = LocalCircleActionCuePublisher.current
     val owner = remember { Any() }
-    val controller = remember { CircleActionCueController() }
     val state = stateValue?.takeIf { it.isNotBlank() }
+    val publishReceipt = rememberUpdatedState {
+        val plan = circleCuePlan(icon, label, state, effectiveTiming,
+            pressed = false, confirmed = true, determinateProgress = null)
+        if (plan is CircleCuePlan.Settle) publish(CircleActionCueEvent(owner, plan.cue))
+    }
+    val controller = remember { CircleActionCueController { publishReceipt.value() } }
 
     LaunchedEffect(
         icon,
@@ -209,12 +220,10 @@ fun rememberCircleActionCueController(
         )
         when (plan) {
             is CircleCuePlan.Settle -> {
-                publish(CircleActionCueEvent(owner, plan.cue))
-                // The HOST owns the dwell from here (see CenterHoldHost): a
-                // row that closes its own menu is gone before any timer of its
-                // own could finish, so keeping the clock here cancelled the
-                // acknowledgement for exactly the rows that close on tap.
-                // This only resets the latch so the next press can arm it.
+                // confirm() already published, synchronously before onTap.
+                // Refresh the resulting state (e.g. OFF -> ON), but never
+                // replace information that the action opened in the meantime.
+                publish(CircleActionCueEvent(owner, plan.cue, updateOnly = true))
                 controller.confirmed = false
             }
 
@@ -229,7 +238,7 @@ fun rememberCircleActionCueController(
                         easing = LinearEasing,
                     ),
                 ) { value, _ ->
-                    publish(
+                    if (!controller.confirmed) publish(
                         CircleActionCueEvent(
                             owner,
                             CircleActionCue(icon, label, value, false, state),

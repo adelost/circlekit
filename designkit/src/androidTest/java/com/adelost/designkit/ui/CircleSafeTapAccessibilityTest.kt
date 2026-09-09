@@ -38,6 +38,7 @@ class CircleSafeTapAccessibilityTest {
         val requests = mutableListOf<HapticFeedbackType>()
         var actions = 0
         var enabled by mutableStateOf(true)
+        var vibration by mutableStateOf(true)
         val haptics = object : HapticFeedback {
             override fun performHapticFeedback(hapticFeedbackType: HapticFeedbackType) {
                 requests += hapticFeedbackType
@@ -45,10 +46,12 @@ class CircleSafeTapAccessibilityTest {
         }
         compose.setContent {
             CompositionLocalProvider(LocalHapticFeedback provides haptics) {
+                CircleTouchFeedback(enabled = vibration) {
                 Box(Modifier.size(48.dp).testTag(TARGET).circleSafeTap(
                     feedback = rememberCircleActionFeedbackState(), enabled = enabled,
                     label = CONTROL_DESCRIPTION, onTap = { actions++ },
                 ))
+                }
             }
         }
         compose.onNodeWithTag(TARGET).performTouchInput {
@@ -62,13 +65,61 @@ class CircleSafeTapAccessibilityTest {
         compose.waitForIdle()
         assertEquals(1, actions)
         assertEquals(listOf(HapticFeedbackType.TextHandleMove), requests)
+        compose.runOnIdle { vibration = false }
+        compose.onNodeWithTag(TARGET).performTouchInput {
+            down(center); advanceEventTime(MenuDesign.tapHoldMs + 1L); up()
+        }
+        compose.waitForIdle()
+        assertEquals("OFF changes feedback, not action acceptance", 2, actions)
+        assertEquals(1, requests.size)
         compose.runOnIdle { enabled = false }
         compose.onNodeWithTag(TARGET).performTouchInput {
             down(center); advanceEventTime(MenuDesign.tapHoldMs + 1L); up()
         }
         compose.waitForIdle()
-        assertEquals(1, actions)
+        assertEquals(2, actions)
         assertEquals(1, requests.size)
+    }
+
+    @Test
+    fun continuousPressRespectsTheSameSettingAndRejectedStartsStaySilent() {
+        val requests = mutableListOf<HapticFeedbackType>()
+        var vibration by mutableStateOf(true)
+        var accepts by mutableStateOf(true)
+        var releases = 0
+        var cancels = 0
+        val haptics = object : HapticFeedback {
+            override fun performHapticFeedback(hapticFeedbackType: HapticFeedbackType) {
+                requests += hapticFeedbackType
+            }
+        }
+        compose.setContent {
+            CompositionLocalProvider(LocalHapticFeedback provides haptics) {
+                CircleTouchFeedback(vibration) {
+                    Box(Modifier.size(48.dp).testTag(TARGET).circlePressLifecycle(
+                        feedback = rememberCircleActionFeedbackState(), enabled = true,
+                        onBegin = { accepts }, onRelease = { releases++ }, onCancel = { cancels++ },
+                    ))
+                }
+            }
+        }
+        fun press() {
+            compose.onNodeWithTag(TARGET).performTouchInput {
+                down(center); advanceEventTime(MenuDesign.tapHoldMs + 1L); up()
+            }
+            compose.waitForIdle()
+        }
+        press()
+        assertEquals(listOf(HapticFeedbackType.LongPress), requests)
+        compose.runOnIdle { vibration = false }
+        press()
+        assertEquals(1, requests.size)
+        assertEquals(2, releases)
+        compose.runOnIdle { vibration = true; accepts = false }
+        press()
+        assertEquals(1, requests.size)
+        assertEquals(2, releases)
+        assertEquals(0, cancels)
     }
 
     @Test

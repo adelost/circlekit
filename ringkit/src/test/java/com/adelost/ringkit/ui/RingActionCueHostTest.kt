@@ -11,6 +11,19 @@ import org.junit.Test
 
 class RingActionCueHostTest {
     @Test
+    fun receiptRefreshUpdatesItsValueButCannotEraseOpenedInformation() {
+        val button = Any()
+        val off = CircleActionCue(RingIcons.Vibrate, "TOUCH VIBRATION", 1f, true, "OFF")
+        val on = off.copy(value = "ON")
+        val committed = nextRingCueHostState(RingCueHostState(), CircleActionCueEvent(button, off))
+        val refreshed = nextRingCueHostState(committed, CircleActionCueEvent(button, on, updateOnly = true))
+        assertSame(on, refreshed.cue)
+        val explanation = on.copy(confirmed = false, hint = "Vibrate on touch. Flight alerts are separate.", lingers = true)
+        val opened = nextRingCueHostState(refreshed, CircleActionCueEvent(Any(), explanation))
+        assertSame(opened, nextRingCueHostState(opened, CircleActionCueEvent(button, on, updateOnly = true)))
+    }
+
+    @Test
     fun committedReceiptSurvivesItsPublishingControl() {
         val owner = Any()
         val cue = CircleActionCue(RingIcons.Record, "TALK", 1f, confirmed = true)
