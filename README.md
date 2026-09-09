@@ -98,7 +98,9 @@ WatchExact viewport, while STYLE / GEOMETRY shows labelled calculated metrics.
 
 Wrap the product UI once in `CircleTouchFeedback(enabled = yourStoredChoice)`.
 Ordinary, dual-action and confirmation holds and continuous presses all use
-Compose's `LocalHapticFeedback`, including an injected host used for testing.
+the root's Compose haptic port, including an injected host used for testing.
+`circleTouchHapticFeedback()` carries that gated port across Android Dialogs,
+which otherwise install a new `LocalHapticFeedback` and bypass the root choice.
 Only an accepted pointer action requests feedback; grazes, disabled controls
 and rejected continuous starts do not. Assistive actions retain the platform's
 own feedback. This switch never controls flight/audio alarms, and a request is

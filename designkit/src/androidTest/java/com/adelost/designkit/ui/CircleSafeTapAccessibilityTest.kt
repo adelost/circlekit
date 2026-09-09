@@ -23,6 +23,7 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performSemanticsAction
 import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.Dialog
 import androidx.wear.compose.material.Icon
 import androidx.wear.compose.material.Text
 import org.junit.Assert.assertEquals
@@ -47,10 +48,14 @@ class CircleSafeTapAccessibilityTest {
         compose.setContent {
             CompositionLocalProvider(LocalHapticFeedback provides haptics) {
                 CircleTouchFeedback(enabled = vibration) {
+                // A real platform window replaces Compose platform locals.
+                // The product's feedback choice must survive that boundary.
+                Dialog(onDismissRequest = {}) {
                 Box(Modifier.size(48.dp).testTag(TARGET).circleSafeTap(
                     feedback = rememberCircleActionFeedbackState(), enabled = enabled,
                     label = CONTROL_DESCRIPTION, onTap = { actions++ },
                 ))
+                }
                 }
             }
         }

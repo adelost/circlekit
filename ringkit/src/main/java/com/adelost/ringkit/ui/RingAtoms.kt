@@ -37,7 +37,7 @@ import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
-import androidx.compose.ui.platform.LocalHapticFeedback
+import com.adelost.designkit.ui.circleTouchHapticFeedback
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.onLongClick
@@ -245,7 +245,7 @@ fun HoldFillBox(
     val progressPublisher = (progressFeedback as? HoldProgressFeedback.External)?.publish
     val latestProgressPublisher = rememberUpdatedState(progressPublisher)
     val latestConfirm = rememberUpdatedState(onConfirm)
-    val haptics = rememberUpdatedState(LocalHapticFeedback.current)
+    val haptics = rememberUpdatedState(circleTouchHapticFeedback())
 
     DisposableEffect(Unit) {
         onDispose { latestProgressPublisher.value?.invoke(null) }
