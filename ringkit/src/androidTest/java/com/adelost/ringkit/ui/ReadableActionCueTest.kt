@@ -4,6 +4,9 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.SemanticsMatcher
@@ -52,8 +55,9 @@ class ReadableActionCueTest {
 
     @Test fun informationTapNeverChangesTheSettingUnderneath() {
         var changes = 0
+        var timing by mutableStateOf(CircleActionTiming.IMMEDIATE)
         compose.setContent {
-            CompositionLocalProvider(LocalCircleTapTiming provides CircleActionTiming.IMMEDIATE) {
+            CompositionLocalProvider(LocalCircleTapTiming provides timing) {
                 RingActionCueHost {
                     RingChoiceRow(title = "AUDIO", selected = "OFF", options = listOf("OFF", "ON"),
                         role = com.adelost.designkit.ui.CircleChoiceRole.TOGGLE,
@@ -62,11 +66,21 @@ class ReadableActionCueTest {
                 }
             }
         }
-        compose.onNodeWithContentDescription("ABOUT AUDIO").performTouchInput { click() }
-        compose.onNodeWithText("Play new replies aloud.").assertExists()
-        assertEquals(0, changes)
-        compose.onNodeWithContentDescription("Close information").performClick()
-        compose.onNodeWithContentDescription("AUDIO · OFF").assertExists()
-        assertEquals(0, changes)
+        for (actionTiming in CircleActionTiming.entries) {
+            compose.runOnIdle { timing = actionTiming }
+            compose.onNodeWithContentDescription("ABOUT AUDIO").performTouchInput {
+                down(center)
+                advanceEventTime(actionTiming.holdMs + 1L)
+                up()
+            }
+            // The info action must survive its own asynchronous hold receipt,
+            // not merely appear for the frame in which onOpen was invoked.
+            compose.waitForIdle()
+            compose.onNodeWithText("Play new replies aloud.").assertExists()
+            assertEquals(0, changes)
+            compose.onNodeWithContentDescription("Close information").performClick()
+            compose.onNodeWithContentDescription("AUDIO · OFF").assertExists()
+            assertEquals(0, changes)
+        }
     }
 }
