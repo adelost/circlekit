@@ -13,7 +13,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.composed
 import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.disabled
@@ -96,7 +95,7 @@ fun Modifier.circleSafeTap(
         }
     } else {
         val latestTap = rememberUpdatedState(onTap)
-        val haptics = rememberUpdatedState(LocalHapticFeedback.current)
+        val haptics = rememberUpdatedState(circleTouchHapticFeedback())
         Modifier
             .semantics(mergeDescendants = label == null) {
                 label?.let { contentDescription = it }
@@ -162,7 +161,7 @@ fun Modifier.circlePressLifecycle(
     if (!enabled) {
         Modifier.semantics { disabled() }
     } else {
-        val haptics = rememberUpdatedState(LocalHapticFeedback.current)
+        val haptics = rememberUpdatedState(circleTouchHapticFeedback())
         val latestBegin = rememberUpdatedState(onBegin)
         val latestRelease = rememberUpdatedState(onRelease)
         val latestCancel = rememberUpdatedState(onCancel)
@@ -239,7 +238,7 @@ fun Modifier.circleSafeTapOrHold(
     } else {
         val latestTap = rememberUpdatedState(onTap)
         val latestLongPress = rememberUpdatedState(onLongPress)
-        val haptics = rememberUpdatedState(LocalHapticFeedback.current)
+        val haptics = rememberUpdatedState(circleTouchHapticFeedback())
         val semantics = Modifier.semantics(mergeDescendants = label == null) {
             label?.let { contentDescription = it }
             onClick {
