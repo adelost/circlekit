@@ -2,9 +2,9 @@ package com.adelost.designkit.ui
 
 import androidx.compose.ui.graphics.vector.ImageVector
 
-/** Name-keyed lookup used by the FILLED/OUTLINE style switch. */
+/** Authored outline variants override the one catalogue; other glyphs keep their shared geometry. */
 val RING_ICON_OUTLINE_BY_NAME: Map<String, ImageVector> by lazy {
-    listOf(
+    val variants = listOf(
         RingIconsOutline.Arrow, RingIconsOutline.Cloud, RingIconsOutline.Plane, RingIconsOutline.Gps,
         RingIconsOutline.Map, RingIconsOutline.Mountain, RingIconsOutline.Sun, RingIconsOutline.Book,
         RingIconsOutline.Wrench, RingIconsOutline.Sliders, RingIconsOutline.Ruler, RingIconsOutline.Gear,
@@ -30,4 +30,7 @@ val RING_ICON_OUTLINE_BY_NAME: Map<String, ImageVector> by lazy {
         RingIconsOutline.Lock, RingIconsOutline.Record, RingIconsOutline.Stop, RingIconsOutline.Grid,
         RingIconsOutline.Watch, RingIconsOutline.Phone, RingIconsOutline.Play, RingIconsOutline.Pause,
     ).associateBy { requireNotNull(it.name) }
+    val catalog = RING_ICON_CATALOG.associateBy { requireNotNull(it.name) }
+    require(catalog.keys.containsAll(variants.keys)) { "Outline variant outside the shared icon catalogue" }
+    catalog.mapValues { (name, icon) -> variants[name] ?: icon }
 }

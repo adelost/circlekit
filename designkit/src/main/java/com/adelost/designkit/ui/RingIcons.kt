@@ -33,6 +33,11 @@ object RingIcons {
         )
     }
 
+    val BatteryEmpty: ImageVector by lazy { glyph("battery-empty") { fill("M9 1H15V4H17A2 2 0 0 1 19 6V21A2 2 0 0 1 17 23H7A2 2 0 0 1 5 21V6A2 2 0 0 1 7 4H9ZM7.5 6.5V20.5H16.5V6.5Z", PathFillType.EvenOdd) } }
+    val BatteryQuarter: ImageVector by lazy { glyph("battery-quarter") { fill("M9 1H15V4H17A2 2 0 0 1 19 6V21A2 2 0 0 1 17 23H7A2 2 0 0 1 5 21V6A2 2 0 0 1 7 4H9ZM7.5 6.5V20.5H16.5V6.5Z", PathFillType.EvenOdd); fill("M9 16.25H15V19H9Z", PathFillType.NonZero) } }
+    val BatteryHalf: ImageVector by lazy { glyph("battery-half") { fill("M9 1H15V4H17A2 2 0 0 1 19 6V21A2 2 0 0 1 17 23H7A2 2 0 0 1 5 21V6A2 2 0 0 1 7 4H9ZM7.5 6.5V20.5H16.5V6.5Z", PathFillType.EvenOdd); fill("M9 13.5H15V19H9Z", PathFillType.NonZero) } }
+    val BatteryThreeQuarters: ImageVector by lazy { glyph("battery-three-quarters") { fill("M9 1H15V4H17A2 2 0 0 1 19 6V21A2 2 0 0 1 17 23H7A2 2 0 0 1 5 21V6A2 2 0 0 1 7 4H9ZM7.5 6.5V20.5H16.5V6.5Z", PathFillType.EvenOdd); fill("M9 10.75H15V19H9Z", PathFillType.NonZero) } }
+    val BatteryFull: ImageVector by lazy { glyph("battery-full") { fill("M9 1H15V4H17A2 2 0 0 1 19 6V21A2 2 0 0 1 17 23H7A2 2 0 0 1 5 21V6A2 2 0 0 1 7 4H9ZM7.5 6.5V20.5H16.5V6.5Z", PathFillType.EvenOdd); fill("M9 8H15V19H9Z", PathFillType.NonZero) } }
     val Data: ImageVector by lazy { glyph("data") { fill("M4 6C4 3.8 7.6 2.5 12 2.5S20 3.8 20 6S16.4 9.5 12 9.5S4 8.2 4 6ZM4 9C6 10.5 9 11.3 12 11.3S18 10.5 20 9V12.6C20 14.6 16.4 16 12 16S4 14.6 4 12.6ZM4 15.7C6 17.2 9 18 12 18S18 17.2 20 15.7V19.2C20 21 16.4 22 12 22S4 21 4 19.2Z", PathFillType.NonZero) } }
     val Arrow: ImageVector by lazy { glyph("arrow") { stroke("M12 20V5", 3.2f); stroke("M5 11l7 -7l7 7", 3.2f) } }
     val Cloud: ImageVector by lazy { glyph("cloud") { fill("M7.6 18h9.3a3.6 3.6 0 0 0 0.6 -7.2a5.1 5.1 0 0 0 -9.9 -1.2A3.9 3.9 0 0 0 7.6 18Z", PathFillType.NonZero) } }

@@ -25,4 +25,15 @@ class IconCatalogTest {
     fun `clown provenance marker stays present in both styles`() {
         assertSame(RingIcons.Clown, RING_ICON_OUTLINE_BY_NAME["clown"])
     }
+
+    @Test
+    fun `battery levels share the public gallery and both styles`() {
+        val levels = listOf(RingIcons.BatteryEmpty, RingIcons.BatteryQuarter,
+            RingIcons.BatteryHalf, RingIcons.BatteryThreeQuarters, RingIcons.BatteryFull)
+        levels.forEach { level ->
+            assertSame(level, RING_ICON_CATALOG.single { it.name == level.name })
+            assertSame(level, RING_ICON_OUTLINE_BY_NAME[level.name])
+        }
+        assertEquals(5, levels.map { it.name }.toSet().size)
+    }
 }
