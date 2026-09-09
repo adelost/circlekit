@@ -44,5 +44,7 @@ The app setting gates touch acknowledgement, not its independently owned alarms.
 
 Raw logs and baseline APKs are retained in the private artifact archive
 `/home/adelost/lsrc/.artifacts/circlekit-touch-feedback-2026-09-09/`.
-The implementation PR carries the exact publicly accessible source and outcome
-receipt. No user image, GPS trace or existing app data is in this change.
+[PR162](https://github.com/adelost/circlekit/pull/162) carries the exact source and
+outcome receipt. Fresh-main source7a92cee: native8/8 in7.920s plus6/6 in6.752s;
+both isolated test packages removed and absence read back. No user image, GPS
+trace or existing app data is in this change.
