@@ -26,6 +26,7 @@ export const positionObservationContract = {
     field("bearingDeg", "number", { unit: "geo.degree", nullable: true }),
     field("speedMs", "number", { unit: "si.meter-per-second", nullable: true }),
     field("provider", "string"),
+    field("source", finiteValueRef("position.source"), { nullable: true }),
   ],
 } as const;
 
@@ -80,6 +81,8 @@ export const positionHomePointContract = {
     field("latitude", "number", { unit: "geo.degree", nullable: true }),
     field("longitude", "number", { unit: "geo.degree", nullable: true }),
     field("altitudeMslM", "number", { unit: "si.meter", nullable: true }),
+    // Receipt of the actual HERE calibration, never inferred from matching coordinates.
+    field("hereCapture", valueRef("home.datum-capture"), { nullable: true }),
   ],
 } as const;
 
@@ -113,6 +116,7 @@ export const homeGuidancePresentationContract = {
     field("homeAltitudeM", "number", { unit: "si.meter", nullable: true }),
     field("distanceToHomeM", "number", { unit: "si.meter", nullable: true }),
     field("bearingToHomeDeg", "number", { unit: "geo.degree", nullable: true }),
+    field("hereCapture", valueRef("home.datum-capture"), { nullable: true }),
   ],
 } as const;
 
