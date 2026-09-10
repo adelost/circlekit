@@ -172,9 +172,9 @@ object MenuDesign {
     /** Hold-to-confirm edge actions — screen unlock, home-set. */
     const val holdConfirmMs: Long = 1_000L
 
-    val backDiameter: Dp = 40.dp
-    val backDiameterCompact: Dp = 34.dp
-    val backChevronSize: Dp = 18.dp
+    val backDiameter: Dp = watchActionRingDiameter
+    val backDiameterCompact: Dp = watchActionRingDiameter
+    val backChevronSize: Dp = iconSize
     val backTouchTarget: Dp = 48.dp
     const val backPressScale: Float = 0.93f
     const val backHoldMs: Long = holdDeliberateMs

@@ -20,6 +20,7 @@ import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assert
+import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
@@ -50,6 +51,39 @@ class RingRowAccessibilityTest {
             activity.actionBar?.hide()
             activity.window.addFlags(android.view.WindowManager.LayoutParams.FLAG_FULLSCREEN)
         }
+    }
+
+    @Test fun readingIdentityUsesTheFreeWidthAboveCentredActions() {
+        val name = "Alexandra Kristina Svensson Tests · FAKE"
+        var accepted = false
+        val rows = MutableStateFlow(listOf(
+            RowSpec("name", name, "RECEIVED", RingIcons.Link, hint = name),
+            RowSpec("accept", "ACCEPT", "", RingIcons.Check, onTap = { accepted = true }),
+            RowSpec("decline", "DECLINE", "", RingIcons.Cross, onTap = {}),
+        ))
+        compose.setContent { roundMenu(CircleChromeSlot.HOUR_9) {
+            RenderRingScreen(RingNavigator(RingScreen.Rows("PEOPLE", rows)), {}, "Back")
+        } }
+        val nameBounds = compose.onNodeWithText(name).fetchSemanticsNode().boundsInRoot
+        val acceptBounds = compose.onNodeWithContentDescription("ACCEPT", useUnmergedTree = true)
+            .fetchSemanticsNode().boundsInRoot
+        capture("people-reading-nine")
+        assertTrue("identity should use the full row: identity=$nameBounds, action=$acceptBounds",
+            nameBounds.width >= acceptBounds.width * 0.9f)
+        assertEquals("identity is centred in the same usable band as the actions",
+            nameBounds.center.x, acceptBounds.center.x, 1f)
+        val escape = compose.onNodeWithContentDescription("Back", useUnmergedTree = true)
+            .fetchSemanticsNode().boundsInRoot
+        assertTrue("the named action must clear the escape", !acceptBounds.overlaps(escape))
+        compose.onNodeWithContentDescription("ACCEPT", useUnmergedTree = true)
+            .performSemanticsAction(SemanticsActions.OnClick)
+        compose.runOnIdle {
+            assertTrue(accepted)
+            rows.value = listOf(RowSpec("name", name, "FRIEND", RingIcons.Link, hint = name))
+        }
+        compose.waitForIdle()
+        compose.onNodeWithText(name).assertIsDisplayed()
+        capture("people-reading-accepted")
     }
 
     @Test fun directionIsPreservedWhenTheReadingOpensInformation() {
@@ -136,12 +170,15 @@ class RingRowAccessibilityTest {
         capture("pressure-clearance")
     }
 
-    @Composable private fun roundMenu(content: @Composable () -> Unit) {
+    @Composable private fun roundMenu(
+        backSlot: CircleChromeSlot = CircleChromeSlot.HOUR_10,
+        content: @Composable () -> Unit,
+    ) {
         Box(Modifier.size(192.dp).testTag("round-menu-face")) {
             CircleHostSurface(isWatchDevice = true, state = CircleHostPreviewState(), onStateChange = null) {
-                CompositionLocalProvider(LocalRoundChromeReservation provides listOf(CircleChromeSlot.HOUR_10)) {
+                CompositionLocalProvider(LocalRoundChromeReservation provides listOf(backSlot)) {
                     content()
-                    RingRoundChrome(listOf(RingChromeAction(CircleChromeSlot.HOUR_10, RingIcons.Cross, "Back", {})))
+                    RingRoundChrome(listOf(RingChromeAction(backSlot, RingIcons.Cross, "Back", {})))
                 }
             }
         }
@@ -151,9 +188,17 @@ class RingRowAccessibilityTest {
         val instrumentation = androidx.test.platform.app.InstrumentationRegistry.getInstrumentation()
         instrumentation.uiAutomation.waitForIdle(100, 2_000)
         compose.waitForIdle()
+        // Optional observation window for a continuous, external screenrecord.
+        // It changes neither row state nor rendering; normal tests do not wait.
+        androidx.test.platform.app.InstrumentationRegistry.getArguments()
+            .getString("proofObserveMs")?.toLong()?.let(android.os.SystemClock::sleep)
+        if (androidx.test.platform.app.InstrumentationRegistry.getArguments()
+                .getString("proofCapture") == "false") return
         val context = instrumentation.targetContext
         java.io.File(context.cacheDir, "$name.png").outputStream().use { output ->
-            check(compose.onNodeWithTag("round-menu-face").captureToImage().asAndroidBitmap()
+            // Capture the composited Android window, rather than replaying a
+            // Compose subtree whose cached layers may not appear in readback.
+            check(requireNotNull(instrumentation.uiAutomation.takeScreenshot())
                 .compress(android.graphics.Bitmap.CompressFormat.PNG, 100, output))
         }
     }
