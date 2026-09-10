@@ -1,8 +1,9 @@
 /** Portable shape required by the skydiving jump-tag Kotlin emitter. */
 export type JumpTagRuleEmission =
+  | JumpSequenceRuleEmission
   | { readonly kind: "sink-band"; readonly metric: string; readonly min: number; readonly max: number; readonly minCoverage: number }
   | { readonly kind: "sink-uncertain"; readonly metric: string; readonly ranges: readonly (readonly [number, number])[]; readonly minCoverage: number }
-  | { readonly kind: "body-drive"; readonly metric: string; readonly min: number }
+  | { readonly kind: "body-drive"; readonly metric: string; readonly min: number; readonly quality?: DriveEvidenceQualityEmission }
   | { readonly kind: "hop-n-pop"; readonly minFallbackPeakM: number; readonly maxExitM: number; readonly maxFreefallS: number }
   | { readonly kind: "at-least"; readonly metric: string; readonly value: number }
   | { readonly kind: "finite-any"; readonly metric: string; readonly values: readonly string[] }
@@ -10,6 +11,32 @@ export type JumpTagRuleEmission =
   | { readonly kind: "personal-extreme"; readonly metric: string; readonly direction: string; readonly minSamples: number }
   | { readonly kind: "rotation"; readonly metric: string; readonly moment: string; readonly axis: string | null; readonly minTurns: number; readonly maxSecondsPerTurn: number }
   | { readonly kind: "landing-bands"; readonly metric: string; readonly values: readonly string[] };
+
+/** WHAT: Defines measured-track quality requirements independently of a product's tag IDs.
+ * WHY: Keeps gap, accuracy and wind-coverage thresholds in the same declaration as the classification. */
+export interface DriveEvidenceQualityEmission {
+  readonly minFixes: number;
+  readonly minSpanS: number;
+  readonly maxAccuracyM: number;
+  readonly maxGapMs: number;
+  readonly maxFixAgeMs: number;
+  readonly minWindCoverage: number;
+}
+
+/** WHAT: Describes bounded ordered observations without naming a sport or sensor implementation.
+ * WHY: Keeps sequence rules reviewable as product data rather than bespoke tag branches. */
+export interface JumpSequenceRuleEmission {
+  readonly kind: "sequence";
+  readonly version: number;
+  readonly requiredTracks: number;
+  readonly maxGapMs: number;
+  readonly maxTransitionMs: number;
+  readonly paths: readonly (readonly {
+    readonly id: string;
+    readonly minDurationMs: number;
+    readonly conditions: readonly { readonly metric: string; readonly min?: number; readonly max?: number }[];
+  }[])[];
+}
 
 export interface JumpTagDefinitionEmission {
   readonly id: string;

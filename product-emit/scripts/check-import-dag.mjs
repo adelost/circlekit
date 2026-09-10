@@ -18,7 +18,7 @@ const expectedCore = new Set([
 ]);
 const expectedSkydiving = new Set([
   "compile-interactions", "compile-settings", "emit-home-actions-kotlin",
-  "emit-interaction-kotlin", "emit-iso-options-kotlin", "emit-jump-tags-kotlin", "emit-kotlin",
+  "emit-interaction-kotlin", "emit-iso-options-kotlin", "emit-jump-sequence", "emit-jump-tags-kotlin", "emit-kotlin",
   "emit-map-object-presets-kotlin", "emit-map-product-kotlin", "emit-product-icons-kotlin",
   "emit-product-menus-kotlin", "emit-settings-components-kotlin",
   "emit-preflight-briefing-kotlin", "emit-status-indicators-kotlin",

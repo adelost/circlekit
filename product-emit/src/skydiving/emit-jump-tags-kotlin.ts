@@ -1,17 +1,27 @@
 import { kotlinStringLiteral } from "../core/kotlin-syntax.js";
 import type { SourcedKotlinEmissionOptions } from "../core/emission-options.js";
+import { emitJumpSequence } from "./emit-jump-sequence.js";
 import type {
   JumpTagCatalogEmission,
   JumpTagDefinitionEmission,
   JumpTagRuleEmission,
 } from "./jump-tag-model.js";
 
-/** Emits one product-prefixed Kotlin catalog from declared skydiving tag data. */
+/** WHAT: Builds one product-prefixed Kotlin catalog from declared skydiving tag data.
+ * WHY: Keeps product vocabulary and thresholds outside handwritten native classification code. */
 export function emitJumpTagsKotlin(
   input: JumpTagCatalogEmission,
   options: SourcedKotlinEmissionOptions,
 ): string {
   const g = `Generated${options.symbolPrefix}`;
+  for (const { suggest } of input.tags) {
+    const metrics = suggest?.kind === "sequence"
+      ? suggest.paths.flatMap(path => path.flatMap(stage => stage.conditions.map(condition => condition.metric)))
+      : suggest && "metric" in suggest ? [suggest.metric] : [];
+    for (const metric of metrics) {
+      if (!input.evidenceMetrics.includes(metric)) throw new Error(`Unknown jump evidence metric: ${metric}`);
+    }
+  }
   const categories = input.axes.map(({ id }) => id);
   const shapes = unique(input.tags.map(({ shape }) => shape));
   const edits = unique(input.tags.map(({ edit }) => edit));
@@ -36,9 +46,10 @@ enum class ${g}JumpTagEvidenceMetric { ${input.evidenceMetrics.join(", ")} }
 
 data class ${g}JumpTagAxis(val id: String, val label: String)
 sealed interface ${g}JumpTagRule {
+    data class Sequence(val version: Int, val requiredTracks: Int, val maxGapMs: Long, val maxTransitionMs: Long, val paths: List<List<${g}SequenceStage>>) : ${g}JumpTagRule
     data class SinkBand(val metric: ${g}JumpTagEvidenceMetric, val min: Float, val max: Float, val minCoverage: Float) : ${g}JumpTagRule
     data class SinkUncertain(val metric: ${g}JumpTagEvidenceMetric, val ranges: List<ClosedFloatingPointRange<Float>>, val minCoverage: Float) : ${g}JumpTagRule
-    data class BodyDrive(val metric: ${g}JumpTagEvidenceMetric, val min: Float) : ${g}JumpTagRule
+    data class BodyDrive(val metric: ${g}JumpTagEvidenceMetric, val min: Float, val quality: ${g}DriveEvidenceQuality? = null) : ${g}JumpTagRule
     data class HopNPop(val minFallbackPeakM: Float, val maxExitM: Float, val maxFreefallS: Long) : ${g}JumpTagRule
     data class AtLeast(val metric: ${g}JumpTagEvidenceMetric, val value: Float) : ${g}JumpTagRule
     data class FiniteAny(val metric: ${g}JumpTagEvidenceMetric, val values: Set<String>) : ${g}JumpTagRule
@@ -47,6 +58,14 @@ sealed interface ${g}JumpTagRule {
     data class Rotation(val metric: ${g}JumpTagEvidenceMetric, val moment: String, val axis: String?, val minTurns: Float, val maxSecondsPerTurn: Float) : ${g}JumpTagRule
     data class LandingBands(val metric: ${g}JumpTagEvidenceMetric, val values: Set<String>) : ${g}JumpTagRule
 }
+
+data class ${g}DriveEvidenceQuality(
+    val minFixes: Int, val minSpanS: Float, val maxAccuracyM: Float,
+    val maxGapMs: Long, val maxFixAgeMs: Long, val minWindCoverage: Float,
+)
+
+data class ${g}SequenceStage(val id: String, val minDurationMs: Long, val conditions: List<${g}SequenceCondition>)
+data class ${g}SequenceCondition(val metric: ${g}JumpTagEvidenceMetric, val min: Float?, val max: Float?)
 
 data class ${g}JumpTagDefinition(
     val id: String,
@@ -167,9 +186,21 @@ function emitDefinition(item: JumpTagDefinitionEmission, g: string): string {
 function emitRule(rule: JumpTagRuleEmission | undefined, g: string): string {
   if (rule === undefined) return "null";
   switch (rule.kind) {
+    case "sequence": return emitJumpSequence(rule, g);
     case "sink-band": return `${g}JumpTagRule.SinkBand(${g}JumpTagEvidenceMetric.${rule.metric}, ${f(rule.min)}, ${f(rule.max)}, ${f(rule.minCoverage)})`;
     case "sink-uncertain": return `${g}JumpTagRule.SinkUncertain(${g}JumpTagEvidenceMetric.${rule.metric}, listOf(${rule.ranges.map(([min, max]) => `${f(min)}..${f(max)}`).join(", ")}), ${f(rule.minCoverage)})`;
-    case "body-drive": return `${g}JumpTagRule.BodyDrive(${g}JumpTagEvidenceMetric.${rule.metric}, ${f(rule.min)})`;
+    case "body-drive": {
+      const quality = rule.quality;
+      if (quality === undefined) return `${g}JumpTagRule.BodyDrive(${g}JumpTagEvidenceMetric.${rule.metric}, ${f(rule.min)}, null)`;
+      for (const key of ["minFixes", "minSpanS", "maxAccuracyM", "maxGapMs", "maxFixAgeMs", "minWindCoverage"] as const) {
+        const value = quality[key];
+        if (!Number.isFinite(value) || value <= 0) throw new Error(`Invalid drive quality ${key}`);
+      }
+      if (!Number.isInteger(quality.minFixes) || quality.minFixes < 2 ||
+          !Number.isInteger(quality.maxGapMs) || !Number.isInteger(quality.maxFixAgeMs) ||
+          quality.minWindCoverage > 1) throw new Error("Invalid drive quality domain");
+      return `${g}JumpTagRule.BodyDrive(${g}JumpTagEvidenceMetric.${rule.metric}, ${f(rule.min)}, ${g}DriveEvidenceQuality(${quality.minFixes}, ${f(quality.minSpanS)}, ${f(quality.maxAccuracyM)}, ${quality.maxGapMs}L, ${quality.maxFixAgeMs}L, ${f(quality.minWindCoverage)}))`;
+    }
     case "hop-n-pop": return `${g}JumpTagRule.HopNPop(${f(rule.minFallbackPeakM)}, ${f(rule.maxExitM)}, ${rule.maxFreefallS}L)`;
     case "at-least": return `${g}JumpTagRule.AtLeast(${g}JumpTagEvidenceMetric.${rule.metric}, ${f(rule.value)})`;
     case "finite-any": return `${g}JumpTagRule.FiniteAny(${g}JumpTagEvidenceMetric.${rule.metric}, ${setOf(rule.values)})`;
