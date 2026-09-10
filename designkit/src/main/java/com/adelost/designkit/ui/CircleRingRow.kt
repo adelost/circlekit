@@ -294,17 +294,9 @@ private fun CirclePassiveReadingContent(
     iconRotationDeg: Float,
 ) {
     Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
-        CircleText(
-            text = title,
-            color = RingTokens.Ink,
-            fontSizeSp = MenuDesign.titleSize.value,
-            fontWeight = FontWeight.Bold,
-            letterSpacingSp = MenuDesign.titleTracking.value,
-            textAlign = androidx.compose.ui.text.style.TextAlign.Center,
-            modifier = Modifier.fillMaxWidth(),
-        )
+        CircleReadingTitle(title)
         if (icon != null || sub.isNotBlank() || trailing != null) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
+            Row(modifier = Modifier.readingValueClearance(), verticalAlignment = Alignment.CenterVertically) {
                 if (icon != null) {
                     CircleStyledIcon(
                         style = ringIconStyle(icon, accent),

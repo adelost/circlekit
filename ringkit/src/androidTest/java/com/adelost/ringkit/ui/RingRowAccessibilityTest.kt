@@ -26,6 +26,7 @@ import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performSemanticsAction
 import androidx.compose.ui.test.performTouchInput
+import androidx.compose.ui.test.hasScrollAction
 import com.adelost.designkit.ui.RingIcons
 import com.adelost.designkit.ui.CircleChromeSlot
 import com.adelost.designkit.ui.CircleHostSurface
@@ -70,8 +71,9 @@ class RingRowAccessibilityTest {
         capture("people-reading-nine")
         assertTrue("identity should use the full row: identity=$nameBounds, action=$acceptBounds",
             nameBounds.width >= acceptBounds.width * 0.9f)
-        assertEquals("identity is centred in the same usable band as the actions",
-            nameBounds.center.x, acceptBounds.center.x, 1f)
+        val face = compose.onNodeWithTag("round-menu-face").fetchSemanticsNode().boundsInRoot
+        assertEquals("free identity ink is centred on the face instead of inheriting the action gutter",
+            face.center.x, nameBounds.center.x, 1f)
         val escape = compose.onNodeWithContentDescription("Back", useUnmergedTree = true)
             .fetchSemanticsNode().boundsInRoot
         assertTrue("the named action must clear the escape", !acceptBounds.overlaps(escape))
@@ -84,6 +86,41 @@ class RingRowAccessibilityTest {
         compose.waitForIdle()
         compose.onNodeWithText(name).assertIsDisplayed()
         capture("people-reading-accepted")
+    }
+
+    @Test fun movingPastBackKeepsScrollExtentAndAllNameLinesClear() {
+        val name = "Alexandra Kristina Svensson Tests · FAKE"
+        val rows = flowOf(listOf(
+            RowSpec("open", "OPEN", "", RingIcons.Check, onTap = {}),
+            RowSpec("name", name, "RECEIVED", RingIcons.Link)) +
+            (1..8).map { RowSpec("action-$it", "ACTION $it", "", RingIcons.Check, onTap = {}) })
+        compose.setContent { roundMenu(CircleChromeSlot.HOUR_9) {
+            RenderRingScreen(RingNavigator(RingScreen.Rows("PEOPLE", rows)), {}, "Back")
+        } }
+        val scroll = compose.onNode(hasScrollAction())
+        val range = scroll.fetchSemanticsNode().config[SemanticsProperties.VerticalScrollAxisRange].maxValue()
+        val escape = compose.onNodeWithContentDescription("Back", useUnmergedTree = true)
+            .fetchSemanticsNode().boundsInRoot
+        for (dy in listOf(0f, 24f, 24f, 24f, 24f)) {
+            scroll.performSemanticsAction(SemanticsActions.ScrollBy) { it(0f, dy) }
+            compose.waitForIdle()
+            assertEquals("wrapping must not move the scroll extent", range,
+                scroll.fetchSemanticsNode().config[SemanticsProperties.VerticalScrollAxisRange].maxValue(), 1f)
+            val node = compose.onNodeWithText(name)
+            val bounds = node.fetchSemanticsNode().boundsInRoot
+            val layouts = mutableListOf<androidx.compose.ui.text.TextLayoutResult>()
+            node.performSemanticsAction(SemanticsActions.GetTextLayoutResult) { it(layouts) }
+            val layout = layouts.single()
+            for (line in 0 until layout.lineCount) {
+                val ink = androidx.compose.ui.geometry.Rect(bounds.left + layout.getLineLeft(line),
+                    bounds.top + layout.getLineTop(line), bounds.left + layout.getLineRight(line),
+                    bounds.top + layout.getLineBottom(line))
+                assertTrue("line $line must clear Back at scroll delta $dy: $ink / $escape", !ink.overlaps(escape))
+            }
+        }
+        val face = compose.onNodeWithTag("round-menu-face").fetchSemanticsNode().boundsInRoot
+        assertEquals(face.center.x, compose.onNodeWithText(name).fetchSemanticsNode().boundsInRoot.center.x, 1f)
+        capture("people-reading-after-scroll")
     }
 
     @Test fun directionIsPreservedWhenTheReadingOpensInformation() {
