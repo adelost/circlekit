@@ -86,6 +86,7 @@ class RingRowAccessibilityTest {
     private fun assertReadingPigment(value: String) {
         val nodes = compose.onAllNodes(SemanticsMatcher.expectValue(
             SemanticsProperties.Text, listOf(AnnotatedString(value))), useUnmergedTree = true)
+        compose.waitUntil { nodes.fetchSemanticsNodes().isNotEmpty() }
         val bitmap = nodes[nodes.fetchSemanticsNodes().lastIndex].captureToImage().asAndroidBitmap()
         assertTrue("explicit reading pigment must reach the visible value",
             (0 until bitmap.height).any { y -> (0 until bitmap.width).any { x ->
