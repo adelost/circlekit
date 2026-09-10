@@ -36,4 +36,16 @@ class IconCatalogTest {
         }
         assertEquals(5, levels.map { it.name }.toSet().size)
     }
+
+    @Test
+    fun `activity pictograms are distinct shared assets in both styles`() {
+        val icons = listOf(RingIcons.Tag, RingIcons.RamAir, RingIcons.CanopyCarry,
+            RingIcons.Tandem, RingIcons.Wingsuit, RingIcons.Tracking, RingIcons.CanopySwoop,
+            RingIcons.Formation, RingIcons.Camera, RingIcons.Balloon, RingIcons.Helicopter)
+        icons.forEach { icon ->
+            assertSame(icon, RING_ICON_CATALOG.single { it.name == icon.name })
+            assertSame(icon, RING_ICON_OUTLINE_BY_NAME[icon.name])
+        }
+        assertEquals(icons.size, icons.map { it.name }.toSet().size)
+    }
 }

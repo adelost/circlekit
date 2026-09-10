@@ -43,7 +43,8 @@ function emitRingIcons() {
 `import androidx.compose.ui.graphics.vector.ImageVector\n` +
 `import androidx.compose.ui.graphics.vector.addPathNodes\n` +
 `import androidx.compose.ui.unit.dp\n\n` +
-`/** Filled Ring geometry. Product semantics stay in portable ProductSpec data. */\n` +
+`/** WHAT: Builds native vectors from the shared portable icon catalog.\n` +
+` * WHY: Keeps product semantics separate from reusable filled geometry. */\n` +
 `object RingIcons {\n` +
 `    private fun glyph(name: String, paths: ImageVector.Builder.() -> Unit): ImageVector = ImageVector.Builder(\n` +
 `        name = name, defaultWidth = 24.dp, defaultHeight = 24.dp,\n` +
