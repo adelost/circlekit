@@ -52,6 +52,38 @@ class RingRowAccessibilityTest {
         }
     }
 
+    @Test fun readingIdentityUsesTheFreeWidthAboveCentredActions() {
+        val name = "Alexandra Kristina Svensson Tests · FAKE"
+        var accepted = false
+        val rows = MutableStateFlow(listOf(
+            RowSpec("name", name, "RECEIVED", RingIcons.Link, hint = name),
+            RowSpec("accept", "ACCEPT", "", RingIcons.Check, onTap = { accepted = true }),
+            RowSpec("decline", "DECLINE", "", RingIcons.Cross, onTap = {}),
+        ))
+        compose.setContent { roundMenu(CircleChromeSlot.HOUR_9) {
+            RenderRingScreen(RingNavigator(RingScreen.Rows("PEOPLE", rows)), {}, "Back")
+        } }
+        val nameBounds = compose.onNodeWithText(name).fetchSemanticsNode().boundsInRoot
+        val acceptBounds = compose.onNodeWithContentDescription("ACCEPT", useUnmergedTree = true)
+            .fetchSemanticsNode().boundsInRoot
+        capture("people-reading-nine")
+        assertTrue("identity should use the full row: identity=$nameBounds, action=$acceptBounds",
+            nameBounds.width >= acceptBounds.width * 0.9f)
+        assertEquals("identity is centred in the same usable band as the actions",
+            nameBounds.center.x, acceptBounds.center.x, 1f)
+        val escape = compose.onNodeWithContentDescription("Back", useUnmergedTree = true)
+            .fetchSemanticsNode().boundsInRoot
+        assertTrue("the named action must clear the escape", !acceptBounds.overlaps(escape))
+        compose.onNodeWithContentDescription("ACCEPT", useUnmergedTree = true)
+            .performSemanticsAction(SemanticsActions.OnClick)
+        compose.runOnIdle {
+            assertTrue(accepted)
+            rows.value = listOf(RowSpec("name", name, "FRIEND", RingIcons.Link, hint = name))
+        }
+        compose.waitForIdle()
+        capture("people-reading-accepted")
+    }
+
     @Test fun directionIsPreservedWhenTheReadingOpensInformation() {
         var published by androidx.compose.runtime.mutableStateOf<com.adelost.designkit.ui.CircleActionCue?>(null)
         val screen = RingScreen.Rows("READINGS", flowOf(listOf(
@@ -136,12 +168,15 @@ class RingRowAccessibilityTest {
         capture("pressure-clearance")
     }
 
-    @Composable private fun roundMenu(content: @Composable () -> Unit) {
+    @Composable private fun roundMenu(
+        backSlot: CircleChromeSlot = CircleChromeSlot.HOUR_10,
+        content: @Composable () -> Unit,
+    ) {
         Box(Modifier.size(192.dp).testTag("round-menu-face")) {
             CircleHostSurface(isWatchDevice = true, state = CircleHostPreviewState(), onStateChange = null) {
-                CompositionLocalProvider(LocalRoundChromeReservation provides listOf(CircleChromeSlot.HOUR_10)) {
+                CompositionLocalProvider(LocalRoundChromeReservation provides listOf(backSlot)) {
                     content()
-                    RingRoundChrome(listOf(RingChromeAction(CircleChromeSlot.HOUR_10, RingIcons.Cross, "Back", {})))
+                    RingRoundChrome(listOf(RingChromeAction(backSlot, RingIcons.Cross, "Back", {})))
                 }
             }
         }
