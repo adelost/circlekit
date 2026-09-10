@@ -9,6 +9,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.graphics.asAndroidBitmap
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.test.captureToImage
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.platform.testTag
@@ -54,7 +56,7 @@ class RingRowAccessibilityTest {
         var published by androidx.compose.runtime.mutableStateOf<com.adelost.designkit.ui.CircleActionCue?>(null)
         val screen = RingScreen.Rows("READINGS", flowOf(listOf(
             RowSpec("direction", "120 m", "8 m/s", RingIcons.Arrow,
-                hint = "FROM 270°", iconRotationDeg = 90f),
+                hint = "FROM 270°", iconRotationDeg = 90f, semanticColor = Color.Magenta),
         )))
         val nav = RingNavigator(screen)
         compose.setContent { roundMenu {
@@ -67,12 +69,29 @@ class RingRowAccessibilityTest {
                 published?.let { RingActionExplanation(it, onDismiss = { published = null }) }
             }
         } }
+        assertReadingPigment("8 m/s")
         compose.onNodeWithText("120 m", useUnmergedTree = true)
             .performTouchInput { down(center); advanceEventTime(1); up() }
         compose.onNodeWithContentDescription("ABOUT 120 m", useUnmergedTree = true)
             .performTouchInput { down(center); advanceEventTime(450); up() }
-        compose.runOnIdle { assertEquals(90f, requireNotNull(published).iconRotationDeg, 0f) }
+        compose.runOnIdle {
+            assertEquals(90f, requireNotNull(published).iconRotationDeg, 0f)
+            assertEquals(Color.Magenta, requireNotNull(published).semanticColor)
+        }
+        assertReadingPigment("8 m/s")
         capture("reading-direction-info")
+    }
+
+    /** Pixel proof of the actual value renderer, not a metadata-only equality. */
+    private fun assertReadingPigment(value: String) {
+        val nodes = compose.onAllNodes(SemanticsMatcher.expectValue(
+            SemanticsProperties.Text, listOf(AnnotatedString(value))), useUnmergedTree = true)
+        compose.waitUntil { nodes.fetchSemanticsNodes().isNotEmpty() }
+        val bitmap = nodes[nodes.fetchSemanticsNodes().lastIndex].captureToImage().asAndroidBitmap()
+        assertTrue("explicit reading pigment must reach the visible value",
+            (0 until bitmap.height).any { y -> (0 until bitmap.width).any { x ->
+                bitmap.getPixel(x, y) == Color.Magenta.toArgb()
+            } })
     }
 
     @Test fun declaredMultilineChoiceReachesTheActualRoundRow() {

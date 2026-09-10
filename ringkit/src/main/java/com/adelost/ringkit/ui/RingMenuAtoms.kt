@@ -258,6 +258,7 @@ fun RingRow(
                 RingRowInfoButton(
                     rowIcon = icon,
                     iconRotationDeg = iconRotationDeg,
+                    semanticColor = semanticColor,
                     title = title,
                     value = sub,
                     hint = explanation,
