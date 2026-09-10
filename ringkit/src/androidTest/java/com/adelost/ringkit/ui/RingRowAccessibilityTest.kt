@@ -16,7 +16,7 @@ import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assert
-import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performSemanticsAction
@@ -37,7 +37,16 @@ import org.junit.Test
 
 class RingRowAccessibilityTest {
     @get:Rule
-    val compose = createComposeRule()
+    val compose = createAndroidComposeRule<androidx.activity.ComponentActivity>()
+
+    @org.junit.Before fun useTheProductLikeWindow() {
+        compose.activityRule.scenario.onActivity { activity ->
+            // The self-targeted test Activity otherwise adds Android's title
+            // bar above the kit. Product hosts have no such competing chrome.
+            activity.actionBar?.hide()
+            activity.window.addFlags(android.view.WindowManager.LayoutParams.FLAG_FULLSCREEN)
+        }
+    }
 
     @Test fun declaredMultilineChoiceReachesTheActualRoundRow() {
         val selected = "SEA GLASS BLUE GREEN"
@@ -93,7 +102,10 @@ class RingRowAccessibilityTest {
     }
 
     private fun capture(name: String) {
-        val context = androidx.test.platform.app.InstrumentationRegistry.getInstrumentation().targetContext
+        val instrumentation = androidx.test.platform.app.InstrumentationRegistry.getInstrumentation()
+        instrumentation.uiAutomation.waitForIdle(100, 2_000)
+        compose.waitForIdle()
+        val context = instrumentation.targetContext
         java.io.File(context.cacheDir, "$name.png").outputStream().use { output ->
             check(compose.onNodeWithTag("round-menu-face").captureToImage().asAndroidBitmap()
                 .compress(android.graphics.Bitmap.CompressFormat.PNG, 100, output))
