@@ -307,6 +307,8 @@ data class RowSpec(
     val centerValue: String? = null,
     /** Long identities (people, places, devices) must stay readable on selection. */
     val multiline: Boolean = onTap == null,
+    /** Directional readings rotate only the catalog icon, never their text or touch target. */
+    val iconRotationDeg: Float = 0f,
 ) {
     /**
      * Semantic row role, DERIVED from the interaction data — never passed in.
@@ -319,6 +321,7 @@ data class RowSpec(
     val kind: RowKind = rowKindFor(onTap, onDec, onInc, choices, choiceRole)
 
     init {
+        require(iconRotationDeg.isFinite()) { "A row icon rotation must be finite" }
         require(
             (choices.isEmpty() && onSelect == null) ||
                 (

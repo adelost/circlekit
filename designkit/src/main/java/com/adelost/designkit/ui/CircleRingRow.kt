@@ -15,6 +15,7 @@ import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.graphics.Color
@@ -57,6 +58,7 @@ fun CircleRingRow(
      * predictable.
      */
     multiline: Boolean = false,
+    iconRotationDeg: Float = 0f,
 ) {
     val phoneDesign = phoneSurfaceDesignFor(LocalCircleSurfaceLayout.current.surfaceClass)
     val feedback = rememberCircleActionFeedbackState()
@@ -122,6 +124,7 @@ fun CircleRingRow(
                 pressHoldMs = actionHoldMs,
                 centerValue = centerValue,
                 multiline = multiline,
+                iconRotationDeg = iconRotationDeg,
             )
         }
         if (confirmedTap != null) {
@@ -172,6 +175,7 @@ fun CircleRingRowContent(
     /** See [CircleRingRow]: a row nobody can press has no centre cue to fall
      *  back on, so it grows to fit its words instead of ellipsising them. */
     multiline: Boolean = false,
+    iconRotationDeg: Float = 0f,
 ) {
     val phoneDesign = phoneSurfaceDesignFor(LocalCircleSurfaceLayout.current.surfaceClass)
     val hasSlots = leading != null || trailing != null
@@ -199,6 +203,7 @@ fun CircleRingRowContent(
                 semanticColor = semanticColor,
                 phoneDesign = phoneDesign,
                 feedbackSweep = feedbackSweep,
+                iconRotationDeg = iconRotationDeg,
             )
             Spacer(Modifier.size(phoneDesign?.rowIconTextGap ?: MenuDesign.iconTextGap))
         }
@@ -309,6 +314,7 @@ private fun CircleRowLeadingRing(
     semanticColor: Color?,
     phoneDesign: PhoneSurfaceDesign?,
     feedbackSweep: Float,
+    iconRotationDeg: Float,
 ) {
     val activeContour = circleBrandColor()
     val progressContour = circleBrandColor()
@@ -339,7 +345,7 @@ private fun CircleRowLeadingRing(
                 style = ringIconStyle(icon, accent),
                 contentDescription = null,
                 tintOverride = semanticColor,
-                modifier = Modifier.size(phoneDesign?.rowIconSize ?: MenuDesign.iconSize),
+                modifier = Modifier.size(phoneDesign?.rowIconSize ?: MenuDesign.iconSize).rotate(iconRotationDeg),
             )
         } else {
             CircleText(
