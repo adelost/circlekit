@@ -62,8 +62,7 @@ data class DisplayUnitPreferences(
 
     /**
      * Primary altitude readout. Keep the measured value in ordinary units:
-     * metric tenths while the value has at most three whole digits, then whole
-     * metres. Feet are always whole because a tenth of a foot overstates the
+     * metric tenths at every magnitude. Feet are always whole because a tenth of a foot overstates the
      * barometer's physical resolution. Never coarsen either unit to ten-unit
      * steps or compact it to km/kft; responsive typography owns fitting.
      */
@@ -147,21 +146,13 @@ private fun decimal(value: Float, places: Int): String {
     else String.format(Locale.US, "%.${places}f", value)
 }
 
-/**
- * A tenth is useful while the rounded readout still has at most three whole
- * digits. The rule is display-unit based and phase-free: descending through
- * 1,000 immediately restores the decimal instead of waiting for LANDED.
- */
-private fun dialDecimalFits(value: Float): Boolean =
-    (abs(value) * 10f).roundToInt() < DIAL_DECIMAL_THRESHOLD * 10
-
 private fun dialAltitude(
     value: Float,
     unit: String,
     allowTenths: Boolean,
 ): MeasurementText =
     MeasurementText(
-        value = if (allowTenths && dialDecimalFits(value)) {
+        value = if (allowTenths) {
             decimal(value, 1)
         } else {
             value.roundToInt().toString()
@@ -173,4 +164,3 @@ private const val METRES_TO_FEET = 3.280839895f
 private const val METRES_PER_KILOMETRE = 1_000f
 private const val FEET_PER_KILOFOOT = 1_000f
 private const val METRES_PER_MILE = 1_609.344f
-private const val DIAL_DECIMAL_THRESHOLD = 1_000

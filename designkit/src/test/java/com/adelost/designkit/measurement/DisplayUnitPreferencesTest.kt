@@ -49,18 +49,21 @@ class DisplayUnitPreferencesTest {
         val metric = DisplayUnitPreferences()
         val feet = DisplayUnitPreferences(altitude = AltitudeDisplayUnit.FEET)
 
-        assertEquals(MeasurementText("3549", "m"), metric.formatDialAltitude(3_549f))
-        assertEquals(MeasurementText("12345", "m"), metric.formatDialAltitude(12_345f))
+        assertEquals(MeasurementText("3549.0", "m"), metric.formatDialAltitude(3_549f))
+        assertEquals(MeasurementText("12345.0", "m"), metric.formatDialAltitude(12_345f))
         assertEquals(MeasurementText("13123", "ft"), feet.formatDialAltitude(4_000f))
         assertEquals(MeasurementText("4921", "ft"), feet.formatDialAltitude(1_500f))
     }
 
     @Test
-    fun `metric dial decimal returns below a three digit display magnitude without phase state`() {
+    fun `metric dial retains its tenth across sign and digit boundaries`() {
         val metric = DisplayUnitPreferences()
 
-        assertEquals(MeasurementText("1500", "m"), metric.formatDialAltitude(1_500f))
-        assertEquals(MeasurementText("1000", "m"), metric.formatDialAltitude(1_000f))
+        assertEquals(MeasurementText("2605.4", "m"), metric.formatDialAltitude(2_605.4f))
+        assertEquals(MeasurementText("1500.0", "m"), metric.formatDialAltitude(1_500f))
+        assertEquals(MeasurementText("1000.0", "m"), metric.formatDialAltitude(1_000f))
+        assertEquals(MeasurementText("-1000.0", "m"), metric.formatDialAltitude(-1_000f))
+        assertEquals(MeasurementText("-0.3", "m"), metric.formatDialAltitude(-0.3f))
         assertEquals(MeasurementText("999.4", "m"), metric.formatDialAltitude(999.4f))
         assertEquals(MeasurementText("99.4", "m"), metric.formatDialAltitude(99.4f))
         assertEquals(MeasurementText("0.0", "m"), metric.formatDialAltitude(0f))

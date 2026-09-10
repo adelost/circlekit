@@ -211,7 +211,7 @@ fun roundChromeHorizontalInsetsDp(
     gapDp = gapDp,
 )
 
-private fun roundChromeHorizontalInsetsForHalfHeightDp(
+internal fun roundChromeHorizontalInsetsForHalfHeightDp(
     viewportWidthDp: Float,
     viewportHeightDp: Float,
     contentCenterYDp: Float,

@@ -64,7 +64,24 @@ fun CircleText(
     BasicText(
         text = text,
         modifier = modifier,
-        style = TextStyle(
+        style = circleTextStyle(color, fontSizeSp, fontWeight, letterSpacingSp,
+            textAlign, tabularNumerals, lineHeightSp),
+        maxLines = maxLines,
+        overflow = overflow,
+        onTextLayout = onTextLayout,
+    )
+}
+
+@Composable
+internal fun circleTextStyle(
+    color: Color,
+    fontSizeSp: Float,
+    fontWeight: FontWeight = FontWeight.Normal,
+    letterSpacingSp: Float = 0f,
+    textAlign: TextAlign? = null,
+    tabularNumerals: Boolean = false,
+    lineHeightSp: Float? = null,
+): TextStyle = TextStyle(
             color = color,
             fontFamily = GraphiteType.Sans,
             fontSize = circleFixedSp(fontSizeSp),
@@ -81,12 +98,7 @@ fun CircleText(
             // Same explicit choice wear's DefaultTextStyle makes; pinned here
             // so a Compose default change can never fork watch/phone metrics.
             platformStyle = PlatformTextStyle(includeFontPadding = false),
-        ),
-        maxLines = maxLines,
-        overflow = overflow,
-        onTextLayout = onTextLayout,
-    )
-}
+        )
 
 /**
  * Text that stays whole: renders at [fontSizeSp] and steps down as far as
