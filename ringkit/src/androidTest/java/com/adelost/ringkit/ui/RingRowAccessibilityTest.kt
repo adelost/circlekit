@@ -4,6 +4,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.graphics.asAndroidBitmap
@@ -46,6 +48,31 @@ class RingRowAccessibilityTest {
             activity.actionBar?.hide()
             activity.window.addFlags(android.view.WindowManager.LayoutParams.FLAG_FULLSCREEN)
         }
+    }
+
+    @Test fun directionIsPreservedWhenTheReadingOpensInformation() {
+        var published by androidx.compose.runtime.mutableStateOf<com.adelost.designkit.ui.CircleActionCue?>(null)
+        val screen = RingScreen.Rows("READINGS", flowOf(listOf(
+            RowSpec("direction", "120 m", "8 m/s", RingIcons.Arrow,
+                hint = "FROM 270°", iconRotationDeg = 90f),
+        )))
+        val nav = RingNavigator(screen)
+        compose.setContent { roundMenu {
+            CompositionLocalProvider(com.adelost.designkit.ui.LocalCircleActionCuePublisher provides {
+                // Observe the explicit information publication; ordinary INFO
+                // button press receipts are a separate, already-tested owner.
+                if (it.cue?.lingers == true) published = it.cue
+            }) {
+                RenderRingScreen(nav, {}, "Back")
+                published?.let { RingActionExplanation(it, onDismiss = { published = null }) }
+            }
+        } }
+        compose.onNodeWithText("120 m", useUnmergedTree = true)
+            .performTouchInput { down(center); advanceEventTime(1); up() }
+        compose.onNodeWithContentDescription("ABOUT 120 m", useUnmergedTree = true)
+            .performTouchInput { down(center); advanceEventTime(450); up() }
+        compose.runOnIdle { assertEquals(90f, requireNotNull(published).iconRotationDeg, 0f) }
+        capture("reading-direction-info")
     }
 
     @Test fun declaredMultilineChoiceReachesTheActualRoundRow() {

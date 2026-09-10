@@ -31,3 +31,23 @@ The bounded proof archive is attached to the
 as `round-menu-clearance-proof.tar.gz` after publication. It contains no
 user photographs, locations or saved records. Skyvw adoption is a separate
 consumer commit after its canonical writer handover.
+
+## Direction follow-up (0.3.68)
+
+Skyvw's actual menu proof found that opening a rotated reading as INFO reset
+its arrow to upright. `CircleActionCue.iconRotationDeg` now carries the same
+finite presentation value from the existing row into both cue renderers;
+native host adapters must preserve it. No direction or weather is calculated
+by the framework. Ordinary cues keep zero rotation by default.
+
+Existing `RingRowAccessibilityTest.directionIsPreservedWhenTheReadingOpensInformation`
+uses the actual passive row → named INFO pointer → shared disclosure, asserts
+the published rotation and captures its pixels. One Wear192dp synthetic case
+passed in 1.835s: FROM270° shows a right-facing arrow. The first test harness
+recreated its navigator during observation; that failed run is not evidence.
+The corrected harness observes only the explicit information publication.
+No product app/data/settings were modified by this self-targeted test.
+
+Proof is in the existing private archive's `shared/direction/`, attached as
+`menu-direction-proof.tar.gz` to the
+[0.3.68 release](https://github.com/adelost/circlekit/releases/tag/v0.3.68).

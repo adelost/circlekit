@@ -58,8 +58,11 @@ data class CircleActionCue(
      * says the same thing for an answer that was never an action.
      */
     val lingers: Boolean = false,
+    /** A directional glyph keeps its reading when opened as information. */
+    val iconRotationDeg: Float = 0f,
 ) {
     init {
+        require(iconRotationDeg.isFinite()) { "Action cue icon rotation must be finite" }
         require(label.isNotBlank()) { "Action cue needs a visible label" }
         require(progress.isFinite() && progress in 0f..1f) {
             "Action cue progress must be a finite fraction in 0..1"

@@ -31,6 +31,10 @@ class CircleActionCueTest {
     @Test
     fun `centre cue refuses invented or invisible progress`() {
         assertThrows(IllegalArgumentException::class.java) {
+            CircleActionCue(RingIcons.Arrow, "READING", progress = 1f, confirmed = false,
+                iconRotationDeg = Float.NaN)
+        }
+        assertThrows(IllegalArgumentException::class.java) {
             CircleActionCue(RingIcons.Gauge, "", progress = 0.5f, confirmed = false)
         }
         assertThrows(IllegalArgumentException::class.java) {
