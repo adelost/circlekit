@@ -25,7 +25,7 @@ internal fun Modifier.readingValueClearance(): Modifier = composed {
     val viewport = LocalCircleReadingViewport.current
     val slots = LocalRoundChromeReservation.current
     val density = LocalDensity.current.density
-    var shift by remember(viewport, slots) { mutableStateOf(0f) }
+    var shiftPx by remember(viewport, slots) { mutableStateOf(0) }
     if (viewport == null) this else {
         val widthDp = viewport.width / density
         val heightDp = viewport.height / density
@@ -33,14 +33,15 @@ internal fun Modifier.readingValueClearance(): Modifier = composed {
             (heightDp - 2f * (MenuDesign.roundTitleTopPadding + MenuDesign.roundTitleHeight).value)
                 .coerceAtLeast(1f), slots, MenuDesign.backTouchTarget.value)
         this.widthIn(max = (widthDp - safe.start - safe.end - 4f).coerceAtLeast(1f).dp)
-            .offset { IntOffset((shift * density).roundToInt(), 0) }
+            .offset { IntOffset(shiftPx, 0) }
             .onGloballyPositioned { coordinates ->
                 val p = coordinates.positionInRoot() - viewport.topLeft
-                val left = p.x / density - shift
+                val left = (p.x - shiftPx) / density
                 val top = p.y / density
-                shift = readingInkShiftDp(widthDp, heightDp,
+                val shift = readingInkShiftDp(widthDp, heightDp,
                     listOf(Rect(left, top, left + coordinates.size.width / density,
-                        top + coordinates.size.height / density)), slots) ?: shift
+                        top + coordinates.size.height / density)), slots)
+                if (shift != null) shiftPx = (shift * density).roundToInt()
             }
     }
 }
