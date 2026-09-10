@@ -37,3 +37,27 @@ test("jump tags emit from the shared skydiving backend without a product literal
   assert.match(output, /Generated from product\/jump-tags\.ts · fixture/u);
   assert.doesNotMatch(output, /Skyvw|skydive-altimeter/u);
 });
+
+test("drive quality values reach native output and reject unbounded or impossible policy", () => {
+  const options = { packageName: "io.acme", symbolPrefix: "Acme", sourceFile: "tags.ts", sourceSha: "test" };
+  const quality = { minFixes: 6, minSpanS: 12, maxAccuracyM: 15, maxGapMs: 2500, maxFixAgeMs: 4000, minWindCoverage: .7 };
+  const withQuality = (q: typeof quality): JumpTagCatalogEmission => ({ ...fixture, tags: [{
+    ...fixture.tags[0], suggest: { kind: "body-drive", metric: "AVG_SINK_TRUE", min: 10, quality: q },
+  }] });
+  assert.match(emitJumpTagsKotlin(withQuality(quality), options),
+    /GeneratedAcmeDriveEvidenceQuality\(6, 12.0f, 15.0f, 2500L, 4000L, 0.7f\)/u);
+  for (const bad of [{ ...quality, maxGapMs: Infinity }, { ...quality, minFixes: 1 },
+    { ...quality, maxFixAgeMs: 2.5 }, { ...quality, minWindCoverage: 1.1 }, { ...quality, minSpanS: NaN }]) {
+    assert.throws(() => emitJumpTagsKotlin(withQuality(bad), options), /Invalid drive quality/u);
+  }
+});
+
+test("sequence metrics must belong to the declared native vocabulary", () => {
+  const input: JumpTagCatalogEmission = { ...fixture, tags: [{ ...fixture.tags[0], suggest: {
+    kind: "sequence", version: 1, requiredTracks: 1, maxGapMs: 2000, maxTransitionMs: 3000,
+    paths: [[{ id: "sustained", minDurationMs: 10000, conditions: [{ metric: "UNDECLARED", min: 1 }] }]],
+  } }] };
+  assert.throws(() => emitJumpTagsKotlin(input, {
+    packageName: "io.acme", symbolPrefix: "Acme", sourceFile: "tags.ts", sourceSha: "test",
+  }), /Unknown jump evidence metric: UNDECLARED/u);
+});
