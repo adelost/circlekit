@@ -1,8 +1,11 @@
 import { BATTERY_ICON_ASSETS } from "./battery-icon-assets.js";
+import { ACTIVITY_ICON_ASSETS } from "./activity-icon-assets.js";
 
-/** Canonical portable geometry for CircleKit's filled Ring icon language. */
+/** WHAT: Builds the canonical portable catalog for CircleKit's filled icons.
+ * WHY: Native and web consumers must share geometry instead of copying product-local artwork. */
 export const RING_ICON_ASSETS = [
   ...BATTERY_ICON_ASSETS,
+  ...ACTIVITY_ICON_ASSETS,
   // Data records, not a network transport. Filled tiers stay distinct at 18 dp.
   {"id":"data","viewport":{"width":24,"height":24},"paths":[{"kind":"fill","pathData":"M4 6C4 3.8 7.6 2.5 12 2.5S20 3.8 20 6S16.4 9.5 12 9.5S4 8.2 4 6ZM4 9C6 10.5 9 11.3 12 11.3S18 10.5 20 9V12.6C20 14.6 16.4 16 12 16S4 14.6 4 12.6ZM4 15.7C6 17.2 9 18 12 18S18 17.2 20 15.7V19.2C20 21 16.4 22 12 22S4 21 4 19.2Z","fillRule":"nonzero"}]},
   {"id":"arrow","viewport":{"width":24,"height":24},"paths":[{"kind":"stroke","pathData":"M12 20V5","strokeWidth":3.2},{"kind":"stroke","pathData":"M5 11l7 -7l7 7","strokeWidth":3.2}]},
@@ -91,9 +94,10 @@ export const RING_ICON_ASSETS = [
   {"id":"phone","viewport":{"width":24,"height":24},"paths":[{"kind":"fill","pathData":"M8.5 3.5h7A1.5 1.5 0 0 1 17 5v14a1.5 1.5 0 0 1 -1.5 1.5h-7A1.5 1.5 0 0 1 7 19V5a1.5 1.5 0 0 1 1.5 -1.5ZM10.4 17.6h3.2v1.1h-3.2Z","fillRule":"evenodd"}]},
 ] as const;
 
-/** Shared immutable catalog reference consumed by ProductSpec without copying geometry into product IR. */
+/** WHAT: Defines the immutable catalog identity consumed by ProductSpec.
+ * WHY: Keeps shared geometry out of copied product IR. */
 export const CIRCLEKIT_ASSET_CATALOG = {
   id: "circlekit",
-  version: "0.3.64",
+  version: "0.3.70",
   icons: RING_ICON_ASSETS,
 } as const;
