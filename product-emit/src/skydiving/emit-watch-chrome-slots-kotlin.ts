@@ -33,6 +33,9 @@ internal object Generated${options.symbolPrefix}WatchChromeSlots {
     /** Escape. Present at every level, on every page. */
     val back: CircleChromeSlot = CircleChromeSlot.${slots.back}
 
+    /** Reading-menu escape. No rim pager or item run co-renders here. */
+    val readingBack: CircleChromeSlot = CircleChromeSlot.${slots.readingBack ?? slots.back}
+
     /** Forward one page. Shown only when a further page exists. */
     val next: CircleChromeSlot = CircleChromeSlot.${slots.next}
 

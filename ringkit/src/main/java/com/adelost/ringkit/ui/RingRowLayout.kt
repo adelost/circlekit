@@ -5,6 +5,7 @@ import androidx.compose.ui.unit.dp
 import com.adelost.designkit.ui.CircleActionTiming
 import com.adelost.designkit.ui.CircleChoiceRole
 import com.adelost.designkit.ui.CircleChromeSlot
+import com.adelost.designkit.ui.MenuDesign
 import com.adelost.designkit.ui.roundSafeRectHorizontalInsetsDp
 import com.adelost.designkit.ui.roundSafeInsetDp
 
@@ -159,6 +160,9 @@ internal fun rowsListInsetsDp(
         contentCenterYDp = viewportHeightDp / 2f,
         contentHeightDp = (viewportHeightDp - 2f * titleBandBottomDp).coerceAtLeast(1f),
         reservedSlots = reservedSlots,
+        // The smaller visible ring keeps its generous hit target. A row must
+        // clear that target too, or its left edge can activate Back instead.
+        buttonDiameterDp = MenuDesign.backTouchTarget.value,
     )
     return RingRowHorizontalInsets(
         start = maxOf(baseInsetDp, band.start).dp,

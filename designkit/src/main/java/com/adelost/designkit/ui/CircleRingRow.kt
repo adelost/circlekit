@@ -180,6 +180,13 @@ fun CircleRingRowContent(
     val phoneDesign = phoneSurfaceDesignFor(LocalCircleSurfaceLayout.current.surfaceClass)
     val hasSlots = leading != null || trailing != null
     val hasLeadingRing = icon != null || centerValue != null
+    // A passive, wrapping reading has no action ring to align with. Give its
+    // identity the full reading width; the small source/status glyph belongs
+    // with the supporting value. Actions and choices keep their shared column.
+    if (phoneDesign == null && !affordance.operable && multiline && leading == null && centerValue == null) {
+        CirclePassiveReadingContent(title, sub, icon, accent, semanticColor, trailing, iconRotationDeg)
+        return
+    }
     val feedbackSweep = rememberCircleFeedbackSweep(
         progress = labelProgress,
         pressed = pressed,
@@ -242,33 +249,85 @@ fun CircleRingRowContent(
             // 2026-07-27, finding 11). It indicates the value, so it belongs
             // on the value's line; the weight keeps it at the row's right
             // edge, so rails still line up down the list.
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                CircleText(
-                    text = sub,
-                    // A passive reading's pigment describes its value, not
-                    // just its icon. Ordinary action copy stays neutral.
-                    color = if (!affordance.operable) semanticColor ?: RingTokens.Dim else RingTokens.Dim,
-                    fontSizeSp = phoneDesign?.rowSubtitleSize?.value ?: MenuDesign.subSize.value,
-                    maxLines = if (multiline) Int.MAX_VALUE else 1,
-                    overflow = TextOverflow.Ellipsis,
-                    modifier = (if (trailing != null && phoneDesign == null) Modifier.weight(1f) else Modifier)
-                        .then(
-                            if (LocalActionParentOwnsRowCopy.current) {
-                                Modifier.clearAndSetSemantics { }
-                            } else {
-                                Modifier
-                            },
-                        ),
-                )
-                if (trailing != null && phoneDesign == null) {
-                    Spacer(Modifier.size(6.dp))
-                    trailing()
+            if (sub.isNotBlank() || (trailing != null && phoneDesign == null)) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    CircleText(
+                        text = sub,
+                        // A passive reading's pigment describes its value, not
+                        // just its icon. Ordinary action copy stays neutral.
+                        color = if (!affordance.operable) semanticColor ?: RingTokens.Dim else RingTokens.Dim,
+                        fontSizeSp = phoneDesign?.rowSubtitleSize?.value ?: MenuDesign.subSize.value,
+                        maxLines = if (multiline) Int.MAX_VALUE else 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = (if (trailing != null && phoneDesign == null) Modifier.weight(1f) else Modifier)
+                            .then(
+                                if (LocalActionParentOwnsRowCopy.current) {
+                                    Modifier.clearAndSetSemantics { }
+                                } else {
+                                    Modifier
+                                },
+                            ),
+                    )
+                    if (trailing != null && phoneDesign == null) {
+                        Spacer(Modifier.size(6.dp))
+                        trailing()
+                    }
                 }
             }
         }
         if (trailing != null && phoneDesign != null) {
             Spacer(Modifier.size(phoneDesign.controlGap))
             trailing()
+        }
+    }
+}
+
+/** A non-interactive reading keeps its full identity above its source/value. */
+@Composable
+private fun CirclePassiveReadingContent(
+    title: String,
+    sub: String,
+    icon: ImageVector?,
+    accent: CircleAccent,
+    semanticColor: Color?,
+    trailing: (@Composable () -> Unit)?,
+    iconRotationDeg: Float,
+) {
+    Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
+        CircleText(
+            text = title,
+            color = RingTokens.Ink,
+            fontSizeSp = MenuDesign.titleSize.value,
+            fontWeight = FontWeight.Bold,
+            letterSpacingSp = MenuDesign.titleTracking.value,
+            textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+            modifier = Modifier.fillMaxWidth(),
+        )
+        if (icon != null || sub.isNotBlank() || trailing != null) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                if (icon != null) {
+                    CircleStyledIcon(
+                        style = ringIconStyle(icon, accent),
+                        contentDescription = null,
+                        tintOverride = semanticColor,
+                        modifier = Modifier.size(MenuDesign.iconSize).rotate(iconRotationDeg),
+                    )
+                    if (sub.isNotBlank() || trailing != null) Spacer(Modifier.size(6.dp))
+                }
+                if (sub.isNotBlank()) {
+                    CircleText(
+                        text = sub,
+                        color = semanticColor ?: RingTokens.Dim,
+                        fontSizeSp = MenuDesign.subSize.value,
+                        textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                        modifier = Modifier.weight(1f, fill = false),
+                    )
+                }
+                if (trailing != null) {
+                    if (sub.isNotBlank()) Spacer(Modifier.size(6.dp))
+                    trailing()
+                }
+            }
         }
     }
 }

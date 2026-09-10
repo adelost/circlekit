@@ -8,6 +8,8 @@
 export interface WatchChromeSlotDeclaration<HourRef extends string = string> {
   /** Escape. Present at every level, on every page. */
   readonly back: HourRef;
+  /** Escape on reading menus, which have neither rim items nor page arrows. */
+  readonly readingBack?: HourRef;
   /** Forward one page. Rendered only when a further page exists. */
   readonly next: HourRef;
   /** Back one page. Rendered only once paged away from the first. */
