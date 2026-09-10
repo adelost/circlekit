@@ -22,16 +22,17 @@ import org.junit.Test
  */
 class RingRowLogicTest {
     @Test
-    fun `hub rings shrink symmetrically only when floating chrome occupies the middle chord`() {
+    fun `hub keeps readable atoms while the existing grid reserves an off-centre escape`() {
         val face = 192f
-        val xAtNine = listOf(com.adelost.designkit.ui.CircleChromeSlot.HOUR_9)
-        val normal = hubStatRingDiameterDp(face, emptyList())
-        val reserved = hubStatRingDiameterDp(face, xAtNine)
-        val inset = com.adelost.designkit.ui.roundChromeInsetDp(face, face, face / 2f, xAtNine)
-
-        assertEquals(com.adelost.designkit.ui.MenuDesign.statRingDiameter.value, normal, 0.001f)
-        assertTrue(reserved < normal)
-        assertTrue(reserved * 3f + 6f <= face - inset * 2f + 0.001f)
+        val grid = MenuGridCatalog.RoundPair.copy(diameter = MenuDesign.statRingDiameter)
+        val insets = rowsListInsetsDp(face, face,
+            (MenuDesign.roundTitleTopPadding + MenuDesign.roundTitleHeight).value,
+            0f, listOf(CircleChromeSlot.HOUR_10))
+        val available = face - insets.start.value - insets.end.value
+        val columns = resolvedCircleGridColumns(grid, available)
+        assertEquals(2, columns)
+        assertTrue(insets.start > insets.end)
+        assertTrue(columns * grid.diameter.value + (columns - 1) * grid.horizontalGap.value <= available)
     }
     private val onOff = listOf("OFF", "ON")
     private val volume = listOf("QUIET", "NORMAL")

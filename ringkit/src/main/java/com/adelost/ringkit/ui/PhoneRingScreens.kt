@@ -334,6 +334,7 @@ private fun PhoneRowsScreen(
                         options = row.choices,
                         role = row.choiceRole,
                         onSelect = requireNotNull(row.onSelect),
+                        multiline = row.multiline,
                         holdMs = interaction.holdMs,
                         actionTiming = interaction.timing,
                         hint = row.hint,
