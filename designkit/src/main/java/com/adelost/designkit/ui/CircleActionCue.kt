@@ -15,6 +15,7 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.graphics.Color
 
 /**
  * The one centre-screen acknowledgement model for every action atom.
@@ -60,6 +61,8 @@ data class CircleActionCue(
     val lingers: Boolean = false,
     /** A directional glyph keeps its reading when opened as information. */
     val iconRotationDeg: Float = 0f,
+    /** Explicit reading pigment follows the value into information; never a brand fallback. */
+    val semanticColor: Color? = null,
 ) {
     init {
         require(iconRotationDeg.isFinite()) { "Action cue icon rotation must be finite" }

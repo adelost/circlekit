@@ -52,6 +52,7 @@ fun RingInfoButton(contentDescription: String, onOpen: () -> Unit, modifier: Mod
 internal fun RingRowInfoButton(
     rowIcon: androidx.compose.ui.graphics.vector.ImageVector?,
     iconRotationDeg: Float,
+    semanticColor: androidx.compose.ui.graphics.Color?,
     title: String,
     value: String,
     hint: String,
@@ -60,13 +61,14 @@ internal fun RingRowInfoButton(
     require(hint.isNotBlank())
     val publish = LocalCircleActionCuePublisher.current
     val owner = remember { Any() }
-    val cue = remember(rowIcon, iconRotationDeg, title, value, hint, infoAction) {
+    val cue = remember(rowIcon, iconRotationDeg, semanticColor, title, value, hint, infoAction) {
         CircleActionCue(
             icon = rowIcon ?: RingIcons.Info,
             label = title, progress = 1f, confirmed = false,
             value = value.takeIf(String::isNotBlank), hint = hint,
             infoAction = infoAction, lingers = true,
             iconRotationDeg = iconRotationDeg,
+            semanticColor = semanticColor,
         )
     }
     RingInfoButton("ABOUT $title", onOpen = { publish(CircleActionCueEvent(owner, cue)) })

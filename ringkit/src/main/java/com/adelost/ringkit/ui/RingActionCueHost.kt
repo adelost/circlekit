@@ -151,7 +151,7 @@ private fun RingExplanationCue(cue: CircleActionCue, onDismiss: () -> Unit) {
         Icon(
             imageVector = cue.icon,
             contentDescription = cue.label,
-            tint = RingTokens.Ink,
+            tint = cue.semanticColor ?: RingTokens.Ink,
             modifier = Modifier.size(24.dp).rotate(cue.iconRotationDeg),
         )
         Text(
@@ -167,7 +167,7 @@ private fun RingExplanationCue(cue: CircleActionCue, onDismiss: () -> Unit) {
         cue.value?.let { value ->
             Text(
                 text = value,
-                color = circleBrandColor(),
+                color = cue.semanticColor ?: circleBrandColor(),
                 fontSize = if (round) 10.sp else 14.sp,
                 fontWeight = FontWeight.Bold,
                 textAlign = TextAlign.Center,

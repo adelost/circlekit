@@ -245,7 +245,9 @@ fun CircleRingRowContent(
             Row(verticalAlignment = Alignment.CenterVertically) {
                 CircleText(
                     text = sub,
-                    color = RingTokens.Dim,
+                    // A passive reading's pigment describes its value, not
+                    // just its icon. Ordinary action copy stays neutral.
+                    color = if (!affordance.operable) semanticColor ?: RingTokens.Dim else RingTokens.Dim,
                     fontSizeSp = phoneDesign?.rowSubtitleSize?.value ?: MenuDesign.subSize.value,
                     maxLines = if (multiline) Int.MAX_VALUE else 1,
                     overflow = TextOverflow.Ellipsis,
