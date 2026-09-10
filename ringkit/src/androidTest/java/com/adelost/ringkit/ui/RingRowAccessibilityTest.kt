@@ -6,6 +6,8 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.graphics.asAndroidBitmap
+import androidx.compose.ui.test.captureToImage
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.SemanticsActions
@@ -50,6 +52,7 @@ class RingRowAccessibilityTest {
         compose.waitForIdle()
         assertTrue("declared multiline was lost between Rows and RingChoiceRow",
             named.fetchSemanticsNode().boundsInRoot.height > compactHeight)
+        capture("choice-multiline")
     }
 
     @Test fun statusAndDetailClearTheSameOffCentreEscape() {
@@ -69,21 +72,31 @@ class RingRowAccessibilityTest {
         val pressure = compose.onNodeWithContentDescription("PRESSURE", useUnmergedTree = true)
             .fetchSemanticsNode().boundsInRoot
         assertTrue("status ring overlaps escape", !pressure.overlaps(escape))
+        capture("status-clearance")
         compose.runOnIdle { nav.push(detail) }
         compose.waitForIdle()
         val hero = compose.onNodeWithText("1005 hPa", useUnmergedTree = true)
             .fetchSemanticsNode().boundsInRoot
         assertTrue("detail hero overlaps escape", !hero.overlaps(escape))
+        capture("pressure-clearance")
     }
 
     @Composable private fun roundMenu(content: @Composable () -> Unit) {
-        Box(Modifier.size(192.dp)) {
+        Box(Modifier.size(192.dp).testTag("round-menu-face")) {
             CircleHostSurface(isWatchDevice = true, state = CircleHostPreviewState(), onStateChange = null) {
                 CompositionLocalProvider(LocalRoundChromeReservation provides listOf(CircleChromeSlot.HOUR_10)) {
                     content()
                     RingRoundChrome(listOf(RingChromeAction(CircleChromeSlot.HOUR_10, RingIcons.Cross, "Back", {})))
                 }
             }
+        }
+    }
+
+    private fun capture(name: String) {
+        val context = androidx.test.platform.app.InstrumentationRegistry.getInstrumentation().targetContext
+        java.io.File(context.cacheDir, "$name.png").outputStream().use { output ->
+            check(compose.onNodeWithTag("round-menu-face").captureToImage().asAndroidBitmap()
+                .compress(android.graphics.Bitmap.CompressFormat.PNG, 100, output))
         }
     }
 
