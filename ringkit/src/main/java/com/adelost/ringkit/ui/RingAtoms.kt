@@ -351,12 +351,16 @@ fun RingChoiceRow(
     infoAction: CircleActionCueInfoAction? = null,
     infoSelected: Boolean = false,
     onInfoTouch: (() -> Unit)? = null,
+    multiline: Boolean = false,
+    iconRotationDeg: Float = 0f,
 ) {
     val active = choiceIsActive(options, selected, role)
     val choiceState = circleChoiceState(options, selected)
     RingRow(
         title = title,
         sub = selected,
+        multiline = multiline,
+        iconRotationDeg = iconRotationDeg,
         icon = icon,
         accent = accent,
         onTap = { onSelect(nextChoice(options, selected)) },

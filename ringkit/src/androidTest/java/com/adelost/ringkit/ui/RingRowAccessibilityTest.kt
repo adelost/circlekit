@@ -1,6 +1,14 @@
 package com.adelost.ringkit.ui
 
 import androidx.compose.ui.Modifier
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.size
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.graphics.asAndroidBitmap
+import androidx.compose.ui.test.captureToImage
+import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.semantics.SemanticsProperties
@@ -8,19 +16,101 @@ import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assert
-import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performSemanticsAction
 import androidx.compose.ui.test.performTouchInput
 import com.adelost.designkit.ui.RingIcons
+import com.adelost.designkit.ui.CircleChromeSlot
+import com.adelost.designkit.ui.CircleHostSurface
+import com.adelost.designkit.ui.CircleHostPreviewState
+import com.adelost.designkit.ui.LocalRoundChromeReservation
+import com.adelost.ringkit.data.Health
+import com.adelost.ringkit.data.SourceId
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.flowOf
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 
 class RingRowAccessibilityTest {
     @get:Rule
-    val compose = createComposeRule()
+    val compose = createAndroidComposeRule<androidx.activity.ComponentActivity>()
+
+    @org.junit.Before fun useTheProductLikeWindow() {
+        compose.activityRule.scenario.onActivity { activity ->
+            // The self-targeted test Activity otherwise adds Android's title
+            // bar above the kit. Product hosts have no such competing chrome.
+            activity.actionBar?.hide()
+            activity.window.addFlags(android.view.WindowManager.LayoutParams.FLAG_FULLSCREEN)
+        }
+    }
+
+    @Test fun declaredMultilineChoiceReachesTheActualRoundRow() {
+        val selected = "SEA GLASS BLUE GREEN"
+        val row = RowSpec(key = "colour", title = "COLORS", sub = selected,
+            icon = RingIcons.Palette, choices = listOf(selected, "EMBER"), onSelect = {}, multiline = false)
+        val rows = MutableStateFlow(listOf(row))
+        val screen = RingScreen.Rows("DISPLAY", rows)
+        compose.setContent { roundMenu { RenderRingScreen(RingNavigator(screen), {}, "Back") } }
+        val named = compose.onNodeWithContentDescription("COLORS · $selected", useUnmergedTree = true)
+        val compactHeight = named.fetchSemanticsNode().boundsInRoot.height
+        compose.runOnIdle { rows.value = listOf(row.copy(multiline = true)) }
+        compose.waitForIdle()
+        assertTrue("declared multiline was lost between Rows and RingChoiceRow",
+            named.fetchSemanticsNode().boundsInRoot.height > compactHeight)
+        capture("choice-multiline")
+    }
+
+    @Test fun statusAndDetailClearTheSameOffCentreEscape() {
+        val detail = RingScreen.Detail("PRESSURE", RingIcons.Gauge, SourceId("pressure"),
+            flowOf("1005 hPa"), flowOf("STATION · 24 KM"), flowOf("REPORTED 22m ago"),
+            flowOf(Health.FRESH), flowOf(null))
+        val status = RingScreen.Hub("STATUS", listOf(
+            StatRowSpec(SourceId("pressure"), RingIcons.Gauge, "PRESSURE", flowOf("1005"),
+                flowOf(Health.FRESH), detail = { detail }),
+            StatRowSpec(SourceId("position"), RingIcons.Gps, "POSITION", flowOf("±5"),
+                flowOf(Health.FRESH), detail = { detail }),
+        ))
+        val nav = RingNavigator(status)
+        compose.setContent { roundMenu { RenderRingScreen(nav, {}, "Back") } }
+        val escape = compose.onNodeWithContentDescription("Back", useUnmergedTree = true)
+            .fetchSemanticsNode().boundsInRoot
+        val pressure = compose.onNodeWithContentDescription("PRESSURE", useUnmergedTree = true)
+            .fetchSemanticsNode().boundsInRoot
+        assertTrue("status ring overlaps escape", !pressure.overlaps(escape))
+        capture("status-clearance")
+        compose.runOnIdle { nav.push(detail) }
+        compose.waitForIdle()
+        val hero = compose.onNodeWithText("1005 hPa", useUnmergedTree = true)
+            .fetchSemanticsNode().boundsInRoot
+        assertTrue("detail hero overlaps escape", !hero.overlaps(escape))
+        capture("pressure-clearance")
+    }
+
+    @Composable private fun roundMenu(content: @Composable () -> Unit) {
+        Box(Modifier.size(192.dp).testTag("round-menu-face")) {
+            CircleHostSurface(isWatchDevice = true, state = CircleHostPreviewState(), onStateChange = null) {
+                CompositionLocalProvider(LocalRoundChromeReservation provides listOf(CircleChromeSlot.HOUR_10)) {
+                    content()
+                    RingRoundChrome(listOf(RingChromeAction(CircleChromeSlot.HOUR_10, RingIcons.Cross, "Back", {})))
+                }
+            }
+        }
+    }
+
+    private fun capture(name: String) {
+        val instrumentation = androidx.test.platform.app.InstrumentationRegistry.getInstrumentation()
+        instrumentation.uiAutomation.waitForIdle(100, 2_000)
+        compose.waitForIdle()
+        val context = instrumentation.targetContext
+        java.io.File(context.cacheDir, "$name.png").outputStream().use { output ->
+            check(compose.onNodeWithTag("round-menu-face").captureToImage().asAndroidBitmap()
+                .compress(android.graphics.Bitmap.CompressFormat.PNG, 100, output))
+        }
+    }
 
     @Test
     fun holdRowOwnsOneNamedLongClickAndNoClick() {

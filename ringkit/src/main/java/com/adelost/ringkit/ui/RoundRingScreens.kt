@@ -108,69 +108,41 @@ internal fun ScreenTitle(
 
 @Composable
 internal fun HubScreen(s: RingScreen.Hub, nav: RingNavigator) {
-    BoxWithConstraints(Modifier.fillMaxSize()) {
-        val face = minOf(maxWidth, maxHeight).value
-        val statDiameter = hubStatRingDiameterDp(
-            viewportDiameterDp = face,
-            reservedSlots = LocalRoundChromeReservation.current,
-        ).dp
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            modifier = Modifier.fillMaxSize().padding(top = 6.dp),
-        ) {
-            ScreenTitle(s.title)
-            Spacer(Modifier.height(6.dp))
-            s.rows.chunked(HUB_COLUMNS).forEach { rowChunk ->
-                Row(horizontalArrangement = Arrangement.spacedBy(HUB_GAP_DP.dp)) {
-                    rowChunk.forEach { row ->
-                        val value = row.value.collectAsState(initial = "–").value
-                        val health = row.health.collectAsState(initial = Health.OFF).value
-                        val iconRotation = row.iconRotation.collectAsState(initial = 0f).value
-                        StatRing(
-                            icon = row.icon,
-                            iconRotationDeg = iconRotation,
-                            value = value,
-                            health = health,
-                            label = row.label,
-                            diameter = statDiameter,
-                            onTap = { nav.push(row.detail()) },
-                        )
-                    }
-                }
-                Spacer(Modifier.height(4.dp))
-            }
-            Spacer(Modifier.height(2.dp))
-            s.corner?.let { corner ->
-                IconRing(
-                    icon = corner.icon,
-                    label = "",
-                    diameter = MenuDesign.cornerDiameter,
-                    onTap = { corner.open()?.let(nav::push) ?: corner.run?.invoke() },
-                )
-            }
+    val scrollState = remember(s) { ScrollState(0) }
+    // Status is the same chrome-aware grid as navigation. Keep the reading
+    // atom's size; fewer columns + scrolling beat shrinking it under the X.
+    val grid = MenuGridCatalog.RoundPair.copy(diameter = MenuDesign.statRingDiameter)
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = Modifier.fillMaxSize().verticalScroll(scrollState).rotaryScroll(scrollState),
+    ) {
+        ScreenTitle(s.title)
+        Spacer(Modifier.height(6.dp))
+        RingMenuGrid(items = s.rows, spec = grid) { row ->
+            val value = row.value.collectAsState(initial = "–").value
+            val health = row.health.collectAsState(initial = Health.OFF).value
+            val iconRotation = row.iconRotation.collectAsState(initial = 0f).value
+            StatRing(
+                icon = row.icon,
+                iconRotationDeg = iconRotation,
+                value = value,
+                health = health,
+                label = row.label,
+                diameter = grid.diameter,
+                onTap = { nav.push(row.detail()) },
+            )
         }
+        Spacer(Modifier.height(2.dp))
+        s.corner?.let { corner ->
+            IconRing(
+                icon = corner.icon,
+                label = "",
+                diameter = MenuDesign.cornerDiameter,
+                onTap = { corner.open()?.let(nav::push) ?: corner.run?.invoke() },
+            )
+        }
+        Spacer(Modifier.height(24.dp))
     }
-}
-
-private const val HUB_COLUMNS = 3
-private const val HUB_GAP_DP = 3f
-
-/** Keeps the hub centred while shrinking only when floating chrome consumes its chord. */
-internal fun hubStatRingDiameterDp(
-    viewportDiameterDp: Float,
-    reservedSlots: List<CircleChromeSlot>,
-): Float {
-    val chromeInset = roundChromeInsetDp(
-        viewportWidthDp = viewportDiameterDp,
-        viewportHeightDp = viewportDiameterDp,
-        contentCenterYDp = viewportDiameterDp / 2f,
-        reservedSlots = reservedSlots,
-    )
-    val availableWidth = (viewportDiameterDp - chromeInset * 2f).coerceAtLeast(0f)
-    val diameterByWidth = (
-        availableWidth - HUB_GAP_DP * (HUB_COLUMNS - 1)
-        ).coerceAtLeast(0f) / HUB_COLUMNS
-    return minOf(MenuDesign.statRingDiameter.value, diameterByWidth)
 }
 
 @Composable
@@ -182,70 +154,73 @@ internal fun DetailScreen(s: RingScreen.Detail) {
     val progress = s.progress.collectAsState(initial = null).value
     val refreshEnabled = s.refreshEnabled?.collectAsState(initial = true)?.value ?: true
     val scrollState = rememberScrollState()
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = Modifier.fillMaxSize().verticalScroll(scrollState).rotaryScroll(scrollState),
-    ) {
-        ScreenTitle(s.title, s.icon)
-        Spacer(Modifier.height(10.dp))
-        Text(text = hero, color = RingTokens.Ink, fontSize = 30.sp, fontWeight = FontWeight.Black)
-        // A source's own words are the longest text on any menu surface --
-        // "OBSERVED RESET PRESSURE + FORECAST PRESSURE TREND" -- and they were
-        // centred with no width budget, so they ran off BOTH edges of the
-        // round face. Same arc, same shared answer the rows already use;
-        // wrapping is right here because these are sentences, not labels.
-        if (sub.isNotEmpty()) {
-            Text(
-                text = sub,
-                color = RingTokens.Dim,
-                fontSize = 11.sp,
-                textAlign = TextAlign.Center,
-                modifier = Modifier.fillMaxWidth().roundSafeContentInset(),
-            )
-        }
-        Spacer(Modifier.height(6.dp))
-        Text(
-            text = freshness,
-            color = health.ringColor(),
-            fontSize = 10.5.sp,
-            textAlign = TextAlign.Center,
-            modifier = Modifier.fillMaxWidth().roundSafeContentInset(),
+    BoxWithConstraints(Modifier.fillMaxSize()) {
+        // Use this face, not Android's outer window (WatchExact may be embedded).
+        // Reserve the whole reading band so X@10 cannot cover a hero's first digit.
+        val insets = rowsListInsetsDp(
+            viewportWidthDp = maxWidth.value,
+            viewportHeightDp = maxHeight.value,
+            titleBandBottomDp = (MenuDesign.roundTitleTopPadding + MenuDesign.roundTitleHeight).value,
+            baseInsetDp = roundRowInsetH.value,
+            reservedSlots = LocalRoundChromeReservation.current,
         )
-        Spacer(Modifier.height(8.dp))
-        // A Detail's actions are ROWS, the same atom the rest of the menu
-        // system uses. They were bare centred words, which read as captions
-        // under the hero number rather than as things you could press.
-        s.actions.forEach { action ->
-            RingRow(
-                title = action.label,
-                sub = "",
-                icon = action.icon,
-                accent = if (action.destructive) CircleAccent.DANGER else ringIconAccent(action.icon),
-                onTap = action.onRun,
-                holdToConfirm = action.holdToConfirm,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = 3.dp, bottom = 3.dp)
-                    .roundSafeContentInset(),
-            )
-        }
-        if (s.onRefresh != null) {
-            // One verb, one feedback channel: measured fetch state lives in
-            // REFRESH's label instead of a second progress ring beside it.
-            RingRow(
-                title = "REFRESH",
-                sub = "",
-                icon = RingIcons.Refresh,
-                onTap = if (refreshEnabled) s.onRefresh else null,
-                labelProgress = measuredWorkLabelProgress(progress, inFlight = !refreshEnabled),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = 3.dp, bottom = 3.dp)
-                    .roundSafeContentInset(),
-            )
+        val readingWidth = Modifier.fillMaxWidth().padding(start = insets.start, end = insets.end)
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            modifier = Modifier.fillMaxSize().verticalScroll(scrollState).rotaryScroll(scrollState),
+        ) {
+            ScreenTitle(s.title, s.icon)
+            Spacer(Modifier.height(10.dp))
+            Text(text = hero, color = RingTokens.Ink, fontSize = 30.sp, fontWeight = FontWeight.Black,
+                textAlign = TextAlign.Center, modifier = readingWidth)
+            // Supporting source information wraps inside that same stable band.
+            if (sub.isNotEmpty()) {
+                Text(
+                    text = sub,
+                    color = RingTokens.Dim,
+                    fontSize = 11.sp,
+                    textAlign = TextAlign.Center,
+                    modifier = readingWidth,
+                )
+            }
             Spacer(Modifier.height(6.dp))
+            Text(
+                text = freshness,
+                color = health.ringColor(),
+                fontSize = 10.5.sp,
+                textAlign = TextAlign.Center,
+                modifier = readingWidth,
+            )
+            Spacer(Modifier.height(8.dp))
+            // A Detail's actions are ROWS, the same atom the rest of the menu
+            // system uses. They were bare centred words, which read as captions
+            // under the hero number rather than as things you could press.
+            s.actions.forEach { action ->
+                RingRow(
+                    title = action.label,
+                    sub = "",
+                    icon = action.icon,
+                    accent = if (action.destructive) CircleAccent.DANGER else ringIconAccent(action.icon),
+                    onTap = action.onRun,
+                    holdToConfirm = action.holdToConfirm,
+                    modifier = readingWidth.padding(top = 3.dp, bottom = 3.dp),
+                )
+            }
+            if (s.onRefresh != null) {
+                // One verb, one feedback channel: measured fetch state lives in
+                // REFRESH's label instead of a second progress ring beside it.
+                RingRow(
+                    title = "REFRESH",
+                    sub = "",
+                    icon = RingIcons.Refresh,
+                    onTap = if (refreshEnabled) s.onRefresh else null,
+                    labelProgress = measuredWorkLabelProgress(progress, inFlight = !refreshEnabled),
+                    modifier = readingWidth.padding(top = 3.dp, bottom = 3.dp),
+                )
+                Spacer(Modifier.height(6.dp))
+            }
+            Spacer(Modifier.height(24.dp))
         }
-        Spacer(Modifier.height(24.dp))
     }
 }
 
@@ -369,6 +344,7 @@ internal fun RowsScreen(
                             title = link.title,
                             sub = link.sub,
                             icon = link.icon,
+                            iconRotationDeg = row.iconRotationDeg,
                             accent = link.accent,
                             semanticColor = row.semanticColor,
                             onTap = link.onTap,
@@ -389,6 +365,8 @@ internal fun RowsScreen(
                             options = row.choices,
                             role = row.choiceRole,
                             onSelect = requireNotNull(row.onSelect),
+                            multiline = row.multiline,
+                            iconRotationDeg = row.iconRotationDeg,
                             holdMs = interaction.holdMs,
                             actionTiming = interaction.timing,
                             hint = row.hint,
@@ -410,6 +388,7 @@ internal fun RowsScreen(
                         holdMs = row.holdMs,
                         centerValue = row.centerValue,
                         multiline = row.multiline,
+                        iconRotationDeg = row.iconRotationDeg,
                         actionTiming = row.actionTiming,
                         hint = row.hint,
                         infoAction = row.infoAction,

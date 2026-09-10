@@ -243,6 +243,7 @@ fun RingRow(
     onInfoTouch: (() -> Unit)? = null,
     /** Named selections need their complete identity, even when actionable. */
     multiline: Boolean = onTap == null,
+    iconRotationDeg: Float = 0f,
 ) {
     val explanation = hint.takeIf { it.isNotBlank() }
     require(!infoSelected || explanation != null) {
@@ -328,6 +329,7 @@ fun RingRow(
                     pressHoldMs = holdMs,
                     centerValue = centerValue,
                     multiline = multiline,
+                    iconRotationDeg = iconRotationDeg,
                 )
             }
         }
@@ -350,6 +352,7 @@ fun RingRow(
         actionTiming = actionTiming,
         actionHoldMs = actionHoldMs,
         multiline = multiline,
+        iconRotationDeg = iconRotationDeg,
     )
 }
 
