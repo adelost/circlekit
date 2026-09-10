@@ -20,6 +20,7 @@ import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assert
+import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
@@ -81,6 +82,7 @@ class RingRowAccessibilityTest {
             rows.value = listOf(RowSpec("name", name, "FRIEND", RingIcons.Link, hint = name))
         }
         compose.waitForIdle()
+        compose.onNodeWithText(name).assertIsDisplayed()
         capture("people-reading-accepted")
     }
 
@@ -186,9 +188,17 @@ class RingRowAccessibilityTest {
         val instrumentation = androidx.test.platform.app.InstrumentationRegistry.getInstrumentation()
         instrumentation.uiAutomation.waitForIdle(100, 2_000)
         compose.waitForIdle()
+        // Optional observation window for a continuous, external screenrecord.
+        // It changes neither row state nor rendering; normal tests do not wait.
+        androidx.test.platform.app.InstrumentationRegistry.getArguments()
+            .getString("proofObserveMs")?.toLong()?.let(android.os.SystemClock::sleep)
+        if (androidx.test.platform.app.InstrumentationRegistry.getArguments()
+                .getString("proofCapture") == "false") return
         val context = instrumentation.targetContext
         java.io.File(context.cacheDir, "$name.png").outputStream().use { output ->
-            check(compose.onNodeWithTag("round-menu-face").captureToImage().asAndroidBitmap()
+            // Capture the composited Android window, rather than replaying a
+            // Compose subtree whose cached layers may not appear in readback.
+            check(requireNotNull(instrumentation.uiAutomation.takeScreenshot())
                 .compress(android.graphics.Bitmap.CompressFormat.PNG, 100, output))
         }
     }
