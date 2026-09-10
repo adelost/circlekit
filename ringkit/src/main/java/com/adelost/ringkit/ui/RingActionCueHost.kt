@@ -1,5 +1,7 @@
 package com.adelost.ringkit.ui
 
+import androidx.compose.ui.draw.rotate
+
 import androidx.compose.foundation.background
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Box
@@ -150,7 +152,7 @@ private fun RingExplanationCue(cue: CircleActionCue, onDismiss: () -> Unit) {
             imageVector = cue.icon,
             contentDescription = cue.label,
             tint = RingTokens.Ink,
-            modifier = Modifier.size(24.dp),
+            modifier = Modifier.size(24.dp).rotate(cue.iconRotationDeg),
         )
         Text(
             text = cue.label,
@@ -231,7 +233,7 @@ private fun RingActionCue(cue: CircleActionCue) {
                 imageVector = cue.icon,
                 contentDescription = null,
                 tint = ink,
-                modifier = Modifier.size(28.dp),
+                modifier = Modifier.size(28.dp).rotate(cue.iconRotationDeg),
             )
         }
         Column(

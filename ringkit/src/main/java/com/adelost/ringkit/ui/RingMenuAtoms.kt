@@ -257,6 +257,7 @@ fun RingRow(
                 if (trailing != null) Spacer(Modifier.size(5.dp))
                 RingRowInfoButton(
                     rowIcon = icon,
+                    iconRotationDeg = iconRotationDeg,
                     title = title,
                     value = sub,
                     hint = explanation,
