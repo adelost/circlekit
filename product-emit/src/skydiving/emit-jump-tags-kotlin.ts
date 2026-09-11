@@ -45,6 +45,7 @@ enum class ${g}JumpTagTone { ${tones.join(", ")} }
 enum class ${g}JumpTagEvidenceMetric { ${input.evidenceMetrics.join(", ")} }
 
 data class ${g}JumpTagAxis(val id: String, val label: String)
+data class ${g}JumpTagVisual(val assetId: String, val rotationDeg: Float)
 sealed interface ${g}JumpTagRule {
     data class Sequence(val version: Int, val requiredTracks: Int, val maxGapMs: Long, val maxTransitionMs: Long, val paths: List<List<${g}SequenceStage>>) : ${g}JumpTagRule
     data class SinkBand(val metric: ${g}JumpTagEvidenceMetric, val min: Float, val max: Float, val minCoverage: Float) : ${g}JumpTagRule
@@ -80,6 +81,7 @@ data class ${g}JumpTagDefinition(
     val quickAdd: Boolean,
     val suggest: ${g}JumpTagRule?,
     val unlessAnyDecided: Set<String>,
+    val visual: ${g}JumpTagVisual? = null,
 )
 
 enum class ${g}JumpAiOperation { ${input.ai.operations.join(", ")} }
@@ -180,7 +182,16 @@ function emitDefinition(item: JumpTagDefinitionEmission, g: string): string {
     `${g}JumpTagIcon.${item.icon}`, `${g}JumpTagTone.${item.tone}`,
     nullableQ(item.exclusiveGroup), nullableQ(item.autoChoosesOne), String(item.quickAdd === true),
     emitRule(item.suggest, g), setOf(item.unlessAnyDecided ?? []),
+    emitVisual(item.visual, g),
   ].join(", ")})`;
+}
+
+function emitVisual(visual: JumpTagDefinitionEmission["visual"], g: string): string {
+  if (visual === undefined) return "null";
+  if (!visual.assetId.trim() || !Number.isFinite(visual.rotationDeg)) {
+    throw new Error("Invalid jump tag visual");
+  }
+  return `${g}JumpTagVisual(${q(visual.assetId)}, ${f(visual.rotationDeg)})`;
 }
 
 function emitRule(rule: JumpTagRuleEmission | undefined, g: string): string {

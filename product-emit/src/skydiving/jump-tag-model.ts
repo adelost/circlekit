@@ -46,6 +46,8 @@ export interface JumpTagDefinitionEmission {
   readonly edit: string;
   readonly icon: string;
   readonly tone: string;
+  /** Resolved by the product against its pinned portable icon catalogue. */
+  readonly visual?: { readonly assetId: string; readonly rotationDeg: number };
   readonly exclusiveGroup?: string;
   readonly autoChoosesOne?: string;
   readonly quickAdd?: boolean;
