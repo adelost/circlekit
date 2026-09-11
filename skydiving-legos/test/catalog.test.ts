@@ -108,6 +108,20 @@ test("recording stage distinguishes unconfirmed buffering from confirmed recordi
   );
 });
 
+test("account actions include explicit read approval and log refresh in the reserved catalog", () => {
+  const actions = skydivingLegoCatalog.finiteValues.find(
+    ({ id }) => id === "sync.watch-account-action",
+  );
+  assert.ok(actions);
+  assert.deepEqual(actions.values, [
+    "start-pairing", "disconnect", "request-read-access", "refresh-log",
+  ]);
+  assert.throws(
+    () => buildProduct({ finiteValues: [{ ...actions, values: [...actions.values] }] }),
+    /product finite value 'sync.watch-account-action' collides with library 'skydiving'/,
+  );
+});
+
 test("auto zero config describes app inactivity, not zero age or sensor recency", () => {
   const input = instrumentRuntimeOwner.configInputs.find(({ id }) => id === "autoZeroPolicy");
   assert.ok(input?.fields);

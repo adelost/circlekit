@@ -27,6 +27,14 @@ written list is a second place to forget a file and the failure is silent: the
 lego still compiles, the catalog just stops reserving its ids, and the collision
 this package exists to cause never happens.
 
+## Account read actions
+
+`sync.watch-account-action` declares pairing, disconnect, explicit read-access
+approval and log refresh. These are existing account-owner intents, not new
+permissions or another sync lifecycle. Consumers bind `request-read-access`
+and `refresh-log` through the same reserved finite space; a product-local copy
+is rejected. Native grant checks and handlers remain responsible for execution.
+
 ## Selected flight settings
 
 `settings.runtime-owner.flightPresentation` publishes
