@@ -61,3 +61,19 @@ test("sequence metrics must belong to the declared native vocabulary", () => {
     packageName: "io.acme", symbolPrefix: "Acme", sourceFile: "tags.ts", sourceSha: "test",
   }), /Unknown jump evidence metric: UNDECLARED/u);
 });
+
+test("resolved icon identity and rotation pass through without semantic aliasing", () => {
+  const options = { packageName: "io.acme", symbolPrefix: "Acme", sourceFile: "tags.ts", sourceSha: "test" };
+  const visual = { assetId: "refresh", rotationDeg: 90 };
+  const input = { ...fixture, tags: [{ ...fixture.tags[0], visual }] };
+  assert.match(emitJumpTagsKotlin(input, options), /GeneratedAcmeJumpTagVisual\("refresh", 90.0f\)/u);
+  assert.match(emitJumpTagsKotlin({ ...input, tags: [{ ...fixture.tags[0],
+    visual: { assetId: "balloon", rotationDeg: 0 },
+  }] }, options), /GeneratedAcmeJumpTagVisual\("balloon", 0.0f\)/u);
+  assert.match(emitJumpTagsKotlin(fixture, options), /val visual: GeneratedAcmeJumpTagVisual\? = null/u);
+  for (const invalid of [{ ...visual, assetId: " " }, { ...visual, rotationDeg: NaN },
+    { ...visual, rotationDeg: Infinity }]) {
+    assert.throws(() => emitJumpTagsKotlin({ ...input, tags: [{ ...fixture.tags[0], visual: invalid }] }, options),
+      /Invalid jump tag visual/u);
+  }
+});
