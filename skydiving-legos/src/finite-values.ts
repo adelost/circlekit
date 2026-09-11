@@ -99,7 +99,7 @@ export const weatherPriorities = finiteValues(
   ["unavailable", "normal", "high"],
 );
 /**
- * WHAT: Build the finite contract for the account owner's pairing and read intents.
+ * WHAT: Defines the account owner's pairing and read intents.
  * WHY: Keeps native read approval and refresh from drifting outside the shared contract.
  */
 export const watchAccountActions = finiteValues(
