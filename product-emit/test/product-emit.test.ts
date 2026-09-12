@@ -261,6 +261,61 @@ test("read-only navigation can declare immediate cadence with its closed reason"
   assert.match(output.menus, /immediateReason = GeneratedAcmeMenuImmediateReason\.READ_ONLY_NAVIGATION/u);
 });
 
+test("each menu closes its row targets and ports to what it declares", () => {
+  const menus: ProductMenuDeclaration<string, string, string>[] = [
+    {
+      id: "root",
+      localTarget: "settings-section",
+      items: {
+        flight: { icon: "SETTINGS", label: "FLIGHT" },
+        open: { icon: "SETTINGS", label: "OPEN", routeRef: "HOME" },
+      },
+    },
+    {
+      id: "system",
+      localTarget: "host-action",
+      items: {
+        health: { wireId: "system-health", nativeRowsRef: "system.health-rows", reason: "live state" },
+        auto: {
+          wireId: "system-auto",
+          nativeToggleRef: "system.auto-toggle",
+          label: "AUTO",
+          icon: "SETTINGS",
+          hint: "Keep it current",
+          reason: "owned elsewhere",
+        },
+        reset: { icon: "SETTINGS", label: "RESET", hint: "Wipe", action: { kind: "port", ref: "system.reset-invoke" } },
+      },
+    },
+  ];
+  validateProductMenus(menus, []);
+  const output = emitProductMenusKotlin(menus, [], {
+    packageName: "io.acme.generated",
+    symbolPrefix: "Acme",
+    sourceFile: "product/menus.ts",
+    sourceSha: "fixture",
+    nativeSymbols: acmeSymbols.productMenus,
+  });
+  // One sealed set per menu, implemented only by the kinds that menu declares.
+  assert.match(output.contracts, /sealed interface GeneratedAcmeRootMenuTarget : GeneratedAcmeMenuTarget/u);
+  assert.match(output.contracts, /data class SettingsSection\(val key: MenuActionKey\) : GeneratedAcmeMenuTarget, GeneratedAcmeRootMenuTarget\n/u);
+  assert.match(output.contracts, /\) : GeneratedAcmeMenuTarget, GeneratedAcmeRootMenuTarget \{\n {8}constructor\(screen/u);
+  assert.match(output.contracts, /data class Setting\(val settingId: AppSpecSettingId\) : GeneratedAcmeMenuTarget\n/u);
+  assert.doesNotMatch(output.contracts, /SettingsSection\([^\n]*GeneratedAcmeSystemMenuTarget/u);
+  // Ports close per menu and per kind, each entry naming the product-wide port.
+  assert.match(output.contracts, /enum class GeneratedAcmeSystemNativeRowsPort\(override val port: GeneratedAcmeProductInputPort\) : GeneratedAcmeMenuPort \{\n {4}SYSTEM_HEALTH_ROWS\(GeneratedAcmeProductInputPort\.SYSTEM_HEALTH_ROWS\),\n\}/u);
+  assert.match(output.contracts, /enum class GeneratedAcmeSystemNativeTogglePort\(/u);
+  assert.match(output.contracts, /enum class GeneratedAcmeSystemActionPort\([^\n]*\{\n {4}SYSTEM_RESET_INVOKE\(/u);
+  assert.doesNotMatch(output.contracts, /GeneratedAcmeRoot(NativeRows|NativeToggle|Action)Port/u);
+  assert.match(output.contracts, /data class SystemPortAction\(\n {8}val key: MenuActionKey,\n {8}val action: GeneratedAcmeSystemActionPort,\n {4}\) : GeneratedAcmeMenuTarget, GeneratedAcmeSystemMenuTarget/u);
+  // The menu objects carry the closed types, Nothing where a slot kind is absent.
+  assert.match(output.menus, /val items: List<GeneratedAcmeMenuItem<GeneratedAcmeRootMenuTarget>>/u);
+  assert.match(output.menus, /val elements: List<GeneratedAcmeMenuElement<GeneratedAcmeRootMenuTarget, Nothing, Nothing>>/u);
+  assert.match(output.menus, /val elements: List<GeneratedAcmeMenuElement<GeneratedAcmeSystemMenuTarget, GeneratedAcmeSystemNativeRowsPort, GeneratedAcmeSystemNativeTogglePort>>/u);
+  assert.match(output.menus, /NativeRows\(MenuActionKey\("system-health"\), GeneratedAcmeSystemNativeRowsPort\.SYSTEM_HEALTH_ROWS, /u);
+  assert.match(output.menus, /GeneratedAcmeMenuTarget\.SystemPortAction\(key, GeneratedAcmeSystemActionPort\.SYSTEM_RESET_INVOKE\)/u);
+});
+
 test("a settings-section seat holds exactly one setting", () => {
   const seat = { kind: "settings-section", section: "DISPLAY", order: 6 } as const;
   const held = [
