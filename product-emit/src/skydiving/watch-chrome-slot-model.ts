@@ -34,6 +34,18 @@ export interface WatchChromeSlotDeclaration<HourRef extends string = string> {
    * the collision check treats it as always present.
    */
   readonly status: HourRef;
+  /**
+   * A surface's camera pair (zoom in, then zoom out), for surfaces that mount
+   * one. Declared here so the pair is CHECKED against the seats it shares the
+   * rim with instead of being aligned to an edge in host code (Skyvw
+   * 2026-09-12: (i) at HOUR_2 landed on a + that no table knew about).
+   */
+  readonly zoom?: readonly HourRef[];
+  /**
+   * A surface's hold-gated reference pair (top to bottom), for surfaces that
+   * mount one: the actions that move the world anchor, rare and deliberate.
+   */
+  readonly reference?: readonly HourRef[];
   /** Why this arrangement, in one sentence per moved control. */
   readonly reason: string;
 }
