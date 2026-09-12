@@ -53,6 +53,12 @@ internal object Generated${options.symbolPrefix}WatchChromeSlots {
      * report, so on a healthy scene this hour draws nothing at all.
      */
     val status: CircleChromeSlot = CircleChromeSlot.${slots.status}
+
+    /** The camera pair, zoom in then zoom out. Empty when the product mounts none. */
+    val zoom: List<CircleChromeSlot> = listOf(${list(slots.zoom ?? [])})
+
+    /** The hold-gated reference pair, top to bottom. Empty when the product mounts none. */
+    val reference: List<CircleChromeSlot> = listOf(${list(slots.reference ?? [])})
 }
 `;
 }

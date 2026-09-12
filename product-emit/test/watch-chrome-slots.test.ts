@@ -21,3 +21,12 @@ test("existing products keep their declared escape when no reading slot is suppl
   const emitted = emitWatchChromeSlotsKotlin(paged, options);
   assert.match(emitted, /val readingBack: CircleChromeSlot = CircleChromeSlot.HOUR_10/);
 });
+
+test("a surface's camera and reference pairs are emitted as hour lists, empty when undeclared", () => {
+  const emitted = emitWatchChromeSlotsKotlin({ ...paged, zoom: ["HOUR_3", "HOUR_4"], reference: ["HOUR_8", "HOUR_7"] }, options);
+  assert.match(emitted, /val zoom: List<CircleChromeSlot> = listOf\(CircleChromeSlot.HOUR_3, CircleChromeSlot.HOUR_4\)/);
+  assert.match(emitted, /val reference: List<CircleChromeSlot> = listOf\(CircleChromeSlot.HOUR_8, CircleChromeSlot.HOUR_7\)/);
+  const bare = emitWatchChromeSlotsKotlin(paged, options);
+  assert.match(bare, /val zoom: List<CircleChromeSlot> = listOf\(\)/);
+  assert.match(bare, /val reference: List<CircleChromeSlot> = listOf\(\)/);
+});
