@@ -140,7 +140,11 @@ internal fun HubScreen(s: RingScreen.Hub, nav: RingNavigator) {
         s.corner?.let { corner ->
             IconRing(
                 icon = corner.icon,
-                label = "",
+                // The label is also the hold cue's verb: an empty one made the
+                // cue refuse ("Action cue needs a visible label") and the hub
+                // crashed on a long press of its corner (Skyvw, 2026-09-13).
+                // The phone renderer already shows it.
+                label = corner.label,
                 diameter = MenuDesign.cornerDiameter,
                 onTap = { corner.open()?.let(nav::push) ?: corner.run?.invoke() },
             )
