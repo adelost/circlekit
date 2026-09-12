@@ -24,7 +24,7 @@ const expectedSkydiving = new Set([
   "emit-preflight-briefing-kotlin", "emit-status-indicators-kotlin",
   "emit-surface-components-kotlin", "emit-watch-chrome-slots-kotlin", "home-action-model",
   "index", "interaction-model", "iso-option-model", "jump-tag-model", "menu-text-budget", "model",
-  "native-symbols", "normalize-setting", "product-menu-model", "product-menu-types",
+  "native-symbols", "normalize-setting", "product-menu-closed-sets", "product-menu-model", "product-menu-types",
   "preflight-briefing-model",
   "setting-mount-model", "status-indicator-model", "surface-component-model", "validate-iso-options",
   "validate-product-menus", "validate-setting-groups", "watch-chrome-slot-model",

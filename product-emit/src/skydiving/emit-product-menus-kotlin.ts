@@ -3,6 +3,16 @@ import type { SourcedKotlinEmissionOptions } from "../core/emission-options.js";
 import { MENU_HINT_MAX_CHARS, MENU_LABEL_MAX_CHARS } from "./menu-text-budget.js";
 import type { SettingIr } from "./model.js";
 import type { ProductMenusNativeSymbols } from "./native-symbols.js";
+import {
+  emitMenuPortEnum,
+  hostActionRefs,
+  hostActionTargetName,
+  menuPortEnumName,
+  menuPorts,
+  menuTargetKinds,
+  menuTargetTypeName,
+  portActionTargetName,
+} from "./product-menu-closed-sets.js";
 
 import {
   type AnyProductMenu,
@@ -15,6 +25,17 @@ import {
   wireId,
 } from "./product-menu-types.js";
 
+const SHARED_TARGET_KINDS = [
+  "SettingsSection",
+  "MapControl",
+  "AlarmAction",
+  "ClockFaceCueAction",
+  "ClockFaceWeightAction",
+  "Information",
+  "Setting",
+  "SettingValue",
+] as const;
+
 export function emitProductMenusKotlin<EffectRef extends string>(
   menus: readonly AnyProductMenu[],
   settings: readonly SettingIr<EffectRef>[],
@@ -23,7 +44,11 @@ export function emitProductMenusKotlin<EffectRef extends string>(
   const generated = `Generated${options.symbolPrefix}`;
   const settingById = new Map(settings.map((setting) => [setting.id, setting]));
   const hostActionMenus = menus.filter((menu) => hostActionRefs(menu).length > 0);
+  const portActionMenus = menus.filter((menu) => menuPorts(menu).action.length > 0);
   const inputPorts = menuNativeRefs(menus);
+  const implementors = (kind: string) =>
+    [`${generated}MenuTarget`, ...menus.filter((menu) => menuTargetKinds(menu).includes(kind)).map((menu) => menuTargetTypeName(menu, generated))]
+      .join(", ");
   const contracts = `// GENERATED FILE. DO NOT EDIT.
 // GENERATED FROM ${options.sourceFile}
 // Product declaration SHA-256: ${options.sourceSha}
@@ -43,6 +68,12 @@ enum class ${generated}ProductInputPort(val wireId: String) {
 ${inputPorts.map((ref) => `    ${kotlinEnumToken(ref)}(${kotlinStringLiteral(ref)}),`).join("\n")}
 }
 
+/** One port a menu binds a slot, a toggle or an action to; each menu's set is its own enum. */
+interface ${generated}MenuPort {
+    val port: ${generated}ProductInputPort
+}
+
+${menus.flatMap((menu) => emitMenuPortEnums(menu, generated)).join("\n")}
 enum class ${generated}MenuRef(val wireId: String) {
 ${menus.map((menu) => `    ${kotlinEnumToken(menu.id)}(${kotlinStringLiteral(menu.id)}),`).join("\n")}
 }
@@ -52,36 +83,41 @@ sealed interface ${generated}DiscreteActionDestination {
     data class Menu(val ref: ${generated}MenuRef) : ${generated}DiscreteActionDestination
 }
 
+/**
+ * The kinds of row each menu declares, one sealed set per menu. A host that
+ * matches \`item.target\` of ONE menu matches this set, so its \`when\` is
+ * exhaustive over what the menu declares and needs no \`else\`: a row of a kind
+ * the host does not handle fails to compile instead of crashing when opened.
+ */
+${menus.map((menu) => `sealed interface ${menuTargetTypeName(menu, generated)} : ${generated}MenuTarget`).join("\n")}
+
 sealed interface ${generated}MenuTarget {
-    data class SettingsSection(val key: MenuActionKey) : ${generated}MenuTarget
-    data class MapControl(val key: MenuActionKey) : ${generated}MenuTarget
+    data class SettingsSection(val key: MenuActionKey) : ${implementors("SettingsSection")}
+    data class MapControl(val key: MenuActionKey) : ${implementors("MapControl")}
     data class AlarmAction(
         val key: MenuActionKey,
         val stage: AlarmStage,
         val stepM: Int,
-    ) : ${generated}MenuTarget
+    ) : ${implementors("AlarmAction")}
     data class ClockFaceCueAction(
         val key: MenuActionKey,
         val cue: ClockFaceCue,
         val valueLabel: String,
-    ) : ${generated}MenuTarget
-    data class ClockFaceWeightAction(val key: MenuActionKey) : ${generated}MenuTarget
-    data class PortAction(
-        val key: MenuActionKey,
-        val port: ${generated}ProductInputPort,
-    ) : ${generated}MenuTarget
-    data class Information(val text: String) : ${generated}MenuTarget
-    data class Setting(val settingId: AppSpecSettingId) : ${generated}MenuTarget
+    ) : ${implementors("ClockFaceCueAction")}
+    data class ClockFaceWeightAction(val key: MenuActionKey) : ${implementors("ClockFaceWeightAction")}
+    data class Information(val text: String) : ${implementors("Information")}
+    data class Setting(val settingId: AppSpecSettingId) : ${implementors("Setting")}
     /** This row IS one value of the setting; the menu is the choice list. */
     data class SettingValue(
         val key: MenuActionKey,
         val settingId: AppSpecSettingId,
         val valueId: AppSpecValueId,
-    ) : ${generated}MenuTarget
+    ) : ${implementors("SettingValue")}
 ${hostActionMenus.map((menu) => emitHostActionTarget(menu, generated)).join("\n")}
+${portActionMenus.map((menu) => emitPortActionTarget(menu, generated)).join("\n")}
     data class Destination(
         val destination: ${generated}DiscreteActionDestination,
-    ) : ${generated}MenuTarget {
+    ) : ${implementors("Destination")} {
         constructor(screen: ${generated}PageRef) : this(
             ${generated}DiscreteActionDestination.Surface(${generated}RouteIntent(screen)),
         )
@@ -91,39 +127,40 @@ ${hostActionMenus.map((menu) => emitHostActionTarget(menu, generated)).join("\n"
 /**
  * One position in a menu's declared order: either a row the product owns, or a
  * slot native fills. The reason travels with the slot, so a screen cannot quietly
- * grow native rows nobody named.
+ * grow native rows nobody named. The type parameters are the menu's own closed
+ * sets: its row targets, its slot ports and its toggle ports.
  */
-sealed interface ${generated}MenuElement {
-    data class Row(val item: ${generated}MenuItem) : ${generated}MenuElement
-    data class NativeRows(
+sealed interface ${generated}MenuElement<out T : ${generated}MenuTarget, out R : ${generated}MenuPort, out G : ${generated}MenuPort> {
+    data class Row<out T : ${generated}MenuTarget>(val item: ${generated}MenuItem<T>) : ${generated}MenuElement<T, Nothing, Nothing>
+    data class NativeRows<out R : ${generated}MenuPort>(
         val key: MenuActionKey,
-        val port: ${generated}ProductInputPort,
+        val port: R,
         val reason: String,
-    ) : ${generated}MenuElement
+    ) : ${generated}MenuElement<Nothing, R, Nothing>
 
     /** A row the product owns whose VALUE and write belong to [port]. */
-    data class NativeToggle(
+    data class NativeToggle<out G : ${generated}MenuPort>(
         val key: MenuActionKey,
-        val port: ${generated}ProductInputPort,
+        val port: G,
         val label: String,
         val icon: MenuIconToken,
         val hint: String,
         val reason: String,
-    ) : ${generated}MenuElement
+    ) : ${generated}MenuElement<Nothing, Nothing, G>
 }
 
 /** One product menu as data: what it is called and what it offers. */
 data class ${generated}ProductMenu(
     val id: String,
     val label: String,
-    val items: List<${generated}MenuItem>,
-    val elements: List<${generated}MenuElement>,
+    val items: List<${generated}MenuItem<${generated}MenuTarget>>,
+    val elements: List<${generated}MenuElement<${generated}MenuTarget, ${generated}MenuPort, ${generated}MenuPort>>,
 )
 
 /** Why a generated menu row may bypass the safe deliberate default. */
 enum class ${generated}MenuImmediateReason { READ_ONLY_NAVIGATION }
 
-data class ${generated}MenuItem(
+data class ${generated}MenuItem<out T : ${generated}MenuTarget>(
     val key: MenuActionKey,
     val label: String,
     val hint: String?,
@@ -132,7 +169,7 @@ data class ${generated}MenuItem(
     val timing: CircleActionTiming = CircleActionTiming.DELIBERATE,
     val immediateReason: ${generated}MenuImmediateReason? = null,
     val destructive: Boolean = false,
-    val target: ${generated}MenuTarget,
+    val target: T,
 ) {
     init {
         require(!destructive || timing == CircleActionTiming.DELIBERATE) {
@@ -147,15 +184,15 @@ data class ${generated}MenuItem(
     }
 }
 
-internal fun localItem(
+internal fun <T : ${generated}MenuTarget> localItem(
     id: String,
     label: String,
     icon: MenuIconToken,
     accent: MenuAccentToken = icon.defaultAccent,
     destructive: Boolean = false,
-    target: (MenuActionKey) -> ${generated}MenuTarget,
+    target: (MenuActionKey) -> T,
     hint: String? = null,
-): ${generated}MenuItem {
+): ${generated}MenuItem<T> {
     val key = MenuActionKey(id)
     return ${generated}MenuItem(key, label, hint, icon, accent, destructive = destructive, target = target(key))
 }
@@ -176,14 +213,14 @@ internal fun mapItem(
     destructive: Boolean = false,
 ) = localItem(id, label, icon, accent, destructive, ${generated}MenuTarget::MapControl)
 
-internal fun actionItem(
+internal fun <T : ${generated}MenuTarget> actionItem(
     id: String,
     label: String,
     hint: String?,
     icon: MenuIconToken,
     accent: MenuAccentToken = icon.defaultAccent,
     destructive: Boolean = false,
-    target: (MenuActionKey) -> ${generated}MenuTarget,
+    target: (MenuActionKey) -> T,
 ) = localItem(id, label, icon, accent, destructive, target, hint)
 
 internal fun informationItem(
@@ -286,14 +323,26 @@ ${menus.map((menu) =>
 
 /** Closed payload vocabulary for the mounted settings component. */
 function menuNativeRefs(menus: readonly AnyProductMenu[]): string[] {
-  return [...new Set(menus.flatMap((menu) => Object.values(menu.items).flatMap((item) => {
-    if (isNativeRowsItem(item)) return [item.nativeRowsRef];
-    if (isNativeToggleItem(item)) return [item.nativeToggleRef];
-    if ("action" in item && item.action?.kind === "port") return [item.action.ref];
-    return [];
-  })))];
+  return [...new Set(menus.flatMap((menu) => {
+    const ports = menuPorts(menu);
+    return [...ports.nativeRows, ...ports.nativeToggle, ...ports.action];
+  }))];
 }
 
+function emitMenuPortEnums(menu: AnyProductMenu, generated: string): string[] {
+  const ports = menuPorts(menu);
+  return (["nativeRows", "nativeToggle", "action"] as const)
+    .filter((kind) => ports[kind].length > 0)
+    .map((kind) => emitMenuPortEnum(menuPortEnumName(menu, kind, generated), ports[kind], generated));
+}
+
+/** `Nothing` where the menu declares no slot of that kind: the host's `when` then has no port to name. */
+function elementTypeArguments(menu: AnyProductMenu, generated: string): string {
+  const ports = menuPorts(menu);
+  const rows = ports.nativeRows.length > 0 ? menuPortEnumName(menu, "nativeRows", generated) : "Nothing";
+  const toggles = ports.nativeToggle.length > 0 ? menuPortEnumName(menu, "nativeToggle", generated) : "Nothing";
+  return `${menuTargetTypeName(menu, generated)}, ${rows}, ${toggles}`;
+}
 
 function emitMenu<EffectRef extends string>(
   menu: AnyProductMenu,
@@ -302,6 +351,7 @@ function emitMenu<EffectRef extends string>(
 ): string {
   const entries = Object.entries(menu.items);
   const objectName = `${generated}${kotlinIdentifier(menu.id)}Menu`;
+  const targetType = menuTargetTypeName(menu, generated);
   const values = entries.map(([id, item]) => emitItem(menu, id, item, settingById, generated)).join("\n");
   // `items` stays the rows the product declares; `elements` is the declared
   // ORDER, slots included, so a screen can render top to bottom from one source.
@@ -316,9 +366,9 @@ function emitMenu<EffectRef extends string>(
   return `object ${objectName} {
     const val label: String = ${kotlinStringLiteral(menu.label ?? kotlinLabel(menu.id))}
 ${values}
-    val items: List<${generated}MenuItem> = listOf(${generatedItems})
-    val elements: List<${generated}MenuElement> = listOf(${generatedElements})
-    fun item(key: MenuActionKey): ${generated}MenuItem = items.single { it.key == key }
+    val items: List<${generated}MenuItem<${targetType}>> = listOf(${generatedItems})
+    val elements: List<${generated}MenuElement<${elementTypeArguments(menu, generated)}>> = listOf(${generatedElements})
+    fun item(key: MenuActionKey): ${generated}MenuItem<${targetType}> = items.single { it.key == key }
 }`;
 }
 
@@ -337,10 +387,10 @@ function emitItem<EffectRef extends string>(
     return `    val ${kotlinIdentifier(id)} = actionItem(${kotlinStringLiteral(setting.control.id)}, ${kotlinStringLiteral(setting.control.title.text)}, ${kotlinStringLiteral(setting.control.hint.text)}, MenuIconToken.${icon}) { ${generated}MenuTarget.Setting(AppSpecSettingId(${kotlinStringLiteral(setting.id)})) }`;
   }
   if (isNativeRowsItem(item)) {
-    return `    val ${kotlinIdentifier(id)} = ${generated}MenuElement.NativeRows(MenuActionKey(${kotlinStringLiteral(item.wireId)}), ${generated}ProductInputPort.${kotlinEnumToken(item.nativeRowsRef)}, ${kotlinStringLiteral(item.reason)})`;
+    return `    val ${kotlinIdentifier(id)} = ${generated}MenuElement.NativeRows(MenuActionKey(${kotlinStringLiteral(item.wireId)}), ${menuPortEnumName(menu, "nativeRows", generated)}.${kotlinEnumToken(item.nativeRowsRef)}, ${kotlinStringLiteral(item.reason)})`;
   }
   if (isNativeToggleItem(item)) {
-    return `    val ${kotlinIdentifier(id)} = ${generated}MenuElement.NativeToggle(MenuActionKey(${kotlinStringLiteral(item.wireId)}), ${generated}ProductInputPort.${kotlinEnumToken(item.nativeToggleRef)}, ${kotlinStringLiteral(item.label)}, MenuIconToken.${item.icon}, ${kotlinStringLiteral(item.hint)}, ${kotlinStringLiteral(item.reason)})`;
+    return `    val ${kotlinIdentifier(id)} = ${generated}MenuElement.NativeToggle(MenuActionKey(${kotlinStringLiteral(item.wireId)}), ${menuPortEnumName(menu, "nativeToggle", generated)}.${kotlinEnumToken(item.nativeToggleRef)}, ${kotlinStringLiteral(item.label)}, MenuIconToken.${item.icon}, ${kotlinStringLiteral(item.hint)}, ${kotlinStringLiteral(item.reason)})`;
   }
   if (isSettingValueItem(item)) {
     const icon = item.icon;
@@ -371,10 +421,10 @@ function emitItem<EffectRef extends string>(
         constructor = `actionItem(${key}, ${label}, ${nullableQuoted(item.hint)}, MenuIconToken.${item.icon}${accent}${interaction}) { key -> ${generated}MenuTarget.ClockFaceWeightAction(key) }`;
         break;
       case "host":
-        constructor = `actionItem(${key}, ${label}, ${nullableQuoted(item.hint)}, MenuIconToken.${item.icon}${accent}${interaction}) { key -> ${generated}MenuTarget.${kotlinIdentifier(menu.id)}Action(key, ${generated}${kotlinIdentifier(menu.id)}Action.${item.action.ref}) }`;
+        constructor = `actionItem(${key}, ${label}, ${nullableQuoted(item.hint)}, MenuIconToken.${item.icon}${accent}${interaction}) { key -> ${generated}MenuTarget.${hostActionTargetName(menu)}(key, ${generated}${hostActionTargetName(menu)}.${item.action.ref}) }`;
         break;
       case "port":
-        constructor = `actionItem(${key}, ${label}, ${nullableQuoted(item.hint)}, MenuIconToken.${item.icon}${accent}${interaction}) { key -> ${generated}MenuTarget.PortAction(key, ${generated}ProductInputPort.${kotlinEnumToken(item.action.ref)}) }`;
+        constructor = `actionItem(${key}, ${label}, ${nullableQuoted(item.hint)}, MenuIconToken.${item.icon}${accent}${interaction}) { key -> ${generated}MenuTarget.${portActionTargetName(menu)}(key, ${menuPortEnumName(menu, "action", generated)}.${kotlinEnumToken(item.action.ref)}) }`;
         break;
     }
   } else {
@@ -387,30 +437,25 @@ function emitItem<EffectRef extends string>(
   return `    val ${kotlinIdentifier(id)} = ${constructor}`;
 }
 
-
-function hostActionRefs(menu: AnyProductMenu): string[] {
-  return [...new Set(Object.values(menu.items).flatMap((item) =>
-    !isSettingItem(item) && !isSettingValueItem(item) && !isNativeRowsItem(item) && !isNativeToggleItem(item)
-      && item.action?.kind === "host"
-      ? [item.action.ref]
-      : []
-  ))];
-}
-
 function emitHostActionEnum(menu: AnyProductMenu, generated: string): string {
-  return `enum class ${generated}${kotlinIdentifier(menu.id)}Action { ${hostActionRefs(menu).join(", ")} }`;
+  return `enum class ${generated}${hostActionTargetName(menu)} { ${hostActionRefs(menu).join(", ")} }`;
 }
 
 function emitHostActionTarget(menu: AnyProductMenu, generated: string): string {
-  const name = kotlinIdentifier(menu.id);
-  return `    data class ${name}Action(
+  const name = hostActionTargetName(menu);
+  return `    data class ${name}(
         val key: MenuActionKey,
-        val action: ${generated}${name}Action,
-    ) : ${generated}MenuTarget`;
+        val action: ${generated}${name},
+    ) : ${generated}MenuTarget, ${menuTargetTypeName(menu, generated)}`;
 }
 
-
-
+/** The menu's port actions: one target class over the menu's own closed port enum. */
+function emitPortActionTarget(menu: AnyProductMenu, generated: string): string {
+  return `    data class ${portActionTargetName(menu)}(
+        val key: MenuActionKey,
+        val action: ${menuPortEnumName(menu, "action", generated)},
+    ) : ${generated}MenuTarget, ${menuTargetTypeName(menu, generated)}`;
+}
 
 function interactionArguments(item: AnyProductMenuVisualItem, generated: string): string {
   const immediateReason = "cadence" in item && item.cadence !== undefined
