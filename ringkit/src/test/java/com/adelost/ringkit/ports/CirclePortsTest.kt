@@ -50,4 +50,11 @@ class CirclePortsTest {
         assertEquals("LISTENING · 30 s", circlePortPreview(status))
         assertEquals(listOf("Phase" to "LISTENING", "Detail" to "null", "Detections" to "3"), circlePortValueFields(status.value!!))
     }
+
+    @Test fun twoPortsWithTheSameShortNameInOneGroupStayTellable() {
+        val names = circlePortNames(listOf(port("capture.talk.command"), port("capture.service.command"),
+            port("capture.service.status"), port("wake.service.command")))
+        assertEquals(mapOf("capture.talk.command" to "Talk command", "capture.service.command" to "Service command",
+            "capture.service.status" to "Status", "wake.service.command" to "Command"), names)
+    }
 }

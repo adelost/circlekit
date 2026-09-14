@@ -50,6 +50,15 @@ fun CirclePortInspection.groupKey(): String = ownerId.substringBefore('.')
 /** The port's own short name inside its group: `conversation.service.status` is Status. */
 fun CirclePortInspection.shortName(): String = circlePortWords(id.substringAfterLast('.'))
 
+/** Row names by port id: the short name, unless two ports in one group share it; then `capture.talk.command` is Talk command. */
+fun circlePortNames(ports: List<CirclePortInspection>): Map<String, String> =
+    ports.groupBy(CirclePortInspection::groupKey).values.flatMap { group ->
+        val shared = group.groupingBy(CirclePortInspection::shortName).eachCount().filterValues { it > 1 }.keys
+        group.map { port ->
+            port.id to if (port.shortName() in shared) circlePortWords(port.id.substringAfter('.')) else port.shortName()
+        }
+    }.toMap()
+
 /** Declaration ids in plain words: `wake-phase` and `wakePhase` both read "Wake phase". */
 fun circlePortWords(id: String): String = id
     .replace(Regex("([a-z])([A-Z])"), "$1 $2")

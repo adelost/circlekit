@@ -58,27 +58,34 @@ private fun groupScreen(ports: Flow<List<CirclePortInspection>>, key: String, ti
         title = title.uppercase(),
         items = ports.map { snapshot ->
             val members = snapshot.filter { it.groupKey() == key }
+            val names = circlePortNames(members)
             CirclePortRole.entries.flatMap { role ->
                 val inRole = members.filter { it.role == role }.sortedBy(CirclePortInspection::id)
                 if (inRole.isEmpty()) emptyList()
-                else listOf(RowSpec("section-$role", sectionTitle(role), "", null)) + inRole.map { portRow(it, ports, push) }
+                else listOf(RowSpec("section-$role", sectionTitle(role), "", null)) +
+                    inRole.map { portRow(it, names.getValue(it.id), ports, push) }
             }
         },
     )
 
 private fun portListScreen(title: String, ports: Flow<List<CirclePortInspection>>, push: (RingScreen) -> Unit) = RingScreen.Rows(
     title = title,
-    items = ports.map { snapshot -> snapshot.sortedBy(CirclePortInspection::id).map { portRow(it, ports, push, fullName = true) } },
+    items = ports.map { snapshot ->
+        val names = circlePortNames(snapshot)
+        snapshot.sortedBy(CirclePortInspection::id).map {
+            portRow(it, "${circlePortWords(it.groupKey())} · ${names.getValue(it.id)}", ports, push)
+        }
+    },
 )
 
 private fun portRow(
     port: CirclePortInspection,
+    title: String,
     ports: Flow<List<CirclePortInspection>>,
     push: (RingScreen) -> Unit,
-    fullName: Boolean = false,
 ) = RowSpec(
     key = port.id,
-    title = if (fullName) "${circlePortWords(port.groupKey())} · ${port.shortName()}" else port.shortName(),
+    title = title,
     sub = circlePortPreview(port),
     icon = statusIcon(port.status()),
     accent = statusAccent(port.status()),
