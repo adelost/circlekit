@@ -2,6 +2,8 @@ package com.adelost.designkit.ui
 
 import androidx.compose.runtime.Immutable
 import androidx.compose.ui.graphics.vector.ImageVector
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.collectLatest
 
 /**
  * A strip of small service glyphs: an icon, a number, and a ring that counts down to the service's next update in
@@ -51,15 +53,51 @@ fun circleServiceLitSegments(glyph: CircleServiceGlyph, nowMs: Long): Int {
     return (since * CIRCLE_SERVICE_RING_SEGMENTS / interval).coerceAtMost(CIRCLE_SERVICE_RING_SEGMENTS.toLong()).toInt()
 }
 
-/** Whether the glyph draws a ring at all: a stale service has none. */
-fun circleServiceHasRing(glyph: CircleServiceGlyph): Boolean = glyph.look == CircleServiceLook.LIVE
+/** Whether a glyph draws a ring at all: a stale service has none. */
+fun circleServiceHasRing(look: CircleServiceLook): Boolean = look == CircleServiceLook.LIVE
 
-/** What one strip frame draws; equal frames draw nothing new. */
+/**
+ * What one glyph draws, and nothing it was computed from: a 20 Hz service lands a new update every second without
+ * changing its frame, so equal frames draw nothing new.
+ */
 @Immutable
-data class CircleServiceFrame(val glyph: CircleServiceGlyph, val litSegments: Int)
+data class CircleServiceFrame(
+    val key: String,
+    val icon: ImageVector,
+    val label: String,
+    val look: CircleServiceLook,
+    val litSegments: Int,
+    val description: String,
+)
 
-fun circleServiceFrames(glyphs: List<CircleServiceGlyph>, nowMs: Long): List<CircleServiceFrame> =
-    glyphs.map { CircleServiceFrame(it, circleServiceLitSegments(it, nowMs)) }
+fun circleServiceFrames(glyphs: List<CircleServiceGlyph>, nowMs: Long): List<CircleServiceFrame> = glyphs.map {
+    CircleServiceFrame(it.key, it.icon, it.label, it.look, circleServiceLitSegments(it, nowMs), it.description)
+}
+
+/**
+ * Draws the strip's frames: at once for every glyph source the host publishes, then after every [tick] on the latest
+ * one, skipping a frame equal to the last drawn. The frame comes before the wait, so a host that republishes faster
+ * than a tick (a sensor's once-a-second summary) still moves the ring instead of restarting a wait that never ends.
+ */
+suspend fun drawCircleServiceFrames(
+    glyphSources: Flow<(nowMs: Long) -> List<CircleServiceGlyph>>,
+    clock: () -> Long,
+    tick: suspend () -> Unit,
+    draw: (List<CircleServiceFrame>) -> Unit,
+) {
+    var drawn: List<CircleServiceFrame>? = null
+    glyphSources.collectLatest { glyphsAt ->
+        while (true) {
+            val now = clock()
+            val frames = circleServiceFrames(glyphsAt(now), now)
+            if (frames != drawn) {
+                drawn = frames
+                draw(frames)
+            }
+            tick()
+        }
+    }
+}
 
 /** Glyphs placed row by row in order, and how many did not fit; the last row keeps room for their "+N" count. */
 @Immutable

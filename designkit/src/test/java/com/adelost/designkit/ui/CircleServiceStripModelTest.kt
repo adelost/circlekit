@@ -2,6 +2,13 @@ package com.adelost.designkit.ui
 
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
+import kotlinx.coroutines.awaitCancellation
+import kotlinx.coroutines.cancelAndJoin
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.yield
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertThrows
 import org.junit.Test
@@ -41,6 +48,43 @@ class CircleServiceStripModelTest {
         assertEquals(circleServiceFrames(listOf(traffic), 4_000L), circleServiceFrames(listOf(traffic), 7_000L))
         assertEquals(1, circleServiceFrames(listOf(traffic), 4_000L).single().litSegments)
         assertEquals(2, circleServiceFrames(listOf(traffic), 8_000L).single().litSegments)
+        // A 20 Hz sensor lands an update every second; its still ring and number draw the same frame.
+        assertEquals(circleServiceFrames(listOf(glyph(50L, 1_000L)), 1_020L), circleServiceFrames(listOf(glyph(50L, 2_000L)), 2_020L))
+    }
+
+    /**
+     * wear34b and p0phone 2026-09-14: the host republished its services about once a second, each restart began with a
+     * one-second wait, and TRAFFIC read 3/8 for twelve seconds on a 30 s countdown.
+     */
+    @Test
+    fun `a host that republishes faster than a tick still moves the ring on every publish`() = runBlocking {
+        var now = 100_000L
+        val traffic = { _: Long -> listOf(glyph(intervalMs = 30_000L, lastUpdateMs = 100_000L)) }
+        val drawn = mutableListOf<Int>()
+        val republishing = flow {
+            repeat(CIRCLE_SERVICE_RING_SEGMENTS + 1) { emit(traffic); now += 3_750L }
+        }
+        val strip = launch { drawCircleServiceFrames(republishing, { now }, { awaitCancellation() }) { drawn += it.single().litSegments } }
+        repeat(1_000) { if (drawn.size <= CIRCLE_SERVICE_RING_SEGMENTS) yield() }
+        strip.cancelAndJoin()
+        assertEquals((0..CIRCLE_SERVICE_RING_SEGMENTS).toList(), drawn)
+    }
+
+    @Test
+    fun `a quiet host draws once per lit segment, not once per tick, while a 20 Hz neighbour keeps landing updates`() = runBlocking {
+        var now = 0L
+        var ticks = 0
+        val services = { at: Long -> listOf(glyph(intervalMs = 50L, lastUpdateMs = at - 10L), glyph(intervalMs = 30_000L, lastUpdateMs = 0L)) }
+        val drawn = mutableListOf<Int>()
+        val strip = launch {
+            drawCircleServiceFrames(flowOf(services), { now }, { if (ticks++ < 30) now += 1_000L else awaitCancellation() }) {
+                drawn += it.last().litSegments
+            }
+        }
+        repeat(1_000) { if (ticks <= 30) yield() }
+        strip.cancelAndJoin()
+        // 30 one-second ticks over a 30 s countdown: the first frame and one per segment, never the 20 Hz updates.
+        assertEquals((0..CIRCLE_SERVICE_RING_SEGMENTS).toList(), drawn)
     }
 
     @Test

@@ -10,6 +10,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.produceState
+import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
@@ -43,8 +45,9 @@ data class CircleServiceStripStyle(
  * Every service the host lists, as a small icon, its number and a segmented countdown ring (see
  * [circleServiceLitSegments]). What does not fit in [maxRows] is counted as "+N".
  *
- * [glyphsAt] builds the glyphs for a moment on [clock]; the strip asks once a second and redraws only when a number,
- * a look or a lit segment count changed, so a quiet strip costs a wake-up and no frame.
+ * [glyphsAt] builds the glyphs for a moment on [clock]; the strip asks whenever the host passes a new one and once a
+ * second between, and redraws only when a number, a look or a lit segment count changed, so a quiet strip costs a
+ * wake-up and no frame ([drawCircleServiceFrames]).
  */
 @Composable
 fun CircleServiceStrip(
@@ -54,18 +57,15 @@ fun CircleServiceStrip(
     maxRows: Int,
     modifier: Modifier = Modifier,
 ) {
-    val frames by produceState(circleServiceFrames(glyphsAt(clock()), clock()), glyphsAt, clock) {
-        while (true) {
-            delay(CIRCLE_SERVICE_TICK_MS)
-            val now = clock()
-            value = circleServiceFrames(glyphsAt(now), now)
-        }
+    val latestGlyphsAt = rememberUpdatedState(glyphsAt)
+    val frames by produceState(circleServiceFrames(glyphsAt(clock()), clock()), clock) {
+        drawCircleServiceFrames(snapshotFlow { latestGlyphsAt.value }, clock, { delay(CIRCLE_SERVICE_TICK_MS) }) { value = it }
     }
     if (frames.isEmpty()) return
-    SubcomposeLayout(modifier.clearAndSetSemantics { contentDescription = frames.joinToString(", ") { it.glyph.description } }) { constraints ->
+    SubcomposeLayout(modifier.clearAndSetSemantics { contentDescription = frames.joinToString(", ") { it.description } }) { constraints ->
         val free = Constraints(maxWidth = constraints.maxWidth)
         val placeables = frames.map { frame ->
-            subcompose(frame.glyph.key) { CircleServiceGlyphView(frame, style) }.single().measure(free)
+            subcompose(frame.key) { CircleServiceGlyphView(frame, style) }.single().measure(free)
         }
         val gapPx = style.gap.roundToPx()
         val layout = fitCircleServiceRows(placeables.map { it.width }, gapPx, minOf(style.maxWidth.roundToPx(), constraints.maxWidth), maxRows) { hidden ->
@@ -93,9 +93,8 @@ fun CircleServiceStrip(
 
 @Composable
 private fun CircleServiceGlyphView(frame: CircleServiceFrame, style: CircleServiceStripStyle) {
-    val glyph = frame.glyph
-    val tint = if (glyph.look == CircleServiceLook.LIVE) style.liveTint else style.staleTint
-    val ring = circleServiceHasRing(glyph)
+    val tint = if (frame.look == CircleServiceLook.LIVE) style.liveTint else style.staleTint
+    val ring = circleServiceHasRing(frame.look)
     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(style.iconSize * 0.18f)) {
         Box(
             Modifier.size(style.iconSize * 1.4f).drawBehind {
@@ -113,10 +112,10 @@ private fun CircleServiceGlyphView(frame: CircleServiceFrame, style: CircleServi
             },
             contentAlignment = Alignment.Center,
         ) {
-            style.halo?.let { Image(glyph.icon, null, Modifier.size(style.iconSize * 1.2f), colorFilter = ColorFilter.tint(it)) }
-            Image(glyph.icon, null, Modifier.size(style.iconSize * 0.95f), colorFilter = ColorFilter.tint(tint))
+            style.halo?.let { Image(frame.icon, null, Modifier.size(style.iconSize * 1.2f), colorFilter = ColorFilter.tint(it)) }
+            Image(frame.icon, null, Modifier.size(style.iconSize * 0.95f), colorFilter = ColorFilter.tint(tint))
         }
-        CircleServiceText(glyph.label, style, tint)
+        CircleServiceText(frame.label, style, tint)
     }
 }
 
