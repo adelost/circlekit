@@ -161,15 +161,22 @@ fun circlePortPreview(port: CirclePortInspection): String = buildList {
 
 private val TIME_FIELD = Regex("(?i)(epoch|nanos|millis|timestamp)|(At|Ms)$")
 
-/** The first plain field a person can read at a glance; timestamps are skipped (the age is shown) and nested records are opened. */
+private val FLAG_VALUE = setOf("true", "false", "null")
+
+/**
+ * The field a person can read at a glance: the first plain value that is not a timestamp (the age is shown)
+ * or a flag, then the first nested record opened the same way, and only then a flag.
+ */
 private fun circlePortPlainValue(value: String): String? {
     val fields = circlePortValueFields(value)
     if (fields.size == 1 && fields.single().first == "Value") return fields.single().second.takeIf(String::isNotBlank)
     val named = topLevelNames(value)
-    fields.forEachIndexed { index, (_, field) ->
-        if (!isRecord(field) && named.getOrNull(index)?.let(TIME_FIELD::containsMatchIn) != true) return field
+    val plain = fields.map { it.second }.filterIndexed { index, field ->
+        !isRecord(field) && named.getOrNull(index)?.let(TIME_FIELD::containsMatchIn) != true
     }
-    return fields.firstOrNull { isRecord(it.second) }?.let { circlePortPlainValue(it.second) }
+    return plain.firstOrNull { it !in FLAG_VALUE }
+        ?: fields.firstOrNull { isRecord(it.second) }?.let { circlePortPlainValue(it.second) }
+        ?: plain.firstOrNull()
 }
 
 private fun isRecord(value: String) = value.indexOf('(') > 0 && value.endsWith(')')

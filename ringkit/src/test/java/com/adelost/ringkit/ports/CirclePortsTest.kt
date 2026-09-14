@@ -98,5 +98,11 @@ class CirclePortsTest {
         val nestedOnly = port("position.home-guidance.presentation", ageMs = 6_000,
             value = "PositionPresentation(observation=PositionObservation(timeEpochMs=1, latitude=55.6))")
         assertEquals("55.6 · 6 s", circlePortPreview(nestedOnly))
+        // skyvw:0 on v0.5.1320: Fix previewed "false", its breakBefore flag.
+        val flightFix = port("position.flight-context.fix", ageMs = 6_000,
+            value = "PositionFlightFix(observation=PositionObservation(timeEpochMs=1, latitude=57.78), breakBefore=false, gpsStatus=GOOD)")
+        assertEquals("GOOD · 6 s", circlePortPreview(flightFix))
+        val flagsOnly = port("capture.service.flags", value = "CaptureFlags(armed=true, detail=null)")
+        assertEquals("true", circlePortPreview(flagsOnly))
     }
 }
