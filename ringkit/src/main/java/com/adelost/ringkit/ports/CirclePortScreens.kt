@@ -29,7 +29,7 @@ fun circlePortScreen(
             if (attention.isNotEmpty()) {
                 add(RowSpec("attention", "NEEDS ATTENTION", "${attention.size} port${if (attention.size == 1) "" else "s"}",
                     RingIcons.Warning, accent = CircleAccent.CAUTION,
-                    onTap = { push(portListScreen("NEEDS ATTENTION", ports.map { it.filter(CirclePortInspection::needsAttention) }, push)) }))
+                    onTap = { push(portListScreen("NEEDS ATTENTION", ports, push, CirclePortInspection::needsAttention)) }))
             }
             circlePortGroups(snapshot).forEach { group ->
                 add(RowSpec(group.key, group.title.uppercase(), circlePortGroupSummary(group), statusIcon(group.worst),
@@ -48,7 +48,7 @@ private fun statusFilterScreen(ports: Flow<List<CirclePortInspection>>, push: (R
             if (count == 0) return@mapNotNull null
             RowSpec(status.name, status.name, "$count port${if (count == 1) "" else "s"}", statusIcon(status),
                 accent = statusAccent(status),
-                onTap = { push(portListScreen(status.name, ports.map { rows -> rows.filter { it.status() == status } }, push)) })
+                onTap = { push(portListScreen(status.name, ports, push) { it.status() == status }) })
         }
     },
 )
@@ -57,8 +57,9 @@ private fun groupScreen(ports: Flow<List<CirclePortInspection>>, key: String, ti
     RingScreen.Rows(
         title = title.uppercase(),
         items = ports.map { snapshot ->
-            val members = snapshot.filter { it.groupKey() == key }
-            val names = circlePortNames(members)
+            val keys = circlePortGroupKeys(snapshot)
+            val members = snapshot.filter { keys.getValue(it.id) == key }
+            val names = circlePortNames(snapshot)
             CirclePortRole.entries.flatMap { role ->
                 val inRole = members.filter { it.role == role }.sortedBy(CirclePortInspection::id)
                 if (inRole.isEmpty()) emptyList()
@@ -68,12 +69,19 @@ private fun groupScreen(ports: Flow<List<CirclePortInspection>>, key: String, ti
         },
     )
 
-private fun portListScreen(title: String, ports: Flow<List<CirclePortInspection>>, push: (RingScreen) -> Unit) = RingScreen.Rows(
+/** Names and groups come from the whole snapshot, so a filtered list reads the same as its group. */
+private fun portListScreen(
+    title: String,
+    ports: Flow<List<CirclePortInspection>>,
+    push: (RingScreen) -> Unit,
+    include: (CirclePortInspection) -> Boolean,
+) = RingScreen.Rows(
     title = title,
     items = ports.map { snapshot ->
+        val keys = circlePortGroupKeys(snapshot)
         val names = circlePortNames(snapshot)
-        snapshot.sortedBy(CirclePortInspection::id).map {
-            portRow(it, "${circlePortWords(it.groupKey())} · ${names.getValue(it.id)}", ports, push)
+        snapshot.filter(include).sortedBy(CirclePortInspection::id).map {
+            portRow(it, "${circlePortWords(keys.getValue(it.id))} · ${names.getValue(it.id)}", ports, push)
         }
     },
 )

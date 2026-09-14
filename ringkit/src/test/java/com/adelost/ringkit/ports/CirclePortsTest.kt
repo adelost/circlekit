@@ -13,7 +13,9 @@ class CirclePortsTest {
         required: Boolean = false,
         value: String? = null,
         ageMs: Long? = null,
-    ) = CirclePortInspection(id, id.substringBeforeLast('.'), role, "c", "OUTPUT", "PRESENTATION", required, quality, value, ageMs)
+        bindings: Set<String> = emptySet(),
+    ) = CirclePortInspection(id, id.substringBeforeLast('.'), role, "c", "OUTPUT", "PRESENTATION", required, quality, value, ageMs,
+        bindings = bindings)
 
     @Test fun aDeclaredPortLandsInTheGroupNamedByItsDeclaration() {
         val groups = circlePortGroups(listOf(port("wake.service.status"), port("conversation.service.status"), port("wake.presentation.model")))
@@ -56,5 +58,45 @@ class CirclePortsTest {
             port("capture.service.status"), port("wake.service.command")))
         assertEquals(mapOf("capture.talk.command" to "Talk command", "capture.service.command" to "Service command",
             "capture.service.status" to "Status", "wake.service.command" to "Command"), names)
+    }
+
+    // skyvw:0 2026-09-14: 174 of Skyvw's 478 ports landed in one "UI" group, because every projection is declared under ui.projection.*.
+    @Test fun aProjectionJoinsTheGroupOfTheComponentItFeeds() {
+        val ports = listOf(
+            port("ui.projection.home-dial.altimeter", bindings = setOf("NODE_INPUT:flight.service.altimeter->ui.projection.home-dial.altimeter")),
+            port("ui.projection.home-dial.model", bindings = setOf("COMPONENT_INPUT:ui.projection.home-dial.model->instrument.altitude-dial.model")),
+            port("instrument.altitude-dial.model", bindings = setOf("COMPONENT_INPUT:ui.projection.home-dial.model->instrument.altitude-dial.model")),
+            port("flight.service.altimeter", bindings = setOf("NODE_INPUT:flight.service.altimeter->ui.projection.home-dial.altimeter",
+                "COMPONENT_INPUT:flight.service.altimeter->map.surface.altimeter")),
+            port("ui.surface-interaction.open", bindings = setOf("COMPONENT_EVENT:instrument.altitude-dial.open->ui.surface-interaction.open",
+                "COMPONENT_EVENT:map.surface.open->ui.surface-interaction.open")),
+        )
+        assertEquals(listOf("Flight" to 1, "Instrument" to 3, "Ui" to 1), circlePortGroups(ports).map { it.title to it.ports.size })
+    }
+
+    // skyvw:0 2026-09-14: "Availability state presentation adapter presentation" was cut off on the round watch.
+    @Test fun aSharedNameGainsOnlyTheOwnerWordThatTellsItApart() {
+        val names = circlePortNames(listOf(
+            port("position.availability-state.presentation-adapter.presentation"),
+            port("position.home-guidance.presentation"),
+            port("position.home-guidance.home"),
+            port("position.flight-context.home"),
+            port("position.service.fix"),
+        ))
+        assertEquals(listOf("Availability state presentation", "Home guidance presentation", "Home guidance home", "Flight context home", "Fix"),
+            names.values.toList())
+    }
+
+    // skyvw:0 2026-09-14: a row previewed a whole nested record, "PositionObservation(timeEpochMs=1789411102967, elaps...".
+    @Test fun aPreviewShowsTheFirstPlainFieldNotATimestampOrANestedRecord() {
+        val fix = port("position.service.fix", ageMs = 38_000,
+            value = "PositionObservation(timeEpochMs=1789411102967, elapsedRealtimeNanos=99, latitude=55.6, longitude=13.1)")
+        assertEquals("55.6 · 38 s", circlePortPreview(fix))
+        val flight = port("position.flight-context.state", ageMs = 6_000,
+            value = "PositionFlightFix(observation=PositionObservation(timeEpochMs=1, latitude=55.6), phase=FREEFALL)")
+        assertEquals("FREEFALL · 6 s", circlePortPreview(flight))
+        val nestedOnly = port("position.home-guidance.presentation", ageMs = 6_000,
+            value = "PositionPresentation(observation=PositionObservation(timeEpochMs=1, latitude=55.6))")
+        assertEquals("55.6 · 6 s", circlePortPreview(nestedOnly))
     }
 }
