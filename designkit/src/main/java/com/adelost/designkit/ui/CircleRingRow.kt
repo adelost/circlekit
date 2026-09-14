@@ -38,6 +38,8 @@ fun CircleRingRow(
     ringActive: Boolean? = null,
     accent: CircleAccent = ringIconAccent(icon),
     semanticColor: Color? = null,
+    /** Optional product-semantic colour for the title alone, when the title and the value carry different laws. */
+    titleColor: Color? = null,
     labelProgress: CircleLabelProgress? = null,
     leading: (@Composable () -> Unit)? = null,
     trailing: (@Composable () -> Unit)? = null,
@@ -117,6 +119,7 @@ fun CircleRingRow(
                 affordance = CircleRowAffordance.of(onTap),
                 accent = accent,
                 semanticColor = semanticColor,
+                titleColor = titleColor,
                 leading = leading,
                 trailing = trailing,
                 labelProgress = labelProgress,
@@ -176,6 +179,8 @@ fun CircleRingRowContent(
      *  back on, so it grows to fit its words instead of ellipsising them. */
     multiline: Boolean = false,
     iconRotationDeg: Float = 0f,
+    /** See [CircleRingRow]. */
+    titleColor: Color? = null,
 ) {
     val phoneDesign = phoneSurfaceDesignFor(LocalCircleSurfaceLayout.current.surfaceClass)
     val hasSlots = leading != null || trailing != null
@@ -184,7 +189,7 @@ fun CircleRingRowContent(
     // identity the full reading width; the small source/status glyph belongs
     // with the supporting value. Actions and choices keep their shared column.
     if (phoneDesign == null && !affordance.operable && multiline && leading == null && centerValue == null) {
-        CirclePassiveReadingContent(title, sub, icon, accent, semanticColor, trailing, iconRotationDeg)
+        CirclePassiveReadingContent(title, sub, icon, accent, semanticColor, trailing, iconRotationDeg, titleColor)
         return
     }
     val feedbackSweep = rememberCircleFeedbackSweep(
@@ -234,6 +239,7 @@ fun CircleRingRowContent(
             // row IS, so it shrinks to stay whole rather than losing letters.
             CircleFittedTitle(
                 text = title,
+                color = titleColor ?: RingTokens.Ink,
                 fontSizeSp = phoneDesign?.rowTitleSize?.value ?: (
                     if (icon == null) MenuDesign.titleSizeNoIcon else MenuDesign.titleSize
                     ).value,
@@ -292,9 +298,10 @@ private fun CirclePassiveReadingContent(
     semanticColor: Color?,
     trailing: (@Composable () -> Unit)?,
     iconRotationDeg: Float,
+    titleColor: Color?,
 ) {
     Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
-        CircleReadingTitle(title)
+        CircleReadingTitle(title, titleColor ?: RingTokens.Ink)
         if (icon != null || sub.isNotBlank() || trailing != null) {
             Row(modifier = Modifier.readingValueClearance(), verticalAlignment = Alignment.CenterVertically) {
                 if (icon != null) {
@@ -334,6 +341,7 @@ private fun CirclePassiveReadingContent(
 @Composable
 private fun CircleFittedTitle(
     text: String,
+    color: Color,
     fontSizeSp: Float,
     maxLines: Int = 1,
     spoken: Boolean = true,
@@ -342,7 +350,7 @@ private fun CircleFittedTitle(
     // mechanism; this wrapper only owns the row-title styling choices.
     CircleFittedText(
         text = text,
-        color = RingTokens.Ink,
+        color = color,
         fontSizeSp = fontSizeSp,
         minFontSizeSp = CIRCLE_TITLE_MIN_SIZE_SP,
         shrinkStepSp = CIRCLE_TITLE_SHRINK_STEP_SP,

@@ -22,6 +22,7 @@ import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
@@ -29,11 +30,11 @@ import kotlin.math.roundToInt
 
 /** Keep centred ink where it fits; a control reserves only the lines it meets. */
 @Composable
-internal fun CircleReadingTitle(text: String) {
+internal fun CircleReadingTitle(text: String, color: Color = RingTokens.Ink) {
     val viewport = LocalCircleReadingViewport.current
     val slots = LocalRoundChromeReservation.current
     val density = LocalDensity.current.density
-    val style = circleTextStyle(RingTokens.Ink, MenuDesign.titleSize.value,
+    val style = circleTextStyle(color, MenuDesign.titleSize.value,
         FontWeight.Bold, MenuDesign.titleTracking.value, TextAlign.Center)
     val measurer = rememberTextMeasurer()
     var origin by remember { mutableStateOf<Offset?>(null) }

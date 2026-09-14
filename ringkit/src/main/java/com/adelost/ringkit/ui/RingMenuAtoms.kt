@@ -227,6 +227,8 @@ fun RingRow(
     ringActive: Boolean? = null,
     accent: CircleAccent = ringIconAccent(icon),
     semanticColor: Color? = null,
+    /** See [RowSpec.titleColor]. */
+    titleColor: Color? = null,
     labelProgress: CircleLabelProgress? = null,
     leading: (@Composable () -> Unit)? = null,
     trailing: (@Composable () -> Unit)? = null,
@@ -332,6 +334,7 @@ fun RingRow(
                     centerValue = centerValue,
                     multiline = multiline,
                     iconRotationDeg = iconRotationDeg,
+                    titleColor = titleColor,
                 )
             }
         }
@@ -347,6 +350,7 @@ fun RingRow(
         ringActive = ringActive,
         accent = accent,
         semanticColor = semanticColor,
+        titleColor = titleColor,
         labelProgress = labelProgress,
         leading = leading,
         trailing = rowTrailing,
