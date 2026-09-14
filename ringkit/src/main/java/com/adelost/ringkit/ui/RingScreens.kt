@@ -259,6 +259,9 @@ data class RowSpec(
     /** Optional product-semantic colour for the row's value/icon (for
      * altitude alarm bands, health states, etc.). */
     val semanticColor: Color? = null,
+    /** Optional product-semantic colour for the title alone, when the title and the value carry different laws
+     *  (Skyvw's wind aloft: the height wears the altitude scale, its speed the wind scale). */
+    val titleColor: Color? = null,
     /** Optional verb shown only inside the transient information card. */
     val infoAction: CircleActionCueInfoAction? = null,
     /** Null is a passive information/status row, with no touch affordance. */
