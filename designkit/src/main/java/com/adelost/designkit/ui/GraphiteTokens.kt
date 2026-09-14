@@ -26,6 +26,10 @@ object GraphiteTokens {
     val Orange = Color(0xFFE2AF32)
     val Red = Color(0xFFED6863)
     val Green = Color(0xFF63C375)
+    // The step after Red on an altitude scale (below the hard deck), at Red's
+    // OKLab lightness (0.68) so a thin stroke on OLED stays legible; the
+    // altitude scheme's purple (0.39) is a dial-bar fill, too dark for a line.
+    val Purple = Color(0xFF9C87D9)
 }
 
 object GraphiteMetrics {
