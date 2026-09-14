@@ -1,0 +1,58 @@
+package com.adelost.designkit.ui
+
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.unit.dp
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertThrows
+import org.junit.Test
+
+class CircleServiceStripModelTest {
+    private val icon = ImageVector.Builder("probe", 1.dp, 1.dp, 1f, 1f).build()
+    private fun glyph(intervalMs: Long?, lastUpdateMs: Long?, look: CircleServiceLook = CircleServiceLook.LIVE) =
+        CircleServiceGlyph("svc", icon, "30s", look, intervalMs, lastUpdateMs, "svc")
+
+    /** Mattias 2026-09-14: "en åttabitars progression när det är dags för nästa uppdatering". */
+    @Test
+    fun `the ring is empty when an update lands, half at half the interval, full when the next is due`() {
+        val traffic = glyph(intervalMs = 30_000L, lastUpdateMs = 100_000L)
+        assertEquals(0, circleServiceLitSegments(traffic, 100_000L))
+        assertEquals(3, circleServiceLitSegments(traffic, 100_000L + 11_250L))
+        assertEquals(4, circleServiceLitSegments(traffic, 115_000L))
+        assertEquals(7, circleServiceLitSegments(traffic, 129_999L))
+        assertEquals(8, circleServiceLitSegments(traffic, 130_000L))
+        assertEquals("overdue stays full", 8, circleServiceLitSegments(traffic, 400_000L))
+    }
+
+    /** Mattias 2026-09-14: "20 Hz går ju såklart inte, men allting som är över en sekund". */
+    @Test
+    fun `a service of a second or faster keeps a still full ring, an unmeasured or stale one lights nothing`() {
+        assertEquals(8, circleServiceLitSegments(glyph(intervalMs = 50L, lastUpdateMs = 0L), 20L))
+        assertEquals(8, circleServiceLitSegments(glyph(intervalMs = 1_000L, lastUpdateMs = 0L), 10L))
+        assertEquals(0, circleServiceLitSegments(glyph(intervalMs = 1_001L, lastUpdateMs = 0L), 10L))
+        assertEquals(0, circleServiceLitSegments(glyph(intervalMs = null, lastUpdateMs = 0L), 90_000L))
+        assertEquals(0, circleServiceLitSegments(glyph(intervalMs = 30_000L, lastUpdateMs = null), 90_000L))
+        assertEquals(0, circleServiceLitSegments(glyph(30_000L, 0L, CircleServiceLook.STALE), 90_000L))
+        assertThrows(IllegalArgumentException::class.java) { circleServiceLitSegments(glyph(0L, 0L), 1L) }
+    }
+
+    @Test
+    fun `a frame changes only when a lit count or a glyph changes, so a quiet second draws nothing`() {
+        val traffic = glyph(intervalMs = 30_000L, lastUpdateMs = 0L)
+        assertEquals(circleServiceFrames(listOf(traffic), 4_000L), circleServiceFrames(listOf(traffic), 7_000L))
+        assertEquals(1, circleServiceFrames(listOf(traffic), 4_000L).single().litSegments)
+        assertEquals(2, circleServiceFrames(listOf(traffic), 8_000L).single().litSegments)
+    }
+
+    @Test
+    fun `what does not fit is counted on the last row, and later glyphs step aside for the count`() {
+        val widths = listOf(20, 20, 20, 20, 20)
+        assertEquals(CircleServiceRows(listOf(listOf(0, 1)), 3), fitCircleServiceRows(widths, gap = 3, maxWidth = 55, maxRows = 1) { 8 })
+        // 20 + 2 + 20 + 2 + 20 = 64: three to a row, the rest wraps.
+        assertEquals(CircleServiceRows(listOf(listOf(0, 1, 2), listOf(3, 4)), 0), fitCircleServiceRows(widths, gap = 2, maxWidth = 64, maxRows = 2) { 8 })
+        // Two rows full and one left over: the last row gives up its last glyph so "+2" fits.
+        assertEquals(CircleServiceRows(listOf(listOf(0, 1), listOf(2)), 2), fitCircleServiceRows(widths, gap = 2, maxWidth = 42, maxRows = 2) { 8 })
+        assertEquals(CircleServiceRows(listOf(listOf(0, 1, 2), listOf(3, 4)), 0),
+            fitCircleServiceRows(widths, gap = 2, maxWidth = 64, maxRows = Int.MAX_VALUE) { 8 })
+        assertThrows(IllegalArgumentException::class.java) { fitCircleServiceRows(widths, 2, 64, 0) { 8 } }
+    }
+}
