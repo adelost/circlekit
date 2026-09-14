@@ -58,6 +58,7 @@ internal val PORTABLE_RING_ICON_CATALOG = listOf(
     RingIcons.GroundTrack,
     RingIcons.SpatialPath,
     RingIcons.SinkRate,
+    RingIcons.ClimbRate,
     RingIcons.GpsPoints,
     RingIcons.GpsBreak,
     RingIcons.TouchdownRun,

@@ -26,7 +26,7 @@ class RingIconStyleTest {
     private val lineMotifs = setOf(
         "Arrow", "ChevronLeft", "ChevronRight", "ChevronUp", "ChevronDown",
         "Plus", "Minus", "Check", "Cross", "Zigzag",
-        "Wind", "Yaw", "Pitch", "RotationRate", "SinkRate",
+        "Wind", "Yaw", "Pitch", "RotationRate", "SinkRate", "ClimbRate",
         "TouchdownRun", "TouchdownSink",
     )
 
