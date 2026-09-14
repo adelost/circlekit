@@ -21,6 +21,7 @@ import com.adelost.ringkit.ui.RenderRingScreen
 import com.adelost.ringkit.ui.RingActionCueHost
 import com.adelost.ringkit.ui.RingNavigator
 import com.adelost.ringkit.ui.RingTextEntryPort
+import com.adelost.ringkit.ui.RingRoundBackHost
 import com.adelost.ringkit.ui.RingRoundChrome
 import com.adelost.ringkit.ui.RingChromeAction
 
@@ -94,16 +95,24 @@ fun CircleKitShowcase(
                             onExit = { if (!navigateBack()) onExit() },
                             backLabel = "Back",
                         )
-                        is ShowcasePresentation.Component -> ShowcasePresentations.ComponentPreview(
-                            destination = destination,
-                            kind = presentation.kind,
-                            state = session.media,
-                            surface = surface,
+                        // Components are not RingScreens, so their round
+                        // escape comes from the same shared layer via its host.
+                        is ShowcasePresentation.Component -> RingRoundBackHost(
                             onBack = { if (!navigateBack()) onExit() },
-                        )
+                        ) {
+                            ShowcasePresentations.ComponentPreview(
+                                destination = destination,
+                                kind = presentation.kind,
+                                state = session.media,
+                                surface = surface,
+                                onBack = { if (!navigateBack()) onExit() },
+                            )
+                        }
                     }
 
-                    if (surface == CircleSurfaceClass.ROUND) {
+                    // Screens get their escape from RenderRingScreen itself,
+                    // exactly as a product route without a back host does.
+                    if (surface == CircleSurfaceClass.ROUND && reservedChrome.isNotEmpty()) {
                         RoundShowcaseChrome(
                             slots = reservedChrome,
                             onBack = { if (!navigateBack()) onExit() },

@@ -12,6 +12,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.layout.findRootCoordinates
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import kotlin.math.abs
 import kotlin.math.cos
@@ -45,6 +46,17 @@ enum class CircleChromeSlot(val angleFromTopDeg: Float) {
  * without floating chrome (phone hosts, previews, tests) reserves nothing.
  */
 val LocalRoundChromeReservation = compositionLocalOf<List<CircleChromeSlot>> { emptyList() }
+
+/**
+ * True while the shared round escape layer is mounted above this content. It
+ * claims no rim slot, only the top cap, so content reads it for one thing:
+ * where its title or first visible line starts.
+ */
+val LocalRoundBackLayer = compositionLocalOf { false }
+
+/** A round title's top: below the escape layer when one is mounted. */
+fun roundTitleTopPadding(backLayer: Boolean): Dp =
+    if (backLayer) MenuDesign.roundBackLayerContentTop else MenuDesign.roundTitleTopPadding
 
 /** Directional edge claims for content inside a round viewport. */
 data class CircleHorizontalInsetsDp(

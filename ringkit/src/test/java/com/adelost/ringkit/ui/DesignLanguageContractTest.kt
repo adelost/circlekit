@@ -44,7 +44,8 @@ class DesignLanguageContractTest {
         assertEquals(10.dp, MenuDesign.stepperIconSize)
         assertEquals(3.dp, MenuDesign.stepperIconGap)
         assertEquals(10.sp, MenuDesign.stepperValueSize)
-        assertEquals(9.5.sp, MenuDesign.subSize)
+        // Mattias 2026-09-14 asked for smaller row text; derived in CircleGlanceLegibility.
+        assertEquals(9.sp, MenuDesign.subSize)
     }
 
     @Test

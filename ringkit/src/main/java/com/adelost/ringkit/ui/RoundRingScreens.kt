@@ -28,9 +28,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.geometry.Rect
-import androidx.compose.ui.layout.boundsInRoot
-import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -84,7 +81,7 @@ internal fun MenuScreen(
 internal fun ScreenTitle(
     text: String,
     icon: ImageVector? = null,
-    topPadding: Dp = MenuDesign.roundTitleTopPadding,
+    topPadding: Dp = roundTitleTopPadding(LocalRoundBackLayer.current),
 ) {
     Row(
         horizontalArrangement = Arrangement.Center,
@@ -281,8 +278,8 @@ internal fun RowsScreen(
     // screen's scroll offset made nested pages open halfway down (AUDIO ->
     // ALARM HEIGHTS could hide BREAK-OFF and PULL entirely).
     val scrollState = remember(s) { ScrollState(0) }
-    var viewport by remember { mutableStateOf<Rect?>(null) }
-    BoxWithConstraints(Modifier.fillMaxSize().onGloballyPositioned { viewport = it.boundsInRoot() }) {
+    val titleTop = roundTitleTopPadding(LocalRoundBackLayer.current)
+    BoxWithConstraints(Modifier.fillMaxSize()) {
         val diameter = if (maxWidth < maxHeight) maxWidth else maxHeight
         val insets = ringRowHorizontalInsets(
             round = LocalCircleSurfaceLayout.current.surfaceClass == CircleSurfaceClass.ROUND,
@@ -305,16 +302,10 @@ internal fun RowsScreen(
             baseInsetDp = insets.start.value,
             reservedSlots = LocalRoundChromeReservation.current,
         )
-        // Information owns centred ink, not an action column. Its text and
-        // value clear the actual mounted controls at their individual heights.
-        val readingInsets = rowsListInsetsDp(diameter.value, maxHeight.value,
-            (MenuDesign.roundTitleTopPadding + MenuDesign.roundTitleHeight).value,
-            insets.start.value, emptyList())
         val safeTop = circleSafeTopInsetDp(
             diameterDp = diameter.value,
             contentWidthDp = (maxWidth - rowInsets.start - rowInsets.end).value,
         ).dp
-        CompositionLocalProvider(LocalCircleReadingViewport provides viewport) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
             modifier = Modifier.fillMaxSize().verticalScroll(scrollState).rotaryScroll(scrollState),
@@ -330,13 +321,13 @@ internal fun RowsScreen(
             // were always fine, because they use this fixed height — the bug
             // was never the title, it was placing it by the rows' geometry.
             //
-            // The band answers to the CIRCLE only. That holds because chrome
-            // is mounted from 9 o'clock downward (see ROUND_CHROME_* slots),
-            // leaving the top of the face free. A future button at 11, 12 or 1
-            // would silently overlap the title, so such a slot must take the
-            // reservation into account here as well (circle:8 review).
+            // The band answers to the CIRCLE only. Rim chrome is mounted from
+            // 9 o'clock downward; the one control at 12 is the shared escape
+            // layer, and the title starts below it through LocalRoundBackLayer.
+            // Any other button at 11, 12 or 1 would overlap the title and must
+            // take the reservation into account here as well (circle:8 review).
             ScreenTitle(s.title)
-            Spacer(Modifier.height(maxOf(safeTop - MenuDesign.roundTitleTopPadding, 8.dp)))
+            Spacer(Modifier.height(maxOf(safeTop - titleTop, 8.dp)))
             items.value.forEach { row ->
                 val infoSelected = infoSelection.selectedRowKey == row.key
                 val onInfoTouch = {
@@ -346,13 +337,12 @@ internal fun RowsScreen(
                         hasExplanation = row.hint.isNotBlank(),
                     )
                 }
-                val selectedInsets = if (rowKind(row) == RowKind.INFORMATION && row.multiline) {
-                    readingInsets
-                } else rowInsets
+                // Every row kind shares the one stable edge. Nothing is
+                // measured per row, so nothing moves while the list scrolls.
                 val rowModifier = Modifier
                     .fillMaxWidth()
                     .padding(top = 3.dp, bottom = 3.dp)
-                    .padding(start = selectedInsets.start, end = selectedInsets.end)
+                    .padding(start = rowInsets.start, end = rowInsets.end)
                 when (rowKind(row)) {
                     RowKind.ADJUSTMENT -> {
                         val link = adjustmentLinkRow(row) {
@@ -422,7 +412,6 @@ internal fun RowsScreen(
             // Bottom mirror of the safe band so the last row can scroll
             // fully clear of the lower arc.
             Spacer(Modifier.height(safeTop))
-        }
         }
     }
 }

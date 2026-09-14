@@ -90,6 +90,41 @@ class BackRingAccessibilityTest {
         assertEquals(1, actionableNodes())
     }
 
+    /** Link's DEV HOST route renders the shared host preview with no back host (Mattias 2026-09-14). */
+    @Test
+    fun roundHostPreviewPaintsItsOwnNamedBackWithoutAProductHost() {
+        var exits = 0
+        val devHost = circleHostPreviewScreen(
+            CircleHostPreviewPort(
+                isWatchDevice = false,
+                state = kotlinx.coroutines.flow.MutableStateFlow(com.adelost.designkit.ui.CircleHostPreviewState()),
+                systemOrientationAllowed = true,
+                onMode = {},
+                onDiameter = {},
+                onOrientation = {},
+            ),
+        )
+        compose.setContent {
+            Box(Modifier.size(192.dp)) {
+                com.adelost.designkit.ui.CircleHostSurface(
+                    isWatchDevice = true,
+                    state = com.adelost.designkit.ui.CircleHostPreviewState(),
+                    onStateChange = null,
+                ) {
+                    RenderRingScreen(RingNavigator(devHost), onExit = { exits++ }, backLabel = PRODUCT_LABEL)
+                }
+            }
+        }
+
+        val back = compose.onNodeWithContentDescription(PRODUCT_LABEL, useUnmergedTree = true)
+            .assertWidthIsEqualTo(48.dp).assertHeightIsEqualTo(48.dp)
+            .assert(SemanticsMatcher.keyIsDefined(SemanticsActions.OnClick))
+        back.performSemanticsAction(SemanticsActions.OnClick)
+        compose.waitForIdle()
+
+        assertEquals(1, exits)
+    }
+
     private fun actionableNodes(): Int = compose.onAllNodes(
         SemanticsMatcher.keyIsDefined(SemanticsActions.OnClick)
             .or(SemanticsMatcher.keyIsDefined(SemanticsActions.OnLongClick)),
