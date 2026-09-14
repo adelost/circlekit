@@ -7,6 +7,7 @@ import com.adelost.designkit.ui.*
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -389,8 +390,9 @@ class RingNavigator(root: RingScreen) {
  * and [PhoneRingScreens] — so a round inset or a phone header can never be
  * written into the shared contract by accident.
  *
- * Product-level X@9 owns visible round back navigation; phone keeps its own
- * header/back atom.
+ * Phone keeps its own header/back atom. Round paints the shared escape layer
+ * for the same screens unless a host above already owns the escape (see
+ * [roundRendererPaintsBack]); both pop the stack before calling [onExit].
  */
 @Composable
 fun RenderRingScreen(
@@ -403,14 +405,21 @@ fun RenderRingScreen(
         return
     }
     val s = nav.current
+    val backLayerMounted = LocalRoundBackLayer.current
+    val paintsBack = roundRendererPaintsBack(s, backLayerMounted, LocalRoundChromeReservation.current)
     Box(Modifier.fillMaxSize().circleMenuCanvas()) {
-        when (s) {
-            is RingScreen.Hub -> HubScreen(s, nav)
-            is RingScreen.Detail -> DetailScreen(s)
-            is RingScreen.Menu -> MenuScreen(s, nav)
-            is RingScreen.Adjustment -> RingAdjustmentScreen(s)
-            is RingScreen.ColorPicker -> ColorPickerScreen(s, nav)
-            is RingScreen.DialPreview -> DialPreviewScreen(s)
+        CompositionLocalProvider(LocalRoundBackLayer provides (backLayerMounted || paintsBack)) {
+            when (s) {
+                is RingScreen.Hub -> HubScreen(s, nav)
+                is RingScreen.Detail -> DetailScreen(s)
+                is RingScreen.Menu -> MenuScreen(s, nav)
+                is RingScreen.Adjustment -> RingAdjustmentScreen(s)
+                is RingScreen.ColorPicker -> ColorPickerScreen(s, nav)
+                is RingScreen.DialPreview -> DialPreviewScreen(s)
+            }
+        }
+        if (paintsBack) {
+            RingRoundBackLayer(label = backLabel, onBack = { if (!nav.back()) onExit() })
         }
     }
 }

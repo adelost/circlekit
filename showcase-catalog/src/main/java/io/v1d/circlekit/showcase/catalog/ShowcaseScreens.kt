@@ -101,15 +101,21 @@ object ShowcaseScreens {
     )
     }
 
-    fun reservedChrome(destination: ShowcaseDestination): List<CircleChromeSlot> = buildList {
-        add(CircleChromeSlot.HOUR_9)
-        if (
-            destination.caseId?.value == "foundation.geometry" &&
-            destination.scenarioId?.value == "chrome-x-gear"
-        ) {
-            add(CircleChromeSlot.HOUR_8)
+    /**
+     * Rim chrome a product shell would mount, shown only by the geometry
+     * demos. Everywhere else back is the shared top escape layer, which
+     * claims no slot.
+     */
+    fun reservedChrome(destination: ShowcaseDestination): List<CircleChromeSlot> =
+        if (destination.caseId?.value != "foundation.geometry") {
+            emptyList()
+        } else {
+            when (destination.scenarioId?.value) {
+                "chrome-x" -> listOf(CircleChromeSlot.HOUR_9)
+                "chrome-x-gear" -> listOf(CircleChromeSlot.HOUR_9, CircleChromeSlot.HOUR_8)
+                else -> emptyList()
+            }
         }
-    }
 
     internal fun scenarios(case: ShowcaseCase, session: ShowcaseSession): RingScreen = RingScreen.Rows(
         title = case.title,

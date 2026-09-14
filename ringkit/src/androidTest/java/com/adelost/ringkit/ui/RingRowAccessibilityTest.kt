@@ -62,13 +62,13 @@ class RingRowAccessibilityTest {
             RowSpec("accept", "ACCEPT", "", RingIcons.Check, onTap = { accepted = true }),
             RowSpec("decline", "DECLINE", "", RingIcons.Cross, onTap = {}),
         ))
-        compose.setContent { roundMenu(CircleChromeSlot.HOUR_9) {
+        compose.setContent { sharedBackMenu {
             RenderRingScreen(RingNavigator(RingScreen.Rows("PEOPLE", rows)), {}, "Back")
         } }
         val nameBounds = compose.onNodeWithText(name).fetchSemanticsNode().boundsInRoot
         val acceptBounds = compose.onNodeWithContentDescription("ACCEPT", useUnmergedTree = true)
             .fetchSemanticsNode().boundsInRoot
-        capture("people-reading-nine")
+        capture("people-reading-shared-back")
         assertTrue("identity should use the full row: identity=$nameBounds, action=$acceptBounds",
             nameBounds.width >= acceptBounds.width * 0.9f)
         val face = compose.onNodeWithTag("round-menu-face").fetchSemanticsNode().boundsInRoot
@@ -76,7 +76,7 @@ class RingRowAccessibilityTest {
             face.center.x, nameBounds.center.x, 1f)
         val escape = compose.onNodeWithContentDescription("Back", useUnmergedTree = true)
             .fetchSemanticsNode().boundsInRoot
-        assertTrue("the named action must clear the escape", !acceptBounds.overlaps(escape))
+        assertTrue("the resting action must clear the escape", !acceptBounds.overlaps(escape))
         compose.onNodeWithContentDescription("ACCEPT", useUnmergedTree = true)
             .performSemanticsAction(SemanticsActions.OnClick)
         compose.runOnIdle {
@@ -88,38 +88,34 @@ class RingRowAccessibilityTest {
         capture("people-reading-accepted")
     }
 
-    @Test fun movingPastBackKeepsScrollExtentAndAllNameLinesClear() {
+    /** Mattias 2026-09-14: "menyerna inte ska hoppa". Scrolling moves rows only vertically. */
+    @Test fun scrollingPastBackNeverMovesARowSideways() {
         val name = "Alexandra Kristina Svensson Tests · FAKE"
         val rows = flowOf(listOf(
             RowSpec("open", "OPEN", "", RingIcons.Check, onTap = {}),
             RowSpec("name", name, "RECEIVED", RingIcons.Link)) +
             (1..8).map { RowSpec("action-$it", "ACTION $it", "", RingIcons.Check, onTap = {}) })
-        compose.setContent { roundMenu(CircleChromeSlot.HOUR_9) {
+        compose.setContent { sharedBackMenu {
             RenderRingScreen(RingNavigator(RingScreen.Rows("PEOPLE", rows)), {}, "Back")
         } }
         val scroll = compose.onNode(hasScrollAction())
         val range = scroll.fetchSemanticsNode().config[SemanticsProperties.VerticalScrollAxisRange].maxValue()
-        val escape = compose.onNodeWithContentDescription("Back", useUnmergedTree = true)
+        val restingName = compose.onNodeWithText(name).fetchSemanticsNode().boundsInRoot
+        val restingAction = compose.onNodeWithContentDescription("ACTION 1", useUnmergedTree = true)
             .fetchSemanticsNode().boundsInRoot
-        for (dy in listOf(0f, 24f, 24f, 24f, 24f)) {
+        for (dy in listOf(24f, 24f, 24f, 24f, 24f)) {
             scroll.performSemanticsAction(SemanticsActions.ScrollBy) { it(0f, dy) }
             compose.waitForIdle()
-            assertEquals("wrapping must not move the scroll extent", range,
+            assertEquals("the scroll extent is stable", range,
                 scroll.fetchSemanticsNode().config[SemanticsProperties.VerticalScrollAxisRange].maxValue(), 1f)
-            val node = compose.onNodeWithText(name)
-            val bounds = node.fetchSemanticsNode().boundsInRoot
-            val layouts = mutableListOf<androidx.compose.ui.text.TextLayoutResult>()
-            node.performSemanticsAction(SemanticsActions.GetTextLayoutResult) { it(layouts) }
-            val layout = layouts.single()
-            for (line in 0 until layout.lineCount) {
-                val ink = androidx.compose.ui.geometry.Rect(bounds.left + layout.getLineLeft(line),
-                    bounds.top + layout.getLineTop(line), bounds.left + layout.getLineRight(line),
-                    bounds.top + layout.getLineBottom(line))
-                assertTrue("line $line must clear Back at scroll delta $dy: $ink / $escape", !ink.overlaps(escape))
-            }
+            val nameBounds = compose.onNodeWithText(name).fetchSemanticsNode().boundsInRoot
+            val actionBounds = compose.onNodeWithContentDescription("ACTION 1", useUnmergedTree = true)
+                .fetchSemanticsNode().boundsInRoot
+            assertEquals("reading left edge at scroll delta $dy", restingName.left, nameBounds.left, 0.5f)
+            assertEquals("reading width at scroll delta $dy", restingName.width, nameBounds.width, 0.5f)
+            assertEquals("action left edge at scroll delta $dy", restingAction.left, actionBounds.left, 0.5f)
+            assertEquals("action width at scroll delta $dy", restingAction.width, actionBounds.width, 0.5f)
         }
-        val face = compose.onNodeWithTag("round-menu-face").fetchSemanticsNode().boundsInRoot
-        assertEquals(face.center.x, compose.onNodeWithText(name).fetchSemanticsNode().boundsInRoot.center.x, 1f)
         capture("people-reading-after-scroll")
     }
 
@@ -207,10 +203,17 @@ class RingRowAccessibilityTest {
         capture("pressure-clearance")
     }
 
-    @Composable private fun roundMenu(
-        backSlot: CircleChromeSlot = CircleChromeSlot.HOUR_10,
-        content: @Composable () -> Unit,
-    ) {
+    @Composable private fun sharedBackMenu(content: @Composable () -> Unit) {
+        Box(Modifier.size(192.dp).testTag("round-menu-face")) {
+            CircleHostSurface(isWatchDevice = true, state = CircleHostPreviewState(), onStateChange = null) {
+                RingRoundBackHost(onBack = {}) { content() }
+            }
+        }
+    }
+
+    /** A product shell that mounts its own off-centre escape (Skyvw's X@10) and reserves it. */
+    @Composable private fun roundMenu(content: @Composable () -> Unit) {
+        val backSlot = CircleChromeSlot.HOUR_10
         Box(Modifier.size(192.dp).testTag("round-menu-face")) {
             CircleHostSurface(isWatchDevice = true, state = CircleHostPreviewState(), onStateChange = null) {
                 CompositionLocalProvider(LocalRoundChromeReservation provides listOf(backSlot)) {

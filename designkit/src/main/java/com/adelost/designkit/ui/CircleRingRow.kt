@@ -288,7 +288,13 @@ fun CircleRingRowContent(
     }
 }
 
-/** A non-interactive reading keeps its full identity above its source/value. */
+/**
+ * A non-interactive reading keeps its full identity above its source/value,
+ * centred in the row's own stable width. It used to shift each measured line
+ * sideways while that line passed a rim button, so readings jumped as the list
+ * scrolled (Mattias 2026-09-14: "menyerna inte ska hoppa"). The list edge is
+ * the only clearance now.
+ */
 @Composable
 private fun CirclePassiveReadingContent(
     title: String,
@@ -301,9 +307,17 @@ private fun CirclePassiveReadingContent(
     titleColor: Color?,
 ) {
     Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
-        CircleReadingTitle(title, titleColor ?: RingTokens.Ink)
+        CircleText(
+            text = title,
+            color = titleColor ?: RingTokens.Ink,
+            fontSizeSp = MenuDesign.titleSize.value,
+            fontWeight = FontWeight.Bold,
+            letterSpacingSp = MenuDesign.titleTracking.value,
+            textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+            modifier = Modifier.fillMaxWidth(),
+        )
         if (icon != null || sub.isNotBlank() || trailing != null) {
-            Row(modifier = Modifier.readingValueClearance(), verticalAlignment = Alignment.CenterVertically) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
                 if (icon != null) {
                     CircleStyledIcon(
                         style = ringIconStyle(icon, accent),

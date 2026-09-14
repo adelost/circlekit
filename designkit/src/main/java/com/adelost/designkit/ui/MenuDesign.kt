@@ -49,10 +49,14 @@ object MenuDesign {
     // rows (36 dp insets leave a 60 dp value column; 12 sp wrapped mid-unit).
     val stepperValueSize: TextUnit = 10.sp
 
-    val titleSize: TextUnit = 11.sp
-    val titleSizeNoIcon: TextUnit = 12.sp
+    /** Derived from the smallest supported watch, see [CircleGlanceLegibility]
+     *  (10 sp; was 11 sp before Mattias 2026-09-14 asked for smaller rows). */
+    val titleSize: TextUnit = CircleGlanceLegibility.rowTitleSp.sp
+    /** A row without an icon keeps its one-step larger identity (11 sp; was 12). */
+    val titleSizeNoIcon: TextUnit = (CircleGlanceLegibility.rowTitleSp + 1f).sp
     val titleTracking: TextUnit = 0.2.sp
-    val subSize: TextUnit = 9.5.sp
+    /** Derived like [titleSize] (9 sp; was 9.5 sp). */
+    val subSize: TextUnit = CircleGlanceLegibility.rowValueSp.sp
 
     /**
      * Maximum authored label for the compact option rows on a 192 dp round
@@ -76,6 +80,20 @@ object MenuDesign {
     /** The title's own line box at 11 sp bold. Everything below it is the row
      *  band, which is what a rows list has to size its straight edge for. */
     val roundTitleHeight: Dp = 14.dp
+
+    /**
+     * The shared round escape's centre, from the canvas top. It is its own
+     * layer at 12 o'clock (Mattias 2026-09-14: "bakknappen ska väl vara ett
+     * eget lager"): the circle is already narrow there, so it costs rows no
+     * width, and its whole [backTouchTarget] lies on the canvas.
+     */
+    val roundBackLayerCenterY: Dp = 24.dp
+
+    /** Where content that must be visible at rest (the title) starts under the escape. */
+    val roundBackLayerContentTop: Dp = roundBackLayerCenterY + watchActionRingDiameter / 2 + 4.dp
+
+    /** The escape's cap fades out here: inside the resting title's line box, above its letters. */
+    val roundBackLayerCapBottom: Dp = roundBackLayerContentTop + 2.dp
 
     val ringActive: Color = RingTokens.Accent
     val ringResting: Color = RingTokens.Outline

@@ -75,7 +75,7 @@ private fun PhoneMenuScreen(
 ) {
     when (screen) {
         is RingScreen.Launcher -> PhoneLauncherScreen(screen, nav, back, backLabel, screen.gridRole)
-        is RingScreen.Rows -> PhoneRowsScreen(screen, nav, back.takeIf { screen.showBack }, backLabel)
+        is RingScreen.Rows -> PhoneRowsScreen(screen, nav, back.takeIf { ringScreenOffersBack(screen) }, backLabel)
     }
 }
 

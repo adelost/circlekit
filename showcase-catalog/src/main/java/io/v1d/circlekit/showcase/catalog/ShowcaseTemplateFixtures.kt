@@ -167,6 +167,15 @@ object ShowcaseTemplateFixtures {
         items = combine(session.interaction.actionCount, session.interaction.choiceIndex) { count, selected ->
             listOf(
                 RowSpec("info", "LOCAL EXAMPLE", "No product settings are changed", icon = null),
+                // A product-like settings run, long enough to scroll every
+                // row past the escape: a passive status, a wrapping action and
+                // a dated reading with the copy lengths real settings carry.
+                RowSpec("connection", "CONNECTED", "Connected via Tailscale", RingIcons.Wifi),
+                RowSpec("update", "UPDATE", "Up to date · v1.2.17 · tap to check", RingIcons.Download,
+                    onTap = { session.interaction.runAction() }, multiline = true),
+                RowSpec("published", "PUBLISHED", "v1.2.17 · 14 Sep 21:30", RingIcons.Calendar),
+                RowSpec("preview", "DISPLAY PREVIEW", "Phone layout or watch-size preview", RingIcons.Phone,
+                    onTap = { session.interaction.runAction() }, multiline = true),
                 RowSpec("action", "RUN ACTION", "RAN $count TIMES", RingIcons.Play,
                     onTap = { session.interaction.runAction() }),
                 RowSpec(
