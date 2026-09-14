@@ -1,15 +1,26 @@
 package com.adelost.designkit.ui
 
+import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.background
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.Dp
@@ -23,10 +34,15 @@ enum class CircleChoiceRole { TOGGLE, STEPPED }
  * Position in a finite choice set. The state names stay in product data;
  * this atom only needs count + selected index and therefore works for every
  * enum without knowing whether it represents units, clouds or a camera axis.
+ *
+ * [icons] lets a surface with room show WHICH answer rather than only where
+ * it sits: one glyph per answer, in order. Anonymous dots all look alike, so
+ * a strip of glyphs is only worth drawing when no two answers share one.
  */
 data class CircleChoiceState(
     val optionCount: Int,
     val selectedIndex: Int,
+    val icons: List<ImageVector>? = null,
 ) {
     init {
         require(optionCount in MIN_OPTIONS..MAX_OPTIONS) {
@@ -34,6 +50,12 @@ data class CircleChoiceState(
         }
         require(selectedIndex in 0 until optionCount) {
             "Selected choice $selectedIndex is outside 0 until $optionCount"
+        }
+        require(icons == null || icons.size == optionCount) {
+            "A choice with icons needs one per answer: ${icons?.size} for $optionCount"
+        }
+        require(icons == null || icons.distinct().size == icons.size) {
+            "Every answer needs its own icon; ${icons?.map { it.name }} repeats one"
         }
     }
 
@@ -118,3 +140,58 @@ fun CircleChoiceIndicator(
         )
     }
 }
+
+/**
+ * The same position as [CircleChoiceIndicator], said with each answer's own
+ * glyph instead of an anonymous dot: the selected answer is lit and carries
+ * the bead, the others stay quiet. For a surface with room to read a glyph
+ * per answer, such as the centre cue; a rail ring keeps the dots.
+ *
+ * Glyphs shrink below [iconSize] rather than overflow, so seven answers still
+ * fit the width a round face gives them.
+ */
+@Composable
+fun CircleChoiceIconStrip(
+    state: CircleChoiceState,
+    modifier: Modifier = Modifier,
+    iconSize: Dp = 13.dp,
+    selectedColor: Color = RingTokens.Ink,
+    restColor: Color = RingTokens.Outline,
+) {
+    val icons = requireNotNull(state.icons) { "An icon strip needs the answers' icons" }
+    BoxWithConstraints(
+        modifier = modifier.semantics {
+            contentDescription = "Option ${state.selectedIndex + 1} of ${state.optionCount}"
+        },
+        contentAlignment = Alignment.Center,
+    ) {
+        val gap = iconSize * CHOICE_STRIP_GAP_RATIO
+        val fitted = minOf(iconSize, (maxWidth - gap * (icons.size - 1)) / icons.size)
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(gap),
+            verticalAlignment = Alignment.Top,
+        ) {
+            icons.forEachIndexed { index, icon ->
+                val selected = index == state.selectedIndex
+                val tint by animateColorAsState(
+                    targetValue = if (selected) selectedColor else restColor,
+                    animationSpec = tween(durationMillis = 180),
+                    label = "circleChoiceStripTint",
+                )
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    CircleIcon(icon, contentDescription = null, tint = tint, modifier = Modifier.size(fitted))
+                    Spacer(Modifier.size(fitted * CHOICE_STRIP_BEAD_GAP_RATIO))
+                    Spacer(
+                        Modifier
+                            .size(fitted * CHOICE_STRIP_BEAD_RATIO)
+                            .background(if (selected) selectedColor else Color.Transparent, CircleShape),
+                    )
+                }
+            }
+        }
+    }
+}
+
+private const val CHOICE_STRIP_GAP_RATIO = 0.45f
+private const val CHOICE_STRIP_BEAD_GAP_RATIO = 0.18f
+private const val CHOICE_STRIP_BEAD_RATIO = 0.26f
