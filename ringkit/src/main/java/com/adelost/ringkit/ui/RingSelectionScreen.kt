@@ -4,7 +4,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.graphics.vector.ImageVector
+import com.adelost.designkit.ui.CircleAccent
 import com.adelost.designkit.ui.CircleActionTiming
+import com.adelost.designkit.ui.ringIconAccent
 import com.adelost.designkit.ui.RingIcons
 import kotlinx.coroutines.flow.MutableStateFlow
 
@@ -15,6 +17,8 @@ data class RingSelectionOption(
     val detail: String = "",
     val enabled: Boolean = true,
     val icon: ImageVector? = null,
+    /** The option's own identity colour, e.g. a sender; null keeps the icon's product meaning. */
+    val accent: CircleAccent? = null,
 )
 
 /** Selection is by stable identity; identical names never select the wrong item. */
@@ -32,6 +36,7 @@ fun ringSelectionRows(
             title = option.title,
             sub = option.detail,
             icon = if (option.id == selectedId) RingIcons.Check else option.icon ?: icon,
+            accent = option.accent ?: ringIconAccent(if (option.id == selectedId) RingIcons.Check else option.icon ?: icon),
             onTap = if (option.enabled) ({ onSelect(option.id) }) else null,
             actionTiming = CircleActionTiming.IMMEDIATE,
             multiline = true,
