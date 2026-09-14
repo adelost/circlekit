@@ -63,6 +63,12 @@ data class CircleActionCue(
     val iconRotationDeg: Float = 0f,
     /** Explicit reading pigment follows the value into information; never a brand fallback. */
     val semanticColor: Color? = null,
+    /**
+     * The answer this cue names among its peers, for a button that switches
+     * between a fixed few. The host draws the button's own dots filled at the
+     * answer [icon] and [label] name, so the three cannot read as two answers.
+     */
+    val choiceState: CircleChoiceState? = null,
 ) {
     init {
         require(iconRotationDeg.isFinite()) { "Action cue icon rotation must be finite" }
@@ -92,6 +98,14 @@ data class CircleActionCue(
         } else {
             MenuDesign.actionConfirmationMs
         }
+
+    /**
+     * Whether a committed receipt may be refreshed from the recomposed control.
+     * A switch's receipt already names the answer the press chose; after the
+     * switch lands it points at the NEXT answer, so a refresh would print where
+     * a second tap goes (Skyvw 2026-09-14: "text B ... men bild A").
+     */
+    internal val refreshesAfterCommit: Boolean get() = choiceState == null
 }
 
 /** One optional verb in the transient explanation card. */
@@ -148,9 +162,10 @@ internal fun circleCuePlan(
     pressed: Boolean,
     confirmed: Boolean,
     determinateProgress: Float?,
+    choiceState: CircleChoiceState? = null,
 ): CircleCuePlan {
     fun cue(progress: Float, isConfirmed: Boolean) =
-        CircleActionCue(icon, label, progress, isConfirmed, value)
+        CircleActionCue(icon, label, progress, isConfirmed, value, choiceState = choiceState)
     return when {
         confirmed && timing == CircleActionTiming.DELIBERATE ->
             CircleCuePlan.Settle(cue(progress = 1f, isConfirmed = true))
@@ -188,6 +203,8 @@ fun rememberCircleActionCueController(
     /** Where this control stands. Rendered while held and after it commits. */
     stateValue: String? = null,
     ordinaryTap: Boolean = true,
+    /** For a switch: the answer [icon] and [label] name, drawn as its dots. */
+    choiceState: CircleChoiceState? = null,
 ): CircleActionCueController {
     val effectiveTiming = if (ordinaryTap) LocalCircleTapTiming.current ?: timing else timing
     require(holdDurationMs >= 0L) { "Action cue hold duration cannot be negative" }
@@ -199,7 +216,7 @@ fun rememberCircleActionCueController(
     val state = stateValue?.takeIf { it.isNotBlank() }
     val publishReceipt = rememberUpdatedState {
         val plan = circleCuePlan(icon, label, state, effectiveTiming,
-            pressed = false, confirmed = true, determinateProgress = null)
+            pressed = false, confirmed = true, determinateProgress = null, choiceState = choiceState)
         if (plan is CircleCuePlan.Settle) publish(CircleActionCueEvent(owner, plan.cue))
     }
     val controller = remember { CircleActionCueController { publishReceipt.value() } }
@@ -212,6 +229,7 @@ fun rememberCircleActionCueController(
         holdDurationMs,
         determinateProgress,
         state,
+        choiceState,
         controller.confirmed,
         publish,
     ) {
@@ -223,13 +241,16 @@ fun rememberCircleActionCueController(
             pressed = pressed,
             confirmed = controller.confirmed,
             determinateProgress = determinateProgress,
+            choiceState = choiceState,
         )
         when (plan) {
             is CircleCuePlan.Settle -> {
                 // confirm() already published, synchronously before onTap.
                 // Refresh the resulting state (e.g. OFF -> ON), but never
                 // replace information that the action opened in the meantime.
-                publish(CircleActionCueEvent(owner, plan.cue, updateOnly = true))
+                if (plan.cue.refreshesAfterCommit) {
+                    publish(CircleActionCueEvent(owner, plan.cue, updateOnly = true))
+                }
                 controller.confirmed = false
             }
 
@@ -247,7 +268,7 @@ fun rememberCircleActionCueController(
                     if (!controller.confirmed) publish(
                         CircleActionCueEvent(
                             owner,
-                            CircleActionCue(icon, label, value, false, state),
+                            CircleActionCue(icon, label, value, false, state, choiceState = choiceState),
                         ),
                     )
                 }

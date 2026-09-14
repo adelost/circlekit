@@ -124,6 +124,8 @@ fun CircleIconDisc(
     iconTint: Color? = null,
     accent: CircleAccent = ringIconAccent(icon),
     choiceState: CircleChoiceState? = null,
+    /** For a switch: the answer [icon] and [actionLabel] name, drawn as dots in the cue. */
+    cueChoiceState: CircleChoiceState? = null,
     /** Optional asynchronous work on the same contour as the action. */
     labelProgress: CircleLabelProgress? = null,
     timing: CircleActionTiming = CircleActionTiming.DELIBERATE,
@@ -135,6 +137,7 @@ fun CircleIconDisc(
         label = actionLabel,
         timing = timing,
         pressed = feedback.pressed,
+        choiceState = cueChoiceState,
     )
     val chrome = circleActionDiscChrome(
         enabled = enabled,

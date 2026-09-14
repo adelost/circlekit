@@ -81,6 +81,18 @@ class CircleActionCueTest {
         assertEquals(true, settled.cue.confirmed)
     }
 
+    /** Skyvw 2026-09-14: a switch's cue named one answer in words and another in its glyph. */
+    @Test
+    fun `a switch receipt keeps the answer the press chose`() {
+        val landing = CircleChoiceState(optionCount = 3, selectedIndex = 1)
+        val settled = circleCuePlan(RingIcons.Target, "LANDING", null, CircleActionTiming.DELIBERATE,
+            pressed = false, confirmed = true, determinateProgress = null, choiceState = landing) as CircleCuePlan.Settle
+
+        assertEquals(landing, settled.cue.choiceState)
+        assertEquals(false, settled.cue.refreshesAfterCommit)
+        assertEquals(true, (plan(pressed = false, confirmed = true) as CircleCuePlan.Settle).cue.refreshesAfterCommit)
+    }
+
     @Test
     fun `a control nobody is touching shows nothing`() {
         assertEquals(CircleCuePlan.Clear, plan(pressed = false))
