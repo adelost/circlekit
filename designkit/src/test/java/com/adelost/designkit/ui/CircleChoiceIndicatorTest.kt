@@ -24,4 +24,17 @@ class CircleChoiceIndicatorTest {
             circleChoiceState(listOf("A", "B"), "C")
         }
     }
+
+    @Test
+    fun `a choice drawn with icons names every answer with its own glyph`() {
+        val state = CircleChoiceState(3, 1, listOf(RingIcons.Map, RingIcons.Cube, RingIcons.Cloud))
+        assertEquals(RingIcons.Cube, state.icons!![state.selectedIndex])
+
+        assertThrows(IllegalArgumentException::class.java) {
+            CircleChoiceState(3, 1, listOf(RingIcons.Map, RingIcons.Cube))
+        }
+        assertThrows(IllegalArgumentException::class.java) {
+            CircleChoiceState(3, 1, listOf(RingIcons.Map, RingIcons.Cube, RingIcons.Map))
+        }
+    }
 }
