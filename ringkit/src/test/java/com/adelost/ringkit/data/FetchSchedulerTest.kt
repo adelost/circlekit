@@ -1,17 +1,8 @@
 package com.adelost.ringkit.data
 
-import com.adelost.servicekit.ServiceClock
 import com.adelost.servicekit.ServiceId
 import com.adelost.servicekit.ServiceOutcome
-import com.adelost.servicekit.ServiceTelemetry
-import kotlinx.coroutines.CompletableDeferred
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.flow.MutableSharedFlow
-import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
@@ -26,77 +17,6 @@ import kotlin.time.Duration.Companion.minutes
  * (same pattern as the repo's other coroutine tests).
  */
 class FetchSchedulerTest {
-
-    private class FakeClock(var mono: Long = 0L, var wall: Long = 1_000_000L) : MonoClock {
-        override fun nowMs(): Long = mono
-        override fun wallMs(): Long = wall
-        fun advanceMinutes(m: Long) { mono += m * 60_000; wall += m * 60_000 }
-        fun advanceSeconds(s: Long) { mono += s * 1_000; wall += s * 1_000 }
-    }
-
-    /** Controllable source: auto-completes unless [pendingMode] is set. */
-    private class FakeSource(
-        key: String,
-        private val log: MutableList<String>? = null,
-    ) : DataSource<String> {
-        override val id = SourceId(key)
-        var calls = 0
-        var pendingMode = false
-        var nextResult: FetchResult<String> = FetchResult.Success("v")
-        var pending: CompletableDeferred<FetchResult<String>>? = null
-        var lastOnProgress: ((Progress) -> Unit)? = null
-        val requests = mutableListOf<FetchRequest>()
-
-        override suspend fun fetchOnce(
-            request: FetchRequest,
-            onProgress: (Progress) -> Unit,
-        ): FetchResult<String> {
-            calls++
-            requests += request
-            log?.add(id.key)
-            lastOnProgress = onProgress
-            if (!pendingMode) return nextResult
-            val d = CompletableDeferred<FetchResult<String>>()
-            pending = d
-            return d.await()
-        }
-    }
-
-    private class Harness(
-        rows: List<SchedulerRow<*>>,
-        val clock: FakeClock = FakeClock(),
-        store: SourceStore = SourceStore.None,
-        maxConcurrent: Int = 2,
-    ) {
-        val telemetry = ServiceTelemetry(object : ServiceClock {
-            override fun wallMs(): Long = clock.wallMs()
-            override fun monotonicNs(): Long = clock.nowMs() * 1_000_000L
-        })
-        val gate = MutableStateFlow(true)
-        val visible = MutableStateFlow<Set<SourceId>>(emptySet())
-        val pulses = MutableSharedFlow<Unit>()
-        val ticks = MutableSharedFlow<Unit>()
-        val scope = CoroutineScope(Dispatchers.Unconfined + Job())
-        val scheduler = FetchScheduler(
-            rows = rows,
-            scope = scope,
-            clock = clock,
-            gateOpen = gate,
-            priorityWindowPulses = pulses,
-            visibleSources = visible,
-            ttlTicks = ticks,
-            store = store,
-            maxConcurrent = maxConcurrent,
-            telemetry = telemetry,
-        )
-        fun tick() = runBlocking { ticks.emit(Unit) }
-        fun pulse() = runBlocking { pulses.emit(Unit) }
-    }
-
-    private fun visiblePolicy(ttlMinutes: Int = 15) = SourcePolicy(
-        ttl = ttlMinutes.minutes,
-        triggers = setOf(Trigger.VISIBLE),
-    )
 
     // 1 ------------------------------------------------------------------
     @Test
@@ -468,5 +388,42 @@ class FetchSchedulerTest {
         assertEquals("TIMEOUT", snapshot.lastAttempt?.detail)
         assertEquals(2L, snapshot.attemptCount)
         assertTrue(snapshot.lastSuccessAtMs != null)
+    }
+    @Test
+    fun `a network return re-attempts at once the sources whose last attempt failed offline`() {
+        val offline = FakeSource("traffic").apply { nextResult = FetchResult.Failure(FetchError.Offline) }
+        val broken = FakeSource("weather").apply { nextResult = FetchResult.Failure(FetchError.Timeout) }
+        var heldUntil: Long? = null
+        val held = FakeSource("aircraft").apply { nextResult = FetchResult.Failure(FetchError.Offline) }
+        val h = Harness(
+            listOf(
+                SchedulerRow(offline, visiblePolicy()),
+                SchedulerRow(broken, visiblePolicy()),
+                SchedulerRow(held, visiblePolicy().copy(blockedPlan = { heldUntil?.let(FetchPlan::RetryAt) })),
+            ),
+            maxConcurrent = 3,
+        )
+        h.visible.value = setOf(offline.id, broken.id, held.id)
+        h.clock.advanceSeconds(31); h.tick()
+        assertEquals(2, offline.calls)            // second offline failure: the backoff is now 2 min
+        assertEquals(2, broken.calls)
+        assertEquals(2, held.calls)
+
+        heldUntil = h.clock.wall + 60_000L        // the provider asked for a wait (429)
+        h.clock.advanceSeconds(10)
+        h.networkReturned()
+        assertEquals("offline failure re-attempts at once, not after 2 min", 3, offline.calls)
+        assertEquals(FetchCause.NETWORK_RETURN, offline.requests.last().cause)
+        assertEquals("a failure that was not for lack of network keeps its backoff", 2, broken.calls)
+        assertEquals("a provider wait still holds", 2, held.calls)
+
+        offline.nextResult = FetchResult.Success("v")
+        h.clock.advanceSeconds(20); h.tick()
+        assertEquals("once: the re-attempt failed offline again, so it waits the first rung", 3, offline.calls)
+        h.clock.advanceSeconds(11); h.tick()
+        assertEquals(4, offline.calls)
+        heldUntil = null
+        h.tick()
+        assertEquals("the held source runs when its wait ends, through the normal path", 3, held.calls)
     }
 }

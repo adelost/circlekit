@@ -149,7 +149,12 @@ sealed interface FetchResult<out T> {
             require(valueAgeMs >= 0L) { "a value cannot come from the future (valueAgeMs=$valueAgeMs)" }
         }
     }
-    data class Failure(val error: FetchError) : FetchResult<Nothing>
+    data class Failure(
+        val error: FetchError,
+        /** Transport evidence, independent of the diagnostic word. A new
+         * connection can recover DNS/offline failures, not HTTP or bad data. */
+        val retryOnNetworkReturn: Boolean = error is FetchError.Offline,
+    ) : FetchResult<Nothing>
 }
 
 /**
@@ -165,14 +170,15 @@ interface DataSource<T> {
     ): FetchResult<T>
 }
 
-/** Why one attempt became due. Adapters may force a network refresh only for
- * MANUAL while automatic paths remain cache-aware. */
+/** Why one attempt became due. An explicit replacement must reach the
+ * producer, while ordinary freshness checks may serve its cache. */
 enum class FetchCause {
     VISIBLE,
     HIGH_PRIORITY_WINDOW,
     CONTEXT_CHANGED,
     INVALIDATED,
     MANUAL,
+    NETWORK_RETURN,
 
     /** Compatibility alias for [HIGH_PRIORITY_WINDOW]. Removed after one release cycle. */
     @Deprecated(
@@ -183,7 +189,8 @@ enum class FetchCause {
 }
 
 data class FetchRequest(val cause: FetchCause) {
-    val forceNetwork: Boolean get() = cause == FetchCause.MANUAL || cause == FetchCause.INVALIDATED
+    val forceNetwork: Boolean get() = cause == FetchCause.MANUAL ||
+        cause == FetchCause.INVALIDATED || cause == FetchCause.NETWORK_RETURN
 }
 
 /**
