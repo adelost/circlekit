@@ -3,6 +3,7 @@ package com.adelost.ringkit.data
 import com.adelost.servicekit.ServiceId
 import com.adelost.servicekit.ServiceTelemetry
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.Flow
@@ -10,13 +11,14 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 
 /**
  * The ONLY fetch decision point. Nothing else in an app built on datakit is
  * allowed to hit the network (seam-gated once the app adopts it). Main logic
- * stays simple because policy is data: the scheduler reacts to five
+ * stays simple because policy is data: the scheduler reacts to declared
  * events and re-evaluates one guard chain.
  *
  * Events:
@@ -25,6 +27,7 @@ import kotlinx.coroutines.launch
  *  - [manual]                        -> fetch that source, bypassing TTL
  *  - cache invalidation              -> refetch on its next eligible surface
  *  - a TTL tick (production: 1/min while anything is visible)
+ *  - a usable network returned        -> re-attempt sources that failed offline
  *
  * Guards, in order: enabled && !inFlight && gate open && (due by trigger).
  * While the host closes the gate, no request starts, including manual ones.
@@ -45,6 +48,9 @@ class FetchScheduler(
     private val store: SourceStore = SourceStore.None,
     private val maxConcurrent: Int = 2,
     private val telemetry: ServiceTelemetry = ServiceTelemetry.shared,
+    /** Retry connection failures once through the normal visibility and
+     * execution guards. A provider's own [SourcePolicy.blockedPlan] still holds. */
+    networkReturns: Flow<Unit> = emptyFlow(),
 ) {
     private val rowsById = rows.associateBy { it.source.id }
     private val states = rows.associate { row ->
@@ -54,6 +60,9 @@ class FetchScheduler(
     private val jobs = mutableMapOf<SourceId, Job>()
     private val manualPending = mutableSetOf<SourceId>()
     private val invalidated = mutableSetOf<SourceId>()
+    private val networkFailures = mutableSetOf<SourceId>()
+    private val networkRetryPending = mutableSetOf<SourceId>()
+    private var networkGeneration = 0L
     private var priorityWindowPending = false
     private var visible: Set<SourceId> = emptySet()
     private var open = true
@@ -72,6 +81,7 @@ class FetchScheduler(
         scope.launch { visibleSources.collect { onVisible(it) } }
         scope.launch { priorityWindowPulses.collect { onPriorityWindowPulse() } }
         scope.launch { ttlTicks.collect { evaluate() } }
+        scope.launch { networkReturns.collect { onNetworkReturn() } }
     }
 
     fun state(id: SourceId): StateFlow<SourceState<*>> = requireNotNull(states[id]) {
@@ -149,6 +159,21 @@ class FetchScheduler(
         evaluate()
     }
 
+    private fun onNetworkReturn() {
+        synchronized(lock) {
+            networkGeneration++
+            networkFailures.forEach(::queueNetworkRetry)
+        }
+        publishPlans()
+        evaluate()
+    }
+
+    private fun queueNetworkRetry(id: SourceId) {
+        networkRetryPending.add(id)
+        failureCount.remove(id)
+        nextRetryAtMono.remove(id)
+    }
+
     // --- the guard chain ------------------------------------------------
 
     private fun evaluate(excludeId: SourceId? = null) {
@@ -188,6 +213,9 @@ class FetchScheduler(
         // The retry backoff gates EVERY automatic path: a failed source stays
         // stale, so without this gate staleness alone would retry-storm.
         nextRetryAtMono[id]?.let { retryAt -> if (now < retryAt) return null }
+        if (Trigger.VISIBLE in policy.triggers && id in visible && id in networkRetryPending) {
+            return FetchRequest(FetchCause.NETWORK_RETURN)
+        }
         val stale = isStale(s, policy, now)
         val contextChanged = completedContextKeys[id] != policy.contextKey()
         if (Trigger.VISIBLE in policy.triggers && id in visible && id in invalidated) {
@@ -198,9 +226,9 @@ class FetchScheduler(
         }
         if (
             priorityWindowPending && policy.triggers.containsPriorityWindow() &&
-            (stale || contextChanged || id in invalidated)
+            (stale || contextChanged || id in invalidated || id in networkRetryPending)
         ) {
-            return FetchRequest(FetchCause.HIGH_PRIORITY_WINDOW)
+            return FetchRequest(if (id in networkRetryPending) FetchCause.NETWORK_RETURN else FetchCause.HIGH_PRIORITY_WINDOW)
         }
         if (Trigger.VISIBLE in policy.triggers && id in visible && stale) {
             return FetchRequest(FetchCause.VISIBLE)
@@ -212,16 +240,18 @@ class FetchScheduler(
         val id = row.source.id
         val stateFlow = states.getValue(id)
         synchronized(lock) {
-            if (jobs[id]?.isActive == true) return // in-flight dedup
+            if (stateFlow.value.inFlight) return // in-flight dedup
+            val attemptGeneration = networkGeneration
             stateFlow.value = stateFlow.value.copy(inFlight = true, progress = null)
             publishPlansLocked(clock.nowMs())
-            val job = scope.launch {
+            // Register before execution: an immediate result may refill the
+            // slot, and must never be overwritten by the completed job.
+            val job = scope.launch(start = CoroutineStart.LAZY) {
                 val operation = telemetry.beginOperation(ServiceId(id.key))
                 try {
                     val result = row.source.fetchOnce(request) { p ->
                         stateFlow.value = stateFlow.value.copy(progress = p)
                     }
-                    onFetchDone(row, result)
                     when (result) {
                         is FetchResult.Success -> operation.success(
                             when {
@@ -232,6 +262,7 @@ class FetchScheduler(
                         )
                         is FetchResult.Failure -> operation.failed(result.error.word)
                     }
+                    onFetchDone(row, result, attemptGeneration)
                 } catch (cancelled: CancellationException) {
                     operation.cancelled()
                     throw cancelled
@@ -252,13 +283,19 @@ class FetchScheduler(
                     }
                 }
             }
+            job.start()
         }
     }
 
-    private fun onFetchDone(row: SchedulerRow<*>, result: FetchResult<*>) {
+    private fun onFetchDone(row: SchedulerRow<*>, result: FetchResult<*>, attemptGeneration: Long) {
         val id = row.source.id
         val stateFlow = states.getValue(id)
+        val recoverLateFailure: Boolean
         synchronized(lock) {
+            networkFailures.remove(id)
+            networkRetryPending.remove(id)
+            recoverLateFailure = result is FetchResult.Failure && result.retryOnNetworkReturn &&
+                attemptGeneration != networkGeneration
             when (result) {
                 is FetchResult.Success -> {
                     stateFlow.value = SourceState(
@@ -287,6 +324,8 @@ class FetchScheduler(
                     val delay = backoff[count.coerceAtMost(backoff.lastIndex)]
                     failureCount[id] = count + 1
                     nextRetryAtMono[id] = clock.nowMs() + delay.inWholeMilliseconds
+                    if (result.retryOnNetworkReturn) networkFailures.add(id)
+                    if (recoverLateFailure) queueNetworkRetry(id)
                 }
             }
             manualPending.remove(id)
@@ -297,7 +336,7 @@ class FetchScheduler(
         // radio window instead of waiting for the next tick. The finished
         // source EXCLUDES ITSELF: a still-stale outcome (partial coverage)
         // must wait for the next tick, not respin inline forever.
-        evaluate(excludeId = id)
+        evaluate(excludeId = if (recoverLateFailure) null else id)
     }
 
     // --- helpers ----------------------------------------------------------
@@ -336,7 +375,7 @@ class FetchScheduler(
 
         val stale = isStale(state, policy, nowMono)
         val contextChanged = completedContextKeys[id] != policy.contextKey()
-        val due = stale || contextChanged || id in invalidated
+        val due = stale || contextChanged || id in invalidated || id in networkRetryPending
         if (!due) {
             val fetchedAt = requireNotNull(state.fetchedAtMono)
             return FetchPlan.FreshUntil(
