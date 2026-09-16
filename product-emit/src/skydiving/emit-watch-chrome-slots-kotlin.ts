@@ -16,6 +16,18 @@ export function emitWatchChromeSlotsKotlin(
   const list = (hours: readonly string[]) =>
     hours.map((hour) => `CircleChromeSlot.${hour}`).join(", ");
 
+  // A reading escape a product never declared used to be emitted anyway, at the
+  // ordinary escape's hour. Nothing read it, and the silent default is exactly
+  // the kind a product cannot see it never chose, so an undeclared slot now
+  // emits no property at all.
+  const readingBack = (declared: WatchChromeSlotDeclaration) =>
+    declared.readingBack === undefined
+      ? ""
+      : `    /** Reading-menu escape. No rim pager or item run co-renders here. */
+    val readingBack: CircleChromeSlot = CircleChromeSlot.${declared.readingBack}
+
+`;
+
   return `// GENERATED FILE. DO NOT EDIT.
 // GENERATED FROM ${options.sourceFile}
 // Generator SHA-256: ${options.sourceSha}
@@ -33,10 +45,7 @@ internal object Generated${options.symbolPrefix}WatchChromeSlots {
     /** Escape. Present at every level, on every page. */
     val back: CircleChromeSlot = CircleChromeSlot.${slots.back}
 
-    /** Reading-menu escape. No rim pager or item run co-renders here. */
-    val readingBack: CircleChromeSlot = CircleChromeSlot.${slots.readingBack ?? slots.back}
-
-    /** Forward one page. Shown only when a further page exists. */
+${readingBack(slots)}    /** Forward one page. Shown only when a further page exists. */
     val next: CircleChromeSlot = CircleChromeSlot.${slots.next}
 
     /** Back one page. Shown only once paged away from the first. */

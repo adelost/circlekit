@@ -25,6 +25,7 @@ import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontFamily
@@ -41,19 +42,40 @@ import androidx.compose.ui.unit.sp
  * rest, [MenuDesign.ringActive] for an ON toggle). The host box MUST carry
  * `clip(CircleShape)` — without the clip the full stroke renders and the
  * ring reads twice as heavy.
+ *
+ * [suggested] is the one dashed reading in the language: a control the product
+ * proposed rather than one a person chose. It is the ring's GEOMETRY that says
+ * so, never shade alone, or a suggestion reads as a disabled control.
  */
 fun Modifier.circleRingContour(
     color: Color,
     strokeWidth: Dp = MenuDesign.iconRingStroke,
+    suggested: Boolean = false,
 ): Modifier = drawBehind {
     drawArc(
         color = color,
         startAngle = -90f,
         sweepAngle = 360f,
         useCenter = false,
-        style = Stroke(width = strokeWidth.toPx()),
+        style = Stroke(
+            width = strokeWidth.toPx(),
+            pathEffect = circleSuggestedDashEffect(suggested) { it.toPx() },
+        ),
     )
 }
+
+/**
+ * The dash a suggested contour is drawn with, as a decision separate from the
+ * drawing: an empty gap array silently renders a SOLID ring, so "did the
+ * suggestion keep its dash?" has to be answerable without a screenshot.
+ */
+fun circleSuggestedDashLengths(suggested: Boolean): List<Dp> =
+    if (suggested) listOf(MenuDesign.suggestedDashOn, MenuDesign.suggestedDashOff) else emptyList()
+
+internal fun circleSuggestedDashEffect(suggested: Boolean, toPx: (Dp) -> Float): PathEffect? =
+    circleSuggestedDashLengths(suggested)
+        .takeIf { it.isNotEmpty() }
+        ?.let { PathEffect.dashPathEffect(it.map(toPx).toFloatArray()) }
 
 /** Resolved visual state for a label-free circular action. */
 @Immutable
@@ -298,6 +320,9 @@ fun CircleIconRing(
     timing: CircleActionTiming = CircleActionTiming.DELIBERATE,
     enabled: Boolean = true,
     semanticColor: Color? = null,
+    /** The product proposed this, a person did not choose it: a dashed
+     *  contour, the one reading a suggestion has anywhere in the language. */
+    suggested: Boolean = false,
 ) {
     val feedback = rememberCircleActionFeedbackState()
     val cue = rememberCircleActionCueController(
@@ -323,6 +348,7 @@ fun CircleIconRing(
             choiceState = choiceState,
             sub = sub,
             enabled = enabled,
+            suggested = suggested,
             gestureModifier = Modifier.circleSafeTap(
                 feedback = feedback,
                 enabled = enabled,

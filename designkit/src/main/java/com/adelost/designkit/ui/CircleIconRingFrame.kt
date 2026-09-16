@@ -46,6 +46,7 @@ internal fun CircleIconRingFrame(
     enabled: Boolean,
     gestureModifier: Modifier,
     semanticColor: Color? = null,
+    suggested: Boolean = false,
 ) {
     val fontScale = LocalDensity.current.fontScale
     val activeContour = circleBrandColor()
@@ -62,7 +63,10 @@ internal fun CircleIconRingFrame(
                     drawCircle(
                         color = contourColor,
                         radius = size.minDimension / 2f - 2.dp.toPx(),
-                        style = Stroke(width = RingMetrics.StrokeWidth.toPx()),
+                        style = Stroke(
+                            width = RingMetrics.StrokeWidth.toPx(),
+                            pathEffect = circleSuggestedDashEffect(suggested) { it.toPx() },
+                        ),
                     )
                 }
             } else {
@@ -70,11 +74,12 @@ internal fun CircleIconRingFrame(
                     Modifier
                         .size(diameter)
                         .circleRingContour(
-                            when {
+                            color = when {
                                 !enabled -> RingTokens.Off
                                 active == true -> activeContour
                                 else -> MenuDesign.ringNeutral
                             },
+                            suggested = suggested,
                         ),
                 )
             }

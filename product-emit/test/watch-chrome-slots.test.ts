@@ -17,9 +17,12 @@ test("a reading escape changes independently of the paged navigation", () => {
   assert.match(emitted, /val previous: CircleChromeSlot = CircleChromeSlot.HOUR_9/);
 });
 
-test("existing products keep their declared escape when no reading slot is supplied", () => {
+// skyvw:0 row 52, criterion 4: an undeclared reading escape used to be emitted
+// at the ordinary escape's hour, a default no product ever chose and none read.
+test("a product that declares no reading escape gets no reading slot at all", () => {
   const emitted = emitWatchChromeSlotsKotlin(paged, options);
-  assert.match(emitted, /val readingBack: CircleChromeSlot = CircleChromeSlot.HOUR_10/);
+  assert.doesNotMatch(emitted, /readingBack/);
+  assert.match(emitted, /val back: CircleChromeSlot = CircleChromeSlot.HOUR_10/);
 });
 
 test("a surface's camera and reference pairs are emitted as hour lists, empty when undeclared", () => {
