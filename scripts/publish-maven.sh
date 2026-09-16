@@ -10,6 +10,14 @@ REMOTE_REPOSITORY="${CIRCLEKIT_REMOTE_REPOSITORY:-https://circlekit.pages.dev}"
 AXIS="${CIRCLEKIT_RELEASE_AXIS:-maven}"
 VERSION="${1:-}"
 MODE="${2:-}"
+# A persistent copy of the last verified cumulative snapshot. A publish only
+# fetches versions the mirror lacks; every reused payload is re-hashed against
+# its own .sha256 before it is staged, so a corrupt mirror file is fetched
+# again, never deployed. --full ignores the mirror and fetches everything.
+MIRROR="${CIRCLEKIT_PAGES_MIRROR:-$HOME/.circlekit/pages-mirror}"
+FULL_FETCH=false
+if [[ "$MODE" == --full ]]; then FULL_FETCH=true; MODE=""; fi
+if [[ "${3:-}" == --full ]]; then FULL_FETCH=true; fi
 MODULES=(bddkit designkit renderkit ringkit releasekit releasekit-ui servicekit)
 EXTENSIONS=(aar pom module)
 CHECKSUM_SUFFIXES=("" .md5 .sha1 .sha256 .sha512)
@@ -43,6 +51,15 @@ if [[ -n "$MODE" && "$MODE" != "--prepare-only" ]]; then
   echo "unknown option: $MODE" >&2
   exit 2
 fi
+
+# True when the mirror holds $1 (a path relative to the repository root) and
+# its bytes still hash to the .sha256 beside it.
+mirror_has() {
+  local file="$MIRROR/$1"
+  [[ "$FULL_FETCH" == false && -s "$file" && -s "$file.sha256" ]] || return 1
+  [[ "$(sha256sum "$file" | cut -d' ' -f1)" == "$(tr -d '\r\n ' < "$file.sha256")" ]]
+}
+reused_count=0
 if ! git -C "$REPO_ROOT" diff --quiet ||
    ! git -C "$REPO_ROOT" diff --cached --quiet; then
   echo "$PUBLISHER: tracked worktree must be clean" >&2
@@ -156,6 +173,11 @@ stage_npm_package() {
     [[ "$previous" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo "$PUBLISHER: unsafe $slug version: $previous" >&2; exit 1; }
     local previous_dir="$npm_root/$previous" previous_tarball="$tarball_prefix-$previous.tgz"
     mkdir -p "$previous_dir"
+    if mirror_has "npm/v1d/$slug/$previous/$previous_tarball"; then
+      cp -a "$MIRROR/npm/v1d/$slug/$previous/$previous_tarball" "$MIRROR/npm/v1d/$slug/$previous/$previous_tarball.sha256" "$previous_dir/"
+      reused_count=$((reused_count + 1))
+      continue
+    fi
     curl -fsSL "$remote_root/$previous/$previous_tarball" -o "$previous_dir/$previous_tarball"
     actual="$(sha256sum "$previous_dir/$previous_tarball" | cut -d' ' -f1)"
     checksum_status="$(curl -sS -o "$previous_dir/$previous_tarball.sha256" -w '%{http_code}' \
@@ -296,6 +318,18 @@ for module in "${MODULES[@]}"; do
     target_version="$target_module/$previous"
     mkdir -p "$target_version"
     base="$module-$previous"
+    mirrored=true
+    for extension in "${EXTENSIONS[@]}"; do
+      mirror_has "$module_path/$previous/$base.$extension" || { mirrored=false; break; }
+      for suffix in "${CHECKSUM_SUFFIXES[@]}"; do
+        [[ -s "$MIRROR/$module_path/$previous/$base.$extension$suffix" ]] || { mirrored=false; break 2; }
+      done
+    done
+    if [[ "$mirrored" == true ]]; then
+      cp -a "$MIRROR/$module_path/$previous/." "$target_version/"
+      reused_count=$((reused_count + 1))
+      continue
+    fi
     for extension in "${EXTENSIONS[@]}"; do
       for suffix in "${CHECKSUM_SUFFIXES[@]}"; do
         curl -fsSL \
@@ -357,7 +391,11 @@ for module in "${MODULES[@]}"; do
   )
 done
 
-echo "$PUBLISHER: staged $payload_count verified immutable Maven payloads at $cumulative_repository"
+echo "$PUBLISHER: staged $payload_count verified immutable Maven payloads at $cumulative_repository ($reused_count version directories reused from $MIRROR)"
+# Every staged file was just re-hashed against its checksum, so the stage is a
+# valid mirror for the next publish whatever happens after this point.
+mkdir -p "$MIRROR"
+rsync -a "$cumulative_repository/" "$MIRROR/"
 if [[ "$MODE" == "--prepare-only" ]]; then
   echo "SOURCE_SHA=$source_sha"
   echo "RELEASE_AXIS=$AXIS"
