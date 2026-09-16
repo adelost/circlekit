@@ -2,6 +2,8 @@
 
 Shared Android foundations used by Skyvw and Agentmux Link.
 
+- `bddkit`: JUnit 4 scenarios with hard per-level time limits and required
+  descriptions and assertions, for every Kotlin consumer's tests.
 - `designkit`: adaptive phone and round-Wear visual language.
 - `ringkit`: spec-driven phone/watch screens and controls.
 - `releasekit`: update state, download, APK verification and install flow.
