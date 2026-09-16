@@ -15,9 +15,12 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.ProgressBarRangeInfo
@@ -79,14 +82,34 @@ internal fun ringCueReceiptStillCurrent(
     current.cue == scheduledCue &&
     (current.cue.confirmed || current.cue.lingers)
 
+/** The cue that owns the centre right now, for a host that dims behind it or
+ *  places the cue itself. Empty outside a [RingActionCueHost]. */
+val LocalRingActionCue = staticCompositionLocalOf<State<CircleActionCue?>> { mutableStateOf(null) }
+
+/** Clears the cue: the reader's CLOSE, and a modal that dismisses its own. */
+val LocalRingActionCueDismiss = staticCompositionLocalOf<() -> Unit> { {} }
+
+/**
+ * A separate window (a modal dialog) draws the cue above its own opaque
+ * surface while it is mounted, so the host underneath must not draw a second
+ * one behind it. Registering is how the covered host knows.
+ */
+val LocalRingActionCueWindow = staticCompositionLocalOf<((Any, Boolean) -> Unit)?> { null }
+
 /**
  * One host for CircleKit action progress on rectangular and round surfaces.
  * Phone and Wear mount the same host once; controls only publish semantic cue
  * data and can never invent a second progress renderer.
+ *
+ * [rendersCue] is false for a host whose product places the cue itself, in a
+ * declared component slot or in a window of its own: the host still owns the
+ * cue, its ownership rules and its dwell, and [LocalRingActionCue] is where
+ * that one cue is read.
  */
 @Composable
 fun RingActionCueHost(
     modifier: Modifier = Modifier,
+    rendersCue: Boolean = true,
     content: @Composable () -> Unit,
 ) {
     var state by remember { mutableStateOf(RingCueHostState()) }
@@ -103,28 +126,42 @@ fun RingActionCueHost(
             state = RingCueHostState()
         }
     }
-    CompositionLocalProvider(LocalCircleActionCuePublisher provides publish) {
+    val cueState = rememberUpdatedState(state.cue)
+    val dismiss = remember { { state = RingCueHostState() } }
+    var windowOwners by remember { mutableStateOf(emptySet<Any>()) }
+    val mountWindow = remember {
+        { owner: Any, mounted: Boolean ->
+            windowOwners = if (mounted) windowOwners + owner else windowOwners - owner
+        }
+    }
+    CompositionLocalProvider(
+        LocalCircleActionCuePublisher provides publish,
+        LocalRingActionCue provides cueState,
+        LocalRingActionCueDismiss provides dismiss,
+        LocalRingActionCueWindow provides mountWindow,
+    ) {
         Box(modifier = modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             content()
-            state.cue?.let { cue ->
-                val dismiss = { state = RingCueHostState() }
-                when (ringCueSurface(cue)) {
-                    RingCueSurface.ACTION -> {
-                        Box(Modifier.fillMaxSize().background(MenuDesign.actionCueScrim))
-                        RingActionCue(cue)
-                    }
-                    RingCueSurface.EXPLANATION -> RingActionExplanation(cue, dismiss)
-                }
-            }
+            // The opaque window is the presentation while it is mounted; a
+            // second copy in the covered host is one the reader cannot close.
+            if (rendersCue && windowOwners.isEmpty()) RingActionCueSurface(state.cue)
         }
     }
 }
 
-internal enum class RingCueSurface { ACTION, EXPLANATION }
-
-/** Explanatory copy has one deliberate entry point and one shared renderer. */
-internal fun ringCueSurface(cue: CircleActionCue): RingCueSurface =
-    if (cue.hint == null) RingCueSurface.ACTION else RingCueSurface.EXPLANATION
+/**
+ * The one centre-cue drawing: the host's own, a product's declared slot and a
+ * modal window all render THIS, so a cue cannot look like two different things
+ * depending on which surface published it.
+ */
+@Composable
+fun RingActionCueSurface(cue: CircleActionCue?, modifier: Modifier = Modifier) {
+    if (cue == null) return
+    val dismiss = LocalRingActionCueDismiss.current
+    Box(modifier = modifier, contentAlignment = Alignment.Center) {
+        if (cue.isInformation) RingActionExplanation(cue, dismiss) else RingActionCueContent(cue)
+    }
+}
 
 /** Same closeable information surface for instrument hosts and menu hosts. */
 @Composable
@@ -200,67 +237,5 @@ private fun RingExplanationCue(cue: CircleActionCue, onDismiss: () -> Unit) {
             diameter = if (round) MenuDesign.watchActionRingDiameter else 44.dp,
             iconSize = MenuDesign.iconSize,
         )
-    }
-}
-
-/** The canonical centre ring used for deliberate progress and confirmation. */
-@Composable
-private fun RingActionCue(cue: CircleActionCue) {
-    val round = com.adelost.designkit.ui.LocalCircleSurfaceLayout.current.surfaceClass ==
-        com.adelost.designkit.ui.CircleSurfaceClass.ROUND
-    val ringSize = if (round) 64.dp else 80.dp
-    val pigment = if (cue.confirmed) RingTokens.Fresh else circleBrandColor()
-    val ink = if (cue.confirmed) RingTokens.Fresh else RingTokens.Ink
-    // The ring and its caption own disjoint measured bounds. An offset inside
-    // a fixed ring lets a second label line cross its stroke on every host.
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(10.dp),
-        modifier = Modifier.widthIn(max = if (round) 132.dp else 280.dp),
-    ) {
-        Box(contentAlignment = Alignment.Center) {
-            ProgressRing(
-                progress = cue.progress,
-                diameter = ringSize,
-                trackWidth = 4.dp,
-                progressWidth = 4.dp,
-                progressColor = pigment,
-                modifier = Modifier.semantics {
-                    progressBarRangeInfo = ProgressBarRangeInfo(cue.progress, 0f..1f)
-                },
-            )
-            Icon(
-                imageVector = cue.icon,
-                contentDescription = null,
-                tint = ink,
-                modifier = Modifier.size(28.dp).rotate(cue.iconRotationDeg),
-            )
-        }
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-        ) {
-            Text(
-                text = cue.label,
-                color = ink,
-                fontSize = if (round) 11.sp else 16.sp,
-                fontWeight = FontWeight.SemiBold,
-                letterSpacing = 0.5.sp,
-                textAlign = TextAlign.Center,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis,
-            )
-            cue.value?.takeIf { cue.confirmed }?.let { value ->
-                Text(
-                    text = value,
-                    color = pigment,
-                    fontSize = if (round) 10.sp else 14.sp,
-                    fontWeight = FontWeight.Bold,
-                    letterSpacing = 0.5.sp,
-                    textAlign = TextAlign.Center,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis,
-                )
-            }
-        }
     }
 }

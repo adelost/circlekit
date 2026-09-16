@@ -106,6 +106,11 @@ object MenuDesign {
      * strecket runt ikoner.. samma tjocklek också"). */
     val contourHairline: Dp = iconRingStroke / 2
 
+    /** The one suggested-contour dash: drawn mark, then gap. A suggestion is
+     * read as geometry, so every product's suggested ring dashes the same. */
+    val suggestedDashOn: Dp = 3.4.dp
+    val suggestedDashOff: Dp = 2.6.dp
+
     // THE press-and-hold ladder. Every hold in the product is one of these
     // rungs — no control invents its own number.
 

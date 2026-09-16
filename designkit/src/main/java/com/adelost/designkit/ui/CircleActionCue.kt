@@ -87,16 +87,26 @@ data class CircleActionCue(
         }
     }
 
+    /** A cue with something to read earns the room to show it. */
+    val explains: Boolean get() = hint != null || value != null
+
+    /** An explicitly opened answer is dismissed by the reader, not a timer. */
+    val isInformation: Boolean get() = lingers && hint != null
+
     /**
-     * How long the confirmed cue stays up. A cue with something to read earns
-     * the time to read it; a bare acknowledgement keeps the old brief pulse,
-     * so ordinary taps do not suddenly feel sticky.
+     * How long the confirmed cue stays up, scaled to how much it has to say.
+     *
+     * A bare acknowledgement keeps the old brief pulse, so ordinary taps do not
+     * suddenly feel sticky. A confirmation that names a new state earns the
+     * time to read that. A confirmation carrying a SENTENCE earns the time to
+     * read the sentence: a window set for a value let a tapped row's
+     * explanation disappear before it could be finished (Skyvw 2026-08-06).
      */
     val dwellMs: Long
-        get() = if (hint != null || value != null) {
-            MenuDesign.actionExplainMs
-        } else {
-            MenuDesign.actionConfirmationMs
+        get() = when {
+            hint != null -> MenuDesign.hintReadingMs
+            value != null -> MenuDesign.actionExplainMs
+            else -> MenuDesign.actionConfirmationMs
         }
 
     /**
