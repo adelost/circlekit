@@ -135,4 +135,20 @@ class RingActionCueShapeTest {
         }
         assertEquals(explainScrimAlpha(1f), explainScrimAlpha(0.5f), 0.001f)
     }
+
+    /**
+     * A settled card is still a receipt: it leaves on its own after its own
+     * reading window. Only an answer the reader OPENED waits for them to close
+     * it. Without this, every tap on a row that explains itself leaves a card
+     * on the face until some later press takes the centre.
+     */
+    @Test
+    fun `a settled sentence leaves on its own, an opened answer waits for the reader`() {
+        val settled = cue(confirmed = true)
+        assertTrue("a confirmation is a receipt, sentence or not", ringCueDwellsOut(settled))
+        assertTrue("and it must carry the window it leaves on", settled.dwellMs > 0L)
+
+        val opened = cue(confirmed = false).copy(progress = 0f, lingers = true)
+        assertEquals(false, ringCueDwellsOut(opened))
+    }
 }
