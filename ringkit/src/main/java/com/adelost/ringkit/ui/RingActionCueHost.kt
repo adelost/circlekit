@@ -72,6 +72,16 @@ internal fun nextRingCueHostState(
     }
 }
 
+/**
+ * Does this settled cue leave on its own?
+ *
+ * Only an explicitly OPENED answer waits for the reader: it is theirs to
+ * close. A confirmation that happens to carry a sentence is still a receipt,
+ * and a receipt that never leaves is a card the reader must dismiss after
+ * every tap on a row that explains itself.
+ */
+internal fun ringCueDwellsOut(cue: CircleActionCue): Boolean = !cue.isInformation
+
 /** A dwell may clear only the exact confirmed receipt that scheduled it. */
 internal fun ringCueReceiptStillCurrent(
     current: RingCueHostState,
@@ -120,7 +130,7 @@ fun RingActionCueHost(
     LaunchedEffect(state.settledOwner, settledCue) {
         val scheduledOwner = state.settledOwner ?: return@LaunchedEffect
         val scheduledCue = settledCue ?: return@LaunchedEffect
-        if (scheduledCue.hint != null) return@LaunchedEffect
+        if (!ringCueDwellsOut(scheduledCue)) return@LaunchedEffect
         delay(scheduledCue.dwellMs)
         if (ringCueReceiptStillCurrent(state, scheduledOwner, scheduledCue)) {
             state = RingCueHostState()
