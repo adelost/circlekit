@@ -59,6 +59,46 @@ data class CircleAltitudeColorScheme(
     val approach: Color,
 )
 
+/**
+ * The altitude meanings a scheme colours, highest first. The band is the unit a
+ * product asks for; a surface never names a pigment.
+ *
+ * APPROACH is the strip under the last decision height, and it is deliberately
+ * one colour at both weights: it is the band that has to stay readable when
+ * every decision above it has already been missed.
+ */
+enum class CircleAltitudeBand { BLUE, GREEN, AMBER, RED, PURPLE, APPROACH }
+
+/**
+ * The two weights each band carries. [REST] sits behind content, [ACTIVE] is
+ * the live front. A theme moves both together; it never swaps their order.
+ */
+enum class CircleAltitudeWeight { REST, ACTIVE }
+
+/**
+ * This scheme's pigment for [band] at [weight]: the one band-to-colour step.
+ *
+ * The named fields above are the declaration; this is how a product reads them
+ * without copying the mapping. A consumer that spells out its own
+ * `when (band) { BLUE -> blueActive; ... }` has made a second table that
+ * nothing compares against, which is exactly how the dial's bands and this
+ * scheme drifted apart before.
+ */
+fun CircleAltitudeColorScheme.color(
+    band: CircleAltitudeBand,
+    weight: CircleAltitudeWeight,
+): Color {
+    val rest = weight == CircleAltitudeWeight.REST
+    return when (band) {
+        CircleAltitudeBand.BLUE -> if (rest) blue else blueActive
+        CircleAltitudeBand.GREEN -> if (rest) green else greenActive
+        CircleAltitudeBand.AMBER -> if (rest) amber else amberActive
+        CircleAltitudeBand.RED -> if (rest) red else redActive
+        CircleAltitudeBand.PURPLE -> if (rest) purple else purpleActive
+        CircleAltitudeBand.APPROACH -> approach
+    }
+}
+
 object CircleColorSchemes {
     val SeaGlass = CircleColorScheme(
         theme = CircleColorTheme.SEA_GLASS,
