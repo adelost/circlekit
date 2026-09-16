@@ -45,6 +45,60 @@ class CircleColorSchemeTest {
         )
     }
 
+    /**
+     * The default band table is the pigment a product consumes across the repo
+     * boundary, and a product pins an immutable version: moving a cell here
+     * moves that product's dial on its next bump. Spelled out so that a change
+     * is a decision about the pixels rather than an edit nobody reads.
+     */
+    @Test
+    fun `the default band table is the pigment products consume`() {
+        val expected = mapOf(
+            //                            REST                  ACTIVE
+            CircleAltitudeBand.BLUE to (Color(0xFF2F6F92) to Color(0xFF38BDF8)),
+            CircleAltitudeBand.GREEN to (Color(0xFF34C36B) to Color(0xFF34C36B)),
+            CircleAltitudeBand.AMBER to (Color(0xFF836829) to Color(0xFFF4C542)),
+            CircleAltitudeBand.RED to (Color(0xFF7F3336) to Color(0xFFEF5350)),
+            CircleAltitudeBand.PURPLE to (Color(0xFF473A6A) to Color(0xFFC084FC)),
+            CircleAltitudeBand.APPROACH to (Color.White to Color.White),
+        )
+        assertEquals(CircleAltitudeBand.entries.toSet(), expected.keys)
+        val altitude = CircleColorSchemes.default.altitude
+        expected.forEach { (band, pigment) ->
+            val (rest, active) = pigment
+            assertEquals("$band REST", rest, altitude.color(band, CircleAltitudeWeight.REST))
+            assertEquals("$band ACTIVE", active, altitude.color(band, CircleAltitudeWeight.ACTIVE))
+        }
+    }
+
+    @Test
+    fun `the band lookup reads the same fields the scheme declares`() {
+        CircleColorSchemes.all.forEach { scheme ->
+            val a = scheme.altitude
+            val named = listOf(
+                CircleAltitudeBand.BLUE to (a.blue to a.blueActive),
+                CircleAltitudeBand.GREEN to (a.green to a.greenActive),
+                CircleAltitudeBand.AMBER to (a.amber to a.amberActive),
+                CircleAltitudeBand.RED to (a.red to a.redActive),
+                CircleAltitudeBand.PURPLE to (a.purple to a.purpleActive),
+                CircleAltitudeBand.APPROACH to (a.approach to a.approach),
+            )
+            assertEquals(CircleAltitudeBand.entries, named.map { it.first })
+            named.forEach { (band, pigment) ->
+                assertEquals(
+                    "${scheme.theme} $band REST",
+                    pigment.first,
+                    a.color(band, CircleAltitudeWeight.REST),
+                )
+                assertEquals(
+                    "${scheme.theme} $band ACTIVE",
+                    pigment.second,
+                    a.color(band, CircleAltitudeWeight.ACTIVE),
+                )
+            }
+        }
+    }
+
     @Test
     fun `every theme has a brighter highlight and darker supporting roles`() {
         CircleColorSchemes.all.forEach { scheme ->
