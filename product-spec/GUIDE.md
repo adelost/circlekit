@@ -20,7 +20,7 @@ The product writes facts. The kit owns shapes, laws and emitters. A platform add
 
 | Layer | What | Where |
 |---|---|---|
-| Shapes and laws | decision tables (`product-spec/src/decision-table-model.ts`), lanes (row 131), navigation, components, state authorities, palettes | `product-spec/src/` |
+| Shapes and laws | decision tables (`product-spec/src/decision-table-model.ts`), lanes (`product-spec/src/lanes-model.ts`), navigation, components, state authorities, palettes | `product-spec/src/` |
 | Emitters | Kotlin; a platform is one more | `product-emit/src/` |
 | Domain words | skydiving: phases, bands, stages, units (meanings, not thresholds) | `skydiving-legos/src/` |
 | One product's facts | cells, copy, feeds, lanes, pages, thresholds | the product's `appspec/products/<name>/` |
@@ -50,10 +50,11 @@ A product invariant. Read: "no airborne decision may ask for less than 20 Hz." I
 invariants: [{ refuse: "air must read pressure live", when: (d) => isAirborne(d.at.phase) && d.values.pressure.hz < 20 }]
 ```
 
-A lane and a ride (row 131). Read: "pressure samples get their own serial lane, because a late sample is a late altitude."
+A lane and a ride (`defineLanes`). Read: "pressure samples get their own serial lane, because a late sample is a late altitude."
 
 ```ts
 lanes: { pressure: { isolation: "dedicated", ordering: "serial", reason: "a late sample is a late altitude" } },
+streams: ["stream.pressure"],
 rides: { "stream.pressure": "pressure" }
 ```
 
