@@ -20,6 +20,13 @@ suffix; file boundaries are not API. Complete declarations/entries are packed
 below 500 lines without compressing Kotlin. A single oversized declaration or
 the public accessor facade fails explicitly instead of emitting a monolith.
 
+`emitDecisionCellsKotlin` and `emitDecisionLookupKotlin` write a product-spec
+decision table as Kotlin fragments the product places in its own file: one
+constant per cell with its id first, and a lookup that is an exhaustive `when`
+per axis in declared order. A branch that one cell covers returns that cell, so
+a region over several values is one line. The product names every axis enum and
+column argument, and writes record values itself; nothing is guessed.
+
 ## Reading the product as a graph
 
 `core` can draw any compiled product as two Mermaid files, generated from the
@@ -45,7 +52,8 @@ buildOutputManifest(product, [
   or component is one box; every port binding that crosses two of them is a
   solid edge labelled with the contract that crosses. A domain nothing binds
   to is drawn dashed red instead of being left out.
-- `acme.graph.mmd` is every node and component inside its domain, for reading
+- `acme.graph.mmd` is every node, component and decision table (one hexagon
+  listing its cell ids) inside its domain, for reading
   one subgraph at a time.
 
 The `CapabilityTable` is the product's closed host vocabulary: every

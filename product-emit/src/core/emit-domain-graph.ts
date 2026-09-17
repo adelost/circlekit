@@ -1,4 +1,5 @@
 import type {
+  DecisionTable,
   OutputArtifact,
   PortBindingIr,
   PortRegistryEntry,
@@ -44,6 +45,8 @@ export interface DomainGraphSource {
     readonly componentPorts: readonly Pick<PortRegistryEntry, "ref" | "ownerId" | "contractRef">[];
     readonly bindings: readonly Pick<PortBindingIr, "from" | "to">[];
   };
+  /** Drawn as one node per table in its domain, listing its cell ids. Data, not wiring: no edges. */
+  readonly decisionTables?: readonly Pick<DecisionTable, "id" | "cells">[];
 }
 
 export function domainGraphEmitter(emission: DomainGraphEmission, table: CapabilityTable): ProductEmitterPlugin {
@@ -233,6 +236,12 @@ export function emitFullGraph(product: DomainGraphSource, productJsonPath: strin
   for (const owner of byId.values()) {
     byDomain.set(owner.domain, [...(byDomain.get(owner.domain) ?? []), owner]);
   }
+  const tablesByDomain = new Map<string, Pick<DecisionTable, "id" | "cells">[]>();
+  for (const table of product.decisionTables ?? []) {
+    const domain = domainOf(table.id);
+    tablesByDomain.set(domain, [...(tablesByDomain.get(domain) ?? []), table]);
+    if (!byDomain.has(domain)) byDomain.set(domain, []);
+  }
   const lines = [
     "%% GENERATED FILE. DO NOT EDIT.",
     `%% GENERATED FROM ${productJsonPath} (nodes, components, port bindings).`,
@@ -245,6 +254,11 @@ export function emitFullGraph(product: DomainGraphSource, productJsonPath: strin
       const shape = owner.kind === "component" ? ["([", "])"] : ["[", "]"];
       const name = owner.id.slice(domain.length + 1) || owner.id;
       lines.push(`    ${memberId(owner.id)}${shape[0]}"${name}<br/><i>${owner.kind}</i>"${shape[1]}`);
+    }
+    for (const table of [...(tablesByDomain.get(domain) ?? [])].sort((a, b) => byCodeUnit(a.id, b.id))) {
+      const name = table.id.slice(domain.length + 1) || table.id;
+      const cells = table.cells.map(({ id }) => id).join("<br/>");
+      lines.push(`    ${memberId(table.id)}{{"${name}<br/><i>decision table</i><br/>${cells}"}}`);
     }
     lines.push("  end");
   }
