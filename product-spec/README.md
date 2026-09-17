@@ -19,7 +19,12 @@ The authoring vocabulary has four executable building blocks:
   components. It may feed components only; presentation chains are rejected
   with an error that names `derive(...)` as the correction.
 - `defineComponentType(...)` declares a dumb renderer's mandatory named inputs
-  and typed events.
+  and typed events. Ports are an object, name to contract, in order:
+  `inputs: { model: statusContract, phase: phasePresentation }`, where a
+  presentation means its `.contract`. `requiredCapabilities` defaults to
+  `["ui.component-tree"]` and is written only when a type needs something else.
+  The list of `componentPort(name, contract, { required })` calls stays valid,
+  and is the form for an optional port.
 
 `node` is compiler/IR vocabulary for the first three kinds, not a fifth
 authoring choice. There is no parallel `role` taxonomy and no opt-in UI list.
