@@ -273,14 +273,13 @@ fun CircleRingRowContent(
             // edge, so rails still line up down the list.
             if (sub.isNotBlank() || (trailing != null && phoneDesign == null)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    CircleText(
-                        text = sub,
-                        // A passive reading's pigment describes its value, not
-                        // just its icon. Ordinary action copy stays neutral.
-                        color = if (!affordance.operable) semanticColor ?: RingTokens.Dim else RingTokens.Dim,
-                        fontSizeSp = phoneDesign?.rowSubtitleSize?.value ?: MenuDesign.subSize.value,
-                        maxLines = if (multiline) Int.MAX_VALUE else 1,
-                        overflow = TextOverflow.Ellipsis,
+                    // A passive reading's pigment describes its value, not
+                    // just its icon. Ordinary action copy stays neutral.
+                    val subColor = if (!affordance.operable) semanticColor ?: RingTokens.Dim else RingTokens.Dim
+                    val subSizeSp = phoneDesign?.rowSubtitleSize?.value ?: MenuDesign.subSize.value
+                    CircleRowLineKeepingOneLine(
+                        text = sub, fontSizeSp = subSizeSp, letterSpacingSp = 0f, fontWeight = FontWeight.Normal,
+                        lentWidth = widthLentToEndSlot, maxLines = if (multiline) Int.MAX_VALUE else 1,
                         modifier = (if (trailing != null && phoneDesign == null) Modifier.weight(1f) else Modifier)
                             .then(
                                 if (LocalActionParentOwnsRowCopy.current) {
@@ -289,7 +288,19 @@ fun CircleRingRowContent(
                                     Modifier
                                 },
                             ),
-                    )
+                    ) { lines, lineModifier ->
+                        if (multiline && lines == 1) {
+                            CircleFittedText(
+                                text = sub, color = subColor, fontSizeSp = subSizeSp, maxLines = 1,
+                                modifier = lineModifier,
+                            )
+                        } else {
+                            CircleText(
+                                text = sub, color = subColor, fontSizeSp = subSizeSp, maxLines = lines,
+                                overflow = TextOverflow.Ellipsis, modifier = lineModifier,
+                            )
+                        }
+                    }
                     if (trailing != null && phoneDesign == null) {
                         Spacer(Modifier.size(6.dp))
                         trailing()
@@ -328,10 +339,11 @@ private fun CirclePassiveReadingContent(
     widthLentToEndSlot: Dp,
 ) {
     Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
-        CircleTitleKeepingItsLine(
+        CircleRowLineKeepingOneLine(
             text = title, fontSizeSp = MenuDesign.titleSize.value, letterSpacingSp = MenuDesign.titleTracking.value,
-            lentWidth = widthLentToEndSlot, maxLines = Int.MAX_VALUE, modifier = Modifier.fillMaxWidth(),
-        ) { maxLines ->
+            fontWeight = FontWeight.Bold, lentWidth = widthLentToEndSlot, maxLines = Int.MAX_VALUE,
+            modifier = Modifier.fillMaxWidth(),
+        ) { maxLines, lineModifier ->
             CircleFittedText(
                 text = title,
                 color = titleColor ?: RingTokens.Ink,
@@ -341,7 +353,7 @@ private fun CirclePassiveReadingContent(
                 letterSpacingSp = MenuDesign.titleTracking.value,
                 maxLines = maxLines,
                 textAlign = androidx.compose.ui.text.style.TextAlign.Center,
-                modifier = Modifier.fillMaxWidth(),
+                modifier = lineModifier.fillMaxWidth(),
             )
         }
         if (icon != null || sub.isNotBlank() || trailing != null) {
@@ -358,14 +370,28 @@ private fun CirclePassiveReadingContent(
                 if (sub.isNotBlank()) {
                     // A reading wraps freely; balanced so "your phone's own,
                     // screen held / on" cannot leave a word alone (Skyvw row 117).
-                    CircleText(
-                        text = sub,
-                        color = semanticColor ?: RingTokens.Dim,
-                        fontSizeSp = MenuDesign.subSize.value,
-                        textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                    CircleRowLineKeepingOneLine(
+                        text = sub, fontSizeSp = MenuDesign.subSize.value, letterSpacingSp = 0f,
+                        fontWeight = FontWeight.Normal, lentWidth = widthLentToEndSlot, maxLines = Int.MAX_VALUE,
                         modifier = Modifier.weight(1f, fill = false),
-                        balancedLines = true,
-                    )
+                    ) { lines, lineModifier ->
+                        if (lines == 1) {
+                            CircleFittedText(
+                                text = sub, color = semanticColor ?: RingTokens.Dim,
+                                fontSizeSp = MenuDesign.subSize.value, maxLines = 1,
+                                textAlign = androidx.compose.ui.text.style.TextAlign.Center, modifier = lineModifier,
+                            )
+                        } else {
+                            CircleText(
+                                text = sub,
+                                color = semanticColor ?: RingTokens.Dim,
+                                fontSizeSp = MenuDesign.subSize.value,
+                                textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                                modifier = lineModifier,
+                                balancedLines = true,
+                            )
+                        }
+                    }
                 }
                 if (trailing != null) {
                     if (sub.isNotBlank()) Spacer(Modifier.size(6.dp))
@@ -394,10 +420,10 @@ private fun CircleFittedTitle(
 ) {
     // Delegates to the shared fitted-text atom so there is ONE shrink
     // mechanism; this wrapper only owns the row-title styling choices.
-    CircleTitleKeepingItsLine(
+    CircleRowLineKeepingOneLine(
         text = text, fontSizeSp = fontSizeSp, letterSpacingSp = MenuDesign.titleTracking.value,
-        lentWidth = widthLentToEndSlot, maxLines = maxLines,
-    ) { lines ->
+        fontWeight = FontWeight.Bold, lentWidth = widthLentToEndSlot, maxLines = maxLines,
+    ) { lines, lineModifier ->
         CircleFittedText(
             text = text,
             color = color,
@@ -407,7 +433,7 @@ private fun CircleFittedTitle(
             fontWeight = FontWeight.Bold,
             letterSpacingSp = MenuDesign.titleTracking.value,
             maxLines = lines,
-            modifier = if (spoken) Modifier else Modifier.clearAndSetSemantics { },
+            modifier = lineModifier.then(if (spoken) Modifier else Modifier.clearAndSetSemantics { }),
         )
     }
 }
