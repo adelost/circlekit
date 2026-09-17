@@ -1,5 +1,7 @@
+import { UI_LANE } from "@v1d/product-spec";
 import type {
   DecisionTable,
+  LanesIr,
   OutputArtifact,
   PortBindingIr,
   PortRegistryEntry,
@@ -47,6 +49,8 @@ export interface DomainGraphSource {
   };
   /** Drawn as one node per table in its domain, listing its cell ids. Data, not wiring: no edges. */
   readonly decisionTables?: readonly Pick<DecisionTable, "id" | "cells">[];
+  /** Drawn as one subgraph per lane with its riders inside, so what runs where sits beside the ports. */
+  readonly lanes?: Pick<LanesIr, "lanes" | "rides">;
 }
 
 export function domainGraphEmitter(emission: DomainGraphEmission, table: CapabilityTable): ProductEmitterPlugin {
@@ -262,6 +266,7 @@ export function emitFullGraph(product: DomainGraphSource, productJsonPath: strin
     }
     lines.push("  end");
   }
+  lines.push(...laneSubgraphs(product.lanes));
   const seen = new Map<string, string[]>();
   for (const edge of edges(product)) {
     const key = `${edge.from} ${edge.to}`;
@@ -280,3 +285,19 @@ export function emitFullGraph(product: DomainGraphSource, productJsonPath: strin
  * mermaid refuses a node whose id is the id of the subgraph it is in.
  */
 const memberId = (id: string): string => `n_${mermaidId(id)}`;
+
+/** One subgraph per lane, its riders inside, in declaration order; the UI lane only when something rides it. */
+function laneSubgraphs(lanes: Pick<LanesIr, "lanes" | "rides"> | undefined): string[] {
+  if (lanes === undefined) return [];
+  const laneId = (name: string) => `lane_${name.replace(/[^A-Za-z0-9]/gu, "_")}`;
+  const riderId = (lane: string, rider: string) => `${laneId(lane)}__${rider.replace(/[^A-Za-z0-9]/gu, "_")}`;
+  const described = Object.entries(lanes.lanes).map(([name, lane]) => [name, lane.isolation === "dedicated"
+    ? `dedicated ${lane.ordering}, owner ${lane.owner}, ${lane.lifetime === "owner" ? "lives with its owner" : "lives for the process"}`
+    : `shared ${lane.ordering}, lives for the process`] as const);
+  const all = lanes.rides.some(({ to }) => to === UI_LANE) ? [...described, [UI_LANE, "the platform's main thread"] as const] : described;
+  return all.flatMap(([name, description]) => [
+    `  subgraph ${laneId(name)}["${name} lane<br/><i>${description}</i>"]`,
+    ...lanes.rides.filter(({ to }) => to === name).map(({ from }) => `    ${riderId(name, from)}["${from}"]`),
+    "  end",
+  ]);
+}

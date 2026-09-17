@@ -27,6 +27,15 @@ per axis in declared order. A branch that one cell covers returns that cell, so
 a region over several values is one line. The product names every axis enum and
 column argument, and writes record values itself; nothing is guessed.
 
+`emitLanesKotlin` writes a product-spec `defineLanes` declaration as one Android
+object. A dedicated lane is a HandlerThread named with the product's prefix and
+the lane, a shared lane a single-thread executor on a thread with that name,
+and the UI lane the main looper. A process lane is built on first use; an owner
+lane is an `open<Lane>()` its owner calls and closes with `close()`. A rider
+registers with the handle its lane hands out, and `require()` throws off the
+lane only when the product's debug expression is true. `fulfilment()` lists, per
+lane, its isolation and ordering, what Android built and how fully.
+
 ## Reading the product as a graph
 
 `core` can draw any compiled product as two Mermaid files, generated from the
@@ -53,8 +62,8 @@ buildOutputManifest(product, [
   solid edge labelled with the contract that crosses. A domain nothing binds
   to is drawn dashed red instead of being left out.
 - `acme.graph.mmd` is every node, component and decision table (one hexagon
-  listing its cell ids) inside its domain, for reading
-  one subgraph at a time.
+  listing its cell ids) inside its domain, and each declared lane as a subgraph
+  with its riders inside, for reading one subgraph at a time.
 
 The `CapabilityTable` is the product's closed host vocabulary: every
 `contextInputs` and `effects` string a node type spells must be a row. A row
