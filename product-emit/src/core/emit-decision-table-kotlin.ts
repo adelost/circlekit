@@ -43,7 +43,9 @@ export function decisionCellConstant(cellId: string): string {
   return kotlinEnumToken(cellId);
 }
 
-/** One `val` per cell, in declared order. */
+const KOTLIN_STEP = "    ";
+
+/** One `val` per cell, in declared order. [indent] is where each `val` line starts. */
 export function emitDecisionCellsKotlin(table: DecisionTable, names: DecisionTableKotlinNames, indent = "    "): string {
   requireNames(table, names);
   return table.cells.map((cell, index) => {
@@ -60,7 +62,10 @@ export function emitDecisionCellsKotlin(table: DecisionTable, names: DecisionTab
   }).join("\n");
 }
 
-/** `fun <functionName>(<axes>): <cellType> = when (...) { ... }` over every axis in declared order. */
+/**
+ * `fun <functionName>(<axes>): <cellType> = when (...) { ... }` over every axis in declared order. [indent] is where
+ * the `fun` line starts; each nested `when` steps in by four spaces from there.
+ */
 export function emitDecisionLookupKotlin(
   table: DecisionTable,
   names: DecisionTableKotlinNames,
@@ -77,11 +82,11 @@ export function emitDecisionLookupKotlin(
     if (cells.size === 1) return decisionCellConstant([...cells][0]!);
     const axis = axisNames[depth]!;
     const { parameter, enumType } = names.axes[axis]!;
-    const pad = indent.repeat(depth + 2);
+    const pad = indent + KOTLIN_STEP.repeat(depth + 1);
     const branches = table.axes[axis]!
       .map((value) => `${pad}${enumType}.${value} -> ${body(depth + 1, { ...fixed, [axis]: value })}`)
       .join("\n");
-    return `when (${parameter}) {\n${branches}\n${indent.repeat(depth + 1)}}`;
+    return `when (${parameter}) {\n${branches}\n${indent + KOTLIN_STEP.repeat(depth)}}`;
   };
   return `${indent}fun ${functionName}(${parameters}): ${names.cellType} = ${body(0, {})}`;
 }

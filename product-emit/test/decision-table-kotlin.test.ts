@@ -61,6 +61,19 @@ test("the lookup is an exhaustive when per axis, and a branch one cell owns retu
   ].join("\n"));
 });
 
+test("a lookup inside a nested object starts at its indent and steps in by four spaces", () => {
+  const nested = emitDecisionLookupKotlin(table, names, "at", "        ").split("\n");
+  assert.deepEqual(nested.slice(0, 5), [
+    "        fun at(phase: FlightPhase, display: DisplayState, arrived: Arrival): AcmePowerRule = when (phase) {",
+    "            FlightPhase.GROUND -> when (display) {",
+    "                DisplayState.LIT -> when (arrived) {",
+    "                    Arrival.JUST_NOW -> GROUND_LIT_ARRIVED",
+    "                    Arrival.SETTLED -> GROUND_LIT",
+  ]);
+  assert.equal(nested.at(-1), "        }");
+  assert.match(emitDecisionCellsKotlin(table, names, "        "), /^ {8}val AIR = AcmePowerRule\(\n {12}id = "air",/u);
+});
+
 test("a cell is a constant with its id first, then every column as its argument", () => {
   const cells = emitDecisionCellsKotlin(table, names);
   assert.ok(cells.startsWith([
