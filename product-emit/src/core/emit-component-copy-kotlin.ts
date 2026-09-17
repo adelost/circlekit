@@ -1,7 +1,7 @@
 import type { ComponentCopyDeclaration } from "./component-copy-model.js";
 import { validateComponentCopy } from "./component-copy-model.js";
 import type { SourcedKotlinEmissionOptions } from "./emission-options.js";
-import { kotlinIdentifier, kotlinStringLiteral } from "./kotlin-syntax.js";
+import { kotlinIdentifier, kotlinPropertyName, kotlinStringLiteral } from "./kotlin-syntax.js";
 
 /** Emit one typed Kotlin value per component. No string-key lookup survives. */
 export function emitComponentCopyKotlin(
@@ -19,7 +19,7 @@ export function emitComponentCopyKotlin(
     return `    data class ${type}(\n${properties}\n    )`;
   }).join("\n\n");
   const values = declarations.map(({ componentRef, fields }) => {
-    const symbol = lowerCamel(kotlinIdentifier(componentRef));
+    const symbol = kotlinPropertyName(componentRef);
     const type = `${kotlinIdentifier(componentRef)}Copy`;
     const properties = Object.entries(fields)
       .map(([field, value]) => `        ${field} = ${kotlinStringLiteral(value)},`)
@@ -38,8 +38,4 @@ ${types}
 ${values}
 }
 `;
-}
-
-function lowerCamel(value: string): string {
-  return value[0]!.toLowerCase() + value.slice(1);
 }
