@@ -29,6 +29,52 @@ semver axis; every app declaration remains in its product's owning repository.
 `@v1d/circlekit-assets` follows the Maven/design-system axis because its paths
 are consumed by DesignKit. ProductSpec does not.
 
+## Pin the kits in a new product
+
+`scripts/print-pins.sh` prints today's lines from what is actually served: the
+Maven repository, each Android kit at its latest version, and the npm tarballs
+at this checkout's versions. It fails on a line that is not published.
+
+Android, in `settings.gradle.kts`, then one dependency per kit the product uses:
+
+```kotlin
+dependencyResolutionManagement {
+    repositories {
+        google()
+        mavenCentral()
+        maven("https://circlekit.pages.dev")
+    }
+}
+// in a module's build.gradle.kts
+implementation("io.v1d.circlekit:ringkit:X.Y.Z")
+```
+
+The kits are the modules `scripts/publish-maven.sh` publishes: `bddkit/`,
+`designkit/`, `renderkit/`, `ringkit/`, `releasekit/`, `releasekit-ui/` and
+`servicekit/`, group `io.v1d.circlekit`. `ringkit` brings `designkit` and
+`servicekit` with it.
+
+TypeScript, in the product's own package.json:
+
+```json
+"@v1d/product-spec": "https://circlekit.pages.dev/npm/v1d/product-spec/X.Y.Z/v1d-product-spec-X.Y.Z.tgz",
+"@v1d/product-emit": "https://circlekit.pages.dev/npm/v1d/product-emit/X.Y.Z/v1d-product-emit-X.Y.Z.tgz",
+"@v1d/circlekit-assets": "https://circlekit.pages.dev/npm/v1d/circlekit-assets/X.Y.Z/v1d-circlekit-assets-X.Y.Z.tgz"
+```
+
+Three version lines, each moving on its own:
+
+- The Android kits: one version for all seven, released by `scripts/publish-maven.sh`.
+  `@v1d/circlekit-assets` carries the same number.
+- `@v1d/product-spec`: its own semver line, the version in `product-spec/package.json`.
+- `@v1d/product-emit`: its own line, the version in `product-emit/package.json`.
+  Its dependencies name the product-spec it was built on; pin that same one.
+
+```
+scripts/print-pins.sh
+scripts/check-guide-paths.sh README.md
+```
+
 ## Local-first publication
 
 Both release axes publish cumulative snapshots to the same Pages project, so
