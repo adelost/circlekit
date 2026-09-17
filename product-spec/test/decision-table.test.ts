@@ -110,3 +110,32 @@ test("a product invariant refuses every decision it matches, naming cell and poi
   assert.throws(untyped({ cells: slowAir, invariants: [airIsLive] }),
     /cell air at phase=AIR display=LIT arrived=JUST_NOW: the air must read 20 Hz/);
 });
+
+const arrived = {
+  source: "docs/architecture/barometer-rate.md",
+  inside: "JUST_NOW",
+  outside: "SETTLED",
+  windowMs: 30_000,
+  startsOn: ["touch", "face-lit"],
+  restartsOn: ["touch"],
+  endsOn: ["face-dark"],
+} as const;
+
+test("the defined table is plain data: invariants ran at definition and are not in it", () => {
+  const table = defineDecisionTable({ id: "fixture.power", axes, derived: { arrived }, columns, cells, invariants: [airIsLive] });
+  assert.equal("invariants" in table, false);
+  assert.deepEqual(JSON.parse(JSON.stringify(table)), table);
+  assert.deepEqual(table.derived.arrived, arrived);
+});
+
+test("a derived axis is a named window fact over exactly its two values", () => {
+  const withArrived = (fact: Record<string, unknown>) => untyped({ derived: { arrived: { ...arrived, ...fact } } });
+  assert.throws(untyped({ derived: { altitude: arrived } }), /derived axis 'altitude' is not an axis of the table/);
+  assert.throws(withArrived({ inside: "SETTLED" }), /derived axis 'arrived' must have exactly its two values, inside and outside the window/);
+  assert.throws(untyped({ axes: { ...axes, display: ["LIT", "DARK", "OFF"] }, derived: { display: { ...arrived, inside: "LIT", outside: "DARK" } } }),
+    /derived axis 'display' must have exactly its two values/);
+  assert.throws(withArrived({ windowMs: 2.5 }), /derived axis 'arrived' window 2\.5 ms is not a positive whole number/);
+  assert.throws(withArrived({ startsOn: [] }), /derived axis 'arrived' names nothing that starts its window/);
+  assert.throws(withArrived({ restartsOn: ["Touch Again"] }), /derived axis 'arrived' event 'Touch Again' is not a plain event name/);
+  assert.throws(withArrived({ source: " " }), /derived axis 'arrived' names no source/);
+});

@@ -17,6 +17,14 @@ import { requireUnique, requireWireId } from "./node-model.js";
  * - every cell carries exactly the declared columns, each value of its column's type;
  * - cells and regions are data: a function anywhere in them is refused.
  * A product adds its own laws as `invariants: [{ refuse, when }]`; it can only add.
+ * Invariants are build-time code: they run once over every point when the
+ * table is defined and are not part of the table that comes back, so no
+ * callback ever reaches an emitter.
+ *
+ * An axis the platform works out from events (the wearer "just arrived" at
+ * the face) is not a free input: it is declared beside the cells as a
+ * [DerivedAxis], a named fact with its source, its window and the events that
+ * start, restart and end it. The table only selects on it; the fact has an owner.
  *
  * Portability: the table is plain data, so every platform reads the same
  * cells. Kotlin gets an exhaustive `when` per axis (product-emit), Swift a
@@ -101,17 +109,42 @@ export interface DecisionInvariant<Axes extends DecisionAxes = DecisionAxes, Col
   readonly when: (decision: Decision<Axes, Columns>) => boolean;
 }
 
+/**
+ * An axis whose value comes from a time window the platform keeps: [inside]
+ * from a start event for [windowMs], restarted by each restart event and closed
+ * early by an end event, [outside] otherwise. [source] is where the rule is
+ * written for people (a decision note), so the window has one owner.
+ */
+export interface DerivedAxis<Value extends string = string> {
+  readonly source: string;
+  readonly inside: Value;
+  readonly outside: Value;
+  readonly windowMs: number;
+  readonly startsOn: readonly string[];
+  readonly restartsOn: readonly string[];
+  readonly endsOn: readonly string[];
+}
+
+export type DerivedAxes<Axes extends DecisionAxes> = { readonly [Axis in keyof Axes]?: DerivedAxis<Axes[Axis][number]> };
+
 export interface DecisionTableDeclaration<Axes extends DecisionAxes, Columns extends DecisionColumns> {
   readonly id: string;
   /** Axis names to their values, in the order every emitter walks them. */
   readonly axes: Axes;
+  readonly derived?: DerivedAxes<NoInfer<Axes>>;
   readonly columns: Columns;
   readonly cells: readonly DecisionCell<NoInfer<Axes>, NoInfer<Columns>>[];
   readonly invariants?: readonly DecisionInvariant<NoInfer<Axes>, NoInfer<Columns>>[];
 }
 
-export type DecisionTable<Axes extends DecisionAxes = DecisionAxes, Columns extends DecisionColumns = DecisionColumns> =
-  DecisionTableDeclaration<Axes, Columns>;
+/** A table that passed every law: plain data, with no invariant functions left in it. */
+export interface DecisionTable<Axes extends DecisionAxes = DecisionAxes, Columns extends DecisionColumns = DecisionColumns> {
+  readonly id: string;
+  readonly axes: Axes;
+  readonly derived: DerivedAxes<Axes>;
+  readonly columns: Columns;
+  readonly cells: readonly DecisionCell<Axes, Columns>[];
+}
 
 export const choice = <const Value extends string>(values: readonly Value[]): ChoiceColumn<Value> => ({ kind: "choice", values });
 export const bool: BooleanColumn = { kind: "boolean" };
@@ -139,11 +172,13 @@ export function on<const Region, const Values>(id: string, region: Region, value
 export function defineDecisionTable<const Axes extends DecisionAxes, const Columns extends DecisionColumns>(
   declaration: DecisionTableDeclaration<Axes, Columns>,
 ): DecisionTable<Axes, Columns> {
-  const problems = decisionTableProblems(declaration as unknown as DecisionTable);
+  const { id, axes, columns, cells, derived = {}, invariants = [] } = declaration;
+  const table = { id, axes, derived, columns, cells } as DecisionTable<Axes, Columns>;
+  const problems = decisionTableProblems(table as unknown as DecisionTable, invariants as unknown as readonly DecisionInvariant[]);
   if (problems.length > 0) {
-    throw new Error(`decision table '${declaration.id}' is refused:\n- ${problems.join("\n- ")}`);
+    throw new Error(`decision table '${id}' is refused:\n- ${problems.join("\n- ")}`);
   }
-  return declaration;
+  return table;
 }
 
 /** Every point of the axes, the first axis slowest, in declared value order. */
@@ -170,7 +205,7 @@ export function regionCovers(region: DecisionRegion<DecisionAxes>, point: Decisi
   return Object.entries(region).every(([axis, covered]) => covered === undefined || valuesOf(covered).includes(point[axis]!));
 }
 
-function decisionTableProblems(table: DecisionTable): string[] {
+function decisionTableProblems(table: DecisionTable, invariants: readonly DecisionInvariant[]): string[] {
   const problems: string[] = [];
   const attempt = (check: () => void) => {
     try {
@@ -181,7 +216,7 @@ function decisionTableProblems(table: DecisionTable): string[] {
   };
   attempt(() => requireWireId(table.id, "decision table"));
   problems.push(...axisProblems(table.axes));
-  problems.push(...columnProblems(table.columns));
+  problems.push(...columnProblems(table.columns), ...derivedProblems(table.axes, table.derived));
   attempt(() => requireUnique(table.cells.map(({ id }) => id), `cell id in decision table '${table.id}'`));
   for (const cell of table.cells) {
     attempt(() => requireWireId(cell.id, "decision cell"));
@@ -196,7 +231,7 @@ function decisionTableProblems(table: DecisionTable): string[] {
   if (problems.length > 0) return problems;
   for (const at of decisionPoints(table.axes)) {
     const decision = decide(table, at);
-    for (const invariant of table.invariants ?? []) {
+    for (const invariant of invariants) {
       if (invariant.when(decision)) problems.push(`cell ${decision.cell} at ${pointName(at)}: ${invariant.refuse}`);
     }
   }
@@ -211,6 +246,29 @@ function axisProblems(axes: DecisionAxes): string[] {
     if (values.length === 0) problems.push(`axis '${axis}' has no values`);
     if (new Set(values).size !== values.length) problems.push(`axis '${axis}' lists a value twice`);
     for (const value of values) if (!isSymbol(value)) problems.push(`axis '${axis}' value '${value}' is not a plain name`);
+  }
+  return problems;
+}
+
+function derivedProblems(axes: DecisionAxes, derived: DerivedAxes<DecisionAxes>): string[] {
+  const problems: string[] = [];
+  for (const [axis, fact] of Object.entries(derived)) {
+    if (fact === undefined) continue;
+    const values = axes[axis];
+    if (values === undefined) {
+      problems.push(`derived axis '${axis}' is not an axis of the table`);
+      continue;
+    }
+    if (fact.source.trim() === "") problems.push(`derived axis '${axis}' names no source`);
+    const pair = [fact.inside, fact.outside];
+    if (values.length !== 2 || fact.inside === fact.outside || !pair.every((value) => values.includes(value))) {
+      problems.push(`derived axis '${axis}' must have exactly its two values, inside and outside the window: has ${values.join(", ")}`);
+    }
+    if (!Number.isInteger(fact.windowMs) || fact.windowMs <= 0) problems.push(`derived axis '${axis}' window ${fact.windowMs} ms is not a positive whole number`);
+    if (fact.startsOn.length === 0) problems.push(`derived axis '${axis}' names nothing that starts its window`);
+    for (const event of [...fact.startsOn, ...fact.restartsOn, ...fact.endsOn]) {
+      if (!/^[a-z][a-z0-9.-]*$/u.test(event)) problems.push(`derived axis '${axis}' event '${event}' is not a plain event name`);
+    }
   }
   return problems;
 }
