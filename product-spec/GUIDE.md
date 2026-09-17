@@ -11,7 +11,7 @@ For agents and for people. Every path and command in this file is checked by `sc
 | Thing | anything with an id | a page, a stream, the table `power`, the lane `pressure` |
 | Fact | a declared property on a thing, never a branch | "in freefall the barometer is asked for 20 Hz" is a cell; "the pressure stream rides the pressure lane" is a ride |
 | Law | what must hold across facts, proven when the declaration builds | every point of a table's axes has exactly one cell; a stream never rides the UI lane |
-| System | a platform's emitter and runtime | Kotlin today; Swift or Monkey C later, each one more emitter |
+| System | a platform's emitter, its native runtime, and the capabilities it declares | Kotlin today; a new platform is an emitter plus bindings and a capability list, not text generation alone |
 | Proof | one generated test per declaration kind | every declared input runs once; every declared page renders; every table point decides |
 
 The product writes facts. The kit owns shapes, laws and emitters. A platform adds an emitter, never a shape.
@@ -90,8 +90,19 @@ A code pattern that matters is a law or it is not a rule. Gates are run by the o
 
 ## 8. Commands
 
+In this repo, the kit:
+
 ```
 cd product-spec && npm test        # the shapes and their laws, one red case per law
 cd product-emit && npm test        # the emitters against the shapes
 scripts/check-guide-paths.sh       # this file's paths and commands still exist
 ```
+
+In a product (Skyvw), two loops, not one. After a cell or copy change, the short loop: regenerate, then the one test or page the change touches. The wide loop, the declaration's own tests and the stale-projection check, is for a change to a shape or a wiring file, not after every cell. Each of `npm test`, `npm run generate` and `npm run check-generated` starts with a clean TypeScript build, so running all three is three builds; a single `verify` script that builds once is a proposed improvement, measured before it is claimed.
+
+```
+(cd appspec && npm run generate)                       # short loop, then the targeted test or page
+(cd appspec && npm test && npm run check-generated)    # wide loop, for shape or wiring changes
+```
+
+An example in this guide is a claim; the type-checked copy of it lives in the kit's tests, and a change to the shape that breaks the example turns that test red before the guide can go stale.
