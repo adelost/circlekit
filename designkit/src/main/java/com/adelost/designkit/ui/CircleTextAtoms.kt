@@ -106,6 +106,9 @@ internal fun circleTextStyle(
             platformStyle = PlatformTextStyle(includeFontPadding = false),
         )
 
+/** How far [CircleFittedText] shrinks by default before it ellipsises, as a share of its design size. */
+internal const val CIRCLE_FITTED_TEXT_MIN_SCALE = 0.75f
+
 /**
  * Text that stays whole: renders at [fontSizeSp] and steps down as far as
  * [minFontSizeSp] when the measured line would not fit, so a wide surface is
@@ -122,7 +125,7 @@ fun CircleFittedText(
     color: Color,
     fontSizeSp: Float,
     modifier: Modifier = Modifier,
-    minFontSizeSp: Float = fontSizeSp * 0.75f,
+    minFontSizeSp: Float = fontSizeSp * CIRCLE_FITTED_TEXT_MIN_SCALE,
     shrinkStepSp: Float = 0.5f,
     fontWeight: FontWeight = FontWeight.Normal,
     letterSpacingSp: Float = 0f,
