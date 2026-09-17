@@ -25,6 +25,10 @@ The authoring vocabulary has four executable building blocks:
   `["ui.component-tree"]` and is written only when a type needs something else.
   The list of `componentPort(name, contract, { required })` calls stays valid,
   and is the form for an optional port.
+- `family(shared)` states fields many rows share once: `const conditions =
+  family({ category: "CONDITIONS", shape: "WHOLE_JUMP", edit: "DERIVED" })`, then
+  `conditions({ id: "night", label: "NIGHT" })` is the full record. A row that
+  restates a field its family fixes is refused, in the editor and at build.
 
 `node` is compiler/IR vocabulary for the first three kinds, not a fifth
 authoring choice. There is no parallel `role` taxonomy and no opt-in UI list.
