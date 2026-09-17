@@ -24,6 +24,10 @@ while IFS= read -r line; do
       *'<'*'>'*) continue ;;                       # placeholder
       appspec/*|app/src/*|*/appspec/*) continue ;; # the product's, not ours
       Generated*|\<product\>*) continue ;;
+      @*/*) continue ;;                           # an npm package name, checked by print-pins.sh
+      /*) continue ;;                             # a package entrypoint such as /core
+      http://*|https://*) continue ;;             # a URL, checked by print-pins.sh
+      *X.Y.Z*) continue ;;                        # a path that exists once a version is built
     esac
     if [ ! -e "$token" ]; then
       echo "check-guide-paths: FAIL: $GUIDE:$line_no names '$token', which does not exist (renamed? fix the line or the path)" >&2
