@@ -53,9 +53,9 @@ invariants: [{ refuse: "air must read pressure live", when: (d) => isAirborne(d.
 A lane and a ride (`defineLanes`; Android Kotlin from `product-emit/src/core/emit-lanes-kotlin.ts`). Read: "pressure samples get their own serial lane, because a late sample is a late altitude."
 
 ```ts
-lanes: { pressure: { isolation: "dedicated", ordering: "serial", reason: "a late sample is a late altitude" } },
+lanes: { pressure: { isolation: "dedicated", owner: "pressure-hub", lifetime: "process", ordering: "serial", reason: "a late sample is a late altitude" } },
 streams: ["stream.pressure"],
-rides: { "stream.pressure": "pressure" }
+rides: { "stream.pressure": { lane: "pressure", owner: "pressure-hub" } }
 ```
 
 ## 4. The four questions

@@ -63,13 +63,19 @@ the product graph; product-emit writes the same
 lookup as an exhaustive Kotlin `when`.
 
 Where streams and services run is one `defineLanes(...)`: each lane says
-`isolation` (`dedicated` for one rider, `shared` for several) and `ordering`
-(`serial`) with a reason, `streams` lists every stream the product declares,
-and `rides` maps each `stream.<id>` or `service.<id>` to a lane or to the
-platform's `ui` lane. The shape refuses a stream on the UI lane, a dedicated
-lane without exactly one rider, a declared stream that rides nothing and a ride
-to an undeclared lane. product-emit builds each lane once for a platform and
-reports what it could build.
+`isolation` (`dedicated` for one owner's work, `shared` for unrelated riders),
+`ordering` (`serial`), `lifetime` (`process`, or `owner` for a dedicated lane
+that lives and closes with its owner instance), a dedicated lane's `owner`,
+and a reason. `streams` lists every stream the product declares, and `rides`
+maps each `stream.<id>` or `service.<id>` to a shared lane or `ui` by name, or
+to a dedicated lane as `{ lane, owner }`. The shape refuses a stream on the UI
+lane, a rider on a dedicated lane that works for another owner, a dedicated
+lane with no rider, a shared lane that claims an owner's lifetime, a declared
+stream that rides nothing and a ride to an undeclared lane. A product passes its
+lanes to `defineProduct` as `lanes`, so the IR and the product JSON carry them
+with every ride as an edge; product-emit builds each lane once for a platform,
+reports its fulfilment (full, degraded or unsupported) and draws each lane in
+the product graph.
 
 Every UI-reaching closed state discriminator uses one
 `defineStateAuthority(...)`. Its source is an exact output port, contract,
