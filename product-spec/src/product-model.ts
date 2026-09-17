@@ -5,6 +5,7 @@ import type {
   ScreenComponentFamilyRef,
 } from "./component-tree-model.js";
 import { decisionTablesIr, type DecisionTable } from "./decision-table-model.js";
+import { lanesIr, type Lanes, type LanesIr } from "./lanes-model.js";
 import {
   compileProductGraph,
   type MountedComponentScope,
@@ -150,6 +151,8 @@ export interface ProductDeclaration<
   readonly navigation: ProductNavigationDeclaration<NoInfer<Families[number]["screen"]>>;
   /** The product's decisions over finite axes, carried into the IR so the product graph can draw them. */
   readonly decisionTables?: readonly DecisionTable[];
+  /** Where the product's streams and services run, carried into the IR so the product graph can draw each lane. */
+  readonly lanes?: Lanes;
 }
 
 export interface ProductIr {
@@ -174,6 +177,8 @@ export interface ProductIr {
   readonly navigation: ProductNavigationIr;
   /** Present only when the product declares decision tables, so a product without any emits the IR it always did. */
   readonly decisionTables?: readonly DecisionTable[];
+  /** Present only when the product declares lanes: the lanes as declared and every ride as an edge from rider to lane. */
+  readonly lanes?: LanesIr;
 }
 
 export function defineProduct<
@@ -360,6 +365,7 @@ export function defineProduct<
     iconRefs: declaration.iconRefs,
     navigation,
     ...decisionTablesIr(declaration.decisionTables ?? []),
+    ...lanesIr(declaration.lanes),
   };
 }
 

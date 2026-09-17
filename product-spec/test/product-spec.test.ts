@@ -26,6 +26,7 @@ import {
   derive,
   definePalette,
   definePortableAssetCatalog,
+  defineLanes,
   defineProduct,
   defineProductNavigation,
   defineScreenComponentFamilyRegistry,
@@ -2220,6 +2221,29 @@ test("native manifest decoding fails loud and requires the node axis", () => {
   const withoutNavigation = { ...conformingManifest } as Record<string, unknown>;
   delete withoutNavigation.navigation;
   assert.throws(() => decodeNativeBindingManifest(withoutNavigation), /manifest navigation must be an object/);
+});
+
+test("lanes reach the product IR and its JSON, rides as edges, only when declared", () => {
+  assert.equal("lanes" in fixture(), false);
+  const lanes = defineLanes({
+    id: "fixture.lanes",
+    lanes: {
+      sensor: { isolation: "dedicated", owner: "sensor-hub", lifetime: "process", ordering: "serial", reason: "a late sample is late" },
+      receipts: { isolation: "shared", lifetime: "process", ordering: "serial", reason: "off the hot path" },
+    },
+    streams: ["stream.sensor"],
+    rides: { "stream.sensor": { lane: "sensor", owner: "sensor-hub" }, "service.receipts": "receipts" },
+  });
+  const json = JSON.parse(productJsonEmitter("out/product.json").emit(fixture({ lanes }))[0]!.content) as {
+    lanes: { id: string; lanes: Record<string, { isolation: string; owner?: string }>; rides: { from: string; to: string; owner?: string }[] };
+  };
+  assert.deepEqual(json.lanes.rides, [
+    { from: "stream.sensor", to: "sensor", owner: "sensor-hub" },
+    { from: "service.receipts", to: "receipts" },
+  ]);
+  // The product JSON writes object keys in canonical order.
+  assert.deepEqual(Object.entries(json.lanes.lanes).map(([name, lane]) => [name, lane.isolation, lane.owner]),
+    [["receipts", "shared", undefined], ["sensor", "dedicated", "sensor-hub"]]);
 });
 
 test("visual contracts still fail on unknown palette and asset refs", () => {
