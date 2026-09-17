@@ -252,11 +252,10 @@ fun RingRow(
         "A selected info affordance needs declared explanatory copy"
     }
     val rowModifier = modifier.selectRingInfoOnTouch(onInfoTouch.takeIf { explanation != null })
-    val rowTrailing: (@Composable () -> Unit)? = if (infoSelected && explanation != null) {
+    // A row that can reveal its (i) keeps the button's place at all times, so a touch only fills it.
+    val infoSlot: (@Composable () -> Unit)? = if (explanation != null && (onInfoTouch != null || infoSelected)) {
         {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                trailing?.invoke()
-                if (trailing != null) Spacer(Modifier.size(5.dp))
+            RingRowInfoSlot(shown = infoSelected) {
                 RingRowInfoButton(
                     rowIcon = icon,
                     iconRotationDeg = iconRotationDeg,
@@ -269,7 +268,7 @@ fun RingRow(
             }
         }
     } else {
-        trailing
+        null
     }
     if (holdToConfirm) {
         val confirm = requireNotNull(onTap) { "A hold row requires an action" }
@@ -326,7 +325,8 @@ fun RingRow(
                     accent = accent,
                     semanticColor = semanticColor,
                     leading = leading,
-                    trailing = rowTrailing,
+                    trailing = trailing,
+                    endSlot = infoSlot,
                     labelProgress = labelProgress ?: holdProgress?.let {
                         CircleLabelProgress.Determinate(it.coerceIn(0f, 1f))
                     },
@@ -353,7 +353,8 @@ fun RingRow(
         titleColor = titleColor,
         labelProgress = labelProgress,
         leading = leading,
-        trailing = rowTrailing,
+        trailing = trailing,
+        endSlot = infoSlot,
         centerValue = centerValue,
         actionTiming = actionTiming,
         actionHoldMs = actionHoldMs,

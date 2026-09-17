@@ -3,12 +3,16 @@ package com.adelost.ringkit.ui
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.waitForUpOrCancellation
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.composed
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.unit.Dp
 import com.adelost.designkit.ui.*
 
 /** Only the touched row exposes transient help in dense instrument menus. */
@@ -43,9 +47,22 @@ fun RingInfoButton(contentDescription: String, onOpen: () -> Unit, modifier: Mod
     CircleIconDisc(
         icon = RingIcons.Info, contentDescription = contentDescription,
         actionLabel = "INFO", onTap = onOpen, modifier = modifier,
-        diameter = design?.rowIconDiameter ?: MenuDesign.watchActionRingDiameter,
+        diameter = ringInfoButtonDiameter(),
         iconSize = design?.rowIconSize ?: MenuDesign.iconSize,
     )
+}
+
+@Composable
+private fun ringInfoButtonDiameter(): Dp =
+    phoneSurfaceDesignFor(LocalCircleSurfaceLayout.current.surfaceClass)?.rowIconDiameter
+        ?: MenuDesign.watchActionRingDiameter
+
+/** The row's (i) place, measured at the button's size whether the button shows or not. */
+@Composable
+internal fun RingRowInfoSlot(shown: Boolean, button: @Composable () -> Unit) {
+    Box(Modifier.size(ringInfoButtonDiameter()), contentAlignment = Alignment.Center) {
+        if (shown) button()
+    }
 }
 
 @Composable
