@@ -3,6 +3,7 @@ package com.adelost.ringkit.ui
 import com.adelost.designkit.ui.*
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import com.adelost.ringkit.data.Progress
@@ -13,9 +14,11 @@ internal data class DetailActionRow(
     val icon: ImageVector,
     val accent: CircleAccent,
     val holdToConfirm: Boolean,
-    /** Null while the row cannot run (REFRESH during a fetch). */
+    /** Null while the row cannot run: REFRESH during a fetch, or an action with a reason it cannot run now. */
     val onTap: (() -> Unit)?,
     val isRefresh: Boolean,
+    /** The reason an action cannot run now, drawn as the row's line; empty when it can. */
+    val sub: String = "",
 )
 
 /**
@@ -27,14 +30,17 @@ internal fun detailActionRows(
     actions: List<ActionSpec>,
     onRefresh: (() -> Unit)?,
     refreshEnabled: Boolean,
-): List<DetailActionRow> = actions.map { action ->
+    unavailableReasons: List<String?> = actions.map { null },
+): List<DetailActionRow> = actions.zip(unavailableReasons) { action, reason ->
     DetailActionRow(
         title = action.label,
         icon = action.icon,
         accent = if (action.destructive) CircleAccent.DANGER else ringIconAccent(action.icon),
-        holdToConfirm = action.holdToConfirm,
-        onTap = action.onRun,
+        // A hold that cannot run is not a hold: there is nothing for the press to confirm.
+        holdToConfirm = action.holdToConfirm && reason == null,
+        onTap = action.onRun.takeIf { reason == null },
         isRefresh = false,
+        sub = reason.orEmpty(),
     )
 } + listOfNotNull(
     onRefresh?.let { refresh ->
@@ -56,10 +62,11 @@ internal fun DetailActionRows(
     progress: Progress?,
     rowModifier: Modifier,
 ) {
-    detailActionRows(screen.actions, screen.onRefresh, refreshEnabled).forEach { row ->
+    val reasons = screen.actions.map { action -> action.unavailableReason.collectAsState(initial = null).value }
+    detailActionRows(screen.actions, screen.onRefresh, refreshEnabled, reasons).forEach { row ->
         RingRow(
             title = row.title,
-            sub = "",
+            sub = row.sub,
             icon = row.icon,
             accent = row.accent,
             onTap = row.onTap,
