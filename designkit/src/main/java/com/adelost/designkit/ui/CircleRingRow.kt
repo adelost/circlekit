@@ -21,6 +21,7 @@ import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 
 /**
@@ -61,6 +62,8 @@ fun CircleRingRow(
      */
     multiline: Boolean = false,
     iconRotationDeg: Float = 0f,
+    /** See [CircleRingRowContent]. */
+    endSlot: (@Composable () -> Unit)? = null,
 ) {
     val phoneDesign = phoneSurfaceDesignFor(LocalCircleSurfaceLayout.current.surfaceClass)
     val feedback = rememberCircleActionFeedbackState()
@@ -128,6 +131,7 @@ fun CircleRingRow(
                 centerValue = centerValue,
                 multiline = multiline,
                 iconRotationDeg = iconRotationDeg,
+                endSlot = endSlot,
             )
         }
         if (confirmedTap != null) {
@@ -181,15 +185,24 @@ fun CircleRingRowContent(
     iconRotationDeg: Float = 0f,
     /** See [CircleRingRow]. */
     titleColor: Color? = null,
+    /**
+     * A fixed-size slot at the row's end, beside both lines, that the row measures whether or not it shows
+     * anything. Content that comes and goes (RingKit's row (i)) lives here, so revealing it changes no pixel
+     * of the row around it. Inside the value line it made that line as tall as the button, and the row grew
+     * and pushed the list down on touch (Skyvw row 118, Mattias 2026-09-16: "det ser ju fult ut").
+     */
+    endSlot: (@Composable () -> Unit)? = null,
 ) {
     val phoneDesign = phoneSurfaceDesignFor(LocalCircleSurfaceLayout.current.surfaceClass)
-    val hasSlots = leading != null || trailing != null
+    val hasSlots = leading != null || trailing != null || endSlot != null
     val hasLeadingRing = icon != null || centerValue != null
     // A passive, wrapping reading has no action ring to align with. Give its
     // identity the full reading width; the small source/status glyph belongs
     // with the supporting value. Actions and choices keep their shared column.
     if (phoneDesign == null && !affordance.operable && multiline && leading == null && centerValue == null) {
-        CirclePassiveReadingContent(title, sub, icon, accent, semanticColor, trailing, iconRotationDeg, titleColor)
+        CircleRowEndSlotted(endSlot, gap = 6.dp) {
+            CirclePassiveReadingContent(title, sub, icon, accent, semanticColor, trailing, iconRotationDeg, titleColor)
+        }
         return
     }
     val feedbackSweep = rememberCircleFeedbackSweep(
@@ -285,6 +298,23 @@ fun CircleRingRowContent(
             Spacer(Modifier.size(phoneDesign.controlGap))
             trailing()
         }
+        if (endSlot != null) {
+            Spacer(Modifier.size(phoneDesign?.controlGap ?: 6.dp))
+            endSlot()
+        }
+    }
+}
+
+@Composable
+private fun CircleRowEndSlotted(endSlot: (@Composable () -> Unit)?, gap: Dp, content: @Composable () -> Unit) {
+    if (endSlot == null) {
+        content()
+        return
+    }
+    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+        Box(Modifier.weight(1f)) { content() }
+        Spacer(Modifier.size(gap))
+        endSlot()
     }
 }
 
