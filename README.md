@@ -11,6 +11,7 @@ Shared Android foundations used by Skyvw and Agentmux Link.
 - `servicekit`: bounded telemetry used by the shared modules.
 - `product-spec`: product-neutral TypeScript authoring, validation and output
   manifests, published as the versioned `@v1d/product-spec` npm tarball.
+  Start with `product-spec/GUIDE.md`: the model in one page, for agents and people.
 - `product-emit`: deterministic ProductSpec emitters with separate
   product-neutral `/core` and skydiving `/skydiving` entrypoints.
 - `skydiving-legos`: the published skydiving domain catalog shared by products.
