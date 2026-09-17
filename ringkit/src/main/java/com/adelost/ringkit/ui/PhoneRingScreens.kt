@@ -218,23 +218,13 @@ private fun PhoneDetailScreen(
             textAlign = TextAlign.Center,
             modifier = Modifier.padding(top = 8.dp),
         )
-        screen.actions.forEach { action ->
-            Spacer(Modifier.height(10.dp))
-            if (action.holdToConfirm) {
-                HoldPill(action.label, action.onRun, destructive = action.destructive)
-            } else {
-                TextAction(action.label, action.onRun)
-            }
-        }
-        screen.onRefresh?.let { refresh ->
-            TextAction(
-                text = "REFRESH",
-                onTap = refresh,
-                enabled = refreshEnabled,
-                labelProgress = measuredWorkLabelProgress(progress, inFlight = !refreshEnabled),
-                modifier = Modifier.padding(top = 18.dp),
-            )
-        }
+        Spacer(Modifier.height(16.dp))
+        DetailActionRows(
+            screen,
+            refreshEnabled,
+            progress,
+            rowModifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp),
+        )
         Spacer(Modifier.height(32.dp))
     }
 }

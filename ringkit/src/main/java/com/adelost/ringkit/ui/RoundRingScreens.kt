@@ -197,33 +197,8 @@ internal fun DetailScreen(s: RingScreen.Detail) {
                 modifier = readingWidth,
             )
             Spacer(Modifier.height(8.dp))
-            // A Detail's actions are ROWS, the same atom the rest of the menu
-            // system uses. They were bare centred words, which read as captions
-            // under the hero number rather than as things you could press.
-            s.actions.forEach { action ->
-                RingRow(
-                    title = action.label,
-                    sub = "",
-                    icon = action.icon,
-                    accent = if (action.destructive) CircleAccent.DANGER else ringIconAccent(action.icon),
-                    onTap = action.onRun,
-                    holdToConfirm = action.holdToConfirm,
-                    modifier = readingWidth.padding(top = 3.dp, bottom = 3.dp),
-                )
-            }
-            if (s.onRefresh != null) {
-                // One verb, one feedback channel: measured fetch state lives in
-                // REFRESH's label instead of a second progress ring beside it.
-                RingRow(
-                    title = "REFRESH",
-                    sub = "",
-                    icon = RingIcons.Refresh,
-                    onTap = if (refreshEnabled) s.onRefresh else null,
-                    labelProgress = measuredWorkLabelProgress(progress, inFlight = !refreshEnabled),
-                    modifier = readingWidth.padding(top = 3.dp, bottom = 3.dp),
-                )
-                Spacer(Modifier.height(6.dp))
-            }
+            DetailActionRows(s, refreshEnabled, progress, rowModifier = readingWidth.padding(top = 3.dp, bottom = 3.dp))
+            if (s.onRefresh != null) Spacer(Modifier.height(6.dp))
             Spacer(Modifier.height(24.dp))
         }
     }
