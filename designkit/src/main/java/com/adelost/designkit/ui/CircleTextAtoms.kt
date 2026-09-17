@@ -7,6 +7,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
@@ -14,6 +15,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.PlatformTextStyle
+import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.LineBreak
@@ -42,6 +44,14 @@ fun circleFixedSp(baseSp: Float): TextUnit {
     return fixedCircleUiSp(baseSp * atomScale, fontScale).sp
 }
 
+/**
+ * What every [CircleText] under it laid out: its text and the measured layout, on each layout pass. For tests and
+ * debug hosts, which need the letters a face really holds; ink shows height, not whether a line was ellipsised. A row
+ * whose action speaks for it clears its title's text semantics, so this is the only reading of that title. Null, the
+ * default, lays out exactly as before.
+ */
+val LocalCircleTextLayouts = staticCompositionLocalOf<((text: String, layout: TextLayoutResult) -> Unit)?> { null }
+
 @Composable
 fun CircleText(
     text: String,
@@ -60,11 +70,12 @@ fun CircleText(
     lineHeightSp: Float? = null,
     /** Measured layout, for callers that must react to overflow (a row title
      *  that shrinks rather than losing letters). */
-    onTextLayout: ((androidx.compose.ui.text.TextLayoutResult) -> Unit)? = null,
+    onTextLayout: ((TextLayoutResult) -> Unit)? = null,
     /** Wrap into lines of even length instead of filling each line first, so
      *  a centred sentence never leaves one word alone on its last line. */
     balancedLines: Boolean = false,
 ) {
+    val layouts = LocalCircleTextLayouts.current
     BasicText(
         text = text,
         modifier = modifier,
@@ -74,7 +85,10 @@ fun CircleText(
         },
         maxLines = maxLines,
         overflow = overflow,
-        onTextLayout = onTextLayout,
+        onTextLayout = if (layouts == null) onTextLayout else { layout ->
+            onTextLayout?.invoke(layout)
+            layouts(text, layout)
+        },
     )
 }
 
