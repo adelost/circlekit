@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { defineLanes, laneRideEdges, laneRiders, lanesIr } from "../src/index.js";
+import { defineLanes, laneRideEdges, laneRiders, lanesIr, type Lanes, type ProductDeclaration } from "../src/index.js";
 
 const lanes = {
   pressure: { isolation: "dedicated", owner: "pressure-hub", lifetime: "process", ordering: "serial", reason: "a late sample is a late altitude" },
@@ -29,6 +29,13 @@ test("an owner's intake and processing share its lane, unrelated riders share a 
   assert.deepEqual(laneRideEdges(declared).slice(0, 1), [{ from: "stream.pressure", to: "pressure", owner: "pressure-hub" }]);
   assert.equal(lanesIr(declared).lanes?.rides.length, 6);
   assert.deepEqual(lanesIr(undefined), {});
+});
+
+test("defineLanes' own result is a product's lanes as it stands, with no annotation or widening", () => {
+  const declared = defineLanes({ id: "fixture.lanes", lanes, streams: ["stream.pressure"], rides });
+  const productLanes: ProductDeclaration["lanes"] = declared;
+  const anyLanes: Lanes = declared;
+  assert.equal(productLanes, anyLanes);
 });
 
 test("a stream never rides the UI lane", () => {
@@ -65,6 +72,8 @@ test("a lane says why, uses known isolation, ordering and lifetime, names its ow
   assert.throws(untyped({ lanes: { ...lanes, incident: { ...lanes.incident, ordering: "parallel" } } }), /ordering 'parallel' is not one of serial/u);
   assert.throws(untyped({ lanes: { ...lanes, incident: { ...lanes.incident, lifetime: "forever" } } }), /lifetime 'forever' is not one of process, owner/u);
   assert.throws(untyped({ lanes: { ...lanes, pressure: { ...lanes.pressure, owner: "" } } }), /dedicated lane 'pressure' names no owner/u);
+  assert.throws(untyped({ lanes: { ...lanes, pressure: { ...lanes.pressure, owner: "pressure.service" } } }),
+    /dedicated lane 'pressure' owner 'pressure\.service' is not a plain kebab name \(a-z, 0-9, -, starting with a letter\)/u);
   assert.throws(untyped({ lanes: { ...lanes, ui: lanes.incident } }), /lane 'ui' is the platform's UI lane and cannot be declared/u);
   assert.throws(untyped({ rides: { ...rides, "worker.sync": "incident" } }), /rider 'worker\.sync' is not named stream\.<id> or service\.<id>/u);
 });
