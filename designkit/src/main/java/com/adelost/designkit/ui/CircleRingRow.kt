@@ -328,12 +328,15 @@ private fun CirclePassiveReadingContent(
                     if (sub.isNotBlank() || trailing != null) Spacer(Modifier.size(6.dp))
                 }
                 if (sub.isNotBlank()) {
+                    // A reading wraps freely; balanced so "your phone's own,
+                    // screen held / on" cannot leave a word alone (Skyvw row 117).
                     CircleText(
                         text = sub,
                         color = semanticColor ?: RingTokens.Dim,
                         fontSizeSp = MenuDesign.subSize.value,
                         textAlign = androidx.compose.ui.text.style.TextAlign.Center,
                         modifier = Modifier.weight(1f, fill = false),
+                        balancedLines = true,
                     )
                 }
                 if (trailing != null) {

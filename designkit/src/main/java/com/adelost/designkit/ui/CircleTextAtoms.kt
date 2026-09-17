@@ -16,6 +16,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.PlatformTextStyle
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.LineBreak
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.TextUnit
@@ -60,12 +61,17 @@ fun CircleText(
     /** Measured layout, for callers that must react to overflow (a row title
      *  that shrinks rather than losing letters). */
     onTextLayout: ((androidx.compose.ui.text.TextLayoutResult) -> Unit)? = null,
+    /** Wrap into lines of even length instead of filling each line first, so
+     *  a centred sentence never leaves one word alone on its last line. */
+    balancedLines: Boolean = false,
 ) {
     BasicText(
         text = text,
         modifier = modifier,
         style = circleTextStyle(color, fontSizeSp, fontWeight, letterSpacingSp,
-            textAlign, tabularNumerals, lineHeightSp),
+            textAlign, tabularNumerals, lineHeightSp).let {
+            if (balancedLines) it.copy(lineBreak = BALANCED_LINES) else it
+        },
         maxLines = maxLines,
         overflow = overflow,
         onTextLayout = onTextLayout,
@@ -158,3 +164,9 @@ fun CircleIcon(
         colorFilter = ColorFilter.tint(tint),
     )
 }
+
+private val BALANCED_LINES = LineBreak(
+    strategy = LineBreak.Strategy.Balanced,
+    strictness = LineBreak.Strictness.Normal,
+    wordBreak = LineBreak.WordBreak.Default,
+)
