@@ -48,6 +48,7 @@ while IFS= read -r line; do
   [ -n "$cmd" ] || continue
   if [[ "$cmd" == cd\ * ]]; then
     dir="$(awk '{print $2}' <<<"$cmd")"
+    case "$dir" in appspec*|app/*) continue ;; esac   # a product's directories are the product's to check
     [ -d "$dir" ] || { echo "check-guide-paths: FAIL: $GUIDE:$line_no: directory '$dir' does not exist" >&2; status=1; }
   else
     first="$(awk '{print $1}' <<<"$cmd")"
