@@ -137,13 +137,18 @@ export interface DecisionTableDeclaration<Axes extends DecisionAxes, Columns ext
   readonly invariants?: readonly DecisionInvariant<NoInfer<Axes>, NoInfer<Columns>>[];
 }
 
-/** A table that passed every law: plain data, with no invariant functions left in it. */
+/**
+ * A table that passed every law: plain data. The product's invariants are kept
+ * by what they refuse, so the product graph can list them; their functions ran
+ * at definition and are gone.
+ */
 export interface DecisionTable<Axes extends DecisionAxes = DecisionAxes, Columns extends DecisionColumns = DecisionColumns> {
   readonly id: string;
   readonly axes: Axes;
   readonly derived: DerivedAxes<Axes>;
   readonly columns: Columns;
   readonly cells: readonly DecisionCell<Axes, Columns>[];
+  readonly invariants: readonly string[];
 }
 
 export const choice = <const Value extends string>(values: readonly Value[]): ChoiceColumn<Value> => ({ kind: "choice", values });
@@ -173,12 +178,19 @@ export function defineDecisionTable<const Axes extends DecisionAxes, const Colum
   declaration: DecisionTableDeclaration<Axes, Columns>,
 ): DecisionTable<Axes, Columns> {
   const { id, axes, columns, cells, derived = {}, invariants = [] } = declaration;
-  const table = { id, axes, derived, columns, cells } as DecisionTable<Axes, Columns>;
+  const table = { id, axes, derived, columns, cells, invariants: invariants.map(({ refuse }) => refuse) } as DecisionTable<Axes, Columns>;
   const problems = decisionTableProblems(table as unknown as DecisionTable, invariants as unknown as readonly DecisionInvariant[]);
   if (problems.length > 0) {
     throw new Error(`decision table '${id}' is refused:\n- ${problems.join("\n- ")}`);
   }
   return table;
+}
+
+/** A product's tables for its IR, unique by id; none adds nothing, so a product without tables emits what it always did. */
+export function decisionTablesIr(tables: readonly DecisionTable[]): { readonly decisionTables?: readonly DecisionTable[] } {
+  if (tables.length === 0) return {};
+  requireUnique(tables.map(({ id }) => id), "decision table");
+  return { decisionTables: tables };
 }
 
 /** Every point of the axes, the first axis slowest, in declared value order. */

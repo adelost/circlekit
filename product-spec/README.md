@@ -57,7 +57,9 @@ laws with `invariants: [{ refuse, when }]`, which run once at definition and
 are not part of the returned table. An axis the platform derives from events
 (a window after a touch) is declared in `derived` with its source, window and
 start, restart and end events. `decide(table, point)` returns the
-values with the id of the cell that decided, and product-emit writes the same
+values with the id of the cell that decided. A product passes its tables to
+`defineProduct` as `decisionTables`, so they reach the IR, the product JSON and
+the product graph; product-emit writes the same
 lookup as an exhaustive Kotlin `when`.
 
 Every UI-reaching closed state discriminator uses one

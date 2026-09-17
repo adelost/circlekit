@@ -121,9 +121,9 @@ const arrived = {
   endsOn: ["face-dark"],
 } as const;
 
-test("the defined table is plain data: invariants ran at definition and are not in it", () => {
+test("the defined table is plain data: invariants ran at definition and only their names stay", () => {
   const table = defineDecisionTable({ id: "fixture.power", axes, derived: { arrived }, columns, cells, invariants: [airIsLive] });
-  assert.equal("invariants" in table, false);
+  assert.deepEqual(table.invariants, ["the air must read 20 Hz"]);
   assert.deepEqual(JSON.parse(JSON.stringify(table)), table);
   assert.deepEqual(table.derived.arrived, arrived);
 });
