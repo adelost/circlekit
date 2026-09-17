@@ -1,5 +1,6 @@
 package com.adelost.designkit.ui
 
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.awaitCancellation
@@ -19,6 +20,22 @@ class CircleServiceStripModelTest {
         CircleServiceGlyph("svc", icon, "30s", look, intervalMs, lastUpdateMs, "svc")
 
     /** Mattias 2026-09-14: "en åttabitars progression när det är dags för nästa uppdatering". */
+    /**
+     * Row 178 (Skyvw): a product that measures a service's health says so per glyph, and the strip draws that colour
+     * instead of its look's. The strip still picks no colour itself, and a glyph without one is unchanged.
+     */
+    @Test
+    fun `a glyph's own tint reaches its frame, and a glyph without one keeps its look`() {
+        val measured = CircleServiceGlyph("svc", icon, "LIVE", CircleServiceLook.LIVE, 1_000L, 0L, "svc", tint = Color.Red)
+        val plain = glyph(intervalMs = 1_000L, lastUpdateMs = 0L)
+        val frames = circleServiceFrames(listOf(measured, plain), 10L)
+
+        assertEquals(Color.Red, frames.first().tint)
+        assertEquals(null, frames.last().tint)
+        // The frames are compared to skip a redraw, so the same glyphs at the same moment stay equal.
+        assertEquals(frames, circleServiceFrames(listOf(measured, plain), 10L))
+    }
+
     @Test
     fun `the ring is empty when an update lands, half at half the interval, full when the next is due`() {
         val traffic = glyph(intervalMs = 30_000L, lastUpdateMs = 100_000L)
@@ -98,5 +115,47 @@ class CircleServiceStripModelTest {
         assertEquals(CircleServiceRows(listOf(listOf(0, 1, 2), listOf(3, 4)), 0),
             fitCircleServiceRows(widths, gap = 2, maxWidth = 64, maxRows = Int.MAX_VALUE) { 8 })
         assertThrows(IllegalArgumentException::class.java) { fitCircleServiceRows(widths, 2, 64, 0) { 8 } }
+    }
+
+    /**
+     * Row 178 (Skyvw): the strip owns the press, not the glyph. A Skyvw glyph measures about 14 x 6 dp on a strip
+     * whose cells sit 2 dp apart, far under Android's 48 dp target, so a finger aimed at one would miss it or hit its
+     * neighbour. Every seat therefore reaches half a gap past its glyph and fills the height the host makes for a
+     * finger, while the glyph itself keeps drawing its own few dp.
+     */
+    @Test
+    fun `a press between two glyphs names one of them, and one beside the strip or on the count names none`() {
+        val seats = circleServiceSeats(
+            listOf(listOf(CircleServiceBox("gps", 20, 6), CircleServiceBox("baro", 30, 6), CircleServiceBox(null, 8, 6))),
+            gap = 4, width = 66, height = 24,
+        )
+
+        assertEquals("on the ink", "gps", circleServiceKeyAt(seats, 19, 12))
+        assertEquals("in the gap, gps side", "gps", circleServiceKeyAt(seats, 21, 12))
+        assertEquals("the cell edge", "baro", circleServiceKeyAt(seats, 22, 12))
+        assertEquals("in the gap, baro side", "baro", circleServiceKeyAt(seats, 23, 12))
+        assertEquals("the top of the finger's room", "gps", circleServiceKeyAt(seats, 5, 0))
+        assertEquals("the bottom of it", "gps", circleServiceKeyAt(seats, 5, 23))
+        assertEquals("the +N count names no service", null, circleServiceKeyAt(seats, 60, 12))
+        assertEquals("beside the strip", null, circleServiceKeyAt(seats, 70, 12))
+        assertEquals("below the strip", null, circleServiceKeyAt(seats, 5, 24))
+        // The ink stays 6 tall and centres in the 24 the finger gets.
+        assertEquals(9, seats.first().y)
+        assertEquals(0, seats.first().x)
+    }
+
+    @Test
+    fun `a second row is pressed as its own band, so a press there never names the row above`() {
+        val seats = circleServiceSeats(
+            listOf(listOf(CircleServiceBox("gps", 20, 6)), listOf(CircleServiceBox("baro", 30, 6))),
+            gap = 4, width = 30, height = 12,
+        )
+
+        assertEquals("gps", circleServiceKeyAt(seats, 10, 3))
+        assertEquals("baro", circleServiceKeyAt(seats, 10, 9))
+        assertEquals(null, circleServiceKeyAt(seats, 10, 13))
+        // A short row is centred, and its glyph draws in its own band.
+        assertEquals(5, seats.first().x)
+        assertEquals(6, seats.last().y)
     }
 }
