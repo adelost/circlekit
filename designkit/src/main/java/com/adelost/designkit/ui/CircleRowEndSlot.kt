@@ -12,6 +12,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.Dp
@@ -40,8 +41,9 @@ internal fun CircleRowEndSlotted(endSlot: CircleRowEndSlot?, gap: Dp, content: @
  * How many lines a wrapping row line (its title or its value) may take once the row lends [lentWidth] to an end
  * slot. A line that fitted one line in the width it had before keeps that line and shrinks instead: the slot made
  * GROUND SCREEN wrap at rest at 192 and COLORS read "SEA / GLASS", each row a line taller than its neighbours
- * (Skyvw row 118). A line that already wrapped keeps wrapping. [line] gets [modifier] to place on its text, or
- * a bare Modifier when this wrapper already carries it.
+ * (Skyvw row 118). It keeps the line only while the shrink can hold it, that is while it fits one line at
+ * [minFontSizeSp], the size its text stops shrinking at. A line that already wrapped keeps wrapping. [line] gets
+ * [modifier] to place on its text, or a bare Modifier when this wrapper already carries it.
  */
 @Composable
 internal fun CircleRowLineKeepingOneLine(
@@ -52,6 +54,7 @@ internal fun CircleRowLineKeepingOneLine(
     lentWidth: Dp,
     maxLines: Int,
     modifier: Modifier = Modifier,
+    minFontSizeSp: Float = fontSizeSp * CIRCLE_FITTED_TEXT_MIN_SCALE,
     line: @Composable (maxLines: Int, modifier: Modifier) -> Unit,
 ) {
     if (maxLines == 1 || lentWidth.value <= 0f) {
@@ -60,13 +63,16 @@ internal fun CircleRowLineKeepingOneLine(
     }
     BoxWithConstraints(modifier) {
         val style = circleTextStyle(Color.Unspecified, fontSizeSp, fontWeight, letterSpacingSp)
+        val floor = circleTextStyle(Color.Unspecified, minFontSizeSp, fontWeight, letterSpacingSp)
         val measurer = rememberTextMeasurer()
         val lentPx = with(LocalDensity.current) { lentWidth.roundToPx() }
         // A line break the text itself carries is lines, never a line that wrapped: measured as one line it read as a
         // fit, and Skyvw's RATE row squeezed "Sensor max 100Hz / stamps 20Hz / arrived 20Hz" into "Sensor max 100…".
-        val keepsOneLine = remember(text, style, constraints.maxWidth, lentPx) {
+        // Past its floor a kept line ellipsised instead: Skyvw's NEARBY read "CONNECT ACCOU…" at 192 (row 161).
+        val keepsOneLine = remember(text, style, floor, constraints.maxWidth, lentPx) {
+            fun oneLine(at: TextStyle) = measurer.measure(text, at, maxLines = 1, softWrap = false).size.width
             '\n' !in text && constraints.hasBoundedWidth &&
-                measurer.measure(text, style, maxLines = 1, softWrap = false).size.width <= constraints.maxWidth + lentPx
+                oneLine(style) <= constraints.maxWidth + lentPx && oneLine(floor) <= constraints.maxWidth
         }
         line(if (keepsOneLine) 1 else maxLines, Modifier)
     }

@@ -342,7 +342,7 @@ private fun CirclePassiveReadingContent(
         CircleRowLineKeepingOneLine(
             text = title, fontSizeSp = MenuDesign.titleSize.value, letterSpacingSp = MenuDesign.titleTracking.value,
             fontWeight = FontWeight.Bold, lentWidth = widthLentToEndSlot, maxLines = Int.MAX_VALUE,
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier.fillMaxWidth(), minFontSizeSp = CIRCLE_TITLE_MIN_SIZE_SP,
         ) { maxLines, lineModifier ->
             CircleFittedText(
                 text = title,
@@ -423,6 +423,7 @@ private fun CircleFittedTitle(
     CircleRowLineKeepingOneLine(
         text = text, fontSizeSp = fontSizeSp, letterSpacingSp = MenuDesign.titleTracking.value,
         fontWeight = FontWeight.Bold, lentWidth = widthLentToEndSlot, maxLines = maxLines,
+        minFontSizeSp = CIRCLE_TITLE_MIN_SIZE_SP,
     ) { lines, lineModifier ->
         CircleFittedText(
             text = text,
