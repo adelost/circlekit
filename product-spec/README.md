@@ -62,6 +62,15 @@ values with the id of the cell that decided. A product passes its tables to
 the product graph; product-emit writes the same
 lookup as an exhaustive Kotlin `when`.
 
+Where streams and services run is one `defineLanes(...)`: each lane says
+`isolation` (`dedicated` for one rider, `shared` for several) and `ordering`
+(`serial`) with a reason, `streams` lists every stream the product declares,
+and `rides` maps each `stream.<id>` or `service.<id>` to a lane or to the
+platform's `ui` lane. The shape refuses a stream on the UI lane, a dedicated
+lane without exactly one rider, a declared stream that rides nothing and a ride
+to an undeclared lane. product-emit builds each lane once for a platform and
+reports what it could build.
+
 Every UI-reaching closed state discriminator uses one
 `defineStateAuthority(...)`. Its source is an exact output port, contract,
 finite discriminator field and finite value declaration; a service may own
