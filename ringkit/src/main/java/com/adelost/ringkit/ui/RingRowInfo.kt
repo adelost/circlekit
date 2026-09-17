@@ -53,7 +53,7 @@ fun RingInfoButton(contentDescription: String, onOpen: () -> Unit, modifier: Mod
 }
 
 @Composable
-private fun ringInfoButtonDiameter(): Dp =
+internal fun ringInfoButtonDiameter(): Dp =
     phoneSurfaceDesignFor(LocalCircleSurfaceLayout.current.surfaceClass)?.rowIconDiameter
         ?: MenuDesign.watchActionRingDiameter
 

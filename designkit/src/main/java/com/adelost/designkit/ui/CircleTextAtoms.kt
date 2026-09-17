@@ -129,6 +129,7 @@ fun CircleFittedText(
     maxLines: Int = 1,
     tabularNumerals: Boolean = false,
     lineHeightSp: Float? = null,
+    textAlign: TextAlign? = null,
 ) {
     var sizeSp by remember(text, fontSizeSp, maxLines) { mutableFloatStateOf(fontSizeSp) }
     CircleText(
@@ -137,6 +138,7 @@ fun CircleFittedText(
         fontSizeSp = sizeSp,
         fontWeight = fontWeight,
         letterSpacingSp = letterSpacingSp,
+        textAlign = textAlign,
         maxLines = maxLines,
         overflow = TextOverflow.Ellipsis,
         tabularNumerals = tabularNumerals,
