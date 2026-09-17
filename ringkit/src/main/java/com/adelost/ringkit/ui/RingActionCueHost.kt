@@ -41,6 +41,7 @@ import com.adelost.designkit.ui.RingTokens
 import com.adelost.designkit.ui.circleBrandColor
 import com.adelost.designkit.ui.CircleActionTiming
 import com.adelost.designkit.ui.CircleIconDisc
+import com.adelost.designkit.ui.CircleText
 import com.adelost.designkit.ui.RingIcons
 import com.adelost.designkit.ui.circleSafeTap
 import com.adelost.designkit.ui.rememberCircleActionFeedbackState
@@ -222,10 +223,13 @@ private fun RingExplanationCue(cue: CircleActionCue, onDismiss: () -> Unit) {
                 overflow = TextOverflow.Ellipsis,
             )
         }
-        Text(
+        // CircleText, as a row's subtitle: a Wear `Text` inherits body1's
+        // 20 sp line height whatever its size, which spread a 9 sp explanation
+        // to twice its lines (Skyvw row 117: 66 px a line against a row's 44).
+        CircleText(
             text = requireNotNull(cue.hint),
             color = RingTokens.Dim,
-            fontSize = if (round) 9.sp else 16.sp,
+            fontSizeSp = if (round) 9f else 16f,
             textAlign = TextAlign.Center,
             maxLines = 5,
             overflow = TextOverflow.Ellipsis,
