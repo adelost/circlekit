@@ -4,6 +4,7 @@ import type {
   ProductComponentInstance,
   ScreenComponentFamilyRef,
 } from "./component-tree-model.js";
+import { decisionTablesIr, type DecisionTable } from "./decision-table-model.js";
 import {
   compileProductGraph,
   type MountedComponentScope,
@@ -147,6 +148,8 @@ export interface ProductDeclaration<
   readonly assetCatalogRef: PortableAssetCatalogRef;
   readonly iconRefs: readonly ProductIconRef<PaletteTokenRef<PaletteVariant>, string>[];
   readonly navigation: ProductNavigationDeclaration<NoInfer<Families[number]["screen"]>>;
+  /** The product's decisions over finite axes, carried into the IR so the product graph can draw them. */
+  readonly decisionTables?: readonly DecisionTable[];
 }
 
 export interface ProductIr {
@@ -169,6 +172,8 @@ export interface ProductIr {
   readonly assetCatalogRef: PortableAssetCatalogRef;
   readonly iconRefs: readonly ProductIconRef[];
   readonly navigation: ProductNavigationIr;
+  /** Present only when the product declares decision tables, so a product without any emits the IR it always did. */
+  readonly decisionTables?: readonly DecisionTable[];
 }
 
 export function defineProduct<
@@ -354,8 +359,10 @@ export function defineProduct<
     assetCatalogRef: declaration.assetCatalogRef,
     iconRefs: declaration.iconRefs,
     navigation,
+    ...decisionTablesIr(declaration.decisionTables ?? []),
   };
 }
+
 
 function validateVisuals(
   declaration: Pick<ProductDeclaration, "palette" | "assetCatalogRef" | "iconRefs">,

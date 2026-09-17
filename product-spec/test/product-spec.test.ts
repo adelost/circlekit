@@ -17,6 +17,9 @@ import {
   demandPort,
   decodeNativeBindingManifest,
   defineComponentType,
+  defineDecisionTable,
+  on,
+  bool,
   defineProductLibraryCatalog,
   defineStateAuthority,
   defineStatePresentation,
@@ -2226,4 +2229,23 @@ test("visual contracts still fail on unknown palette and asset refs", () => {
   assert.throws(() => fixture({
     iconRefs: [{ ...baseDeclaration.iconRefs[0], accent: "status.unknown" }],
   }), /uses missing palette token/);
+});
+
+test("decision tables reach the product IR and its JSON only when declared", () => {
+  assert.equal("decisionTables" in fixture(), false);
+  const table = defineDecisionTable({
+    id: "fixture.screen",
+    axes: { phase: ["IDLE", "ACTIVE"] },
+    columns: { held: bool },
+    cells: [on("fixture.idle", { phase: "IDLE" }, { held: false }), on("fixture.active", { phase: "ACTIVE" }, { held: true })],
+    invariants: [{ refuse: "idle never holds the screen", when: ({ at, values }) => at.phase === "IDLE" && values.held }],
+  });
+  const product = fixture({ decisionTables: [table] });
+  const json = JSON.parse(productJsonEmitter("out/product.json").emit(product)[0]!.content) as {
+    decisionTables: { id: string; cells: { id: string }[]; invariants: string[] }[];
+  };
+  assert.deepEqual(json.decisionTables.map(({ id, cells, invariants }) => ({ id, cells: cells.map((cell) => cell.id), invariants })), [
+    { id: "fixture.screen", cells: ["fixture.idle", "fixture.active"], invariants: ["idle never holds the screen"] },
+  ]);
+  assert.throws(() => fixture({ decisionTables: [table, table] }), /duplicate decision table/);
 });
