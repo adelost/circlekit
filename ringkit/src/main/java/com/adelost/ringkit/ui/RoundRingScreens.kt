@@ -112,7 +112,7 @@ internal fun HubScreen(s: RingScreen.Hub, nav: RingNavigator) {
     val scrollState = remember(s) { ScrollState(0) }
     // Status is the same chrome-aware grid as navigation. Keep the reading
     // atom's size; fewer columns + scrolling beat shrinking it under the X.
-    val grid = MenuGridCatalog.RoundPair.copy(diameter = MenuDesign.statRingDiameter)
+    val grid = MenuGridCatalog.RoundStatus
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier.fillMaxSize().verticalScroll(scrollState).rotaryScroll(scrollState),
