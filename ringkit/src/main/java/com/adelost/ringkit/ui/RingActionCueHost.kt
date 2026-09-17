@@ -219,7 +219,9 @@ private fun RingExplanationCue(cue: CircleActionCue, onDismiss: () -> Unit) {
                 fontSize = if (round) 10.sp else 14.sp,
                 fontWeight = FontWeight.Bold,
                 textAlign = TextAlign.Center,
-                maxLines = 1,
+                // A value that carries its own lines keeps them: one line cut Skyvw's RATE reading to
+                // "Sensor max 100…", a number that reads as going on (row 126).
+                maxLines = value.lines().size,
                 overflow = TextOverflow.Ellipsis,
             )
         }
