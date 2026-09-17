@@ -14,7 +14,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
@@ -24,7 +23,6 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Density
@@ -152,7 +150,7 @@ private fun CircleWatchExactSurface(
         } ?: availableSide
         val canonScale = faceSide.value / CircleUiProfiles.CANON_ROUND_CANVAS_DP
         val hostDensity = LocalDensity.current
-        Box(Modifier.size(faceSide).clip(CircleShape)) {
+        Box(Modifier.size(faceSide).roundFaceClip()) {
             CompositionLocalProvider(
                 LocalDensity provides Density(
                     density = hostDensity.density * canonScale,
