@@ -36,6 +36,14 @@ async function registry() {
   ));
 }
 
+/** The product-spec version package.json pins, so a pin bump does not also have to edit this test. */
+async function pinnedProductSpecVersion(): Promise<string> {
+  const pkg = JSON.parse(await readFile(resolve(root, "package.json"), "utf8")) as { dependencies: Record<string, string> };
+  const pinned = /\/product-spec\/(\d+\.\d+\.\d+)\//u.exec(pkg.dependencies["@v1d/product-spec"] ?? "")?.[1];
+  assert.ok(pinned, "package.json pins @v1d/product-spec by an immutable version URL");
+  return pinned;
+}
+
 async function productSpecVersion(): Promise<string> {
   const raw = JSON.parse(await readFile(resolve(root, "node_modules/@v1d/product-spec/package.json"), "utf8")) as {
     version?: unknown;
@@ -86,7 +94,7 @@ function nativeHosts(
 test("one compiled ProductSpec owns Android, Apple and Garmin Showcase structure", async () => {
   const android = await registry();
   const version = await productSpecVersion();
-  assert.equal(version, "0.3.52");
+  assert.equal(version, await pinnedProductSpecVersion());
   const product = compileCircleKitShowcaseProduct(version);
   const recoloured = { ...product, palette: { variants: product.palette.variants.map((variant) => ({
     ...variant,

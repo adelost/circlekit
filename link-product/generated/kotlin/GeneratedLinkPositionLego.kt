@@ -1,6 +1,6 @@
 // GENERATED FILE. DO NOT EDIT.
 // GENERATED FROM ProductConfig position
-// Product declaration SHA-256: 8e9bebdbd90a38b019b7c0322c1385235da4215a4dbf794913bb7ae9e0d330b1
+// Product declaration SHA-256: a3d21aef023d79fa0e9c91fd7eb74225263b3b7bc7f582f2552aa7a108638c77
 package io.v1d.link.generated
 
 internal object GeneratedLinkPositionLego {
@@ -38,7 +38,7 @@ internal object GeneratedLinkPositionLego {
 
     val declarations: List<GeneratedNativeLegoDeclaration> = listOf(
         GeneratedNativeLegoDeclaration(id = Contracts.SERVICE_DEMAND, kind = GeneratedNativeLegoKind.CONTRACT, contractKind = GeneratedNativeLegoContractKind.EVENT, fields = listOf(GeneratedNativeLegoField("owner", "string", null, false, "none"), GeneratedNativeLegoField("active", "boolean", null, false, "none"))),
-        GeneratedNativeLegoDeclaration(id = Contracts.POSITION_PRESENTATION, kind = GeneratedNativeLegoKind.CONTRACT, contractKind = GeneratedNativeLegoContractKind.STATE, fields = listOf(GeneratedNativeLegoField("availability", "ref:position.availability", null, false, "none"), GeneratedNativeLegoField("observation", "ref:position.observation", null, true, "none"))),
+        GeneratedNativeLegoDeclaration(id = Contracts.POSITION_PRESENTATION, kind = GeneratedNativeLegoKind.CONTRACT, contractKind = GeneratedNativeLegoContractKind.STATE, fields = listOf(GeneratedNativeLegoField("availability", "ref:position.availability", null, false, "none"), GeneratedNativeLegoField("observation", "ref:position.observation", null, true, "none"), GeneratedNativeLegoField("isMock", "boolean", null, true, "none"))),
         GeneratedNativeLegoDeclaration(id = Contracts.POSITION_FLIGHT_FIX, kind = GeneratedNativeLegoKind.CONTRACT, contractKind = GeneratedNativeLegoContractKind.OBSERVATION, fields = listOf(GeneratedNativeLegoField("observation", "ref:position.observation", null, false, "none"), GeneratedNativeLegoField("breakBefore", "boolean", null, false, "none"), GeneratedNativeLegoField("gpsStatus", "string", null, false, "none"))),
         GeneratedNativeLegoDeclaration(id = Contracts.LINK_POSITION_FIX_PRESENTATION, kind = GeneratedNativeLegoKind.CONTRACT, contractKind = GeneratedNativeLegoContractKind.SNAPSHOT, fields = listOf(GeneratedNativeLegoField("observation", "ref:position.observation", null, false, "none"), GeneratedNativeLegoField("breakBefore", "boolean", null, false, "none"), GeneratedNativeLegoField("gpsStatus", "string", null, false, "none"))),
         GeneratedNativeLegoDeclaration(id = Configs.LINK_POSITION_ACQUISITION, kind = GeneratedNativeLegoKind.CONFIG),
