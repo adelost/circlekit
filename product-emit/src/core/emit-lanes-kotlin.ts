@@ -3,7 +3,7 @@ import type { SourcedKotlinEmissionOptions } from "./emission-options.js";
 import { kotlinStringLiteral } from "./kotlin-syntax.js";
 
 export interface LanesKotlinOptions extends SourcedKotlinEmissionOptions {
-  /** Every lane's thread is named this plus the lane, e.g. `skyvw-` and `pressure` make `skyvw-pressure`. */
+  /** Every lane's thread is named this plus the lane, e.g. `acme-` and `pressure` make `acme-pressure`. */
   readonly threadNamePrefix: string;
   /** A Kotlin Boolean expression that is true in a debug build, where `require()` throws off its lane. */
   readonly debugExpression: string;
