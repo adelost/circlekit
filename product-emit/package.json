@@ -1,6 +1,6 @@
 {
   "name": "@v1d/product-emit",
-  "version": "0.1.30",
+  "version": "0.1.31",
   "description": "Typed Kotlin emission for v1d ProductSpec products",
   "type": "module",
   "files": [
@@ -27,7 +27,7 @@
   },
   "dependencies": {
     "@v1d/circlekit-assets": "https://circlekit.pages.dev/npm/v1d/circlekit-assets/0.3.43/v1d-circlekit-assets-0.3.43.tgz",
-    "@v1d/product-spec": "https://circlekit.pages.dev/npm/v1d/product-spec/0.3.55/v1d-product-spec-0.3.55.tgz",
+    "@v1d/product-spec": "https://circlekit.pages.dev/npm/v1d/product-spec/0.3.56/v1d-product-spec-0.3.56.tgz",
     "@v1d/skydiving-legos": "https://circlekit.pages.dev/npm/v1d/skydiving-legos/0.1.5/v1d-skydiving-legos-0.1.5.tgz"
   },
   "devDependencies": {
