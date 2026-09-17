@@ -39,6 +39,8 @@ object MenuDesign {
     val mediaContentGap: Dp = 4.dp
 
     val statRingDiameter: Dp = 46.dp
+    /** The round STATUS hub's content column: two stat rings close enough to the centre that their labels fit the chord. */
+    val roundStatusGridMaxWidth: Dp = 128.dp
     val statValueSize: TextUnit = 12.sp
     val statLabelSize: TextUnit = 6.5.sp
     val launcherDiameter: Dp = watchActionRingDiameter

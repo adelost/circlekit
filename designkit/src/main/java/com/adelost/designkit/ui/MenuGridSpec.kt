@@ -75,6 +75,15 @@ object MenuGridCatalog {
         labelSize = 8.sp,
     )
 
+    // The round STATUS hub: two columns of 46 dp stat rings with a label under each. At RoundPair's width the second
+    // row's labels sat about 37 dp either side of the centre line, where the 192 dp face's chord is too narrow for
+    // them ("ALT RE", Skyvw row 161). A narrower content column brings both columns in so every label of the rows
+    // shown at rest stays inside the face; the atom and the label size do not change.
+    val RoundStatus = RoundPair.copy(
+        diameter = MenuDesign.statRingDiameter,
+        contentMaxWidth = MenuDesign.roundStatusGridMaxWidth,
+    )
+
     // Phone portrait. ONE ring size on every rectangular surface — the start
     // screen's 56 dp action (Mattias 2026-07-21: "ikonerna på settings är
     // samma storlek som på framsidan.. det är nya standarden"). Density and
