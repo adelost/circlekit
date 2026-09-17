@@ -62,8 +62,10 @@ internal fun CircleRowLineKeepingOneLine(
         val style = circleTextStyle(Color.Unspecified, fontSizeSp, fontWeight, letterSpacingSp)
         val measurer = rememberTextMeasurer()
         val lentPx = with(LocalDensity.current) { lentWidth.roundToPx() }
+        // A line break the text itself carries is lines, never a line that wrapped: measured as one line it read as a
+        // fit, and Skyvw's RATE row squeezed "Sensor max 100Hz / stamps 20Hz / arrived 20Hz" into "Sensor max 100…".
         val keepsOneLine = remember(text, style, constraints.maxWidth, lentPx) {
-            constraints.hasBoundedWidth &&
+            '\n' !in text && constraints.hasBoundedWidth &&
                 measurer.measure(text, style, maxLines = 1, softWrap = false).size.width <= constraints.maxWidth + lentPx
         }
         line(if (keepsOneLine) 1 else maxLines, Modifier)
