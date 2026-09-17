@@ -37,32 +37,35 @@ internal fun CircleRowEndSlotted(endSlot: CircleRowEndSlot?, gap: Dp, content: @
 }
 
 /**
- * How many lines a wrapping row title may take once its row lends [lentWidth] to an end slot. A title that fitted
- * one line in the width it had before keeps that line and shrinks instead: the slot made GROUND SCREEN wrap at
- * rest at 192, a line taller than its neighbours (Skyvw row 118). A title that already wrapped keeps wrapping.
+ * How many lines a wrapping row line (its title or its value) may take once the row lends [lentWidth] to an end
+ * slot. A line that fitted one line in the width it had before keeps that line and shrinks instead: the slot made
+ * GROUND SCREEN wrap at rest at 192 and COLORS read "SEA / GLASS", each row a line taller than its neighbours
+ * (Skyvw row 118). A line that already wrapped keeps wrapping. [line] gets [modifier] to place on its text, or
+ * a bare Modifier when this wrapper already carries it.
  */
 @Composable
-internal fun CircleTitleKeepingItsLine(
+internal fun CircleRowLineKeepingOneLine(
     text: String,
     fontSizeSp: Float,
     letterSpacingSp: Float,
+    fontWeight: FontWeight,
     lentWidth: Dp,
     maxLines: Int,
     modifier: Modifier = Modifier,
-    title: @Composable (maxLines: Int) -> Unit,
+    line: @Composable (maxLines: Int, modifier: Modifier) -> Unit,
 ) {
     if (maxLines == 1 || lentWidth.value <= 0f) {
-        title(maxLines)
+        line(maxLines, modifier)
         return
     }
     BoxWithConstraints(modifier) {
-        val style = circleTextStyle(Color.Unspecified, fontSizeSp, FontWeight.Bold, letterSpacingSp)
+        val style = circleTextStyle(Color.Unspecified, fontSizeSp, fontWeight, letterSpacingSp)
         val measurer = rememberTextMeasurer()
         val lentPx = with(LocalDensity.current) { lentWidth.roundToPx() }
         val keepsOneLine = remember(text, style, constraints.maxWidth, lentPx) {
             constraints.hasBoundedWidth &&
                 measurer.measure(text, style, maxLines = 1, softWrap = false).size.width <= constraints.maxWidth + lentPx
         }
-        title(if (keepsOneLine) 1 else maxLines)
+        line(if (keepsOneLine) 1 else maxLines, Modifier)
     }
 }
