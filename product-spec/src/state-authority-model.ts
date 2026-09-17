@@ -16,6 +16,7 @@ import {
 } from "./node-model.js";
 import type { CompiledProductGraph, PortBindingIr } from "./port-graph-model.js";
 import { adapterFields } from "./state-authority-internals.js";
+import { frozen } from "./frozen.js";
 export type StatePresentationFieldValue = LegoPrimitive | LegoFiniteValueDeclaration;
 export interface StatePresentationField<Name extends string = string,
   Value extends StatePresentationFieldValue = StatePresentationFieldValue> {
@@ -104,7 +105,7 @@ export function defineStatePresentation<
     contract,
   };
   validateStatePresentation(result, states);
-  return result;
+  return frozen(result);
 }
 
 /**
@@ -198,7 +199,7 @@ export function defineStateAuthority<
       outputPortRef: `${node.id}.presentation`,
     },
   } as const;
-  return {
+  return frozen({
     /**
      * The port a product binds: this authority's presentation, named once.
      *
@@ -226,7 +227,7 @@ export function defineStateAuthority<
     authority: authority as StateAuthority & { readonly id: Id },
 
     adapter: { type, node },
-  } as const;
+  } as const);
 }
 
 /** Compile all UI-reaching closed state lineages against the executable graph. */

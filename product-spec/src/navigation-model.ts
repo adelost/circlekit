@@ -10,6 +10,7 @@ import {
   type LegoFiniteValueDeclaration,
 } from "./node-model.js";
 import type { CompiledProductGraph } from "./port-graph-model.js";
+import { frozen } from "./frozen.js";
 
 interface NavigationArtifactMountScope {
   readonly artifactRef: string;
@@ -162,7 +163,7 @@ export function defineProductNavigation<
     routeIntentContract: navigationRouteContract(declaration.id),
   };
   validateDefinition(definition);
-  return definition;
+  return frozen(definition);
 }
 
 export function compileProductNavigation(input: {

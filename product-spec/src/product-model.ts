@@ -48,6 +48,7 @@ import {
   type ProductIconRef,
   type ProductPalette,
 } from "./visual-model.js";
+import { frozen } from "./frozen.js";
 
 export const PRODUCT_SPEC_SCHEMA_VERSION = 9 as const;
 
@@ -86,7 +87,7 @@ export function defineProductLibraryCatalog<
   ProductLibraryCatalog<Id, Contracts, NodeTypes, FiniteValues> {
   const catalog = { kind: "product-library-catalog" as const, ...declaration };
   validateProductLibraryCatalog(catalog);
-  return catalog;
+  return frozen(catalog);
 }
 
 export interface RendererBinding<Id extends string = string, Capability extends string = string> {
@@ -344,7 +345,7 @@ export function defineProduct<
     artifactScopes,
     graph,
   });
-  return {
+  return frozen({
     kind: "product-spec-ir",
     schemaVersion: PRODUCT_SPEC_SCHEMA_VERSION,
     id: declaration.id,
@@ -366,7 +367,7 @@ export function defineProduct<
     navigation,
     ...decisionTablesIr(declaration.decisionTables ?? []),
     ...lanesIr(declaration.lanes),
-  };
+  });
 }
 
 
