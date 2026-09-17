@@ -1,6 +1,7 @@
 package com.adelost.designkit.ui
 
 import androidx.compose.runtime.Immutable
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.collectLatest
@@ -37,6 +38,9 @@ data class CircleServiceGlyph(
     val lastUpdateMs: Long?,
     /** What a screen reader hears for this glyph. */
     val description: String,
+    /** The host's own colour for this glyph, over the style's tint for its look; null keeps the look's own. A
+     *  product that measures health per service says so here, so the strip still picks no colour itself. */
+    val tint: Color? = null,
 )
 
 /**
@@ -68,10 +72,11 @@ data class CircleServiceFrame(
     val look: CircleServiceLook,
     val litSegments: Int,
     val description: String,
+    val tint: Color? = null,
 )
 
 fun circleServiceFrames(glyphs: List<CircleServiceGlyph>, nowMs: Long): List<CircleServiceFrame> = glyphs.map {
-    CircleServiceFrame(it.key, it.icon, it.label, it.look, circleServiceLitSegments(it, nowMs), it.description)
+    CircleServiceFrame(it.key, it.icon, it.label, it.look, circleServiceLitSegments(it, nowMs), it.description, it.tint)
 }
 
 /**
@@ -132,3 +137,48 @@ fun fitCircleServiceRows(
     }
     return CircleServiceRows(rows.filter { it.isNotEmpty() }, hidden)
 }
+
+/** A glyph on its way into a row: the service it draws, and how big it measured. The "+N" count names no service. */
+@Immutable
+data class CircleServiceBox(val key: String?, val width: Int, val height: Int)
+
+/** Where a glyph is drawn ([x], [y]) and the seat a press for it lands in ([left]..[right], [top]..[bottom]). */
+@Immutable
+data class CircleServiceSeat(
+    val key: String?,
+    val x: Int,
+    val y: Int,
+    val left: Int,
+    val top: Int,
+    val right: Int,
+    val bottom: Int,
+)
+
+/**
+ * Where the strip puts its measured glyphs, and where a finger may press for each. Rows are centred in [width] and
+ * stacked down the middle of [height]; a seat reaches half a gap past its glyph on each side, so a press between two
+ * glyphs still names one of them, and fills its row's band of the height, so a strip given room for a finger is
+ * pressable everywhere in that room while the glyphs keep their own small size.
+ */
+fun circleServiceSeats(rows: List<List<CircleServiceBox>>, gap: Int, width: Int, height: Int): List<CircleServiceSeat> {
+    require(rows.all { it.isNotEmpty() }) { "A strip row without a glyph cannot be placed" }
+    val rowHeights = rows.map { row -> row.maxOf { it.height } }
+    val seats = mutableListOf<CircleServiceSeat>()
+    var inkTop = ((height - rowHeights.sum()) / 2).coerceAtLeast(0)
+    rows.forEachIndexed { r, row ->
+        val top = if (r == 0) 0 else inkTop
+        val bottom = if (r == rows.lastIndex) maxOf(height, inkTop + rowHeights[r]) else inkTop + rowHeights[r]
+        var x = (width - (row.sumOf { it.width } + gap * (row.size - 1))) / 2
+        row.forEach { box ->
+            seats += CircleServiceSeat(box.key, x, inkTop + (rowHeights[r] - box.height) / 2,
+                left = x - gap / 2, top = top, right = x + box.width + gap / 2, bottom = bottom)
+            x += box.width + gap
+        }
+        inkTop += rowHeights[r]
+    }
+    return seats
+}
+
+/** The service a press at [x], [y] in the strip's own space lands on; null outside every seat and on the "+N" count. */
+fun circleServiceKeyAt(seats: List<CircleServiceSeat>, x: Int, y: Int): String? =
+    seats.firstOrNull { x >= it.left && x < it.right && y >= it.top && y < it.bottom }?.key

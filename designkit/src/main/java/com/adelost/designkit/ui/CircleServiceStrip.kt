@@ -20,12 +20,21 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.layout.Placeable
 import androidx.compose.ui.layout.SubcomposeLayout
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.runtime.remember
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.onClick
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.delay
 
 /** How a host draws its strip: sizes, type and the two tints. The strip never picks a colour for a look itself. */
@@ -39,6 +48,9 @@ data class CircleServiceStripStyle(
     val staleTint: Color,
     /** A dark ground under every glyph so it reads over imagery; null on a plain face. */
     val halo: Color?,
+    /** The least height a strip that can be pressed takes, so a reading a few dp tall still seats a finger. The
+     *  glyphs keep their own size and centre in it, and a strip nobody can press ignores it. */
+    val minTapHeight: Dp = 0.dp,
 )
 
 /**
@@ -56,16 +68,33 @@ fun CircleServiceStrip(
     style: CircleServiceStripStyle,
     maxRows: Int,
     modifier: Modifier = Modifier,
+    /** One tap on a glyph, by its key. Null leaves the strip a reading, as it was: a glance nobody can press by
+     *  mistake. A host that can explain a service passes this, and the strip reports the glyph under the finger. */
+    onGlyphTap: ((key: String) -> Unit)? = null,
 ) {
     val latestGlyphsAt = rememberUpdatedState(glyphsAt)
     val frames by produceState(circleServiceFrames(glyphsAt(clock()), clock()), clock) {
         drawCircleServiceFrames(snapshotFlow { latestGlyphsAt.value }, clock, { delay(CIRCLE_SERVICE_TICK_MS) }) { value = it }
     }
     if (frames.isEmpty()) return
-    SubcomposeLayout(modifier.clearAndSetSemantics { contentDescription = frames.joinToString(", ") { it.description } }) { constraints ->
+    // The strip owns the press, not the glyph: a glyph is a few dp of ink, far under a finger, so a press anywhere in
+    // the strip lands on the glyph nearest it ([circleServiceSeats]). A strip nobody can press speaks as one reading;
+    // a strip whose glyphs open something lets each glyph speak on its own, so a reader reaches the one it asks about.
+    val seated = remember { CircleServiceSeating() }
+    val latestTap = rememberUpdatedState(onGlyphTap)
+    val pressable = if (onGlyphTap == null) {
+        modifier.clearAndSetSemantics { contentDescription = frames.joinToString(", ") { it.description } }
+    } else {
+        modifier.pointerInput(Unit) {
+            detectTapGestures { at ->
+                circleServiceKeyAt(seated.seats, at.x.toInt(), at.y.toInt())?.let { key -> latestTap.value?.invoke(key) }
+            }
+        }
+    }
+    SubcomposeLayout(pressable) { constraints ->
         val free = Constraints(maxWidth = constraints.maxWidth)
         val placeables = frames.map { frame ->
-            subcompose(frame.key) { CircleServiceGlyphView(frame, style) }.single().measure(free)
+            subcompose(frame.key) { CircleServiceGlyphView(frame, style, onGlyphTap) }.single().measure(free)
         }
         val gapPx = style.gap.roundToPx()
         val layout = fitCircleServiceRows(placeables.map { it.width }, gapPx, minOf(style.maxWidth.roundToPx(), constraints.maxWidth), maxRows) { hidden ->
@@ -74,28 +103,53 @@ fun CircleServiceStrip(
         val count = layout.hidden.takeIf { it > 0 }?.let { hidden ->
             subcompose("count") { CircleServiceText("+$hidden", style, style.liveTint) }.single().measure(free)
         }
-        val rows = layout.rows.mapIndexed { r, row -> row.map { placeables[it] } + listOfNotNull(count.takeIf { r == layout.rows.lastIndex }) }
-        val rowHeights = rows.map { row -> row.maxOf { it.height } }
-        val width = rows.maxOf { row -> row.sumOf { it.width } + gapPx * (row.size - 1) }
-        layout(width, rowHeights.sum()) {
-            var y = 0
-            rows.forEachIndexed { r, row ->
-                var x = (width - (row.sumOf { it.width } + gapPx * (row.size - 1))) / 2
-                row.forEach { placeable ->
-                    placeable.place(x, y + (rowHeights[r] - placeable.height) / 2)
-                    x += placeable.width + gapPx
-                }
-                y += rowHeights[r]
-            }
+        val rows = layout.rows.mapIndexed { r, row ->
+            row.map { CircleServiceMeasured(frames[it].key, placeables[it]) } +
+                listOfNotNull(count.takeIf { r == layout.rows.lastIndex }?.let { CircleServiceMeasured(null, it) })
+        }
+        val boxes = rows.map { row -> row.map { CircleServiceBox(it.key, it.placeable.width, it.placeable.height) } }
+        val width = boxes.maxOf { row -> row.sumOf { it.width } + gapPx * (row.size - 1) }
+        val drawnHeight = boxes.sumOf { row -> row.maxOf { it.height } }
+        val height = if (onGlyphTap == null) drawnHeight else maxOf(drawnHeight, style.minTapHeight.roundToPx())
+        val seats = circleServiceSeats(boxes, gapPx, width, height)
+        seated.seats = seats
+        val placed = rows.flatten().map { it.placeable }
+        layout(width, height) {
+            placed.forEachIndexed { i, placeable -> placeable.place(seats[i].x, seats[i].y) }
         }
     }
 }
 
+/** A glyph that has measured, on its way to its seat. */
+private data class CircleServiceMeasured(val key: String?, val placeable: Placeable)
+
+/** Where the last measure seated the glyphs, read by a press rather than by a draw. */
+private class CircleServiceSeating {
+    var seats: List<CircleServiceSeat> = emptyList()
+}
+
 @Composable
-private fun CircleServiceGlyphView(frame: CircleServiceFrame, style: CircleServiceStripStyle) {
-    val tint = if (frame.look == CircleServiceLook.LIVE) style.liveTint else style.staleTint
+private fun CircleServiceGlyphView(
+    frame: CircleServiceFrame,
+    style: CircleServiceStripStyle,
+    onGlyphTap: ((key: String) -> Unit)? = null,
+) {
+    val tint = frame.tint ?: if (frame.look == CircleServiceLook.LIVE) style.liveTint else style.staleTint
     val ring = circleServiceHasRing(frame.look)
-    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(style.iconSize * 0.18f)) {
+    // A reader reaches one glyph and activates it by name; a finger is served by the strip's own seat, which is why
+    // there is no clickable here and no ripple on a few dp of ink.
+    val speaking = onGlyphTap?.let { tap ->
+        Modifier.semantics(mergeDescendants = true) {
+            contentDescription = frame.description
+            role = Role.Button
+            onClick { tap(frame.key); true }
+        }
+    } ?: Modifier
+    Row(
+        modifier = speaking,
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(style.iconSize * 0.18f),
+    ) {
         Box(
             Modifier.size(style.iconSize * 1.4f).drawBehind {
                 if (!ring) return@drawBehind
