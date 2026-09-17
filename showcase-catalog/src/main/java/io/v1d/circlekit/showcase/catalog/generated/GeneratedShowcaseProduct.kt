@@ -27,7 +27,7 @@ enum class ShowcaseFamily(
 
 object ShowcaseManifest {
     const val PRODUCT_ID: String = "circlekit-showcase"
-    const val PRODUCT_SPEC_VERSION: String = "0.3.52"
+    const val PRODUCT_SPEC_VERSION: String = "0.3.62"
     const val RELEASE_REPOSITORY: String = "adelost/circlekit"
     val releaseAssetPrefixes: Map<ShowcaseArtifactProfile, String> = mapOf(
         ShowcaseArtifactProfile.PHONE_FULL_UI to "circlekit-showcase-phone",

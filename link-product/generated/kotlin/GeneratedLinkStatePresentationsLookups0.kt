@@ -1,16 +1,17 @@
 // GENERATED FILE. DO NOT EDIT.
 // GENERATED FROM ProductConfig.stateAuthorities
-// Product declaration SHA-256: d083b2858d52e7a91425fb709af5ace3cfb9a3ae2745b92226778b50c767d501
+// Product declaration SHA-256: 3fa61be4e2a0ef9ca86443d60bce5ffb6453f135e5dac1c497d9ae1e32bc3978
 package io.v1d.link.generated
 
 internal object GeneratedLinkStatePresentationLinkPositionAvailability {
-    val nativeInputPort: io.v1d.link.runtime.ProductDataInput<Any> =
-        object : io.v1d.link.runtime.ProductDataInput<Any>(
+    fun <S : Any> bind(
+        state: (S) -> GeneratedLinkPositionAvailability,
+    ): GeneratedStatePresentationBinding<S, GeneratedLinkPositionAvailabilityPayload> = GeneratedStatePresentationBinding(
+        inputPort = object : io.v1d.link.runtime.ProductDataInput<S>(
             GeneratedLinkNativeLegoCatalog.PortIds.LINK_POSITION_AVAILABILITY_PRESENTATION_ADAPTER_STATE,
-        ) {}
-    @Suppress("UNCHECKED_CAST")
-    fun <T : Any> inputPort(): io.v1d.link.runtime.ProductDataInput<T> =
-        nativeInputPort as io.v1d.link.runtime.ProductDataInput<T>
+        ) {},
+        present = { source -> require(state(source)) },
+    )
     val outputPort: io.v1d.link.runtime.ProductOutputPort<GeneratedLinkPositionAvailabilityPayload> =
         object : io.v1d.link.runtime.ProductOutputPort<GeneratedLinkPositionAvailabilityPayload>(
             GeneratedLinkNativeLegoCatalog.PortIds.LINK_POSITION_AVAILABILITY_PRESENTATION_ADAPTER_PRESENTATION,
@@ -31,18 +32,33 @@ internal object GeneratedLinkStatePresentationLinkPositionAvailability {
             GeneratedLinkNativeLegoCatalog.PortIds.POSITION_PAGE_AVAILABILITY,
         ),
     )
-    private val cases: Map<String, GeneratedLinkPositionAvailabilityPayload> = mapOf(
-        "off" to GeneratedLinkPositionAvailabilityPayload(Label = "GPS OFF"),
-        "precise-required" to GeneratedLinkPositionAvailabilityPayload(Label = "PRECISE REQUIRED"),
-        "subscribing" to GeneratedLinkPositionAvailabilityPayload(Label = "SEARCHING"),
-        "live" to GeneratedLinkPositionAvailabilityPayload(Label = "GPS LIVE"),
-        "coarse" to GeneratedLinkPositionAvailabilityPayload(Label = "GPS COARSE"),
-        "stale" to GeneratedLinkPositionAvailabilityPayload(Label = "LAST SEEN"),
-        "failed" to GeneratedLinkPositionAvailabilityPayload(Label = "GPS ERROR"),
+    private val statesById: Map<String, GeneratedLinkPositionAvailability> = mapOf(
+        "off" to GeneratedLinkPositionAvailability.OFF,
+        "precise-required" to GeneratedLinkPositionAvailability.PRECISE_REQUIRED,
+        "subscribing" to GeneratedLinkPositionAvailability.SUBSCRIBING,
+        "live" to GeneratedLinkPositionAvailability.LIVE,
+        "coarse" to GeneratedLinkPositionAvailability.COARSE,
+        "stale" to GeneratedLinkPositionAvailability.STALE,
+        "failed" to GeneratedLinkPositionAvailability.FAILED,
     )
-    val stateIds: Set<String> get() = cases.keys
+    private val cases: Map<GeneratedLinkPositionAvailability, GeneratedLinkPositionAvailabilityPayload> = mapOf(
+        GeneratedLinkPositionAvailability.OFF to GeneratedLinkPositionAvailabilityPayload(Label = "GPS OFF"),
+        GeneratedLinkPositionAvailability.PRECISE_REQUIRED to GeneratedLinkPositionAvailabilityPayload(Label = "PRECISE REQUIRED"),
+        GeneratedLinkPositionAvailability.SUBSCRIBING to GeneratedLinkPositionAvailabilityPayload(Label = "SEARCHING"),
+        GeneratedLinkPositionAvailability.LIVE to GeneratedLinkPositionAvailabilityPayload(Label = "GPS LIVE"),
+        GeneratedLinkPositionAvailability.COARSE to GeneratedLinkPositionAvailabilityPayload(Label = "GPS COARSE"),
+        GeneratedLinkPositionAvailability.STALE to GeneratedLinkPositionAvailabilityPayload(Label = "LAST SEEN"),
+        GeneratedLinkPositionAvailability.FAILED to GeneratedLinkPositionAvailabilityPayload(Label = "GPS ERROR"),
+    )
+    val stateIds: Set<String> get() = statesById.keys
 
-    fun require(stateId: String): GeneratedLinkPositionAvailabilityPayload = requireNotNull(cases[stateId]) {
+    fun state(stateId: String): GeneratedLinkPositionAvailability = requireNotNull(statesById[stateId]) {
         "Unknown link.position-availability state '$stateId'"
     }
+
+    fun require(state: GeneratedLinkPositionAvailability): GeneratedLinkPositionAvailabilityPayload = requireNotNull(cases[state]) {
+        "Missing link.position-availability presentation for '$state'"
+    }
+
+    fun require(stateId: String): GeneratedLinkPositionAvailabilityPayload = require(state(stateId))
 }

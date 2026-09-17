@@ -33,8 +33,8 @@ const symbolPrefix = "Link";
 const check = process.argv.includes("--check");
 
 const installed = JSON.parse(await readFile(productSpecPackagePath, "utf8")) as { version?: unknown };
-if (installed.version !== "0.3.52") {
-  throw new Error(`Link requires @v1d/product-spec 0.3.52, found '${String(installed.version)}'`);
+if (installed.version !== "0.3.62") {
+  throw new Error(`Link requires @v1d/product-spec 0.3.62, found '${String(installed.version)}'`);
 }
 
 const product = compileLinkProduct();

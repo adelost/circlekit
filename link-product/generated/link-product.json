@@ -522,6 +522,12 @@
                 "value": {
                   "ref": "position.observation"
                 }
+              },
+              {
+                "clockDomain": "none",
+                "name": "isMock",
+                "nullable": true,
+                "value": "boolean"
               }
             ],
             "id": "position.presentation",
@@ -679,6 +685,12 @@
                 "value": {
                   "ref": "position.observation"
                 }
+              },
+              {
+                "clockDomain": "none",
+                "name": "isMock",
+                "nullable": true,
+                "value": "boolean"
               }
             ],
             "id": "position.presentation",
@@ -871,6 +883,12 @@
             "value": {
               "ref": "position.observation"
             }
+          },
+          {
+            "clockDomain": "none",
+            "name": "isMock",
+            "nullable": true,
+            "value": "boolean"
           }
         ],
         "id": "position.presentation",
@@ -1181,6 +1199,12 @@
               "value": {
                 "ref": "position.observation"
               }
+            },
+            {
+              "clockDomain": "none",
+              "name": "isMock",
+              "nullable": true,
+              "value": "boolean"
             }
           ],
           "id": "position.presentation",
