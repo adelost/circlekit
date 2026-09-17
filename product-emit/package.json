@@ -1,6 +1,6 @@
 {
   "name": "@v1d/product-emit",
-  "version": "0.1.38",
+  "version": "0.1.39",
   "description": "Typed Kotlin emission for v1d ProductSpec products",
   "type": "module",
   "files": [
@@ -32,7 +32,8 @@
   },
   "devDependencies": {
     "@types/node": "^24.3.0",
-    "typescript": "^5.9.3"
+    "typescript": "^5.9.3",
+    "xstate": "5.33.2"
   },
   "engines": {
     "node": ">=22"
