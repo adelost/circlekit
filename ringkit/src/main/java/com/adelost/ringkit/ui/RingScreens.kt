@@ -192,6 +192,9 @@ data class ActionSpec(
      *  sleeve-brush can never fire them. */
     val holdToConfirm: Boolean = false,
     val destructive: Boolean = false,
+    /** Why this action cannot run right now, or null when it can. The row shows the reason as its line and cannot
+     *  be pressed, so a press that would do nothing never looks like one that did (Skyvw row 165). */
+    val unavailableReason: Flow<String?> = flowOf(null),
 )
 
 data class LaunchSpec(

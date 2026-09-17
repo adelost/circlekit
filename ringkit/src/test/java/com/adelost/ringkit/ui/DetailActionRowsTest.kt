@@ -23,6 +23,17 @@ class DetailActionRowsTest {
     }
 
     @Test
+    fun `an action that cannot run now shows why and cannot be pressed, and a hold that cannot run is not a hold`() {
+        val rows = detailActionRows(listOf(restore, zero), onRefresh = null, refreshEnabled = true,
+            unavailableReasons = listOf("NO EARLIER ZERO", "SIMULATOR LOCK"))
+
+        assertEquals(listOf("NO EARLIER ZERO", "SIMULATOR LOCK"), rows.map { it.sub })
+        assertEquals(listOf(null, null), rows.map { it.onTap })
+        assertEquals(listOf(false, false), rows.map { it.holdToConfirm })
+        assertEquals(listOf("", ""), detailActionRows(listOf(restore, zero), null, true).map { it.sub })
+    }
+
+    @Test
     fun `refresh is the last row and cannot be pressed while its fetch runs`() {
         val idle = detailActionRows(listOf(restore), onRefresh = {}, refreshEnabled = true)
         val fetching = detailActionRows(listOf(restore), onRefresh = {}, refreshEnabled = false)
