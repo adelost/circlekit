@@ -50,7 +50,7 @@ A product invariant. Read: "no airborne decision may ask for less than 20 Hz." I
 invariants: [{ refuse: "air must read pressure live", when: (d) => isAirborne(d.at.phase) && d.values.pressure.hz < 20 }]
 ```
 
-A lane and a ride (`defineLanes`). Read: "pressure samples get their own serial lane, because a late sample is a late altitude."
+A lane and a ride (`defineLanes`; Android Kotlin from `product-emit/src/core/emit-lanes-kotlin.ts`). Read: "pressure samples get their own serial lane, because a late sample is a late altitude."
 
 ```ts
 lanes: { pressure: { isolation: "dedicated", ordering: "serial", reason: "a late sample is a late altitude" } },
