@@ -15,8 +15,11 @@ import { frozen } from "./frozen.js";
  * - total: every point of the axes has a cell;
  * - one cell per point: no two cells claim the same point;
  * - a region names only declared axes and declared values, and matches at least one point;
+ * - every column is of a known kind (choice, boolean, integer, record, per-choice), and a record field or a
+ *   per-choice value of a scalar kind;
  * - every cell carries exactly the declared columns, each value of its column's type;
- * - cells and regions are data: a function anywhere in them is refused.
+ * - cells and regions are data: plain objects, arrays and the column scalars. A function anywhere in them is
+ *   refused, and so is a class instance, which the freeze would leave writable after the laws ran.
  * A product adds its own laws as `invariants: [{ refuse, when }]`; it can only add.
  * Invariants are build-time code: they run once over every point when the
  * table is defined and are not part of the table that comes back, so no
@@ -243,11 +246,14 @@ function decisionTableProblems(table: DecisionTable, invariants: readonly Decisi
   };
   attempt(() => requireWireId(table.id, "decision table"));
   problems.push(...axisProblems(table.axes));
-  problems.push(...columnProblems(table.columns), ...derivedProblems(table.axes, table.derived));
+  const columnsRefused = columnProblems(table.columns);
+  problems.push(...columnsRefused, ...derivedProblems(table.axes, table.derived));
   attempt(() => requireUnique(table.cells.map(({ id }) => id), `cell id in decision table '${table.id}'`));
   for (const cell of table.cells) {
     attempt(() => requireWireId(cell.id, "decision cell"));
-    problems.push(...regionProblems(table.axes, cell), ...valueProblems(table.columns, cell));
+    problems.push(...regionProblems(table.axes, cell));
+    // A value is judged against its column's kind, so values wait until every column has a kind.
+    if (columnsRefused.length === 0) problems.push(...valueProblems(table.columns, cell));
   }
   if (problems.length > 0) return problems;
   for (const at of decisionPoints(table.axes)) {
@@ -300,6 +306,9 @@ function derivedProblems(axes: DecisionAxes, derived: DerivedAxes<DecisionAxes>)
   return problems;
 }
 
+const SCALAR_KINDS: readonly string[] = ["choice", "boolean", "integer"];
+const COLUMN_KINDS: readonly string[] = [...SCALAR_KINDS, "record", "per-choice"];
+
 function columnProblems(columns: DecisionColumns): string[] {
   const problems: string[] = [];
   if (Object.keys(columns).length === 0) problems.push("a decision table needs at least one column");
@@ -308,14 +317,33 @@ function columnProblems(columns: DecisionColumns): string[] {
     if (new Set(values).size !== values.length) problems.push(`${owner} lists a value twice`);
   };
   for (const [name, column] of Object.entries(columns)) {
+    const unknownKind = kindProblem(`column '${name}'`, column, COLUMN_KINDS);
+    if (unknownKind !== undefined) {
+      problems.push(unknownKind);
+      continue;
+    }
     if (column.kind === "choice") listProblems(`column '${name}'`, column.values);
     if (column.kind === "per-choice") {
       listProblems(`column '${name}' choices`, column.choices);
-      if (column.value.kind === "choice") listProblems(`column '${name}' values`, column.value.values);
+      const unknownValueKind = kindProblem(`column '${name}' value`, column.value, SCALAR_KINDS);
+      if (unknownValueKind !== undefined) problems.push(unknownValueKind);
+      else if (column.value.kind === "choice") listProblems(`column '${name}' values`, column.value.values);
     }
-    if (column.kind === "record" && Object.keys(column.fields).length === 0) problems.push(`column '${name}' has no fields`);
+    if (column.kind === "record") {
+      if (Object.keys(column.fields).length === 0) problems.push(`column '${name}' has no fields`);
+      for (const [field, fieldColumn] of Object.entries(column.fields)) {
+        const unknownFieldKind = kindProblem(`column '${name}' field '${field}'`, fieldColumn, SCALAR_KINDS);
+        if (unknownFieldKind !== undefined) problems.push(unknownFieldKind);
+      }
+    }
   }
   return problems;
+}
+
+/** Why [column], declared by [owner], is not one of [kinds], or undefined when it is. A JavaScript caller can write any kind. */
+function kindProblem(owner: string, column: unknown, kinds: readonly string[]): string | undefined {
+  const kind = isPlainObject(column) ? column.kind : undefined;
+  return typeof kind === "string" && kinds.includes(kind) ? undefined : `${owner} has kind ${describe(kind)}, not one of ${kinds.join(", ")}`;
 }
 
 function regionProblems(axes: DecisionAxes, cell: DecisionCell): string[] {
@@ -409,10 +437,17 @@ function isSymbol(name: string): boolean {
   return /^[A-Za-z][A-Za-z0-9_]*$/u.test(name);
 }
 
+/** An object literal or a null-prototype object: the only objects the freeze reaches, so the only records a table accepts. */
 function isPlainObject(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
+  if (typeof value !== "object" || value === null || Array.isArray(value)) return false;
+  const prototype = Object.getPrototypeOf(value);
+  return prototype === Object.prototype || prototype === null;
 }
 
 function describe(value: unknown): string {
-  return typeof value === "string" ? `'${value}'` : JSON.stringify(value) ?? String(value);
+  if (typeof value === "string") return `'${value}'`;
+  if (typeof value === "object" && value !== null && !Array.isArray(value) && !isPlainObject(value)) {
+    return `a ${value.constructor?.name || "class"} instance`;
+  }
+  return JSON.stringify(value) ?? String(value);
 }

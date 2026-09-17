@@ -139,3 +139,23 @@ test("a derived axis is a named window fact over exactly its two values", () => 
   assert.throws(withArrived({ restartsOn: ["Touch Again"] }), /derived axis 'arrived' event 'Touch Again' is not a plain event name/);
   assert.throws(withArrived({ source: " " }), /derived axis 'arrived' names no source/);
 });
+
+test("a column's kind is one of choice, boolean, integer, record and per-choice, refused by table, column and field", () => {
+  const typo = { kind: "interger" };
+  assert.throws(untyped({ columns: { ...columns, held: typo } }),
+    /decision table 'fixture\.power' is refused:[\s\S]*column 'held' has kind 'interger', not one of choice, boolean, integer, record, per-choice/u);
+  assert.throws(untyped({ columns: { ...columns, rate: { kind: "record", fields: { hz: typo, batchMs: integer } } } }),
+    /decision table 'fixture\.power' is refused:[\s\S]*column 'rate' field 'hz' has kind 'interger', not one of choice, boolean, integer/u);
+  assert.throws(untyped({ columns: { ...columns, level: { kind: "per-choice", choices: ["SMART", "MAX"], value: typo } } }),
+    /decision table 'fixture\.power' is refused:[\s\S]*column 'level' value has kind 'interger', not one of choice, boolean, integer/u);
+});
+
+test("a record value is plain data: a class instance, which the freeze would leave writable, is refused by its class", () => {
+  class Rate {
+    hz = 20;
+    batchMs = 0;
+  }
+  const withRate = cells.map((cell) => cell.id === "air" ? { ...cell, values: { ...cell.values, rate: new Rate() } } : cell);
+  assert.throws(untyped({ cells: withRate }),
+    /decision table 'fixture\.power' is refused:[\s\S]*cell air 'rate' is a Rate instance, not a record of hz, batchMs/u);
+});
