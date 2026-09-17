@@ -32,11 +32,25 @@ export interface ComponentPort<
   readonly required: boolean;
 }
 
+/** What a port names in the object form: a contract, or a presentation, which means its contract. */
+export type ComponentPortSource<Contract extends LegoContract = LegoContract> =
+  | Contract
+  | { readonly contract: Contract };
+
+/** Ports as a list of componentPort(...) calls, or as an object whose keys are the port names, in order. */
+export type ComponentPortsDeclaration =
+  | readonly ComponentPortDeclaration[]
+  | { readonly [id: string]: ComponentPortSource };
+
+/** The capability a component type needs unless it says otherwise: its renderer draws a component tree. */
+export const COMPONENT_TREE_CAPABILITY = "ui.component-tree";
+
 export interface ComponentTypeDeclaration<Id extends string = string> {
   readonly id: Id;
-  readonly requiredCapabilities: readonly string[];
-  readonly inputs: readonly ComponentPortDeclaration[];
-  readonly outputs: readonly ComponentPortDeclaration[];
+  /** Written only when a type needs something other than [COMPONENT_TREE_CAPABILITY]. */
+  readonly requiredCapabilities?: readonly string[];
+  readonly inputs: ComponentPortsDeclaration;
+  readonly outputs: ComponentPortsDeclaration;
 }
 
 export interface ComponentType<Id extends string = string> {
@@ -58,27 +72,53 @@ type NormalizedComponentPort<Port extends ComponentPortDeclaration> =
     ? ComponentPort<Id, Contract> & { readonly required: Port["required"] extends false ? false : true }
     : never;
 
+type ContractOfSource<Source> =
+  Source extends { readonly contract: infer Contract extends LegoContract } ? Contract
+    : Source extends LegoContract ? Source
+      : never;
+
+/** A list keeps its tuple; an object becomes a list of its ports, which is what bindings read ([number]). */
+type NormalizedComponentPorts<Ports extends ComponentPortsDeclaration> =
+  Ports extends readonly ComponentPortDeclaration[]
+    ? { readonly [Index in keyof Ports]: Ports[Index] extends ComponentPortDeclaration
+      ? NormalizedComponentPort<Ports[Index]>
+      : never }
+    : readonly {
+      [Id in keyof Ports & string]: ComponentPort<Id, ContractOfSource<Ports[Id]>> & { readonly required: true }
+    }[keyof Ports & string][];
+
 export type NormalizedComponentType<Declaration extends ComponentTypeDeclaration> =
   ComponentType<Declaration["id"]> & {
-    readonly requiredCapabilities: Declaration["requiredCapabilities"];
-    readonly inputs: { readonly [Index in keyof Declaration["inputs"]]:
-      Declaration["inputs"][Index] extends ComponentPortDeclaration
-        ? NormalizedComponentPort<Declaration["inputs"][Index]>
-        : never };
-    readonly outputs: { readonly [Index in keyof Declaration["outputs"]]:
-      Declaration["outputs"][Index] extends ComponentPortDeclaration
-        ? NormalizedComponentPort<Declaration["outputs"][Index]>
-        : never };
+    readonly requiredCapabilities: Declaration extends { readonly requiredCapabilities: infer Capabilities extends readonly string[] }
+      ? Capabilities
+      : readonly [typeof COMPONENT_TREE_CAPABILITY];
+    readonly inputs: NormalizedComponentPorts<Declaration["inputs"]>;
+    readonly outputs: NormalizedComponentPorts<Declaration["outputs"]>;
   };
+
+function isPortList(ports: ComponentPortsDeclaration): ports is readonly ComponentPortDeclaration[] {
+  return Array.isArray(ports);
+}
+
+function contractOfSource(source: ComponentPortSource): LegoContract {
+  return "contract" in source ? source.contract : source;
+}
+
+function portDeclarations(ports: ComponentPortsDeclaration): readonly ComponentPortDeclaration[] {
+  if (isPortList(ports)) return ports;
+  return Object.entries(ports).map(([id, source]) => ({ id, contract: contractOfSource(source) }));
+}
 
 export function defineComponentType<const Declaration extends ComponentTypeDeclaration>(
   declaration: Declaration,
 ): NormalizedComponentType<Declaration> {
   requireWireId(declaration.id, "component type");
-  requireUnique(declaration.requiredCapabilities, `capability in component type '${declaration.id}'`);
-  declaration.requiredCapabilities.forEach((id) => requireWireId(id, `capability in component type '${declaration.id}'`));
+  const requiredCapabilities = declaration.requiredCapabilities ?? [COMPONENT_TREE_CAPABILITY];
+  requireUnique(requiredCapabilities, `capability in component type '${declaration.id}'`);
+  requiredCapabilities.forEach((id) => requireWireId(id, `capability in component type '${declaration.id}'`));
   const contracts = new Map<string, LegoContract>();
-  const normalize = (ports: readonly ComponentPortDeclaration[], direction: "input" | "output"): ComponentPort[] => {
+  const normalize = (declared: ComponentPortsDeclaration, direction: "input" | "output"): ComponentPort[] => {
+    const ports = portDeclarations(declared);
     requireUnique(ports.map(({ id }) => id), `${direction} in component type '${declaration.id}'`);
     return ports.map((item) => {
       requireIdentifier(item.id, `${direction} in component type '${declaration.id}'`);
@@ -97,10 +137,10 @@ export function defineComponentType<const Declaration extends ComponentTypeDecla
   };
   return frozen({
     id: declaration.id,
-    requiredCapabilities: declaration.requiredCapabilities,
+    requiredCapabilities,
     inputs: normalize(declaration.inputs, "input"),
     outputs: normalize(declaration.outputs, "output"),
-  } as NormalizedComponentType<Declaration>);
+  } as unknown as NormalizedComponentType<Declaration>);
 }
 
 export interface ProductComponentInstance<Id extends string = string, TypeRef extends string = string> {
