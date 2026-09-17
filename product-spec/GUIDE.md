@@ -63,7 +63,7 @@ rides: { "stream.pressure": { lane: "pressure", owner: "pressure-hub" } }
 1. **I want to add or change a fact** (a cell, a hint, a feed, a ride): open the thing's file under the product's `appspec/products/<name>/`, change the fact, run the product's generate. If the build refuses, the message names the law and the fix. Never add a Kotlin branch instead.
 2. **I want a new kind of thing** (a shape): it goes into `product-spec/src/` with at least one law the product cannot switch off and a portability note saying what Swift and Monkey C would emit. Nothing only Android can express. Then an emitter in `product-emit/src/`. Publish with `scripts/publish-product-spec.sh` and `scripts/publish-product-emit.sh`, pin in the product.
 3. **I want a new platform**: one emitter per shape in `product-emit/src/`, plus that platform's runtime glue. No product file changes.
-4. **I want to prove it**: the generated tests already cover every declaration kind. A hand-written test is for a reported symptom, red before the fix.
+4. **I want to prove it**: the generated tests already cover every declaration kind. A hand-written test is for a reported symptom, red before the fix, or a named contract example that pins a public boundary's delivery or timing rule before the first bug; never a copy of the kit's form test.
 
 ## 5. How to review a change
 
@@ -80,6 +80,11 @@ rides: { "stream.pressure": { lane: "pressure", owner: "pressure-hub" } }
 3. A gate with a shrink-only baseline for what already exists: new files comply, old ones are listed and only leave.
 
 A code pattern that matters is a law or it is not a rule. Gates are run by the owner before merge, never wired into the build or a release path.
+
+Two laws for mapping code (row 155, the language freeze in Skyvw's docs/plans/2026-09-17-dsl-language-freeze.md):
+
+- **Existing code is a valid leaf.** A component or service implemented in code with declared ports is not debt and has no colour; there is no DSL coverage target. A leaf is refined into declarations only where the declaration buys simpler logic (fewer branches, one source of truth), portability (a second platform consumes it) or a proof (a law refused at build), and the row names which. "More DSL" is never a reason on its own.
+- **A mapped edge is bound or says it is not.** An edge in a product graph is runtime-bound (generated bindings carry it, the port ledger can see it) or explicitly observational, and an observational edge exists only on nodes that are not wired. The compiled product keeps every strict check; mapping never switches a check off for runnable code.
 
 ## 7. What not to do
 
