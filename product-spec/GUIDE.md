@@ -21,7 +21,7 @@ The product writes facts. The kit owns shapes, laws and emitters. A platform add
 | Layer | What | Where |
 |---|---|---|
 | Shapes and laws | decision tables (`product-spec/src/decision-table-model.ts`), lanes (`product-spec/src/lanes-model.ts`), navigation, components, state authorities, palettes | `product-spec/src/` |
-| Machines | a lifecycle as states, inputs, named guards and cells `from + on + guards -> to`, refused at build unless every state is reachable and every input accounted for; `step()` answers one input (`product-spec/src/machine-model.ts`) | `product-spec/src/` |
+| Machines | a lifecycle as states, inputs, named guards and cells `from + on + guards -> to`, refused at build unless every state is reachable and every input accounted for; `step()` answers one input (`product-spec/src/machine-model.ts`); Kotlin cells and `declaredNext` (`product-emit/src/core/emit-machine-kotlin.ts`) and a Mermaid `stateDiagram-v2` (`product-emit/src/core/emit-machine-mermaid.ts`) | `product-spec/src/`, `product-emit/src/core/` |
 | Emitters | Kotlin; a platform is one more | `product-emit/src/` |
 | Domain words | skydiving: phases, bands, stages, units (meanings, not thresholds) | `skydiving-legos/src/` |
 | One product's facts | cells, copy, feeds, lanes, pages, thresholds | the product's `appspec/products/<name>/` |
