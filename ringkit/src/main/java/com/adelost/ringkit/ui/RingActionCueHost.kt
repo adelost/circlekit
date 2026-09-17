@@ -213,10 +213,12 @@ private fun RingExplanationCue(cue: CircleActionCue, onDismiss: () -> Unit) {
             overflow = TextOverflow.Ellipsis,
         )
         cue.value?.let { value ->
-            Text(
+            // CircleText, as the hint below: a Wear `Text` spaced the RATE reading's three lines at body1's 20 sp
+            // and pushed the close button to the rim (Skyvw row 126).
+            CircleText(
                 text = value,
                 color = cue.semanticColor ?: circleBrandColor(),
-                fontSize = if (round) 10.sp else 14.sp,
+                fontSizeSp = if (round) 10f else 14f,
                 fontWeight = FontWeight.Bold,
                 textAlign = TextAlign.Center,
                 // A value that carries its own lines keeps them: one line cut Skyvw's RATE reading to
