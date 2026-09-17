@@ -44,9 +44,11 @@ while IFS= read -r line; do
   fi
   [ "$in_block" -eq 1 ] || continue
   cmd="${line%%#*}"; cmd="$(sed -E 's/^[[:space:]]+|[[:space:]]+$//g' <<<"$cmd")"
+  cmd="${cmd#(}"; cmd="${cmd%)}"   # a subshell "(cd dir && ...)" is checked as its inner command
   [ -n "$cmd" ] || continue
   if [[ "$cmd" == cd\ * ]]; then
     dir="$(awk '{print $2}' <<<"$cmd")"
+    case "$dir" in appspec*|app/*) continue ;; esac   # a product's directories are the product's to check
     [ -d "$dir" ] || { echo "check-guide-paths: FAIL: $GUIDE:$line_no: directory '$dir' does not exist" >&2; status=1; }
   else
     first="$(awk '{print $1}' <<<"$cmd")"
