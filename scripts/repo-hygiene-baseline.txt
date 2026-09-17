@@ -1,0 +1,11 @@
+# check-repo-hygiene.sh ratchet (Skyvw row 139): each count may only shrink. Lower a row in the change that cleans up; never raise one.
+# Measured 2026-09-17 on the CircleKit clone at /home/adelost/lsrc/.agents/3/circlekit.
+merged-branch 0
+# Three August plans nothing outside docs/plans names.
+unreferenced-plan 3
+unreferenced-root-md 0
+missing-doc-path 0
+# No .agents/0/TASKS.md ledger in this repository.
+closed-ledger-row 0
+# Linked worktrees whose HEAD is already in main and that have not moved for 7 days (31 to 50 days today; the amux janitor's first report named the same 70).
+stale-worktree 70
