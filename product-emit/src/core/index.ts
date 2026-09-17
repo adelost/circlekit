@@ -14,6 +14,8 @@ export * from "./emit-config-values-kotlin.js";
 export * from "./emit-decision-table-kotlin.js";
 export * from "./emit-domain-graph.js";
 export * from "./emit-lanes-kotlin.js";
+export * from "./emit-machine-kotlin.js";
+export * from "./emit-machine-mermaid.js";
 export * from "./emit-native-lego-kotlin.js";
 export * from "./emit-navigation-kotlin.js";
 export * from "./emit-profile-table-js.js";
