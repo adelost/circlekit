@@ -1,14 +1,17 @@
 import type {
   CompiledStateAuthority,
+  LegoContract,
   LegoField,
   LegoFiniteValueDeclaration,
+  LegoPrimitive,
   StatePresentationField,
 } from "@v1d/product-spec";
 import { adapterFields } from "@v1d/product-spec/foundation";
-import type { KotlinEmissionOptions } from "./emission-options.js";
+import type { KotlinEmissionOptions, SourcedKotlinEmissionOptions } from "./emission-options.js";
 import {
   kotlinEnumToken,
   kotlinIdentifier,
+  kotlinPropertyName,
   kotlinStringLiteral,
 } from "./kotlin-syntax.js";
 
@@ -180,12 +183,54 @@ ${declaration.values.map((value) => `    ${kotlinEnumToken(value)},`).join("\n")
 }`;
 }
 
-function emitPayload(authority: CompiledStateAuthority, options: KotlinEmissionOptions): string {
-  const payload = payloadName(authority);
-  const fields = authority.presentation.fields;
-  return `internal data class ${payload}(
-${fields.map((field) => `    val ${kotlinIdentifier(field.name)}: ${kotlinType(field, options)},`).join("\n")}
+/**
+ * A declared record contract as a public Kotlin data class, one `val` per declared field in declared order. It is the
+ * projection the state authorities' source payloads already make (`emitSourcePayload`), exposed for a contract whose
+ * value native code holds, such as Barometer's `barometer.reading`: the product consumes the generated class instead
+ * of a hand copy, so a renamed or retyped declared field stops compiling until the native code follows.
+ *
+ * Fields are primitives. A field that references another value is refused by name, because that value's Kotlin type
+ * lives in another generated file with narrower visibility and this class would not compile against it.
+ */
+export function emitContractTypesKotlin(
+  contracts: readonly LegoContract[],
+  options: SourcedKotlinEmissionOptions,
+): string {
+  const classes = contracts.map((contract) => {
+    if (contract.fields.length === 0) throw new Error(`contract '${contract.id}' has no fields, so it has no data class`);
+    const properties = contract.fields.map((field) => [kotlinPropertyName(field.name), contractFieldType(contract, field)] as const);
+    return `/** Contract \`${contract.id}\`. */\n${dataClass("", contractTypeName(contract), properties)}`;
+  });
+  return `// GENERATED FILE. DO NOT EDIT.
+// GENERATED FROM ${options.sourceFile}
+// Product declaration SHA-256: ${options.sourceSha}
+package ${options.packageName}
+
+${classes.join("\n\n")}
+`;
+}
+
+/** `barometer.reading` -> `GeneratedBarometerReading`, named like the source payloads beside it. */
+function contractTypeName(contract: Pick<LegoContract, "id">): string {
+  return `Generated${kotlinIdentifier(contract.id)}`;
+}
+
+function contractFieldType(contract: LegoContract, field: LegoField): string {
+  if (typeof field.value !== "string") {
+    throw new Error(`contract '${contract.id}' field '${field.name}' references '${field.value.ref}'; a contract type is emitted from primitive fields only`);
+  }
+  return `${primitiveKotlinType(field.value)}${field.nullable ? "?" : ""}`;
+}
+
+function dataClass(visibility: "internal " | "", name: string, properties: readonly (readonly [string, string])[]): string {
+  return `${visibility}data class ${name}(
+${properties.map(([property, type]) => `    val ${property}: ${type},`).join("\n")}
 )`;
+}
+
+function emitPayload(authority: CompiledStateAuthority, options: KotlinEmissionOptions): string {
+  return dataClass("internal ", payloadName(authority), authority.presentation.fields.map((field) =>
+    [kotlinIdentifier(field.name), kotlinType(field, options)] as const));
 }
 
 /**
@@ -200,11 +245,8 @@ function emitSourcePayload(
   finiteValuesById: ReadonlyMap<string, LegoFiniteValueDeclaration>,
   options: KotlinEmissionOptions,
 ): string {
-  return `internal data class ${sourcePayloadName(authority)}(
-${authority.source.contract.fields.map((field) =>
-    `    val ${kotlinIdentifier(field.name)}: ${sourceFieldType(field, finiteValuesById, options)}${field.nullable ? "?" : ""},`
-  ).join("\n")}
-)`;
+  return dataClass("internal ", sourcePayloadName(authority), authority.source.contract.fields.map((field) =>
+    [kotlinIdentifier(field.name), `${sourceFieldType(field, finiteValuesById, options)}${field.nullable ? "?" : ""}`] as const));
 }
 
 function emitLookup(authority: CompiledStateAuthority, options: StatePresentationKotlinOptions): string {
@@ -272,8 +314,11 @@ function emitArguments(
 }
 
 function kotlinType(field: StatePresentationField, options: KotlinEmissionOptions): string {
-  if (typeof field.value !== "string") return finiteEnumName(field.value, options);
-  switch (field.value) {
+  return typeof field.value !== "string" ? finiteEnumName(field.value, options) : primitiveKotlinType(field.value);
+}
+
+function primitiveKotlinType(value: LegoPrimitive): string {
+  switch (value) {
     case "boolean": return "Boolean";
     case "integer": return "Long";
     case "number": return "Double";
@@ -355,12 +400,7 @@ function sourceFieldType(
       ? finiteEnumName(finiteValue, options)
       : opaqueSourceValueName(field.value.ref, options);
   }
-  switch (field.value) {
-    case "boolean": return "Boolean";
-    case "integer": return "Long";
-    case "number": return "Double";
-    case "string": return "String";
-  }
+  return primitiveKotlinType(field.value);
 }
 
 function opaqueSourceValueName(ref: string, options: KotlinEmissionOptions): string {

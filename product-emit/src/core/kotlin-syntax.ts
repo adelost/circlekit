@@ -19,6 +19,12 @@ export function kotlinIdentifier(id: string): string {
   return result;
 }
 
+/** `pressureHpa` / `pressure-hpa` → `pressureHpa` (a property or parameter name). */
+export function kotlinPropertyName(name: string): string {
+  const identifier = kotlinIdentifier(name);
+  return identifier[0]!.toLowerCase() + identifier.slice(1);
+}
+
 /** `dial-direction` → `DIAL_DIRECTION` (enum entry token). */
 export function kotlinEnumToken(id: string): string {
   return id.replace(/[^A-Za-z0-9]+/gu, "_").toUpperCase();
