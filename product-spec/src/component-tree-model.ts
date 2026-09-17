@@ -5,6 +5,7 @@ import {
   requireWireId,
   type LegoContract,
 } from "./node-model.js";
+import { frozen } from "./frozen.js";
 
 export const PORTABLE_SURFACE_CLASSES = ["round", "compact", "wide"] as const;
 export type PortableSurfaceClass = (typeof PORTABLE_SURFACE_CLASSES)[number];
@@ -94,12 +95,12 @@ export function defineComponentType<const Declaration extends ComponentTypeDecla
       return { id: item.id, contract: item.contract, required: item.required ?? true };
     });
   };
-  return {
+  return frozen({
     id: declaration.id,
     requiredCapabilities: declaration.requiredCapabilities,
     inputs: normalize(declaration.inputs, "input"),
     outputs: normalize(declaration.outputs, "output"),
-  } as NormalizedComponentType<Declaration>;
+  } as NormalizedComponentType<Declaration>);
 }
 
 export interface ProductComponentInstance<Id extends string = string, TypeRef extends string = string> {
@@ -193,7 +194,7 @@ export function defineSurfaceFamily<const Instances extends readonly ProductComp
       }
     }
   }
-  return { id: family.id, trees };
+  return frozen({ id: family.id, trees });
 }
 
 export function defineScreenComponentFamilyRegistry<
@@ -213,5 +214,5 @@ export function defineScreenComponentFamilyRegistry<
     family.trees.flatMap(({ mounts }) => mounts.map(({ instance }) => instance))));
   const orphan = instances.map(({ id }) => id).filter((id) => !mounted.has(id));
   if (orphan.length > 0) throw new Error(`component registry has orphan instance '${orphan.join("', '")}'`);
-  return registry;
+  return frozen(registry);
 }

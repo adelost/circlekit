@@ -1,4 +1,5 @@
 import { requireUnique, requireWireId } from "./node-model.js";
+import { frozen } from "./frozen.js";
 
 /**
  * A decision table: which values hold at each point of a few finite axes.
@@ -183,7 +184,7 @@ export function defineDecisionTable<const Axes extends DecisionAxes, const Colum
   if (problems.length > 0) {
     throw new Error(`decision table '${id}' is refused:\n- ${problems.join("\n- ")}`);
   }
-  return table;
+  return frozen(table);
 }
 
 /** A product's tables for its IR, unique by id; none adds nothing, so a product without tables emits what it always did. */
@@ -207,6 +208,20 @@ export function decide<Axes extends DecisionAxes, Columns extends DecisionColumn
   table: DecisionTable<Axes, Columns>,
   at: DecisionPoint<Axes>,
 ): Decision<Axes, Columns> {
+  // A wildcard cell covers any value, so a point is checked against the declared axes before any cell is asked.
+  const declared = table.axes as DecisionAxes;
+  const given = at as Readonly<Record<string, unknown>>;
+  for (const axis of Object.keys(given)) {
+    if (declared[axis] === undefined) {
+      throw new Error(`decision table '${table.id}' has no axis '${axis}'; its axes are ${Object.keys(declared).join(", ")}`);
+    }
+  }
+  for (const [axis, values] of Object.entries(declared)) {
+    if (!(axis in given)) throw new Error(`decision table '${table.id}' was asked without ${axis}; one of ${values.join(", ")}`);
+    if (!values.includes(given[axis] as string)) {
+      throw new Error(`decision table '${table.id}': ${axis} '${String(given[axis])}' is not one of ${values.join(", ")}`);
+    }
+  }
   const cell = table.cells.find((candidate) => regionCovers(candidate.region, at));
   if (cell === undefined) throw new Error(`decision table '${table.id}' has no cell at ${pointName(at)}`);
   return { at, cell: cell.id, values: cell.values as DecisionValues<Columns> };

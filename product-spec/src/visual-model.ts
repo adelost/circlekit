@@ -1,3 +1,5 @@
+import { frozen } from "./frozen.js";
+
 export interface PortableRampBand {
   readonly id: string;
   readonly upTo: number;
@@ -88,7 +90,7 @@ export function definePalette<const Variants extends readonly PortablePaletteVar
 ): ProductPalette<Variants[number]> {
   // A product without additional semantic pigment inherits CircleKit style.
   // Empty is data, not a fake "default" palette variant.
-  if (variants.length === 0) return { variants };
+  if (variants.length === 0) return frozen({ variants });
   requireUnique(variants.map(({ id }) => id), "palette variant id");
   variants.forEach(validateVariant);
   const [first, ...rest] = variants;
@@ -106,7 +108,7 @@ export function definePalette<const Variants extends readonly PortablePaletteVar
     if (shape(variant) !== expectedShape) throw new Error(`palette '${variant.id}' changes ramp structure`);
     if (fixed(variant) !== expectedFixed) throw new Error(`palette '${variant.id}' changes fixed semantic tokens`);
   }
-  return { variants };
+  return frozen({ variants });
 }
 
 export function definePortableAssetCatalog<const Catalog extends PortableAssetCatalog>(
@@ -132,7 +134,7 @@ export function definePortableAssetCatalog<const Catalog extends PortableAssetCa
       if (!ids.has(layer.assetRef)) throw new Error(`icon asset '${icon.id}' uses missing layer '${layer.assetRef}'`);
     }
   }
-  return catalog;
+  return frozen(catalog);
 }
 
 export function validateProductIconRendererBindings(

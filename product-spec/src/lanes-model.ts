@@ -1,4 +1,5 @@
 import { requireWireId } from "./node-model.js";
+import { frozen } from "./frozen.js";
 
 /**
  * Lanes: where a product's streams and services run, declared instead of hand-made.
@@ -106,7 +107,7 @@ export function defineLanes<const Declared extends Readonly<Record<string, LaneD
 ): Lanes<Declared> {
   const problems = lanesProblems(declaration as unknown as Lanes);
   if (problems.length > 0) throw new Error(`lanes '${declaration.id}' are refused:\n- ${problems.join("\n- ")}`);
-  return declaration;
+  return frozen(declaration);
 }
 
 /** Every ride as an edge from rider to lane, in declaration order. */
