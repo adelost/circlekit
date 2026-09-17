@@ -46,6 +46,17 @@ builds a typed cartesian state space from literal axes, and `mapFiniteCases`
 generates an exhaustive case object from it; products do not copy dozens of
 operation-by-data case ids by hand.
 
+A decision over a few finite axes (which values hold in this phase and this
+display state) is one `defineDecisionTable(...)`: `axes` list every value,
+`columns` type the answers (`choice`, `bool`, `integer`, `record`,
+`perChoice`), and each `on(id, region, values)` cell names the region it
+covers. The shape itself refuses a point no cell covers, two cells on one
+point, a region naming an undeclared axis or value, a value of the wrong
+column type and any function inside a cell or region; a product can only add
+laws with `invariants: [{ refuse, when }]`. `decide(table, point)` returns the
+values with the id of the cell that decided, and product-emit writes the same
+lookup as an exhaustive Kotlin `when`.
+
 Every UI-reaching closed state discriminator uses one
 `defineStateAuthority(...)`. Its source is an exact output port, contract,
 finite discriminator field and finite value declaration; a service may own
