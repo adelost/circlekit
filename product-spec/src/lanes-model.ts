@@ -67,17 +67,24 @@ export type LaneRider = `stream.${string}` | `service.${string}`;
 /** A ride onto a dedicated lane names the owner the rider works for; a ride onto a shared lane or the UI names only the lane. */
 export type LaneRide<LaneName extends string = string> = LaneName | typeof UI_LANE | { readonly lane: LaneName; readonly owner: string };
 
-export interface LanesDeclaration<Lanes extends Readonly<Record<string, LaneDeclaration>>> {
+/**
+ * The lane names are their own parameter rather than `keyof Lanes` inside `rides`: `keyof` would make the declaration
+ * invariant, so a narrowed `defineLanes` result could never be passed where any lanes are taken (a product's `lanes`).
+ */
+export interface LanesDeclaration<
+  Lanes extends Readonly<Record<string, LaneDeclaration>>,
+  LaneName extends string = keyof Lanes & string,
+> {
   readonly id: string;
   readonly lanes: Lanes;
   /** Every stream the product declares, by rider name; each must ride a lane. */
   readonly streams: readonly `stream.${string}`[];
   /** Each rider to the lane it runs on. */
-  readonly rides: Readonly<Record<LaneRider, LaneRide<keyof Lanes & string>>>;
+  readonly rides: Readonly<Record<LaneRider, LaneRide<LaneName>>>;
 }
 
 export type Lanes<Declared extends Readonly<Record<string, LaneDeclaration>> = Readonly<Record<string, LaneDeclaration>>> =
-  LanesDeclaration<Declared>;
+  LanesDeclaration<Declared, keyof Declared & string>;
 
 /** One ride as an edge, for the product JSON and graph. */
 export interface LaneRideEdge {
@@ -174,8 +181,10 @@ function laneProblems(name: string, lane: LaneDeclaration): string[] {
   if (!(LANE_LIFETIMES as readonly string[]).includes(lane.lifetime)) {
     problems.push(`lane '${name}' lifetime '${lane.lifetime}' is not one of ${LANE_LIFETIMES.join(", ")}`);
   }
-  if (lane.isolation === "dedicated" && !/^[a-z][a-z0-9-]*$/u.test(lane.owner ?? "")) {
+  if (lane.isolation === "dedicated" && (lane.owner ?? "").trim() === "") {
     problems.push(`dedicated lane '${name}' names no owner`);
+  } else if (lane.isolation === "dedicated" && !/^[a-z][a-z0-9-]*$/u.test(lane.owner)) {
+    problems.push(`dedicated lane '${name}' owner '${lane.owner}' is not a plain kebab name (a-z, 0-9, -, starting with a letter)`);
   }
   if (lane.isolation === "shared" && (lane.lifetime as LaneLifetime) === "owner") {
     problems.push(`shared lane '${name}' has no owner instance to live and die with; its lifetime is the process`);
