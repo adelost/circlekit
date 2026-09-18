@@ -145,23 +145,27 @@ class CircleServiceStripModelTest {
     }
 
     /**
-     * Skyvw row 188, from what row 178 measured on the device: room held AROUND 18 dp of ink sank the cluster 17.5 dp
-     * at 320 and 13 dp at 192, onto the map's own centre, because a host places the strip by its top. Under the ink
-     * it costs no pixel: the same rows at the same y, and the strip simply reaches further down for a finger.
+     * Skyvw row 188, measured on the device at 08:00: a strip that wraps puts its first service in the TOP row, so
+     * room under the ink is nearest the bottom row and a press under the cluster opened CLOUD IMAGE, never PRESSURE.
+     * The room that reaches the first row is above it, and a host that passes the number can place the strip that
+     * much higher, so the face does not move either way.
      */
     @Test
-    fun `room under the ink moves no glyph, and a press in it names the nearest`() {
+    fun `room above and under the ink reaches the first row and the last, and moves neither`() {
         val row = listOf(CircleServiceBox("gps", 20, 6))
         val tight = circleServiceSeats(List(3) { row }, gap = 4, width = 20)
-        val roomy = circleServiceSeats(List(3) { row }, gap = 4, width = 20, roomBelow = 24)
+        val roomy = circleServiceSeats(List(3) { row }, gap = 4, width = 20, roomAbove = 24, roomBelow = 24)
 
         assertEquals("three tight rows of ink", 18, tight.height)
-        assertEquals("and the room asked for under them", 18 + 24, roomy.height)
+        assertEquals("and a room on each side of them", 24 + 18 + 24, roomy.height)
         assertEquals("the rows stay 6 apart, as drawn", listOf(0, 6, 12), tight.seats.map { it.y })
-        assertEquals("every glyph keeps the y it had with no room", tight.seats.map { it.y }, roomy.seats.map { it.y })
-        // The room belongs to the row nearest it, which under the ink is the last one.
-        assertEquals("gps", circleServiceKeyAt(roomy.seats, 10, 41))
-        assertEquals("gps", circleServiceKeyAt(roomy.seats, 10, 0))
+        assertEquals("the ink sits under the room above, and a host lifts the strip by exactly that",
+            listOf(24, 30, 36), roomy.seats.map { it.y })
+        // Each room belongs to the row nearest it: the first row above, the last row below.
+        assertEquals("the top of the room above", "gps", circleServiceKeyAt(roomy.seats, 10, 0))
+        assertEquals("the bottom of the room below", "gps", circleServiceKeyAt(roomy.seats, 10, 65))
+        assertEquals("a strip cannot be given a negative room", true,
+            runCatching { circleServiceSeats(listOf(row), gap = 4, width = 20, roomAbove = -1) }.isFailure)
     }
 
     @Test

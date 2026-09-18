@@ -160,25 +160,29 @@ data class CircleServiceSeating(val seats: List<CircleServiceSeat>, val height: 
 
 /**
  * Where the strip puts its measured glyphs, and where a finger may press for each. Rows are centred in [width] and
- * stacked tight from the top, exactly as they are drawn; [roomBelow] then makes the strip that much taller underneath
- * them. A seat is its glyph's own box widened by half the gap on each side, and every part of the strip, the room
- * included, belongs to the seat nearest it ([circleServiceKeyAt]), so a press that falls short still lands.
+ * stacked tight, exactly as they are drawn, under [roomAbove] and over [roomBelow]. A seat is its glyph's own box
+ * widened by half the gap on each side, and every part of the strip, the rooms included, belongs to the seat nearest
+ * it ([circleServiceKeyAt]), so a press that falls short of the glyphs still lands on one.
  *
- * The room is below the ink, not around it: a host places the strip by its top, so room above would push every glyph
- * down the face. Measured in Skyvw on 2026-09-18, room held around 18 dp of ink sank the cluster 17.5 dp at 320 and
- * 13 dp at 192, onto the map's own centre. Below the ink, not one glyph moves.
+ * The rooms are named rather than centred so a host can keep its face still: it passes the numbers, so it can place
+ * the strip [roomAbove] higher and not one glyph moves. Room that a strip decides for itself cannot be undone that
+ * way, and in Skyvw it sank the cluster 17.5 dp at 320 and 13 dp at 192, onto the map's own centre (2026-09-18).
+ *
+ * Which room reaches which glyph is the wrap's business: a press above the strip is nearest the TOP row, one below it
+ * nearest the BOTTOM row, and a row in the middle is reached through its own ink alone.
  */
 fun circleServiceSeats(
     rows: List<List<CircleServiceBox>>,
     gap: Int,
     width: Int,
+    roomAbove: Int = 0,
     roomBelow: Int = 0,
 ): CircleServiceSeating {
     require(rows.all { it.isNotEmpty() }) { "A strip row without a glyph cannot be placed" }
-    require(roomBelow >= 0) { "A strip cannot be given $roomBelow of room under its glyphs" }
+    require(roomAbove >= 0 && roomBelow >= 0) { "A strip cannot be given $roomAbove and $roomBelow of room" }
     val rowHeights = rows.map { row -> row.maxOf { it.height } }
     val seats = mutableListOf<CircleServiceSeat>()
-    var top = 0
+    var top = roomAbove
     rows.forEachIndexed { r, row ->
         var x = (width - (row.sumOf { it.width } + gap * (row.size - 1))) / 2
         row.forEach { box ->
