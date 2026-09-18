@@ -48,9 +48,9 @@ data class CircleServiceStripStyle(
     val staleTint: Color,
     /** A dark ground under every glyph so it reads over imagery; null on a plain face. */
     val halo: Color?,
-    /** The least height each ROW of a pressable strip takes, so a reading a few dp tall still seats a finger. The
-     *  glyphs keep their own size and centre in it, and a strip nobody can press ignores it. */
-    val minRowHeight: Dp = 0.dp,
+    /** The least height a pressable strip takes, so a reading a few dp tall still seats a finger. The glyphs keep
+     *  their own size and spacing and centre in it, and a strip nobody can press ignores it. */
+    val minTapHeight: Dp = 0.dp,
 )
 
 /**
@@ -87,6 +87,9 @@ fun CircleServiceStrip(
     } else {
         modifier.pointerInput(Unit) {
             detectTapGestures { at ->
+                // Only the strip's own space answers: the nearest seat would otherwise claim a press beside it.
+                val (w, h) = seated.size
+                if (at.x < 0f || at.y < 0f || at.x >= w || at.y >= h) return@detectTapGestures
                 circleServiceKeyAt(seated.seats, at.x.toInt(), at.y.toInt())?.let { key -> latestTap.value?.invoke(key) }
             }
         }
@@ -109,8 +112,9 @@ fun CircleServiceStrip(
         }
         val boxes = rows.map { row -> row.map { CircleServiceBox(it.key, it.placeable.width, it.placeable.height) } }
         val width = boxes.maxOf { row -> row.sumOf { it.width } + gapPx * (row.size - 1) }
-        val seating = circleServiceSeats(boxes, gapPx, width, if (onGlyphTap == null) 0 else style.minRowHeight.roundToPx())
+        val seating = circleServiceSeats(boxes, gapPx, width, if (onGlyphTap == null) 0 else style.minTapHeight.roundToPx())
         seated.seats = seating.seats
+        seated.size = width to seating.height
         val placed = rows.flatten().map { it.placeable }
         layout(width, seating.height) {
             placed.forEachIndexed { i, placeable -> placeable.place(seating.seats[i].x, seating.seats[i].y) }
@@ -124,6 +128,7 @@ private data class CircleServiceMeasured(val key: String?, val placeable: Placea
 /** Where the last measure seated the glyphs, read by a press rather than by a draw. */
 private class CircleServiceSeatLatch {
     var seats: List<CircleServiceSeat> = emptyList()
+    var size: Pair<Int, Int> = 0 to 0
 }
 
 @Composable

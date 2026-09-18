@@ -160,35 +160,46 @@ data class CircleServiceSeating(val seats: List<CircleServiceSeat>, val height: 
 
 /**
  * Where the strip puts its measured glyphs, and where a finger may press for each. Rows are centred in [width] and
- * stacked from the top; a seat reaches half a gap past its glyph on each side, so a press between two glyphs still
- * names one of them, and fills its own row's band, which is at least [minRowHeight] tall. The bands tile the height
- * exactly, so every press inside the strip lands on a glyph, and the glyphs keep their own small size inside them.
+ * stacked tight, as they are drawn, and the block of them is centred in a strip at least [minHeight] tall. A seat is
+ * its glyph's own box widened by half the gap on each side; the room the minimum adds belongs to whichever seat is
+ * nearest it ([circleServiceKeyAt]), so a finger gains reach without a single glyph moving.
  *
- * The least height is per ROW, not for the strip: a strip that wraps into three rows would otherwise divide one
- * finger between them (Skyvw's strip measured 6 dp a row on a 320 face while asking for 24 over the whole strip).
+ * The minimum is the strip's, not each row's: rows of 6 dp ink sit 6 dp apart, so they cannot each be a finger tall,
+ * and holding them apart to make them so would respace a face's glyphs to serve its touch handling.
  */
 fun circleServiceSeats(
     rows: List<List<CircleServiceBox>>,
     gap: Int,
     width: Int,
-    minRowHeight: Int = 0,
+    minHeight: Int = 0,
 ): CircleServiceSeating {
     require(rows.all { it.isNotEmpty() }) { "A strip row without a glyph cannot be placed" }
-    val bands = rows.map { row -> maxOf(row.maxOf { it.height }, minRowHeight) }
+    val rowHeights = rows.map { row -> row.maxOf { it.height } }
+    val height = maxOf(rowHeights.sum(), minHeight)
     val seats = mutableListOf<CircleServiceSeat>()
-    var top = 0
+    var top = (height - rowHeights.sum()) / 2
     rows.forEachIndexed { r, row ->
         var x = (width - (row.sumOf { it.width } + gap * (row.size - 1))) / 2
         row.forEach { box ->
-            seats += CircleServiceSeat(box.key, x, top + (bands[r] - box.height) / 2,
-                left = x - gap / 2, top = top, right = x + box.width + gap / 2, bottom = top + bands[r])
+            seats += CircleServiceSeat(box.key, x, top + (rowHeights[r] - box.height) / 2,
+                left = x - gap / 2, top = top, right = x + box.width + gap / 2, bottom = top + rowHeights[r])
             x += box.width + gap
         }
-        top += bands[r]
+        top += rowHeights[r]
     }
-    return CircleServiceSeating(seats, top)
+    return CircleServiceSeating(seats, height)
 }
 
-/** The service a press at [x], [y] in the strip's own space lands on; null outside every seat and on the "+N" count. */
+/**
+ * The service a press at [x], [y] in the strip's own space lands on: the glyph whose seat is nearest, so every part
+ * of the strip belongs to the glyph closest to the finger and nothing falls between two of them. The "+N" count has a
+ * seat like the rest and names no service, so a press on it reports nothing rather than a neighbour.
+ *
+ * A press outside the strip never arrives here; the strip answers only inside its own bounds.
+ */
 fun circleServiceKeyAt(seats: List<CircleServiceSeat>, x: Int, y: Int): String? =
-    seats.firstOrNull { x >= it.left && x < it.right && y >= it.top && y < it.bottom }?.key
+    seats.minByOrNull { seat ->
+        val dx = maxOf(seat.left - x, 0, x - seat.right + 1)
+        val dy = maxOf(seat.top - y, 0, y - seat.bottom + 1)
+        dx.toLong() * dx + dy.toLong() * dy
+    }?.key
