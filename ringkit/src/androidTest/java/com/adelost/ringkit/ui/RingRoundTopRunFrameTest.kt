@@ -1,6 +1,7 @@
 package com.adelost.ringkit.ui
 
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.size
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.test.assertHeightIsEqualTo
@@ -9,10 +10,12 @@ import androidx.compose.ui.test.junit4.ComposeContentTestRule
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.getUnclippedBoundsInRoot
 import androidx.compose.ui.test.onNodeWithContentDescription
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.adelost.designkit.ui.CircleHostPreviewState
 import com.adelost.designkit.ui.CircleHostSurface
+import com.adelost.designkit.ui.CircleIconDisc
 import com.adelost.designkit.ui.MenuDesign
 import com.adelost.designkit.ui.RingIcons
 import org.junit.Assert.assertEquals
@@ -22,9 +25,10 @@ import org.junit.Test
 
 /**
  * The run on the glass, not on paper: what the three seats actually lay out to
- * at the canon face, and that an unfilled seat leaves the frame exactly as it
- * was (row 192; the choice and its pictures are .agents/2/row182/PROPOSAL.md in
- * the Skyvw repo).
+ * at the canon face, that an unfilled seat leaves the frame exactly as it was,
+ * and that the run alone keeps the picture behind it where the page host's cap
+ * covers it (rows 192 and 193; the choice and its pictures are
+ * .agents/2/row182/PROPOSAL.md in the Skyvw repo).
  */
 class RingRoundTopRunFrameTest {
     @get:Rule
@@ -82,11 +86,52 @@ class RingRoundTopRunFrameTest {
         )
     }
 
-    private fun seat(label: String) = RoundTopSeat(RingIcons.Gear, label) {}
+    /**
+     * The same three seats when the run is mounted ALONE, as a picture surface
+     * mounts it: no cap over the map, and the geometry unchanged. What the cap
+     * does to a page is a drawing, and row 193 proves that on the device
+     * instead of on a sampled pixel (.agents/2/row193 in the Skyvw repo).
+     */
+    @Test
+    fun theRunAloneSeatsTheSameThreeSeats() {
+        compose.setContent {
+            Box(Modifier.size(CANON.dp).testTag(FACE)) {
+                CircleHostSurface(
+                    isWatchDevice = true,
+                    state = CircleHostPreviewState(),
+                    onStateChange = null,
+                ) {
+                    RingRoundTopRun(
+                        centre = { BackRing(label = BACK, onBack = {}) },
+                        left = seat(LEFT),
+                        right = seat(RIGHT),
+                    )
+                }
+            }
+        }
+        compose.waitForIdle()
+
+        val expected = roundTopRunSeatCenters(CANON, seats = 3)
+        listOf(LEFT to expected[0], BACK to expected[1], RIGHT to expected[2]).forEach { (label, seat) ->
+            val centre = compose.centerOf(label)
+            assertEquals("$label x", seat.first, centre.first.value, 1f)
+            assertEquals("$label y", seat.second, centre.second.value, 1f)
+        }
+    }
+
+    private fun seat(label: String): RoundTopSeat = {
+        CircleIconDisc(
+            icon = RingIcons.Gear,
+            contentDescription = label,
+            actionLabel = label,
+            onTap = {},
+            diameter = MenuDesign.watchActionRingDiameter,
+        )
+    }
 
     private fun ComposeContentTestRule.setRun(left: RoundTopSeat?, right: RoundTopSeat?) {
         setContent {
-            Box(Modifier.size(CANON.dp)) {
+            Box(Modifier.size(CANON.dp).testTag(FACE)) {
                 CircleHostSurface(
                     isWatchDevice = true,
                     state = CircleHostPreviewState(),
@@ -118,5 +163,6 @@ class RingRoundTopRunFrameTest {
         const val BACK = "RETURN"
         const val LEFT = "SETTINGS"
         const val RIGHT = "ROTATE"
+        const val FACE = "round-face"
     }
 }
