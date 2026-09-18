@@ -54,9 +54,22 @@ val LocalRoundChromeReservation = compositionLocalOf<List<CircleChromeSlot>> { e
  */
 val LocalRoundBackLayer = compositionLocalOf { false }
 
+/**
+ * Whether the escape above this content has a companion seat filled beside it.
+ * Content reads it for one reason only: to start its title below the run's own
+ * ink instead of the escape's.
+ */
+val LocalRoundTopRunCompanions = compositionLocalOf { false }
+
 /** A round title's top: below the escape layer when one is mounted. */
-fun roundTitleTopPadding(backLayer: Boolean): Dp =
-    if (backLayer) MenuDesign.roundBackLayerContentTop else MenuDesign.roundTitleTopPadding
+fun roundTitleTopPadding(backLayer: Boolean, companionSeats: Boolean = false): Dp = when {
+    // A filled companion seat sits lower than the escape, because the run
+    // follows the face. Its ink, not the escape's, is what a centred title has
+    // to start below.
+    backLayer && companionSeats -> MenuDesign.roundTopRunContentTop
+    backLayer -> MenuDesign.roundBackLayerContentTop
+    else -> MenuDesign.roundTitleTopPadding
+}
 
 /** Directional edge claims for content inside a round viewport. */
 data class CircleHorizontalInsetsDp(

@@ -81,7 +81,7 @@ internal fun MenuScreen(
 internal fun ScreenTitle(
     text: String,
     icon: ImageVector? = null,
-    topPadding: Dp = roundTitleTopPadding(LocalRoundBackLayer.current),
+    topPadding: Dp = roundTitleTopPadding(LocalRoundBackLayer.current, LocalRoundTopRunCompanions.current),
 ) {
     Row(
         horizontalArrangement = Arrangement.Center,
@@ -253,7 +253,7 @@ internal fun RowsScreen(
     // screen's scroll offset made nested pages open halfway down (AUDIO ->
     // ALARM HEIGHTS could hide BREAK-OFF and PULL entirely).
     val scrollState = remember(s) { ScrollState(0) }
-    val titleTop = roundTitleTopPadding(LocalRoundBackLayer.current)
+    val titleTop = roundTitleTopPadding(LocalRoundBackLayer.current, LocalRoundTopRunCompanions.current)
     BoxWithConstraints(Modifier.fillMaxSize()) {
         val diameter = if (maxWidth < maxHeight) maxWidth else maxHeight
         val insets = ringRowHorizontalInsets(
