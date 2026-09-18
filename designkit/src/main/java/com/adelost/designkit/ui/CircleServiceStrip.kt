@@ -48,9 +48,9 @@ data class CircleServiceStripStyle(
     val staleTint: Color,
     /** A dark ground under every glyph so it reads over imagery; null on a plain face. */
     val halo: Color?,
-    /** The least height a strip that can be pressed takes, so a reading a few dp tall still seats a finger. The
+    /** The least height each ROW of a pressable strip takes, so a reading a few dp tall still seats a finger. The
      *  glyphs keep their own size and centre in it, and a strip nobody can press ignores it. */
-    val minTapHeight: Dp = 0.dp,
+    val minRowHeight: Dp = 0.dp,
 )
 
 /**
@@ -80,7 +80,7 @@ fun CircleServiceStrip(
     // The strip owns the press, not the glyph: a glyph is a few dp of ink, far under a finger, so a press anywhere in
     // the strip lands on the glyph nearest it ([circleServiceSeats]). A strip nobody can press speaks as one reading;
     // a strip whose glyphs open something lets each glyph speak on its own, so a reader reaches the one it asks about.
-    val seated = remember { CircleServiceSeating() }
+    val seated = remember { CircleServiceSeatLatch() }
     val latestTap = rememberUpdatedState(onGlyphTap)
     val pressable = if (onGlyphTap == null) {
         modifier.clearAndSetSemantics { contentDescription = frames.joinToString(", ") { it.description } }
@@ -109,13 +109,11 @@ fun CircleServiceStrip(
         }
         val boxes = rows.map { row -> row.map { CircleServiceBox(it.key, it.placeable.width, it.placeable.height) } }
         val width = boxes.maxOf { row -> row.sumOf { it.width } + gapPx * (row.size - 1) }
-        val drawnHeight = boxes.sumOf { row -> row.maxOf { it.height } }
-        val height = if (onGlyphTap == null) drawnHeight else maxOf(drawnHeight, style.minTapHeight.roundToPx())
-        val seats = circleServiceSeats(boxes, gapPx, width, height)
-        seated.seats = seats
+        val seating = circleServiceSeats(boxes, gapPx, width, if (onGlyphTap == null) 0 else style.minRowHeight.roundToPx())
+        seated.seats = seating.seats
         val placed = rows.flatten().map { it.placeable }
-        layout(width, height) {
-            placed.forEachIndexed { i, placeable -> placeable.place(seats[i].x, seats[i].y) }
+        layout(width, seating.height) {
+            placed.forEachIndexed { i, placeable -> placeable.place(seating.seats[i].x, seating.seats[i].y) }
         }
     }
 }
@@ -124,7 +122,7 @@ fun CircleServiceStrip(
 private data class CircleServiceMeasured(val key: String?, val placeable: Placeable)
 
 /** Where the last measure seated the glyphs, read by a press rather than by a draw. */
-private class CircleServiceSeating {
+private class CircleServiceSeatLatch {
     var seats: List<CircleServiceSeat> = emptyList()
 }
 
