@@ -16,6 +16,7 @@ import com.adelost.designkit.ui.CircleHostSurface
 import com.adelost.designkit.ui.MenuDesign
 import com.adelost.designkit.ui.RingIcons
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 
@@ -34,7 +35,6 @@ class RingRoundTopRunFrameTest {
         compose.setRun(left = null, right = null)
         val alone = compose.centerOf(BACK)
 
-        compose.runOnUiThread { }
         assertEquals("back x", 96f, alone.first.value, 1f)
         assertEquals("back y", MenuDesign.roundBackLayerCenterY.value, alone.second.value, 1f)
     }
@@ -76,9 +76,10 @@ class RingRoundTopRunFrameTest {
         assertEquals("both companions sit at the same height",
             centers[0].second.value, centers[2].second.value, 1f)
         // And lower than the escape, because the run follows the face.
-        assert(centers[0].second.value > centers[1].second.value) {
-            "a companion must sit lower than the escape: ${centers[0].second} vs ${centers[1].second}"
-        }
+        assertTrue(
+            "a companion must sit lower than the escape: ${centers[0].second} vs ${centers[1].second}",
+            centers[0].second.value > centers[1].second.value,
+        )
     }
 
     private fun seat(label: String) = RoundTopSeat(RingIcons.Gear, label) {}
