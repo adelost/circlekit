@@ -48,9 +48,9 @@ data class CircleServiceStripStyle(
     val staleTint: Color,
     /** A dark ground under every glyph so it reads over imagery; null on a plain face. */
     val halo: Color?,
-    /** The least height a pressable strip takes, so a reading a few dp tall still seats a finger. The glyphs keep
-     *  their own size and spacing and centre in it, and a strip nobody can press ignores it. */
-    val minTapHeight: Dp = 0.dp,
+    /** Room under the glyphs for a finger that falls short: the strip grows downward by this much and every glyph
+     *  stays exactly where it drew. A strip nobody can press ignores it. */
+    val tapRoomBelow: Dp = 0.dp,
 )
 
 /**
@@ -112,7 +112,7 @@ fun CircleServiceStrip(
         }
         val boxes = rows.map { row -> row.map { CircleServiceBox(it.key, it.placeable.width, it.placeable.height) } }
         val width = boxes.maxOf { row -> row.sumOf { it.width } + gapPx * (row.size - 1) }
-        val seating = circleServiceSeats(boxes, gapPx, width, if (onGlyphTap == null) 0 else style.minTapHeight.roundToPx())
+        val seating = circleServiceSeats(boxes, gapPx, width, if (onGlyphTap == null) 0 else style.tapRoomBelow.roundToPx())
         seated.seats = seating.seats
         seated.size = width to seating.height
         val placed = rows.flatten().map { it.placeable }

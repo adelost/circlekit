@@ -160,24 +160,25 @@ data class CircleServiceSeating(val seats: List<CircleServiceSeat>, val height: 
 
 /**
  * Where the strip puts its measured glyphs, and where a finger may press for each. Rows are centred in [width] and
- * stacked tight, as they are drawn, and the block of them is centred in a strip at least [minHeight] tall. A seat is
- * its glyph's own box widened by half the gap on each side; the room the minimum adds belongs to whichever seat is
- * nearest it ([circleServiceKeyAt]), so a finger gains reach without a single glyph moving.
+ * stacked tight from the top, exactly as they are drawn; [roomBelow] then makes the strip that much taller underneath
+ * them. A seat is its glyph's own box widened by half the gap on each side, and every part of the strip, the room
+ * included, belongs to the seat nearest it ([circleServiceKeyAt]), so a press that falls short still lands.
  *
- * The minimum is the strip's, not each row's: rows of 6 dp ink sit 6 dp apart, so they cannot each be a finger tall,
- * and holding them apart to make them so would respace a face's glyphs to serve its touch handling.
+ * The room is below the ink, not around it: a host places the strip by its top, so room above would push every glyph
+ * down the face. Measured in Skyvw on 2026-09-18, room held around 18 dp of ink sank the cluster 17.5 dp at 320 and
+ * 13 dp at 192, onto the map's own centre. Below the ink, not one glyph moves.
  */
 fun circleServiceSeats(
     rows: List<List<CircleServiceBox>>,
     gap: Int,
     width: Int,
-    minHeight: Int = 0,
+    roomBelow: Int = 0,
 ): CircleServiceSeating {
     require(rows.all { it.isNotEmpty() }) { "A strip row without a glyph cannot be placed" }
+    require(roomBelow >= 0) { "A strip cannot be given $roomBelow of room under its glyphs" }
     val rowHeights = rows.map { row -> row.maxOf { it.height } }
-    val height = maxOf(rowHeights.sum(), minHeight)
     val seats = mutableListOf<CircleServiceSeat>()
-    var top = (height - rowHeights.sum()) / 2
+    var top = 0
     rows.forEachIndexed { r, row ->
         var x = (width - (row.sumOf { it.width } + gap * (row.size - 1))) / 2
         row.forEach { box ->
@@ -187,7 +188,7 @@ fun circleServiceSeats(
         }
         top += rowHeights[r]
     }
-    return CircleServiceSeating(seats, height)
+    return CircleServiceSeating(seats, top + roomBelow)
 }
 
 /**
