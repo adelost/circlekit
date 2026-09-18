@@ -5,6 +5,8 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import kotlin.math.PI
+import kotlin.math.cos
 
 /** One form-factor-neutral design spec for the canonical Circle menu row. */
 object MenuDesign {
@@ -96,6 +98,59 @@ object MenuDesign {
 
     /** The escape's cap fades out here: inside the resting title's line box, above its letters. */
     val roundBackLayerCapBottom: Dp = roundBackLayerContentTop + 2.dp
+
+    /**
+     * How far around the face one companion seat sits from the escape: one
+     * clock hour, the kit's own unit for rim placement.
+     *
+     * Mattias 2026-09-17, on a JUMP LOG picture: "om det går att få in tre
+     * knappar ganska litet bredvid varandra i toppen liksom ... bak-knapp,
+     * settings-knapp och sen kanske rotationsknapp", and "helst vill vi ha
+     * samma storlek på alla cirklarna". So the run is three seats of ONE
+     * diameter, and the step has to be the largest the glass can hold.
+     *
+     * Measured on the 192 dp canon, where the escape's centre is 24 dp from the
+     * top, i.e. 72 dp from the face centre. A seat one hour along that same
+     * radius lands 36.0 dp sideways and 33.6 dp down, 87.0 dp from the centre
+     * with its ink, so it clears the 96 dp glass by 9.0 dp. Its neighbours'
+     * centres are 37.3 dp apart, wider than the 30 dp discs, so no two seats'
+     * targets overlap.
+     *
+     * A FOURTH seat is refused for two reasons, and neither is the glass edge:
+     * every seat on this radius keeps its ink 87.0 dp from the centre however
+     * far around it sits. First, an even run has no seat at twelve, so the
+     * escape would have to leave the place it has held since 2026-09-14.
+     * Second, the next odd run, five, puts its outer seats two hours out, where
+     * their ink ends 65.1 dp down: past the title and into the scrolling row
+     * band, which is the exact cost this layer exists to avoid ("de andra
+     * meny-itemsen ska inte tryckas undan"). So the run is one seat or three,
+     * and [roundTopRunMaxSeats] is what says so.
+     */
+    val roundTopRunStepDeg: Float = 30f
+
+    /** Three seats: eleven, twelve, one. There is no fourth on a 192 dp face. */
+    const val roundTopRunMaxSeats: Int = 3
+
+    /** The run's radius: the escape's own distance from the face centre. */
+    val roundTopRunRadius: Dp =
+        (CircleUiProfiles.CANON_ROUND_CANVAS_DP / 2f).dp - roundBackLayerCenterY
+
+    /** A companion seat's centre, from the canvas top. Derived, never typed. */
+    val roundTopRunSeatCenterY: Dp = (
+        CircleUiProfiles.CANON_ROUND_CANVAS_DP / 2f -
+            roundTopRunRadius.value * cos(roundTopRunStepDeg * PI.toFloat() / 180f)
+        ).dp
+
+    /**
+     * Where a title starts on a page that fills a companion seat.
+     *
+     * A companion's centre is lower than the escape's (the run follows the
+     * face), so its ink ends lower too, and a centred title would otherwise
+     * run into it. Derived, never typed: the seat's own bottom plus the same
+     * 4 dp of air [roundBackLayerContentTop] uses.
+     */
+    val roundTopRunContentTop: Dp =
+        roundTopRunSeatCenterY + watchActionRingDiameter / 2 + 4.dp
 
     val ringActive: Color = RingTokens.Accent
     val ringResting: Color = RingTokens.Outline

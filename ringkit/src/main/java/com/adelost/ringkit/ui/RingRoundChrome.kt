@@ -48,12 +48,54 @@ fun RingRoundChrome(actions: List<RingChromeAction>) {
 }
 
 /**
+ * One companion seat in the round top run: the page's own control, drawn in
+ * the same layer and at the same diameter as the escape beside it.
+ */
+data class RoundTopSeat(
+    val icon: ImageVector,
+    val label: String,
+    val onTap: () -> Unit,
+)
+
+/**
+ * Where the seats of a [seats]-wide run sit on a [faceDp] face, left to right,
+ * as centres in dp from the canvas top-left.
+ *
+ * The run is an arc, not a straight line: every seat keeps the escape's own
+ * distance from the face centre, so the three read as one run on a round face
+ * and none of them is closer to the glass edge than the escape already is.
+ *
+ * A run wider than [MenuDesign.roundTopRunMaxSeats] is not a layout this kit
+ * can draw, and saying so out loud beats drawing a fourth seat into the rows
+ * (see the derivation on [MenuDesign.roundTopRunStepDeg]).
+ */
+internal fun roundTopRunSeatCenters(faceDp: Float, seats: Int): List<Pair<Float, Float>> {
+    require(seats in 1..MenuDesign.roundTopRunMaxSeats) {
+        "the round top run seats 1..${MenuDesign.roundTopRunMaxSeats} controls, not $seats"
+    }
+    val scale = faceDp / CircleUiProfiles.CANON_ROUND_CANVAS_DP
+    val centre = faceDp / 2f
+    val radius = MenuDesign.roundTopRunRadius.value * scale
+    val step = MenuDesign.roundTopRunStepDeg
+    val first = -(seats - 1) / 2f
+    return (0 until seats).map { index ->
+        val angle = Math.toRadians(((first + index) * step).toDouble())
+        centre + radius * sin(angle).toFloat() to centre - radius * cos(angle).toFloat()
+    }
+}
+
+/**
  * Mount the shared round escape above [content]: a [BackRing] fixed at
  * 12 o'clock over a canvas-coloured cap (Mattias 2026-09-14: "bakknappen ska
  * väl vara ett eget lager så att de andra meny-itemsen ska inte tryckas
  * undan"). It claims no rim slot, so rows keep one stable straight edge and
  * scroll under the cap instead of stepping aside. Content reads
  * [LocalRoundBackLayer] only to start its title below the control.
+ *
+ * [left] and [right] are the run's companion seats (Mattias 2026-09-17:
+ * "bak-knapp, settings-knapp och sen kanske rotationsknapp"). A page declares
+ * the ones it fills; an unfilled seat draws nothing, reserves nothing and
+ * leaves the frame exactly as it was before this run existed.
  *
  * Non-round hosts render [content] unchanged; phone screens carry their own
  * header back.
@@ -62,6 +104,8 @@ fun RingRoundChrome(actions: List<RingChromeAction>) {
 fun RingRoundBackHost(
     onBack: () -> Unit,
     label: String = "Back",
+    left: RoundTopSeat? = null,
+    right: RoundTopSeat? = null,
     content: @Composable () -> Unit,
 ) {
     if (LocalCircleSurfaceLayout.current.surfaceClass != CircleSurfaceClass.ROUND) {
@@ -70,21 +114,34 @@ fun RingRoundBackHost(
     }
     CompositionLocalProvider(
         LocalRoundBackLayer provides true,
+        LocalRoundTopRunCompanions provides (left != null || right != null),
         LocalRoundChromeReservation provides LocalRoundChromeReservation.current + roundBackHostReservation(),
     ) {
         Box(Modifier.fillMaxSize()) {
             content()
-            RingRoundBackLayer(label = label, onBack = onBack)
+            RingRoundBackLayer(label = label, onBack = onBack, left = left, right = right)
         }
     }
 }
 
-/** The fixed escape and the cap its passing rows fade under. */
+/** The fixed escape, its companions, and the cap their passing rows fade under. */
 @Composable
-internal fun RingRoundBackLayer(label: String, onBack: () -> Unit) {
+internal fun RingRoundBackLayer(
+    label: String,
+    onBack: () -> Unit,
+    left: RoundTopSeat? = null,
+    right: RoundTopSeat? = null,
+) {
     val canvas = circleCanvasColor()
-    val ringBottom = MenuDesign.roundBackLayerCenterY + MenuDesign.backDiameter / 2
-    val capBottom = MenuDesign.roundBackLayerCapBottom
+    val companions = left != null || right != null
+    val ringBottom = if (companions) {
+        MenuDesign.roundTopRunSeatCenterY + MenuDesign.watchActionRingDiameter / 2
+    } else {
+        MenuDesign.roundBackLayerCenterY + MenuDesign.backDiameter / 2
+    }
+    // The cap has to cover the lowest ink in the run, or a row would scroll
+    // through a companion instead of under it.
+    val capBottom = if (companions) MenuDesign.roundTopRunContentTop + 2.dp else MenuDesign.roundBackLayerCapBottom
     Box(Modifier.fillMaxSize()) {
         // Opaque behind the whole ring, so a passing row never shows through
         // or crosses its contour; faded below it, ending where a resting
@@ -108,6 +165,27 @@ internal fun RingRoundBackLayer(label: String, onBack: () -> Unit) {
                 .align(Alignment.TopCenter)
                 .padding(top = MenuDesign.roundBackLayerCenterY - MenuDesign.backDiameter / 2),
         )
+        // The companions keep the escape's radius, one clock hour to each side.
+        // Placed from the face's own size so the run scales with the glass,
+        // exactly as the escape above them does.
+        val diameter = MenuDesign.watchActionRingDiameter
+        val seatOffsetX = MenuDesign.roundTopRunRadius *
+            sin(Math.toRadians(MenuDesign.roundTopRunStepDeg.toDouble())).toFloat()
+        val seatTop = MenuDesign.roundTopRunSeatCenterY - diameter / 2
+        left?.let { seat ->
+            CircleIconDisc(
+                icon = seat.icon, contentDescription = seat.label,
+                actionLabel = seat.label, onTap = seat.onTap, diameter = diameter,
+                modifier = Modifier.align(Alignment.TopCenter).offset(x = -seatOffsetX, y = seatTop),
+            )
+        }
+        right?.let { seat ->
+            CircleIconDisc(
+                icon = seat.icon, contentDescription = seat.label,
+                actionLabel = seat.label, onTap = seat.onTap, diameter = diameter,
+                modifier = Modifier.align(Alignment.TopCenter).offset(x = seatOffsetX, y = seatTop),
+            )
+        }
     }
 }
 
