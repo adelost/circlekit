@@ -2,12 +2,13 @@ package com.adelost.ringkit.ui
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Alignment
@@ -48,14 +49,15 @@ fun RingRoundChrome(actions: List<RingChromeAction>) {
 }
 
 /**
- * One companion seat in the round top run: the page's own control, drawn in
- * the same layer and at the same diameter as the escape beside it.
+ * One seat of the round top run: a place, not a control.
+ *
+ * The kit owns WHERE the three seats sit and how wide they are; the product
+ * draws WHAT sits in them. A data seat (icon, label, tap) cannot carry what a
+ * product's own button already carries -- the answers it cycles through, a
+ * hold, the centre cue it publishes -- and a seat that took only a glyph would
+ * have forced every such control to stay on the rim.
  */
-data class RoundTopSeat(
-    val icon: ImageVector,
-    val label: String,
-    val onTap: () -> Unit,
-)
+typealias RoundTopSeat = @Composable BoxScope.() -> Unit
 
 /**
  * Where the seats of a [seats]-wide run sit on a [faceDp] face, left to right,
@@ -69,7 +71,7 @@ data class RoundTopSeat(
  * can draw, and saying so out loud beats drawing a fourth seat into the rows
  * (see the derivation on [MenuDesign.roundTopRunStepDeg]).
  */
-internal fun roundTopRunSeatCenters(faceDp: Float, seats: Int): List<Pair<Float, Float>> {
+fun roundTopRunSeatCenters(faceDp: Float, seats: Int): List<Pair<Float, Float>> {
     require(seats in 1..MenuDesign.roundTopRunMaxSeats) {
         "the round top run seats 1..${MenuDesign.roundTopRunMaxSeats} controls, not $seats"
     }
@@ -158,34 +160,75 @@ internal fun RingRoundBackLayer(
                     ),
                 ),
         )
-        BackRing(
-            label = label,
-            onBack = onBack,
-            modifier = Modifier
-                .align(Alignment.TopCenter)
-                .padding(top = MenuDesign.roundBackLayerCenterY - MenuDesign.backDiameter / 2),
+        RingRoundTopRun(
+            centre = {
+                BackRing(
+                    label = label,
+                    onBack = onBack,
+                    modifier = Modifier.align(Alignment.Center),
+                )
+            },
+            left = left,
+            right = right,
         )
-        // The companions keep the escape's radius, one clock hour to each side.
-        // Placed from the face's own size so the run scales with the glass,
-        // exactly as the escape above them does.
-        val diameter = MenuDesign.watchActionRingDiameter
-        val seatOffsetX = MenuDesign.roundTopRunRadius *
-            sin(Math.toRadians(MenuDesign.roundTopRunStepDeg.toDouble())).toFloat()
-        val seatTop = MenuDesign.roundTopRunSeatCenterY - diameter / 2
+    }
+}
+
+/**
+ * The run's three seats and nothing else: no cap, no page treatment.
+ *
+ * A scrolling page mounts the run through [RingRoundBackHost], whose cap is
+ * what its rows fade under. A picture surface -- a map, a camera, a scene --
+ * has no rows to hide and must not have its picture painted over, so it mounts
+ * the run alone and keeps its glass. Both get their seats from here, so the
+ * escape and its companions sit in the same three places on every surface.
+ *
+ * Each seat is a box of the run's own diameter at the run's own centre; the
+ * caller draws inside it and never restates a position. [centre] is the
+ * escape's seat.
+ */
+@Composable
+fun RingRoundTopRun(
+    centre: RoundTopSeat,
+    left: RoundTopSeat? = null,
+    right: RoundTopSeat? = null,
+    modifier: Modifier = Modifier,
+) {
+    val diameter = MenuDesign.watchActionRingDiameter
+    // The companions keep the escape's radius, one clock hour to each side.
+    // Placed from the face's own size so the run scales with the glass,
+    // exactly as the escape above them does.
+    val seatOffsetX = MenuDesign.roundTopRunRadius *
+        sin(Math.toRadians(MenuDesign.roundTopRunStepDeg.toDouble())).toFloat()
+    val companionTop = MenuDesign.roundTopRunSeatCenterY - diameter / 2
+    Box(modifier.fillMaxSize()) {
         left?.let { seat ->
-            CircleIconDisc(
-                icon = seat.icon, contentDescription = seat.label,
-                actionLabel = seat.label, onTap = seat.onTap, diameter = diameter,
-                modifier = Modifier.align(Alignment.TopCenter).offset(x = -seatOffsetX, y = seatTop),
+            Box(
+                Modifier
+                    .align(Alignment.TopCenter)
+                    .offset(x = -seatOffsetX, y = companionTop)
+                    .size(diameter),
+                content = seat,
             )
         }
         right?.let { seat ->
-            CircleIconDisc(
-                icon = seat.icon, contentDescription = seat.label,
-                actionLabel = seat.label, onTap = seat.onTap, diameter = diameter,
-                modifier = Modifier.align(Alignment.TopCenter).offset(x = seatOffsetX, y = seatTop),
+            Box(
+                Modifier
+                    .align(Alignment.TopCenter)
+                    .offset(x = seatOffsetX, y = companionTop)
+                    .size(diameter),
+                content = seat,
             )
         }
+        // The escape is drawn last: topmost siblings win overlapping pointer
+        // input, and the escape is the one control every surface has.
+        Box(
+            Modifier
+                .align(Alignment.TopCenter)
+                .offset(y = MenuDesign.roundBackLayerCenterY - MenuDesign.backDiameter / 2)
+                .size(MenuDesign.backDiameter),
+            content = centre,
+        )
     }
 }
 
