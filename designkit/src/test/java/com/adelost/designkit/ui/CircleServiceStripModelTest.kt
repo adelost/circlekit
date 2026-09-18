@@ -127,8 +127,8 @@ class CircleServiceStripModelTest {
     fun `a press between two glyphs names one of them, and one beside the strip or on the count names none`() {
         val seats = circleServiceSeats(
             listOf(listOf(CircleServiceBox("gps", 20, 6), CircleServiceBox("baro", 30, 6), CircleServiceBox(null, 8, 6))),
-            gap = 4, width = 66, height = 24,
-        )
+            gap = 4, width = 66, minRowHeight = 24,
+        ).seats
 
         assertEquals("on the ink", "gps", circleServiceKeyAt(seats, 19, 12))
         assertEquals("in the gap, gps side", "gps", circleServiceKeyAt(seats, 21, 12))
@@ -144,12 +144,32 @@ class CircleServiceStripModelTest {
         assertEquals(0, seats.first().x)
     }
 
+    /**
+     * Skyvw row 178, measured on the 320 face: the strip wrapped into three rows and every row seated 6 dp, because
+     * the least height was read for the strip and divided between them. A finger presses one row, so the least
+     * height is each row's.
+     */
+    @Test
+    fun `every row seats a finger, however many rows the glyphs wrap into`() {
+        val row = listOf(CircleServiceBox("gps", 20, 6))
+        val three = circleServiceSeats(List(3) { row }, gap = 4, width = 20, minRowHeight = 24)
+
+        assertEquals("three rows of a finger each", 72, three.height)
+        assertEquals(listOf(0, 24, 48), three.seats.map { it.top })
+        assertEquals(listOf(24, 48, 72), three.seats.map { it.bottom })
+        assertEquals("the ink keeps its own 6 and centres in the band", listOf(9, 33, 57), three.seats.map { it.y })
+        // Every press inside the strip lands on a row: the bands tile the height with no seam and no slack.
+        assertEquals("gps", circleServiceKeyAt(three.seats, 10, 23))
+        assertEquals("gps", circleServiceKeyAt(three.seats, 10, 24))
+        assertEquals(null, circleServiceKeyAt(three.seats, 10, 72))
+    }
+
     @Test
     fun `a second row is pressed as its own band, so a press there never names the row above`() {
         val seats = circleServiceSeats(
             listOf(listOf(CircleServiceBox("gps", 20, 6)), listOf(CircleServiceBox("baro", 30, 6))),
-            gap = 4, width = 30, height = 12,
-        )
+            gap = 4, width = 30,
+        ).seats
 
         assertEquals("gps", circleServiceKeyAt(seats, 10, 3))
         assertEquals("baro", circleServiceKeyAt(seats, 10, 9))

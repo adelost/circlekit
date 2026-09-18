@@ -154,29 +154,39 @@ data class CircleServiceSeat(
     val bottom: Int,
 )
 
+/** Every glyph's seat, and the height the strip takes to hold them. */
+@Immutable
+data class CircleServiceSeating(val seats: List<CircleServiceSeat>, val height: Int)
+
 /**
  * Where the strip puts its measured glyphs, and where a finger may press for each. Rows are centred in [width] and
- * stacked down the middle of [height]; a seat reaches half a gap past its glyph on each side, so a press between two
- * glyphs still names one of them, and fills its row's band of the height, so a strip given room for a finger is
- * pressable everywhere in that room while the glyphs keep their own small size.
+ * stacked from the top; a seat reaches half a gap past its glyph on each side, so a press between two glyphs still
+ * names one of them, and fills its own row's band, which is at least [minRowHeight] tall. The bands tile the height
+ * exactly, so every press inside the strip lands on a glyph, and the glyphs keep their own small size inside them.
+ *
+ * The least height is per ROW, not for the strip: a strip that wraps into three rows would otherwise divide one
+ * finger between them (Skyvw's strip measured 6 dp a row on a 320 face while asking for 24 over the whole strip).
  */
-fun circleServiceSeats(rows: List<List<CircleServiceBox>>, gap: Int, width: Int, height: Int): List<CircleServiceSeat> {
+fun circleServiceSeats(
+    rows: List<List<CircleServiceBox>>,
+    gap: Int,
+    width: Int,
+    minRowHeight: Int = 0,
+): CircleServiceSeating {
     require(rows.all { it.isNotEmpty() }) { "A strip row without a glyph cannot be placed" }
-    val rowHeights = rows.map { row -> row.maxOf { it.height } }
+    val bands = rows.map { row -> maxOf(row.maxOf { it.height }, minRowHeight) }
     val seats = mutableListOf<CircleServiceSeat>()
-    var inkTop = ((height - rowHeights.sum()) / 2).coerceAtLeast(0)
+    var top = 0
     rows.forEachIndexed { r, row ->
-        val top = if (r == 0) 0 else inkTop
-        val bottom = if (r == rows.lastIndex) maxOf(height, inkTop + rowHeights[r]) else inkTop + rowHeights[r]
         var x = (width - (row.sumOf { it.width } + gap * (row.size - 1))) / 2
         row.forEach { box ->
-            seats += CircleServiceSeat(box.key, x, inkTop + (rowHeights[r] - box.height) / 2,
-                left = x - gap / 2, top = top, right = x + box.width + gap / 2, bottom = bottom)
+            seats += CircleServiceSeat(box.key, x, top + (bands[r] - box.height) / 2,
+                left = x - gap / 2, top = top, right = x + box.width + gap / 2, bottom = top + bands[r])
             x += box.width + gap
         }
-        inkTop += rowHeights[r]
+        top += bands[r]
     }
-    return seats
+    return CircleServiceSeating(seats, top)
 }
 
 /** The service a press at [x], [y] in the strip's own space lands on; null outside every seat and on the "+N" count. */
