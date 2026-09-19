@@ -19,10 +19,12 @@ import { frozen } from "./frozen.js";
  * 3. with `first-match`, the declared order decides, and a cell an earlier cell always wins over is refused by name;
  * 4. every state is reachable from `initial` through declared cells;
  * 5. no functions anywhere: guards are names, facts are supplied by the caller;
- * 6. every input is on a cell or an update, or listed under `ignored`.
+ * 6. every input is on a cell or an update, or listed under `ignored`;
+ * 7. every state that is not listed under `rests` has a cell on a declared deadline input that leaves it.
  *
  * Not in this form: hierarchy, parallel regions, history, eventless or delayed transitions, entry and exit actions.
  * A parallel region is a second machine; a deadline is an input carrying `now`, decided into a guard by the caller.
+ * Law 7 proves a way out is declared, not that anyone raises the clock: sending the deadline stays the caller's job.
  */
 
 export type MachineOrdering = "exclusive" | "first-match";
@@ -55,6 +57,10 @@ export interface MachineDeclaration<State extends string, Input extends string, 
   readonly cells: readonly MachineCell<NoInfer<State>, NoInfer<Input>, NoInfer<Guard>>[];
   readonly updates?: readonly MachineUpdate<NoInfer<Input>>[];
   readonly ignored?: readonly NoInfer<Input>[];
+  /** States where staying forever is correct. Law 7 asks every other state for a deadline input that leaves it. */
+  readonly rests: readonly NoInfer<State>[];
+  /** Inputs the caller raises from a clock. Empty is legal, and then every state is a rest and says so in plain sight. */
+  readonly deadlines: readonly NoInfer<Input>[];
   readonly ordering: MachineOrdering;
   readonly otherwise: MachineOtherwise;
 }
@@ -69,6 +75,8 @@ export interface Machine<State extends string = string, Input extends string = s
   readonly cells: readonly Required<MachineCell<State, Input, Guard>>[];
   readonly updates: readonly MachineUpdate<Input>[];
   readonly ignored: readonly Input[];
+  readonly rests: readonly State[];
+  readonly deadlines: readonly Input[];
   readonly ordering: MachineOrdering;
   readonly otherwise: MachineOtherwise;
 }
@@ -94,6 +102,8 @@ export function defineMachine<const State extends string, const Input extends st
     cells: declaration.cells.map((cell) => ({ ...cell, requires: cell.requires ?? [], forbids: cell.forbids ?? [] })),
     updates: declaration.updates ?? [],
     ignored: declaration.ignored ?? [],
+    rests: declaration.rests,
+    deadlines: declaration.deadlines,
     ordering: declaration.ordering,
     otherwise: declaration.otherwise,
   } as Machine<State, Input, Guard>;
@@ -157,11 +167,37 @@ function machineProblems(machine: Machine, declaration: Readonly<Record<string, 
   if (!["exclusive", "first-match"].includes(machine.ordering)) problems.push(`ordering '${String(machine.ordering)}' is not exclusive or first-match`);
   if (!["stay", "refuse"].includes(machine.otherwise)) problems.push(`otherwise '${String(machine.otherwise)}' is not stay or refuse`);
   if (!machine.states.includes(machine.initial)) problems.push(`initial state '${machine.initial}' is not a declared state`);
+  if (!Array.isArray(machine.rests)) problems.push("rests is required: the states where staying forever is correct, [] when there are none");
+  if (!Array.isArray(machine.deadlines)) problems.push("deadlines is required: the inputs the caller raises from a clock, [] when there are none");
   problems.push(...cellProblems(machine), ...inputProblems(machine));
   if (problems.length > 0) return problems;
   problems.push(...orderingProblems(machine));
   const unreached = machine.states.filter((state) => !reachableStates(machine).includes(state));
   if (unreached.length > 0) problems.push(`no cell reaches ${unreached.join(", ")} from ${machine.initial}`);
+  problems.push(...restProblems(machine));
+  return problems;
+}
+
+/**
+ * Law 7: a state that is not a rest is left by a declared deadline input. A cell on a deadline that goes back to the
+ * state it came from is not a way out, so it does not count. Guards on the cell are allowed: the law proves the way
+ * out is declared, not that the caller raises the clock.
+ */
+function restProblems(machine: Machine): string[] {
+  const problems: string[] = [];
+  for (const state of machine.rests) {
+    if (!machine.states.includes(state)) problems.push(`rest '${state}' is not a declared state`);
+  }
+  for (const input of machine.deadlines) {
+    if (!machine.inputs.includes(input)) problems.push(`deadline '${input}' is not a declared input`);
+  }
+  if (problems.length > 0) return problems;
+  const ways = machine.deadlines.length === 0 ? "a deadline input" : `one of ${machine.deadlines.join(", ")}`;
+  for (const state of machine.states) {
+    if (machine.rests.includes(state)) continue;
+    const left = machine.cells.some((cell) => cell.from === state && machine.deadlines.includes(cell.on) && cell.to !== state);
+    if (!left) problems.push(`state ${state} is not a rest and no deadline input leaves it; list it under rests or give it a cell on ${ways}`);
+  }
   return problems;
 }
 
