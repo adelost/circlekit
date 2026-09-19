@@ -10,6 +10,8 @@ export interface MachineStatelyOptions {
  * and their transitions in the cells' declared order, so a first-match machine reads the same. A guard is its name;
  * `requires` becomes `and([...])` and each `forbids` a `not(...)`. There are no functions and no context: the facts
  * behind a guard stay the caller's, and Studio's simulator lets a person pick them. Export only, never read back.
+ * The rests and deadlines are carried in the header, not in the machine: XState's `after` wants a duration and the
+ * form declares none, so a deadline stays an ordinary event a person sends in the simulator.
  * A machine that breaks a law is refused before anything is written.
  */
 export function emitMachineStately(machine: Machine, options: MachineStatelyOptions): string {
@@ -35,10 +37,16 @@ export function emitMachineStately(machine: Machine, options: MachineStatelyOpti
     return [`    ${key(state)}: {`, "      on: {", ...on, "      },", "    },"].join("\n");
   });
   const imports = ["createMachine", ...helpers].sort();
+  const named = (names: readonly string[]) => names.join(", ") || "none";
+  const clock = machine.deadlines.length === 0
+    ? []
+    : ["// A deadline stays an ordinary event here: XState's `after` wants a duration, and the form declares none."];
   return [
     "// GENERATED FILE. DO NOT EDIT.",
     `// GENERATED FROM ${options.sourceFile}`,
     `// Machine ${machine.id} for Stately Studio: ordering ${machine.ordering}, otherwise ${machine.otherwise}. Guards are names; the caller supplies the facts.`,
+    `// Rests, where staying forever is correct: ${named(machine.rests)}. Deadlines, the inputs a clock raises: ${named(machine.deadlines)}.`,
+    ...clock,
     `import { ${imports.join(", ")} } from "xstate";`,
     "",
     "export const machine = createMachine({",

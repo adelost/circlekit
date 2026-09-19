@@ -9,8 +9,8 @@ export interface MachineKotlinOptions extends SourcedKotlinEmissionOptions {
 
 /**
  * A machine as Kotlin, the file `Generated<Product><Machine>Machine.kt`: its states and guards as enums, every cell as
- * data in declared order (from, the input's class name, to, requires, forbids), and `declaredNext(stage, inputName,
- * guards)`, which answers as product-spec's `step()` does. The caller works out which guards hold, as it does for
+ * data in declared order (from, the input's class name, to, requires, forbids), its rests and deadlines, and
+ * `declaredNext(stage, inputName, guards)`, which answers as product-spec's `step()` does. The caller works out which guards hold, as it does for
  * `step()`; nothing here runs a predicate. A machine that breaks a law is refused before any Kotlin is written.
  */
 export function emitMachineKotlin(machine: Machine, options: MachineKotlinOptions): string {
@@ -61,6 +61,12 @@ internal object ${name}Machine {
 
     /** Inputs the machine takes no notice of. */
     val ignored: List<String> = ${strings(machine.ignored)}
+
+    /** States where staying forever is correct. */
+    val rests: List<String> = ${strings(machine.rests)}
+
+    /** Inputs the caller raises from a clock; law 7 gave one of them a cell out of every state that is not a rest. */
+    val deadlines: List<String> = ${strings(machine.deadlines)}
 
     val cells: List<${cell}> = listOf(
 ${cells}
