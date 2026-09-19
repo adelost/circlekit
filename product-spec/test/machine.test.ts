@@ -62,6 +62,8 @@ const recording = defineMachine({
     { on: "GroundObserved", fields: ["bufferingRearmGroundObserved"] },
     { on: "Rearm", fields: ["bufferingLeaseExpired", "bufferingRearmGroundObserved"] },
   ],
+  rests: ["STOPPED", "ARMED"],
+  deadlines: ["BufferingDeadline", "RecordingDeadline"],
   ordering: "exclusive",
   otherwise: "stay",
 });
@@ -190,6 +192,29 @@ test("law 6: an input on no cell or update is refused until it is listed under i
   assert.throws(refusedWith(withNap), /input Nap is on no cell or update and not listed under ignored/u);
   const napping = defineMachine({ ...recording, ...withNap, ignored: ["Nap"] } as never) as typeof recording;
   assert.deepEqual(step(napping, "RECORDING", "Nap" as never, held()), { to: "RECORDING", cellId: null });
+});
+
+test("law 7: a state that is not a rest and that no deadline leaves is refused by name", () => {
+  // Row 122: the phase froze in a state nothing could leave, and nothing in the form had to say so.
+  assert.throws(refusedWith({ rests: ["STOPPED"] }),
+    /state ARMED is not a rest and no deadline input leaves it; list it under rests or give it a cell on one of BufferingDeadline, RecordingDeadline/u);
+});
+
+test("law 7: a deadline cell that goes back where it came from is not a way out", () => {
+  const looping = recording.cells.map((cell) => cell.id === "buffering.deadline" ? { ...cell, to: "BUFFERING" } : cell);
+  assert.throws(refusedWith({ cells: looping }), /state BUFFERING is not a rest and no deadline input leaves it/u);
+});
+
+test("law 7: a rest that is not a state, and a deadline that is not an input, are refused by name", () => {
+  assert.throws(refusedWith({ rests: ["STOPPED", "ARMED", "LANDED"] }), /rest 'LANDED' is not a declared state/u);
+  assert.throws(refusedWith({ deadlines: ["BufferingDeadline", "Sunset"] }), /deadline 'Sunset' is not a declared input/u);
+});
+
+test("law 7: no deadlines at all is legal when every state is a rest, and names the first state that is not", () => {
+  const resting = defineMachine({ ...recording, deadlines: [], rests: states } as never) as typeof recording;
+  assert.deepEqual([...resting.deadlines], []);
+  assert.throws(refusedWith({ deadlines: [], rests: ["STOPPED", "ARMED", "RECORDING"] }),
+    /state BUFFERING is not a rest and no deadline input leaves it; list it under rests or give it a cell on a deadline input/u);
 });
 
 test("otherwise refuse turns an input with no matching cell into an error, and an update still only stays", () => {
