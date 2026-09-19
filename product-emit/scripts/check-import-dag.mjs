@@ -12,6 +12,7 @@ const expectedCore = new Set([
   "diagnostics", "emission-options", "emit-component-body-kotlin", "emit-component-copy-kotlin", "emit-decision-table-kotlin",
   "emit-component-family-registry-kotlin", "emit-component-trees-kotlin",
   "emit-config-values-kotlin", "emit-domain-graph", "emit-lanes-kotlin", "emit-machine-kotlin", "emit-machine-mermaid", "emit-machine-stately",
+  "emit-decision-table-swift", "emit-machine-swift", "swift-syntax",
   "emit-native-lego-kotlin", "emit-navigation-kotlin",
   "emit-profile-table-js", "emit-service-glances-kotlin", "emit-state-presentations-kotlin", "emit-theme", "index",
   "kotlin-syntax", "model", "profile-table-model", "service-glance-model", "theme-model", "validate-capabilities",
