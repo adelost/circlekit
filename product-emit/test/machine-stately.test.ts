@@ -23,6 +23,25 @@ const door = defineMachine({
   ],
   updates: [{ on: "Knock", fields: ["knocks"] }],
   ignored: ["Wave"],
+  rests: ["CLOSED", "OPEN", "LOCKED", "BROKEN"],
+  deadlines: [],
+  ordering: "exclusive",
+  otherwise: "stay",
+});
+
+/** Skyvw row 200: a door that may not stand ajar, so Studio gets a state the clock leaves and says so. */
+const springDoor = defineMachine({
+  id: "acme.spring-door",
+  states: ["CLOSED", "AJAR"],
+  initial: "CLOSED",
+  inputs: ["Push", "SpringDeadline"],
+  guards: ["SPRING_PASSED"],
+  cells: [
+    { id: "closed.push", from: "CLOSED", on: "Push", to: "AJAR" },
+    { id: "ajar.spring", from: "AJAR", on: "SpringDeadline", to: "CLOSED", requires: ["SPRING_PASSED"] },
+  ],
+  rests: ["CLOSED"],
+  deadlines: ["SpringDeadline"],
   ordering: "exclusive",
   otherwise: "stay",
 });
@@ -33,6 +52,7 @@ test("the Stately source is the machine's states and cells in declared order, gu
   assert.equal(emitMachineStately(door, options), `// GENERATED FILE. DO NOT EDIT.
 // GENERATED FROM appspec/products/acme/runtime/door.ts
 // Machine acme.door for Stately Studio: ordering exclusive, otherwise stay. Guards are names; the caller supplies the facts.
+// Rests, where staying forever is correct: CLOSED, OPEN, LOCKED, BROKEN. Deadlines, the inputs a clock raises: none.
 import { and, createMachine, not } from "xstate";
 
 export const machine = createMachine({
@@ -81,6 +101,14 @@ test("XState v5 reads the source as a machine that moves as step() does, for eve
     compared += 1;
   }
   assert.equal(compared, door.states.length * door.inputs.length * guardSets.length);
+});
+
+test("a deadline is named in the header and stays an ordinary event in the states", () => {
+  const source = emitMachineStately(springDoor, options);
+  assert.match(source, /\n\/\/ Rests, where staying forever is correct: CLOSED\. Deadlines, the inputs a clock raises: SpringDeadline\.\n/u);
+  assert.match(source, /\n\/\/ A deadline stays an ordinary event here: XState's `after` wants a duration, and the form declares none\.\n/u);
+  assert.match(source, /\n {8}SpringDeadline: \[\{ guard: "SPRING_PASSED", target: "CLOSED" \}\],\n/u);
+  assert.doesNotMatch(source, /after: \{/u);
 });
 
 test("a machine that breaks a law is refused before any source is written", () => {

@@ -19,8 +19,27 @@ const door = defineMachine({
   ],
   updates: [{ on: "Knock", fields: ["knocks"] }],
   ignored: ["Wave"],
+  rests: ["CLOSED", "OPEN", "LOCKED"],
+  deadlines: [],
   ordering: "exclusive",
   otherwise: "refuse",
+});
+
+/** Skyvw row 200: a door that may not stand ajar. AJAR is no rest, and the spring is the clock that leaves it. */
+const springDoor = defineMachine({
+  id: "acme.spring-door",
+  states: ["CLOSED", "AJAR"],
+  initial: "CLOSED",
+  inputs: ["Push", "SpringDeadline"],
+  guards: ["SPRING_PASSED"],
+  cells: [
+    { id: "closed.push", from: "CLOSED", on: "Push", to: "AJAR" },
+    { id: "ajar.spring", from: "AJAR", on: "SpringDeadline", to: "CLOSED", requires: ["SPRING_PASSED"] },
+  ],
+  rests: ["CLOSED"],
+  deadlines: ["SpringDeadline"],
+  ordering: "exclusive",
+  otherwise: "stay",
 });
 
 const options = {
@@ -65,6 +84,12 @@ internal object GeneratedAcmeDoorMachine {
     /** Inputs the machine takes no notice of. */
     val ignored: List<String> = listOf("Wave")
 
+    /** States where staying forever is correct. */
+    val rests: List<String> = listOf("CLOSED", "OPEN", "LOCKED")
+
+    /** Inputs the caller raises from a clock; law 7 gave one of them a cell out of every state that is not a rest. */
+    val deadlines: List<String> = listOf()
+
     val cells: List<GeneratedAcmeDoorCell> = listOf(
         GeneratedAcmeDoorCell("closed.open", GeneratedAcmeDoorState.CLOSED, "Open", GeneratedAcmeDoorState.OPEN, setOf(), setOf(GeneratedAcmeDoorGuard.ALARMED)),
         GeneratedAcmeDoorCell("open.close", GeneratedAcmeDoorState.OPEN, "Close", GeneratedAcmeDoorState.CLOSED, setOf(), setOf()),
@@ -99,11 +124,31 @@ test("the Mermaid is one arrow per cell, labelled with its input and guards", ()
   assert.equal(emitMachineMermaid(door), [
     "stateDiagram-v2",
     "    %% machine acme.door: ordering exclusive, otherwise refuse",
+    "    %% a state noted rest may stay forever; a deadline input leaves every other state",
     "    [*] --> CLOSED",
     "    CLOSED --> OPEN : Open [!ALARMED]",
     "    OPEN --> CLOSED : Close",
     "    CLOSED --> LOCKED : Lock [HAS_KEY]",
     "    LOCKED --> CLOSED : Unlock [HAS_KEY, !ALARMED]",
+    "    note right of CLOSED : rest",
+    "    note right of OPEN : rest",
+    "    note right of LOCKED : rest",
+    "",
+  ].join("\n"));
+});
+
+test("both projections carry the rests and the deadlines, and only a rest is noted", () => {
+  const kotlin = emitMachineKotlin(springDoor, { ...options, machineName: "SpringDoor" });
+  assert.match(kotlin, /\n {4}val rests: List<String> = listOf\("CLOSED"\)\n/u);
+  assert.match(kotlin, /\n {4}val deadlines: List<String> = listOf\("SpringDeadline"\)\n/u);
+  assert.equal(emitMachineMermaid(springDoor), [
+    "stateDiagram-v2",
+    "    %% machine acme.spring-door: ordering exclusive, otherwise stay",
+    "    %% a state noted rest may stay forever; a deadline input leaves every other state",
+    "    [*] --> CLOSED",
+    "    CLOSED --> AJAR : Push",
+    "    AJAR --> CLOSED : SpringDeadline [SPRING_PASSED]",
+    "    note right of CLOSED : rest",
     "",
   ].join("\n"));
 });
