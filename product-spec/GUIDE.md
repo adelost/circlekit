@@ -4,6 +4,8 @@ For agents and for people. Every path and command in this file is checked by `sc
 
 Planned authoring improvements: [worker handoff and implementation order](../docs/plans/2026-09-20-product-spec-authoring-dx.md#worker-entrypoint). That document is a proposal, not an implemented API; the current reference below remains authoritative until the corresponding implementation lands.
 
+Cross-product adoption: [SKYVW, AMUX and ai-dsl handoff](../docs/handoffs/2026-09-20-shared-dsl/README.md). Read its migration cards and labelled recipes before extending a product boundary; they are plans and bounded review evidence, not claims of a completed migration.
+
 ## 1. Five words
 
 **Thing, fact, law, system, proof.**

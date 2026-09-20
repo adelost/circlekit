@@ -1,0 +1,31 @@
+{
+  "source": "family-model.ts",
+  "git_blob": "f7e17120e250cb5650e56b35899da103c4533929",
+  "scope": "Entire real family module only; not the full ProductSpec compiler, published package or native emitter.",
+  "node": "v22.16.0",
+  "tsc": "Version 5.8.3",
+  "checks": [
+    {
+      "id": "literal-inference",
+      "passed": true,
+      "exit": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "id": "restatement-rejected",
+      "passed": true,
+      "exit": 2,
+      "stdout": "tmp/productspec-family-zm6hbsss/restatement-rejected.ts(3,21): error TS2322: Type 'string' is not assignable to type 'undefined'.\n",
+      "stderr": ""
+    },
+    {
+      "id": "runtime-data-and-refusals",
+      "passed": true,
+      "stdout": "runtime: valid merge and both redundant/conflicting restatements checked\n",
+      "stderr": ""
+    }
+  ],
+  "passed": 3,
+  "failed": 0
+}

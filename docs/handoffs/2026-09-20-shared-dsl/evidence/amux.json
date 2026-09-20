@@ -1,0 +1,71 @@
+{
+  "git_blob": "7bb913e8660c7cae48ea9e2e3534ebbefb704f03",
+  "scope": "Exact policy text; recording collaborators substitute ProductSpec import. Independent 42-point enumeration and adapter probes, NOT installed DSL/runtime.",
+  "node": "v22.16.0",
+  "checks": [
+    {
+      "id": "amux.context-cost.all-points-and-invariants",
+      "passed": true,
+      "observed": {
+        "points": 18,
+        "cells": 6
+      }
+    },
+    {
+      "id": "amux.context-cost.rename-parity",
+      "passed": true,
+      "observed": {
+        "points": 18,
+        "note": "Axis mapping only. A real code migration and installed compiler run remain required."
+      }
+    },
+    {
+      "id": "amux.codex-launch.all-points-and-invariants",
+      "passed": true,
+      "observed": {
+        "points": 24,
+        "cells": 6
+      }
+    },
+    {
+      "id": "amux.codex-launch.rename-parity",
+      "passed": true,
+      "observed": {
+        "points": 24,
+        "note": "Axis mapping only. A real code migration and installed compiler run remain required."
+      }
+    },
+    {
+      "id": "adapter-current-threshold",
+      "passed": true,
+      "observed": {
+        "maxTokens": 100000
+      }
+    },
+    {
+      "id": "rename-must-preserve-NONE-plus-FAILED",
+      "passed": true,
+      "observed": {
+        "at": {
+          "need": "NONE",
+          "readiness": "SAFE",
+          "attempt": "FAILED"
+        },
+        "cell": "within-policy",
+        "values": {
+          "action": "CONTINUE"
+        }
+      }
+    },
+    {
+      "id": "omitted-axis-is-not-future-state-refusal",
+      "passed": true,
+      "observed": {
+        "points": 36,
+        "note": "Independent enumeration confirms omitted-axis wildcard semantics, not compiler execution."
+      }
+    }
+  ],
+  "passed": 7,
+  "failed": 0
+}
