@@ -24,133 +24,6 @@ import androidx.compose.ui.semantics.onLongClick
 import androidx.compose.ui.semantics.semantics
 import kotlinx.coroutines.withTimeoutOrNull
 
-/** Product action timing is semantic data, not a per-screen millisecond.
- * Transport/camera steps are harmless and reversible; navigation/state
- * changes keep the wrist-safe short intent gate. */
-enum class CircleActionTiming(val holdMs: Long) {
-    DELIBERATE(MenuDesign.tapHoldMs),
-    IMMEDIATE(0L),
-}
-
-/**
- * THE ONE ANSWER a control's declared timing gives, in milliseconds, read by the press GATE and by
- * the wait the control DRAWS alike.
- *
- * It exists because those two used to resolve the same declaration separately, and a control could
- * therefore draw a deliberate wait while committing on release. Measured on Link 1.2.23, 2026-09-20:
- * its WAKE PHRASE row drew a half-second arc (152 px of ink at 100 ms, 454 at 250, 683 at 450) and
- * switched on a press of ONE millisecond, because a host-wide override reached the gate and never
- * reached the drawing. Mattias, the same day: "det ska inte finnas något mellanting liksom, bara de
- * här två typerna utav knappar".
- *
- * TWO KINDS AND NOTHING BETWEEN, which is what this function is for: an IMMEDIATE control has NO
- * hold, whatever millisecond value rides along with it, and a DELIBERATE one holds for the duration
- * it declares. The in-betweens are refused here rather than shipped: a deliberate control with no
- * duration commits at once while claiming to wait, and one that holds for less than
- * [CIRCLE_CUE_BRUSH_MIN_MS] gates a press that row 215's cue deliberately never draws, which is the
- * same silence from the other side.
- */
-@Composable
-fun circleResolvedTiming(
-    timing: CircleActionTiming,
-    holdMs: Long = timing.holdMs,
-    effect: CircleActionEffect = CircleActionEffect.ACTS,
-): CircleResolvedTiming = resolveCircleTiming(timing, holdMs, effect, LocalCircleTouchLock.current)
-
-/**
- * The same rule without a composition, so a case can walk locked and unlocked without mounting one.
- *
- * Internal on purpose: [circleResolvedTiming] is the only door a product has, and it is the door that
- * reads the lock. A caller that could pass `locked` could pass false.
- */
-internal fun resolveCircleTiming(
-    timing: CircleActionTiming,
-    holdMs: Long,
-    effect: CircleActionEffect,
-    locked: Boolean,
-): CircleResolvedTiming {
-    require(holdMs >= 0L) { "A control's hold cannot be negative" }
-    require(timing == CircleActionTiming.IMMEDIATE || holdMs > CIRCLE_CUE_BRUSH_MIN_MS) {
-        "A deliberate control holds for longer than the brush minimum ($CIRCLE_CUE_BRUSH_MIN_MS ms), " +
-            "because a hold the cue refuses to draw is a wait nobody is told about; " +
-            "${CircleActionTiming.IMMEDIATE} is how a control says it does not wait"
-    }
-    val declared = if (timing == CircleActionTiming.IMMEDIATE) 0L else holdMs
-    // The lock never SHORTENS a hold: a destructive control does not get cheaper because the wearer is
-    // under canopy. And it lengthens rather than refuses, because a control that looks pressable and
-    // can never be pressed is the third kind of button Mattias threw out; in the air every control is
-    // the hold kind, and its ring teaches that the first time it is touched (skyvw:1, row 229).
-    val locked = locked && effect == CircleActionEffect.ACTS
-    return CircleResolvedTiming(if (locked) maxOf(declared, MenuDesign.holdConfirmMs) else declared)
-}
-
-/**
- * WHAT A PRESS CHANGES, which is the only thing that can excuse it from a locked surface.
- *
- * THE DEFAULT FAILS TOWARDS THE LOCK, and that is the whole reason it is allowed to have one: a
- * control whose author never thought about this is [ACTS], so it becomes a hold in the air. Had the
- * default been the other way, forgetting it would leave a control live under canopy with nothing red
- * anywhere. The exception is what has to be typed, by name, with its reason in the declaration.
- */
-enum class CircleActionEffect {
-    /** It navigates, steps data, toggles a layer or writes. Everything, unless stated otherwise. */
-    ACTS,
-
-    /**
-     * A pure view operation on the surface being flown, and nothing else.
-     *
-     * A jumper steering to a landing area must not need a one-second hold in gloves to get the map
-     * back on themselves, and a brushed recentre or zoom costs nothing the next press does not give
-     * back (lsrc:0, 2026-09-20, correcting his own earlier ruling). Today that is the glass zoom pair
-     * and the aim. Anything that leaves something changed behind it is not in this class.
-     */
-    MOVES_THE_VIEW,
-}
-
-/**
- * WHETHER THE SURFACE UNDER THE FINGER IS LOCKED, read by [circleResolvedTiming] and by nothing else.
- *
- * One reader, at the moment the number is resolved, so the gate, the cue and the drawing are already
- * locked because they take that number. A parameter instead would be 27 call sites that can forget it,
- * and one that forgets is a control keeping its tap in freefall with nothing red anywhere.
- *
- * Unlocked by default because a kit with no phase model has no lock. What has no default is the
- * control: nothing opts out, and the lock is never a flag on a button.
- */
-val LocalCircleTouchLock = staticCompositionLocalOf { false }
-
-/**
- * A CONTROL'S RESOLVED TIMING, which is the only timing anything downstream is allowed to see.
- *
- * [circleResolvedTiming] is the only way to make one, because its constructor is internal to this kit.
- * So a raw millisecond cannot reach a gate, a cue or a drawing without passing the two-kinds rule
- * first, and a component cannot hand one reader a different number than another: there is one value
- * and every reader takes THE value rather than its own parameter beside it.
- *
- * What it replaces is four parallel names for the same declaration, `timing` and `holdMs` and
- * `actionHoldMs` and `pressHoldMs`, any two of which could disagree. They did: Link 1.2.23's WAKE
- * PHRASE row drew a half-second arc and switched on a press of ONE millisecond, because a host-wide
- * override reached the gate and never reached the drawing. That defect is now unwritable rather than
- * tested for.
- */
-@JvmInline
-value class CircleResolvedTiming internal constructor(val holdMs: Long) {
-
-    /** A control draws a wait exactly while it has one to wait out. The gate and the drawing read this. */
-    val drawsAWait: Boolean get() = holdMs > 0L
-
-    override fun toString(): String = if (drawsAWait) "a $holdMs ms hold" else "no hold"
-}
-
-/**
- * What makes a press count: it lasted at least as long as the control's resolved hold. THE rule, so
- * the rung cannot drift between the gates below.
- *
- * No default: a gate whose duration is assumed is a gate nobody declared.
- */
-fun isCircleHoldComplete(pressDurationMs: Long, timing: CircleResolvedTiming): Boolean =
-    pressDurationMs >= timing.holdMs
-
 /** The continuous action may start only when the gate completed under touch. */
 internal fun continuousPressMayBegin(
     releasedBeforeActivation: Boolean,
@@ -189,6 +62,12 @@ internal fun continuousPressMayBegin(
  * into its own bounds: the component renders that state once, on its label (or
  * as a pressed affordance when it has no label). This prevents a button-wide
  * fill and a label fill from describing the same wait twice.
+ *
+ * A PRESS IN PROGRESS WHEN THE TIMING CHANGES IS CANCELLED, and that is declared rather than incidental.
+ * The pointer block is keyed on [timing], so when a surface locks under a finger already down, the
+ * block restarts and that gesture commits nothing. It is the outcome to want: the press was made
+ * against a gate the wearer is no longer being asked for, and the next one is measured against the one
+ * they are. Nobody has to notice; it is written here so the next reader does not file it as a defect.
  */
 fun Modifier.circleSafeTap(
     feedback: CircleActionFeedbackState,

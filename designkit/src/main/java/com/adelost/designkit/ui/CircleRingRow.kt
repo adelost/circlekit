@@ -51,6 +51,16 @@ fun CircleRingRow(
      * It was a kind and a duration side by side, and those are two numbers that can disagree: a choice
      * row carrying half a second while its declared kind commits at once is how Link shipped a row
      * that filled an arc and switched on one millisecond.
+     *
+     * INGREDIENTS OR ANSWER, NEVER BOTH: this row takes the ANSWER, so it has no `effect` parameter
+     * and must not grow one. See [CircleActionEffect].
+     *
+     * IT KEEPS ITS DEFAULT, unlike the gestures below it, and the reason is a measured one rather than
+     * a preference: the gestures cannot default a value whose builder reads a composition local, while
+     * a row can, and a default is allowed exactly when its direction is the safe one. DELIBERATE is
+     * that direction, because a row whose author never stated a timing refuses a graze rather than
+     * firing on one. [com.adelost.designkit.ui.ADefaultFailsTowardsTheGateTest] presses a row that
+     * states nothing and proves it, so the direction is measured rather than asserted about.
      */
     timing: CircleResolvedTiming = circleResolvedTiming(CircleActionTiming.DELIBERATE),
     /**

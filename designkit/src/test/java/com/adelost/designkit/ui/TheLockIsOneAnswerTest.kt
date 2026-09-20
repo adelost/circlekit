@@ -98,11 +98,10 @@ class TheLockIsOneAnswerTest {
         // The composable door defaults effect to ACTS, so a control whose author never thought about
         // the lock becomes a hold in the air. The opposite default would leave that control live under
         // canopy with nothing red anywhere.
-        assertEquals(
-            "ACTS is not the first entry, so the kit's default is no longer the locking one",
-            CircleActionEffect.ACTS,
-            CircleActionEffect.entries.first(),
-        )
+        // The DIRECTION itself is measured in ADefaultFailsTowardsTheGateTest, on a control that omits
+        // the argument. Pinning the enum's order here instead was a proxy that was false both ways:
+        // reordering the entries for readability turned it red while changing nothing about safety,
+        // and turning the parameter's default to the unsafe answer left it green (skyvw:1).
         assertTrue(
             "the locking answer and the exempt answer resolved the same, so the marker decides nothing",
             resolve(CircleActionTiming.IMMEDIATE, locked = true).holdMs >

@@ -288,8 +288,18 @@ data class RowSpec(
     val onToggle: (() -> Unit)? = null,
     /** Mode-swapping rows require the sustained-press gesture. */
     val holdToConfirm: Boolean = false,
-    /** Duration is row data. Ordinary choices use the 500 ms deliberate rung;
-     *  confirmation rows default to the 900 ms destructive/state-swap rung. */
+    /**
+     * THE DURATION OF THIS ROW'S CHOICE OR CONFIRMATION, and of nothing else.
+     *
+     * Ordinary choices use the 500 ms deliberate rung; confirmation rows default to the 900 ms
+     * destructive/state-swap rung. An ACTION row's press gate is NOT this: it is the ordinary gate its
+     * declared [actionTiming] resolves to, and this field is inert on such a row unless
+     * [holdToConfirm] is set, which is the hold-to-confirm gesture rather than the press gate.
+     *
+     * That is deliberate and was asked about (lsrc:0, 2026-09-20): the hosts resolve a choice row WITH
+     * this duration and an action row WITHOUT it. One field, two meanings by row kind, which is worth
+     * knowing before reading either host.
+     */
     val holdMs: Long = if (holdToConfirm) {
         MenuDesign.holdDestructiveMs
     } else {
