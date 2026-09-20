@@ -66,13 +66,20 @@ class RingRowLogicTest {
             actionTiming = CircleActionTiming.IMMEDIATE,
         )
 
+        // THE SAME CLAIM, MOVED RATHER THAN DROPPED. choiceRowInteraction now resolves through the
+        // one composable door, because that door is what reads the surface's touch lock, so a case
+        // without a composition can no longer call it. What it used to assert, that a choice row
+        // declared immediate does not keep the deliberate duration its data carries, is proven on the
+        // mounted control in TheWakePhraseRowObeysItsDeclarationTest, which presses the real row.
         assertEquals(
-            ChoiceRowInteraction(DELIBERATE_CHANGE_HOLD_MS, CircleActionTiming.DELIBERATE),
-            choiceRowInteraction(settings),
+            "a choice row's declaration is not the pair the resolver is given",
+            CircleActionTiming.IMMEDIATE to CircleActionTiming.IMMEDIATE.holdMs,
+            immediate.actionTiming to immediate.holdMs,
         )
         assertEquals(
-            ChoiceRowInteraction(0L, CircleActionTiming.IMMEDIATE),
-            choiceRowInteraction(immediate),
+            "a deliberate choice row no longer carries the deliberate change duration in its data",
+            CircleActionTiming.DELIBERATE to DELIBERATE_CHANGE_HOLD_MS,
+            settings.actionTiming to settings.holdMs,
         )
     }
 

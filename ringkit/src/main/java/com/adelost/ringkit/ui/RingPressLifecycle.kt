@@ -4,7 +4,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.adelost.designkit.ui.CircleActionTiming
 import com.adelost.designkit.ui.CirclePressIconRing
+import com.adelost.designkit.ui.CircleResolvedTiming
+import com.adelost.designkit.ui.circleResolvedTiming
 import com.adelost.designkit.ui.MenuDesign
 import com.adelost.designkit.ui.RingIcons
 
@@ -15,7 +18,8 @@ data class RingPressLifecycleSpec(
     val enabled: Boolean,
     val centerValue: String? = null,
     val sub: String? = null,
-    val holdMs: Long = MenuDesign.tapHoldMs,
+    /** No default: a press verb states its own gate, and the lock is folded in when it is built. */
+    val timing: CircleResolvedTiming,
     val onBegin: () -> Boolean,
     val onRelease: () -> Unit,
     val onCancel: () -> Unit,
@@ -39,7 +43,7 @@ fun RingPressLifecycle(
         centerValue = spec.centerValue,
         sub = spec.sub,
         diameter = diameter,
-        holdMs = spec.holdMs,
+        timing = spec.timing,
         onBegin = spec.onBegin,
         onRelease = spec.onRelease,
         onCancel = spec.onCancel,

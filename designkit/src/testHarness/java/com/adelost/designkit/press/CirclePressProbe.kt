@@ -303,8 +303,14 @@ object OneCuePerGatedControl {
                 )
             }
         }
-        val firstDrawn = press.frames.indexOfFirst { it.elapsedMs >= brushMinimumMs() }
-        check(firstDrawn >= 0) { "a press of ${press.frames.size} frames never reached the brush minimum" }
+        // WHERE THE CUE MUST BE VISIBLE BY. Not the brush minimum itself: on a long gate the fraction
+        // there is a few degrees of arc and rounds to no pixels at all, which is the cue drawing
+        // correctly and too small to photograph. A fifth of the gate is past that on every gate this
+        // kit declares, and on an ordinary 200 ms one it IS the frame after the brush minimum, which
+        // is the frame a cue measuring from its own first frame is still silent at.
+        val visibleBy = maxOf(brushMinimumMs(), gateMs / A_FIFTH)
+        val firstDrawn = press.frames.indexOfFirst { it.elapsedMs >= visibleBy }
+        check(firstDrawn >= 0) { "a press of ${press.frames.size} frames never reached $visibleBy ms" }
         if (cue[firstDrawn] <= 0) {
             throw AssertionError(
                 "$what was still silent ${press.frames[firstDrawn].elapsedMs} ms into a $gateMs ms gate. " +
@@ -347,4 +353,7 @@ object OneCuePerGatedControl {
      * a complete one is all of it. Two is a floor with room for a round cap and an antialiased edge.
      */
     private const val GROWN_BY_THE_GATE = 2
+
+    /** See [aHeldControlDrawsItsGateOut]: how much of a gate has to pass before a cue has pixels. */
+    private const val A_FIFTH = 5
 }

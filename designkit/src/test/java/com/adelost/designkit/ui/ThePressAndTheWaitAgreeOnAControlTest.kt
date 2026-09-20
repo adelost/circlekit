@@ -182,8 +182,7 @@ class ThePressAndTheWaitAgreeOnAControlTest {
                         sub = "HEY JARVIS",
                         icon = RingIcons.Grid,
                         onTap = { taps += 1 },
-                        actionTiming = declaredTiming.value,
-                        actionHoldMs = declaredHoldMs.value,
+                        timing = circleResolvedTiming(declaredTiming.value, declaredHoldMs.value),
                     )
                 }
             }

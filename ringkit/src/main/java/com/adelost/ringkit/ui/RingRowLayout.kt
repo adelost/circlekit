@@ -1,7 +1,10 @@
 package com.adelost.ringkit.ui
 
+import androidx.compose.runtime.Composable
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.adelost.designkit.ui.CircleResolvedTiming
+import com.adelost.designkit.ui.circleResolvedTiming
 import com.adelost.designkit.ui.CircleActionTiming
 import com.adelost.designkit.ui.CircleChoiceRole
 import com.adelost.designkit.ui.CircleChromeSlot
@@ -47,20 +50,18 @@ internal fun rowKindFor(
     else -> RowKind.INFORMATION
 }
 
-internal data class ChoiceRowInteraction(
-    val holdMs: Long,
-    val timing: CircleActionTiming,
-)
-
-/** Both Watch and Phone consume the exact cadence declared by row data. */
-internal fun choiceRowInteraction(row: RowSpec): ChoiceRowInteraction {
+/**
+ * Both Watch and Phone consume the exact cadence declared by row data, as ONE value.
+ *
+ * It used to be a pair, a duration and a kind travelling side by side from the row to two hosts, which
+ * is the shape that let a choice row carry half a second while its gate committed at once.
+ */
+@Composable
+internal fun choiceRowInteraction(row: RowSpec): CircleResolvedTiming {
     require(row.kind == RowKind.TOGGLE || row.kind == RowKind.CHOICE_OF_N) {
         "Only semantic choice rows have a choice interaction"
     }
-    return ChoiceRowInteraction(
-        holdMs = row.holdMs,
-        timing = row.actionTiming,
-    )
+    return circleResolvedTiming(row.actionTiming, row.holdMs)
 }
 
 internal data class RingRowHorizontalInsets(

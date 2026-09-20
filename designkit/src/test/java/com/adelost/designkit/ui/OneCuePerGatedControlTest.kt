@@ -102,8 +102,7 @@ class OneCuePerGatedControlTest {
                 sub = "HEY JARVIS",
                 icon = RingIcons.Grid,
                 onTap = {},
-                actionTiming = CircleActionTiming.DELIBERATE,
-                actionHoldMs = declaredRowHoldMs.value,
+                timing = circleResolvedTiming(CircleActionTiming.DELIBERATE, declaredRowHoldMs.value),
             )
         }
     }
