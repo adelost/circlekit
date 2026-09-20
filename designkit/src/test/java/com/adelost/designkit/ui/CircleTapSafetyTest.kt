@@ -2,6 +2,7 @@ package com.adelost.designkit.ui
 
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertThrows
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -64,6 +65,19 @@ class CircleTapSafetyTest {
             MenuDesign.holdConfirmMs,
         )
         assertEquals(ladder.sorted(), ladder)
+    }
+
+    @Test
+    fun `continuous content starts on down without inheriting host cost`() {
+        assertEquals(0L, resolveCirclePressStart(CirclePressStart.ON_DOWN, null).holdMs)
+        val wornGate = unlockedTiming(CircleActionTiming.IMMEDIATE, CircleActionHostCost.WORN)
+        assertEquals(wornGate, resolveCirclePressStart(CirclePressStart.AFTER_INTENT_GATE, wornGate))
+        assertThrows(IllegalArgumentException::class.java) {
+            resolveCirclePressStart(CirclePressStart.ON_DOWN, wornGate)
+        }
+        assertThrows(IllegalArgumentException::class.java) {
+            resolveCirclePressStart(CirclePressStart.AFTER_INTENT_GATE, null)
+        }
     }
 
     private companion object {
