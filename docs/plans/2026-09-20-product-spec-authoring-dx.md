@@ -18,6 +18,24 @@ The rule for this work is:
 
 A shorter spelling is not enough reason to add syntax. A helper must remove a named duplication class, improve type guidance, or move an existing correctness rule into the compiler.
 
+## Canonical authoring is enforced, not optional forever
+
+The end state must have one preferred spelling for each semantic concept. A better authoring form is allowed to coexist with the old explicit form only during a bounded migration.
+
+Use this progression:
+
+1. **Prove equivalence.** Add the new helper/typed form and prove byte-identical IR/output against a representative existing declaration.
+2. **Migrate consumers.** Move the real Skyvw/AMUX call sites that match the proven pattern.
+3. **Warn on legacy authoring.** Add a focused lint/diagnostic that names the canonical replacement.
+4. **Refuse new legacy authoring.** Once existing call sites are migrated and the new form is stable, make redundant legacy spelling a lint error or remove it from the public authoring type/API.
+5. **Delete compatibility code.** Do not carry two grammars indefinitely.
+
+Prefer making an invalid/redundant state unrepresentable in the public authoring type over adding a stylistic lint. Use lint when static typing cannot reliably identify the source pattern or during migration. The compiler remains the authority for semantic laws; lint is for canonical spelling and source-level duplication.
+
+Do not fail old generated IR or persisted product data merely because authoring syntax changed. Enforcement targets source authoring, not historical artifacts.
+
+A local helper that expresses the same semantic fact differently without a migration path is not acceptable. One language means one canonical authoring path after migration.
+
 ## What stays canonical
 
 Do not replace or fork these concepts:
@@ -98,6 +116,7 @@ Acceptance:
 3. Unknown host, illegal mount kind and incomplete host coverage still fail.
 4. A future host is never silently included.
 5. One negative mutation proves each derived law still bites.
+6. After migration, direct authoring of the redundant fields above is rejected by the canonical API or linted as an error with an autofix/mechanical migration where safe.
 
 Do not infer semantic timing from a control name. If timing can be proven from an already canonical setting/navigation/action semantic, bind to that canonical declaration rather than adding another descriptive field.
 
@@ -123,7 +142,7 @@ over repeating:
 { setting: ..., mount: { kind: "settings-section", section: "DISPLAY", order: 1 } }
 ```
 
-Keep section identity explicit and derive only numeric order.
+Keep section identity explicit and derive only numeric order. Once migrated, hand-authored sequential `order` values for this exact shape should be rejected as redundant source authoring.
 
 ### Repeated component trees
 
@@ -137,7 +156,7 @@ sameTree(["round", "compact", "wide"], [
 ])
 ```
 
-Do not add an implicit `all surfaces` default. A future surface must force an explicit decision.
+Do not add an implicit `all surfaces` default. A future surface must force an explicit decision. If the shared-tree form is adopted for an identical-tree family, duplicating the same tree per surface becomes a lint error after migration.
 
 ## P1: improve references instead of copying string ids
 
@@ -166,6 +185,8 @@ Target properties:
 
 Do not auto-wire by compatible type. Explicit topology is a correctness feature.
 
+When typed refs can represent an edge exactly, raw string refs should become a compatibility form, then a lint error, then leave the public authoring API. Keep an explicit escape hatch only for genuinely dynamic/external ids that typed refs cannot own, and make that escape hatch visually obvious.
+
 ## P1: make diagnostics first-class DX
 
 Standardize compiler-facing failures so agents and people get structured information:
@@ -193,6 +214,8 @@ output:
 ```
 
 This is presentation over the existing decision result, not new semantics.
+
+Canonical-authoring lint should use the same diagnostics structure where possible: rule id, declaration/source, redundant spelling, canonical replacement, and whether a mechanical fix is safe.
 
 ## P1: use better product vocabulary without renaming the core DSL
 
@@ -224,6 +247,8 @@ For AMUX Codex launch, prefer:
 
 These are consumer declaration migrations, not ProductSpec keyword changes. Audit logs/tests before changing existing cell/output words because those names are operational evidence.
 
+Once an axis/value rename is chosen and operational references are migrated, the old spelling should not remain as a permanent alias. If backward compatibility is required for serialized IR, translate at the boundary while keeping source authoring canonical.
+
 ## P2: one verification loop
 
 The ProductSpec guide already notes that product verification can rebuild TypeScript several times. Add or measure one `verify` path only if it actually shortens the local loop.
@@ -235,9 +260,24 @@ It should:
 3. emit to a temporary/in-memory destination where practical;
 4. compare tracked projections;
 5. run the declaration's law tests;
-6. present one structured diagnostics result.
+6. run canonical-authoring lint;
+7. present one structured diagnostics result.
 
-Do not wire it into release or CI merely because it exists. Keep the current local-first ownership rule.
+Do not wire it into release or CI merely because it exists. Keep the current local-first ownership rule. The important property is that the owner has one command which refuses new non-canonical authoring before merge.
+
+## Enforcement strategy
+
+Use the strongest layer that can express the rule truthfully:
+
+| Rule kind | Enforcement |
+| --- | --- |
+| Semantically impossible combination | ProductSpec compiler/type system |
+| Redundant field whose value is derivable | Remove from canonical authoring type/helper |
+| Old but mechanically detectable spelling | Lint error with fix/migration message |
+| Transitional legacy call site | Temporary allowlist/baseline that can only shrink |
+| Runtime sequencing/effect behavior | Controller tests/runtime proof, not DSL lint |
+
+A migration baseline is temporary debt accounting, not an opt-out mechanism. New files/call sites must never be added to it without changing the language decision itself. Delete the baseline when the last legacy source is migrated.
 
 ## Explicit non-goals
 
@@ -245,6 +285,7 @@ Do not do any of these in this DX pass:
 
 - no new AMUX-specific DSL for decisions ProductSpec already expresses;
 - no second decision-table grammar;
+- no permanent optional "nice syntax" alongside a verbose equivalent;
 - no default/fallback cell for uncovered enum values;
 - no wildcard syntax such as `*` when omission already expresses a region;
 - no automatic graph wiring by matching types;
@@ -298,15 +339,15 @@ Add:
 
 Generated Product IR and native projection must be byte-identical unless the PR explicitly declares a schema migration.
 
-Review the authoring diff. If the helper hides product decisions or requires explaining more concepts than it removes, revert it.
+Review the authoring diff. If the helper hides product decisions or requires explaining more concepts than it removes, revert it. If it wins, migrate the matching family and add the canonical-source lint so new verbose copies cannot return.
 
 ### E4. Improve AMUX vocabulary
 
-Rename product axes only after checking logs/tests that consume those words. Do not mix this naming cleanup with controller-race fixes.
+Rename product axes only after checking logs/tests that consume those words. Do not mix this naming cleanup with controller-race fixes. Once migrated, refuse the old source spelling instead of maintaining aliases indefinitely.
 
 ### E5. Typed refs
 
-Prototype typed port refs on one component family. Require explicit edge authoring and byte-identical stable ids.
+Prototype typed port refs on one component family. Require explicit edge authoring and byte-identical stable ids. If successful, migrate that reference class and lint new raw-string copies.
 
 ### E6. Decide whether more is warranted
 
@@ -316,14 +357,16 @@ Only generalize another pattern when at least two consumers exhibit the same dup
 
 A DX change is ready only when:
 
-- old explicit declarations still work during migration;
+- old explicit declarations work only for the bounded migration window, not as a permanent second style;
+- the canonical form is documented and machine-enforced for new/changed source;
 - one source of semantic truth remains;
 - Product IR/output is unchanged unless explicitly versioned;
 - uncovered combinations still fail closed;
 - negative mutation tests prove the old laws still bite;
 - the author writes fewer duplicated facts, not merely fewer characters;
 - error messages are at least as specific as before;
-- the guide has one canonical spelling for each concept.
+- the guide has one canonical spelling for each concept;
+- any compatibility baseline is shrink-only and has a deletion condition.
 
 ## End state
 
@@ -335,6 +378,7 @@ writes only product decisions
 PRODUCTSPEC / DOMAIN AUTHORING
 derives structural metadata
 refuses holes, overlap and illegal combinations
+enforces one canonical source spelling
         |
         v
 DETERMINISTIC IR
