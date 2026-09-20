@@ -172,7 +172,7 @@ enum GeneratedShowcaseProduct {
             rendererId: "ShowcaseComponentScreen",
             title: "ACTION ROW",
             iconId: "touchdown-run",
-            scenarios: [ShowcaseScenario(id: "immediate", label: "TAP ACTION"), ShowcaseScenario(id: "deliberate", label: "HOLD ACTION"), ShowcaseScenario(id: "confirm", label: "CONFIRM ACTION"), ShowcaseScenario(id: "recoverable", label: "RECOVER ACCESS"), ShowcaseScenario(id: "blocked", label: "MISSING TARGET"), ShowcaseScenario(id: "failure", label: "FAILURE + RETRY")]
+            scenarios: [ShowcaseScenario(id: "immediate", label: "TAP ACTION"), ShowcaseScenario(id: "deliberate", label: "HOLD ACTION"), ShowcaseScenario(id: "both", label: "THE TWO KINDS"), ShowcaseScenario(id: "confirm", label: "CONFIRM ACTION"), ShowcaseScenario(id: "recoverable", label: "RECOVER ACCESS"), ShowcaseScenario(id: "blocked", label: "MISSING TARGET"), ShowcaseScenario(id: "failure", label: "FAILURE + RETRY")]
         ),
         ShowcaseComponent(
             id: .controlChoiceRow,

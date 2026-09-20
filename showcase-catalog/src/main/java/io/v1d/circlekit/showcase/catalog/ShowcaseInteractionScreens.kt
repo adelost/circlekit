@@ -18,7 +18,7 @@ object ShowcaseInteractionScreens {
         RingScreen.Rows(
             title = scenario.label,
             items = combine(state.actionCount, state.actionFailed, state.availability) { count, failed, availability ->
-                listOf(actionRow(scenario.id.value, count, failed, availability, state))
+                actionRows(scenario.id.value, count, failed, availability, state)
             },
         )
 
@@ -103,6 +103,42 @@ object ShowcaseInteractionScreens {
             },
         )
 
+    /**
+     * THE TWO KINDS, ON ONE PAGE, so a designer can press one against the other instead of holding
+     * two screens in mind. Which kind a control is follows from what a slip costs, never from how
+     * important the action feels: the next press takes a centred view back, and nothing takes back a
+     * saved one.
+     *
+     * Row 225, Mattias 2026-09-20: "det ska inte finnas något mellanting liksom, bara de här två
+     * typerna utav knappar". A touch that draws a wait is what this page is here to make visible.
+     */
+    private fun actionRows(
+        scenario: String,
+        count: Int,
+        failed: Boolean,
+        availability: ShowcaseAvailability,
+        state: ShowcaseInteractionState,
+    ): List<RowSpec> = if (scenario == "both") {
+        listOf(
+            action(
+                key = "touch",
+                title = "CENTER VIEW",
+                sub = "TAP · FIRED $count",
+                timing = CircleActionTiming.IMMEDIATE,
+                hint = "The next press takes this back, so it commits at once and draws no wait.",
+            ) { state.runAction() },
+            action(
+                key = "hold",
+                title = "SAVE VIEW",
+                sub = "HOLD · FIRED $count",
+                timing = CircleActionTiming.DELIBERATE,
+                hint = "A second press does not give this back, so it waits and shows the wait.",
+            ) { state.runAction() },
+        )
+    } else {
+        listOf(actionRow(scenario, count, failed, availability, state))
+    }
+
     private fun actionRow(
         scenario: String,
         count: Int,
@@ -159,13 +195,15 @@ object ShowcaseInteractionScreens {
         title: String,
         sub: String,
         timing: CircleActionTiming,
+        key: String = "action",
+        hint: String = "The timing is declared by the row data.",
         onTap: () -> Unit,
     ) = RowSpec(
-        key = "action",
+        key = key,
         title = title,
         sub = sub,
         icon = RingIcons.Target,
-        hint = "The timing is declared by the row data.",
+        hint = hint,
         onTap = onTap,
         actionTiming = timing,
     )

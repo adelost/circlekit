@@ -31,6 +31,24 @@ class ShowcaseInteractionScreensTest {
     }
 
     @Test
+    fun `the two kinds page puts one of each on one screen, both pressable`() = runBlocking {
+        // Row 225. The page exists so the two kinds can be pressed against each other: a picture of a
+        // hold beside a live tap would show the difference without letting anyone feel it.
+        val state = ShowcaseInteractionState()
+        val both = scenario("control.action-row", "both")
+        state.prepare(ShowcaseCaseId("control.action-row"), both.id)
+        val rows = ShowcaseInteractionScreens.actionRows(both, state).items.first()
+
+        assertEquals("the page did not carry two controls", 2, rows.size)
+        assertEquals(
+            "the page showed the same kind twice, so there is nothing to compare",
+            listOf(CircleActionTiming.IMMEDIATE, CircleActionTiming.DELIBERATE),
+            rows.map { it.actionTiming },
+        )
+        rows.forEach { assertNotNull("a control on the comparison page cannot be pressed", it.onTap) }
+    }
+
+    @Test
     fun `choice adjustment and measured work retain their semantic specs`() = runBlocking {
         val state = ShowcaseInteractionState()
         val last = scenario("control.choice-row", "last")
