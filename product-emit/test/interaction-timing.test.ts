@@ -5,6 +5,7 @@ import {
   interactionControlId,
   interactionMountId,
   type DiscreteInteractionDeclaration,
+  type SettingIr,
 } from "../src/skydiving/index.js";
 
 /**
@@ -15,7 +16,7 @@ import {
  * the shared vocabulary in product-spec, and these are the cases that hold it to that.
  */
 
-function discrete(timing: string): DiscreteInteractionDeclaration {
+function discrete(timing: string, settingId?: string): DiscreteInteractionDeclaration {
   return {
     kind: "discrete-action",
     controlId: interactionControlId("settings.wake-phrase"),
@@ -23,8 +24,14 @@ function discrete(timing: string): DiscreteInteractionDeclaration {
     mounts: [{ id: interactionMountId("settings.wake-phrase.row"), kind: "atom", requiredHosts: ["phone"] }],
     requiredHosts: ["phone"],
     source: { file: "menus/interactions.ts", declarationId: "skyvwInteractions" },
+    ...(settingId === undefined ? {} : { settingId }),
   } as unknown as DiscreteInteractionDeclaration;
 }
+
+const toggleSetting = {
+  id: "wake-phrase",
+  control: { id: "settings.wake-phrase" },
+} as unknown as SettingIr;
 
 test("the two words a product may declare still compile, unchanged by the move", () => {
   for (const timing of ["immediate", "deliberate"]) {
@@ -47,4 +54,20 @@ test("a third kind of button is refused by name", () => {
       `'${invented}' was accepted as a kind of button`,
     );
   }
+});
+
+test("a canonical setting control refuses deliberate timing by name", () => {
+  const { ir, diagnostics } = compileInteractions({
+    declarations: [discrete("deliberate", toggleSetting.id)],
+    settings: [toggleSetting],
+  });
+  assert.equal(ir, null);
+  assert.deepEqual(
+    diagnostics.map(({ rule, declarationId, message }) => ({ rule, declarationId, message })),
+    [{
+      rule: "interaction.setting.timing",
+      declarationId: "settings.wake-phrase",
+      message: "setting 'wake-phrase' is a toggle or finite choice and must use immediate timing",
+    }],
+  );
 });

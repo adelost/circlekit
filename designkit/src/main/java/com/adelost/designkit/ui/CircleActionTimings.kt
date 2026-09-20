@@ -13,10 +13,34 @@ import androidx.compose.runtime.staticCompositionLocalOf
 
 /** Product action timing is semantic data, not a per-screen millisecond.
  * Transport/camera steps are harmless and reversible; navigation/state
- * changes keep the wrist-safe short intent gate. */
+ * changes keep the wrist-safe short intent gate.
+ * WHAT: Defines the two product action timings.
+ * WHY: Keeps semantic timing separate from host cost. */
 enum class CircleActionTiming(val holdMs: Long) {
-    DELIBERATE(MenuDesign.tapHoldMs),
+    DELIBERATE(MenuDesign.holdDeliberateMs),
     IMMEDIATE(0L),
+}
+
+/** WHAT: Names the cost a host adds to an immediate action. WHY: Keeps the kit from guessing Phone policy. */
+enum class CircleActionHostCost(val holdMs: Long) {
+    NONE(0L),
+    WORN(MenuDesign.wornTouchCostMs),
+}
+
+/** WHAT: Maps both renderer profiles to explicit costs. WHY: Keeps device hardware from deciding preview behavior. */
+data class CircleActionHostCosts(
+    val responsive: CircleActionHostCost,
+    val watchExact: CircleActionHostCost,
+) {
+    fun forMode(mode: CircleHostMode): CircleActionHostCost = when (mode) {
+        CircleHostMode.RESPONSIVE -> responsive
+        CircleHostMode.WATCH_EXACT -> watchExact
+    }
+}
+
+/** No default: every mounted host states the immediate-action cost it fulfils. */
+val LocalCircleActionHostCost = staticCompositionLocalOf<CircleActionHostCost> {
+    error("CircleActionHostCost is absent: CircleHostSurface must receive explicit responsive and WATCH_EXACT costs")
 }
 
 /**
@@ -30,19 +54,27 @@ enum class CircleActionTiming(val holdMs: Long) {
  * reached the drawing. Mattias, the same day: "det ska inte finnas något mellanting liksom, bara de
  * här två typerna utav knappar".
  *
- * TWO KINDS AND NOTHING BETWEEN, which is what this function is for: an IMMEDIATE control has NO
- * hold, whatever millisecond value rides along with it, and a DELIBERATE one holds for the duration
- * it declares. The in-betweens are refused here rather than shipped: a deliberate control with no
- * duration commits at once while claiming to wait, and one that holds for less than
+ * TWO KINDS AND NOTHING BETWEEN, which is what this function is for: an IMMEDIATE control takes the
+ * host's explicitly supplied touch cost, unless it only moves the view, and a DELIBERATE one holds
+ * for the duration it declares. The in-betweens are refused here rather than shipped: a deliberate
+ * control with no duration commits at once while claiming to wait, and one that holds for less than
  * [CIRCLE_CUE_BRUSH_MIN_MS] gates a press that row 215's cue deliberately never draws, which is the
  * same silence from the other side.
+ * WHAT: Resolves one timing for a mounted control.
+ * WHY: Keeps gate, cue and commit on one duration.
  */
 @Composable
 fun circleResolvedTiming(
     timing: CircleActionTiming,
     holdMs: Long = timing.holdMs,
     effect: CircleActionEffect = CircleActionEffect.ACTS,
-): CircleResolvedTiming = resolveCircleTiming(timing, holdMs, effect, LocalCircleTouchLock.current)
+): CircleResolvedTiming = resolveCircleTiming(
+    timing,
+    holdMs,
+    effect,
+    LocalCircleActionHostCost.current,
+    LocalCircleTouchLock.current,
+)
 
 /**
  * The same rule without a composition, so a case can walk locked and unlocked without mounting one.
@@ -59,6 +91,7 @@ internal fun resolveCircleTiming(
     timing: CircleActionTiming,
     holdMs: Long,
     effect: CircleActionEffect,
+    hostCost: CircleActionHostCost,
     locked: Boolean,
 ): CircleResolvedTiming {
     require(holdMs >= 0L) { "A control's hold cannot be negative" }
@@ -67,7 +100,11 @@ internal fun resolveCircleTiming(
             "because a hold the cue refuses to draw is a wait nobody is told about; " +
             "${CircleActionTiming.IMMEDIATE} is how a control says it does not wait"
     }
-    val declared = if (timing == CircleActionTiming.IMMEDIATE) 0L else holdMs
+    val declared = when {
+        timing == CircleActionTiming.DELIBERATE -> holdMs
+        effect == CircleActionEffect.MOVES_THE_VIEW -> 0L
+        else -> hostCost.holdMs
+    }
     // The lock never SHORTENS a hold: a destructive control does not get cheaper because the wearer is
     // under canopy. And it lengthens rather than refuses, because a control that looks pressable and
     // can never be pressed is the third kind of button Mattias threw out; in the air every control is

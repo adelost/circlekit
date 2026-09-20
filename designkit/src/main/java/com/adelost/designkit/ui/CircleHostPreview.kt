@@ -100,12 +100,15 @@ fun requestedOrientationFor(orientation: CircleHostOrientation): Int = when (ori
  * from product state; this function changes only constraints, profile and
  * round clipping. WatchExact on Phone therefore is the real Wear surface, not
  * a preview-only renderer.
+ * WHAT: Wraps the product in responsive or exact-watch geometry.
+ * WHY: Keeps host switching from remounting product state.
  */
 @Composable
 fun CircleHostSurface(
     isWatchDevice: Boolean,
     state: CircleHostPreviewState,
     onStateChange: ((CircleHostPreviewState) -> Unit)?,
+    actionHostCosts: CircleActionHostCosts,
     modifier: Modifier = Modifier,
     content: @Composable (CircleUiProfile) -> Unit,
 ) {
@@ -116,19 +119,22 @@ fun CircleHostSurface(
     val movableContent = remember {
         movableContentOf<CircleUiProfile> { profile -> currentContent(profile) }
     }
-    when (resolveCircleHostMode(isWatchDevice, requested = null, persisted = state.mode)) {
-        CircleHostMode.RESPONSIVE -> CircleResponsiveSurface(modifier, movableContent)
-        CircleHostMode.WATCH_EXACT -> CircleWatchExactSurface(
-            emulatedDiameterDp = state.watchDiameterDp.takeUnless { isWatchDevice },
-            onSelectDiameter = onStateChange?.takeUnless { isWatchDevice }?.let { update ->
-                { diameter -> update(state.copy(watchDiameterDp = supportedCircleWatchDiameter(diameter))) }
-            },
-            onSelectResponsive = onStateChange?.takeUnless { isWatchDevice }?.let { update ->
-                { update(state.copy(mode = CircleHostMode.RESPONSIVE)) }
-            },
-            modifier = modifier,
-            content = movableContent,
-        )
+    val mode = resolveCircleHostMode(isWatchDevice, requested = null, persisted = state.mode)
+    CompositionLocalProvider(LocalCircleActionHostCost provides actionHostCosts.forMode(mode)) {
+        when (mode) {
+            CircleHostMode.RESPONSIVE -> CircleResponsiveSurface(modifier, movableContent)
+            CircleHostMode.WATCH_EXACT -> CircleWatchExactSurface(
+                emulatedDiameterDp = state.watchDiameterDp.takeUnless { isWatchDevice },
+                onSelectDiameter = onStateChange?.takeUnless { isWatchDevice }?.let { update ->
+                    { diameter -> update(state.copy(watchDiameterDp = supportedCircleWatchDiameter(diameter))) }
+                },
+                onSelectResponsive = onStateChange?.takeUnless { isWatchDevice }?.let { update ->
+                    { update(state.copy(mode = CircleHostMode.RESPONSIVE)) }
+                },
+                modifier = modifier,
+                content = movableContent,
+            )
+        }
     }
 }
 

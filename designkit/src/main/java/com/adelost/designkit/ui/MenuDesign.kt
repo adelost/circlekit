@@ -8,7 +8,7 @@ import androidx.compose.ui.unit.sp
 import kotlin.math.PI
 import kotlin.math.cos
 
-/** One form-factor-neutral design spec for the canonical Circle menu row. */
+/** WHAT: Defines form-factor-neutral Circle menu dimensions. WHY: Keeps renderers from inventing competing geometry. */
 object MenuDesign {
     /** Calm centred composition shared by menu grids on every host.
      * The remaining 25% is split symmetrically by the renderer. */
@@ -181,7 +181,7 @@ object MenuDesign {
      * visibly different from an instant touch, without making navigation feel
      * like a confirmation gesture. Settings choices keep their deliberate
      * half-second rung below; destructive actions stay longer still. */
-    const val tapHoldMs: Long = 200L
+    const val wornTouchCostMs: Long = 200L
 
     /** Brief centre acknowledgement after either action category commits. */
     const val actionConfirmationMs: Long = 240L

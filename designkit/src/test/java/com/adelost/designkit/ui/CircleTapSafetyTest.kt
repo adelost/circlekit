@@ -12,12 +12,12 @@ class CircleTapSafetyTest {
         // A touch that was never a decision must do nothing (Mattias
         // 2026-07-21: "inte att man råkar nudda").
         assertFalse(isCircleHoldComplete(pressDurationMs = 0L, timing = THE_ORDINARY_GATE))
-        assertFalse(isCircleHoldComplete(pressDurationMs = MenuDesign.tapHoldMs - 1L, timing = THE_ORDINARY_GATE))
+        assertFalse(isCircleHoldComplete(pressDurationMs = MenuDesign.wornTouchCostMs - 1L, timing = THE_ORDINARY_GATE))
     }
 
     @Test
     fun `a press that reaches the rung commits`() {
-        assertTrue(isCircleHoldComplete(pressDurationMs = MenuDesign.tapHoldMs, timing = THE_ORDINARY_GATE))
+        assertTrue(isCircleHoldComplete(pressDurationMs = MenuDesign.wornTouchCostMs, timing = THE_ORDINARY_GATE))
         assertTrue(isCircleHoldComplete(pressDurationMs = 5_000L, timing = THE_ORDINARY_GATE))
     }
 
@@ -29,15 +29,19 @@ class CircleTapSafetyTest {
     }
 
     @Test
-    fun `a plain action uses the short 200 millisecond rung`() {
-        assertEquals(200L, MenuDesign.tapHoldMs)
-        assertTrue(MenuDesign.tapHoldMs < MenuDesign.holdDeliberateMs)
+    fun `the worn host adds the short 200 millisecond cost`() {
+        assertEquals(200L, MenuDesign.wornTouchCostMs)
+        assertTrue(MenuDesign.wornTouchCostMs < MenuDesign.holdDeliberateMs)
     }
 
     @Test
-    fun `camera and transport actions are explicitly immediate while app actions stay deliberate`() {
+    fun `the two declarations stay distinct from the worn host cost`() {
         assertEquals(0L, CircleActionTiming.IMMEDIATE.holdMs)
-        assertEquals(MenuDesign.tapHoldMs, CircleActionTiming.DELIBERATE.holdMs)
+        assertEquals(MenuDesign.holdDeliberateMs, CircleActionTiming.DELIBERATE.holdMs)
+        assertEquals(
+            MenuDesign.wornTouchCostMs,
+            unlockedTiming(CircleActionTiming.IMMEDIATE, CircleActionHostCost.WORN).holdMs,
+        )
     }
 
     @Test
@@ -45,8 +49,8 @@ class CircleTapSafetyTest {
         // Both rungs are holds, so the long one has to outlast the action one
         // by enough for a thumb to aim at; circleSafeTapOrHold refuses any
         // other configuration.
-        assertTrue(MenuDesign.holdDestructiveMs > MenuDesign.tapHoldMs)
-        assertTrue(MenuDesign.holdDestructiveMs - MenuDesign.tapHoldMs >= 300L)
+        assertTrue(MenuDesign.holdDestructiveMs > MenuDesign.wornTouchCostMs)
+        assertTrue(MenuDesign.holdDestructiveMs - MenuDesign.wornTouchCostMs >= 300L)
     }
 
     @Test
@@ -54,7 +58,7 @@ class CircleTapSafetyTest {
         // One ladder, ascending: tap, choice, destructive, confirm. A tap gate
         // that crept past a deliberate hold would swallow that hold.
         val ladder = listOf(
-            MenuDesign.tapHoldMs,
+            MenuDesign.wornTouchCostMs,
             MenuDesign.holdDeliberateMs,
             MenuDesign.holdDestructiveMs,
             MenuDesign.holdConfirmMs,
@@ -64,6 +68,6 @@ class CircleTapSafetyTest {
 
     private companion object {
         /** What an ordinary navigation control declares. The gate takes no default: see isCircleHoldComplete. */
-        val THE_ORDINARY_GATE = unlockedTiming(CircleActionTiming.DELIBERATE)
+        val THE_ORDINARY_GATE = unlockedTiming(CircleActionTiming.IMMEDIATE, CircleActionHostCost.WORN)
     }
 }

@@ -31,7 +31,7 @@ internal fun continuousPressMayBegin(
 ): Boolean = !releasedBeforeActivation && !cancelled
 
 /**
- * The press gate every plain control shares: hold for [MenuDesign.tapHoldMs]
+ * The press gate a worn host adds to an immediate action: [MenuDesign.wornTouchCostMs]
  * and the action fires while the finger is still down. Completion IS the
  * commit — the same semantics as the longer confirmation rungs, with a short
  * duration appropriate for ordinary navigation.

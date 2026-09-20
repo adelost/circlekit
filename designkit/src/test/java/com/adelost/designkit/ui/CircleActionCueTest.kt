@@ -18,12 +18,12 @@ class CircleActionCueTest {
     @Test
     fun `immediate playback and navigation do not flash a hold receipt`() {
         assertEquals(CircleCuePlan.Clear, circleCuePlan(RingIcons.Play, "PLAY", null,
-            unlockedTiming(CircleActionTiming.IMMEDIATE), pressed = false, confirmed = true, determinateProgress = null))
+            unlockedTiming(CircleActionTiming.IMMEDIATE, CircleActionHostCost.NONE), pressed = false, confirmed = true, determinateProgress = null))
     }
     @Test
     fun `the two action categories keep one data-owned timing ladder`() {
         assertEquals(0L, CircleActionTiming.IMMEDIATE.holdMs)
-        assertEquals(MenuDesign.tapHoldMs, CircleActionTiming.DELIBERATE.holdMs)
+        assertEquals(MenuDesign.holdDeliberateMs, CircleActionTiming.DELIBERATE.holdMs)
         assertEquals(240L, MenuDesign.actionConfirmationMs)
         assertEquals(MenuDesign.holdDeliberateMs, MenuDesign.backHoldMs)
     }
@@ -85,7 +85,7 @@ class CircleActionCueTest {
     @Test
     fun `a switch receipt keeps the answer the press chose`() {
         val landing = CircleChoiceState(optionCount = 3, selectedIndex = 1)
-        val settled = circleCuePlan(RingIcons.Target, "LANDING", null, unlockedTiming(CircleActionTiming.DELIBERATE),
+        val settled = circleCuePlan(RingIcons.Target, "LANDING", null, unlockedTiming(CircleActionTiming.DELIBERATE, CircleActionHostCost.NONE),
             pressed = false, confirmed = true, determinateProgress = null, choiceState = landing) as CircleCuePlan.Settle
 
         assertEquals(landing, settled.cue.choiceState)
@@ -122,7 +122,7 @@ class CircleActionCueTest {
     private fun plan(
         pressed: Boolean,
         confirmed: Boolean = false,
-        timing: CircleResolvedTiming = unlockedTiming(CircleActionTiming.DELIBERATE),
+        timing: CircleResolvedTiming = unlockedTiming(CircleActionTiming.DELIBERATE, CircleActionHostCost.NONE),
     ) = circleCuePlan(
         icon = RingIcons.Gauge,
         label = "DIAL DIRECTION",

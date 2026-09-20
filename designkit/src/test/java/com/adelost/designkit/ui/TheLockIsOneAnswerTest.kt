@@ -26,17 +26,24 @@ class TheLockIsOneAnswerTest {
     @Test
     fun `unlocked, a control is exactly what it declared`() {
         for (effect in CircleActionEffect.entries) {
-            assertEquals(0L, resolve(CircleActionTiming.IMMEDIATE, effect = effect).holdMs)
             assertEquals(
-                MenuDesign.tapHoldMs,
-                resolve(CircleActionTiming.DELIBERATE, effect = effect).holdMs,
+                0L,
+                resolve(CircleActionTiming.IMMEDIATE, CircleActionHostCost.NONE, effect = effect).holdMs,
+            )
+            assertEquals(
+                if (effect == CircleActionEffect.MOVES_THE_VIEW) 0L else MenuDesign.wornTouchCostMs,
+                resolve(CircleActionTiming.IMMEDIATE, CircleActionHostCost.WORN, effect = effect).holdMs,
+            )
+            assertEquals(
+                MenuDesign.holdDeliberateMs,
+                resolve(CircleActionTiming.DELIBERATE, CircleActionHostCost.NONE, effect = effect).holdMs,
             )
         }
     }
 
     @Test
     fun `locked, an ordinary control becomes a hold and its ring says so`() {
-        val touch = resolve(CircleActionTiming.IMMEDIATE, locked = true)
+        val touch = resolve(CircleActionTiming.IMMEDIATE, CircleActionHostCost.WORN, locked = true)
         assertEquals(
             "a touch stayed a touch on a locked surface, so a sleeve in freefall still fires it",
             MenuDesign.holdConfirmMs,
@@ -50,7 +57,7 @@ class TheLockIsOneAnswerTest {
         assertEquals(
             "a deliberate control's short gate survived the lock",
             MenuDesign.holdConfirmMs,
-            resolve(CircleActionTiming.DELIBERATE, locked = true).holdMs,
+            resolve(CircleActionTiming.DELIBERATE, CircleActionHostCost.WORN, locked = true).holdMs,
         )
     }
 
@@ -59,6 +66,7 @@ class TheLockIsOneAnswerTest {
         // A destructive control does not get cheaper because the wearer is under canopy.
         val destructive = resolve(
             CircleActionTiming.DELIBERATE,
+            CircleActionHostCost.WORN,
             holdMs = MenuDesign.holdDestructiveMs,
             locked = true,
         )
@@ -78,14 +86,16 @@ class TheLockIsOneAnswerTest {
             0L,
             resolve(
                 CircleActionTiming.IMMEDIATE,
+                CircleActionHostCost.WORN,
                 effect = CircleActionEffect.MOVES_THE_VIEW,
                 locked = true,
             ).holdMs,
         )
         assertEquals(
-            MenuDesign.tapHoldMs,
+            MenuDesign.holdDeliberateMs,
             resolve(
                 CircleActionTiming.DELIBERATE,
+                CircleActionHostCost.WORN,
                 effect = CircleActionEffect.MOVES_THE_VIEW,
                 locked = true,
             ).holdMs,
@@ -104,9 +114,10 @@ class TheLockIsOneAnswerTest {
         // and turning the parameter's default to the unsafe answer left it green (skyvw:1).
         assertTrue(
             "the locking answer and the exempt answer resolved the same, so the marker decides nothing",
-            resolve(CircleActionTiming.IMMEDIATE, locked = true).holdMs >
+            resolve(CircleActionTiming.IMMEDIATE, CircleActionHostCost.WORN, locked = true).holdMs >
                 resolve(
                     CircleActionTiming.IMMEDIATE,
+                    CircleActionHostCost.WORN,
                     effect = CircleActionEffect.MOVES_THE_VIEW,
                     locked = true,
                 ).holdMs,
@@ -115,8 +126,9 @@ class TheLockIsOneAnswerTest {
 
     private fun resolve(
         timing: CircleActionTiming,
+        hostCost: CircleActionHostCost,
         holdMs: Long = timing.holdMs,
         effect: CircleActionEffect = CircleActionEffect.ACTS,
         locked: Boolean = false,
-    ) = resolveCircleTiming(timing, holdMs, effect, locked)
+    ) = resolveCircleTiming(timing, holdMs, effect, hostCost, locked)
 }

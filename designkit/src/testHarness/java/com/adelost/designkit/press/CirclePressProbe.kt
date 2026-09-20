@@ -5,11 +5,14 @@ import android.graphics.Canvas
 import android.view.View
 import androidx.activity.ComponentActivity
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.test.SemanticsNodeInteraction
 import androidx.compose.ui.test.down
 import androidx.compose.ui.test.junit4.AndroidComposeTestRule
 import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.test.up
+import com.adelost.designkit.ui.CircleActionHostCost
+import com.adelost.designkit.ui.LocalCircleActionHostCost
 import kotlin.math.roundToInt
 
 /**
@@ -26,6 +29,8 @@ import kotlin.math.roundToInt
  * and a step circle all change their CHROME under a finger (fill, contour, tint, scale), and that chrome
  * is greyscale while the cue is the product's accent. Counting changed pixels on those cannot tell a cue
  * from a press highlight; counting coloured ones can.
+ * WHAT: Tracks a mounted control through every press frame.
+ * WHY: Keeps rule tests from missing renderer handoff defects.
  */
 class CirclePressProbe(
     private val compose: AndroidComposeTestRule<*, ComponentActivity>,
@@ -37,10 +42,12 @@ class CirclePressProbe(
      * Mounts [content] once. Call it from every press: a control that reads its declaration from state
      * answers for both kinds from ONE composition, and a fresh mount between presses proves nothing.
      */
-    fun mount(content: @Composable () -> Unit) {
+    fun mount(hostCost: CircleActionHostCost, content: @Composable () -> Unit) {
         if (mounted) return
         compose.mainClock.autoAdvance = false
-        compose.setContent(content)
+        compose.setContent {
+            CompositionLocalProvider(LocalCircleActionHostCost provides hostCost) { content() }
+        }
         mounted = true
     }
 

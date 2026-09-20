@@ -104,7 +104,7 @@ class ALockedControlIsAHoldControlTest {
     }
 
     private fun press(holdFor: Long): CirclePress {
-        probe.mount {
+        probe.mount(CircleActionHostCost.WORN) {
             CompositionLocalProvider(LocalCircleTouchLock provides locked.value) {
                 Box(Modifier.fillMaxSize().background(Color.Black)) {
                     CircleIconDisc(

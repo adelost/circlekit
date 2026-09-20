@@ -13,7 +13,7 @@ export interface CompileInteractionsInput<EffectRef extends string = never> {
   readonly settings?: readonly SettingIr<EffectRef>[];
 }
 
-/** Normalize the TypeScript declaration directly; there is no second product registry to agree with. */
+/** WHAT: Normalizes interaction declarations and reports violated laws. WHY: Keeps generated IR from accepting contradictory product facts. */
 export function compileInteractions<EffectRef extends string>(
   input: CompileInteractionsInput<EffectRef>,
 ): CompileInteractionsResult {
@@ -54,6 +54,15 @@ export function compileInteractions<EffectRef extends string>(
       }
       if (setting !== undefined && setting.control.id !== declaration.controlId) {
         issue(diagnostics, "interaction.setting.control-parity", declaration, `setting '${setting.id}' owns control '${setting.control.id}', not '${declaration.controlId}'`);
+        valid = false;
+      }
+      if (setting !== undefined && declaration.timing !== "immediate") {
+        issue(
+          diagnostics,
+          "interaction.setting.timing",
+          declaration,
+          `setting '${setting.id}' is a toggle or finite choice and must use immediate timing`,
+        );
         valid = false;
       }
       if (valid) interactions.push({

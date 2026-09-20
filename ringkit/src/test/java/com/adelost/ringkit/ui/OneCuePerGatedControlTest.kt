@@ -52,8 +52,8 @@ class OneCuePerGatedControlTest {
         OneCuePerGatedControl.aGrazeSaysNothing("an action word", pressTheWord(CirclePressProbe.A_FLICK_MS))
         OneCuePerGatedControl.aHeldControlDrawsItsGateOut(
             what = "an action word",
-            gateMs = MenuDesign.tapHoldMs,
-            press = pressTheWord(MenuDesign.tapHoldMs),
+            gateMs = MenuDesign.wornTouchCostMs,
+            press = pressTheWord(MenuDesign.wornTouchCostMs),
         )
     }
 
@@ -68,7 +68,7 @@ class OneCuePerGatedControlTest {
         val oneCueAtFull = probe.colouredAtRest(compose.onNodeWithContentDescription(THE_WORD))
         theWord.value = null
 
-        val pressed = pressTheWord(MenuDesign.tapHoldMs)
+        val pressed = pressTheWord(MenuDesign.wornTouchCostMs)
         assertTrue(
             "a complete press drew ${pressed.cueAtTheGate} pixels against the $oneCueAtFull pixels " +
                 "this control draws when its own renderer is full. Either the press did not complete " +
@@ -88,8 +88,8 @@ class OneCuePerGatedControlTest {
         OneCuePerGatedControl.aGrazeSaysNothing("a back ring", pressTheBack(A_BRUSH))
         OneCuePerGatedControl.aHeldControlDrawsItsGateOut(
             what = "a back ring",
-            gateMs = MenuDesign.tapHoldMs,
-            press = pressTheBack(MenuDesign.tapHoldMs),
+            gateMs = MenuDesign.wornTouchCostMs,
+            press = pressTheBack(MenuDesign.wornTouchCostMs),
         )
     }
 
@@ -98,8 +98,8 @@ class OneCuePerGatedControlTest {
         OneCuePerGatedControl.aGrazeSaysNothing("a step circle", pressTheStep(CirclePressProbe.A_FLICK_MS))
         OneCuePerGatedControl.aHeldControlDrawsItsGateOut(
             what = "a step circle",
-            gateMs = MenuDesign.tapHoldMs,
-            press = pressTheStep(MenuDesign.tapHoldMs),
+            gateMs = MenuDesign.wornTouchCostMs,
+            press = pressTheStep(MenuDesign.wornTouchCostMs),
         )
     }
 
@@ -107,7 +107,7 @@ class OneCuePerGatedControlTest {
 
     private val theWord = mutableStateOf<CircleLabelProgress?>(null)
 
-    private fun mountTheWord() = probe.mount {
+    private fun mountTheWord() = probe.mount(com.adelost.designkit.ui.CircleActionHostCost.WORN) {
         Box(Modifier.fillMaxSize().background(Color.Black)) {
             TextAction(text = THE_WORD, onTap = {}, labelProgress = theWord.value)
         }
@@ -119,7 +119,7 @@ class OneCuePerGatedControlTest {
     }
 
     private fun pressTheBack(holdFor: Long): CirclePress {
-        probe.mount {
+        probe.mount(com.adelost.designkit.ui.CircleActionHostCost.WORN) {
             Box(Modifier.fillMaxSize().background(Color.Black)) {
                 BackRing(label = THE_BACK, onBack = {})
             }
@@ -128,7 +128,7 @@ class OneCuePerGatedControlTest {
     }
 
     private fun pressTheStep(holdFor: Long): CirclePress {
-        probe.mount {
+        probe.mount(com.adelost.designkit.ui.CircleActionHostCost.WORN) {
             Box(Modifier.fillMaxSize().background(Color.Black)) {
                 // The tap variant: adjustHoldMs left null, which is what an ordinary stepper is. The
                 // held variant is a HoldFillBox and draws its own measured fill already.

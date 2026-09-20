@@ -41,6 +41,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 
+/** WHAT: Checks rendered-row accessibility semantics. WHY: Keeps visual rows from exposing inert accessibility nodes. */
 class RingRowAccessibilityTest {
     @get:Rule
     val compose = createAndroidComposeRule<androidx.activity.ComponentActivity>()
@@ -205,7 +206,15 @@ class RingRowAccessibilityTest {
 
     @Composable private fun sharedBackMenu(content: @Composable () -> Unit) {
         Box(Modifier.size(192.dp).testTag("round-menu-face")) {
-            CircleHostSurface(isWatchDevice = true, state = CircleHostPreviewState(), onStateChange = null) {
+            CircleHostSurface(
+                isWatchDevice = true,
+                state = CircleHostPreviewState(),
+                onStateChange = null,
+                actionHostCosts = com.adelost.designkit.ui.CircleActionHostCosts(
+                    responsive = com.adelost.designkit.ui.CircleActionHostCost.NONE,
+                    watchExact = com.adelost.designkit.ui.CircleActionHostCost.WORN,
+                ),
+            ) {
                 RingRoundBackHost(onBack = {}) { content() }
             }
         }
@@ -215,7 +224,15 @@ class RingRowAccessibilityTest {
     @Composable private fun roundMenu(content: @Composable () -> Unit) {
         val backSlot = CircleChromeSlot.HOUR_10
         Box(Modifier.size(192.dp).testTag("round-menu-face")) {
-            CircleHostSurface(isWatchDevice = true, state = CircleHostPreviewState(), onStateChange = null) {
+            CircleHostSurface(
+                isWatchDevice = true,
+                state = CircleHostPreviewState(),
+                onStateChange = null,
+                actionHostCosts = com.adelost.designkit.ui.CircleActionHostCosts(
+                    responsive = com.adelost.designkit.ui.CircleActionHostCost.NONE,
+                    watchExact = com.adelost.designkit.ui.CircleActionHostCost.WORN,
+                ),
+            ) {
                 CompositionLocalProvider(LocalRoundChromeReservation provides listOf(backSlot)) {
                     content()
                     RingRoundChrome(listOf(RingChromeAction(backSlot, RingIcons.Cross, "Back", {})))
