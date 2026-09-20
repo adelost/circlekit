@@ -1,3 +1,4 @@
+import type { InteractionTiming } from "@v1d/product-spec";
 import type { Diagnostic, RequiredHost, SourceRef } from "./model.js";
 
 export type InteractionControlId = string & { readonly __interactionControlId: unique symbol };
@@ -8,7 +9,15 @@ export const interactionControlId = (value: string): InteractionControlId => val
 export const interactionPolicyHandle = (value: string): InteractionPolicyHandle => value as InteractionPolicyHandle;
 export const interactionMountId = (value: string): InteractionMountId => value as InteractionMountId;
 
-export type InteractionTiming = "immediate" | "deliberate";
+/**
+ * Re-exported, not declared: the two kinds of button are shared vocabulary now.
+ *
+ * They lived here, under a Skyvw name inside the shared emitter, so only Skyvw could say them and
+ * Link's product declaration was silent about every one of its buttons. They moved to product-spec
+ * in 0.3.64 unchanged; this line keeps every existing import reading the same type from the one
+ * place that owns it.
+ */
+export type { InteractionTiming };
 export type InteractionMountKind = "atom" | "primitive";
 
 export interface InteractionMountDeclaration {

@@ -1,3 +1,4 @@
+import { isInteractionTiming } from "@v1d/product-spec";
 import type { Diagnostic, SettingIr } from "./model.js";
 import { APP_SPEC_VERSION } from "./model.js";
 import type {
@@ -40,7 +41,7 @@ export function compileInteractions<EffectRef extends string>(
     valid = sameSet(declaration.requiredHosts, mountedHosts, "interaction.mount.host-coverage", declaration, diagnostics) && valid;
 
     if (declaration.kind === "discrete-action") {
-      if (declaration.timing !== "immediate" && declaration.timing !== "deliberate") {
+      if (!isInteractionTiming(declaration.timing)) {
         issue(diagnostics, "interaction.invalid-timing", declaration, `unknown timing '${declaration.timing}'`);
         valid = false;
       }
