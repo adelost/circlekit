@@ -275,11 +275,14 @@ object OneCuePerGatedControl {
      * is drawn for them, or a wrist flickers all day.
      */
     fun aGrazeSaysNothing(what: String, press: CirclePress) {
-        val drawn = press.cueAtItsMost
-        if (drawn != 0) {
+        val cue = press.cueByFrame
+        val touched = cue.first()
+        val grew = cue.maxOrNull() ?: 0
+        if (grew > touched) {
             throw AssertionError(
-                "$what answered a graze shorter than the ${brushMinimumMs()} ms brush minimum with " +
-                    "$drawn pixels of cue. A wrist brushes its own screen all day",
+                "$what grew from $touched to $grew pixels during a graze shorter than the " +
+                    "${brushMinimumMs()} ms brush minimum. A wrist brushes its own screen all day. " +
+                    "Readings: ${cue.joinToString()}",
             )
         }
     }
@@ -293,13 +296,20 @@ object OneCuePerGatedControl {
      * it draws nothing. That is the whole of the defect, and it is what this frame catches.
      */
     fun aHeldControlDrawsItsGateOut(what: String, gateMs: Long, press: CirclePress) {
-        val cue = press.cueByFrame
+        // WHAT A TOUCH COSTS BEFORE ANY WAIT IS DRAWN. A control may change its chrome the instant a
+        // finger lands, and several do: the back ring dips and brightens its contour, and that contour
+        // is the product's action colour, so it cannot be told from the cue by colour alone. It is
+        // constant from the first frame, though, and a WAIT is not: subtracting the first frame leaves
+        // exactly what is growing. Controls with greyscale chrome read 0 here and nothing changes.
+        val touched = press.cueByFrame.first()
+        val cue = press.cueByFrame.map { it - touched }
         val readings = press.frames.map { it.elapsedMs }.zip(cue).joinToString(" ") { "${it.first}:${it.second}" }
         press.frames.zip(cue).forEach { (frame, drawn) ->
             if (frame.elapsedMs < brushMinimumMs() && drawn != 0) {
                 throw AssertionError(
                     "$what drew $drawn pixels of cue ${frame.elapsedMs} ms in, under the " +
-                        "${brushMinimumMs()} ms brush minimum. Readings: $readings",
+                        "${brushMinimumMs()} ms brush minimum, over the $touched it draws merely for " +
+                        "being touched. Readings: $readings",
                 )
             }
         }
@@ -328,17 +338,18 @@ object OneCuePerGatedControl {
                 )
             }
         }
-        if (press.cueAtTheGate < cue[firstDrawn] * GROWN_BY_THE_GATE) {
+        val atTheGate = cue.last()
+        if (atTheGate < cue[firstDrawn] * GROWN_BY_THE_GATE) {
             throw AssertionError(
-                "$what drew ${press.cueAtTheGate} pixels of cue at the frame its $gateMs ms gate commits " +
+                "$what drew $atTheGate pixels of cue at the frame its $gateMs ms gate commits " +
                     "on, against ${cue[firstDrawn]} at the first frame it drew anything. A cue that " +
                     "barely moves across a gate is not saying how much of it is left. Readings: $readings",
             )
         }
-        if (press.cueAtTheGate < press.cueAtItsMost) {
+        if (atTheGate < (cue.maxOrNull() ?: 0)) {
             throw AssertionError(
-                "$what drew its most cue (${press.cueAtItsMost}) before the frame its gate commits on " +
-                    "(${press.cueAtTheGate}), so the ring was fullest while the action had not fired. " +
+                "$what drew its most cue (${cue.maxOrNull()}) before the frame its gate commits on " +
+                    "($atTheGate), so the ring was fullest while the action had not fired. " +
                     "Readings: $readings",
             )
         }

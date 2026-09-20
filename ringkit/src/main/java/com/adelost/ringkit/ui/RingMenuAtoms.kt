@@ -105,6 +105,7 @@ private fun TapBackRing(
         BackDisc(
             enabled = enabled,
             pressed = feedback.pressed,
+            holdProgress = { feedback.holdProgress },
             scrim = scrim,
             diameter = diameter,
             modifier = Modifier.clearAndSetSemantics { },
@@ -145,6 +146,10 @@ private fun HoldBackRing(
             BackDisc(
                 enabled = true,
                 pressed = holding,
+                // The finger covers the whole disc here, so this variant's progress goes to the
+                // caller's centre overlay through progressFeedback above. Drawing it here as well
+                // would be the second cue row 215 exists to end.
+                holdProgress = { 0f },
                 scrim = scrim,
                 diameter = diameter,
                 modifier = Modifier.clearAndSetSemantics { },
@@ -159,6 +164,7 @@ private fun HoldBackRing(
 private fun BackDisc(
     enabled: Boolean,
     pressed: Boolean,
+    holdProgress: () -> Float,
     scrim: Boolean,
     diameter: Dp,
     modifier: Modifier = Modifier,
@@ -166,6 +172,7 @@ private fun BackDisc(
     CircleBackDisc(
         enabled = enabled,
         pressed = pressed,
+        holdProgress = holdProgress,
         scrim = scrim,
         diameter = diameter,
         contentDescription = null,

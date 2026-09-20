@@ -13,6 +13,7 @@ import androidx.compose.ui.test.onNodeWithText
 import com.adelost.designkit.press.CirclePress
 import com.adelost.designkit.press.CirclePressProbe
 import com.adelost.designkit.press.OneCuePerGatedControl
+import com.adelost.designkit.ui.CIRCLE_CUE_BRUSH_MIN_MS
 import com.adelost.designkit.ui.CircleLabelProgress
 import com.adelost.designkit.ui.MenuDesign
 import com.adelost.designkit.ui.RingIcons
@@ -77,6 +78,22 @@ class OneCuePerGatedControlTest {
     }
 
     @Test
+    fun `a back ring says how much of its gate a finger has spent, and nothing for a graze`() {
+        // ROW 212'S SILENCE, on the back button of every screen. The disc answered a touch with a dip
+        // and a brighter contour and nothing else: a boolean, so a press about to be refused looked
+        // exactly like one about to act until the moment it did not. It says OWNED because its press
+        // target is deliberately larger than the circle the wearer sees, so the gesture's own cue
+        // would be a ring around nothing; OWNED was permission to draw it elsewhere and was being
+        // spent on drawing no wait at all.
+        OneCuePerGatedControl.aGrazeSaysNothing("a back ring", pressTheBack(A_BRUSH))
+        OneCuePerGatedControl.aHeldControlDrawsItsGateOut(
+            what = "a back ring",
+            gateMs = MenuDesign.tapHoldMs,
+            press = pressTheBack(MenuDesign.tapHoldMs),
+        )
+    }
+
+    @Test
     fun `a step circle says how much of its gate a finger has spent, and nothing for a graze`() {
         OneCuePerGatedControl.aGrazeSaysNothing("a step circle", pressTheStep(CirclePressProbe.A_FLICK_MS))
         OneCuePerGatedControl.aHeldControlDrawsItsGateOut(
@@ -101,6 +118,15 @@ class OneCuePerGatedControlTest {
         return probe.press(compose.onNodeWithContentDescription(THE_WORD), holdFor)
     }
 
+    private fun pressTheBack(holdFor: Long): CirclePress {
+        probe.mount {
+            Box(Modifier.fillMaxSize().background(Color.Black)) {
+                BackRing(label = THE_BACK, onBack = {})
+            }
+        }
+        return probe.press(compose.onNodeWithContentDescription(THE_BACK), holdFor)
+    }
+
     private fun pressTheStep(holdFor: Long): CirclePress {
         probe.mount {
             Box(Modifier.fillMaxSize().background(Color.Black)) {
@@ -122,6 +148,11 @@ class OneCuePerGatedControlTest {
 
     private companion object {
         const val THE_WORD = "REFRESH"
+
+        const val THE_BACK = "Back"
+
+        /** A graze long enough to have frames to be constant across, and still under the minimum. */
+        const val A_BRUSH = CIRCLE_CUE_BRUSH_MIN_MS - 8L
 
         /** The visible glyph is this control's whole merged name: [StepCircle] states no label. */
         const val THE_STEP = "+"
