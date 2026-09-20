@@ -43,6 +43,7 @@ import com.adelost.designkit.ui.rememberCircleActionFeedbackState
 import com.adelost.designkit.ui.ringIconAccent
 import com.adelost.designkit.ui.circleAccentColor
 import com.adelost.designkit.ui.circleBrandColor
+import com.adelost.designkit.ui.CirclePressCue
 import com.adelost.designkit.ui.circleLabelProgress
 import com.adelost.designkit.ui.circleSafeTap
 import kotlinx.coroutines.flow.map
@@ -284,6 +285,9 @@ private fun StepperPillRow(
                             Modifier.circleSafeTap(
                                 feedback = centreFeedback,
                                 label = null,
+                                // The value column inside these bounds already carries the wash, and
+                                // it is the same column the adjustment's own progress fills (row 215).
+                                cue = CirclePressCue.OWNED,
                                 onTap = onToggle,
                             )
                         } else {
@@ -336,7 +340,8 @@ private fun StepCircle(
             .clip(CircleShape)
             .border(MenuDesign.contourStroke, RingTokens.Outline, CircleShape)
             // The visible +/− text is the complete merged action name.
-            .circleSafeTap(feedback = feedback, label = null, onTap = onTap),
+            // The +/- text under this button carries the wash already (row 215).
+            .circleSafeTap(feedback = feedback, label = null, cue = CirclePressCue.OWNED, onTap = onTap),
         contentAlignment = Alignment.Center,
     ) {
         Text(

@@ -95,6 +95,9 @@ private fun TapBackRing(
                     feedback = feedback,
                     enabled = enabled,
                     label = label,
+                    // The press target is deliberately LARGER than the disc, so a cue on these bounds
+                    // would be a ring around nothing. BackDisc draws it, on the circle the wearer sees.
+                    cue = CirclePressCue.OWNED,
                     onTap = onBack,
                 ),
         )
