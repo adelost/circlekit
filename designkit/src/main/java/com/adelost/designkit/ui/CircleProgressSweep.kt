@@ -224,24 +224,42 @@ internal fun circleHoldCueIsRing(width: Float, height: Float): Boolean =
     width <= height * CIRCLE_CUE_ROUND_ASPECT
 
 /**
- * The one clock the cue runs on: real frames, and [circleHoldCueFraction] deciding what they mean.
+ * The one clock the cue runs on: the FINGER'S OWN ZERO, sampled on real frames.
  *
- * It reads the elapsed time off the frame clock rather than handing a tween a duration, so the cue and
- * the GATE cannot drift: the gate times the finger and so does this. It also stops at 1 and it only
- * runs while a finger is down, which is what makes the cue cost nothing on a face that is only being
- * looked at.
+ * Measured on the first build of this (2026-09-20, a 192 dp seat under a 200 ms gate): reading the zero
+ * off the first frame instead made the ring start at 0.24 rather than 0.2, and FREEZE AT 0.88 when the
+ * gate fired. Two frames pass between the finger landing and this effect's first frame, because the
+ * press has to reach composition first, and a ring that is two frames behind a 200 ms gate can never
+ * complete. "Completes at holdMs" is the row's own sentence, so the zero has to be the pointer's.
+ *
+ * [pressedAtMs] is the down event's own uptime and [withFrameMillis] is the frame clock. On Android both
+ * are CLOCK_MONOTONIC, so they are comparable, but that is a platform detail rather than a promise: if
+ * the first frame does not land inside the gate's own window after that zero, the two clocks are not the
+ * same one, and the cue falls back to the frame it CAN trust. That degrades to a cue up to two frames
+ * late, never to a ring that is already full.
+ *
+ * It reads elapsed time off the clock rather than handing a tween a duration, so the cue and the GATE
+ * cannot drift: the gate times the finger and so does this. It stops at 1 and runs only while a finger
+ * is down, which is what makes the cue cost nothing on a face that is only being looked at.
  */
-internal suspend fun runCircleHoldCue(hold: Animatable<Float, *>, pressed: Boolean, holdMs: Long) {
+internal suspend fun runCircleHoldCue(
+    hold: Animatable<Float, *>,
+    pressed: Boolean,
+    holdMs: Long,
+    pressedAtMs: Long,
+) {
     if (!pressed) {
         if (hold.value > 0f) hold.animateTo(0f, tween(CIRCLE_CUE_RELEASE_MS, easing = LinearEasing))
         return
     }
     if (holdMs <= CIRCLE_CUE_BRUSH_MIN_MS) return
-    val downAtMs = withFrameMillis { it }
+    val firstFrameMs = withFrameMillis { it }
+    val zeroMs = if (firstFrameMs - pressedAtMs in 0..holdMs) pressedAtMs else firstFrameMs
+    var fraction = circleHoldCueFraction(firstFrameMs - zeroMs, holdMs)
     while (true) {
-        val fraction = circleHoldCueFraction(withFrameMillis { it } - downAtMs, holdMs)
         if (fraction > 0f) hold.snapTo(fraction)
         if (fraction >= 1f) return
+        fraction = circleHoldCueFraction(withFrameMillis { it } - zeroMs, holdMs)
     }
 }
 
