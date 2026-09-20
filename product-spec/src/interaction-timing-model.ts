@@ -12,12 +12,20 @@
  * showing the wait, or draw a wait it does not keep. That is the defect this vocabulary was moved
  * to prevent, and it is stated here rather than in any one platform's kit.
  *
- * WHICH KIND A CONTROL IS is decided by what a slip costs, not by how important it feels:
- * `immediate` for anything the same press again or the next press takes back (a stepped or on/off
- * choice, opening a page, picking a recipient), `deliberate` where a slip costs something a second
- * press does not give back (clearing a conversation, anything that sends, deletes or spends).
- * A control that fits neither sentence has consequences nobody has decided yet, which is a question
- * for its product rather than a third kind of button.
+ * WHICH KIND A CONTROL IS is decided by what a slip costs, not by how important the action feels:
+ *
+ * - `immediate` for navigation, a choice, a toggle, or state that ordinary use recovers;
+ * - `deliberate` where a slip causes a permanent or destructive effect, or an external effect that
+ *   cannot simply be taken back.
+ *
+ * "The next press does not restore the exact state" is too coarse a test on its own. Used that way,
+ * `deliberate` drifts into "anything tedious to undo" and the gesture stops meaning anything:
+ * clearing a conversation destroys it, while signing out changes session state and leaves the
+ * account and its data where they were.
+ *
+ * AND ONE THING THAT IS NEITHER, so nobody reaches for a third word: a gesture whose duration IS
+ * the content, such as press-and-hold to record and release to send, is not a discrete action and
+ * declares no timing at all. Its hold is not a confirmation of anything; it is the recording.
  */
 export const INTERACTION_TIMINGS = ["immediate", "deliberate"] as const;
 
