@@ -27,6 +27,12 @@ android {
         compose = true
     }
 
+    testOptions {
+        // A press is a gesture on a real composition, so the JVM cases mount one. Robolectric draws
+        // it only with the merged resources.
+        unitTests.isIncludeAndroidResources = true
+    }
+
     publishing {
         singleVariant("release")
     }
@@ -61,6 +67,12 @@ dependencies {
     implementation(libs.androidx.compose.foundation)
 
     testImplementation(libs.junit)
+    // Row 225: whether a control draws the wait it keeps is a fact about a mounted control, not
+    // about a function. These run that control on the JVM, for every product at once, so nobody has
+    // to spend minutes of emulator to learn whether a button obeys.
+    testImplementation(libs.robolectric)
+    testImplementation(platform(libs.androidx.compose.bom))
+    testImplementation(libs.androidx.compose.ui.test.junit4)
     androidTestImplementation(platform(libs.androidx.compose.bom))
     androidTestImplementation(libs.androidx.compose.ui.test.junit4)
     androidTestImplementation(libs.androidx.test.runner)

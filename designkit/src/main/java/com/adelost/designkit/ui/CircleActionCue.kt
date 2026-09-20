@@ -216,7 +216,9 @@ fun rememberCircleActionCueController(
     /** For a switch: the answer [icon] and [label] name, drawn as its dots. */
     choiceState: CircleChoiceState? = null,
 ): CircleActionCueController {
-    val effectiveTiming = if (ordinaryTap) LocalCircleTapTiming.current ?: timing else timing
+    // The declared timing IS the answer here too. This used to consult a host-wide override that the
+    // control's own drawing never saw, so the two could disagree about the same press (row 225).
+    val effectiveTiming = timing
     require(holdDurationMs >= 0L) { "Action cue hold duration cannot be negative" }
     require(determinateProgress == null || determinateProgress.isFinite() && determinateProgress in 0f..1f) {
         "Action cue progress must be null or a finite fraction in 0..1"

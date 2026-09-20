@@ -52,7 +52,14 @@ internal fun resolveCircleLabelFeedbackMode(
     return when (progress) {
         is CircleLabelProgress.Determinate -> CircleLabelFeedbackMode.Determinate(progress.fraction)
         CircleLabelProgress.Indeterminate -> CircleLabelFeedbackMode.Indeterminate
-        null -> if (pressed) CircleLabelFeedbackMode.Press(pressHoldMs) else CircleLabelFeedbackMode.Idle
+        // A wait is drawn exactly while there IS one to wait out, which is what
+        // [circleDrawsAWait] says of the resolved hold. An immediate control resolves to zero and
+        // draws nothing: a wait nobody waits out is the in-between Mattias refused (row 225).
+        null -> if (pressed && circleDrawsAWait(pressHoldMs)) {
+            CircleLabelFeedbackMode.Press(pressHoldMs)
+        } else {
+            CircleLabelFeedbackMode.Idle
+        }
     }
 }
 

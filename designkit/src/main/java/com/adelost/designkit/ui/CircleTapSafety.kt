@@ -31,9 +31,36 @@ enum class CircleActionTiming(val holdMs: Long) {
     IMMEDIATE(0L),
 }
 
-/** Product-level policy for ordinary taps only. Explicit confirmation/press
- * lifecycles keep their own duration; the default preserves instrument UX. */
-val LocalCircleTapTiming = androidx.compose.runtime.compositionLocalOf<CircleActionTiming?> { null }
+/**
+ * THE ONE ANSWER a control's declared timing gives, in milliseconds, read by the press GATE and by
+ * the wait the control DRAWS alike.
+ *
+ * It exists because those two used to resolve the same declaration separately, and a control could
+ * therefore draw a deliberate wait while committing on release. Measured on Link 1.2.23, 2026-09-20:
+ * its WAKE PHRASE row drew a half-second arc (152 px of ink at 100 ms, 454 at 250, 683 at 450) and
+ * switched on a press of ONE millisecond, because a host-wide override reached the gate and never
+ * reached the drawing. Mattias, the same day: "det ska inte finnas något mellanting liksom, bara de
+ * här två typerna utav knappar".
+ *
+ * TWO KINDS AND NOTHING BETWEEN, which is what this function is for: an IMMEDIATE control has NO
+ * hold, whatever millisecond value rides along with it, and a DELIBERATE one holds for the duration
+ * it declares. The in-betweens are refused here rather than shipped: a deliberate control with no
+ * duration commits at once while claiming to wait, and one that holds for less than
+ * [CIRCLE_CUE_BRUSH_MIN_MS] gates a press that row 215's cue deliberately never draws, which is the
+ * same silence from the other side.
+ */
+fun circleResolvedTiming(timing: CircleActionTiming, holdMs: Long = timing.holdMs): Long {
+    require(holdMs >= 0L) { "A control's hold cannot be negative" }
+    require(timing == CircleActionTiming.IMMEDIATE || holdMs > CIRCLE_CUE_BRUSH_MIN_MS) {
+        "A deliberate control holds for longer than the brush minimum ($CIRCLE_CUE_BRUSH_MIN_MS ms), " +
+            "because a hold the cue refuses to draw is a wait nobody is told about; " +
+            "${CircleActionTiming.IMMEDIATE} is how a control says it does not wait"
+    }
+    return if (timing == CircleActionTiming.IMMEDIATE) 0L else holdMs
+}
+
+/** A control draws a wait exactly while it has one to wait out. The gate and the drawing read this. */
+fun circleDrawsAWait(resolvedHoldMs: Long): Boolean = resolvedHoldMs > 0L
 
 /**
  * What makes a press count: it lasted at least [holdMs]. THE rule, so the
@@ -90,17 +117,16 @@ fun Modifier.circleSafeTap(
     cue: CirclePressCue = CirclePressCue.AUTO,
     onTap: () -> Unit,
 ): Modifier = composed {
-    val effectiveHoldMs = LocalCircleTapTiming.current?.holdMs ?: holdMs
     if (!enabled) {
         Modifier.circleActionSemantics(label, enabled = false) {}
     } else {
         val latestTap = rememberUpdatedState(onTap)
         val haptics = rememberUpdatedState(circleTouchHapticFeedback())
-        CircleHoldCueDriver(feedback, effectiveHoldMs)
+        CircleHoldCueDriver(feedback, holdMs)
         Modifier
             .circleActionSemantics(label, enabled = true) { latestTap.value() }
             .circlePressCue(feedback, cue)
-            .pointerInput(effectiveHoldMs, consumeDown) {
+            .pointerInput(holdMs, consumeDown) {
                 awaitEachGesture {
                     val down = awaitFirstDown(requireUnconsumed = !consumeDown)
                     if (consumeDown) down.consume()
@@ -108,7 +134,7 @@ fun Modifier.circleSafeTap(
                     feedback.pressed = true
                     var commits = false
                     try {
-                        if (effectiveHoldMs == 0L) {
+                        if (holdMs == 0L) {
                             // A normal click commits on release, so starting a
                             // scroll over a row cannot accidentally select it.
                             val up = waitForUpOrCancellation()
@@ -116,7 +142,7 @@ fun Modifier.circleSafeTap(
                             up?.consume()
                         } else {
                         var cancelled = false
-                        val releasedEarly = withTimeoutOrNull(effectiveHoldMs) {
+                        val releasedEarly = withTimeoutOrNull(holdMs) {
                             val release = waitForUpOrCancellation()
                             cancelled = release == null
                             release

@@ -66,6 +66,9 @@ fun CircleRingRow(
     endSlot: CircleRowEndSlot? = null,
 ) {
     val phoneDesign = phoneSurfaceDesignFor(LocalCircleSurfaceLayout.current.surfaceClass)
+    // ONE resolution, read by the gate, by the cue and by the wait this row draws. Row 225: these
+    // three used to be handed the same declaration and answer it separately.
+    val holdMs = circleResolvedTiming(actionTiming, actionHoldMs)
     val feedback = rememberCircleActionFeedbackState()
     val cue = if (onTap != null && icon != null) {
         rememberCircleActionCueController(
@@ -73,7 +76,7 @@ fun CircleRingRow(
             label = title,
             timing = actionTiming,
             pressed = feedback.pressed,
-            holdDurationMs = actionHoldMs,
+            holdDurationMs = holdMs,
             // The row's own value line is already the honest state; the cue
             // repeats it in the action receipt without also smuggling the
             // row's explanation into an ordinary press.
@@ -92,7 +95,7 @@ fun CircleRingRow(
         confirmedTap == null -> modifier
         onLongPress == null -> modifier.circleSafeTap(
             feedback = feedback,
-            holdMs = actionHoldMs,
+            holdMs = holdMs,
             label = circleRingRowAccessibilityLabel(title, sub),
             // The row already paints the wait: on its leading ring, or as the wash under its own
             // title column when it has no ring. Row 215 leaves it exactly one cue.
@@ -101,7 +104,7 @@ fun CircleRingRow(
         )
         else -> modifier.circleSafeTapOrHold(
             feedback = feedback,
-            holdMs = actionHoldMs,
+            holdMs = holdMs,
             label = circleRingRowAccessibilityLabel(title, sub),
             cue = CirclePressCue.OWNED,
             onLongPress = onLongPress,
@@ -131,7 +134,7 @@ fun CircleRingRow(
                 trailing = trailing,
                 labelProgress = labelProgress,
                 pressed = feedback.pressed,
-                pressHoldMs = actionHoldMs,
+                pressHoldMs = holdMs,
                 centerValue = centerValue,
                 multiline = multiline,
                 iconRotationDeg = iconRotationDeg,

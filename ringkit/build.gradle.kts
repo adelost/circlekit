@@ -30,6 +30,11 @@ android {
         compose = true
     }
 
+    testOptions {
+        // Robolectric draws a real row only with the merged resources.
+        unitTests.isIncludeAndroidResources = true
+    }
+
     publishing {
         singleVariant("release")
     }
@@ -70,6 +75,11 @@ dependencies {
     implementation(libs.kotlinx.coroutines.core)
 
     testImplementation(libs.junit)
+    // Row 225: the control Mattias pressed is a RingChoiceRow, so the case that proves it obeys
+    // mounts one, on the JVM.
+    testImplementation(libs.robolectric)
+    testImplementation(platform(libs.androidx.compose.bom))
+    testImplementation(libs.androidx.compose.ui.test.junit4)
     androidTestImplementation(platform(libs.androidx.compose.bom))
     androidTestImplementation(libs.androidx.compose.ui.test.junit4)
     androidTestImplementation(libs.androidx.test.runner)
