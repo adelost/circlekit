@@ -193,6 +193,10 @@ fun TextAction(
                 feedback = feedback,
                 enabled = enabled,
                 label = text,
+                // The WORD carries the wait, not the padded box around it. Row 215: without this the
+                // gesture painted a second fill across the whole target while the label painted its
+                // own, which is two cues for one press.
+                cue = CirclePressCue.OWNED,
                 onTap = onTap,
             )
             .padding(horizontal = 18.dp, vertical = 7.dp),
@@ -206,7 +210,7 @@ fun TextAction(
             letterSpacing = MenuDesign.textActionTracking,
             modifier = Modifier.circleLabelProgress(
                 progress = labelProgress,
-                pressed = feedback.pressed,
+                feedback = feedback,
             ).clearAndSetSemantics { },
         )
     }
@@ -333,7 +337,9 @@ fun RingRow(
                     labelProgress = labelProgress ?: holdProgress?.let {
                         CircleLabelProgress.Determinate(it.coerceIn(0f, 1f))
                     },
-                    pressHoldMs = holdMs,
+                    // HoldFillBox owns this row's gesture and hands its fraction over as labelProgress
+                    // above; there is no CircleActionFeedbackState under this content to read.
+                    feedback = null,
                     centerValue = centerValue,
                     multiline = multiline,
                     iconRotationDeg = iconRotationDeg,

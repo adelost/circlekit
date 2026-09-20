@@ -138,20 +138,27 @@ class ThePressAndTheWaitAgreeTest {
     private fun drawsAWait(resolvedHoldMs: Long): Boolean = circleDrawsAWait(resolvedHoldMs)
 
     /**
-     * Whether the ROW'S OWN feedback resolves to a press wait at all, which is the half the rule
-     * above cannot speak for: this is the reader that used to be handed a different number.
+     * Whether anything is drawn across the whole of this hold, read off the CUE's own law.
+     *
+     * This used to ask the row's own feedback resolver, which carried a second millisecond value and
+     * was the reader that could be handed a different number. Row 215 deleted that value: the drawing
+     * takes the fraction the gesture measured and no duration at all. What is left to ask is whether
+     * the one cue draws anything for a control declaring this hold, which is the brush minimum's
+     * answer. The hand-over itself is now proven on a mounted control in
+     * [ThePressAndTheWaitAgreeOnAControlTest], where it can be seen rather than computed.
      */
     private fun drawsAWaitOnTheGlass(resolvedHoldMs: Long): Boolean =
-        resolveCircleLabelFeedbackMode(null, pressed = true, pressHoldMs = resolvedHoldMs) is
-            CircleLabelFeedbackMode.Press
+        circleHoldCueFraction(resolvedHoldMs, resolvedHoldMs) > 0f
 
     /**
-     * How long the wait the control draws lasts, read off the mode the row's own feedback resolves
-     * to rather than off the number handed to it.
+     * How long the wait the control draws lasts, read off the cue by finding the last millisecond at
+     * which it is still short of full. A cue that completes early or late would answer differently
+     * here from the gate below.
      */
-    private fun drawnWaitMs(resolvedHoldMs: Long): Long =
-        when (val mode = resolveCircleLabelFeedbackMode(null, pressed = true, pressHoldMs = resolvedHoldMs)) {
-            is CircleLabelFeedbackMode.Press -> mode.holdMs
-            else -> 0L
-        }
+    private fun drawnWaitMs(resolvedHoldMs: Long): Long {
+        if (!drawsAWaitOnTheGlass(resolvedHoldMs)) return 0L
+        var elapsed = 0L
+        while (elapsed <= resolvedHoldMs && circleHoldCueFraction(elapsed, resolvedHoldMs) < 1f) elapsed += 1L
+        return elapsed
+    }
 }
