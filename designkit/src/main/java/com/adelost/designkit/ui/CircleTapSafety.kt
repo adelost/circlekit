@@ -3,7 +3,9 @@ package com.adelost.designkit.ui
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.waitForUpOrCancellation
+import androidx.compose.animation.core.Animatable
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -85,25 +87,19 @@ fun Modifier.circleSafeTap(
     holdMs: Long = MenuDesign.tapHoldMs,
     consumeDown: Boolean = false,
     label: String?,
+    cue: CirclePressCue = CirclePressCue.AUTO,
     onTap: () -> Unit,
 ): Modifier = composed {
     val effectiveHoldMs = LocalCircleTapTiming.current?.holdMs ?: holdMs
     if (!enabled) {
-        Modifier.semantics(mergeDescendants = label == null) {
-            label?.let { contentDescription = it }
-            disabled()
-        }
+        Modifier.circleActionSemantics(label, enabled = false) {}
     } else {
         val latestTap = rememberUpdatedState(onTap)
         val haptics = rememberUpdatedState(circleTouchHapticFeedback())
+        CircleHoldCueDriver(feedback, effectiveHoldMs)
         Modifier
-            .semantics(mergeDescendants = label == null) {
-                label?.let { contentDescription = it }
-                onClick {
-                    latestTap.value()
-                    true
-                }
-            }
+            .circleActionSemantics(label, enabled = true) { latestTap.value() }
+            .circlePressCue(feedback, cue)
             .pointerInput(effectiveHoldMs, consumeDown) {
                 awaitEachGesture {
                     val down = awaitFirstDown(requireUnconsumed = !consumeDown)
@@ -153,6 +149,7 @@ fun Modifier.circlePressLifecycle(
     feedback: CircleActionFeedbackState,
     enabled: Boolean,
     holdMs: Long = MenuDesign.tapHoldMs,
+    cue: CirclePressCue = CirclePressCue.AUTO,
     onBegin: () -> Boolean,
     onRelease: () -> Unit,
     onCancel: () -> Unit,
@@ -165,7 +162,8 @@ fun Modifier.circlePressLifecycle(
         val latestBegin = rememberUpdatedState(onBegin)
         val latestRelease = rememberUpdatedState(onRelease)
         val latestCancel = rememberUpdatedState(onCancel)
-        Modifier.pointerInput(holdMs) {
+        CircleHoldCueDriver(feedback, holdMs)
+        Modifier.circlePressCue(feedback, cue).pointerInput(holdMs) {
             awaitEachGesture {
                 val down = awaitFirstDown(requireUnconsumed = false)
                 down.consume()
@@ -224,6 +222,7 @@ fun Modifier.circleSafeTapOrHold(
     longPressMs: Long = MenuDesign.holdDestructiveMs,
     consumeDown: Boolean = false,
     label: String?,
+    cue: CirclePressCue = CirclePressCue.AUTO,
     onLongPress: () -> Unit,
     onTap: () -> Unit,
 ): Modifier = composed {
@@ -231,26 +230,19 @@ fun Modifier.circleSafeTapOrHold(
         "long press ($longPressMs ms) must outlast the action rung ($holdMs ms)"
     }
     if (!enabled) {
-        Modifier.semantics(mergeDescendants = label == null) {
-            label?.let { contentDescription = it }
-            disabled()
-        }
+        Modifier.circleActionSemantics(label, enabled = false) {}
     } else {
         val latestTap = rememberUpdatedState(onTap)
         val latestLongPress = rememberUpdatedState(onLongPress)
         val haptics = rememberUpdatedState(circleTouchHapticFeedback())
-        val semantics = Modifier.semantics(mergeDescendants = label == null) {
-            label?.let { contentDescription = it }
-            onClick {
-                latestTap.value()
-                true
-            }
-            onLongClick {
-                latestLongPress.value()
-                true
-            }
-        }
-        semantics
+        CircleHoldCueDriver(feedback, holdMs)
+        Modifier
+            .circleActionSemantics(
+                label,
+                enabled = true,
+                onLongPress = { latestLongPress.value() },
+            ) { latestTap.value() }
+            .circlePressCue(feedback, cue)
             .pointerInput(holdMs, longPressMs, consumeDown) {
             awaitEachGesture {
                 val down = awaitFirstDown(requireUnconsumed = !consumeDown)
@@ -297,6 +289,87 @@ fun Modifier.circleSafeTapOrHold(
 class CircleActionFeedbackState internal constructor() {
     var pressed by mutableStateOf(false)
         internal set
+
+    internal val hold = Animatable(0f)
+
+    /**
+     * How much of the gate this press has spent, 0 to 1, and 0 until the brush minimum has passed.
+     *
+     * The gesture drives it for every gated control, so a component that paints the wait itself
+     * ([CirclePressCue.OWNED]) reads THIS rather than timing a second animation beside the one that
+     * decides whether the press counts. Two clocks for one wait is how a cue and a gate drift apart.
+     */
+    val holdProgress: Float get() = hold.value
+}
+
+/**
+ * WHO OWNS THIS CONTROL'S SPOKEN NAME, ITS ACTIONS AND ITS DISABLED STATE: one node, stated once.
+ *
+ * Split out in row 215 on the churn ledger's evidence, which named the price rather than the smell.
+ * This block was written out three times in this file, and FIVE of the eight fixes these gates have
+ * taken in 60 days changed it: who may merge with children (a31790232), that a disabled control must
+ * still say it is disabled (8914bdebd), that the name's owner is a decision the caller cannot omit
+ * (51212dea7), and two more. Every one of them had to be applied two to four times in one commit, and
+ * the one it reached last was the one that had been wrong longest. The fixes came from this branch's
+ * own state, not from a constant or an upstream value, so the ledger's answer is SPLIT.
+ *
+ * [label] keeps its contract exactly: a string means this node owns both the spoken name and the
+ * action, so visual children must be silent; explicit null means the caller derives the name from
+ * merged children. Assistive technology activates the production action immediately, because a
+ * screen-reader action is already an explicit decision and cannot perform the raw pointer hold.
+ *
+ * circlePressLifecycle deliberately does NOT come here: its disabled node carries no label and does
+ * not merge, which is a different contract, and folding it in would change a shipped one silently.
+ */
+private fun Modifier.circleActionSemantics(
+    label: String?,
+    enabled: Boolean,
+    onLongPress: (() -> Unit)? = null,
+    onTap: () -> Unit,
+): Modifier = semantics(mergeDescendants = label == null) {
+    label?.let { contentDescription = it }
+    if (!enabled) {
+        disabled()
+        return@semantics
+    }
+    onClick {
+        onTap()
+        true
+    }
+    onLongPress?.let { long ->
+        onLongClick {
+            long()
+            true
+        }
+    }
+}
+
+/**
+ * The one clock behind every gated control's cue, wherever that cue is painted.
+ *
+ * It is mounted by the GESTURE rather than by the component, which is the whole of row 215: a control
+ * that takes a hold gets the cue by taking the hold, and a hand-rolled one cannot be built without it.
+ * The law it runs, including the brush minimum and the shape, is [runCircleHoldCue].
+ */
+@Composable
+private fun CircleHoldCueDriver(feedback: CircleActionFeedbackState, holdMs: Long) {
+    val pressed = feedback.pressed
+    LaunchedEffect(feedback, pressed, holdMs) { runCircleHoldCue(feedback.hold, pressed, holdMs) }
+}
+
+/**
+ * [CirclePressCue.AUTO] paints on the gesture's own bounds; OWNED leaves the glass to the component.
+ *
+ * The colour is the product's own accent, the same one this kit's other two progress renderers take,
+ * so a held seat answers in the colour the wearer already reads as "this is happening".
+ */
+@Composable
+private fun Modifier.circlePressCue(
+    feedback: CircleActionFeedbackState,
+    cue: CirclePressCue,
+): Modifier = when (cue) {
+    CirclePressCue.OWNED -> this
+    CirclePressCue.AUTO -> this.circleHoldCue({ feedback.holdProgress }, circleBrandColor())
 }
 
 @Composable

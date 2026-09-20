@@ -191,6 +191,9 @@ fun CircleIconDisc(
                 consumeDown = true,
                 holdMs = timing.holdMs,
                 label = contentDescription,
+                // The contour above is this disc's own cue, and it merges the press with asynchronous
+                // work on one circle. Row 215 leaves the gesture's copy off rather than drawing two.
+                cue = CirclePressCue.OWNED,
                 onTap = {
                     cue.confirm()
                     onTap()

@@ -94,12 +94,16 @@ fun CircleRingRow(
             feedback = feedback,
             holdMs = actionHoldMs,
             label = circleRingRowAccessibilityLabel(title, sub),
+            // The row already paints the wait: on its leading ring, or as the wash under its own
+            // title column when it has no ring. Row 215 leaves it exactly one cue.
+            cue = CirclePressCue.OWNED,
             onTap = confirmedTap,
         )
         else -> modifier.circleSafeTapOrHold(
             feedback = feedback,
             holdMs = actionHoldMs,
             label = circleRingRowAccessibilityLabel(title, sub),
+            cue = CirclePressCue.OWNED,
             onLongPress = onLongPress,
             onTap = confirmedTap,
         )
@@ -442,59 +446,3 @@ private fun CircleFittedTitle(
 /** The smallest a row title may shrink before ellipsis takes over. */
 private const val CIRCLE_TITLE_MIN_SIZE_SP = 7.5f
 private const val CIRCLE_TITLE_SHRINK_STEP_SP = 0.5f
-
-@Composable
-private fun CircleRowLeadingRing(
-    icon: ImageVector?,
-    centerValue: String?,
-    active: Boolean?,
-    affordance: CircleRowAffordance,
-    accent: CircleAccent,
-    semanticColor: Color?,
-    phoneDesign: PhoneSurfaceDesign?,
-    feedbackSweep: Float,
-    iconRotationDeg: Float,
-) {
-    val activeContour = circleBrandColor()
-    val progressContour = circleBrandColor()
-    // The start screen's language everywhere (Mattias 2026-07-21: "samma
-    // ljusstyrka som på huvudsidan"): the icon always speaks at full
-    // strength — the RING alone carries state, neutral unless the toggle
-    // is ON. One shared contour renderer, so a row ring can never weigh
-    // differently from a launcher or home ring again.
-    //
-    // A reading keeps the icon and keeps the SIZE — the list's titles still
-    // line up down a straight edge, and nothing moves when a row's action
-    // appears or goes away. Only the circle is withheld, because only the
-    // circle was making a promise (see [CircleRowAffordance]).
-    val contour = circleRowRingContour(affordance, active, activeContour)
-    Box(
-        modifier = Modifier
-            .size(phoneDesign?.rowIconDiameter ?: MenuDesign.iconRingDiameter)
-            .clip(CircleShape)
-            .then(contour?.let { Modifier.circleRingContour(it) } ?: Modifier)
-            .circleProgressContour(
-                feedbackSweep.takeIf { it > 0f },
-                color = progressContour,
-            ),
-        contentAlignment = Alignment.Center,
-    ) {
-        if (icon != null) {
-            CircleStyledIcon(
-                style = ringIconStyle(icon, accent),
-                contentDescription = null,
-                tintOverride = semanticColor,
-                modifier = Modifier.size(phoneDesign?.rowIconSize ?: MenuDesign.iconSize).rotate(iconRotationDeg),
-            )
-        } else {
-            CircleText(
-                text = requireNotNull(centerValue),
-                color = semanticColor ?: circleAccentColor(accent),
-                fontSizeSp = (phoneDesign?.rowCenterValueSize ?: MenuDesign.rowCenterValueSize).value,
-                fontWeight = FontWeight.Black,
-                tabularNumerals = true,
-                maxLines = 1,
-            )
-        }
-    }
-}
