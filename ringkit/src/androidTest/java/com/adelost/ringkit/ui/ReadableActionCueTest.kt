@@ -21,7 +21,6 @@ import com.adelost.designkit.ui.CircleActionCue
 import com.adelost.designkit.ui.CircleActionCueEvent
 import com.adelost.designkit.ui.LocalCircleActionCuePublisher
 import com.adelost.designkit.ui.RingIcons
-import com.adelost.designkit.ui.LocalCircleTapTiming
 import com.adelost.designkit.ui.CircleActionTiming
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -57,13 +56,14 @@ class ReadableActionCueTest {
         var changes = 0
         var timing by mutableStateOf(CircleActionTiming.IMMEDIATE)
         compose.setContent {
-            CompositionLocalProvider(LocalCircleTapTiming provides timing) {
-                RingActionCueHost {
-                    RingChoiceRow(title = "AUDIO", selected = "OFF", options = listOf("OFF", "ON"),
-                        role = com.adelost.designkit.ui.CircleChoiceRole.TOGGLE,
-                        hint = "Play new replies aloud.", infoSelected = true,
-                        onSelect = { changes++ }, icon = RingIcons.Speaker)
-                }
+            // The control carries its own timing (row 225): a host-wide override is gone, so a case
+            // that walks both kinds says so on the control it is walking.
+            RingActionCueHost {
+                RingChoiceRow(title = "AUDIO", selected = "OFF", options = listOf("OFF", "ON"),
+                    role = com.adelost.designkit.ui.CircleChoiceRole.TOGGLE,
+                    hint = "Play new replies aloud.", infoSelected = true,
+                    actionTiming = timing,
+                    onSelect = { changes++ }, icon = RingIcons.Speaker)
             }
         }
         for (actionTiming in CircleActionTiming.entries) {
