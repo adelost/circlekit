@@ -11,6 +11,7 @@ enum class ShowcaseWorkState { NONE, INDETERMINATE, EMPTY, HALF, COMPLETE, FAILE
 /** Pure deterministic state shared verbatim by the Phone and Wear hosts. */
 class ShowcaseInteractionState {
     private val mutableActionCount = MutableStateFlow(0)
+    private val mutableHeldActionCount = MutableStateFlow(0)
     private val mutableActionFailed = MutableStateFlow(false)
     private val mutableAvailability = MutableStateFlow(ShowcaseAvailability.AVAILABLE)
     private val mutableChoiceIndex = MutableStateFlow(0)
@@ -18,6 +19,8 @@ class ShowcaseInteractionState {
     private val mutableWork = MutableStateFlow(ShowcaseWorkState.NONE)
 
     val actionCount: StateFlow<Int> = mutableActionCount.asStateFlow()
+    /** The comparison page's hold row counts its own presses: see [runHeldAction]. */
+    val heldActionCount: StateFlow<Int> = mutableHeldActionCount.asStateFlow()
     val actionFailed: StateFlow<Boolean> = mutableActionFailed.asStateFlow()
     val availability: StateFlow<ShowcaseAvailability> = mutableAvailability.asStateFlow()
     val choiceIndex: StateFlow<Int> = mutableChoiceIndex.asStateFlow()
@@ -26,6 +29,7 @@ class ShowcaseInteractionState {
 
     fun prepare(caseId: ShowcaseCaseId, scenarioId: ShowcaseScenarioId) {
         mutableActionCount.value = 0
+        mutableHeldActionCount.value = 0
         mutableActionFailed.value = caseId.value == "control.action-row" && scenarioId.value == "failure"
         mutableAvailability.value = when (scenarioId.value) {
             "recoverable" -> ShowcaseAvailability.RECOVERABLE
@@ -59,6 +63,7 @@ class ShowcaseInteractionState {
 
     fun reset() {
         mutableActionCount.value = 0
+        mutableHeldActionCount.value = 0
         mutableActionFailed.value = false
         mutableAvailability.value = ShowcaseAvailability.AVAILABLE
         mutableChoiceIndex.value = 0
@@ -69,6 +74,16 @@ class ShowcaseInteractionState {
     fun runAction(fails: Boolean = false) {
         mutableActionCount.value += 1
         mutableActionFailed.value = fails
+    }
+
+    /**
+     * The hold row on the comparison page, counted apart from the touch row beside it.
+     *
+     * One shared tally made a touch on the tap row raise the hold row's count as well, so on the one
+     * page built to compare the two kinds the hold row claimed it had fired when nobody held it.
+     */
+    fun runHeldAction() {
+        mutableHeldActionCount.value += 1
     }
 
     fun recover() {

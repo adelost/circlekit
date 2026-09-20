@@ -17,8 +17,13 @@ object ShowcaseInteractionScreens {
     fun actionRows(scenario: ShowcaseScenario, state: ShowcaseInteractionState): RingScreen.Rows =
         RingScreen.Rows(
             title = scenario.label,
-            items = combine(state.actionCount, state.actionFailed, state.availability) { count, failed, availability ->
-                actionRows(scenario.id.value, count, failed, availability, state)
+            items = combine(
+                state.actionCount,
+                state.heldActionCount,
+                state.actionFailed,
+                state.availability,
+            ) { count, heldCount, failed, availability ->
+                actionRows(scenario.id.value, count, heldCount, failed, availability, state)
             },
         )
 
@@ -115,6 +120,7 @@ object ShowcaseInteractionScreens {
     private fun actionRows(
         scenario: String,
         count: Int,
+        heldCount: Int,
         failed: Boolean,
         availability: ShowcaseAvailability,
         state: ShowcaseInteractionState,
@@ -130,10 +136,10 @@ object ShowcaseInteractionScreens {
             action(
                 key = "hold",
                 title = "SAVE VIEW",
-                sub = "HOLD · FIRED $count",
+                sub = "HOLD · FIRED $heldCount",
                 timing = CircleActionTiming.DELIBERATE,
                 hint = "A second press does not give this back, so it waits and shows the wait.",
-            ) { state.runAction() },
+            ) { state.runHeldAction() },
         )
     } else {
         listOf(actionRow(scenario, count, failed, availability, state))

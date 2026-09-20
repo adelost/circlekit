@@ -49,6 +49,33 @@ class ShowcaseInteractionScreensTest {
     }
 
     @Test
+    fun `each kind counts its own presses, so neither claims the other's`() = runBlocking {
+        // A shared tally made a touch on CENTER VIEW raise "HOLD · FIRED n" on SAVE VIEW beside it,
+        // so the one page built to compare the two kinds showed the hold row firing when nobody had
+        // held it. On this page that is not a stale number, it is the wrong lesson.
+        val state = ShowcaseInteractionState()
+        val both = scenario("control.action-row", "both")
+        state.prepare(ShowcaseCaseId("control.action-row"), both.id)
+        suspend fun subs() = ShowcaseInteractionScreens.actionRows(both, state).items.first().map { it.sub }
+
+        assertEquals(listOf("TAP · FIRED 0", "HOLD · FIRED 0"), subs())
+
+        requireNotNull(ShowcaseInteractionScreens.actionRows(both, state).items.first()[0].onTap).invoke()
+        assertEquals(
+            "the touch's press was counted by the hold row as well",
+            listOf("TAP · FIRED 1", "HOLD · FIRED 0"),
+            subs(),
+        )
+
+        requireNotNull(ShowcaseInteractionScreens.actionRows(both, state).items.first()[1].onTap).invoke()
+        assertEquals(
+            "the hold's press was counted by the touch row as well",
+            listOf("TAP · FIRED 1", "HOLD · FIRED 1"),
+            subs(),
+        )
+    }
+
+    @Test
     fun `choice adjustment and measured work retain their semantic specs`() = runBlocking {
         val state = ShowcaseInteractionState()
         val last = scenario("control.choice-row", "last")
