@@ -47,7 +47,10 @@ class CircleSafeTapAccessibilityTest {
             }
         }
         compose.setContent {
-            CompositionLocalProvider(LocalHapticFeedback provides haptics) {
+            CompositionLocalProvider(
+                LocalHapticFeedback provides haptics,
+                LocalCircleActionHostCost provides CircleActionHostCost.WORN,
+            ) {
                 CircleTouchFeedback(enabled = vibration) {
                 // A real platform window replaces Compose platform locals.
                 // The product's feedback choice must survive that boundary.
@@ -113,7 +116,7 @@ class CircleSafeTapAccessibilityTest {
         }
         fun press() {
             compose.onNodeWithTag(TARGET).performTouchInput {
-                down(center); advanceEventTime(MenuDesign.wornTouchCostMs + 1L); up()
+                down(center); advanceEventTime(MenuDesign.holdDeliberateMs + 1L); up()
             }
             compose.waitForIdle()
         }

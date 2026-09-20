@@ -21,6 +21,12 @@ enum class CircleActionTiming(val holdMs: Long) {
     IMMEDIATE(0L),
 }
 
+/** WHAT: Names when a continuous press begins its content. WHY: Keeps recording duration separate from confirmation timing. */
+enum class CirclePressStart {
+    ON_DOWN,
+    AFTER_INTENT_GATE,
+}
+
 /** WHAT: Names the cost a host adds to an immediate action. WHY: Keeps the kit from guessing Phone policy. */
 enum class CircleActionHostCost(val holdMs: Long) {
     NONE(0L),
@@ -41,6 +47,20 @@ data class CircleActionHostCosts(
 /** No default: every mounted host states the immediate-action cost it fulfils. */
 val LocalCircleActionHostCost = staticCompositionLocalOf<CircleActionHostCost> {
     error("CircleActionHostCost is absent: CircleHostSurface must receive explicit responsive and WATCH_EXACT costs")
+}
+
+/** WHAT: Resolves a continuous press start to one lifecycle timing. WHY: Keeps ON_DOWN independent from host and lock costs. */
+fun resolveCirclePressStart(
+    start: CirclePressStart,
+    gatedTiming: CircleResolvedTiming?,
+): CircleResolvedTiming = when (start) {
+    CirclePressStart.ON_DOWN -> {
+        require(gatedTiming == null) { "ON_DOWN carries no intent timing because its duration is content" }
+        CircleResolvedTiming(0L)
+    }
+    CirclePressStart.AFTER_INTENT_GATE -> requireNotNull(gatedTiming) {
+        "AFTER_INTENT_GATE requires one already resolved timing"
+    }
 }
 
 /**
