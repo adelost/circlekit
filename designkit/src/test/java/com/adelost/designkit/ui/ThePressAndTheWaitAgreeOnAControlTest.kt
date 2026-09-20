@@ -45,7 +45,11 @@ class ThePressAndTheWaitAgreeOnAControlTest {
 
     @Test
     fun `an immediate control commits the shortest press and draws no wait at all`() {
-        val pressed = press(CircleActionTiming.IMMEDIATE, holdFor = CirclePressProbe.A_FLICK_MS)
+        val pressed = press(
+            CircleActionTiming.IMMEDIATE,
+            CircleActionHostCost.NONE,
+            holdFor = CirclePressProbe.A_FLICK_MS,
+        )
 
         assertTrue("the shortest press a finger can make did not commit", pressed.committed)
         assertEquals(
@@ -58,14 +62,22 @@ class ThePressAndTheWaitAgreeOnAControlTest {
 
     @Test
     fun `a deliberate control refuses a short press and draws the wait it does keep`() {
-        val flicked = press(CircleActionTiming.DELIBERATE, holdFor = CirclePressProbe.A_FLICK_MS)
+        val flicked = press(
+            CircleActionTiming.DELIBERATE,
+            CircleActionHostCost.NONE,
+            holdFor = CirclePressProbe.A_FLICK_MS,
+        )
         assertTrue(
-            "a press of ${CirclePressProbe.A_FLICK_MS} ms committed against a ${MenuDesign.tapHoldMs} ms " +
+            "a press of ${CirclePressProbe.A_FLICK_MS} ms committed against a ${MenuDesign.holdDeliberateMs} ms " +
                 "wait, which is the row 225 defect on a deliberate control",
             !flicked.committed,
         )
 
-        val held = press(CircleActionTiming.DELIBERATE, holdFor = CirclePressProbe.MID_HOLD_MS)
+        val held = press(
+            CircleActionTiming.DELIBERATE,
+            CircleActionHostCost.NONE,
+            holdFor = CirclePressProbe.MID_HOLD_MS,
+        )
         assertTrue(
             "a deliberate control drew nothing ${CirclePressProbe.MID_HOLD_MS} ms into its own hold, so " +
                 "the wait it is keeping is invisible to the finger keeping it",
@@ -73,7 +85,11 @@ class ThePressAndTheWaitAgreeOnAControlTest {
         )
         assertTrue("the gate committed before its wait was out", !held.committed)
 
-        val waitedOut = press(CircleActionTiming.DELIBERATE, holdFor = MenuDesign.tapHoldMs)
+        val waitedOut = press(
+            CircleActionTiming.DELIBERATE,
+            CircleActionHostCost.NONE,
+            holdFor = MenuDesign.holdDeliberateMs,
+        )
         assertTrue("a press that waited the whole wait out did not commit", waitedOut.committed)
     }
 
@@ -82,8 +98,16 @@ class ThePressAndTheWaitAgreeOnAControlTest {
         // The pair, which is the whole rule in one case: the identical gesture, held the identical
         // time, on the two kinds of control. What separates them is what each one PROMISED, so the
         // deliberate one must be drawing its wait at the same moment the immediate one draws nothing.
-        val deliberate = press(CircleActionTiming.DELIBERATE, holdFor = CirclePressProbe.MID_HOLD_MS)
-        val immediate = press(CircleActionTiming.IMMEDIATE, holdFor = CirclePressProbe.MID_HOLD_MS)
+        val deliberate = press(
+            CircleActionTiming.DELIBERATE,
+            CircleActionHostCost.NONE,
+            holdFor = CirclePressProbe.MID_HOLD_MS,
+        )
+        val immediate = press(
+            CircleActionTiming.IMMEDIATE,
+            CircleActionHostCost.NONE,
+            holdFor = CirclePressProbe.MID_HOLD_MS,
+        )
 
         assertTrue(
             "a ${CirclePressProbe.MID_HOLD_MS} ms press drew nothing on the control that was making " +
@@ -106,6 +130,7 @@ class ThePressAndTheWaitAgreeOnAControlTest {
         // glass is the number the gate is keeping, or the row is lying about the gesture it wants.
         val immediateCarryingAHold = press(
             CircleActionTiming.IMMEDIATE,
+            CircleActionHostCost.NONE,
             holdFor = CirclePressProbe.MID_HOLD_MS,
             holdMs = MenuDesign.holdDeliberateMs,
         )
@@ -129,6 +154,7 @@ class ThePressAndTheWaitAgreeOnAControlTest {
         // to report and must ask for none, whatever hold rides along with it.
         val immediateCarryingAHold = press(
             CircleActionTiming.IMMEDIATE,
+            CircleActionHostCost.NONE,
             holdFor = CirclePressProbe.MID_HOLD_MS,
             holdMs = MenuDesign.holdDeliberateMs,
         )
@@ -140,7 +166,11 @@ class ThePressAndTheWaitAgreeOnAControlTest {
             0f,
         )
 
-        val deliberate = press(CircleActionTiming.DELIBERATE, holdFor = MenuDesign.tapHoldMs)
+        val deliberate = press(
+            CircleActionTiming.DELIBERATE,
+            CircleActionHostCost.NONE,
+            holdFor = MenuDesign.holdDeliberateMs,
+        )
         assertTrue(
             "a deliberate control's cue never swept, so the overlay says nothing while the row waits",
             deliberate.cueSweptTo > 0f,
@@ -167,6 +197,7 @@ class ThePressAndTheWaitAgreeOnAControlTest {
      */
     private fun press(
         timing: CircleActionTiming,
+        hostCost: CircleActionHostCost,
         holdFor: Long,
         holdMs: Long = timing.holdMs,
     ): Press {
@@ -174,7 +205,7 @@ class ThePressAndTheWaitAgreeOnAControlTest {
         // so the same mounted control answers for both kinds and nothing is proven by a fresh mount.
         declaredTiming.value = timing
         declaredHoldMs.value = holdMs
-        probe.mount {
+        probe.mount(hostCost) {
             CompositionLocalProvider(LocalCircleActionCuePublisher provides { event -> cues += event }) {
                 Box(Modifier.fillMaxSize().background(Color.Black)) {
                     CircleRingRow(

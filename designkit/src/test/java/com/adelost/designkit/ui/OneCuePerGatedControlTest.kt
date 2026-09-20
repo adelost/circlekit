@@ -53,8 +53,8 @@ class OneCuePerGatedControlTest {
         OneCuePerGatedControl.aGrazeSaysNothing("a settings row", pressTheRow(CirclePressProbe.A_FLICK_MS))
         OneCuePerGatedControl.aHeldControlDrawsItsGateOut(
             what = "a settings row",
-            gateMs = MenuDesign.tapHoldMs,
-            press = pressTheRow(MenuDesign.tapHoldMs),
+            gateMs = MenuDesign.wornTouchCostMs,
+            press = pressTheRow(MenuDesign.wornTouchCostMs),
         )
     }
 
@@ -65,12 +65,12 @@ class OneCuePerGatedControlTest {
         // complete cue, so both draw the same ink. A cue whose zero is two frames late ends short of
         // full, and ends SHORTER on the shorter gate, because two frames is a bigger share of it.
         mountTheRow()
-        val short = pressTheRow(MenuDesign.tapHoldMs)
+        val short = pressTheRow(MenuDesign.wornTouchCostMs)
         val long = pressTheRow(MenuDesign.holdDeliberateMs, declaredHoldMs = MenuDesign.holdDeliberateMs)
 
         val difference = kotlin.math.abs(short.cueAtTheGate - long.cueAtTheGate)
         assertTrue(
-            "a ${MenuDesign.tapHoldMs} ms gate ended with ${short.cueAtTheGate} pixels of cue and a " +
+            "a ${MenuDesign.wornTouchCostMs} ms gate ended with ${short.cueAtTheGate} pixels of cue and a " +
                 "${MenuDesign.holdDeliberateMs} ms gate with ${long.cueAtTheGate}. Two complete rings " +
                 "are the same ring, so one of them did not complete when its action fired",
             difference <= long.cueAtTheGate / 10,
@@ -93,9 +93,9 @@ class OneCuePerGatedControlTest {
 
     // State, not a plain var: the probe mounts once on purpose, so a new declaration only
     // reaches the row if the row is reading it from state.
-    private val declaredRowHoldMs = mutableStateOf(MenuDesign.tapHoldMs)
+    private val declaredRowHoldMs = mutableStateOf(MenuDesign.wornTouchCostMs)
 
-    private fun mountTheRow() = probe.mount {
+    private fun mountTheRow() = probe.mount(CircleActionHostCost.WORN) {
         Box(Modifier.fillMaxSize().background(Color.Black)) {
             CircleRingRow(
                 title = "WAKE PHRASE",
@@ -107,13 +107,13 @@ class OneCuePerGatedControlTest {
         }
     }
 
-    private fun pressTheRow(holdFor: Long, declaredHoldMs: Long = MenuDesign.tapHoldMs): CirclePress {
+    private fun pressTheRow(holdFor: Long, declaredHoldMs: Long = MenuDesign.wornTouchCostMs): CirclePress {
         declaredRowHoldMs.value = declaredHoldMs
         mountTheRow()
         return probe.press(compose.onNodeWithContentDescription(THE_ROW), holdFor)
     }
 
-    private fun mountTheDisc() = probe.mount {
+    private fun mountTheDisc() = probe.mount(CircleActionHostCost.WORN) {
         Box(Modifier.fillMaxSize().background(Color.Black)) {
             CircleIconDisc(
                 icon = RingIcons.Grid,

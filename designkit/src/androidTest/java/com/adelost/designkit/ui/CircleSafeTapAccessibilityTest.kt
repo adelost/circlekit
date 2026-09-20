@@ -30,6 +30,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
 
+/** WHAT: Checks safe-tap accessibility and haptic feedback. WHY: Keeps accepted and refused touches from sharing feedback. */
 class CircleSafeTapAccessibilityTest {
     @get:Rule
     val compose = createComposeRule()
@@ -61,26 +62,26 @@ class CircleSafeTapAccessibilityTest {
             }
         }
         compose.onNodeWithTag(TARGET).performTouchInput {
-            down(center); advanceEventTime(MenuDesign.tapHoldMs - 1L); up()
+            down(center); advanceEventTime(MenuDesign.wornTouchCostMs - 1L); up()
         }
         compose.waitForIdle()
         assertEquals(0, requests.size)
         compose.onNodeWithTag(TARGET).performTouchInput {
-            down(center); advanceEventTime(MenuDesign.tapHoldMs + 1L); up()
+            down(center); advanceEventTime(MenuDesign.wornTouchCostMs + 1L); up()
         }
         compose.waitForIdle()
         assertEquals(1, actions)
         assertEquals(listOf(HapticFeedbackType.TextHandleMove), requests)
         compose.runOnIdle { vibration = false }
         compose.onNodeWithTag(TARGET).performTouchInput {
-            down(center); advanceEventTime(MenuDesign.tapHoldMs + 1L); up()
+            down(center); advanceEventTime(MenuDesign.wornTouchCostMs + 1L); up()
         }
         compose.waitForIdle()
         assertEquals("OFF changes feedback, not action acceptance", 2, actions)
         assertEquals(1, requests.size)
         compose.runOnIdle { enabled = false }
         compose.onNodeWithTag(TARGET).performTouchInput {
-            down(center); advanceEventTime(MenuDesign.tapHoldMs + 1L); up()
+            down(center); advanceEventTime(MenuDesign.wornTouchCostMs + 1L); up()
         }
         compose.waitForIdle()
         assertEquals(2, actions)
@@ -112,7 +113,7 @@ class CircleSafeTapAccessibilityTest {
         }
         fun press() {
             compose.onNodeWithTag(TARGET).performTouchInput {
-                down(center); advanceEventTime(MenuDesign.tapHoldMs + 1L); up()
+                down(center); advanceEventTime(MenuDesign.wornTouchCostMs + 1L); up()
             }
             compose.waitForIdle()
         }
@@ -136,7 +137,7 @@ class CircleSafeTapAccessibilityTest {
 
         compose.onNodeWithTag(TARGET).performTouchInput {
             down(center)
-            advanceEventTime(MenuDesign.tapHoldMs - 1L)
+            advanceEventTime(MenuDesign.wornTouchCostMs - 1L)
             up()
         }
         compose.waitForIdle()
@@ -144,7 +145,7 @@ class CircleSafeTapAccessibilityTest {
 
         compose.onNodeWithTag(TARGET).performTouchInput {
             down(center)
-            advanceEventTime(MenuDesign.tapHoldMs + 1L)
+            advanceEventTime(MenuDesign.wornTouchCostMs + 1L)
             up()
         }
         compose.waitForIdle()
@@ -247,7 +248,7 @@ class CircleSafeTapAccessibilityTest {
 
         compose.onNodeWithTag(TARGET).performTouchInput {
             down(center)
-            advanceEventTime(MenuDesign.tapHoldMs - 1L)
+            advanceEventTime(MenuDesign.wornTouchCostMs - 1L)
             up()
         }
         compose.waitForIdle()
@@ -256,7 +257,7 @@ class CircleSafeTapAccessibilityTest {
 
         compose.onNodeWithTag(TARGET).performTouchInput {
             down(center)
-            advanceEventTime(MenuDesign.tapHoldMs + 1L)
+            advanceEventTime(MenuDesign.wornTouchCostMs + 1L)
             up()
         }
         compose.waitForIdle()

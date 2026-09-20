@@ -32,6 +32,7 @@ import io.v1d.circlekit.showcase.catalog.ShowcaseMenuProbe
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.cancel
 
+/** WHAT: Wraps the complete CircleKit Phone showcase. WHY: Keeps package consumers exercised through the public surface. */
 class PhoneShowcaseActivity : ComponentActivity() {
     private val session = ShowcaseSession(ShowcaseArtifactProfile.PHONE_FULL_UI)
     private val runtimeScope = MainScope()
@@ -94,6 +95,10 @@ class PhoneShowcaseActivity : ComponentActivity() {
                     host.port.onMode(next.mode)
                     host.port.onDiameter(next.watchDiameterDp)
                 },
+                actionHostCosts = com.adelost.designkit.ui.CircleActionHostCosts(
+                    responsive = com.adelost.designkit.ui.CircleActionHostCost.NONE,
+                    watchExact = com.adelost.designkit.ui.CircleActionHostCost.WORN,
+                ),
             ) {
                 CircleKitShowcase(
                     session = session,

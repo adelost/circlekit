@@ -159,7 +159,7 @@ internal fun rememberCircleFeedbackSweep(
 
 /**
  * The one action-progress renderer for text labels. It merges the standard
- * [MenuDesign.tapHoldMs] safe-tap delay with optional asynchronous work
+ * [MenuDesign.wornTouchCostMs] worn-host delay with optional asynchronous work
  * supplied as data.
  * Async state wins once work starts, making press → checking → download one
  * continuous visual language without a screen-owned progress composable.

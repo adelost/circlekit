@@ -10,6 +10,7 @@ package com.adelost.designkit.ui
  */
 internal fun unlockedTiming(
     timing: CircleActionTiming,
+    hostCost: CircleActionHostCost,
     holdMs: Long = timing.holdMs,
     effect: CircleActionEffect = CircleActionEffect.ACTS,
-): CircleResolvedTiming = resolveCircleTiming(timing, holdMs, effect, locked = false)
+): CircleResolvedTiming = resolveCircleTiming(timing, holdMs, effect, hostCost, locked = false)

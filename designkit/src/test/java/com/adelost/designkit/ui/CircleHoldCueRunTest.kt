@@ -28,7 +28,7 @@ class CircleHoldCueRunTest {
 
     @Test
     fun `the cue measures from the finger, not from the loop's own first frame`() {
-        val gate = MenuDesign.tapHoldMs
+        val gate = MenuDesign.wornTouchCostMs
         // The finger lands at 0 and the loop's first frame is two frames later, which is what a press
         // reaching composition costs at 60 Hz.
         val frames = buildList {
@@ -72,7 +72,7 @@ class CircleHoldCueRunTest {
         // different origins the difference is arbitrary, and the dangerous direction is a ring that is
         // ALREADY FULL under a finger that just landed: it would say the gate is done when it has not
         // started. The loop falls back to the frame it can trust instead.
-        val gate = MenuDesign.tapHoldMs
+        val gate = MenuDesign.wornTouchCostMs
         val strayFirstFrame = gate + 500L
         val frames = listOf(strayFirstFrame, strayFirstFrame + 48L, strayFirstFrame + gate)
         val read = driveTheCue(pressedAtMs = 0L, holdMs = gate, frames = frames)

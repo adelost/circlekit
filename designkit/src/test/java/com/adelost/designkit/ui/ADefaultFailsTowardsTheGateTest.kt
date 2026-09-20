@@ -50,7 +50,7 @@ class ADefaultFailsTowardsTheGateTest {
     fun `a control that never mentions the lock is locked by it`() {
         // No `effect` argument anywhere below. On a locked surface this control must become a hold,
         // because the marker it does not carry defaults to the answer that locks.
-        probe.mount {
+        probe.mount(CircleActionHostCost.WORN) {
             CompositionLocalProvider(LocalCircleTouchLock provides true) {
                 Box(Modifier.fillMaxSize().background(Color.Black)) {
                     CircleIconDisc(
@@ -82,7 +82,7 @@ class ADefaultFailsTowardsTheGateTest {
         // RENDERER's default and says nothing about the builder's. The gesture sites call the builder
         // directly, and this is one of them: no effect argument anywhere between the finger and the
         // rule.
-        probe.mount {
+        probe.mount(CircleActionHostCost.WORN) {
             CompositionLocalProvider(LocalCircleTouchLock provides true) {
                 Box(Modifier.fillMaxSize().background(Color.Black)) {
                     Box(
@@ -116,7 +116,7 @@ class ADefaultFailsTowardsTheGateTest {
     fun `a row that never states a timing still refuses a graze`() {
         // No `timing` argument. The kit's ordinary row is deliberate, and the point of that default
         // being allowed is that forgetting it costs a wait rather than giving away a free tap.
-        probe.mount {
+        probe.mount(CircleActionHostCost.WORN) {
             Box(Modifier.fillMaxSize().background(Color.Black)) {
                 CircleRingRow(
                     title = "WAKE PHRASE",
@@ -136,10 +136,10 @@ class ADefaultFailsTowardsTheGateTest {
         )
 
         taps = 0
-        probe.press(compose.onNodeWithContentDescription(THE_ROW), MenuDesign.tapHoldMs)
+        probe.press(compose.onNodeWithContentDescription(THE_ROW), CircleActionTiming.DELIBERATE.holdMs)
         assertTrue(
-            "and then it refused a press that waited out the ${MenuDesign.tapHoldMs} ms it defaults " +
-                "to, which would make the default a control nobody can operate",
+            "and then it refused a press that waited out the ${CircleActionTiming.DELIBERATE.holdMs} ms " +
+                "its declaration resolves to, which would make the default a control nobody can operate",
             taps > 0,
         )
     }

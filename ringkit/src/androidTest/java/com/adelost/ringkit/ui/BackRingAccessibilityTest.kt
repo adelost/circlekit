@@ -19,6 +19,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
 
+/** WHAT: Checks back-ring artwork and target semantics. WHY: Keeps visible size separate from the accessible hit target. */
 class BackRingAccessibilityTest {
     @get:Rule
     val compose = createComposeRule()
@@ -110,6 +111,10 @@ class BackRingAccessibilityTest {
                     isWatchDevice = true,
                     state = com.adelost.designkit.ui.CircleHostPreviewState(),
                     onStateChange = null,
+                    actionHostCosts = com.adelost.designkit.ui.CircleActionHostCosts(
+                        responsive = com.adelost.designkit.ui.CircleActionHostCost.NONE,
+                        watchExact = com.adelost.designkit.ui.CircleActionHostCost.WORN,
+                    ),
                 ) {
                     RenderRingScreen(RingNavigator(devHost), onExit = { exits++ }, backLabel = PRODUCT_LABEL)
                 }

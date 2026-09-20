@@ -94,7 +94,7 @@ private fun TapBackRing(
                 .circleSafeTap(
                     feedback = feedback,
                     enabled = enabled,
-                    timing = circleResolvedTiming(CircleActionTiming.DELIBERATE),
+                    timing = circleResolvedTiming(CircleActionTiming.IMMEDIATE),
                     label = label,
                     // The press target is deliberately LARGER than the disc, so a cue on these bounds
                     // would be a ring around nothing. BackDisc draws it, on the circle the wearer sees.
@@ -184,7 +184,9 @@ private fun BackDisc(
 }
 
 /** A labelled non-destructive action (REFRESH, OPEN MAP) as quiet text:
- *  chrome stays reserved for hold-to-confirm verbs ([HoldPill]). */
+ * chrome stays reserved for hold-to-confirm verbs ([HoldPill]).
+ * WHAT: Builds one textual action with the shared press cue.
+ * WHY: Keeps text actions from painting a second wait. */
 @Composable
 fun TextAction(
     text: String,
@@ -200,7 +202,7 @@ fun TextAction(
             .circleSafeTap(
                 feedback = feedback,
                 enabled = enabled,
-                timing = circleResolvedTiming(CircleActionTiming.DELIBERATE),
+                timing = circleResolvedTiming(CircleActionTiming.IMMEDIATE),
                 label = text,
                 // The WORD carries the wait, not the padded box around it. Row 215: without this the
                 // gesture painted a second fill across the whole target while the label painted its

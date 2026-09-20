@@ -29,6 +29,8 @@ import org.junit.Test
  * and that the run alone keeps the picture behind it where the page host's cap
  * covers it (rows 192 and 193; the choice and its pictures are
  * .agents/2/row182/PROPOSAL.md in the Skyvw repo).
+ * WHAT: Checks the top-run frame on the canonical face.
+ * WHY: Keeps empty seats from shifting picture geometry.
  */
 class RingRoundTopRunFrameTest {
     @get:Rule
@@ -100,6 +102,10 @@ class RingRoundTopRunFrameTest {
                     isWatchDevice = true,
                     state = CircleHostPreviewState(),
                     onStateChange = null,
+                    actionHostCosts = com.adelost.designkit.ui.CircleActionHostCosts(
+                        responsive = com.adelost.designkit.ui.CircleActionHostCost.NONE,
+                        watchExact = com.adelost.designkit.ui.CircleActionHostCost.WORN,
+                    ),
                 ) {
                     RingRoundTopRun(
                         centre = { BackRing(label = BACK, onBack = {}) },
@@ -136,6 +142,10 @@ class RingRoundTopRunFrameTest {
                     isWatchDevice = true,
                     state = CircleHostPreviewState(),
                     onStateChange = null,
+                    actionHostCosts = com.adelost.designkit.ui.CircleActionHostCosts(
+                        responsive = com.adelost.designkit.ui.CircleActionHostCost.NONE,
+                        watchExact = com.adelost.designkit.ui.CircleActionHostCost.WORN,
+                    ),
                 ) {
                     RingRoundBackHost(onBack = {}, label = BACK, left = left, right = right) {
                         Box(Modifier.size(CANON.dp))

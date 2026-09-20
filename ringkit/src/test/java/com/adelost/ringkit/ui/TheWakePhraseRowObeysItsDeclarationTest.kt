@@ -107,7 +107,7 @@ class TheWakePhraseRowObeysItsDeclarationTest {
 
     private fun press(timing: CircleActionTiming, holdFor: Long): Press {
         declaredTiming.value = timing
-        probe.mount {
+        probe.mount(com.adelost.designkit.ui.CircleActionHostCost.NONE) {
             Box(Modifier.fillMaxSize().background(Color.Black)) {
                 RingChoiceRow(
                     title = "WAKE PHRASE",

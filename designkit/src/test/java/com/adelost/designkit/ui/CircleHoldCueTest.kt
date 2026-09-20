@@ -21,12 +21,12 @@ class CircleHoldCueTest {
 
     @Test
     fun `a brush shorter than the declared minimum draws nothing`() {
-        assertEquals(0f, circleHoldCueFraction(0L, MenuDesign.tapHoldMs), 0f)
-        assertEquals(0f, circleHoldCueFraction(1L, MenuDesign.tapHoldMs), 0f)
+        assertEquals(0f, circleHoldCueFraction(0L, MenuDesign.wornTouchCostMs), 0f)
+        assertEquals(0f, circleHoldCueFraction(1L, MenuDesign.wornTouchCostMs), 0f)
         assertEquals(
             "a finger that was on the glass for one millisecond less than the minimum still answered",
             0f,
-            circleHoldCueFraction(CIRCLE_CUE_BRUSH_MIN_MS - 1L, MenuDesign.tapHoldMs),
+            circleHoldCueFraction(CIRCLE_CUE_BRUSH_MIN_MS - 1L, MenuDesign.wornTouchCostMs),
             0f,
         )
     }
@@ -37,17 +37,17 @@ class CircleHoldCueTest {
         // false about the finger that is already there, which is the same class of mistake as a
         // placeholder value standing in for a reading nobody has taken.
         assertEquals(
-            CIRCLE_CUE_BRUSH_MIN_MS.toFloat() / MenuDesign.tapHoldMs,
-            circleHoldCueFraction(CIRCLE_CUE_BRUSH_MIN_MS, MenuDesign.tapHoldMs),
+            CIRCLE_CUE_BRUSH_MIN_MS.toFloat() / MenuDesign.wornTouchCostMs,
+            circleHoldCueFraction(CIRCLE_CUE_BRUSH_MIN_MS, MenuDesign.wornTouchCostMs),
             0.0001f,
         )
-        assertEquals(0.5f, circleHoldCueFraction(MenuDesign.tapHoldMs / 2, MenuDesign.tapHoldMs), 0.0001f)
+        assertEquals(0.5f, circleHoldCueFraction(MenuDesign.wornTouchCostMs / 2, MenuDesign.wornTouchCostMs), 0.0001f)
     }
 
     @Test
     fun `it completes at the gate and never overshoots it`() {
-        assertEquals(1f, circleHoldCueFraction(MenuDesign.tapHoldMs, MenuDesign.tapHoldMs), 0f)
-        assertEquals(1f, circleHoldCueFraction(5_000L, MenuDesign.tapHoldMs), 0f)
+        assertEquals(1f, circleHoldCueFraction(MenuDesign.wornTouchCostMs, MenuDesign.wornTouchCostMs), 0f)
+        assertEquals(1f, circleHoldCueFraction(5_000L, MenuDesign.wornTouchCostMs), 0f)
     }
 
     @Test
@@ -55,7 +55,7 @@ class CircleHoldCueTest {
         // ONE rule, asked twice. The cue is not allowed to promise an action at a different moment than
         // the gate performs it: a ring that fills early teaches the wearer to let go too soon, and one
         // that fills late makes a press that worked look refused.
-        val gates = listOf(MenuDesign.tapHoldMs, MenuDesign.holdDeliberateMs, MenuDesign.holdDestructiveMs)
+        val gates = listOf(MenuDesign.wornTouchCostMs, MenuDesign.holdDeliberateMs, MenuDesign.holdDestructiveMs)
         for (holdMs in gates) {
             for (elapsedMs in listOf(0L, CIRCLE_CUE_BRUSH_MIN_MS, holdMs - 1L, holdMs, holdMs + 50L)) {
                 assertEquals(
@@ -97,12 +97,12 @@ class CircleHoldCueTest {
         assertEquals(
             "a cue zeroed two frames after the finger cannot reach the gate",
             1f,
-            circleHoldCueFraction(MenuDesign.tapHoldMs, MenuDesign.tapHoldMs),
+            circleHoldCueFraction(MenuDesign.wornTouchCostMs, MenuDesign.wornTouchCostMs),
             0f,
         )
         assertTrue(
             "zeroing on the first frame instead leaves the ring short at the moment the gate commits",
-            circleHoldCueFraction(MenuDesign.tapHoldMs - twoFramesLate, MenuDesign.tapHoldMs) < 1f,
+            circleHoldCueFraction(MenuDesign.wornTouchCostMs - twoFramesLate, MenuDesign.wornTouchCostMs) < 1f,
         )
     }
 
@@ -112,6 +112,6 @@ class CircleHoldCueTest {
         // sleeve makes all day are. It is a fifth of the tap gate, so four fifths of every real press
         // is spent with the cue on the glass.
         assertEquals(40L, CIRCLE_CUE_BRUSH_MIN_MS)
-        assertTrue(CIRCLE_CUE_BRUSH_MIN_MS < MenuDesign.tapHoldMs / 2)
+        assertTrue(CIRCLE_CUE_BRUSH_MIN_MS < MenuDesign.wornTouchCostMs / 2)
     }
 }

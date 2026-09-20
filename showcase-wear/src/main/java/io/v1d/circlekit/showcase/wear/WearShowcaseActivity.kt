@@ -36,6 +36,7 @@ import com.adelost.ringkit.ui.RingTextInputSpec
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.cancel
 
+/** WHAT: Wraps the complete CircleKit Wear showcase. WHY: Keeps worn rendering exercised through the public surface. */
 class WearShowcaseActivity : ComponentActivity() {
     private val session = ShowcaseSession(ShowcaseArtifactProfile.WEAR_FULL_UI)
     private val runtimeScope = MainScope()
@@ -112,6 +113,10 @@ class WearShowcaseActivity : ComponentActivity() {
                 isWatchDevice = true,
                 state = preview,
                 onStateChange = null,
+                actionHostCosts = com.adelost.designkit.ui.CircleActionHostCosts(
+                    responsive = com.adelost.designkit.ui.CircleActionHostCost.NONE,
+                    watchExact = com.adelost.designkit.ui.CircleActionHostCost.WORN,
+                ),
             ) {
                 CircleKitShowcase(
                     session = session,

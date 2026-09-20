@@ -53,6 +53,7 @@ class TheScreenHandsEachRowItsDeclarationTest {
     private val probe = CirclePressProbe(compose)
     private var chosen = FIRST_PHRASE
     private var acted = 0
+    private var mountedHostCost = com.adelost.designkit.ui.CircleActionHostCost.NONE
 
     @Test
     fun `the phone screen gives a choice row the kind its data declares`() {
@@ -86,17 +87,15 @@ class TheScreenHandsEachRowItsDeclarationTest {
         // arrives at the screen with half a second in its other hand.
         chosen = FIRST_PHRASE
         val flicked = press(A_TOUCH_ROW, CirclePressProbe.A_FLICK_MS)
-        assertTrue(
-            "the screen refused a ${CirclePressProbe.A_FLICK_MS} ms press on a choice row its data " +
-                "declares a touch, so the hold riding along reached the gate the screen built",
-            chosen != FIRST_PHRASE,
-        )
-        assertEquals(
-            "and it drew a wait while switching: ${flicked.cueAtItsMost} pixels of a gesture nobody " +
-                "is being asked for",
-            0,
-            flicked.cueAtItsMost,
-        )
+        if (mountedHostCost == com.adelost.designkit.ui.CircleActionHostCost.NONE) {
+            assertTrue("a no-cost host refused the immediate choice", chosen != FIRST_PHRASE)
+            assertEquals("a no-cost host drew a wait", 0, flicked.cueAtItsMost)
+        } else {
+            assertTrue("the worn host accepted a graze before its cost", chosen == FIRST_PHRASE)
+            val held = press(A_TOUCH_ROW, MenuDesign.wornTouchCostMs)
+            assertTrue("the worn host refused the immediate choice after its cost", chosen != FIRST_PHRASE)
+            assertTrue("the worn host drew no cue for its cost", held.cueAtItsMost > 0)
+        }
 
         chosen = FIRST_PHRASE
         press(A_HOLD_ROW, CirclePressProbe.MID_HOLD_MS)
@@ -115,20 +114,20 @@ class TheScreenHandsEachRowItsDeclarationTest {
     private fun theTwoKindsOfActionRow() {
         acted = 0
         val flicked = press(A_TOUCH_ACTION, CirclePressProbe.A_FLICK_MS)
-        assertTrue(
-            "the screen refused a flick on an action row its data declares a touch",
-            acted > 0,
-        )
-        assertEquals(
-            "and it drew a wait while acting: ${flicked.cueAtItsMost} pixels",
-            0,
-            flicked.cueAtItsMost,
-        )
+        if (mountedHostCost == com.adelost.designkit.ui.CircleActionHostCost.NONE) {
+            assertTrue("a no-cost host refused the immediate action", acted > 0)
+            assertEquals("a no-cost host drew a wait", 0, flicked.cueAtItsMost)
+        } else {
+            assertTrue("the worn host accepted an immediate graze before its cost", acted == 0)
+            val held = press(A_TOUCH_ACTION, MenuDesign.wornTouchCostMs)
+            assertTrue("the worn host refused the immediate action after its cost", acted > 0)
+            assertTrue("the worn host drew no cue for its cost", held.cueAtItsMost > 0)
+        }
 
         acted = 0
         press(A_HOLD_ACTION, CirclePressProbe.A_FLICK_MS)
         assertTrue("a flick fired an action row declared deliberate", acted == 0)
-        press(A_HOLD_ACTION, MenuDesign.tapHoldMs)
+        press(A_HOLD_ACTION, MenuDesign.holdDeliberateMs)
         assertTrue("a press that waited the declared gate out did not fire", acted > 0)
     }
 
@@ -171,11 +170,12 @@ class TheScreenHandsEachRowItsDeclarationTest {
     private val nav = mutableStateOf<RingNavigator?>(null)
 
     private fun mountPhone(rowsToShow: () -> List<RowSpec>) {
+        mountedHostCost = com.adelost.designkit.ui.CircleActionHostCost.NONE
         build = rowsToShow
         rows.value = build()
         val screen = RingScreen.Rows(title = "SETTINGS", items = rows, showBack = false)
         nav.value = RingNavigator(screen)
-        probe.mount {
+        probe.mount(com.adelost.designkit.ui.CircleActionHostCost.NONE) {
             CompositionLocalProvider(
                 LocalCircleSurfaceLayout provides resolveCircleSurfaceLayout(390f, 844f, round = false),
             ) {
@@ -187,11 +187,12 @@ class TheScreenHandsEachRowItsDeclarationTest {
     }
 
     private fun mountRound(rowsToShow: () -> List<RowSpec>) {
+        mountedHostCost = com.adelost.designkit.ui.CircleActionHostCost.WORN
         build = rowsToShow
         rows.value = build()
         val screen = RingScreen.Rows(title = "SETTINGS", items = rows, showBack = false)
         nav.value = RingNavigator(screen)
-        probe.mount {
+        probe.mount(com.adelost.designkit.ui.CircleActionHostCost.WORN) {
             CompositionLocalProvider(
                 LocalCircleSurfaceLayout provides
                     resolveCircleSurfaceLayout(CircleUiProfiles.CANON_ROUND_CANVAS_DP, round = true),
