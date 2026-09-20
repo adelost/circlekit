@@ -9,6 +9,7 @@ wearCompose = "1.4.0"
 playServicesLocation = "21.3.0"
 playServicesWearable = "20.0.1"
 junit = "4.13.2"
+robolectric = "4.14.1"
 androidxTestRunner = "1.6.2"
 orgJson = "20240303"
 coil = "2.7.0"
@@ -51,6 +52,7 @@ androidx-wear-input = { group = "androidx.wear", name = "wear-input", version.re
 androidx-wear-watchface-complications-data-source-ktx = { group = "androidx.wear.watchface", name = "watchface-complications-data-source-ktx", version.ref = "wearWatchface" }
 
 junit = { group = "junit", name = "junit", version.ref = "junit" }
+robolectric = { group = "org.robolectric", name = "robolectric", version.ref = "robolectric" }
 androidx-test-runner = { group = "androidx.test", name = "runner", version.ref = "androidxTestRunner" }
 androidx-compose-ui-test-junit4 = { group = "androidx.compose.ui", name = "ui-test-junit4" }
 androidx-compose-ui-test-manifest = { group = "androidx.compose.ui", name = "ui-test-manifest" }
