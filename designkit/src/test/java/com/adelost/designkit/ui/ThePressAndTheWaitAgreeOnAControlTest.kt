@@ -236,15 +236,6 @@ class ThePressAndTheWaitAgreeOnAControlTest {
     }
 
     /**
-     * The pixels the view hierarchy actually draws right now.
-     *
-     * Not `captureToImage`: that waits for an idle composition, and a composition with a finger on it
-     * is never idle, because row 215's cue asks for a frame for as long as the press lasts. Drawing
-     * the decor view is the same pixels without the wait, which is the only way to photograph a
-     * control mid-press.
-     */
-
-    /**
      * Advances frames until the control is drawing the same thing twice, and returns that frame.
      *
      * Not a fixed settle: a press that is still animating when the next one starts makes the next
@@ -266,6 +257,14 @@ class ThePressAndTheWaitAgreeOnAControlTest {
         )
     }
 
+    /**
+     * The pixels the view hierarchy actually draws right now.
+     *
+     * Not `captureToImage`: that waits for an idle composition, and a composition with a finger on it
+     * is never idle, because row 215's cue asks for a frame for as long as the press lasts. Drawing
+     * the decor view is the same pixels without the wait, which is the only way to photograph a
+     * control mid-press.
+     */
     private fun frame(): IntArray {
         val view = compose.activity.window.decorView
         val bitmap = Bitmap.createBitmap(view.width, view.height, Bitmap.Config.ARGB_8888)

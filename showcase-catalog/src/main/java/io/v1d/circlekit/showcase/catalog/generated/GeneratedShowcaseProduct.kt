@@ -95,6 +95,7 @@ object ShowcaseManifest {
             scenarios = listOf(
                 ShowcaseScenario(ShowcaseScenarioId("immediate"), "TAP ACTION", "A tap increments the action count"),
                 ShowcaseScenario(ShowcaseScenarioId("deliberate"), "HOLD ACTION", "A completed hold increments the count"),
+                ShowcaseScenario(ShowcaseScenarioId("both"), "THE TWO KINDS", "One of each, to press against the other: the tap draws no wait"),
                 ShowcaseScenario(ShowcaseScenarioId("confirm"), "CONFIRM ACTION", "A longer hold protects a destructive action"),
                 ShowcaseScenario(ShowcaseScenarioId("recoverable"), "RECOVER ACCESS", "A simulated permission can be enabled"),
                 ShowcaseScenario(ShowcaseScenarioId("blocked"), "MISSING TARGET", "Show the reason without a false action"),

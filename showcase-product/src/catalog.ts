@@ -67,6 +67,7 @@ export const showcaseCases = [
     scenarios: [
       { id: "immediate", label: "TAP ACTION", description: "A tap increments the action count" },
       { id: "deliberate", label: "HOLD ACTION", description: "A completed hold increments the count" },
+      { id: "both", label: "THE TWO KINDS", description: "One of each, to press against the other: the tap draws no wait" },
       { id: "confirm", label: "CONFIRM ACTION", description: "A longer hold protects a destructive action" },
       { id: "recoverable", label: "RECOVER ACCESS", description: "A simulated permission can be enabled" },
       { id: "blocked", label: "MISSING TARGET", description: "Show the reason without a false action" },

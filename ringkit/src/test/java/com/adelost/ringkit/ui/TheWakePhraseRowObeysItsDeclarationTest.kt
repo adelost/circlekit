@@ -126,8 +126,6 @@ class TheWakePhraseRowObeysItsDeclarationTest {
         return Press(switched = selected != before, pixelsChangedWhileDown = drawnAtItsMost)
     }
 
-    /** The pixels drawn right now: `captureToImage` waits for an idle composition, which a pressed control never is. */
-
     /**
      * Advances frames until the control is drawing the same thing twice, and returns that frame.
      *
@@ -150,6 +148,7 @@ class TheWakePhraseRowObeysItsDeclarationTest {
         )
     }
 
+    /** The pixels drawn right now: `captureToImage` waits for an idle composition, which a pressed control never is. */
     private fun frame(): IntArray {
         val view = compose.activity.window.decorView
         val bitmap = Bitmap.createBitmap(view.width, view.height, Bitmap.Config.ARGB_8888)

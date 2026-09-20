@@ -6800,6 +6800,11 @@
             "label": "HOLD ACTION"
           },
           {
+            "description": "One of each, to press against the other: the tap draws no wait",
+            "id": "both",
+            "label": "THE TWO KINDS"
+          },
+          {
             "description": "A longer hold protects a destructive action",
             "id": "confirm",
             "label": "CONFIRM ACTION"
