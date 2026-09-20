@@ -8,6 +8,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
@@ -272,12 +273,20 @@ internal fun Modifier.circleHoldCue(progress: () -> Float, color: Color): Modifi
     val fraction = progress().coerceIn(0f, 1f)
     if (fraction <= 0f) return@drawBehind
     if (circleHoldCueIsRing(size.width, size.height)) {
+        // INSIDE the control's own contour, not on it. Measured on a run seat at 192 dp (2026-09-20):
+        // drawn on the bounds, the arc lands exactly where the pressed contour is already a bright ring,
+        // so a teal accent over white read as a tint and the frames before and after were hard to tell
+        // apart. One stroke in, it sits on the fill and the wearer can see how much of the gate is left.
+        val stroke = MenuDesign.iconRingStroke.toPx()
+        val inset = stroke
         drawArc(
             color = color,
             startAngle = -90f,
             sweepAngle = 360f * fraction,
             useCenter = false,
-            style = Stroke(width = MenuDesign.iconRingStroke.toPx(), cap = StrokeCap.Round),
+            topLeft = Offset(inset, inset),
+            size = Size(size.width - 2f * inset, size.height - 2f * inset),
+            style = Stroke(width = stroke, cap = StrokeCap.Round),
         )
     } else {
         drawRect(color = color.copy(alpha = color.alpha * 0.30f), size = Size(size.width * fraction, size.height))
