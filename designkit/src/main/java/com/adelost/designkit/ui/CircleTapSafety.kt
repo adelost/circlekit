@@ -104,6 +104,7 @@ fun Modifier.circleSafeTap(
                 awaitEachGesture {
                     val down = awaitFirstDown(requireUnconsumed = !consumeDown)
                     if (consumeDown) down.consume()
+                    feedback.pressedAtMs = down.uptimeMillis
                     feedback.pressed = true
                     var commits = false
                     try {
@@ -167,6 +168,7 @@ fun Modifier.circlePressLifecycle(
             awaitEachGesture {
                 val down = awaitFirstDown(requireUnconsumed = false)
                 down.consume()
+                feedback.pressedAtMs = down.uptimeMillis
                 feedback.pressed = true
                 var active = false
                 try {
@@ -247,6 +249,7 @@ fun Modifier.circleSafeTapOrHold(
             awaitEachGesture {
                 val down = awaitFirstDown(requireUnconsumed = !consumeDown)
                 if (consumeDown) down.consume()
+                feedback.pressedAtMs = down.uptimeMillis
                 feedback.pressed = true
                 var completion = CircleGestureCompletion.NONE
                 try {
@@ -291,6 +294,9 @@ class CircleActionFeedbackState internal constructor() {
         internal set
 
     internal val hold = Animatable(0f)
+
+    /** The down event's own uptime: the cue's zero, so it is not two frames behind the gate. */
+    internal var pressedAtMs: Long = 0L
 
     /**
      * How much of the gate this press has spent, 0 to 1, and 0 until the brush minimum has passed.
@@ -354,7 +360,9 @@ private fun Modifier.circleActionSemantics(
 @Composable
 private fun CircleHoldCueDriver(feedback: CircleActionFeedbackState, holdMs: Long) {
     val pressed = feedback.pressed
-    LaunchedEffect(feedback, pressed, holdMs) { runCircleHoldCue(feedback.hold, pressed, holdMs) }
+    LaunchedEffect(feedback, pressed, holdMs) {
+        runCircleHoldCue(feedback.hold, pressed, holdMs, feedback.pressedAtMs)
+    }
 }
 
 /**

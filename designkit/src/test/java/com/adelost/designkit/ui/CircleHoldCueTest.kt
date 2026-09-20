@@ -8,9 +8,14 @@ import org.junit.Test
 /**
  * What a held control shows while it is being held, and what a brush shows: nothing.
  *
- * Row 212 measured the hole: a finger resting on a run seat changed 0 pixels, against a calibration the
- * same frame read CAN see (438 for the seat's own active ring), and the kit's haptic sits on the success
- * path only. A press released before the gate was a dead seat rather than a seat that says hold.
+ * ROW 212 RECORDED "a refused press changes 0 pixels" and that number was the instrument, not the
+ * product: its harness called waitForIdle() after the down event, which runs the test clock past the
+ * 200 ms gate, so the frame it read was taken after the press had already committed and the finger was
+ * gone. Re-measured with the clock held (2026-09-20, a run seat at 192 dp): the released seat answers a
+ * touch at the first frame, 438 pixels, and then STANDS STILL, 350 coloured pixels at 48 ms and 361 at
+ * 192 ms. So the hole is not silence. The seat says "touched" and never says how much of the gate has
+ * passed, while the kit's haptic sits on the success path only, so a press that will be refused looks
+ * exactly like one that will act until the moment it does not.
  */
 class CircleHoldCueTest {
 
@@ -80,6 +85,25 @@ class CircleHoldCueTest {
         assertTrue("a disc with its touch padding did not take the ring", circleHoldCueIsRing(44f, 40f))
         assertFalse("a menu row took the ring", circleHoldCueIsRing(160f, 40f))
         assertFalse("a filter chip took the ring", circleHoldCueIsRing(96f, 32f))
+    }
+
+    @Test
+    fun `the cue's zero is the finger's, not the first frame after it`() {
+        // Measured on a 192 dp seat under a 200 ms gate (2026-09-20): reading the zero off the effect's
+        // first frame put the ring two frames behind, so it started at 0.24 instead of 0.2 and FROZE at
+        // 0.88 when the gate fired. A ring that can never complete under a gate it is drawn for is worse
+        // than none: it teaches the wearer that a full ring is not what acting looks like.
+        val twoFramesLate = 32L
+        assertEquals(
+            "a cue zeroed two frames after the finger cannot reach the gate",
+            1f,
+            circleHoldCueFraction(MenuDesign.tapHoldMs, MenuDesign.tapHoldMs),
+            0f,
+        )
+        assertTrue(
+            "zeroing on the first frame instead leaves the ring short at the moment the gate commits",
+            circleHoldCueFraction(MenuDesign.tapHoldMs - twoFramesLate, MenuDesign.tapHoldMs) < 1f,
+        )
     }
 
     @Test

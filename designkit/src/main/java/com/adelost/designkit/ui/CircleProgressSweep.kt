@@ -8,6 +8,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
@@ -224,24 +225,42 @@ internal fun circleHoldCueIsRing(width: Float, height: Float): Boolean =
     width <= height * CIRCLE_CUE_ROUND_ASPECT
 
 /**
- * The one clock the cue runs on: real frames, and [circleHoldCueFraction] deciding what they mean.
+ * The one clock the cue runs on: the FINGER'S OWN ZERO, sampled on real frames.
  *
- * It reads the elapsed time off the frame clock rather than handing a tween a duration, so the cue and
- * the GATE cannot drift: the gate times the finger and so does this. It also stops at 1 and it only
- * runs while a finger is down, which is what makes the cue cost nothing on a face that is only being
- * looked at.
+ * Measured on the first build of this (2026-09-20, a 192 dp seat under a 200 ms gate): reading the zero
+ * off the first frame instead made the ring start at 0.24 rather than 0.2, and FREEZE AT 0.88 when the
+ * gate fired. Two frames pass between the finger landing and this effect's first frame, because the
+ * press has to reach composition first, and a ring that is two frames behind a 200 ms gate can never
+ * complete. "Completes at holdMs" is the row's own sentence, so the zero has to be the pointer's.
+ *
+ * [pressedAtMs] is the down event's own uptime and [withFrameMillis] is the frame clock. On Android both
+ * are CLOCK_MONOTONIC, so they are comparable, but that is a platform detail rather than a promise: if
+ * the first frame does not land inside the gate's own window after that zero, the two clocks are not the
+ * same one, and the cue falls back to the frame it CAN trust. That degrades to a cue up to two frames
+ * late, never to a ring that is already full.
+ *
+ * It reads elapsed time off the clock rather than handing a tween a duration, so the cue and the GATE
+ * cannot drift: the gate times the finger and so does this. It stops at 1 and runs only while a finger
+ * is down, which is what makes the cue cost nothing on a face that is only being looked at.
  */
-internal suspend fun runCircleHoldCue(hold: Animatable<Float, *>, pressed: Boolean, holdMs: Long) {
+internal suspend fun runCircleHoldCue(
+    hold: Animatable<Float, *>,
+    pressed: Boolean,
+    holdMs: Long,
+    pressedAtMs: Long,
+) {
     if (!pressed) {
         if (hold.value > 0f) hold.animateTo(0f, tween(CIRCLE_CUE_RELEASE_MS, easing = LinearEasing))
         return
     }
     if (holdMs <= CIRCLE_CUE_BRUSH_MIN_MS) return
-    val downAtMs = withFrameMillis { it }
+    val firstFrameMs = withFrameMillis { it }
+    val zeroMs = if (firstFrameMs - pressedAtMs in 0..holdMs) pressedAtMs else firstFrameMs
+    var fraction = circleHoldCueFraction(firstFrameMs - zeroMs, holdMs)
     while (true) {
-        val fraction = circleHoldCueFraction(withFrameMillis { it } - downAtMs, holdMs)
         if (fraction > 0f) hold.snapTo(fraction)
         if (fraction >= 1f) return
+        fraction = circleHoldCueFraction(withFrameMillis { it } - zeroMs, holdMs)
     }
 }
 
@@ -254,12 +273,20 @@ internal fun Modifier.circleHoldCue(progress: () -> Float, color: Color): Modifi
     val fraction = progress().coerceIn(0f, 1f)
     if (fraction <= 0f) return@drawBehind
     if (circleHoldCueIsRing(size.width, size.height)) {
+        // INSIDE the control's own contour, not on it. Measured on a run seat at 192 dp (2026-09-20):
+        // drawn on the bounds, the arc lands exactly where the pressed contour is already a bright ring,
+        // so a teal accent over white read as a tint and the frames before and after were hard to tell
+        // apart. One stroke in, it sits on the fill and the wearer can see how much of the gate is left.
+        val stroke = MenuDesign.iconRingStroke.toPx()
+        val inset = stroke
         drawArc(
             color = color,
             startAngle = -90f,
             sweepAngle = 360f * fraction,
             useCenter = false,
-            style = Stroke(width = MenuDesign.iconRingStroke.toPx(), cap = StrokeCap.Round),
+            topLeft = Offset(inset, inset),
+            size = Size(size.width - 2f * inset, size.height - 2f * inset),
+            style = Stroke(width = stroke, cap = StrokeCap.Round),
         )
     } else {
         drawRect(color = color.copy(alpha = color.alpha * 0.30f), size = Size(size.width * fraction, size.height))
