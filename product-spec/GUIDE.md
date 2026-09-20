@@ -2,6 +2,8 @@
 
 For agents and for people. Every path and command in this file is checked by `scripts/check-guide-paths.sh`, so a stale line turns red instead of lying.
 
+Planned authoring improvements: [worker handoff and implementation order](../docs/plans/2026-09-20-product-spec-authoring-dx.md#worker-entrypoint). That document is a proposal, not an implemented API; the current reference below remains authoritative until the corresponding implementation lands.
+
 ## 1. Five words
 
 **Thing, fact, law, system, proof.**
