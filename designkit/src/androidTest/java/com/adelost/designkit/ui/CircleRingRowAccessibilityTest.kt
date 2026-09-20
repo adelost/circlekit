@@ -32,7 +32,7 @@ class CircleRingRowAccessibilityTest {
                 CircleRingRowContent(
                     title = "ACCEPT", sub = "", icon = RingIcons.Check,
                     ringActive = null, affordance = CircleRowAffordance.of({}),
-                    leading = null, trailing = null,
+                    leading = null, trailing = null, feedback = null,
                 )
             }
         }
@@ -49,7 +49,7 @@ class CircleRingRowAccessibilityTest {
                 CircleRingRowContent(
                     title = name, sub = "RECEIVED", icon = RingIcons.Link,
                     ringActive = null, affordance = CircleRowAffordance.of(null),
-                    leading = null, trailing = null, multiline = true,
+                    leading = null, trailing = null, multiline = true, feedback = null,
                 )
             }
         }

@@ -37,7 +37,7 @@ import com.adelost.ringkit.data.Progress
 fun Modifier.holdProgressSweep(
     progress: Float?,
     color: Color = RingTokens.ProgressArc.copy(alpha = 0.30f),
-): Modifier = circleProgressSweep(progress = progress, color = color)
+): Modifier = circleProgressSweep(progress = { progress ?: 0f }, color = color)
 
 /**
  * The one linear renderer for measured background progress. Hold gestures use

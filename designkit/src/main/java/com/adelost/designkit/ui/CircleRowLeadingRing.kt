@@ -28,7 +28,7 @@ internal fun CircleRowLeadingRing(
     accent: CircleAccent,
     semanticColor: Color?,
     phoneDesign: PhoneSurfaceDesign?,
-    feedbackSweep: Float,
+    feedbackSweep: () -> Float,
     iconRotationDeg: Float,
 ) {
     val activeContour = circleBrandColor()
@@ -49,10 +49,7 @@ internal fun CircleRowLeadingRing(
             .size(phoneDesign?.rowIconDiameter ?: MenuDesign.iconRingDiameter)
             .clip(CircleShape)
             .then(contour?.let { Modifier.circleRingContour(it) } ?: Modifier)
-            .circleProgressContour(
-                feedbackSweep.takeIf { it > 0f },
-                color = progressContour,
-            ),
+            .circleProgressContour(feedbackSweep, color = progressContour),
         contentAlignment = Alignment.Center,
     ) {
         if (icon != null) {

@@ -1,7 +1,5 @@
 package com.adelost.ringkit.ui
 
-import android.graphics.Bitmap
-import android.graphics.Canvas
 import androidx.activity.ComponentActivity
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -9,11 +7,10 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.test.down
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
-import androidx.compose.ui.test.performTouchInput
-import androidx.compose.ui.test.up
+import com.adelost.designkit.press.CirclePress
+import com.adelost.designkit.press.CirclePressProbe
 import com.adelost.designkit.ui.CircleActionTiming
 import com.adelost.designkit.ui.CircleChoiceRole
 import com.adelost.designkit.ui.RingIcons
@@ -27,7 +24,7 @@ import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
 
 /**
- * THE CONTROL MATTIAS PRESSED, mounted. Row 225.
+ * THE CONTROL MATTIAS PRESSED, mounted. Row 225, on [CirclePressProbe] since row 215.
  *
  * SETTINGS · WAKE PHRASE in Link is a [RingChoiceRow] with role STEPPED, and a choice row carries
  * [DELIBERATE_CHANGE_HOLD_MS] whatever kind it is declared to be. Measured on Link 1.2.23 on a
@@ -37,6 +34,13 @@ import org.robolectric.annotation.GraphicsMode
  * So the case drives this exact control, both kinds, and reads what committed and what was drawn.
  * Under lsrc:0's rule the WAKE PHRASE row is a TOUCH: the next press takes the phrase back, so it
  * commits at once AND draws nothing, and the two halves have to say that together.
+ *
+ * ITS PIXEL READINGS WERE NOT REAL UNTIL ROW 215. Drawing the DECOR view photographed 112 px of
+ * ComponentActivity's own ActionBar laid over a control mounted at the top of an edge-to-edge window,
+ * and every frame of every press read 0 changed pixels: this row and a plain CircleRingRow and a
+ * 40 dp white square all read 0, in the same module, while designkit read 19 to 400 for the same row.
+ * [CirclePressProbe] photographs the content view instead and refuses a control that drew no ink of
+ * its own, so a reading of nothing fails loudly rather than passing as a zero.
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(application = android.app.Application::class, sdk = [35], qualifiers = "w390dp-h844dp-xhdpi")
@@ -47,14 +51,14 @@ class TheWakePhraseRowObeysItsDeclarationTest {
 
     @Test
     fun `declared a touch, the wake phrase row switches on a flick and draws no wait`() {
-        val flicked = press(CircleActionTiming.IMMEDIATE, holdFor = A_FLICK)
+        val flicked = press(CircleActionTiming.IMMEDIATE, holdFor = CirclePressProbe.A_FLICK_MS)
 
-        assertTrue("a touch of $A_FLICK ms did not change the phrase", flicked.switched)
+        assertTrue("a touch of ${CirclePressProbe.A_FLICK_MS} ms did not change the phrase", flicked.switched)
         assertEquals(
             "the row drew a wait while switching anyway, which is the bug Mattias reported: " +
                 "\"även om progress baren inte fylls så tar den ändå och byter knapp\"",
             0,
-            flicked.pixelsChangedWhileDown,
+            flicked.press.changedAtItsMost,
         )
     }
 
@@ -62,7 +66,7 @@ class TheWakePhraseRowObeysItsDeclarationTest {
     fun `declared a hold, the same row refuses every press shorter than the hold it declared`() {
         assertTrue(
             "a flick changed a phrase the row said it would hold for",
-            !press(CircleActionTiming.DELIBERATE, holdFor = A_FLICK).switched,
+            !press(CircleActionTiming.DELIBERATE, holdFor = CirclePressProbe.A_FLICK_MS).switched,
         )
         assertTrue(
             "a press of half the declared hold changed the phrase",
@@ -74,105 +78,57 @@ class TheWakePhraseRowObeysItsDeclarationTest {
         )
     }
 
-    private class Press(val switched: Boolean, val pixelsChangedWhileDown: Int)
+    @Test
+    fun `declared a hold, the row draws the half second it is keeping`() {
+        // The half ettan's original could not see, and the measurement lsrc:0 sent me to explain: a
+        // DELIBERATE choice row through RingRow was recorded drawing 0 pixels across a whole 460 ms
+        // press while designkit's CircleRingRow drew 111. That 0 was the ActionBar, not the row.
+        val held = press(CircleActionTiming.DELIBERATE, holdFor = DELIBERATE_CHANGE_HOLD_MS)
 
-    private var selected = PHRASES.first()
-    private val declaredTiming = mutableStateOf(CircleActionTiming.DELIBERATE)
-    private var mounted = false
-
-    private fun press(timing: CircleActionTiming, holdFor: Long): Press {
-        declaredTiming.value = timing
-        if (!mounted) {
-            compose.mainClock.autoAdvance = false
-            compose.setContent {
-                Box(Modifier.fillMaxSize().background(Color.Black)) {
-                    RingChoiceRow(
-                        title = "WAKE PHRASE",
-                        selected = selected,
-                        options = PHRASES,
-                        role = CircleChoiceRole.STEPPED,
-                        icon = RingIcons.Grid,
-                        actionTiming = declaredTiming.value,
-                        onSelect = { chosen -> selected = chosen },
-                    )
-                }
-            }
-            mounted = true
-        }
-        val before = selected
-        val atRest = settleToRest()
-
-        val control = compose.onNodeWithContentDescription(SPOKEN_NAME, substring = true)
-        control.performTouchInput { down(center) }
-        // A finger on the glass keeps row 215's cue asking for frames, so nothing here waits for an
-        // idle composition: every frame of the press is advanced and read deliberately.
-        compose.mainClock.advanceTimeByFrame()
-        var drawnAtItsMost = 0
-        try {
-            var elapsed = 0L
-            while (elapsed < holdFor) {
-                val step = minOf(A_FRAME, holdFor - elapsed)
-                compose.mainClock.advanceTimeBy(step)
-                elapsed += step
-                drawnAtItsMost = maxOf(drawnAtItsMost, differingPixels(atRest, frame()))
-            }
-        } finally {
-            // A case that fails mid-press must not leave a finger on the glass: the next press in
-            // the same test would then measure a control that is still answering the last one.
-            control.performTouchInput { up() }
-            compose.mainClock.advanceTimeByFrame()
-            settleToRest()
-        }
-        return Press(switched = selected != before, pixelsChangedWhileDown = drawnAtItsMost)
-    }
-
-    /**
-     * Advances frames until the control is drawing the same thing twice, and returns that frame.
-     *
-     * Not a fixed settle: a press that is still animating when the next one starts makes the next
-     * reading a reading of the last press. lsrc:0 found exactly that, a second case going red under
-     * a mutation that cannot touch it. Coming to rest is therefore proven, not assumed, and a
-     * control that never does fails here rather than quietly one case later.
-     */
-    private fun settleToRest(): IntArray {
-        var previous = frame()
-        repeat(FRAMES_TO_REST) {
-            compose.mainClock.advanceTimeByFrame()
-            val next = frame()
-            if (next.contentEquals(previous)) return next
-            previous = next
-        }
-        throw AssertionError(
-            "the control was still changing after $FRAMES_TO_REST frames, so nothing measured after " +
-                "this point is a reading of the press being made",
+        assertTrue(
+            "the row drew nothing across its own ${DELIBERATE_CHANGE_HOLD_MS} ms hold, so the wearer " +
+                "is told nothing while the phrase is being changed",
+            held.press.changedAtItsMost > 0,
+        )
+        val cue = held.press.cueByFrame
+        assertTrue(
+            "the cue never grew: it read ${cue.joinToString()} across the hold, so whatever is being " +
+                "drawn is not a wait running out",
+            cue.last() > cue[cue.size / 2] && cue[cue.size / 2] > cue.first(),
         )
     }
 
-    /** The pixels drawn right now: `captureToImage` waits for an idle composition, which a pressed control never is. */
-    private fun frame(): IntArray {
-        val view = compose.activity.window.decorView
-        val bitmap = Bitmap.createBitmap(view.width, view.height, Bitmap.Config.ARGB_8888)
-        view.draw(Canvas(bitmap))
-        val buffer = IntArray(bitmap.width * bitmap.height)
-        bitmap.getPixels(buffer, 0, bitmap.width, 0, 0, bitmap.width, bitmap.height)
-        return buffer
-    }
+    private class Press(val switched: Boolean, val press: CirclePress)
 
-    private fun differingPixels(before: IntArray, after: IntArray): Int {
-        assertEquals("the two frames are not the same size, so they cannot be compared", before.size, after.size)
-        var changed = 0
-        for (index in before.indices) if (before[index] != after[index]) changed += 1
-        return changed
+    private val probe = CirclePressProbe(compose)
+    private var selected = PHRASES.first()
+    private val declaredTiming = mutableStateOf(CircleActionTiming.DELIBERATE)
+
+    private fun press(timing: CircleActionTiming, holdFor: Long): Press {
+        declaredTiming.value = timing
+        probe.mount {
+            Box(Modifier.fillMaxSize().background(Color.Black)) {
+                RingChoiceRow(
+                    title = "WAKE PHRASE",
+                    selected = selected,
+                    options = PHRASES,
+                    role = CircleChoiceRole.STEPPED,
+                    icon = RingIcons.Grid,
+                    actionTiming = declaredTiming.value,
+                    onSelect = { chosen -> selected = chosen },
+                )
+            }
+        }
+        val before = selected
+        val reading = probe.press(
+            compose.onNodeWithContentDescription(SPOKEN_NAME, substring = true),
+            holdFor,
+        )
+        return Press(switched = selected != before, press = reading)
     }
 
     private companion object {
         val PHRASES = listOf("HEY JARVIS", "HEY MARVIN", "ALEXA")
         const val SPOKEN_NAME = "WAKE PHRASE"
-        /** Mattias's own measurement, rounded up to a whole frame. */
-        const val A_FLICK = 16L
-            const val A_FRAME = 16L
-
-        /** Two seconds of frames: longer than any release this kit animates. */
-        const val FRAMES_TO_REST = 125
     }
 }

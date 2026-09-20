@@ -27,6 +27,13 @@ android {
         compose = true
     }
 
+    sourceSets {
+        // Row 215: the press probe is compiled into BOTH kits' unit tests from one file. ringkit's
+        // test source set names this same directory, so the second caller cannot drift from the
+        // first. It is not a published source set and never reaches the AAR.
+        getByName("test") { java.srcDir("src/testHarness/java") }
+    }
+
     testOptions {
         // A press is a gesture on a real composition, so the JVM cases mount one. Robolectric draws
         // it only with the merged resources.

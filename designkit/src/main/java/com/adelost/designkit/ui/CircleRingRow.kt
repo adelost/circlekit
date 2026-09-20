@@ -91,26 +91,15 @@ fun CircleRingRow(
             action()
         }
     }
-    val interaction = when {
-        confirmedTap == null -> modifier
-        onLongPress == null -> modifier.circleSafeTap(
+    val interaction = confirmedTap?.let { tap ->
+        modifier.circleRowGesture(
             feedback = feedback,
             holdMs = holdMs,
             label = circleRingRowAccessibilityLabel(title, sub),
-            // The row already paints the wait: on its leading ring, or as the wash under its own
-            // title column when it has no ring. Row 215 leaves it exactly one cue.
-            cue = CirclePressCue.OWNED,
-            onTap = confirmedTap,
-        )
-        else -> modifier.circleSafeTapOrHold(
-            feedback = feedback,
-            holdMs = holdMs,
-            label = circleRingRowAccessibilityLabel(title, sub),
-            cue = CirclePressCue.OWNED,
             onLongPress = onLongPress,
-            onTap = confirmedTap,
+            onTap = tap,
         )
-    }
+    } ?: modifier
     Box(
         modifier = interaction.padding(
             horizontal = MenuDesign.rowPaddingH,
@@ -133,8 +122,7 @@ fun CircleRingRow(
                 leading = leading,
                 trailing = trailing,
                 labelProgress = labelProgress,
-                pressed = feedback.pressed,
-                pressHoldMs = holdMs,
+                feedback = feedback,
                 centerValue = centerValue,
                 multiline = multiline,
                 iconRotationDeg = iconRotationDeg,
@@ -147,6 +135,46 @@ fun CircleRingRow(
             rowContent()
         }
     }
+}
+
+/**
+ * WHICH GESTURE A PRESSED ROW TAKES, with everything the two arms share stated once.
+ *
+ * Split out in row 215 on the churn ledger's evidence, which named the price rather than the smell.
+ * Two of this function's four fixes in 60 days had to be written into BOTH arms of the choice: the
+ * spoken name a row answers to (ce700c82c) and who owns it (83773a6fa). Four of the five arguments
+ * were identical in both arms, so every rule about a pressed row cost two edits, and the arm it
+ * reached second was the one that had been wrong longest. The fixes came from this branching, not
+ * from a constant or an upstream value, so the ledger's answer is SPLIT.
+ *
+ * A row with no action takes no gesture at all, which the caller decides; this is only the choice
+ * between the two it can take.
+ */
+private fun Modifier.circleRowGesture(
+    feedback: CircleActionFeedbackState,
+    holdMs: Long,
+    label: String,
+    onLongPress: (() -> Unit)?,
+    onTap: () -> Unit,
+): Modifier = if (onLongPress == null) {
+    circleSafeTap(
+        feedback = feedback,
+        holdMs = holdMs,
+        label = label,
+        // The row already paints the wait: on its leading ring, or as the wash under its own title
+        // column when it has no ring. Row 215 leaves it exactly one cue.
+        cue = CirclePressCue.OWNED,
+        onTap = onTap,
+    )
+} else {
+    circleSafeTapOrHold(
+        feedback = feedback,
+        holdMs = holdMs,
+        label = label,
+        cue = CirclePressCue.OWNED,
+        onLongPress = onLongPress,
+        onTap = onTap,
+    )
 }
 
 /**
@@ -183,8 +211,14 @@ fun CircleRingRowContent(
     leading: (@Composable () -> Unit)?,
     trailing: (@Composable () -> Unit)?,
     labelProgress: CircleLabelProgress? = null,
-    pressed: Boolean = false,
-    pressHoldMs: Long = MenuDesign.tapHoldMs,
+    /**
+     * The gesture whose wait this content draws, or explicit null when the content is not the thing
+     * under the finger and its wait arrives as [labelProgress] instead.
+     *
+     * No default, and no duration. Row 215: a default here is wiring a caller can delete while every
+     * leaf case stays green, and a duration here is a second clock beside the gate's.
+     */
+    feedback: CircleActionFeedbackState?,
     centerValue: String? = null,
     /** See [CircleRingRow]: a row nobody can press has no centre cue to fall
      *  back on, so it grows to fit its words instead of ellipsising them. */
@@ -214,11 +248,7 @@ fun CircleRingRowContent(
         }
         return
     }
-    val feedbackSweep = rememberCircleFeedbackSweep(
-        progress = labelProgress,
-        pressed = pressed,
-        pressHoldMs = pressHoldMs,
-    )
+    val feedbackSweep = rememberCircleFeedbackSweep(progress = labelProgress, feedback = feedback)
     Row(
         modifier = if (hasSlots) Modifier.fillMaxWidth() else Modifier,
         verticalAlignment = Alignment.CenterVertically,
@@ -247,9 +277,7 @@ fun CircleRingRowContent(
                     if (hasLeadingRing) {
                         Modifier
                     } else {
-                        Modifier.circleProgressSweep(
-                            progress = feedbackSweep.takeIf { it > 0f },
-                        )
+                        Modifier.circleProgressSweep(progress = feedbackSweep)
                     },
                 ),
         ) {

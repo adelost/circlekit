@@ -30,6 +30,12 @@ android {
         compose = true
     }
 
+    sourceSets {
+        // Row 215: designkit owns the press probe; this module is its second caller. See
+        // designkit/src/testHarness/java/com/adelost/designkit/press/CirclePressProbe.kt.
+        getByName("test") { java.srcDir("../designkit/src/testHarness/java") }
+    }
+
     testOptions {
         // Robolectric draws a real row only with the merged resources.
         unitTests.isIncludeAndroidResources = true

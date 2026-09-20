@@ -1,7 +1,5 @@
 package com.adelost.designkit.ui
 
-import android.graphics.Bitmap
-import android.graphics.Canvas
 import androidx.activity.ComponentActivity
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -10,11 +8,10 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.test.down
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
-import androidx.compose.ui.test.performTouchInput
-import androidx.compose.ui.test.up
+import com.adelost.designkit.press.CirclePress
+import com.adelost.designkit.press.CirclePressProbe
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Rule
@@ -25,7 +22,7 @@ import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
 
 /**
- * A MOUNTED control, pressed, read off the glass. Row 225.
+ * A MOUNTED control, pressed, read off the glass. Row 225, on [CirclePressProbe] since row 215.
  *
  * [ThePressAndTheWaitAgreeTest] states the rule and proves the resolver. It cannot see the thing the
  * bug actually was: that the row HANDS the drawing a different number than it hands its gate. Every
@@ -48,31 +45,31 @@ class ThePressAndTheWaitAgreeOnAControlTest {
 
     @Test
     fun `an immediate control commits the shortest press and draws no wait at all`() {
-        val pressed = press(CircleActionTiming.IMMEDIATE, holdFor = A_FLICK)
+        val pressed = press(CircleActionTiming.IMMEDIATE, holdFor = CirclePressProbe.A_FLICK_MS)
 
         assertTrue("the shortest press a finger can make did not commit", pressed.committed)
         assertEquals(
             "an immediate control drew something while the finger was down: a wait that is already " +
                 "over is the in-between Mattias refused",
             0,
-            pressed.pixelsChangedWhileDown,
+            pressed.press.changedAtItsMost,
         )
     }
 
     @Test
     fun `a deliberate control refuses a short press and draws the wait it does keep`() {
-        val flicked = press(CircleActionTiming.DELIBERATE, holdFor = A_FLICK)
+        val flicked = press(CircleActionTiming.DELIBERATE, holdFor = CirclePressProbe.A_FLICK_MS)
         assertTrue(
-            "a press of $A_FLICK ms committed against a ${MenuDesign.tapHoldMs} ms wait, which is the " +
-                "row 225 defect on a deliberate control",
+            "a press of ${CirclePressProbe.A_FLICK_MS} ms committed against a ${MenuDesign.tapHoldMs} ms " +
+                "wait, which is the row 225 defect on a deliberate control",
             !flicked.committed,
         )
 
-        val held = press(CircleActionTiming.DELIBERATE, holdFor = MID_HOLD_MS)
+        val held = press(CircleActionTiming.DELIBERATE, holdFor = CirclePressProbe.MID_HOLD_MS)
         assertTrue(
-            "a deliberate control drew nothing $MID_HOLD_MS ms into its own hold, so the wait it is " +
-                "keeping is invisible to the finger keeping it",
-            held.pixelsChangedWhileDown > 0,
+            "a deliberate control drew nothing ${CirclePressProbe.MID_HOLD_MS} ms into its own hold, so " +
+                "the wait it is keeping is invisible to the finger keeping it",
+            held.press.changedAtItsMost > 0,
         )
         assertTrue("the gate committed before its wait was out", !held.committed)
 
@@ -85,18 +82,20 @@ class ThePressAndTheWaitAgreeOnAControlTest {
         // The pair, which is the whole rule in one case: the identical gesture, held the identical
         // time, on the two kinds of control. What separates them is what each one PROMISED, so the
         // deliberate one must be drawing its wait at the same moment the immediate one draws nothing.
-        val deliberate = press(CircleActionTiming.DELIBERATE, holdFor = MID_HOLD_MS)
-        val immediate = press(CircleActionTiming.IMMEDIATE, holdFor = MID_HOLD_MS)
+        val deliberate = press(CircleActionTiming.DELIBERATE, holdFor = CirclePressProbe.MID_HOLD_MS)
+        val immediate = press(CircleActionTiming.IMMEDIATE, holdFor = CirclePressProbe.MID_HOLD_MS)
 
         assertTrue(
-            "a $MID_HOLD_MS ms press drew nothing on the control that was making it wait",
-            deliberate.pixelsChangedWhileDown > 0,
+            "a ${CirclePressProbe.MID_HOLD_MS} ms press drew nothing on the control that was making " +
+                "it wait",
+            deliberate.press.changedAtItsMost > 0,
         )
         assertEquals(
-            "the same $MID_HOLD_MS ms press drew a wait on a control that was not making it wait: " +
-                "${immediate.pixelsChangedWhileDown} pixels of a gesture nobody is being asked for",
+            "the same ${CirclePressProbe.MID_HOLD_MS} ms press drew a wait on a control that was not " +
+                "making it wait: ${immediate.press.changedAtItsMost} pixels of a gesture nobody is " +
+                "being asked for",
             0,
-            immediate.pixelsChangedWhileDown,
+            immediate.press.changedAtItsMost,
         )
     }
 
@@ -107,7 +106,7 @@ class ThePressAndTheWaitAgreeOnAControlTest {
         // glass is the number the gate is keeping, or the row is lying about the gesture it wants.
         val immediateCarryingAHold = press(
             CircleActionTiming.IMMEDIATE,
-            holdFor = MID_HOLD_MS,
+            holdFor = CirclePressProbe.MID_HOLD_MS,
             holdMs = MenuDesign.holdDeliberateMs,
         )
 
@@ -119,7 +118,7 @@ class ThePressAndTheWaitAgreeOnAControlTest {
             "the hold riding along reached the drawing: the row drew a wait its own gate was not " +
                 "keeping, which is exactly what the WAKE PHRASE row did on the phone",
             0,
-            immediateCarryingAHold.pixelsChangedWhileDown,
+            immediateCarryingAHold.press.changedAtItsMost,
         )
     }
 
@@ -130,7 +129,7 @@ class ThePressAndTheWaitAgreeOnAControlTest {
         // to report and must ask for none, whatever hold rides along with it.
         val immediateCarryingAHold = press(
             CircleActionTiming.IMMEDIATE,
-            holdFor = MID_HOLD_MS,
+            holdFor = CirclePressProbe.MID_HOLD_MS,
             holdMs = MenuDesign.holdDeliberateMs,
         )
         assertEquals(
@@ -150,22 +149,22 @@ class ThePressAndTheWaitAgreeOnAControlTest {
 
     private class Press(
         val committed: Boolean,
-        val pixelsChangedWhileDown: Int,
+        val press: CirclePress,
         /** The furthest the centre cue was ever asked to sweep during this press. */
         val cueSweptTo: Float,
     )
 
-    /**
-     * Mounts one row, presses it for [holdFor] on a clock this test advances, and reports both
-     * answers. [holdMs] is the duration the row carries, which a caller may set independently of the
-     * kind precisely so that disagreeing with it can be caught.
-     */
+    private val probe = CirclePressProbe(compose)
     private var taps = 0
     private val cues = mutableListOf<CircleActionCueEvent>()
     private val declaredTiming = mutableStateOf(CircleActionTiming.DELIBERATE)
     private val declaredHoldMs = mutableStateOf(CircleActionTiming.DELIBERATE.holdMs)
-    private var mounted = false
 
+    /**
+     * Mounts one row, presses it for [holdFor] on a clock the probe advances, and reports both
+     * answers. [holdMs] is the duration the row carries, which a caller may set independently of the
+     * kind precisely so that disagreeing with it can be caught.
+     */
     private fun press(
         timing: CircleActionTiming,
         holdFor: Long,
@@ -175,12 +174,8 @@ class ThePressAndTheWaitAgreeOnAControlTest {
         // so the same mounted control answers for both kinds and nothing is proven by a fresh mount.
         declaredTiming.value = timing
         declaredHoldMs.value = holdMs
-        if (!mounted) {
-            compose.mainClock.autoAdvance = false
-            compose.setContent {
-                CompositionLocalProvider(
-                    LocalCircleActionCuePublisher provides { event -> cues += event },
-                ) {
+        probe.mount {
+            CompositionLocalProvider(LocalCircleActionCuePublisher provides { event -> cues += event }) {
                 Box(Modifier.fillMaxSize().background(Color.Black)) {
                     CircleRingRow(
                         title = "WAKE PHRASE",
@@ -191,114 +186,20 @@ class ThePressAndTheWaitAgreeOnAControlTest {
                         actionHoldMs = declaredHoldMs.value,
                     )
                 }
-                }
             }
-            mounted = true
         }
         taps = 0
         cues.clear()
-        val atRest = settleToRest()
-
-        val control = compose.onNodeWithContentDescription(SPOKEN_NAME)
-        control.performTouchInput { down(center) }
-        // A finger on the glass keeps row 215's cue asking for frames, so this composition is never
-        // idle while it is down. The clock is therefore advanced deliberately rather than waited on:
-        // one frame delivers the event, then exactly the press being measured.
-        compose.mainClock.advanceTimeByFrame()
-
-        // READ EVERY FRAME OF THE PRESS, not one instant of it. A wait that is drawn is drawn while
-        // the finger is down, and a single reading can land before a growing arc has covered its
-        // first pixel: this same case reported 0 at 120 ms for a row that was at 77 pixels, because
-        // the frames between were never drawn. The most any frame differs from the resting one is
-        // therefore the answer to "was a wait drawn", and 0 means no frame of the press drew one.
-        var drawnAtItsMost = 0
-        try {
-            var elapsed = 0L
-            while (elapsed < holdFor) {
-                val step = minOf(A_FRAME, holdFor - elapsed)
-                compose.mainClock.advanceTimeBy(step)
-                elapsed += step
-                drawnAtItsMost = maxOf(drawnAtItsMost, differingPixels(atRest, frame()))
-            }
-        } finally {
-            // A case that fails mid-press must not leave a finger on the glass: the next press in
-            // the same test would then measure a control that is still answering the last one.
-            control.performTouchInput { up() }
-            compose.mainClock.advanceTimeByFrame()
-            settleToRest()
-        }
-
+        val reading = probe.press(compose.onNodeWithContentDescription(SPOKEN_NAME), holdFor)
         return Press(
             committed = taps > 0,
-            pixelsChangedWhileDown = drawnAtItsMost,
+            press = reading,
             cueSweptTo = cues.mapNotNull { it.cue?.progress }.maxOrNull() ?: 0f,
         )
-    }
-
-    /**
-     * Advances frames until the control is drawing the same thing twice, and returns that frame.
-     *
-     * Not a fixed settle: a press that is still animating when the next one starts makes the next
-     * reading a reading of the last press. lsrc:0 found exactly that, a second case going red under
-     * a mutation that cannot touch it. Coming to rest is therefore proven, not assumed, and a
-     * control that never does fails here rather than quietly one case later.
-     */
-    private fun settleToRest(): IntArray {
-        var previous = frame()
-        repeat(FRAMES_TO_REST) {
-            compose.mainClock.advanceTimeByFrame()
-            val next = frame()
-            if (next.contentEquals(previous)) return next
-            previous = next
-        }
-        throw AssertionError(
-            "the control was still changing after $FRAMES_TO_REST frames, so nothing measured after " +
-                "this point is a reading of the press being made",
-        )
-    }
-
-    /**
-     * The pixels the view hierarchy actually draws right now.
-     *
-     * Not `captureToImage`: that waits for an idle composition, and a composition with a finger on it
-     * is never idle, because row 215's cue asks for a frame for as long as the press lasts. Drawing
-     * the decor view is the same pixels without the wait, which is the only way to photograph a
-     * control mid-press.
-     */
-    private fun frame(): IntArray {
-        val view = compose.activity.window.decorView
-        val bitmap = Bitmap.createBitmap(view.width, view.height, Bitmap.Config.ARGB_8888)
-        view.draw(Canvas(bitmap))
-        val buffer = IntArray(bitmap.width * bitmap.height)
-        bitmap.getPixels(buffer, 0, bitmap.width, 0, 0, bitmap.width, bitmap.height)
-        return buffer
-    }
-
-    private fun differingPixels(before: IntArray, after: IntArray): Int {
-        assertEquals("the two frames are not the same size, so they cannot be compared", before.size, after.size)
-        var changed = 0
-        for (index in before.indices) if (before[index] != after[index]) changed += 1
-        return changed
     }
 
     private companion object {
         /** What the row calls itself: [circleRingRowAccessibilityLabel] of its title and its value. */
         const val SPOKEN_NAME = "WAKE PHRASE · HEY JARVIS"
-
-        /** Mattias's own measurement: a touch of about a millisecond, rounded up to a whole frame. */
-        const val A_FLICK = 16L
-
-        /**
-         * Well past row 215's 40 ms brush minimum and well short of the 200 ms gate, so a control
-         * that is keeping a wait is visibly in the middle of it. Below the brush minimum BOTH kinds
-         * draw nothing, by design: a sleeve and a passing thumb are not gestures.
-         */
-        const val MID_HOLD_MS = 120L
-
-        /** One frame at 60 Hz, which is the finest the drawing can be read at. */
-        const val A_FRAME = 16L
-
-        /** Two seconds of frames: longer than any release this kit animates. */
-        const val FRAMES_TO_REST = 125
     }
 }

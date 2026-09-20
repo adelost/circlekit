@@ -203,7 +203,7 @@ private fun StepperPillRow(
                     progress = adjustmentProgress?.let {
                         CircleLabelProgress.Determinate(it.coerceIn(0f, 1f))
                     },
-                    pressed = centreFeedback.pressed,
+                    feedback = centreFeedback,
                     color = brandColor.copy(alpha = 0.35f),
                 ),
             ) {
@@ -349,7 +349,7 @@ private fun StepCircle(
             color = RingTokens.Ink,
             fontSize = 16.sp,
             fontWeight = FontWeight.Bold,
-            modifier = Modifier.circleLabelProgress(pressed = feedback.pressed),
+            modifier = Modifier.circleLabelProgress(feedback = feedback),
         )
     }
 }

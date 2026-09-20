@@ -32,36 +32,37 @@ sealed interface CircleLabelProgress {
     }
 }
 
-internal sealed interface CircleLabelFeedbackMode {
-    data object Idle : CircleLabelFeedbackMode
-    data class Press(val holdMs: Long) : CircleLabelFeedbackMode {
-        init {
-            require(holdMs >= 0L) { "Press feedback duration cannot be negative" }
-        }
-    }
-    data object Indeterminate : CircleLabelFeedbackMode
-    data class Determinate(val fraction: Float) : CircleLabelFeedbackMode
+/**
+ * ASYNCHRONOUS WORK ON A LABEL, which is the only thing a component still times for itself.
+ *
+ * The press used to be a fourth case here, with its own duration, and that is what row 215 removed: a
+ * control drew the wait from a millisecond value it was handed while the GATE counted a different one.
+ * There is no press duration on this side any more. The press arrives as a fraction the gesture has
+ * already measured ([CircleActionFeedbackState.holdProgress]), so the two cannot be handed different
+ * numbers because there is only one number.
+ */
+internal sealed interface CircleLabelWorkMode {
+    /** Nothing of the component's own: the one cue is the press the gesture is timing. */
+    data object None : CircleLabelWorkMode
+    data object Indeterminate : CircleLabelWorkMode
+    data class Determinate(val fraction: Float) : CircleLabelWorkMode
 }
 
-internal fun resolveCircleLabelFeedbackMode(
-    progress: CircleLabelProgress?,
-    pressed: Boolean,
-    pressHoldMs: Long,
-): CircleLabelFeedbackMode {
-    require(pressHoldMs >= 0L) { "Press feedback duration cannot be negative" }
-    return when (progress) {
-        is CircleLabelProgress.Determinate -> CircleLabelFeedbackMode.Determinate(progress.fraction)
-        CircleLabelProgress.Indeterminate -> CircleLabelFeedbackMode.Indeterminate
-        // A wait is drawn exactly while there IS one to wait out, which is what
-        // [circleDrawsAWait] says of the resolved hold. An immediate control resolves to zero and
-        // draws nothing: a wait nobody waits out is the in-between Mattias refused (row 225).
-        null -> if (pressed && circleDrawsAWait(pressHoldMs)) {
-            CircleLabelFeedbackMode.Press(pressHoldMs)
-        } else {
-            CircleLabelFeedbackMode.Idle
-        }
-    }
+internal fun circleLabelWorkMode(progress: CircleLabelProgress?): CircleLabelWorkMode = when (progress) {
+    is CircleLabelProgress.Determinate -> CircleLabelWorkMode.Determinate(progress.fraction)
+    CircleLabelProgress.Indeterminate -> CircleLabelWorkMode.Indeterminate
+    null -> CircleLabelWorkMode.None
 }
+
+/**
+ * ONE NUMBER FOR ONE CUE: the work this control is doing, or else the gate its finger is spending.
+ *
+ * Work wins while there is work, which is the shipped behaviour: press, then checking, then downloading
+ * is one continuous sweep rather than two renderers handing over. [work] keeps winning while its own
+ * release ramp is still running, so a sweep that has just finished does not jump to a finger's zero.
+ */
+internal fun circleOneCueFraction(work: Float, holdProgress: Float, hasWork: Boolean): Float =
+    if (hasWork || work > 0f) work else holdProgress
 
 /**
  * The shared, layout-free left-to-right wash used for short tap feedback and
@@ -69,10 +70,17 @@ internal fun resolveCircleLabelFeedbackMode(
  * component use the same motion language without depending on a host UI.
  */
 fun Modifier.circleProgressSweep(
-    progress: Float?,
+    /**
+     * Read in the DRAW phase, on purpose. A fraction read in composition is the fraction of the frame
+     * BEFORE this one: the gesture writes it from a frame callback, and that write lands after the
+     * frame's composition has been scheduled. Measured 2026-09-20: a wash reading it in composition
+     * first appeared at 64 ms of finger against the gesture's own cue at 48, one frame late all the
+     * way to the gate. It also keeps a press from recomposing the whole control sixty times a second.
+     */
+    progress: () -> Float,
     color: Color = RingTokens.ProgressArc.copy(alpha = 0.30f),
 ): Modifier = drawBehind {
-    val clipped = progress?.coerceIn(0f, 1f) ?: 0f
+    val clipped = progress().coerceIn(0f, 1f)
     if (clipped > 0f) {
         drawRect(color = color, size = Size(size.width * clipped, size.height))
     }
@@ -84,10 +92,11 @@ fun Modifier.circleProgressSweep(
  * rectangular wash through their label.
  */
 fun Modifier.circleProgressContour(
-    progress: Float?,
+    /** See [circleProgressSweep]: read in the draw phase, so the ring is never a frame behind. */
+    progress: () -> Float,
     color: Color = RingTokens.ProgressArc,
 ): Modifier = drawBehind {
-    val clipped = progress?.coerceIn(0f, 1f) ?: 0f
+    val clipped = progress().coerceIn(0f, 1f)
     if (clipped > 0f) {
         drawArc(
             color = color,
@@ -102,26 +111,32 @@ fun Modifier.circleProgressContour(
     }
 }
 
-/** One animation law feeds both label-only actions and circular row actions. */
+/**
+ * THE ONE FRACTION A COMPONENT DRAWS, whether it is doing work or keeping a wearer waiting.
+ *
+ * [holdProgress] comes from the gesture that owns the gate. A component that paints its own cue
+ * ([CirclePressCue.OWNED]) reads it rather than timing a second animation beside the one deciding
+ * whether the press counts: two clocks for one wait is how a cue and a gate drift apart, and the cue
+ * always loses, because a tween cannot start until the press has reached composition two frames later.
+ */
 @Composable
 internal fun rememberCircleFeedbackSweep(
     progress: CircleLabelProgress?,
-    pressed: Boolean,
-    pressHoldMs: Long,
-): Float {
-    val sweep = remember { Animatable(0f) }
-    val mode = resolveCircleLabelFeedbackMode(progress, pressed, pressHoldMs)
+    feedback: CircleActionFeedbackState?,
+): () -> Float {
+    val work = remember { Animatable(0f) }
+    val mode = circleLabelWorkMode(progress)
     LaunchedEffect(mode) {
         when (mode) {
             // Determinate input already is the measured truth (including
             // HoldFillBox's frame-by-frame hold fraction). Smoothing every
             // sample with another fixed tween makes long holds visibly lag
             // and short holds finish early.
-            is CircleLabelFeedbackMode.Determinate -> sweep.snapTo(mode.fraction)
-            CircleLabelFeedbackMode.Indeterminate -> while (true) {
-                val remaining = (1f - sweep.value).coerceIn(0f, 1f)
+            is CircleLabelWorkMode.Determinate -> work.snapTo(mode.fraction)
+            CircleLabelWorkMode.Indeterminate -> while (true) {
+                val remaining = (1f - work.value).coerceIn(0f, 1f)
                 if (remaining > 0f) {
-                    sweep.animateTo(
+                    work.animateTo(
                         1f,
                         tween(
                             (LABEL_WORK_SWEEP_MS * remaining).toInt().coerceAtLeast(1),
@@ -129,24 +144,17 @@ internal fun rememberCircleFeedbackSweep(
                         ),
                     )
                 }
-                sweep.snapTo(0f)
+                work.snapTo(0f)
             }
-            is CircleLabelFeedbackMode.Press -> {
-                val remaining = (1f - sweep.value).coerceIn(0f, 1f)
-                sweep.animateTo(
-                    1f,
-                    tween(
-                        (mode.holdMs * remaining).toInt().coerceAtLeast(1),
-                        easing = LinearEasing,
-                    ),
-                )
-            }
-            CircleLabelFeedbackMode.Idle -> {
-                sweep.animateTo(0f, tween(LABEL_RELEASE_MS, easing = LinearEasing))
+            CircleLabelWorkMode.None -> {
+                work.animateTo(0f, tween(LABEL_RELEASE_MS, easing = LinearEasing))
             }
         }
     }
-    return sweep.value
+    val hasWork = mode != CircleLabelWorkMode.None
+    return remember(work, feedback, hasWork) {
+        { circleOneCueFraction(work.value, feedback?.holdProgress ?: 0f, hasWork) }
+    }
 }
 
 /**
@@ -159,17 +167,20 @@ internal fun rememberCircleFeedbackSweep(
 @Composable
 fun Modifier.circleLabelProgress(
     progress: CircleLabelProgress? = null,
-    pressed: Boolean = false,
-    pressHoldMs: Long = MenuDesign.tapHoldMs,
+    /**
+     * The gesture whose wait this label draws, or explicit null when nothing is being held here.
+     *
+     * Required-but-nullable, the same contract as circleSafeTap's [label]: every caller states who owns
+     * the press it is painting. It takes the STATE and not a duration on purpose. A duration on this
+     * side is a second clock, and a defaulted one decides for controls nobody has thought about, which
+     * is how Link shipped a phone row that drew half a second and committed in one millisecond.
+     */
+    feedback: CircleActionFeedbackState?,
     color: Color? = null,
 ): Modifier {
-    val sweep = rememberCircleFeedbackSweep(
-        progress = progress,
-        pressed = pressed,
-        pressHoldMs = pressHoldMs,
-    )
+    val sweep = rememberCircleFeedbackSweep(progress = progress, feedback = feedback)
     return circleProgressSweep(
-        progress = sweep.takeIf { it > 0f },
+        progress = sweep,
         color = color ?: circleBrandColor().copy(alpha = 0.30f),
     )
 }
