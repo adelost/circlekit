@@ -197,8 +197,7 @@ class ThePressAndTheWaitAgreeOnAControlTest {
         }
         taps = 0
         cues.clear()
-        compose.mainClock.advanceTimeBy(SETTLE_MS)
-        val atRest = frame()
+        val atRest = settleToRest()
 
         val control = compose.onNodeWithContentDescription(SPOKEN_NAME)
         control.performTouchInput { down(center) }
@@ -213,17 +212,21 @@ class ThePressAndTheWaitAgreeOnAControlTest {
         // the frames between were never drawn. The most any frame differs from the resting one is
         // therefore the answer to "was a wait drawn", and 0 means no frame of the press drew one.
         var drawnAtItsMost = 0
-        var elapsed = 0L
-        while (elapsed < holdFor) {
-            val step = minOf(A_FRAME, holdFor - elapsed)
-            compose.mainClock.advanceTimeBy(step)
-            elapsed += step
-            drawnAtItsMost = maxOf(drawnAtItsMost, differingPixels(atRest, frame()))
+        try {
+            var elapsed = 0L
+            while (elapsed < holdFor) {
+                val step = minOf(A_FRAME, holdFor - elapsed)
+                compose.mainClock.advanceTimeBy(step)
+                elapsed += step
+                drawnAtItsMost = maxOf(drawnAtItsMost, differingPixels(atRest, frame()))
+            }
+        } finally {
+            // A case that fails mid-press must not leave a finger on the glass: the next press in
+            // the same test would then measure a control that is still answering the last one.
+            control.performTouchInput { up() }
+            compose.mainClock.advanceTimeByFrame()
+            settleToRest()
         }
-
-        control.performTouchInput { up() }
-        compose.mainClock.advanceTimeByFrame()
-        compose.mainClock.advanceTimeBy(SETTLE_MS)
 
         return Press(
             committed = taps > 0,
@@ -240,6 +243,29 @@ class ThePressAndTheWaitAgreeOnAControlTest {
      * the decor view is the same pixels without the wait, which is the only way to photograph a
      * control mid-press.
      */
+
+    /**
+     * Advances frames until the control is drawing the same thing twice, and returns that frame.
+     *
+     * Not a fixed settle: a press that is still animating when the next one starts makes the next
+     * reading a reading of the last press. lsrc:0 found exactly that, a second case going red under
+     * a mutation that cannot touch it. Coming to rest is therefore proven, not assumed, and a
+     * control that never does fails here rather than quietly one case later.
+     */
+    private fun settleToRest(): IntArray {
+        var previous = frame()
+        repeat(FRAMES_TO_REST) {
+            compose.mainClock.advanceTimeByFrame()
+            val next = frame()
+            if (next.contentEquals(previous)) return next
+            previous = next
+        }
+        throw AssertionError(
+            "the control was still changing after $FRAMES_TO_REST frames, so nothing measured after " +
+                "this point is a reading of the press being made",
+        )
+    }
+
     private fun frame(): IntArray {
         val view = compose.activity.window.decorView
         val bitmap = Bitmap.createBitmap(view.width, view.height, Bitmap.Config.ARGB_8888)
@@ -272,6 +298,8 @@ class ThePressAndTheWaitAgreeOnAControlTest {
 
         /** One frame at 60 Hz, which is the finest the drawing can be read at. */
         const val A_FRAME = 16L
-        const val SETTLE_MS = 2_000L
+
+        /** Two seconds of frames: longer than any release this kit animates. */
+        const val FRAMES_TO_REST = 125
     }
 }
