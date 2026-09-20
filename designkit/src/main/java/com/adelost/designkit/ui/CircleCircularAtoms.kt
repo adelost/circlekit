@@ -435,6 +435,19 @@ fun CirclePressIconRing(
 fun CircleBackDisc(
     enabled: Boolean,
     pressed: Boolean,
+    /**
+     * HOW MUCH OF ITS GATE THE FINGER ON THIS DISC HAS SPENT, read in the draw phase.
+     *
+     * No default, because this is the one thing the disc could not say. It has always answered a touch
+     * with a dip and a brighter contour, which is a BOOLEAN: the wearer is told a finger landed and
+     * never told how much of the wait is left, so a press about to be refused looks exactly like one
+     * about to act until the moment it does not. That is the silence row 212 measured, on the back
+     * button of every screen (row 215).
+     *
+     * A hold-guarded back reports its progress to the caller's centre overlay instead, because the
+     * finger covers the disc there; it passes a zero here and says so.
+     */
+    holdProgress: () -> Float,
     scrim: Boolean,
     diameter: Dp,
     contentDescription: String?,
@@ -450,6 +463,10 @@ fun CircleBackDisc(
             .scale(dip)
             .clip(CircleShape)
             .then(if (scrim) Modifier.background(scrimColor) else Modifier)
+            // The same renderer the gesture's own cue uses, so a back ring cannot answer a press in a
+            // different language from every other gated control: one stroke inside the contour, in the
+            // product's accent, nothing at all at zero.
+            .circleHoldCue(holdProgress, circleBrandColor())
             .border(
                 MenuDesign.contourStroke,
                 when {
