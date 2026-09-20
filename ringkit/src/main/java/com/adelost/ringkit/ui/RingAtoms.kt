@@ -343,8 +343,8 @@ fun RingChoiceRow(
     icon: ImageVector? = null,
     accent: CircleAccent = ringIconAccent(icon),
     modifier: Modifier = Modifier,
-    holdMs: Long = DELIBERATE_CHANGE_HOLD_MS,
-    actionTiming: CircleActionTiming = CircleActionTiming.DELIBERATE,
+    /** See [CircleRingRow]: one value, and only circleResolvedTiming can make it. */
+    timing: CircleResolvedTiming = circleResolvedTiming(CircleActionTiming.DELIBERATE, DELIBERATE_CHANGE_HOLD_MS),
     /** One sentence opened only through the transient row-info affordance. */
     hint: String = "",
     /** Optional verb rendered with the transient information card. */
@@ -365,8 +365,7 @@ fun RingChoiceRow(
         accent = accent,
         onTap = { onSelect(nextChoice(options, selected)) },
         ringActive = active,
-        actionTiming = actionTiming,
-        actionHoldMs = holdMs,
+        timing = timing,
         hint = hint,
         infoAction = infoAction,
         infoSelected = infoSelected,

@@ -60,7 +60,7 @@ class CircleHoldCueTest {
             for (elapsedMs in listOf(0L, CIRCLE_CUE_BRUSH_MIN_MS, holdMs - 1L, holdMs, holdMs + 50L)) {
                 assertEquals(
                     "at $elapsedMs ms of a $holdMs ms gate the cue and the gate disagree",
-                    isCircleHoldComplete(elapsedMs, holdMs),
+                    isCircleHoldComplete(elapsedMs, CircleResolvedTiming(holdMs)),
                     circleHoldCueFraction(elapsedMs, holdMs) >= 1f,
                 )
             }

@@ -105,7 +105,7 @@ class CircleHoldCueRunTest {
     private fun driveTheCue(pressedAtMs: Long, holdMs: Long, frames: List<Long>): List<Float> = runBlocking {
         val clock = BroadcastFrameClock()
         val hold = Animatable(0f)
-        val job = launch(clock) { runCircleHoldCue(hold, pressed = true, holdMs = holdMs, pressedAtMs = pressedAtMs) }
+        val job = launch(clock) { runCircleHoldCue(hold, pressed = true, timing = CircleResolvedTiming(holdMs), pressedAtMs = pressedAtMs) }
         val read = mutableListOf<Float>()
         for (frameMs in frames) {
             pump(clock, job)

@@ -14,6 +14,7 @@ import com.adelost.designkit.press.CirclePressProbe
 import com.adelost.designkit.ui.CircleActionTiming
 import com.adelost.designkit.ui.CircleChoiceRole
 import com.adelost.designkit.ui.RingIcons
+import com.adelost.designkit.ui.circleResolvedTiming
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Rule
@@ -114,7 +115,10 @@ class TheWakePhraseRowObeysItsDeclarationTest {
                     options = PHRASES,
                     role = CircleChoiceRole.STEPPED,
                     icon = RingIcons.Grid,
-                    actionTiming = declaredTiming.value,
+                    timing = circleResolvedTiming(
+                        declaredTiming.value,
+                        DELIBERATE_CHANGE_HOLD_MS,
+                    ),
                     onSelect = { chosen -> selected = chosen },
                 )
             }

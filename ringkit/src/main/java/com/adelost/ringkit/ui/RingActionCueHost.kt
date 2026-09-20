@@ -33,6 +33,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.wear.compose.material.Icon
 import androidx.wear.compose.material.Text
+import com.adelost.designkit.ui.circleResolvedTiming
 import com.adelost.designkit.ui.CircleActionCue
 import com.adelost.designkit.ui.CircleActionCueEvent
 import com.adelost.designkit.ui.LocalCircleActionCuePublisher
@@ -182,7 +183,8 @@ fun RingActionExplanation(cue: CircleActionCue, onDismiss: () -> Unit) {
     Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
         Box(Modifier.fillMaxSize().background(MenuDesign.actionCueScrim).circleSafeTap(
             feedback = rememberCircleActionFeedbackState(),
-            holdMs = 0L, consumeDown = true, label = null, onTap = onDismiss,
+            timing = circleResolvedTiming(CircleActionTiming.IMMEDIATE),
+            consumeDown = true, label = null, onTap = onDismiss,
         ))
         RingExplanationCue(cue, onDismiss)
     }

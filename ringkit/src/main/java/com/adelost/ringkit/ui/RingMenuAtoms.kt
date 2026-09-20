@@ -94,6 +94,7 @@ private fun TapBackRing(
                 .circleSafeTap(
                     feedback = feedback,
                     enabled = enabled,
+                    timing = circleResolvedTiming(CircleActionTiming.DELIBERATE),
                     label = label,
                     // The press target is deliberately LARGER than the disc, so a cue on these bounds
                     // would be a ring around nothing. BackDisc draws it, on the circle the wearer sees.
@@ -192,6 +193,7 @@ fun TextAction(
             .circleSafeTap(
                 feedback = feedback,
                 enabled = enabled,
+                timing = circleResolvedTiming(CircleActionTiming.DELIBERATE),
                 label = text,
                 // The WORD carries the wait, not the padded box around it. Row 215: without this the
                 // gesture painted a second fill across the whole target while the label painted its
@@ -240,8 +242,8 @@ fun RingRow(
     leading: (@Composable () -> Unit)? = null,
     trailing: (@Composable () -> Unit)? = null,
     centerValue: String? = null,
-    actionTiming: CircleActionTiming = CircleActionTiming.DELIBERATE,
-    actionHoldMs: Long = actionTiming.holdMs,
+    /** See [CircleRingRow]: one value, and only circleResolvedTiming can make it. */
+    timing: CircleResolvedTiming = circleResolvedTiming(CircleActionTiming.DELIBERATE),
     /** One sentence opened only through the transient row-info affordance. */
     hint: String = "",
     /** Optional verb rendered with the transient information card. */
@@ -289,9 +291,8 @@ fun RingRow(
                 ordinaryTap = false,
                 icon = icon,
                 label = title,
-                timing = CircleActionTiming.DELIBERATE,
+                timing = circleResolvedTiming(CircleActionTiming.DELIBERATE, holdMs),
                 pressed = false,
-                holdDurationMs = holdMs,
                 determinateProgress = holdProgress,
                 stateValue = sub.takeIf { it.isNotBlank() },
             )
@@ -365,8 +366,7 @@ fun RingRow(
         trailing = trailing,
         endSlot = infoSlot,
         centerValue = centerValue,
-        actionTiming = actionTiming,
-        actionHoldMs = actionHoldMs,
+        timing = timing,
         multiline = multiline,
         iconRotationDeg = iconRotationDeg,
     )

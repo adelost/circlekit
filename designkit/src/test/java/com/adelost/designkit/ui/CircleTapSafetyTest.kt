@@ -11,14 +11,14 @@ class CircleTapSafetyTest {
     fun `a press shorter than the rung is a graze, not an action`() {
         // A touch that was never a decision must do nothing (Mattias
         // 2026-07-21: "inte att man råkar nudda").
-        assertFalse(isCircleHoldComplete(pressDurationMs = 0L))
-        assertFalse(isCircleHoldComplete(pressDurationMs = MenuDesign.tapHoldMs - 1L))
+        assertFalse(isCircleHoldComplete(pressDurationMs = 0L, timing = THE_ORDINARY_GATE))
+        assertFalse(isCircleHoldComplete(pressDurationMs = MenuDesign.tapHoldMs - 1L, timing = THE_ORDINARY_GATE))
     }
 
     @Test
     fun `a press that reaches the rung commits`() {
-        assertTrue(isCircleHoldComplete(pressDurationMs = MenuDesign.tapHoldMs))
-        assertTrue(isCircleHoldComplete(pressDurationMs = 5_000L))
+        assertTrue(isCircleHoldComplete(pressDurationMs = MenuDesign.tapHoldMs, timing = THE_ORDINARY_GATE))
+        assertTrue(isCircleHoldComplete(pressDurationMs = 5_000L, timing = THE_ORDINARY_GATE))
     }
 
     @Test
@@ -60,5 +60,10 @@ class CircleTapSafetyTest {
             MenuDesign.holdConfirmMs,
         )
         assertEquals(ladder.sorted(), ladder)
+    }
+
+    private companion object {
+        /** What an ordinary navigation control declares. The gate takes no default: see isCircleHoldComplete. */
+        val THE_ORDINARY_GATE = unlockedTiming(CircleActionTiming.DELIBERATE)
     }
 }

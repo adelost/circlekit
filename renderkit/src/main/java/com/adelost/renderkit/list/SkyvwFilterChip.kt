@@ -22,6 +22,8 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.adelost.designkit.ui.CircleActionEffect
+import com.adelost.designkit.ui.circleResolvedTiming
 import com.adelost.designkit.ui.GraphiteTokens
 import com.adelost.designkit.ui.RingIcons
 import com.adelost.designkit.ui.CircleActionTiming
@@ -135,12 +137,17 @@ fun SkyvwFilterChip(
     chip: SkyvwFilterChipUi,
     design: SkyvwFilterChipDesign,
     collapse: SkyvwFilterChipCollapse = SkyvwFilterChipCollapse.KEEP_LABEL,
+    /** See [CircleActionEffect]: the default fails towards the lock. A filter changes what is listed,
+     *  which the next press does not give back on its own, so a chip is not a view-only control. */
+    effect: CircleActionEffect = CircleActionEffect.ACTS,
 ) {
     val feedback = rememberCircleActionFeedbackState()
+    // ONE resolution, read by the cue and by the gate below.
+    val timing = circleResolvedTiming(design.actionTiming, effect = effect)
     val cue = rememberCircleActionCueController(
         icon = chip.cueIcon,
         label = chip.label,
-        timing = design.actionTiming,
+        timing = timing,
         pressed = feedback.pressed,
     )
     val showLabel = chip.selected || collapse == SkyvwFilterChipCollapse.KEEP_LABEL
@@ -176,7 +183,7 @@ fun SkyvwFilterChip(
             }
             .circleSafeTap(
                 feedback = feedback,
-                holdMs = design.actionTiming.holdMs,
+                timing = timing,
                 label = chip.label,
                 onTap = {
                     cue.confirm()

@@ -168,7 +168,7 @@ internal fun circleCuePlan(
     icon: ImageVector,
     label: String,
     value: String?,
-    timing: CircleActionTiming,
+    timing: CircleResolvedTiming,
     pressed: Boolean,
     confirmed: Boolean,
     determinateProgress: Float?,
@@ -177,11 +177,11 @@ internal fun circleCuePlan(
     fun cue(progress: Float, isConfirmed: Boolean) =
         CircleActionCue(icon, label, progress, isConfirmed, value, choiceState = choiceState)
     return when {
-        confirmed && timing == CircleActionTiming.DELIBERATE ->
+        confirmed && timing.drawsAWait ->
             CircleCuePlan.Settle(cue(progress = 1f, isConfirmed = true))
         determinateProgress != null ->
             CircleCuePlan.Show(cue(determinateProgress, isConfirmed = false))
-        pressed && timing == CircleActionTiming.DELIBERATE -> CircleCuePlan.Sweep
+        pressed && timing.drawsAWait -> CircleCuePlan.Sweep
         else -> CircleCuePlan.Clear
     }
 }
@@ -206,9 +206,8 @@ class CircleActionCueController internal constructor(private val publishReceipt:
 fun rememberCircleActionCueController(
     icon: ImageVector,
     label: String,
-    timing: CircleActionTiming,
+    timing: CircleResolvedTiming,
     pressed: Boolean,
-    holdDurationMs: Long = timing.holdMs,
     determinateProgress: Float? = null,
     /** Where this control stands. Rendered while held and after it commits. */
     stateValue: String? = null,
@@ -219,7 +218,6 @@ fun rememberCircleActionCueController(
     // The declared timing IS the answer here too. This used to consult a host-wide override that the
     // control's own drawing never saw, so the two could disagree about the same press (row 225).
     val effectiveTiming = timing
-    require(holdDurationMs >= 0L) { "Action cue hold duration cannot be negative" }
     require(determinateProgress == null || determinateProgress.isFinite() && determinateProgress in 0f..1f) {
         "Action cue progress must be null or a finite fraction in 0..1"
     }
@@ -238,7 +236,7 @@ fun rememberCircleActionCueController(
         label,
         effectiveTiming,
         pressed,
-        holdDurationMs,
+        timing,
         determinateProgress,
         state,
         choiceState,
@@ -273,7 +271,7 @@ fun rememberCircleActionCueController(
                     initialValue = 0f,
                     targetValue = 1f,
                     animationSpec = tween(
-                        durationMillis = holdDurationMs.toInt(),
+                        durationMillis = timing.holdMs.toInt(),
                         easing = LinearEasing,
                     ),
                 ) { value, _ ->

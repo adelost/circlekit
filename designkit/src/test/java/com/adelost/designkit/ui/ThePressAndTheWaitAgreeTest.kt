@@ -27,8 +27,8 @@ class ThePressAndTheWaitAgreeTest {
 
     @Test
     fun `an immediate control keeps no press waiting and draws no wait`() {
-        val hold = circleResolvedTiming(CircleActionTiming.IMMEDIATE)
-        assertEquals("an immediate control cannot hold a press", 0L, hold)
+        val hold = unlockedTiming(CircleActionTiming.IMMEDIATE)
+        assertEquals("an immediate control cannot hold a press", 0L, hold.holdMs)
         assertTrue("the shortest press a finger can make did not commit", commits(1L, hold))
         assertFalse(
             "an immediate control drew a wait: a bar that fills while the press has already " +
@@ -46,8 +46,8 @@ class ThePressAndTheWaitAgreeTest {
     fun `an immediate control ignores a hold that rides along with it`() {
         // Where the bug lived. A choice row carries DELIBERATE_CHANGE_HOLD_MS whatever its kind, so
         // a control declared immediate used to arrive with a half second in its other hand.
-        val hold = circleResolvedTiming(CircleActionTiming.IMMEDIATE, holdMs = MenuDesign.holdDeliberateMs)
-        assertEquals("a number riding along outvoted the declaration", 0L, hold)
+        val hold = unlockedTiming(CircleActionTiming.IMMEDIATE, holdMs = MenuDesign.holdDeliberateMs)
+        assertEquals("a number riding along outvoted the declaration", 0L, hold.holdMs)
         assertFalse("and it drew the wait it was not going to keep", drawsAWait(hold))
         assertFalse("and the drawing still produced one", drawsAWaitOnTheGlass(hold))
     }
@@ -55,8 +55,8 @@ class ThePressAndTheWaitAgreeTest {
     @Test
     fun `a deliberate control refuses every press shorter than the wait it drew`() {
         for (declared in listOf(MenuDesign.tapHoldMs, MenuDesign.holdDeliberateMs, 900L)) {
-            val hold = circleResolvedTiming(CircleActionTiming.DELIBERATE, holdMs = declared)
-            assertEquals("the declared hold was not the resolved one", declared, hold)
+            val hold = unlockedTiming(CircleActionTiming.DELIBERATE, holdMs = declared)
+            assertEquals("the declared hold was not the resolved one", declared, hold.holdMs)
             assertTrue("a deliberate control drew no wait, so its hold is invisible", drawsAWait(hold))
             assertTrue("and the drawing produced none", drawsAWaitOnTheGlass(hold))
             assertFalse("a press of one millisecond committed against a $declared ms wait", commits(1L, hold))
@@ -68,28 +68,28 @@ class ThePressAndTheWaitAgreeTest {
     @Test
     fun `the gate and the drawing read one answer, for every kind`() {
         for (timing in CircleActionTiming.entries) {
-            val hold = circleResolvedTiming(timing)
+            val hold = unlockedTiming(timing)
             // THE INVARIANT, in one line: the duration a press must survive IS the duration the
             // control draws. A press at the boundary therefore commits exactly when the drawn wait
             // has been seen through to its end.
             val drawn = drawnWaitMs(hold)
             assertEquals(
-                "$timing draws a ${drawn} ms wait and commits after ${hold} ms, so the bar and the " +
-                    "press describe different gestures",
-                hold,
+                "$timing draws a ${drawn} ms wait and commits after ${hold.holdMs} ms, so the bar and " +
+                    "the press describe different gestures",
+                hold.holdMs,
                 drawn,
             )
             assertEquals(
                 "$timing commits at a moment its own drawing does not reach",
                 commits(drawn, hold),
-                drawn >= hold,
+                drawn >= hold.holdMs,
             )
         }
     }
 
     @Test
     fun `a deliberate control without a duration is refused rather than drawn as a third kind`() {
-        val refusal = runCatching { circleResolvedTiming(CircleActionTiming.DELIBERATE, holdMs = 0L) }
+        val refusal = runCatching { unlockedTiming(CircleActionTiming.DELIBERATE, holdMs = 0L) }
         assertTrue(
             "a deliberate control with no hold was accepted: it draws nothing and commits at once, " +
                 "which is a third kind of button",
@@ -113,7 +113,7 @@ class ThePressAndTheWaitAgreeTest {
             assertTrue(
                 "a $tooShort ms deliberate hold was accepted: the press waits and the glass " +
                     "never says so",
-                runCatching { circleResolvedTiming(CircleActionTiming.DELIBERATE, holdMs = tooShort) }.isFailure,
+                runCatching { unlockedTiming(CircleActionTiming.DELIBERATE, holdMs = tooShort) }.isFailure,
             )
         }
     }
@@ -122,20 +122,52 @@ class ThePressAndTheWaitAgreeTest {
     fun `the arc a deliberate control fills completes exactly when its gate commits`() {
         // One rule, read at the same millisecond from both sides: row 215's cue fraction and this
         // kit's press gate. They cannot drift because they are given the same resolved number.
-        val hold = circleResolvedTiming(CircleActionTiming.DELIBERATE, holdMs = MenuDesign.holdDeliberateMs)
-        assertEquals("the arc was not full at the moment the press committed", 1f, circleHoldCueFraction(hold, hold), 0f)
-        assertTrue("the press did not commit at the moment its arc filled", commits(hold, hold))
-        val justBefore = hold - 1L
-        assertTrue("the arc was already full before the press committed", circleHoldCueFraction(justBefore, hold) < 1f)
+        val hold = unlockedTiming(CircleActionTiming.DELIBERATE, holdMs = MenuDesign.holdDeliberateMs)
+        assertEquals(
+            "the arc was not full at the moment the press committed",
+            1f,
+            circleHoldCueFraction(hold.holdMs, hold.holdMs),
+            0f,
+        )
+        assertTrue("the press did not commit at the moment its arc filled", commits(hold.holdMs, hold))
+        val justBefore = hold.holdMs - 1L
+        assertTrue(
+            "the arc was already full before the press committed",
+            circleHoldCueFraction(justBefore, hold.holdMs) < 1f,
+        )
         assertFalse("the press committed before its arc was full", commits(justBefore, hold))
     }
 
-    /** What the press gate does with a resolved hold, through the kit's own rule. */
-    private fun commits(pressDurationMs: Long, resolvedHoldMs: Long): Boolean =
-        isCircleHoldComplete(pressDurationMs, resolvedHoldMs)
+    @Test
+    fun `a control's timing is one value, and two resolutions of it are the same value`() {
+        // THE POINT OF THE TYPE. Every reader takes the value rather than its own parameter beside it,
+        // so there is nothing left to disagree about. And the value is what a gesture and an effect are
+        // KEYED on: a timing that is not equal to an identical timing would tear down and reinstall the
+        // pointer handler on every recomposition, which is a gesture that loses its own press.
+        for (timing in CircleActionTiming.entries) {
+            for (declared in listOf(MenuDesign.tapHoldMs, MenuDesign.holdDeliberateMs, 900L)) {
+                val resolved = unlockedTiming(timing, declared)
+                assertEquals(
+                    "$resolved says it draws a wait but carries no duration, or the other way about",
+                    resolved.holdMs > 0L,
+                    resolved.drawsAWait,
+                )
+                assertEquals(
+                    "two resolutions of $timing at $declared ms are not the same value, so a pointer " +
+                        "handler keyed on one would be reinstalled by the other every recomposition",
+                    resolved,
+                    unlockedTiming(timing, declared),
+                )
+            }
+        }
+    }
+
+    /** What the press gate does with a resolved timing, through the kit's own rule. */
+    private fun commits(pressDurationMs: Long, timing: CircleResolvedTiming): Boolean =
+        isCircleHoldComplete(pressDurationMs, timing)
 
     /** Whether the control draws a wait, through the kit's own rule. */
-    private fun drawsAWait(resolvedHoldMs: Long): Boolean = circleDrawsAWait(resolvedHoldMs)
+    private fun drawsAWait(timing: CircleResolvedTiming): Boolean = timing.drawsAWait
 
     /**
      * Whether anything is drawn across the whole of this hold, read off the CUE's own law.
@@ -147,18 +179,18 @@ class ThePressAndTheWaitAgreeTest {
      * answer. The hand-over itself is now proven on a mounted control in
      * [ThePressAndTheWaitAgreeOnAControlTest], where it can be seen rather than computed.
      */
-    private fun drawsAWaitOnTheGlass(resolvedHoldMs: Long): Boolean =
-        circleHoldCueFraction(resolvedHoldMs, resolvedHoldMs) > 0f
+    private fun drawsAWaitOnTheGlass(timing: CircleResolvedTiming): Boolean =
+        circleHoldCueFraction(timing.holdMs, timing.holdMs) > 0f
 
     /**
      * How long the wait the control draws lasts, read off the cue by finding the last millisecond at
      * which it is still short of full. A cue that completes early or late would answer differently
      * here from the gate below.
      */
-    private fun drawnWaitMs(resolvedHoldMs: Long): Long {
-        if (!drawsAWaitOnTheGlass(resolvedHoldMs)) return 0L
+    private fun drawnWaitMs(timing: CircleResolvedTiming): Long {
+        if (!drawsAWaitOnTheGlass(timing)) return 0L
         var elapsed = 0L
-        while (elapsed <= resolvedHoldMs && circleHoldCueFraction(elapsed, resolvedHoldMs) < 1f) elapsed += 1L
+        while (elapsed <= timing.holdMs && circleHoldCueFraction(elapsed, timing.holdMs) < 1f) elapsed += 1L
         return elapsed
     }
 }

@@ -12,6 +12,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.composed
 import androidx.compose.ui.input.pointer.pointerInput
@@ -49,25 +50,106 @@ enum class CircleActionTiming(val holdMs: Long) {
  * [CIRCLE_CUE_BRUSH_MIN_MS] gates a press that row 215's cue deliberately never draws, which is the
  * same silence from the other side.
  */
-fun circleResolvedTiming(timing: CircleActionTiming, holdMs: Long = timing.holdMs): Long {
+@Composable
+fun circleResolvedTiming(
+    timing: CircleActionTiming,
+    holdMs: Long = timing.holdMs,
+    effect: CircleActionEffect = CircleActionEffect.ACTS,
+): CircleResolvedTiming = resolveCircleTiming(timing, holdMs, effect, LocalCircleTouchLock.current)
+
+/**
+ * The same rule without a composition, so a case can walk locked and unlocked without mounting one.
+ *
+ * Internal on purpose: [circleResolvedTiming] is the only door a product has, and it is the door that
+ * reads the lock. A caller that could pass `locked` could pass false.
+ */
+internal fun resolveCircleTiming(
+    timing: CircleActionTiming,
+    holdMs: Long,
+    effect: CircleActionEffect,
+    locked: Boolean,
+): CircleResolvedTiming {
     require(holdMs >= 0L) { "A control's hold cannot be negative" }
     require(timing == CircleActionTiming.IMMEDIATE || holdMs > CIRCLE_CUE_BRUSH_MIN_MS) {
         "A deliberate control holds for longer than the brush minimum ($CIRCLE_CUE_BRUSH_MIN_MS ms), " +
             "because a hold the cue refuses to draw is a wait nobody is told about; " +
             "${CircleActionTiming.IMMEDIATE} is how a control says it does not wait"
     }
-    return if (timing == CircleActionTiming.IMMEDIATE) 0L else holdMs
+    val declared = if (timing == CircleActionTiming.IMMEDIATE) 0L else holdMs
+    // The lock never SHORTENS a hold: a destructive control does not get cheaper because the wearer is
+    // under canopy. And it lengthens rather than refuses, because a control that looks pressable and
+    // can never be pressed is the third kind of button Mattias threw out; in the air every control is
+    // the hold kind, and its ring teaches that the first time it is touched (skyvw:1, row 229).
+    val locked = locked && effect == CircleActionEffect.ACTS
+    return CircleResolvedTiming(if (locked) maxOf(declared, MenuDesign.holdConfirmMs) else declared)
 }
 
-/** A control draws a wait exactly while it has one to wait out. The gate and the drawing read this. */
-fun circleDrawsAWait(resolvedHoldMs: Long): Boolean = resolvedHoldMs > 0L
+/**
+ * WHAT A PRESS CHANGES, which is the only thing that can excuse it from a locked surface.
+ *
+ * THE DEFAULT FAILS TOWARDS THE LOCK, and that is the whole reason it is allowed to have one: a
+ * control whose author never thought about this is [ACTS], so it becomes a hold in the air. Had the
+ * default been the other way, forgetting it would leave a control live under canopy with nothing red
+ * anywhere. The exception is what has to be typed, by name, with its reason in the declaration.
+ */
+enum class CircleActionEffect {
+    /** It navigates, steps data, toggles a layer or writes. Everything, unless stated otherwise. */
+    ACTS,
+
+    /**
+     * A pure view operation on the surface being flown, and nothing else.
+     *
+     * A jumper steering to a landing area must not need a one-second hold in gloves to get the map
+     * back on themselves, and a brushed recentre or zoom costs nothing the next press does not give
+     * back (lsrc:0, 2026-09-20, correcting his own earlier ruling). Today that is the glass zoom pair
+     * and the aim. Anything that leaves something changed behind it is not in this class.
+     */
+    MOVES_THE_VIEW,
+}
 
 /**
- * What makes a press count: it lasted at least [holdMs]. THE rule, so the
- * rung cannot drift between the gates below.
+ * WHETHER THE SURFACE UNDER THE FINGER IS LOCKED, read by [circleResolvedTiming] and by nothing else.
+ *
+ * One reader, at the moment the number is resolved, so the gate, the cue and the drawing are already
+ * locked because they take that number. A parameter instead would be 27 call sites that can forget it,
+ * and one that forgets is a control keeping its tap in freefall with nothing red anywhere.
+ *
+ * Unlocked by default because a kit with no phase model has no lock. What has no default is the
+ * control: nothing opts out, and the lock is never a flag on a button.
  */
-fun isCircleHoldComplete(pressDurationMs: Long, holdMs: Long = MenuDesign.tapHoldMs): Boolean =
-    pressDurationMs >= holdMs
+val LocalCircleTouchLock = staticCompositionLocalOf { false }
+
+/**
+ * A CONTROL'S RESOLVED TIMING, which is the only timing anything downstream is allowed to see.
+ *
+ * [circleResolvedTiming] is the only way to make one, because its constructor is internal to this kit.
+ * So a raw millisecond cannot reach a gate, a cue or a drawing without passing the two-kinds rule
+ * first, and a component cannot hand one reader a different number than another: there is one value
+ * and every reader takes THE value rather than its own parameter beside it.
+ *
+ * What it replaces is four parallel names for the same declaration, `timing` and `holdMs` and
+ * `actionHoldMs` and `pressHoldMs`, any two of which could disagree. They did: Link 1.2.23's WAKE
+ * PHRASE row drew a half-second arc and switched on a press of ONE millisecond, because a host-wide
+ * override reached the gate and never reached the drawing. That defect is now unwritable rather than
+ * tested for.
+ */
+@JvmInline
+value class CircleResolvedTiming internal constructor(val holdMs: Long) {
+
+    /** A control draws a wait exactly while it has one to wait out. The gate and the drawing read this. */
+    val drawsAWait: Boolean get() = holdMs > 0L
+
+    override fun toString(): String = if (drawsAWait) "a $holdMs ms hold" else "no hold"
+}
+
+/**
+ * What makes a press count: it lasted at least as long as the control's resolved hold. THE rule, so
+ * the rung cannot drift between the gates below.
+ *
+ * No default: a gate whose duration is assumed is a gate nobody declared.
+ */
+fun isCircleHoldComplete(pressDurationMs: Long, timing: CircleResolvedTiming): Boolean =
+    pressDurationMs >= timing.holdMs
 
 /** The continuous action may start only when the gate completed under touch. */
 internal fun continuousPressMayBegin(
@@ -111,7 +193,7 @@ internal fun continuousPressMayBegin(
 fun Modifier.circleSafeTap(
     feedback: CircleActionFeedbackState,
     enabled: Boolean = true,
-    holdMs: Long = MenuDesign.tapHoldMs,
+    timing: CircleResolvedTiming,
     consumeDown: Boolean = false,
     label: String?,
     cue: CirclePressCue = CirclePressCue.AUTO,
@@ -122,11 +204,11 @@ fun Modifier.circleSafeTap(
     } else {
         val latestTap = rememberUpdatedState(onTap)
         val haptics = rememberUpdatedState(circleTouchHapticFeedback())
-        CircleHoldCueDriver(feedback, holdMs)
+        CircleHoldCueDriver(feedback, timing)
         Modifier
             .circleActionSemantics(label, enabled = true) { latestTap.value() }
             .circlePressCue(feedback, cue)
-            .pointerInput(holdMs, consumeDown) {
+            .pointerInput(timing, consumeDown) {
                 awaitEachGesture {
                     val down = awaitFirstDown(requireUnconsumed = !consumeDown)
                     if (consumeDown) down.consume()
@@ -134,7 +216,7 @@ fun Modifier.circleSafeTap(
                     feedback.pressed = true
                     var commits = false
                     try {
-                        if (holdMs == 0L) {
+                        if (!timing.drawsAWait) {
                             // A normal click commits on release, so starting a
                             // scroll over a row cannot accidentally select it.
                             val up = waitForUpOrCancellation()
@@ -142,7 +224,7 @@ fun Modifier.circleSafeTap(
                             up?.consume()
                         } else {
                         var cancelled = false
-                        val releasedEarly = withTimeoutOrNull(holdMs) {
+                        val releasedEarly = withTimeoutOrNull(timing.holdMs) {
                             val release = waitForUpOrCancellation()
                             cancelled = release == null
                             release
@@ -175,22 +257,21 @@ fun Modifier.circleSafeTap(
 fun Modifier.circlePressLifecycle(
     feedback: CircleActionFeedbackState,
     enabled: Boolean,
-    holdMs: Long = MenuDesign.tapHoldMs,
+    timing: CircleResolvedTiming,
     cue: CirclePressCue = CirclePressCue.AUTO,
     onBegin: () -> Boolean,
     onRelease: () -> Unit,
     onCancel: () -> Unit,
 ): Modifier = composed {
-    require(holdMs >= 0L) { "Press lifecycle hold duration cannot be negative" }
-    if (!enabled) {
+        if (!enabled) {
         Modifier.semantics { disabled() }
     } else {
         val haptics = rememberUpdatedState(circleTouchHapticFeedback())
         val latestBegin = rememberUpdatedState(onBegin)
         val latestRelease = rememberUpdatedState(onRelease)
         val latestCancel = rememberUpdatedState(onCancel)
-        CircleHoldCueDriver(feedback, holdMs)
-        Modifier.circlePressCue(feedback, cue).pointerInput(holdMs) {
+        CircleHoldCueDriver(feedback, timing)
+        Modifier.circlePressCue(feedback, cue).pointerInput(timing) {
             awaitEachGesture {
                 val down = awaitFirstDown(requireUnconsumed = false)
                 down.consume()
@@ -199,7 +280,7 @@ fun Modifier.circlePressLifecycle(
                 var active = false
                 try {
                     var cancelled = false
-                    val releasedBeforeActivation = withTimeoutOrNull(holdMs) {
+                    val releasedBeforeActivation = withTimeoutOrNull(timing.holdMs) {
                         val release = waitForUpOrCancellation()
                         cancelled = release == null
                         release
@@ -231,7 +312,7 @@ fun Modifier.circlePressLifecycle(
 
 /**
  * The same gate for a control that ALSO carries a longer press: holding to
- * [holdMs] fires the action, holding past [longPressMs] fires the long one
+ * The resolved hold fires the action, holding past [longPressMs] fires the long one
  * instead.
  *
  * Both rungs are real holds now, so they must be separated by enough time to
@@ -246,7 +327,7 @@ fun Modifier.circlePressLifecycle(
 fun Modifier.circleSafeTapOrHold(
     feedback: CircleActionFeedbackState,
     enabled: Boolean = true,
-    holdMs: Long = MenuDesign.tapHoldMs,
+    timing: CircleResolvedTiming,
     longPressMs: Long = MenuDesign.holdDestructiveMs,
     consumeDown: Boolean = false,
     label: String?,
@@ -254,8 +335,8 @@ fun Modifier.circleSafeTapOrHold(
     onLongPress: () -> Unit,
     onTap: () -> Unit,
 ): Modifier = composed {
-    require(longPressMs > holdMs) {
-        "long press ($longPressMs ms) must outlast the action rung ($holdMs ms)"
+    require(longPressMs > timing.holdMs) {
+        "long press ($longPressMs ms) must outlast the action rung (${timing.holdMs} ms)"
     }
     if (!enabled) {
         Modifier.circleActionSemantics(label, enabled = false) {}
@@ -263,7 +344,7 @@ fun Modifier.circleSafeTapOrHold(
         val latestTap = rememberUpdatedState(onTap)
         val latestLongPress = rememberUpdatedState(onLongPress)
         val haptics = rememberUpdatedState(circleTouchHapticFeedback())
-        CircleHoldCueDriver(feedback, holdMs)
+        CircleHoldCueDriver(feedback, timing)
         Modifier
             .circleActionSemantics(
                 label,
@@ -271,7 +352,7 @@ fun Modifier.circleSafeTapOrHold(
                 onLongPress = { latestLongPress.value() },
             ) { latestTap.value() }
             .circlePressCue(feedback, cue)
-            .pointerInput(holdMs, longPressMs, consumeDown) {
+            .pointerInput(timing, longPressMs, consumeDown) {
             awaitEachGesture {
                 val down = awaitFirstDown(requireUnconsumed = !consumeDown)
                 if (consumeDown) down.consume()
@@ -290,7 +371,7 @@ fun Modifier.circleSafeTapOrHold(
                         releasedEarly == null -> CircleGestureCompletion.LONG_PRESS
                         isCircleHoldComplete(
                             releasedEarly.uptimeMillis - down.uptimeMillis,
-                            holdMs,
+                            timing,
                         ) -> CircleGestureCompletion.TAP
                         else -> CircleGestureCompletion.NONE
                     }
@@ -384,10 +465,10 @@ private fun Modifier.circleActionSemantics(
  * The law it runs, including the brush minimum and the shape, is [runCircleHoldCue].
  */
 @Composable
-private fun CircleHoldCueDriver(feedback: CircleActionFeedbackState, holdMs: Long) {
+private fun CircleHoldCueDriver(feedback: CircleActionFeedbackState, timing: CircleResolvedTiming) {
     val pressed = feedback.pressed
-    LaunchedEffect(feedback, pressed, holdMs) {
-        runCircleHoldCue(feedback.hold, pressed, holdMs, feedback.pressedAtMs)
+    LaunchedEffect(feedback, pressed, timing) {
+        runCircleHoldCue(feedback.hold, pressed, timing, feedback.pressedAtMs)
     }
 }
 

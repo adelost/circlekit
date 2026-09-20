@@ -12,6 +12,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.adelost.designkit.ui.CircleActionTiming
+import com.adelost.designkit.ui.circleResolvedTiming
 import com.adelost.designkit.ui.CircleSurfaceClass
 import com.adelost.designkit.ui.CircleText
 import com.adelost.designkit.ui.MenuDesign
@@ -209,6 +211,7 @@ object ShowcasePresentations {
                     active -> null
                     else -> "HOLD"
                 },
+                timing = circleResolvedTiming(CircleActionTiming.DELIBERATE),
                 onBegin = state::beginCapture,
                 onRelease = state::releaseCapture,
                 onCancel = state::cancelCapture,

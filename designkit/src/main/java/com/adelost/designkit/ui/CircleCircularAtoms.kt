@@ -151,13 +151,17 @@ fun CircleIconDisc(
     /** Optional asynchronous work on the same contour as the action. */
     labelProgress: CircleLabelProgress? = null,
     timing: CircleActionTiming = CircleActionTiming.DELIBERATE,
+    /** See [CircleActionEffect]: the default fails towards the lock, which is why it may have one. */
+    effect: CircleActionEffect = CircleActionEffect.ACTS,
 ) {
     val feedback = rememberCircleActionFeedbackState()
     val activeContour = circleBrandColor()
+    // ONE resolution, handed to the cue and to the gate. Nothing downstream sees the declaration.
+    val resolved = circleResolvedTiming(timing, effect = effect)
     val cue = rememberCircleActionCueController(
         icon = icon,
         label = actionLabel,
-        timing = timing,
+        timing = resolved,
         pressed = feedback.pressed,
         choiceState = cueChoiceState,
     )
@@ -185,7 +189,7 @@ fun CircleIconDisc(
                 enabled = enabled,
                 // A trailing icon is its own action, never also its parent row.
                 consumeDown = true,
-                holdMs = timing.holdMs,
+                timing = resolved,
                 label = contentDescription,
                 // The contour above is this disc's own cue, and it merges the press with asynchronous
                 // work on one circle. Row 215 leaves the gesture's copy off rather than drawing two.
@@ -234,13 +238,16 @@ fun CircleValueDisc(
     active: Boolean = false,
     enabled: Boolean = true,
     timing: CircleActionTiming = CircleActionTiming.DELIBERATE,
+    /** See [CircleActionEffect]: the default fails towards the lock, which is why it may have one. */
+    effect: CircleActionEffect = CircleActionEffect.ACTS,
 ) {
     val feedback = rememberCircleActionFeedbackState()
     val activeContour = circleBrandColor()
+    val resolved = circleResolvedTiming(timing, effect = effect)
     val cue = rememberCircleActionCueController(
         icon = RingIcons.Gauge,
         label = actionLabel,
-        timing = timing,
+        timing = resolved,
         pressed = feedback.pressed,
     )
     val chrome = circleActionDiscChrome(
@@ -262,7 +269,7 @@ fun CircleValueDisc(
             .circleSafeTap(
                 feedback = feedback,
                 enabled = enabled,
-                holdMs = timing.holdMs,
+                timing = resolved,
                 label = contentDescription,
                 onTap = {
                     cue.confirm()
@@ -317,6 +324,8 @@ fun CircleIconRing(
      *  extra, so every existing ring is unaffected. */
     sub: String? = null,
     timing: CircleActionTiming = CircleActionTiming.DELIBERATE,
+    /** See [CircleActionEffect]: the default fails towards the lock, which is why it may have one. */
+    effect: CircleActionEffect = CircleActionEffect.ACTS,
     enabled: Boolean = true,
     semanticColor: Color? = null,
     /** The product proposed this, a person did not choose it: a dashed
@@ -324,10 +333,11 @@ fun CircleIconRing(
     suggested: Boolean = false,
 ) {
     val feedback = rememberCircleActionFeedbackState()
+    val resolved = circleResolvedTiming(timing, effect = effect)
     val cue = rememberCircleActionCueController(
         icon = icon,
         label = label,
-        timing = timing,
+        timing = resolved,
         pressed = feedback.pressed,
     )
     CircleRingRowActionContent {
@@ -351,7 +361,7 @@ fun CircleIconRing(
             gestureModifier = Modifier.circleSafeTap(
                 feedback = feedback,
                 enabled = enabled,
-                holdMs = timing.holdMs,
+                timing = resolved,
                 label = circleRingRowAccessibilityLabel(label, sub.orEmpty()),
                 onTap = {
                     cue.confirm()
@@ -383,17 +393,16 @@ fun CirclePressIconRing(
     labelSize: TextUnit = 9.5.sp,
     centerValue: String? = null,
     sub: String? = null,
-    holdMs: Long = MenuDesign.tapHoldMs,
+    /** No millisecond: the kind IS the declaration, and this used to read it back off a duration. */
+    timing: CircleResolvedTiming = circleResolvedTiming(CircleActionTiming.DELIBERATE),
 ) {
     val feedback = rememberCircleActionFeedbackState()
-    val timing = if (holdMs == 0L) CircleActionTiming.IMMEDIATE else CircleActionTiming.DELIBERATE
     rememberCircleActionCueController(
         ordinaryTap = false,
         icon = icon,
         label = label,
         timing = timing,
         pressed = feedback.pressed && !active,
-        holdDurationMs = holdMs,
     )
     CircleIconRingFrame(
         icon = icon,
@@ -413,7 +422,7 @@ fun CirclePressIconRing(
         gestureModifier = Modifier.circlePressLifecycle(
             feedback = feedback,
             enabled = enabled,
-            holdMs = holdMs,
+            timing = timing,
             onBegin = onBegin,
             onRelease = onRelease,
             onCancel = onCancel,

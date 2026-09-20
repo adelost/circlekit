@@ -52,6 +52,7 @@ class CircleSafeTapAccessibilityTest {
                 // The product's feedback choice must survive that boundary.
                 Dialog(onDismissRequest = {}) {
                 Box(Modifier.size(48.dp).testTag(TARGET).circleSafeTap(
+                    timing = circleResolvedTiming(CircleActionTiming.DELIBERATE),
                     feedback = rememberCircleActionFeedbackState(), enabled = enabled,
                     label = CONTROL_DESCRIPTION, onTap = { actions++ },
                 ))
@@ -103,6 +104,7 @@ class CircleSafeTapAccessibilityTest {
                 CircleTouchFeedback(vibration) {
                     Box(Modifier.size(48.dp).testTag(TARGET).circlePressLifecycle(
                         feedback = rememberCircleActionFeedbackState(), enabled = true,
+                        timing = circleResolvedTiming(CircleActionTiming.DELIBERATE),
                         onBegin = { accepts }, onRelease = { releases++ }, onCancel = { cancels++ },
                     ))
                 }
@@ -212,6 +214,7 @@ class CircleSafeTapAccessibilityTest {
                     .circleSafeTapOrHold(
                         feedback = feedback,
                         enabled = enabled,
+                        timing = circleResolvedTiming(CircleActionTiming.DELIBERATE),
                         label = null,
                         onTap = { taps++ },
                         onLongPress = { longPresses++ },
@@ -280,6 +283,7 @@ class CircleSafeTapAccessibilityTest {
                     .circleSafeTap(
                         feedback = feedback,
                         enabled = enabled,
+                        timing = circleResolvedTiming(CircleActionTiming.DELIBERATE),
                         label = CONTROL_DESCRIPTION,
                         onTap = onAction,
                     ),
@@ -303,6 +307,7 @@ class CircleSafeTapAccessibilityTest {
                     .testTag(TARGET)
                     .circleSafeTapOrHold(
                         feedback = feedback,
+                        timing = circleResolvedTiming(CircleActionTiming.DELIBERATE),
                         label = CONTROL_DESCRIPTION,
                         onTap = onTap,
                         onLongPress = onLongPress,

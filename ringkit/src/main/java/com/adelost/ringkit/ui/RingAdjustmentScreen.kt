@@ -38,6 +38,8 @@ import com.adelost.designkit.ui.RingIcons
 import com.adelost.designkit.ui.RingTokens
 import com.adelost.designkit.ui.CircleAccent
 import com.adelost.designkit.ui.CircleAccentStrength
+import com.adelost.designkit.ui.CircleActionTiming
+import com.adelost.designkit.ui.circleResolvedTiming
 import com.adelost.designkit.ui.CircleLabelProgress
 import com.adelost.designkit.ui.rememberCircleActionFeedbackState
 import com.adelost.designkit.ui.ringIconAccent
@@ -188,6 +190,7 @@ private fun StepperPillRow(
 ) {
     var adjustmentProgress by remember { mutableStateOf<Float?>(null) }
     val centreFeedback = rememberCircleActionFeedbackState()
+    val centreTiming = circleResolvedTiming(CircleActionTiming.DELIBERATE)
     val brandColor = circleBrandColor()
     Row(verticalAlignment = Alignment.CenterVertically, modifier = modifier) {
         StepCircle(
@@ -284,6 +287,7 @@ private fun StepperPillRow(
                             // merged name for this data-shaped control.
                             Modifier.circleSafeTap(
                                 feedback = centreFeedback,
+                                timing = centreTiming,
                                 label = null,
                                 // The value column inside these bounds already carries the wash, and
                                 // it is the same column the adjustment's own progress fills (row 215).
@@ -341,7 +345,13 @@ private fun StepCircle(
             .border(MenuDesign.contourStroke, RingTokens.Outline, CircleShape)
             // The visible +/− text is the complete merged action name.
             // The +/- text under this button carries the wash already (row 215).
-            .circleSafeTap(feedback = feedback, label = null, cue = CirclePressCue.OWNED, onTap = onTap),
+            .circleSafeTap(
+                feedback = feedback,
+                timing = circleResolvedTiming(CircleActionTiming.DELIBERATE),
+                label = null,
+                cue = CirclePressCue.OWNED,
+                onTap = onTap,
+            ),
         contentAlignment = Alignment.Center,
     ) {
         Text(

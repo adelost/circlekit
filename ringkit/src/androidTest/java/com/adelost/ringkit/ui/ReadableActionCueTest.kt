@@ -62,7 +62,10 @@ class ReadableActionCueTest {
                 RingChoiceRow(title = "AUDIO", selected = "OFF", options = listOf("OFF", "ON"),
                     role = com.adelost.designkit.ui.CircleChoiceRole.TOGGLE,
                     hint = "Play new replies aloud.", infoSelected = true,
-                    actionTiming = timing,
+                    timing = com.adelost.designkit.ui.circleResolvedTiming(
+                        timing,
+                        DELIBERATE_CHANGE_HOLD_MS,
+                    ),
                     onSelect = { changes++ }, icon = RingIcons.Speaker)
             }
         }

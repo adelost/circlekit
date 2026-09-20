@@ -45,8 +45,14 @@ fun CircleRingRow(
     leading: (@Composable () -> Unit)? = null,
     trailing: (@Composable () -> Unit)? = null,
     centerValue: String? = null,
-    actionTiming: CircleActionTiming = CircleActionTiming.DELIBERATE,
-    actionHoldMs: Long = actionTiming.holdMs,
+    /**
+     * WHAT THIS ROW ASKS OF A FINGER, as one value that only [circleResolvedTiming] can make.
+     *
+     * It was a kind and a duration side by side, and those are two numbers that can disagree: a choice
+     * row carrying half a second while its declared kind commits at once is how Link shipped a row
+     * that filled an arc and switched on one millisecond.
+     */
+    timing: CircleResolvedTiming = circleResolvedTiming(CircleActionTiming.DELIBERATE),
     /**
      * Let the row grow to fit its words instead of ellipsising them.
      *
@@ -66,17 +72,13 @@ fun CircleRingRow(
     endSlot: CircleRowEndSlot? = null,
 ) {
     val phoneDesign = phoneSurfaceDesignFor(LocalCircleSurfaceLayout.current.surfaceClass)
-    // ONE resolution, read by the gate, by the cue and by the wait this row draws. Row 225: these
-    // three used to be handed the same declaration and answer it separately.
-    val holdMs = circleResolvedTiming(actionTiming, actionHoldMs)
     val feedback = rememberCircleActionFeedbackState()
     val cue = if (onTap != null && icon != null) {
         rememberCircleActionCueController(
             icon = icon,
             label = title,
-            timing = actionTiming,
+            timing = timing,
             pressed = feedback.pressed,
-            holdDurationMs = holdMs,
             // The row's own value line is already the honest state; the cue
             // repeats it in the action receipt without also smuggling the
             // row's explanation into an ordinary press.
@@ -94,7 +96,7 @@ fun CircleRingRow(
     val interaction = confirmedTap?.let { tap ->
         modifier.circleRowGesture(
             feedback = feedback,
-            holdMs = holdMs,
+            timing = timing,
             label = circleRingRowAccessibilityLabel(title, sub),
             onLongPress = onLongPress,
             onTap = tap,
@@ -152,14 +154,14 @@ fun CircleRingRow(
  */
 private fun Modifier.circleRowGesture(
     feedback: CircleActionFeedbackState,
-    holdMs: Long,
+    timing: CircleResolvedTiming,
     label: String,
     onLongPress: (() -> Unit)?,
     onTap: () -> Unit,
 ): Modifier = if (onLongPress == null) {
     circleSafeTap(
         feedback = feedback,
-        holdMs = holdMs,
+        timing = timing,
         label = label,
         // The row already paints the wait: on its leading ring, or as the wash under its own title
         // column when it has no ring. Row 215 leaves it exactly one cue.
@@ -169,7 +171,7 @@ private fun Modifier.circleRowGesture(
 } else {
     circleSafeTapOrHold(
         feedback = feedback,
-        holdMs = holdMs,
+        timing = timing,
         label = label,
         cue = CirclePressCue.OWNED,
         onLongPress = onLongPress,

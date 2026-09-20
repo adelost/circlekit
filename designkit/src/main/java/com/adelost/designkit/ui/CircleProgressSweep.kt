@@ -264,21 +264,21 @@ internal fun circleHoldCueIsRing(width: Float, height: Float): Boolean =
 internal suspend fun runCircleHoldCue(
     hold: Animatable<Float, *>,
     pressed: Boolean,
-    holdMs: Long,
+    timing: CircleResolvedTiming,
     pressedAtMs: Long,
 ) {
     if (!pressed) {
         if (hold.value > 0f) hold.animateTo(0f, tween(CIRCLE_CUE_RELEASE_MS, easing = LinearEasing))
         return
     }
-    if (holdMs <= CIRCLE_CUE_BRUSH_MIN_MS) return
+    if (timing.holdMs <= CIRCLE_CUE_BRUSH_MIN_MS) return
     val firstFrameMs = withFrameMillis { it }
-    val zeroMs = if (firstFrameMs - pressedAtMs in 0..holdMs) pressedAtMs else firstFrameMs
-    var fraction = circleHoldCueFraction(firstFrameMs - zeroMs, holdMs)
+    val zeroMs = if (firstFrameMs - pressedAtMs in 0..timing.holdMs) pressedAtMs else firstFrameMs
+    var fraction = circleHoldCueFraction(firstFrameMs - zeroMs, timing.holdMs)
     while (true) {
         if (fraction > 0f) hold.snapTo(fraction)
         if (fraction >= 1f) return
-        fraction = circleHoldCueFraction(withFrameMillis { it } - zeroMs, holdMs)
+        fraction = circleHoldCueFraction(withFrameMillis { it } - zeroMs, timing.holdMs)
     }
 }
 
