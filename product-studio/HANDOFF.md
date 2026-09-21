@@ -1,6 +1,6 @@
 # Product Studio 0.2: implementation handoff
 
-Status: real code in `product-studio/`, not completion of every planned integration. Follow README, INTEGRATION and VERIFICATION. This work continues implementation PR #274; design #273 and language-DX #263 remain separate.
+Status: real code in `product-studio/`, not completion of every planned integration. Follow README, INTEGRATION and VERIFICATION. The next planned implementation slice is [SEMANTIC-CLI-PLAN.md](SEMANTIC-CLI-PLAN.md): a read-only semantic query/simulation CLI over the same core, not an agent code editor. This work continues implementation PR #274; design #273 and language-DX #263 remain separate.
 
 ## Outcome and ownership
 
@@ -33,6 +33,7 @@ All new GUI copy, documentation and comments remain English. Existing source ide
 6. Source code, product documents, scenarios, graph layout and runtime effects have different owners. No new video undo engine, scheduler or backend job-state copy belongs here.
 7. One draft per source file, even when two facets share it. Preserve candidate/original separation and stale-reply protection.
 8. Native/media previews and live/AI operations remain explicitly unavailable until real adapters and authorization exist. No network fallback from mocks.
+9. Coding agents keep using their existing repository-edit tools. Studio may expose semantic read/debug commands, but it must not become a second agent source-edit authority.
 
 ## Start here: release verification, not more features
 
@@ -65,6 +66,25 @@ Keep #274 draft until clean package/direct-browser checks have independent evide
 Select one existing debug/test owner, not a whole-program instrumentation rewrite. Emit a few bounded trace events with product/model/session identity, the owner's actual clock and known causal links. Use the provided trace format or passive recorder. Do not infer causes from timestamps or invent native guards.
 
 **Proof:** capture an independently known event/decision; import it; compare its cell/values to the same model; deliberately alter the captured expected result and confirm the difference stays visible. Confirm foreign model, duplicate sequence, unreported gap and unknown entity are refused. No real flight/recording loop is paused by this test.
+
+## Next shared semantic access: CLI before MCP
+
+Agents already edit source with their normal tools. The next shared-access slice therefore exposes the **same read/debug semantics** as the GUI rather than another write mechanism.
+
+Implement [SEMANTIC-CLI-PLAN.md](SEMANTIC-CLI-PLAN.md) in this order:
+
+```text
+trace causality correctness
+→ headless Studio session
+→ inspect/query/source
+→ simulate
+→ scenario/trace
+→ agent-friendly JSON ergonomics
+→ dogfood from Codex/Claude
+→ decide whether MCP adds real value
+```
+
+The CLI is read-only with respect to products and reuses the existing architecture, simulation, provenance and trace code. Do not add MCP until shell/JSON dogfooding shows a real transport/discovery need. A future MCP layer wraps the same semantic service and gains no extra write or runtime authority.
 
 ## Source editor and semantic commands
 
