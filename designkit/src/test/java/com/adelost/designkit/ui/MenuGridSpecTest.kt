@@ -24,7 +24,7 @@ class MenuGridSpecTest {
         val logbook = menuGridSpec(CircleSurfaceClass.ROUND, CircleMenuDensity.REGULAR, MenuGridRole.LOGBOOK)
         assertEquals(2, logbook.columns)
         assertEquals(0.75f, logbook.contentWidthFraction, 0.001f)
-        assertEquals(128.dp, logbook.contentMaxWidth)
+        assertEquals(136.dp, logbook.contentMaxWidth)
         // The one watch action-ring standard: the home rim buttons' 30 dp.
         assertEquals(MenuDesign.watchActionRingDiameter, logbook.diameter)
         assertEquals(8f, logbook.labelSize.value)
