@@ -1,0 +1,19 @@
+{
+  "name": "@v1d/product-studio",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Local-first ProductSpec workbench: inspect, simulate and edit supported declarations",
+  "engines": { "node": ">=22" },
+  "scripts": {
+    "start": "node server.mjs",
+    "test": "node --test test/*.test.mjs",
+    "check": "node scripts/check.mjs",
+    "verify": "npm run check && npm test"
+  },
+  "dependencies": {
+    "@v1d/product-spec": "https://circlekit.pages.dev/npm/v1d/product-spec/0.3.65/v1d-product-spec-0.3.65.tgz",
+    "typescript": "5.9.3"
+  },
+  "license": "UNLICENSED"
+}

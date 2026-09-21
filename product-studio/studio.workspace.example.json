@@ -1,0 +1,12 @@
+{
+  "version": 1,
+  "projects": [
+    {
+      "id": "my-product",
+      "label": "My Product",
+      "sources": ["src/policy.ts"],
+      "artifact": "generated/product.json",
+      "graph": "generated/product.graph.mmd"
+    }
+  ]
+}

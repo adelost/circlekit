@@ -1,0 +1,369 @@
+import { drawGraph } from './graph.js';
+
+const $ = selector => document.querySelector(selector);
+const escape = value => String(value ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const pretty = value => JSON.stringify(value, null, 2);
+const views = ['System', 'Logic', 'Scenarios', 'Interface', 'Changes'];
+let token, projects = [], project, state, generation = 0, graph, busy = false, toastTimer;
+const sessions = new Map();
+const freshState = () => ({ view: 'Logic', facetId: null, selected: null, search: '', facts: {}, guards: {}, input: null,
+  machineState: null, result: null, timeline: [], cursor: -1, mode: 'Declared', text: null, draft: null,
+  dirty: false, perFacet: new Map(), undo: [], redo: [], tableRows: null, scenarioText: null, scenarioResult: null, mockText: null, mockResult: null, archivedRuns: [] });
+
+async function api(route, body) {
+  const response = await fetch('/api/' + route, { method: body === undefined ? 'GET' : 'POST',
+    headers: { 'x-studio-token': token, ...(body === undefined ? {} : { 'content-type': 'application/json' }) },
+    ...(body === undefined ? {} : { body: JSON.stringify(body) }) });
+  const result = await response.json();
+  if (!response.ok) { const e = new Error(result.error?.message ?? 'Operation failed.'); e.code = result.error?.code; throw e; }
+  return result;
+}
+function toast(message) { clearTimeout(toastTimer); $('#toast').textContent = message; $('#toast').style.display = 'block'; toastTimer = setTimeout(() => { $('#toast').style.display = 'none'; }, 7000); }
+function facet() { return project?.facets.find(f => f.id === state.facetId); }
+function source() { const f = facet(); return project?.sources.find(s => s.path === f?.file) ?? project?.sources[0]; }
+const action = (name, label, cls = '', disabled = false) => `<button data-action="${name}" class="${cls}" ${disabled ? 'disabled' : ''}>${label}</button>`;
+const options = (values, selected) => values.map(v => `<option value="${escape(v)}" ${v === selected ? 'selected' : ''}>${escape(v)}</option>`).join('');
+const banner = (text, kind = 'info') => `<div class="notice ${kind}">${escape(text)}</div>`;
+const empty = (title, text, extra = '') => `<div class="empty"><span class="symbol">◇</span><h2>${escape(title)}</h2><p>${escape(text)}</p>${extra}</div>`;
+const panel = (title, body, toolbar = '') => `<section class="panel"><header class="panel-head"><h2>${title}</h2><div class="toolbar">${toolbar}</div></header>${body}</section>`;
+function requestContext() { return { project: project.key, facetId: state.facetId, bundleDigest: project.bundleDigest }; }
+function download(name, text, mime = 'application/json') { const url = URL.createObjectURL(new Blob([text], { type: mime })); const link = document.createElement('a'); link.href = url; link.download = name; link.click(); setTimeout(() => URL.revokeObjectURL(url), 1500); }
+
+async function loadProject(key) {
+  const ticket = ++generation;
+  const p = await api('project?id=' + encodeURIComponent(key));
+  if (ticket !== generation) return;
+  project = p; state = sessions.get(key) ?? freshState(); sessions.set(key, state);
+  if (!p.facets.some(f => f.id === state.facetId)) selectFacet(p.facets[0]?.id ?? null, false);
+  if (!p.facets.length) state.view = p.gallery.length ? 'Interface' : p.sources.length ? 'Changes' : 'System';
+  render();
+}
+function selectFacet(id, paint = true) {
+  ++generation;
+  const keys = ['selected','facts','guards','input','machineState','result','timeline','cursor','mode','text','draft','undo','redo','dirty','tableRows','scenarioText','scenarioResult','archivedRuns'];
+  if (state.facetId) state.perFacet.set(state.facetId, Object.fromEntries(keys.map(k => [k, state[k]])));
+  const remembered = state.perFacet.get(id);
+  state.facetId = id; state.selected = null; state.result = null; state.tableRows = null; state.mode = 'Declared';
+  state.timeline = []; state.cursor = -1; state.text = null; state.draft = null; state.undo = []; state.redo = []; state.dirty = false;
+  state.scenarioText = null; state.scenarioResult = null;
+  const f = facet();
+  if (f?.kind === 'machine') { state.machineState = f.compiled.initial; state.input = f.compiled.inputs[0]; state.guards = Object.fromEntries(f.compiled.guards.map(g => [g, 'unknown'])); }
+  if (f?.kind === 'decision-table') state.facts = Object.fromEntries(Object.entries(f.compiled.axes).map(([k, v]) => [k, v[0]]));
+  if (remembered) Object.assign(state, remembered);
+  if (paint) render();
+}
+function selectedCell() {
+  const f = facet(); if (!f) return null;
+  return f.compiled.cells.find(c => c.id === state.selected?.id) ?? f.compiled.cells.find(c => c.id === (state.result?.cellId ?? state.result?.cell));
+}
+
+function render() {
+  if (!project) return;
+  const f = facet(), query = state.search.toLowerCase(), title = { System: 'Explore the system', Logic: f?.kind === 'machine' ? 'Lifecycle logic' : 'Policy decisions', Scenarios: 'Explore possible outcomes', Interface: 'Components & surfaces', Changes: 'Review the exact change' }[state.view];
+  const list = project.facets.filter(item => item.id.toLowerCase().includes(query));
+  const sourceLabel = ({ fixture: 'Public source fixture', example: 'Synthetic example', workspace: 'Local workspace', 'source-draft': 'Source draft', 'imported-artifact': 'Imported artifact' })[project.originKind] ?? 'Local data';
+  $('#app').innerHTML = `<div class="shell">
+    <header class="topbar"><div class="brand"><div class="brand-mark">P</div><span>PRODUCT STUDIO</span></div>
+      <select class="project-select" id="project" aria-label="Select product">${projects.map(p => `<option value="${escape(p.key)}" ${p.key === project.key ? 'selected' : ''}>${escape(p.label)}</option>`).join('')}</select>
+      <nav aria-label="Workbench views">${views.map(v => `<button data-view="${v}" class="${v === state.view ? 'active' : ''}" ${v === state.view ? 'aria-current="page"' : ''}>${v}</button>`).join('')}</nav>
+      <div class="spacer"></div><span class="badge top-mode ${state.mode === 'Simulation' ? 'simulation' : ''}">${escape(state.mode)}</span>
+      ${action('reload', '↻', 'subtle', !project.key || project.key.startsWith('import-') || project.key.startsWith('source-'))}
+    </header>
+    <div class="main-grid"><aside class="explorer" aria-label="Program explorer">
+      <div class="section-label">Workspace</div><input id="search" aria-label="Search nodes, ports or rules" placeholder="Search nodes, ports or rules" value="${escape(state.search)}">
+      <div class="section-label">Logic · ${project.facets.length}</div><div class="explorer-list">${list.map(item => `<button class="explorer-item ${item.id === state.facetId ? 'active' : ''}" data-facet="${escape(item.id)}"><span class="kind-dot ${item.kind}"></span><span>${escape(item.id)}</span></button>`).join('') || '<small>No matching declarations</small>'}</div>
+      <div class="section-label">Structure · ${project.graph.nodes.length}</div><div class="explorer-list">${project.graph.nodes.filter(n => n.id.toLowerCase().includes(query)).slice(0, 35).map(n => `<button class="explorer-item" data-node="${escape(n.id)}"><span class="kind-dot"></span><span>${escape(n.id)}</span></button>`).join('') || '<small>Load a generated product to explore its full graph.</small>'}</div>
+      <div class="explorer-actions">${action('import', '+ Import source / JSON', 'subtle')}${action('new', '+ New declaration', 'subtle')}${action('saved', 'Open saved drafts', 'subtle')}${action('connect-help', 'Attach repositories', 'subtle')}</div>
+      <div class="section-label">Evidence boundary</div><small>${escape(project.provenance ?? project.validationNotice)}</small>
+    </aside>
+    <main class="content"><div class="page-heading"><div><div class="eyebrow">${escape(project.label)} / ${escape(state.facetId ?? state.view)}</div><h1>${title}</h1><p class="subtitle">${escape(subtitle())}</p></div><div class="toolbar">${action('explorer', 'Explorer', 'mobile-toggle')}${action('inspector', 'Inspector', 'mobile-toggle')}<span class="badge">${sourceLabel}</span></div></div>
+      ${project.diagnostics.length ? `<details class="notice"><summary>${project.diagnostics.length} source or artifact diagnostics</summary>${diagnostics(project.diagnostics)}</details>` : ''}
+      ${state.view === 'System' ? systemView() : state.view === 'Logic' ? logicView() : state.view === 'Scenarios' ? scenariosView() : state.view === 'Interface' ? interfaceView() : changesView()}
+    </main><aside class="inspector" aria-label="Selected object inspector">${inspector()}</aside></div>
+    <footer class="footer"><span class="safe">● No external execution</span><span>${escape(state.mode)}</span><span class="optional">${escape(project.revision?.slice(0, 7) ?? project.bundleDigest.slice(0, 8))}</span><span class="spacer"></span><span id="edit-status">${state.text !== null ? 'Draft changes · source unchanged' : 'Source read-only'}</span><span class="optional">Runtime disconnected</span></footer>
+  </div>`;
+  bind(); renderGraph();
+  if (f?.kind === 'decision-table' && state.view === 'Logic' && state.tableRows === null) loadTable();
+}
+function subtitle() {
+  if (state.view === 'Logic') return 'The installed ProductSpec kernel decides. Synthetic inputs do not execute native code or provider effects.';
+  if (state.view === 'System') return 'Declared topology, typed ports and ownership. A graph is not an execution receipt.';
+  if (state.view === 'Scenarios') return 'Repeatable event sequences and explicit fixture boundaries. Virtual time only.';
+  if (state.view === 'Interface') return 'Inspect the real catalog and declared mount scopes. Native and media editors remain with their owners.';
+  return 'Supported source → shared compiler → semantic diff → local draft and reviewable patch.';
+}
+function diagnostics(items) { return `<ul class="error-list">${items.map(d => `<li><code>${escape(d.rule)}</code> ${d.line ? `<small>line ${d.line}:${d.column}</small>` : ''}<p>${escape(d.message)}</p></li>`).join('')}</ul>`; }
+
+function systemView() {
+  if (!project.product) return panel('Standalone declarations', empty('No full product graph loaded', 'This product exposes the facets listed below. Studio does not invent connections or algorithms.', `<div class="card-grid">${project.facets.map(f => `<button class="catalog-card" data-facet="${escape(f.id)}"><span class="badge">${f.kind}</span><h3>${escape(f.id)}</h3><p>${f.compiled.cells.length} declared cells</p></button>`).join('')}</div>`) + banner(project.validationNotice));
+  const p = project.product;
+  return panel(`Declared topology <span class="badge">${project.graph.nodes.length} owners</span>`, '<div id="graph" class="graph-host"></div><div class="risk-caption">Showing a bounded slice. Port types and contracts are visible in the inspector; graph layout never changes the program.</div>', `${action('fit', 'Fit')}${action('zoom-in', '+')}${action('zoom-out', '−')}${action('snapshot', 'Import snapshot')}`)
+    + banner(project.validationNotice)
+    + panel('Artifacts & surfaces', `<div class="panel-body"><div class="card-grid">${p.artifacts.map(a => `<button class="catalog-card" data-artifact="${escape(a.id)}"><span class="badge">Artifact</span><h3>${escape(a.id)}</h3><p>${escape((a.serves ?? []).join(' / '))}</p><code>${escape(a.entryScreen)}</code></button>`).join('')}</div></div>`)
+    + (project.evidence ? evidenceView() : '');
+}
+function evidenceView() {
+  const e = project.evidence.snapshot;
+  return panel('Recorded port snapshot', `<div class="panel-body">${banner(project.evidence.notice)}<small>Captured ${escape(new Date(e.takenAtMs).toISOString())}</small><div class="table-wrap"><table><thead><tr><th>Port</th><th>Count</th><th>Last age at capture</th><th>Quality</th><th>Summary</th></tr></thead><tbody>${e.ports.map(p => `<tr><td>${escape(p.port)}</td><td>${p.count}</td><td>${Math.round((e.takenAtMs - p.lastAtMs) / 1000)} s</td><td>${escape(p.lastQuality)}</td><td>${escape(p.lastSummary)}</td></tr>`).join('')}</tbody></table></div></div>`);
+}
+function logicView() {
+  const f = facet();
+  if (!f) return empty('Select a logic declaration', 'Import a supported TypeScript/MJS declaration or generated table/machine.');
+  if (f.kind === 'machine') {
+    const m = f.compiled;
+    return panel(`State machine <code>${escape(f.id)}</code>`, `<div id="graph" class="graph-host"></div><div class="risk-caption">${m.states.length} states · ${m.cells.length} declared transitions · ${escape(m.ordering)} · no-match: ${escape(m.otherwise)}</div>`, `${action('fit', 'Fit')}${action('zoom-in', '+')}${action('zoom-out', '−')}${action('add-cell', '+ Transition', '', !f.editable)}${action('edit-root', 'Definition', '', !f.editable)}${action('edit-source', 'Open source', '', !f.editable)}`)
+      + panel('Simulation inputs', `<div class="panel-body"><div class="fact-grid"><label>Synthetic state<select id="machine-state">${options(m.states, state.machineState)}</select></label><label>Event<select id="machine-input">${options(m.inputs, state.input)}</select></label><label>Virtual time (ms)<input id="virtual-time" type="number" min="0" step="1" value="${state.timeline.at(-1)?.atMs ?? 0}"></label></div><div class="toolbar">${action('step', '▷ Step event', 'primary')}${action('reset', 'Reset simulation')}${action('export-run', 'Export scenario', '', !state.timeline.length)}<span class="badge simulation">Synthetic guards</span></div>${resultView()}</div>`)
+      + timelineView();
+  }
+  const m = f.compiled;
+  return panel(`Decision table <code>${escape(f.id)}</code>`, `<div class="panel-body"><div class="fact-grid">${Object.entries(m.axes).map(([a, v]) => `<label>${escape(a)}<select data-fact="${escape(a)}">${options(v, state.facts[a])}</select></label>`).join('')}</div><div class="toolbar">${action('evaluate', '▷ Evaluate point', 'primary')}${action('edit-source', 'Open source', '', !f.editable)}<span class="badge">${Object.values(m.axes).reduce((n, a) => n * a.length, 1)} points · ${m.cells.length} cells</span></div>${resultView()}</div>`)
+    + panel('Named regions', `<div class="table-wrap"><table><thead><tr><th>Cell</th><th>Region (omitted axes cover all values)</th><th>Values</th><th></th></tr></thead><tbody>${m.cells.map(c => `<tr data-cell="${escape(c.id)}" tabindex="0" class="${state.selected?.id === c.id ? 'selected' : ''}"><td><code>${escape(c.id)}</code></td><td>${escape(JSON.stringify(c.region))}</td><td>${escape(JSON.stringify(c.values))}</td><td>Inspect ↗</td></tr>`).join('')}</tbody></table></div>`)
+    + panel('Every declared point', `<div class="table-wrap">${state.tableRows ? `<table><thead><tr>${Object.keys(m.axes).map(a => `<th>${escape(a)}</th>`).join('')}<th>Cell</th><th>Values</th></tr></thead><tbody>${state.tableRows.map((r, i) => `<tr data-point="${i}" tabindex="0">${Object.values(r.at).map(v => `<td>${escape(v)}</td>`).join('')}<td>${escape(r.cell)}</td><td>${escape(JSON.stringify(r.values))}</td></tr>`).join('')}</tbody></table>` : '<div class="empty">Loading results from the shared kernel…</div>'}</div>`);
+}
+function resultView() {
+  const r = state.result;
+  if (!r) return '<small>Choose facts and evaluate. Unknown guard facts are never silently false.</small>';
+  if (r.kind === 'needs-facts') return banner(r.message + ' Missing: ' + r.guards.join(', '), 'warning');
+  return `<div class="notice success"><div class="result-big">${escape(r.kind === 'transition' ? `${r.from} → ${r.to}` : JSON.stringify(r.values))}</div><p>Cell: <code>${escape(r.cellId ?? r.cell ?? 'No matching cell; declared no-match behavior')}</code></p>${r.notice ? `<small>${escape(r.notice)}</small>` : ''}</div>`;
+}
+function timelineView() {
+  if (!state.timeline.length) return '';
+  return panel('Simulation history', `<div class="timeline">${state.timeline.map((e, i) => `<button data-history="${i}" class="timeline-event ${state.cursor === i ? 'current' : ''}"><small>${e.atMs} ms · #${i + 1}</small><strong>${escape(e.input)}</strong><code>${escape(e.to)}</code><small>${escape(e.cellId ?? 'no match')}</small></button>`).join('')}</div><div class="risk-caption">Revisiting history changes this simulator only. Stepping from an earlier frame branches the run; the original is retained for export.</div>`);
+}
+function scenarioTemplate() {
+  const f = facet(); if (!f) return {};
+  const e = f.kind === 'machine' ? { atMs: 0, input: state.input, guards: state.guards } : { atMs: 0, facts: state.facts };
+  return { id: 'my-scenario', facetId: f.id, bundleDigest: project.bundleDigest, initialState: state.machineState, events: [e] };
+}
+const mockTemplate = () => ({ contracts: { 'example.catalog': { request: { item: 'string' }, response: { found: 'boolean' } } },
+  fixtures: [{ boundaryId: 'example.catalog', request: { item: 'example' }, delayMs: 350, response: { found: true } }],
+  requests: [{ operationId: 'request-1', boundaryId: 'example.catalog', atMs: 0, payload: { item: 'example' } }] });
+function scenariosView() {
+  const f = facet();
+  state.scenarioText ??= pretty(scenarioTemplate()); state.mockText ??= pretty(mockTemplate());
+  return banner('Scenarios run the shared logic kernel. Boundary fixtures are synthetic contracts, not connected product services. Missing mocks never fall back to external requests.')
+    + panel('Versioned event scenario', `<div class="panel-body"><p class="muted">Add ordered events and independent <code>expect</code> assertions. Unknown guards stop the run. Time is virtual.</p><textarea id="scenario-editor" spellcheck="false" aria-label="Scenario JSON">${escape(state.scenarioText)}</textarea><div class="toolbar">${action('run-scenario', '▷ Run scenario', 'primary', !f)}${action('scenario-from-run', 'Use current history', '', !state.timeline.length)}${action('download-scenario', 'Export JSON')}</div>${state.scenarioResult ? `<div class="notice ${state.scenarioResult.stopped || state.scenarioResult.pass === false ? 'error' : 'success'}">${state.scenarioResult.stopped ? 'Stopped: missing facts.' : `${state.scenarioResult.events.length} events evaluated; ${state.scenarioResult.assertions.length} independent assertions supplied.`}</div><pre>${escape(pretty(state.scenarioResult))}</pre>` : ''}</div>`)
+    + panel('Deterministic boundary fixtures', `<div class="panel-body"><p class="muted">Exact primitive-record requests, virtual delays, duplicate operation detection and fail-closed matching. This does not exercise the application transport.</p><textarea id="mock-editor" spellcheck="false" aria-label="Mock scenario JSON">${escape(state.mockText)}</textarea><div class="toolbar">${action('run-mocks', 'Run fixture requests', 'primary')}${action('download-mocks', 'Export fixtures')}</div>${state.mockResult ? `<pre>${escape(pretty(state.mockResult))}</pre>` : ''}</div>`);
+}
+function interfaceView() {
+  const cases = project.gallery.filter(c => `${c.id} ${c.title} ${c.purpose}`.toLowerCase().includes(state.search.toLowerCase()));
+  const scopes = project.product?.artifactScopes ?? [];
+  return banner('Native previews, GPU execution and video-document writes are not connected. This view inspects catalog definitions and declared scopes; it does not replace product renderers.')
+    + panel('Component catalog', `<div class="panel-body">${cases.length ? `<div class="card-grid">${cases.map(c => `<button class="catalog-card" data-case="${escape(c.id)}"><span class="symbol">◈</span><span class="badge">${escape(c.section ?? 'component')}</span><h3>${escape(c.title)}</h3><p>${escape(c.purpose)}</p><small>${c.scenarios?.length ?? 0} declared scenarios · inspect only</small></button>`).join('')}</div>` : empty('No catalog facet attached', 'Load Showcase generated ProductSpec JSON or attach its repository to browse the real catalog.')}</div>`)
+    + panel('Artifact mount scopes', `<div class="panel-body">${scopes.length ? `<div class="compact-list">${scopes.map((s, i) => `<button data-scope="${i}"><code>${escape(s.artifactRef)} / ${escape(s.screenRef)}</code><p>${escape(s.surface)} · ${s.includedMounts?.length ?? 0} included · ${s.omittedMounts?.length ?? 0} omitted</p></button>`).join('')}</div>` : '<p class="muted">No compiled mount scopes in this selection.</p>'}</div>`);
+}
+function changesView() {
+  const src = source(), f = facet();
+  if (!src) return empty('Source not attached', 'Compiled JSON cannot recover imports, helper families or invariant code. Attach a supported source file to edit.');
+  const text = state.text ?? src.text, d = state.draft;
+  const sourceChanged = text !== src.text;
+  return banner('Changes stay in a separate Studio draft. No repository source, video document, agent or runtime is changed. Export the patch and apply it through the product owner.')
+    + panel(`Source <code>${escape(src.path)}</code>`, `<textarea class="code-editor" id="source-editor" spellcheck="false" aria-label="DSL source editor" >${escape(text)}</textarea><div class="panel-body"><div class="toolbar">${action('validate', 'Validate draft', 'primary')}${action('undo', 'Undo edit', '', !state.undo.length)}${action('redo', 'Redo edit', '', !state.redo.length)}${action('simulate-draft', 'Explore this draft', '', !d?.valid)}${action('save', 'Save local draft', '', !d)}${action('git-save', 'Save Git draft branch', '', !d?.valid || !project.capabilities.gitDrafts)}${action('patch', 'Download patch', '', !d || !d.valid)}${action('download-source', 'Export source')}</div><small>${sourceChanged ? 'Source edits stay separate. Validation has a deliberately bounded scope.' : 'Source is unchanged.'} ${project.capabilities.gitDrafts ? 'Git draft saves enabled for this exact repository.' : 'Git branch saving is disabled unless explicitly enabled at server startup.'}</small></div>`)
+    + (d ? panel('Validation & semantic diff', `<div class="panel-body">${banner(d.valid ? 'Supported declarations passed the shared kernel. Full product build and native behavior are not verified.' : 'Draft is invalid or contains an unsupported expression. It can be saved as an invalid draft, but not exported as validated.', d.valid ? 'success' : 'error')}${diagnostics(d.diagnostics)}<small>${d.diff.changes.length} changed paths${d.diff.truncated ? ' (truncated)' : ''}</small><pre>${escape(pretty(d.diff.changes))}</pre><details><summary>Source patch</summary><pre class="diff">${escape(d.patch)}</pre></details></div>`) : '')
+    + panel('Persistence boundaries', '<div class="panel-body"><p><strong>Local draft</strong> preserves the proposed source and base revision in Studio storage.</p><p><strong>Patch</strong> is a reviewable source change. It is not applied automatically.</p><p><strong>Video project</strong> and <strong>native runtime</strong> changes require their existing owners and are not available here.</p></div>');
+}
+function inspector() {
+  const f = facet(), cell = selectedCell();
+  if (state.selected?.kind === 'node' && state.view === 'System') {
+    const n = project.graph.nodes.find(n => n.id === state.selected.id);
+    if (n) return `<div class="section-label">${escape(n.kind)}</div><h2>${escape(n.id)}</h2><dl class="properties"><dt>Type</dt><dd>${escape(n.type?.id ?? 'Not exported')}</dd><dt>Ports</dt><dd>${n.ports.length}</dd></dl><details open><summary>Declared ports</summary><pre>${escape(pretty(n.ports))}</pre></details><details><summary>Type and runtime contract</summary><pre>${escape(pretty(n.type))}</pre></details><details><summary>Instance</summary><pre>${escape(pretty(n.declaration))}</pre></details>${banner('Inspect only. Connecting ports requires source provenance and full product validation, which this adapter has not supplied.')}`;
+  }
+  if (state.selected?.kind === 'case') {
+    const c = project.gallery.find(c => c.id === state.selected.id);
+    if (c) return `<div class="section-label">Catalog case</div><h2>${escape(c.title)}</h2><p class="subtitle">${escape(c.purpose)}</p><hr><code>${escape(c.id)}</code><div class="section-label">Scenarios</div>${(c.scenarios ?? []).map(s => `<div class="notice info"><strong>${escape(s.label)}</strong><p>${escape(s.description)}</p></div>`).join('')}${banner('Native preview not connected. These are declared cases, not executed results.')}`;
+  }
+  if (state.selected?.kind === 'artifact' || state.selected?.kind === 'scope') {
+    const value = state.selected.kind === 'artifact' ? project.product?.artifacts.find(a => a.id === state.selected.id) : project.product?.artifactScopes[Number(state.selected.id)];
+    return `<div class="section-label">Declared scope</div><pre>${escape(pretty(value))}</pre><hr>${banner('Declared capability is not proof of a connected renderer.')}`;
+  }
+  if (!f) return `<div class="section-label">Inspection</div><h2>Select an object</h2><p class="subtitle">Choose a declaration, node, component case or artifact.</p><hr><span class="badge warning">No runtime connected</span>`;
+  if (f.kind === 'machine') {
+    const relevant = new Set(f.compiled.cells.filter(c => c.from === state.machineState && c.on === state.input).flatMap(c => [...c.requires, ...c.forbids]));
+    return `<div class="section-label">${cell ? 'Transition definition' : 'Machine'}</div><h2>${escape(cell?.id ?? f.id)}</h2>${cell ? `<dl class="properties"><dt>From</dt><dd>${escape(cell.from)}</dd><dt>Event</dt><dd>${escape(cell.on)}</dd><dt>To</dt><dd>${escape(cell.to)}</dd></dl><div class="toolbar">${action('use-cell', 'Use as synthetic input')}${action('edit-cell', 'Edit definition', '', !f.editable)}</div><hr>` : ''}
+      <div class="section-label">Scenario facts · not definition edits</div><small>Required for this event are marked •. Unknown blocks stepping.</small>
+      ${f.compiled.guards.map(g => `<label class="guard-row ${String(state.guards[g])}"><code>${relevant.has(g) ? '• ' : ''}${escape(g)}</code><select data-guard="${escape(g)}" aria-label="Scenario guard ${escape(g)}"><option value="unknown" ${state.guards[g] === 'unknown' ? 'selected' : ''}>Unknown</option><option value="true" ${state.guards[g] === true ? 'selected' : ''}>True</option><option value="false" ${state.guards[g] === false ? 'selected' : ''}>False</option></select></label>`).join('')}
+      <hr><div class="section-label">Source ${f.source ? `· line ${f.source.line}` : ''}</div><pre class="source-excerpt">${escape(pretty(cell ?? { id: f.id, initial: f.compiled.initial, rests: f.compiled.rests, deadlines: f.compiled.deadlines }))}</pre><hr><small>Guards are supplied facts. No sensor, deadline timer or native field update runs here.</small>`;
+  }
+  return `<div class="section-label">Decision region</div><h2>${escape(cell?.id ?? f.id)}</h2>${cell ? `<dl class="properties"><dt>Region</dt><dd><pre>${escape(pretty(cell.region))}</pre></dd><dt>Values</dt><dd><pre>${escape(pretty(cell.values))}</pre></dd></dl>${action('edit-cell', 'Edit region / values', '', !f.editable)}` : '<p class="subtitle">Select a named cell or evaluate a point.</p>'}<hr><div class="section-label">Product invariants</div>${f.compiled.invariants.length ? f.compiled.invariants.map(v => `<p class="notice info">${escape(v)}</p>`).join('') : '<small>No additional product invariants in this table.</small>'}<hr><div class="section-label">Why / why not</div><pre>${escape(pretty(state.result?.alternatives ?? 'Evaluate a point to inspect mismatches.'))}</pre>${f.validation.includes('structure-only') ? banner('Invariant callback code was not present in the imported artifact. It was not re-executed.') : ''}`;
+}
+
+function renderGraph() {
+  const host = $('#graph'); if (!host) return;
+  const f = facet(); let nodes, edges;
+  if (state.view === 'Logic' && f?.kind === 'machine') {
+    nodes = f.compiled.states.map(id => ({ id, label: id, kind: 'state', subtitle: f.compiled.rests.includes(id) ? 'Rest state · may wait' : 'Deadline exit required' }));
+    edges = f.compiled.cells.map(c => ({ id: c.id, source: c.from, target: c.to, label: c.on }));
+  } else {
+    const q = state.search.toLowerCase();
+    nodes = project.graph.nodes.filter(n => !q || `${n.id} ${n.kind} ${n.ports.map(p => p.ref).join(' ')}`.toLowerCase().includes(q)).map(n => ({ ...n, label: n.id, subtitle: `${n.kind} · ${n.ports.length} ports` }));
+    edges = project.graph.edges.map(e => ({ ...e, label: e.purpose ?? e.kind ?? 'binding' }));
+  }
+  graph = drawGraph(host, { nodes, edges, key: project.key + ':' + (f?.id ?? 'system') + ':' + state.view,
+    selected: state.selected?.id, active: state.view === 'Logic' ? state.machineState : null,
+    onSelect: (kind, id) => { state.selected = { kind: state.view === 'Logic' && kind === 'edge' ? 'cell' : kind, id }; render(); if (innerWidth < 950) $('.inspector').classList.add('open'); } });
+}
+async function loadTable() {
+  const ticket = generation, id = state.facetId; state.tableRows = [];
+  try { const rows = await api('table', requestContext()); if (ticket === generation && id === state.facetId) { state.tableRows = rows; render(); } } catch (e) { toast(e.message); }
+}
+function bind() {
+  $('#project').onchange = e => loadProject(e.target.value).catch(e => toast(e.message));
+  $('#search').oninput = e => { const start = e.target.selectionStart; state.search = e.target.value; render(); $('#search').focus(); $('#search').setSelectionRange(start, start); };
+  document.querySelectorAll('[data-view]').forEach(b => b.onclick = () => { state.view = b.dataset.view; render(); });
+  document.querySelectorAll('[data-facet]').forEach(b => b.onclick = () => { selectFacet(b.dataset.facet, false); state.view = 'Logic'; render(); });
+  document.querySelectorAll('[data-node]').forEach(b => b.onclick = () => { state.view = 'System'; state.selected = { kind: 'node', id: b.dataset.node }; render(); });
+  document.querySelectorAll('[data-cell]').forEach(b => { const choose = () => { state.selected = { kind: 'cell', id: b.dataset.cell }; render(); }; b.onclick = choose; b.onkeydown = e => { if (e.key === 'Enter') choose(); }; });
+  document.querySelectorAll('[data-point]').forEach(b => { const choose = () => { state.facts = { ...state.tableRows[Number(b.dataset.point)].at }; perform('evaluate'); }; b.onclick = choose; b.onkeydown = e => { if (e.key === 'Enter') choose(); }; });
+  document.querySelectorAll('[data-case]').forEach(b => b.onclick = () => { state.selected = { kind: 'case', id: b.dataset.case }; render(); if (innerWidth < 950) $('.inspector').classList.add('open'); });
+  document.querySelectorAll('[data-artifact],[data-scope]').forEach(b => b.onclick = () => { state.selected = { kind: b.dataset.artifact ? 'artifact' : 'scope', id: b.dataset.artifact ?? b.dataset.scope }; render(); });
+  document.querySelectorAll('[data-guard]').forEach(b => b.onchange = () => { state.guards[b.dataset.guard] = b.value === 'unknown' ? 'unknown' : b.value === 'true'; state.result = null; render(); });
+  document.querySelectorAll('[data-fact]').forEach(b => b.onchange = () => { state.facts[b.dataset.fact] = b.value; state.result = null; });
+  document.querySelectorAll('[data-history]').forEach(b => b.onclick = () => { state.cursor = Number(b.dataset.history); const frame = state.timeline[state.cursor]; state.machineState = frame.to; state.result = frame; state.mode = 'Simulation'; render(); });
+  $('#machine-state')?.addEventListener('change', e => { state.machineState = e.target.value; state.result = null; render(); });
+  $('#machine-input')?.addEventListener('change', e => { state.input = e.target.value; render(); });
+  $('#scenario-editor')?.addEventListener('input', e => { state.scenarioText = e.target.value; });
+  $('#mock-editor')?.addEventListener('input', e => { state.mockText = e.target.value; });
+  $('#source-editor')?.addEventListener('input', e => { if (state.text === null) state.undo.push(source().text); state.text = e.target.value; state.draft = null; state.dirty = true; $('#edit-status').textContent = 'Unvalidated draft · source unchanged'; });
+  document.querySelectorAll('[data-action]').forEach(b => b.onclick = () => perform(b.dataset.action));
+}
+
+async function perform(name) {
+  const nonblocking = ['explorer', 'inspector', 'fit', 'zoom-in', 'zoom-out'];
+  if (busy && !nonblocking.includes(name)) return toast('An operation is still in progress.');
+  const ticket = generation;
+  busy = true;
+  try {
+    const f = facet(), cell = selectedCell();
+    if (name === 'explorer' || name === 'inspector') { $('.' + name).classList.toggle('open'); return; }
+    if (name === 'fit') return graph?.reset();
+    if (name === 'zoom-in' || name === 'zoom-out') return graph?.zoom(name === 'zoom-in' ? 1.2 : .8);
+    if (name === 'import') return $('#file-import').click();
+    if (name === 'snapshot') return $('#snapshot-import').click();
+    if (name === 'connect-help') return showInfo('Attach real repositories', 'Stop this server and start it with the repositories you want to inspect. No clone, worktree or product process is started.', 'npm start -- --workspace /path/to/skydive-altimeter --workspace /path/to/agentmux --workspace /path/to/ai-dsl --workspace /path/to/circlekit');
+    if (name === 'reload') { if (state.text !== null && state.text !== source()?.text || [...state.perFacet.entries()].some(([id,s]) => id !== state.facetId && s.dirty)) return toast('The current draft is retained. Return it to the original text or switch to a separate draft before reloading.'); state.perFacet.clear(); const p = await api('reload', { project: project.key }); if (ticket === generation) { project = p; state.facetId = null; selectFacet(p.facets[0]?.id ?? null, false); render(); toast('Reloaded configured sources and existing artifacts. No generator was run.'); } return; }
+    if (name === 'use-cell' && cell && f?.kind === 'machine') {
+      state.guards = Object.fromEntries(f.compiled.guards.map(g => [g, cell.requires.includes(g)]));
+      state.machineState = cell.from; state.input = cell.on; state.mode = 'Simulation'; state.result = null; render(); toast('Guard values explicitly set as synthetic input. This is not observed runtime evidence.'); return;
+    }
+    if (name === 'step' || name === 'evaluate') {
+      const atMs = Number($('#virtual-time')?.value ?? 0);
+      const result = await api('evaluate', { ...requestContext(), state: state.machineState, input: state.input, guards: state.guards, facts: state.facts });
+      if (ticket !== generation) return;
+      state.result = result; state.mode = 'Simulation';
+      if (result.kind === 'transition') {
+        if (state.cursor < state.timeline.length - 1) { state.archivedRuns.push([...state.timeline]); state.timeline = state.timeline.slice(0, state.cursor + 1); }
+        const time = Math.max(Number.isSafeInteger(atMs) ? atMs : 0, state.timeline.at(-1)?.atMs ?? 0);
+        state.timeline.push({ ...result, atMs: time }); state.cursor = state.timeline.length - 1; state.machineState = result.to; state.selected = { kind: 'cell', id: result.cellId };
+      } else if (result.kind === 'decision') state.selected = { kind: 'cell', id: result.cell };
+      render(); return;
+    }
+    if (name === 'reset') { if (state.timeline.length) state.archivedRuns.push([...state.timeline]); state.timeline = []; state.cursor = -1; state.machineState = f?.compiled.initial; state.result = null; state.mode = 'Simulation'; render(); return; }
+    if (name === 'edit-source') { state.view = 'Changes'; render(); return; }
+    if (name === 'validate') {
+      const text = $('#source-editor')?.value ?? state.text ?? source().text;
+      const proposal = await api('propose', { ...requestContext(), file: source().path, text });
+      if (ticket === generation && text === ($('#source-editor')?.value ?? state.text ?? source().text)) { state.dirty = text !== source().text; state.text = text; state.draft = proposal; render(); }
+      return;
+    }
+    if (name === 'save' || name === 'git-save') { const result = await api(name === 'save' ? 'save-draft' : 'save-git-draft', { id: state.draft.id }); if (ticket === generation) { state.dirty = false; toast(result.message + (result.branch ? ' Branch: ' + result.branch : '')); } return; }
+    if (name === 'simulate-draft') { const d = state.draft; const p = await api('import-source', { text: d.text, file: d.file, label: 'Candidate · ' + state.facetId }); projects = await api('projects'); await loadProject(p.key); toast('Independent candidate loaded. The original project, source and simulation were retained.'); return; }
+    if (name === 'patch') return download(source().path.split('/').at(-1) + '.patch', state.draft.patch, 'text/x-diff');
+    if (name === 'download-source') return download(source().path.split('/').at(-1), state.text ?? source().text, 'text/plain');
+    if (name === 'undo' && state.undo.length) { state.redo.push(state.text ?? source().text); state.text = state.undo.pop(); state.draft = null; render(); return; }
+    if (name === 'redo' && state.redo.length) { state.undo.push(state.text ?? source().text); state.text = state.redo.pop(); state.draft = null; render(); return; }
+    if (name === 'edit-cell') return editDialog(f, cell);
+    if (name === 'edit-root') return editDialog(f, f.compiled, true);
+    if (name === 'add-cell') return addCellDialog(f);
+    if (name === 'new') return newDialog();
+    if (name === 'saved') {
+      const rows = await api('drafts'); if (ticket !== generation) return;
+      const dialog = $('#dialog'); dialog.innerHTML = `<h2>Saved local drafts</h2><p class="subtitle">Opening a draft does not apply it to a repository.</p><div class="compact-list">${rows.map(d => `<button data-open-draft="${escape(d.id)}"><strong>${escape(d.file)}</strong><p>${escape(d.savedAt)} · ${d.valid ? 'logic validated' : 'invalid draft'}</p></button>`).join('') || '<p class="empty">No saved drafts.</p>'}</div><hr><button id="close-dialog">Close</button>`; dialog.showModal();
+      $('#close-dialog').onclick = () => dialog.close();
+      dialog.querySelectorAll('[data-open-draft]').forEach(b => b.onclick = async () => {
+        try { const d = await api('draft?id=' + b.dataset.openDraft); const p = await api('import-source', { text: d.text, file: d.file, label: 'Saved draft · ' + d.file.split('/').at(-1) }); projects = await api('projects'); dialog.close(); await loadProject(p.key); } catch (e) { toast(e.message); }
+      }); return;
+    }
+    if (name === 'run-scenario') { const result = await api('scenario', { ...requestContext(), scenario: JSON.parse(state.scenarioText) }); if (ticket === generation) { state.scenarioResult = result; state.mode = 'Simulation'; render(); } return; }
+    if (name === 'run-mocks') { const result = await api('mocks', { scenario: JSON.parse(state.mockText) }); if (ticket === generation) { state.mockResult = result; state.mode = 'Simulation'; render(); } return; }
+    if (name === 'scenario-from-run') { state.scenarioText = pretty(exportScenario()); render(); return; }
+    if (name === 'export-run' || name === 'download-scenario') return download('scenario.json', name === 'export-run' ? pretty(exportScenario()) : state.scenarioText);
+    if (name === 'download-mocks') return download('boundary-fixtures.json', state.mockText);
+  } catch (e) { if (ticket === generation) { if (['step','evaluate'].includes(name)) state.result = null; if (name === 'run-scenario') state.scenarioResult = null; if (name === 'run-mocks') state.mockResult = null; render(); toast((e.code ? e.code + ': ' : '') + e.message); } }
+  finally { busy = false; }
+}
+function exportScenario() {
+  return { id: 'recorded-simulation', facetId: state.facetId, bundleDigest: project.bundleDigest,
+    initialState: state.timeline[0]?.from ?? state.machineState,
+    events: state.timeline.map(e => ({ atMs: e.atMs, input: e.input, guards: e.guardFacts })),
+    note: 'Recorded synthetic inputs. No independent expected assertions were generated.' };
+}
+function showInfo(title, text, code = '') {
+  const d = $('#dialog'); d.innerHTML = `<h2>${escape(title)}</h2><p class="subtitle">${escape(text)}</p>${code ? `<pre class="notice info">${escape(code)}</pre>` : ''}<button id="close-dialog">Close</button>`;
+  d.showModal(); $('#close-dialog').onclick = () => d.close();
+}
+function editDialog(f, cell, root = false) {
+  if (!cell) return toast('Select a cell first.');
+  const fields = root ? ['initial','states','inputs','guards','rests','deadlines','ordering','otherwise'] : f.kind === 'machine' ? ['from', 'on', 'to', 'requires', 'forbids'].filter(k => Object.hasOwn(cell, k)) : ['region', 'values'];
+  const d = $('#dialog');
+  d.innerHTML = `<form id="edit-form"><h2>Edit ${escape(cell.id)}</h2><p class="muted">Definition change, not scenario input. The exact source diff is shown before any export.</p><label>Field<select id="edit-field">${options(fields, fields[0])}</select></label><label>Replacement JSON<textarea id="edit-value" spellcheck="false">${escape(pretty(cell[fields[0]]))}</textarea></label><div class="toolbar"><button type="submit" class="primary">Prepare source draft</button><button type="button" id="cancel-dialog">Cancel</button></div></form>`;
+  d.showModal(); $('#cancel-dialog').onclick = () => d.close(); $('#edit-field').onchange = e => { $('#edit-value').value = pretty(cell[e.target.value]); };
+  $('#edit-form').onsubmit = async e => {
+    e.preventDefault(); const ticket = generation;
+    try {
+      if (state.text !== null && state.text !== source().text) return toast('Use Explore this draft to continue visual edits on your candidate, or combine changes in the source editor. The original draft is retained.');
+      const result = await api('propose', { ...requestContext(), cellId: root ? null : cell.id, field: $('#edit-field').value, value: JSON.parse($('#edit-value').value) });
+      if (ticket !== generation) return;
+      state.undo.push(state.text ?? source().text); state.redo = []; state.dirty = true; state.text = result.text; state.draft = result; state.view = 'Changes'; d.close(); render();
+    } catch (err) { toast(err.message); }
+  };
+}
+function addCellDialog(f) {
+  const m = f.compiled, d = $('#dialog');
+  d.innerHTML = `<form id="transition-form"><h2>Add transition</h2><p class="muted">Append one ordinary machine cell without rewriting existing source. The compiler still checks ambiguity and reachability.</p><label>Stable cell ID<input id="transition-id" value="new-transition" required pattern="[a-z][a-z0-9.\\-]*"></label><div class="fact-grid"><label>From<select id="transition-from">${options(m.states,m.states[0])}</select></label><label>Event<select id="transition-on">${options(m.inputs,m.inputs[0])}</select></label><label>To<select id="transition-to">${options(m.states,m.states[1])}</select></label></div><label>Required guards, separated by commas<input id="transition-requires" placeholder="${escape(m.guards.join(', '))}"></label><label>Forbidden guards, separated by commas<input id="transition-forbids"></label><div class="toolbar"><button type="submit" class="primary">Prepare source draft</button><button type="button" id="cancel-dialog">Cancel</button></div></form>`;
+  d.showModal(); $('#cancel-dialog').onclick = () => d.close();
+  $('#transition-form').onsubmit = async e => {
+    e.preventDefault(); const ticket = generation;
+    if (state.text !== null && state.text !== source().text) return toast('Explore the current draft first, or combine edits in the source editor.');
+    const csv = id => $(id).value.split(',').map(v => v.trim()).filter(Boolean);
+    const value = { id: $('#transition-id').value, from: $('#transition-from').value, on: $('#transition-on').value, to: $('#transition-to').value };
+    const requires = csv('#transition-requires'), forbids = csv('#transition-forbids');
+    if (requires.length) value.requires = requires; if (forbids.length) value.forbids = forbids;
+    try { const r = await api('propose', { ...requestContext(), insert: true, collection: 'cells', value });
+      if (ticket !== generation) return;
+      state.undo.push(state.text ?? source().text); state.text = r.text; state.draft = r; state.dirty = true; state.redo = []; state.view = 'Changes'; d.close(); render();
+    } catch (error) { toast(error.message); }
+  };
+}
+function newDialog() {
+  const d = $('#dialog');
+  d.innerHTML = '<form id="new-form"><h2>New declaration</h2><p class="muted">Create ordinary ProductSpec source. No new language or runtime implementation is generated.</p><label>Kind<select id="new-kind"><option value="machine">State machine</option><option value="table">Decision table</option></select></label><label>Stable ID<input id="new-id" value="my-product.logic" required pattern="[a-z][a-z0-9.\\-]*"></label><div class="toolbar"><button type="submit" class="primary">Create source draft</button><button type="button" id="cancel-dialog">Cancel</button></div></form>';
+  d.showModal(); $('#cancel-dialog').onclick = () => d.close();
+  $('#new-form').onsubmit = async e => {
+    e.preventDefault(); const id = $('#new-id').value, isMachine = $('#new-kind').value === 'machine';
+    const text = isMachine ? `import { defineMachine } from '@v1d/product-spec';\n\nexport const machine = defineMachine({\n  id: ${JSON.stringify(id)},\n  states: ['IDLE', 'RUNNING'], initial: 'IDLE',\n  inputs: ['Start', 'Stop'], guards: [],\n  rests: ['IDLE', 'RUNNING'], deadlines: [],\n  ordering: 'exclusive', otherwise: 'stay',\n  cells: [\n    { id: 'start', from: 'IDLE', on: 'Start', to: 'RUNNING' },\n    { id: 'stop', from: 'RUNNING', on: 'Stop', to: 'IDLE' },\n  ],\n});\n`
+      : `import { defineDecisionTable, choice, on } from '@v1d/product-spec';\n\nexport const policy = defineDecisionTable({\n  id: ${JSON.stringify(id)},\n  axes: { permission: ['ALLOWED', 'BLOCKED'] },\n  columns: { action: choice(['RUN', 'HOLD']) },\n  cells: [\n    on('allowed', { permission: 'ALLOWED' }, { action: 'RUN' }),\n    on('blocked', { permission: 'BLOCKED' }, { action: 'HOLD' }),\n  ],\n});\n`;
+    try { const p = await api('import-source', { text, file: 'new-declaration.ts', label: id }); projects = await api('projects'); d.close(); await loadProject(p.key); }
+    catch (err) { toast(err.message); }
+  };
+}
+$('#file-import').onchange = async e => {
+  const file = e.target.files[0]; if (!file) return;
+  try {
+    if (file.size > 8_000_000) throw new Error('File exceeds the 8 MB import limit.');
+    const text = await file.text();
+    const p = await api(/\.(ts|mjs|js)$/i.test(file.name) ? 'import-source' : 'import', { text, file: file.name, label: file.name });
+    projects = await api('projects'); await loadProject(p.key);
+  } catch (err) { toast(err.message); } finally { e.target.value = ''; }
+};
+$('#snapshot-import').onchange = async e => {
+  const file = e.target.files[0]; if (!file) return; const ticket = generation;
+  try { if (file.size > 8_000_000) throw new Error('Snapshot is too large.'); const p = await api('snapshot', { project: project.key, text: await file.text() }); if (ticket === generation) { project = p; state.mode = 'Recorded snapshot'; render(); } }
+  catch (err) { toast(err.message); } finally { e.target.value = ''; }
+};
+window.addEventListener('beforeunload', e => { if ([...sessions.values()].some(s => s.dirty || [...s.perFacet.values()].some(f => f.dirty))) { e.preventDefault(); e.returnValue = ''; } });
+window.addEventListener('keydown', e => { if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') { e.preventDefault(); $('#search')?.focus(); $('.explorer')?.classList.add('open'); } });
+try {
+  const bootstrap = await fetch('/api/bootstrap').then(r => r.json()); token = bootstrap.token; projects = bootstrap.projects;
+  if (!projects.length) throw new Error('No fixture or configured workspace is available.');
+  await loadProject(projects[0].key);
+} catch (e) { $('#app').innerHTML = `<main class="loading"><h1>Product Studio could not start</h1><pre>${escape(e.message)}</pre><p>Check the local terminal and installed package versions.</p></main>`; }

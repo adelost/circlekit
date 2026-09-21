@@ -1,0 +1,18 @@
+import test from 'node:test';
+import http from 'node:http';
+import assert from 'node:assert/strict';
+import { mkdtemp, rm } from 'node:fs/promises';
+import path from 'node:path';
+import os from 'node:os';
+import { createServer } from '../server.mjs';
+const root=await mkdtemp(path.join(os.tmpdir(),'studio-http-test-'));
+const running=await createServer({port:0,dataDir:root});
+const call=(route,options={})=>fetch(running.origin+route,options);
+test.after(async()=>{running.server.closeAllConnections();await new Promise(r=>running.server.close(r));await rm(root,{recursive:true,force:true});});
+test('HTTP serves actual modules with restrictive browser headers',async()=>{const r=await call('/');assert.equal(r.status,200);assert.match(r.headers.get('content-security-policy'),/frame-ancestors 'none'/);assert.match(await r.text(),/lang="en"/);const js=await call('/app.js');assert.equal(js.status,200);assert.match(await js.text(),/evaluate/);});
+test('bootstrap issues one current session token; source reads require it',async()=>{const r=await call('/api/bootstrap');const b=await r.json();assert.equal(b.token,running.token);assert.equal(b.projects.length,4);assert.equal((await call('/api/projects')).status,403);assert.equal((await call('/api/projects',{headers:{'x-studio-token':running.token}})).status,200);});
+test('cross-origin requests are refused even with a valid token',async()=>{const r=await call('/api/projects',{headers:{origin:'https://attacker.invalid','x-studio-token':running.token}});assert.equal(r.status,403);});
+test('DNS-rebinding host is refused',async()=>{const status=await new Promise((resolve,reject)=>{http.get(running.origin+'/api/bootstrap',{headers:{host:'attacker.invalid'}},r=>{r.resume();resolve(r.statusCode);}).on('error',reject);});assert.equal(status,403);});
+test('HTTP interpreter returns real policy result and never effects',async()=>{const list=await(await call('/api/projects',{headers:{'x-studio-token':running.token}})).json();const amux=list.find(p=>p.label.startsWith('AMUX'));const p=await(await call('/api/project?id='+amux.key,{headers:{'x-studio-token':running.token}})).json();const r=await call('/api/evaluate',{method:'POST',headers:{'content-type':'application/json','x-studio-token':running.token},body:JSON.stringify({project:p.key,facetId:'amux.context-cost',bundleDigest:p.bundleDigest,facts:{need:'UNKNOWN',readiness:'SAFE',attempt:'NEW'}})});const d=await r.json();assert.equal(d.cell,'unknown-evidence');assert.equal(d.values.action,'HOLD');assert.equal(d.effectsExecuted,false);});
+test('arbitrary file and command endpoints do not exist',async()=>{for(const route of ['/api/exec','/api/file?path=/etc/passwd','/../lib/source.mjs']){const r=await call(route,{headers:{'x-studio-token':running.token}});assert.equal(r.status,404);}});
+test('malformed JSON fails with a bounded diagnostic',async()=>{const r=await call('/api/import',{method:'POST',headers:{'content-type':'application/json','x-studio-token':running.token},body:'{' });assert.equal(r.status,400);assert.equal((await r.json()).error.code,'input.json');});

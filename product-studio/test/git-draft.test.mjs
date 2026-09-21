@@ -1,0 +1,14 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { mkdtemp, writeFile, readFile, rm } from 'node:fs/promises';
+import os from 'node:os';
+import path from 'node:path';
+import { execFile } from 'node:child_process';
+import { promisify } from 'node:util';
+import { Workbench } from '../lib/workspaces.mjs';
+const exec=promisify(execFile), original=await readFile(new URL('../fixtures/workflow.ts',import.meta.url),'utf8');
+async function setup(t, allow=true){const root=await mkdtemp(path.join(os.tmpdir(),'studio-git-test-'));t.after(()=>rm(root,{recursive:true,force:true}));const git=(...args)=>exec('git',['-C',root,...args]);await git('init','-q');await git('config','user.name','Studio Test');await git('config','user.email','studio-test@example.invalid');await writeFile(path.join(root,'logic.ts'),original);await writeFile(path.join(root,'studio.workspace.json'),JSON.stringify({version:1,projects:[{id:'test',label:'Test repo',sources:['logic.ts']}]}));await git('add','.');await git('commit','-qm','fixture');const app=new Workbench({dataDir:path.join(root,'local-studio'),gitDraftRoots:allow?[root]:[]});await app.initialize([root]);const v=app.view(app.require(app.list().find(p=>p.label==='Test repo').key));const d=await app.propose({project:v.key,facetId:'example.request',bundleDigest:v.bundleDigest,cellId:'reply-failure',field:'to',value:'SUCCESS'});return{root,git,app,d,v};}
+test('Git draft save is disabled without startup authorization',async t=>{const{app,d}=await setup(t,false);await assert.rejects(app.saveGitDraft(d.id),/not enabled/);});
+test('Git draft is idempotent and changes neither HEAD, index nor working source',async t=>{const{root,git,app,d}=await setup(t);const head=(await git('rev-parse','HEAD')).stdout;const index=(await git('write-tree')).stdout;const a=await app.saveGitDraft(d.id);const b=await app.saveGitDraft(d.id);assert.equal(a.commit,b.commit);assert.equal((await git('rev-parse','HEAD')).stdout,head);assert.equal((await git('write-tree')).stdout,index);assert.equal(await readFile(path.join(root,'logic.ts'),'utf8'),original);assert.equal((await git('show',a.commit+':logic.ts')).stdout,d.text);assert.match(a.branch,/^product-studio\//);});
+test('Git draft rejects stale disk contents after validation',async t=>{const{root,app,d}=await setup(t);await writeFile(path.join(root,'logic.ts'),original+'\n// concurrent edit');await assert.rejects(app.saveGitDraft(d.id),/changed/);});
+test('invalid source can be saved locally but never as validated Git draft',async t=>{const{app,v}=await setup(t);const d=await app.propose({project:v.key,facetId:'example.request',bundleDigest:v.bundleDigest,text:original.replace("to: 'PENDING'","to: 'SUCCESS'")});assert.equal(d.valid,false);await app.saveDraft(d.id);await assert.rejects(app.saveGitDraft(d.id),/valid/);});
