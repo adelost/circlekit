@@ -35,8 +35,8 @@ data class MenuGridSpec(
      * [contentMaxWidth]. The shared centred menu composition keeps its
      * symmetric margin on both round and rectangular hosts. */
     val contentWidthFraction: Float,
-    /** Cap for the grid's content column on rectangular hosts. Null on ROUND,
-     * where the physical face is its own boundary. */
+    /** Cap for the grid's content column. ROUND uses the shared menu chord;
+     * rectangular hosts use their responsive surface cap. */
     val contentMaxWidth: Dp?,
     /** Label text size under each ring. Cells are strict equal-width, so this
      * size must remain readable after the host reserves its chrome. */
@@ -71,7 +71,7 @@ object MenuGridCatalog {
         verticalGap = 4.dp,
         // Base symmetric margin; the renderer also honours occupied slots.
         contentWidthFraction = MenuDesign.centeredGridWidthFraction,
-        contentMaxWidth = null,
+        contentMaxWidth = MenuDesign.roundMenuContentMaxWidth,
         labelSize = 8.sp,
     )
 

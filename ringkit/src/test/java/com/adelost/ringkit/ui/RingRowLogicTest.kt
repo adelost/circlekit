@@ -22,6 +22,12 @@ import org.junit.Test
  */
 class RingRowLogicTest {
     @Test
+    fun `round rows use the same 128 dp chord as launcher grids`() {
+        assertEquals(32f, roundMenuContentInsetDp(192f), 0.001f)
+        assertEquals(96f, roundMenuContentInsetDp(320f), 0.001f)
+        assertEquals(0f, roundMenuContentInsetDp(120f), 0.001f)
+    }
+    @Test
     fun `hub keeps readable atoms while the existing grid reserves an off-centre escape`() {
         val face = 192f
         val grid = MenuGridCatalog.RoundPair.copy(diameter = MenuDesign.statRingDiameter)

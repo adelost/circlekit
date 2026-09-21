@@ -1,8 +1,8 @@
 package com.adelost.designkit.ui
 
+import androidx.compose.ui.unit.dp
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
-import org.junit.Assert.assertNull
 import org.junit.Assert.assertThrows
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -24,6 +24,7 @@ class MenuGridSpecTest {
         val logbook = menuGridSpec(CircleSurfaceClass.ROUND, CircleMenuDensity.REGULAR, MenuGridRole.LOGBOOK)
         assertEquals(2, logbook.columns)
         assertEquals(0.75f, logbook.contentWidthFraction, 0.001f)
+        assertEquals(128.dp, logbook.contentMaxWidth)
         // The one watch action-ring standard: the home rim buttons' 30 dp.
         assertEquals(MenuDesign.watchActionRingDiameter, logbook.diameter)
         assertEquals(8f, logbook.labelSize.value)
@@ -141,16 +142,12 @@ class MenuGridSpecTest {
     }
 
     @Test
-    fun `content width is capped exactly on rectangular hosts`() {
+    fun `every menu host declares an exact content cap`() {
         CircleSurfaceClass.entries.forEach { surface ->
             CircleMenuDensity.entries.forEach { density ->
                 MenuGridRole.entries.forEach { role ->
                     val spec = menuGridSpec(surface, density, role)
-                    if (surface == CircleSurfaceClass.ROUND) {
-                        assertNull(spec.contentMaxWidth)
-                    } else {
-                        assertNotNull(spec.contentMaxWidth)
-                    }
+                    assertNotNull(spec.contentMaxWidth)
                 }
             }
         }

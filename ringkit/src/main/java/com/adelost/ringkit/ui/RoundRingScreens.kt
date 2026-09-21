@@ -63,6 +63,10 @@ internal fun MenuScreen(
     }
 }
 
+/** The stable symmetric inset that gives every round menu the same content chord. */
+internal fun roundMenuContentInsetDp(viewportWidthDp: Float): Float =
+    ((viewportWidthDp - MenuDesign.roundMenuContentMaxWidth.value) / 2f).coerceAtLeast(0f)
+
 /**
  * The screen's name, kept inside the round face.
  *
@@ -274,7 +278,7 @@ internal fun RowsScreen(
             viewportWidthDp = diameter.value,
             viewportHeightDp = maxHeight.value,
             titleBandBottomDp = (MenuDesign.roundTitleTopPadding + MenuDesign.roundTitleHeight).value,
-            baseInsetDp = insets.start.value,
+            baseInsetDp = maxOf(insets.start.value, roundMenuContentInsetDp(diameter.value)),
             reservedSlots = LocalRoundChromeReservation.current,
         )
         val safeTop = circleSafeTopInsetDp(
