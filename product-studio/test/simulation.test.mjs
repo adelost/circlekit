@@ -26,3 +26,16 @@ test('same operation ID reuses one result, different input conflicts', () => { c
 test('mock request matching is independent of JSON property insertion order', () => { const s = mock(); s.requests[0].payload = { b: 1, a: 'x' }; assert.equal(runMockScenario(s).events.length, 1); });
 test('duplicate fixture matches are refused instead of taking the first', () => { const s = mock(); s.fixtures.push({ ...s.fixtures[0], response: { ok: false } }); assert.throws(() => runMockScenario(s), /ambiguous|more than one/i); });
 test('virtual response order reflects latency, not submission order', () => { const s = mock(); s.fixtures.push({ ...s.fixtures[0], request: { a: 'y', b: 2 }, delayMs: 1 }); s.requests.push({ ...s.requests[0], operationId: 'r2', payload: { a: 'y', b: 2 } }); assert.deepEqual(runMockScenario(s).events.map(e => e.operationId), ['r2','r1']); });
+
+
+test('empty or malformed expectations are not counted as passing assertions', () => {
+  for (const expect of [{}, [], '', null, { invented: true }]) {
+    assert.throws(() => runScenario(f, { facetId: f.id, bundleDigest: 'v1',
+      events: [{ atMs: 0, input: 'Send', guards: {}, expect }] }, 'v1'), /expectation/i);
+  }
+});
+test('empty scenario cannot bypass an inspect-only facet or invalid initial state', () => {
+  const scenario = { facetId: f.id, bundleDigest: 'v1', events: [] };
+  assert.throws(() => runScenario({ ...f, runnable: false }, scenario, 'v1'), /inspect-only/);
+  assert.throws(() => runScenario(f, { ...scenario, initialState: 'INVENTED' }, 'v1'), /Initial state/);
+});

@@ -33,12 +33,22 @@ export function enumerateTable(facet) {
 
 /** Virtual event order only. No sleeps, IO, clocks, model calls or production adapters. */
 export function runScenario(facet, scenario, bundleDigest) {
+  requireThat(facet.runnable !== false, 'simulation.unavailable', facet.blockedReason ?? 'This facet is inspect-only.');
+  requireThat(['machine', 'decision-table'].includes(facet.kind), 'scenario.kind', 'This facet has no supported scenario runner.');
   requireThat(plain(scenario) && scenario.bundleDigest === bundleDigest && scenario.facetId === facet.id,
     'scenario.identity', 'Scenario belongs to another source revision or declaration.');
   requireThat(Array.isArray(scenario.events) && scenario.events.length <= 1000, 'scenario.events', 'Scenario needs at most 1000 events.');
   let state = scenario.initialState ?? facet.compiled.initial, time = 0;
+  if (facet.kind === 'machine') requireThat(facet.compiled.states.includes(state), 'scenario.state', 'Initial state is not declared by this machine.');
   const events = [], assertions = [];
   for (const [index, e] of scenario.events.entries()) {
+    requireThat(plain(e), 'scenario.event', 'Each scenario event must be a record.');
+    if (Object.hasOwn(e, 'expect')) {
+      const keys = facet.kind === 'machine' ? ['to', 'cellId'] : ['cell', 'values'];
+      requireThat(plain(e.expect) && Object.keys(e.expect).length > 0
+        && Object.keys(e.expect).every(key => keys.includes(key)), 'scenario.expect',
+        'An expectation must contain at least one supported outcome field; an empty object is not an assertion.');
+    }
     requireThat(Number.isSafeInteger(e.atMs) && e.atMs >= time, 'scenario.time', 'Event times must be nonnegative integer virtual milliseconds in ascending order.');
     time = e.atMs;
     const result = evaluateFacet(facet, { ...e, state });
@@ -47,7 +57,7 @@ export function runScenario(facet, scenario, bundleDigest) {
     events.push({ sequence: index, atMs: time, ...result });
     if (e.expect) {
       const actual = result.kind === 'transition' ? { to: result.to, cellId: result.cellId } : { cell: result.cell, values: result.values };
-      assertions.push({ index, pass: Object.entries(e.expect).every(([key, value]) => JSON.stringify(actual[key]) === JSON.stringify(value)), expected: e.expect, actual });
+      assertions.push({ index, pass: Object.entries(e.expect).every(([key, value]) => canonicalJson(actual[key]) === canonicalJson(value)), expected: e.expect, actual });
     }
   }
   return { stopped: false, state, events, assertions, pass: assertions.length ? assertions.every(a => a.pass) : null, assertionStatus: assertions.length ? (assertions.every(a => a.pass) ? 'passed' : 'failed') : 'unasserted', bundleDigest, scenarioDigest: digest(scenario), effectsExecuted: false };

@@ -1,3 +1,51 @@
+# Product Studio 0.3: static-review record
+
+Date: 2026-09-21. Base PR head: `fa75a2c7b3d3563c3cb6f3d19a752fc694204718`.
+
+**No code execution in this pass.** The user explicitly requested implementation without running the code. No npm install, Node invocation, compiler, application, test suite, browser or live product was run. The new tests below are authored acceptance cases, not passing results. No 9/10 or 10/10 runtime-quality score is asserted.
+
+## What changed
+
+Q0-Q5 have source implementations: headless loading with explicit product selection; inspect/query/source/simulate/scenario/trace commands; one JSON envelope and defined exit statuses; bounded file input/output; pagination; existing Workbench reuse and model preconditions. No dependency version, ProductSpec semantics, product runtime, user session, permission or deployment was changed. The local unpublished tool version is 0.3.0.
+
+Static review also identified and addressed:
+
+- `path.reverse()` caused the old missing-ancestor flag to inspect the selected event instead of the oldest retained ancestor.
+- Empty/malformed `expect` objects could be counted as successful assertions, and an empty scenario could bypass runnable/initial-state validation.
+- Missing recorded outcome fields could be presented as a contradiction instead of unknown evidence.
+- Matching source IDs could relink an old model to changed source without matching its exported digest.
+- Grouped architecture views could reintroduce edges excluded by a focused query.
+- Duplicate manifest IDs could replace an earlier project silently.
+
+Each has regression source. These are code-review findings, not reproduced runtime incidents in this pass. To claim a tested fix, run the applicable regression on the previous implementation, observe the named symptom, then run it on this revision.
+
+## Static verification scope
+
+Read the actual PR metadata, relevant branch files and existing tests. Local source copies were compared to current Git blob identities before modification. Review covered imports/exports, call signatures, command-specific options, output/exit behavior, identity boundaries, read-only ownership, existing GUI call paths and documentation examples. Publication checks compare committed file identities and the intended diff. File identity and source review do not prove correctness of runtime behavior.
+
+Node's official v22 file-system reference was consulted for bounded descriptor reads and optional `O_NONBLOCK`; availability differs by platform. The implementation retains regular-file checks and uses the nonblocking flag only when defined. Reference: https://nodejs.org/docs/latest-v22.x/api/fs.html#file-open-constants
+
+## Required runtime checks by the next owner
+
+```bash
+npm ci
+npm run test:cli
+npm run verify
+node bin/studio.mjs inspect --examples --product workflow-example --pretty
+npm start
+# In another terminal:
+python test/browser.py --url http://127.0.0.1:4317
+python test/browser_extended.py
+```
+
+Then attach two actual products through the same core, verify a known path and policy result, test a wrong model/evaluator identity, inspect a real short trace and preserve normal source-edit/build ownership. Do not make a private compiler harness or the previous HTTP-driver bridge the release runtime. Keep PR #274 draft until normal install and direct-browser proof exists.
+
+---
+
+# Historical evidence for earlier revisions only
+
+The following record predates 0.3. Its test counts and environmental limitations are retained as history; none is a claim that this revision has run successfully.
+
 # Verification boundary: Product Studio 0.2
 
 Date: 2026-09-21. Scope: the `product-studio/` application, not all of CircleKit or an installed product.

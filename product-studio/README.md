@@ -4,6 +4,21 @@ A local, English workbench over the existing ProductSpec language. This is execu
 
 Start here, then read [app integration](INTEGRATION.md), [implementation handoff](HANDOFF.md) and [verification boundaries](VERIFICATION.md).
 
+## Version 0.3: the same model from a shell
+
+Read/debug access is now implemented through `inspect`, `query`, `source`, `simulate`, `scenario` and `trace`. See [CLI.md](CLI.md) for executable examples, JSON/exit contracts, explicit product selection and identity checks. Agents keep using their existing source-edit tools.
+
+```bash
+node bin/studio.mjs inspect --examples --product workflow-example --pretty
+node bin/studio.mjs simulate --examples --product workflow-example \
+  --facet example.request --input '{"state":"IDLE","input":"Send","guards":{}}'
+node bin/studio.mjs doctor /path/to/product --pretty
+```
+
+**This revision was not run.** Code and regression tests were written and statically reviewed only, as requested. Historical 0.1/0.2 test results below do not establish that 0.3 passes. Follow [VERIFICATION.md](VERIFICATION.md) and [HANDOFF.md](HANDOFF.md) before treating it as ready.
+
+Read commands do not start HTTP, run a product generator, save drafts, alter Git, call providers or implicitly substitute example data. The existing GUI and explicit bundle-output command retain their separate behavior.
+
 ## Start
 
 Requires Node 22 or later. From `circlekit/product-studio`:
@@ -156,11 +171,12 @@ npm run test:core
 
 `npm run verify` checks module syntax and runs Node tests for source reading, laws, edit spans, imports, identity checks, scenarios, mocks, HTTP boundaries, local draft persistence and isolated Git branch saves. Browser tests use the actual UI and HTTP backend, not the old scripted concept.
 
-**Read [VERIFICATION.md](VERIFICATION.md) for the exact environment limitation:** the authoring environment could not download the locked packages. Full local results used a separate source-check harness derived from the reviewed functions and an older available TypeScript build. The 24 pure core tests need neither that harness nor TypeScript. They are not proof of a clean `npm ci` or the released tarball's integration. The test harness is neither shipped nor a runtime fallback. The managed browser also required the explicitly reported HTTP-bridge test mode; direct HTTP/CSP checks were separate.
+**Read [VERIFICATION.md](VERIFICATION.md) before treating this version as tested.** This 0.3 pass performed source review only at the user's request. No install, application, compiler, test or browser was run. Historical 0.1/0.2 test results used a temporary source-check harness and a browser HTTP bridge; neither proves the current locked-package/direct-browser path. No harness or fallback evaluator is shipped.
 
 ## Architecture and next implementation seams
 
-- `bin/studio.mjs`: generic serve/doctor/bundle entrypoint.
+- `bin/studio.mjs`, `lib/cli.mjs`: strict serve/doctor/bundle and read/debug command entrypoints.
+- `lib/semantic.mjs`: headless selection and shared Workbench-backed semantic service.
 - `adapter.mjs`, `lib/inspection.mjs`, `lib/exporter.mjs`: data-only build integration and provenance.
 - `lib/architecture.mjs`: derived typed entity graph, bounded views and deterministic queries.
 - `lib/provenance.mjs`: source positions without interpreting program semantics.

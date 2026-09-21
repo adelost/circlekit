@@ -42,16 +42,27 @@ async function sourceCompilerPin(root, sources) {
 
 export class Workbench {
   constructor({ dataDir, gitDraftRoots = [] }) { this.dataDir = dataDir; this.gitDraftRoots = new Set(gitDraftRoots.map(root => path.resolve(root))); this.projects = new Map(); this.drafts = new Map(); }
-  async initialize(roots = []) {
-    const fixtures = boundedJson(await readFile(path.join(fixtureRoot, 'catalog.json'), 'utf8'));
-    for (const fixture of fixtures) await this.load({ ...fixture, root: fixtureRoot, fixture: true });
+  async initialize(roots = [], { includeFixtures = true } = {}) {
+    if (includeFixtures) {
+      const fixtures = boundedJson(await readFile(path.join(fixtureRoot, 'catalog.json'), 'utf8'));
+      for (const fixture of fixtures) await this.load({ ...fixture, root: fixtureRoot, fixture: true });
+    }
+    const visited = new Set();
     for (const input of roots) {
       const root = await realpath(input);
+      if (visited.has(root)) continue;
+      visited.add(root);
       const custom = await exists(root, 'studio.workspace.json');
       if (custom) {
         const config = boundedJson(custom.text, 64000);
         requireThat([1,2].includes(config.version) && Array.isArray(config.projects) && config.projects.length <= 20, 'workspace.config', 'Unsupported studio.workspace.json.');
-        for (const p of config.projects) await this.load({ ...p, root, fixture: false });
+        const ids = new Set();
+        for (const p of config.projects) {
+          requireThat(p && typeof p.id === 'string' && p.id.trim() && !ids.has(p.id),
+            'workspace.duplicate', 'Each configured project needs a unique, nonempty ID.');
+          ids.add(p.id);
+          await this.load({ ...p, root, fixture: false });
+        }
       } else for (const p of PRESETS) {
         if (await exists(root, p.sources[0]) || p.artifact && await exists(root, p.artifact)) await this.load({ ...p, root, fixture: false });
       }
@@ -101,7 +112,7 @@ export class Workbench {
     this.projects.set(key, p); return this.view(p);
   }
   require(key) { const p = this.projects.get(key); requireThat(p, 'project.missing', 'Project is not loaded.', 404); return p; }
-  list() { return [...this.projects.values()].map(p => ({ key: p.key, label: p.config.label, fixture: !!p.config.fixture, originKind: p.config.originKind ?? (p.config.fixture ? 'fixture' : 'workspace'), revision: p.revision })); }
+  list() { return [...this.projects.values()].map(p => ({ key: p.key, id: p.config.id, productId: p.imported.inspection?.productId ?? p.imported.product?.id ?? p.config.id, label: p.config.label, fixture: !!p.config.fixture, originKind: p.config.originKind ?? (p.config.fixture ? 'fixture' : 'workspace'), revision: p.revision })); }
   facets(p) {
     const combined = new Map(p.imported.facets.map(f => [f.id, f]));
     if (p.imported.inspection) return [...combined.values()];
@@ -118,7 +129,10 @@ export class Workbench {
     const modelDigest = p.imported.identity.modelDigest ?? digest({ product: p.imported.product, facets: facets.map(f => ({ kind:f.kind, compiled:f.compiled })), versions: TOOL_VERSIONS, sourceSet });
     const inspection = p.imported.inspection;
     const architecture = architectureOf(p.imported.product, facets, inspection ?? {});
-    const sourceIndex = locateEntities(architecture, p.sources, inspection?.origins ?? []);
+    // Never relink an old compiled model to changed source merely because an ID still matches.
+    const exportedDigests = new Map((inspection?.sources ?? []).map(s => [s.file, s.digest]));
+    const correlatedSources = inspection ? p.sources.filter(s => exportedDigests.get(s.path) === s.parsed.digest) : p.sources;
+    const sourceIndex = locateEntities(architecture, correlatedSources, inspection?.origins ?? []);
     for (const f of facets) {
       const origin = sourceIndex.origins.find(o => o.entityKey === entityKey('facet', f.id, f.kind));
       if (origin) { f.file = origin.file; f.source = { file:origin.file, ...origin.span, span:origin.span, line:origin.line, digest:origin.sourceDigest }; }
@@ -164,9 +178,13 @@ export class Workbench {
       else {
         try {
           const result = evaluateFacet(f, { state: logic.from, input: logic.input, guards: logic.guards, facts: logic.facts });
+          const hasOutcome = result.kind === 'decision'
+            ? Object.hasOwn(logic, 'cellId') && Object.hasOwn(logic, 'values')
+            : Object.hasOwn(logic, 'cellId') && Object.hasOwn(logic, 'to');
           const same = result.kind === 'decision' ? result.cell === logic.cellId && canonicalJson(result.values) === canonicalJson(logic.values)
             : result.kind === 'transition' && result.cellId === logic.cellId && result.to === logic.to;
-          frame.logicCheck = { kind: result.kind === 'needs-facts' ? 'unknown' : same ? 'consistent' : 'different', result, message: 'Comparison to this model, not authentication of the recorded event.' };
+          frame.logicCheck = { kind: result.kind === 'needs-facts' || !hasOutcome ? 'unknown' : same ? 'consistent' : 'different', result,
+            message: hasOutcome ? 'Comparison to this model, not authentication of the recorded event.' : 'Recorded outcome is incomplete; no agreement or contradiction is asserted.' };
         } catch (error) { frame.logicCheck = { kind: 'unavailable', message: error.message }; }
       }
     }

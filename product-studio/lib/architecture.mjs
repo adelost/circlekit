@@ -173,7 +173,7 @@ export function architectureSlice(architecture, { mode = 'owners', group = null,
       nodeMap.get(id).count++;
     }
     const edges = new Map();
-    for (const edge of architecture.edges.filter(e => e.kind === 'binding')) {
+    for (const edge of architecture.edges.filter(e => e.kind === 'binding' && (!result?.edgeIds || result.edgeIds.includes(e.id)))) {
       const a = byKey.get(edge.from)?.owner, b = byKey.get(edge.to)?.owner;
       if (!included.has(a) || !included.has(b)) continue;
       const from = byKey.get(a).group ?? '__ungrouped', to = byKey.get(b).group ?? '__ungrouped';

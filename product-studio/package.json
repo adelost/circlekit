@@ -1,6 +1,6 @@
 {
   "name": "@v1d/product-studio",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "private": true,
   "type": "module",
   "description": "Local-first ProductSpec workbench: inspect, simulate and edit supported declarations",
@@ -13,7 +13,8 @@
     "check": "node scripts/check.mjs",
     "verify": "npm run check && npm test",
     "doctor": "node bin/studio.mjs doctor",
-    "test:core": "node --test test/architecture-inspection.test.mjs test/trace.test.mjs"
+    "test:core": "node --test test/architecture-inspection.test.mjs test/trace.test.mjs",
+    "test:cli": "node --test test/cli-parser.test.mjs test/semantic-cli.test.mjs"
   },
   "dependencies": {
     "@v1d/product-spec": "https://circlekit.pages.dev/npm/v1d/product-spec/0.3.65/v1d-product-spec-0.3.65.tgz",
@@ -25,6 +26,7 @@
   },
   "exports": {
     ".": "./adapter.mjs",
-    "./trace": "./lib/trace.mjs"
+    "./trace": "./lib/trace.mjs",
+    "./semantic": "./lib/semantic.mjs"
   }
 }

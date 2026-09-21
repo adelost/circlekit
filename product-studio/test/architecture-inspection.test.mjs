@@ -89,3 +89,15 @@ test('a path to a specific input does not end at another port of that owner',()=
   const r=queryArchitecture(a,{kind:'path',from:key('node','a'),to:key('port','view.other')});
   assert.equal(r.found,false);
 });
+
+
+test('grouped query view does not reintroduce excluded edge purposes', () => {
+  const p = product(); p.portRegistry.bindings.push({ from: 'a.in', to: 'b.in', purpose: 'context' });
+  const a = architectureOf(p, [], { groups: [
+    { id: 'first', label: 'First', members: [key('node', 'a')] },
+    { id: 'second', label: 'Second', members: [key('node', 'b')] },
+  ] });
+  const result = queryArchitecture(a, { kind: 'path', from: key('node', 'a'), to: key('node', 'b'), purposes: ['data'] });
+  const grouped = architectureSlice(a, { mode: 'domains', result });
+  assert.equal(grouped.edges.length, 1); assert.equal(grouped.edges[0].purpose, 'data');
+});

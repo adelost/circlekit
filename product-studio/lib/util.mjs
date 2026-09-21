@@ -79,3 +79,13 @@ export function unifiedPatch(file, before, after) {
   if (b.length && !after.endsWith('\n')) rows.push('\\ No newline at end of file');
   return rows.join('\n') + '\n';
 }
+
+/** Stable public errors without a stack or dependency-loader dump. */
+export function errorPayload(error) {
+  const dependency = ['ERR_MODULE_NOT_FOUND', 'MODULE_NOT_FOUND'].includes(error?.code);
+  return {
+    code: dependency ? 'dependency.unavailable' : error?.code ?? 'operation.failed',
+    message: dependency ? 'An installed dependency is unavailable. Run npm ci in product-studio, then retry.' : String(error?.message ?? error),
+    ...(error?.details === undefined ? {} : { details: error.details }),
+  };
+}

@@ -50,25 +50,36 @@ function validateEvent(event, knownEntities) {
 
 export function decodeTrace(text, { productId, modelDigest, architecture }) {
   const trace = boundedJson(text, 8_000_000);
-  requireThat(trace.kind === 'product-studio-trace' && trace.version === 1, 'trace.version', 'Unsupported trace format. A count-only port snapshot is not an event trace.');
+  requireThat(plain(trace) && trace.kind === 'product-studio-trace' && trace.version === 1, 'trace.version', 'Unsupported trace format. A count-only port snapshot is not an event trace.');
   requireThat(trace.productId === productId && trace.modelDigest === modelDigest && isDigest(modelDigest), 'trace.identity', 'Trace does not match this compiled model. Open the matching bundle.');
   requireThat(short(trace.sessionId) && ['recorded', 'synthetic'].includes(trace.provenance), 'trace.session', 'A trace requires a session and an explicit evidence origin.');
   requireThat(trace.clock?.unit === 'ms' && ['wall','monotonic','virtual'].includes(trace.clock.domain), 'trace.clock', 'Trace clock must have an explicit supported domain.');
   requireThat(Array.isArray(trace.events) && trace.events.length <= LIMIT, 'trace.size', 'Trace exceeds the supported event budget.');
   requireThat(plain(trace.truncation) && Number.isSafeInteger(trace.truncation.droppedBefore) && trace.truncation.droppedBefore >= 0
     && Array.isArray(trace.truncation.gaps), 'trace.gaps', 'Trace must declare dropped events and gaps.');
+  requireThat(trace.truncation.gaps.length <= LIMIT, 'trace.gaps', 'Too many declared trace gaps.');
+  let previousGapEnd = trace.truncation.droppedBefore - 1;
+  for (const gap of trace.truncation.gaps) {
+    requireThat(plain(gap) && Number.isSafeInteger(gap.from) && Number.isSafeInteger(gap.to)
+      && gap.from > previousGapEnd && gap.to >= gap.from && short(gap.reason, 2000),
+      'trace.gap', 'Gaps must be ordered, non-overlapping missing intervals with a reason.');
+    previousGapEnd = gap.to;
+  }
   const known = new Set(architecture.entities.map(e => e.key)), observed = new Set();
-  let sequence = trace.truncation.droppedBefore - 1, time = -1;
+  let sequence = trace.truncation.droppedBefore - 1, time = -1, gapIndex = 0;
   for (const event of trace.events) {
     validateEvent(event, known);
     requireThat(event.sequence > sequence, 'trace.order', 'Trace sequence numbers must be strictly increasing.');
     if (trace.clock.domain !== 'wall') requireThat(event.atMs >= time, 'trace.time', 'Monotonic or virtual event time moved backwards.');
-    if (event.sequence !== sequence + 1) requireThat(trace.truncation.gaps.some(g => g.from === sequence + 1 && g.to === event.sequence - 1), 'trace.gap', 'Missing event sequences must be declared as gaps.');
+    if (event.sequence !== sequence + 1) {
+      const gap = trace.truncation.gaps[gapIndex++];
+      requireThat(gap?.from === sequence + 1 && gap?.to === event.sequence - 1,
+        'trace.gap', 'Missing event sequences must be declared as gaps.');
+    }
     sequence = event.sequence; time = event.atMs; observed.add(sequence);
   }
-  for (const gap of trace.truncation.gaps) requireThat(Number.isSafeInteger(gap.from) && Number.isSafeInteger(gap.to)
-    && gap.from >= trace.truncation.droppedBefore && gap.to >= gap.from && typeof gap.reason === 'string'
-    && !trace.events.some(e => e.sequence >= gap.from && e.sequence <= gap.to), 'trace.gap', 'Invalid gap or gap overlapping captured events.');
+  requireThat(gapIndex === trace.truncation.gaps.length, 'trace.gap',
+    'A declared gap does not match missing captured sequences. Trailing loss needs a future trace schema.');
   return { ...trace, traceDigest: digest(canonicalJson(trace)),
     notice: trace.provenance === 'synthetic' ? 'Synthetic trace. No product runtime was observed.'
       : 'Recorded events supplied by a producer. Identity is checked; the trace is not authenticated and does not prove sensor accuracy.',
@@ -85,13 +96,27 @@ export function inspectTrace(trace, { cursor = trace.events.length - 1, entityKe
     activity.set(event.entityKey, { entityKey: event.entityKey, count: (old?.count ?? 0) + 1, lastSequence: event.sequence,
       lastAtMs: event.atMs, summary: event.summary ?? null });
   }
+  requireThat(typeof search === 'string' && search.length <= 1000
+    && (entityKey === null || short(entityKey)) && (operationId === null || short(operationId)),
+    'trace.filter', 'Trace filters must be bounded strings.');
   const text = search.toLowerCase();
   const events = trace.events.filter(e => (!entityKey || e.entityKey === entityKey) && (!operationId || e.operationId === operationId)
     && (!text || `${e.entityKey} ${e.summary ?? ''} ${e.kind} ${e.logic?.cellId ?? ''}`.toLowerCase().includes(text)));
   const path = [], bySequence = new Map(trace.events.map(e => [e.sequence, e]));
-  let parent = current;
-  while (parent) { path.push(parent); parent = parent.causedBy === undefined ? null : bySequence.get(parent.causedBy); }
+  let parent = current, missingParentSequence = null;
+  const visited = new Set();
+  while (parent) {
+    requireThat(!visited.has(parent.sequence), 'trace.cycle', 'A causal chain contains a cycle.');
+    visited.add(parent.sequence);
+    path.push(parent);
+    if (parent.causedBy === undefined) break;
+    const next = bySequence.get(parent.causedBy);
+    if (!next) { missingParentSequence = parent.causedBy; break; }
+    parent = next;
+  }
   return { cursor, current, events, activity: [...activity.values()], causalPath: path.reverse(),
-    missingParent: path.length > 0 && path.at(-1)?.causedBy !== undefined && !bySequence.has(path.at(-1).causedBy),
-    message: 'Only explicit causedBy links form this causal path. Timestamps and nearby events are not inferred causes.' };
+    missingParent: missingParentSequence !== null,
+    missingParentSequence,
+    causalPathComplete: missingParentSequence === null,
+    message: 'Completeness concerns only explicitly recorded causedBy links. Missing metadata, timestamps and nearby events do not establish actual causality.' };
 }
