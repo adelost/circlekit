@@ -114,3 +114,18 @@ test('literal transition insertion preserves existing comments and runs the same
  assert.equal(q.valid, true, JSON.stringify(q.diagnostics)); assert.equal(q.facets[0].compiled.cells.length, 8);
  assert.ok(next.text.includes('Synthetic request lifecycle'));
 });
+
+test('semantic split preserves all outputs and original invariant callbacks',()=>{
+ const p=analyzeSource(amuxSource,'amux.mjs');
+ const edit=p.planSplitRegion('amux.context-cost','within-policy','readiness',['SAFE'],'within-policy-safe');
+ const q=analyzeSource(edit.text,'amux.mjs');assert.equal(q.valid,true);assert.equal(edit.outputParity,'all-points-equal');
+ assert.equal(q.facets[0].compiled.cells.length,7);
+ assert.deepEqual(enumerateTable(p.facets[0]).map(r=>r.values),enumerateTable(q.facets[0]).map(r=>r.values));
+ assert.deepEqual(q.facets[0].compiled.invariants,p.facets[0].compiled.invariants);
+ assert.ok(edit.text.includes('a failed compact cannot automatically spend another attempt'));
+});
+test('semantic split refuses empty/comprehensive/foreign subsets and duplicate identity',()=>{
+ const p=analyzeSource(amuxSource,'amux.mjs');
+ for(const values of [[],['SAFE','UNSAFE'],['INVENTED']])assert.throws(()=>p.planSplitRegion('amux.context-cost','within-policy','readiness',values,'new-cell'));
+ assert.throws(()=>p.planSplitRegion('amux.context-cost','within-policy','readiness',['SAFE'],'failed-attempt'));
+});

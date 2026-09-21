@@ -2,6 +2,7 @@ import { kernel, MAX_POINTS } from './kernel.mjs';
 import { requireThat, digest, plain, StudioError, canonicalJson } from './util.mjs';
 
 export function evaluateFacet(facet, request) {
+  requireThat(facet.runnable !== false, 'simulation.unavailable', facet.blockedReason ?? 'This facet is inspect-only.');
   const model = facet.compiled;
   if (facet.kind === 'decision-table') {
     requireThat(plain(request.facts), 'table.facts', 'Supply the exact policy facts.');
@@ -23,6 +24,7 @@ export function evaluateFacet(facet, request) {
     evidenceKind: 'simulation', effectsExecuted: false };
 }
 export function enumerateTable(facet) {
+  requireThat(facet.runnable !== false, 'simulation.unavailable', facet.blockedReason ?? 'This facet is inspect-only.');
   requireThat(facet.kind === 'decision-table', 'table.kind', 'Select a decision table.');
   const points = Object.values(facet.compiled.axes).reduce((n, a) => n * a.length, 1);
   requireThat(points <= MAX_POINTS, 'table.budget', 'Table exceeds the interactive budget.');
@@ -48,7 +50,7 @@ export function runScenario(facet, scenario, bundleDigest) {
       assertions.push({ index, pass: Object.entries(e.expect).every(([key, value]) => JSON.stringify(actual[key]) === JSON.stringify(value)), expected: e.expect, actual });
     }
   }
-  return { stopped: false, state, events, assertions, pass: assertions.every(a => a.pass), bundleDigest, scenarioDigest: digest(scenario), effectsExecuted: false };
+  return { stopped: false, state, events, assertions, pass: assertions.length ? assertions.every(a => a.pass) : null, assertionStatus: assertions.length ? (assertions.every(a => a.pass) ? 'passed' : 'failed') : 'unasserted', bundleDigest, scenarioDigest: digest(scenario), effectsExecuted: false };
 }
 
 /** Exact request fixtures. Schemas are explicit test contracts, not real provider claims. */

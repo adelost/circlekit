@@ -3,3 +3,8 @@
 /* Keep the toolbar from imposing a wider implicit grid track on tablets. */
 .shell{grid-template-columns:minmax(0,1fr)}.topbar,.page-heading>div:first-child{min-width:0}
 @media(max-width:950px){.topbar .top-mode{display:none}.panel-head{flex-wrap:wrap}}
+
+/* Architecture, source navigation and trace are views over the same selected model. */
+.source-navigation{display:flex;align-items:end;gap:15px;margin-bottom:12px}.source-navigation label{flex:1}.source-editor-wrap{display:grid;grid-template-columns:55px minmax(0,1fr);background:#0c1420}.source-editor-wrap #line-gutter{max-height:380px;overflow:hidden;text-align:right;line-height:1.7;padding:14px 10px;font-size:12px;color:#6e8aa6;background:#101d2a;white-space:pre;user-select:none}.source-editor-wrap textarea{height:380px;resize:vertical;min-width:0;line-height:1.7}.query-actions{align-items:center}.inline-check{display:flex;align-items:center;font-size:11px}.inline-check input{width:auto}.inspector-actions{margin:16px 0}.inspector pre{max-height:380px;overflow:auto}.graph-node.domain rect{fill:#182d40;stroke:#65a8bc}.topbar nav{overflow:auto;min-width:0}.source-navigation .mono{max-width:260px}input[type=range]{padding:0;accent-color:var(--cyan)}
+@media(max-width:1250px){.topbar{gap:10px}.topbar .brand span{display:none}.topbar nav button{padding:0 10px}.project-select{width:190px}.topbar .top-mode{display:none}}
+@media(max-width:680px){.topbar nav{justify-content:flex-start}.topbar nav button{min-width:64px}.source-navigation{flex-direction:column;align-items:stretch}.source-editor-wrap{grid-template-columns:38px minmax(0,1fr)}.source-editor-wrap #line-gutter{font-size:11px;padding-right:6px}.source-editor-wrap textarea{font-size:11px}.query-actions button{flex:1;min-width:95px}}

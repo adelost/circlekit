@@ -1,32 +1,57 @@
-import { compileDeclaration } from './kernel.mjs';
-import { boundedJson, digest, plain, requireThat, StudioError } from './util.mjs';
+import { compileDeclaration, KERNEL_VERSION } from './kernel.mjs';
+import { boundedJson, digest, plain, requireThat, StudioError, canonicalJson } from './util.mjs';
+import { validateInspectionBundle, compatibilityReport } from './inspection.mjs';
 
 export function decodeArtifact(text, name = 'artifact.json') {
   const data = boundedJson(text);
-  if (data.kind === 'product-studio-bundle' && data.version === 1) {
+  if (data?.kind === 'product-studio-bundle' && data.version === 2) {
+    const inspection = validateInspectionBundle(data), compatibility = compatibilityReport(inspection, KERNEL_VERSION);
+    const product = data.product ? decodeProduct(data.product) : null;
+    const facets = mergeFacets(data.facets, (product?.decisionTables ?? []).map(compiled => ({ id: compiled.id, kind: 'decision-table', compiled })));
+    const producerErrors = inspection.diagnostics.some(d => d.severity === 'error');
+    const decoded = facets.map(f => decodeFacet(f, compatibility));
+    return { product, facets: producerErrors ? decoded.map(f => ({ ...f, runnable:false, blockedReason:'The producer reported validation errors. Inspect the model, but resolve them before simulation.' })) : decoded, inspection, compatibility,
+      identity: { source: name, productDigest: data.artifacts.productSha256 ?? null, modelDigest: data.modelDigest }, raw: text };
+  }
+  if (data?.kind === 'product-studio-bundle' && data.version === 1) {
     requireThat(Array.isArray(data.facets) && data.facets.length <= 100, 'bundle.facets', 'Invalid facet list.');
     const product = data.product ? decodeProduct(data.product) : null;
-    return { product, facets: data.facets.map(decodeFacet), identity: { source: name, productDigest: product ? digest(JSON.stringify(product)) : null }, raw: text };
+    return { product, facets: mergeFacets(data.facets, (product?.decisionTables ?? []).map(compiled => ({ kind: 'decision-table', compiled }))).map(f => decodeFacet(f)),
+      identity: { source: name, productDigest: null }, raw: text };
   }
-  if (data.kind === 'product-spec-ir') return { product: decodeProduct(data), facets: tableFacets(data), identity: { source: name, productDigest: digest(text) }, raw: text };
-  if (data.states && data.inputs && data.cells) return { product: null, facets: [decodeFacet({ kind: 'machine', compiled: data })], identity: { source: name }, raw: text };
-  if (data.axes && data.columns && data.cells) return { product: null, facets: [decodeFacet({ kind: 'decision-table', compiled: data })], identity: { source: name }, raw: text };
-  throw new StudioError('artifact.schema', 'Expected ProductSpec IR, a machine, a decision table, or a version-1 Product Studio bundle.');
+  if (data?.kind === 'product-spec-ir') return { product: decodeProduct(data), facets: tableFacets(data), identity: { source: name, productDigest: digest(text) }, raw: text };
+  if (data?.states && data.inputs && data.cells) return { product: null, facets: [decodeFacet({ kind: 'machine', compiled: data })], identity: { source: name }, raw: text };
+  if (data?.axes && data.columns && data.cells) return { product: null, facets: [decodeFacet({ kind: 'decision-table', compiled: data })], identity: { source: name }, raw: text };
+  throw new StudioError('artifact.schema', 'Expected ProductSpec IR, a machine, a decision table, or a supported Product Studio inspection bundle.');
 }
-function decodeFacet(f) {
-  requireThat(['machine', 'decision-table'].includes(f.kind) && plain(f.compiled), 'facet.unsupported', 'Unsupported facet. Export a supported machine or decision table.');
+function mergeFacets(explicit, embedded) {
+  const result = new Map();
+  for (const f of [...explicit, ...embedded]) {
+    const id = f.id ?? f.compiled?.id;
+    requireThat(typeof id === 'string', 'facet.id', 'Facet identity is missing.');
+    const prior = result.get(id);
+    requireThat(!prior || prior.kind === f.kind && canonicalJson(prior.compiled) === canonicalJson(f.compiled), 'facet.conflict', `Conflicting exported definitions for '${id}'.`);
+    if (!prior) result.set(id, { ...f, id });
+  }
+  return [...result.values()];
+}
+function decodeFacet(f, compatibility = null) {
+  requireThat(plain(f) && typeof f.kind === 'string' && plain(f.compiled), 'facet.shape', 'Malformed compiled facet.');
   const raw = f.compiled;
-  // Invariant descriptions are not executable invariants. Preserve and disclose them.
+  if (!['machine', 'decision-table'].includes(f.kind) || compatibility?.simulate === false) {
+    return { id: raw.id, kind: f.kind, compiled: raw, validation: 'inspect-only', runnable: false,
+      blockedReason: compatibility?.reason ?? 'This facet needs an owned inspection/runner adapter.', editable: false, source: null };
+  }
   const descriptions = (raw.invariants ?? []).filter(v => typeof v === 'string');
   const declaration = descriptions.length ? { ...raw, invariants: [] } : raw;
   const compiled = compileDeclaration(f.kind, declaration);
   return { id: compiled.id, kind: f.kind, compiled: { ...compiled, ...(descriptions.length ? { invariants: descriptions } : {}) },
     validation: descriptions.length ? 'structure-only-invariant-code-unavailable' : 'shared-kernel',
-    editable: false, source: null };
+    runnable: true, kernelVersion: KERNEL_VERSION, editable: false, source: null };
 }
 function tableFacets(product) { return (product.decisionTables ?? []).map(compiled => decodeFacet({ kind: 'decision-table', compiled })); }
 
-/** Input integrity for a viewer, NOT the whole ProductSpec compiler/conformance proof. */
+/** Viewer integrity checks, not the whole compiler or native-conformance proof. */
 export function decodeProduct(product) {
   requireThat(plain(product) && product.kind === 'product-spec-ir' && product.schemaVersion === 9 && typeof product.id === 'string', 'product.schema', 'Only ProductSpec IR schema 9 is supported.');
   for (const key of ['nodes', 'components', 'componentTypes', 'nodeTypes', 'artifacts']) requireThat(Array.isArray(product[key]) && product[key].length <= 10000, 'product.shape', `Product '${key}' must be a bounded array.`);
@@ -37,27 +62,28 @@ export function decodeProduct(product) {
   }
   const ports = new Set();
   for (const key of ['nodePorts', 'componentPorts']) {
-    requireThat(Array.isArray(product.portRegistry[key]), 'product.ports', `Missing ${key}.`);
+    requireThat(Array.isArray(product.portRegistry[key]) && product.portRegistry[key].length <= 30000, 'product.ports', `Missing or oversized ${key}.`);
     for (const p of product.portRegistry[key]) {
       requireThat(typeof p.ref === 'string' && owners.has(p.ownerId) && !ports.has(p.ref), 'product.port', 'Unknown owner, duplicate or missing port identity.'); ports.add(p.ref);
     }
   }
-  requireThat(Array.isArray(product.portRegistry.bindings), 'product.bindings', 'Missing port bindings.');
+  requireThat(Array.isArray(product.portRegistry.bindings) && product.portRegistry.bindings.length <= 30000, 'product.bindings', 'Missing or oversized port bindings.');
   for (const b of product.portRegistry.bindings) requireThat(ports.has(b.from) && ports.has(b.to), 'product.edge', 'A binding references an undeclared port.');
-  return product; // Preserve product-owned extension fields without inventing semantics.
+  return product;
 }
 
 export function graphOf(product) {
   if (!product) return { nodes: [], edges: [], ports: [] };
   const types = new Map([...product.nodeTypes, ...product.componentTypes].map(t => [t.id, t]));
   const ports = [...product.portRegistry.nodePorts, ...product.portRegistry.componentPorts];
-  const portOwners = new Map(ports.map(p => [p.ref, p.ownerId]));
+  const portOwners = new Map(ports.map(p => [p.ref, p.ownerId])), byOwner = new Map();
+  for (const p of ports) { const list = byOwner.get(p.ownerId) ?? []; list.push(p); byOwner.set(p.ownerId, list); }
   const nodes = [...product.nodes.map(n => ({ ...n, component: false })), ...product.components.map(n => ({ ...n, component: true }))].map(n => {
     const type = types.get(n.nodeTypeRef ?? n.componentTypeRef);
-    return { id: n.id, kind: n.component ? 'component' : type?.kind ?? 'code', domain: n.id.split('.')[0],
-      type: type ?? null, declaration: n, ports: ports.filter(p => p.ownerId === n.id) };
+    return { id: n.id, kind: n.component ? 'component' : type?.kind ?? 'code', domain: null,
+      type: type ?? null, declaration: n, ports: byOwner.get(n.id) ?? [] };
   });
-  return { nodes, ports, edges: product.portRegistry.bindings.map((e, i) => ({ ...e, id: `binding-${i}`, source: portOwners.get(e.from), target: portOwners.get(e.to) })) };
+  return { nodes, ports, edges: product.portRegistry.bindings.map(e => ({ ...e, id: digest(canonicalJson(e)), source: portOwners.get(e.from), target: portOwners.get(e.to) })) };
 }
 
 export function attachSnapshot(product, productDigest, graphDigest, text) {

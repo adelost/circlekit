@@ -124,7 +124,10 @@ export function analyzeSource(text, file = 'declaration.ts') {
     if (Array.isArray(object)) {
       if (key === 'length') return object.length;
       if (/^\d+$/.test(String(key))) return object[Number(key)];
-      if (['includes', 'join'].includes(key)) return approve((...args) => object[key](...args));
+      if (['includes', 'join'].includes(key)) return approve((...args) => {
+        if (key === 'join') requireThat(object.length <= 4096 && object.reduce((n,v)=>n+String(v).length,0) + String(args[0] ?? ',').length * object.length <= 1000000, 'source.budget', 'Joined text exceeds its budget.');
+        return object[key](...args);
+      });
       if (['map', 'filter', 'some', 'every'].includes(key)) return approve(fn => {
         requireThat(approved.has(fn) && object.length <= 2048, 'source.callback', 'Unsupported callback or oversized collection.');
         return object[key]((v, i) => fn(v, i));
@@ -193,7 +196,7 @@ export function analyzeSource(text, file = 'declaration.ts') {
         case ts.SyntaxKind.GreaterThanEqualsToken: return a >= b;
         case ts.SyntaxKind.LessThanToken: return a < b;
         case ts.SyntaxKind.LessThanEqualsToken: return a <= b;
-        case ts.SyntaxKind.PlusToken: return a + b;
+        case ts.SyntaxKind.PlusToken: if (typeof a === 'string' || typeof b === 'string') requireThat(String(a).length + String(b).length <= 1000000, 'source.budget', 'Constructed text exceeds its budget.'); return a + b;
         case ts.SyntaxKind.MinusToken: return a - b;
         case ts.SyntaxKind.AsteriskToken: return a * b;
         case ts.SyntaxKind.SlashToken: return a / b;
@@ -325,6 +328,44 @@ export function analyzeSource(text, file = 'declaration.ts') {
     for (const edit of edits.sort((a,b) => b.start - a.start)) next = next.slice(0, edit.start) + edit.replacement + next.slice(edit.end);
     return { text: next, shared: array.getStart(source) < o.location.span.start };
   }
+  function planSplitRegion(facetId, cellId, axis, selectedValues, newCellId) {
+    const o = origins.get(facetId), f = facets.get(facetId);
+    requireThat(o && f?.kind === 'decision-table', 'edit.table', 'Select a source-backed decision table.');
+    requireThat(Array.isArray(selectedValues) && selectedValues.length > 0 && new Set(selectedValues).size === selectedValues.length,
+      'edit.split', 'Choose a nonempty, unique subset of this region.');
+    const cell = f.compiled.cells.find(c => c.id === cellId), domain = f.compiled.axes[axis];
+    requireThat(cell && domain && typeof newCellId === 'string' && !f.compiled.cells.some(c => c.id === newCellId),
+      'edit.split', 'Choose an existing cell/axis and a new unique cell ID.');
+    const covered = cell.region[axis] === undefined ? domain : Array.isArray(cell.region[axis]) ? cell.region[axis] : [cell.region[axis]];
+    requireThat(selectedValues.every(v => covered.includes(v)), 'edit.split', 'The new region must stay inside the original region.');
+    const remaining = covered.filter(v => !selectedValues.includes(v));
+    requireThat(remaining.length > 0, 'edit.split', 'A split must leave a nonempty original region.');
+    const array = property(o.declaration, 'cells', o.scope);
+    if (!ts.isArrayLiteralExpression(array)) refuse(array, 'Cells are derived. Edit their owner instead.');
+    const entries = array.elements.filter(n => evaluate(n, o.scope)?.id === cellId);
+    requireThat(entries.length === 1, 'edit.split', 'The source cell is ambiguous.');
+    const original = resolveAst(entries[0], o.scope);
+    requireThat(ts.isCallExpression(original) && ts.isIdentifier(original.expression)
+      && bindings.get(original.expression.text)?.name === 'on', 'edit.split', 'This split lens requires a direct imported on(...) cell.');
+    const originalRegion = original.arguments[1], outputExpression = original.arguments[2].getText(source);
+    const oldRegion = JSON.stringify({ ...cell.region, [axis]: remaining }, null, 2);
+    const newRegion = JSON.stringify({ ...cell.region, [axis]: selectedValues }, null, 2);
+    const addition = `${original.expression.getText(source)}(${JSON.stringify(newCellId)}, ${newRegion}, ${outputExpression})`;
+    const edits = [
+      { start: originalRegion.getStart(source), end: originalRegion.end, value: oldRegion },
+      { start: array.end - 1, end: array.end - 1, value: `\n    ${addition},\n  ` },
+    ];
+    if (array.elements.length && !array.elements.hasTrailingComma) edits.push({ start:array.elements.at(-1).end, end:array.elements.at(-1).end, value:',' });
+    let next = text;
+    for (const edit of edits.sort((a,b) => b.start-a.start)) next=next.slice(0,edit.start)+edit.value+next.slice(edit.end);
+    const candidate = analyzeSource(next,file), after = candidate.facets.find(f => f.id === facetId);
+    requireThat(candidate.valid && after, 'edit.split', candidate.diagnostics.map(d=>d.message).join('\n') || 'Split did not produce a valid source declaration.');
+    for (const point of kernel.decisionPoints(f.compiled.axes)) {
+      const before = kernel.decide(f.compiled,point), decision = kernel.decide(after.compiled,point);
+      requireThat(JSON.stringify(before.values) === JSON.stringify(decision.values), 'edit.split-semantics', 'The split changed a decision output.');
+    }
+    return { text:next, outputParity:'all-points-equal', changedCellIds:[cellId,newCellId] };
+  }
   return { file, digest: digest(text), facets: [...facets.values()], diagnostics, dataExports,
-    valid: diagnostics.length === 0 && facets.size > 0, planCellEdit, planInsert };
+    valid: diagnostics.length === 0 && facets.size > 0, planCellEdit, planInsert, planSplitRegion };
 }

@@ -60,8 +60,9 @@ with sync_playwright() as pw:
             return new Response(r.body, {status:r.status,headers:{'content-type':'application/json'}});
         }; }""")
         graph = (ROOT/'public/graph.js').read_text().replace('export function drawGraph','function drawGraph')
-        app = (ROOT/'public/app.js').read_text().replace("import { drawGraph } from './graph.js';",'')
-        page.add_script_tag(type='module',content=graph+'\n'+app)
+        tools = (ROOT/'public/studio-tools.js').read_text().replace('export function ', 'function ')
+        app = (ROOT/'public/app.js').read_text().replace("import { drawGraph } from './graph.js';",'').replace("import { architectureControls, sourceNavigator, entityInspector, traceView, installDocumentState } from './studio-tools.js';",'')
+        page.add_script_tag(type='module',content=graph+'\n'+tools+'\n'+app)
     else:
         page.goto(args.url)
     page.wait_for_selector('#machine-state')

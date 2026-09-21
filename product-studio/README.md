@@ -1,6 +1,8 @@
 # Product Studio
 
-A local, English workbench over the existing ProductSpec language. This is executable application code, not the earlier HTML storyboard. It is an initial implementation with explicit boundaries, not a complete native IDE.
+A local, English workbench over the existing ProductSpec language. This is executable application code, not the earlier HTML storyboard. Version 0.2 adds generated inspection bundles, architecture questions, source navigation and recorded traces. It is not a complete native IDE.
+
+Start here, then read [app integration](INTEGRATION.md), [implementation handoff](HANDOFF.md) and [verification boundaries](VERIFICATION.md).
 
 ## Start
 
@@ -40,6 +42,19 @@ The GUI's `Save Git draft branch` then creates `product-studio/<operation-id>` i
 
 The saved branch is **logic-checked source**, not a successful whole-product/native build. Inspect the receipt and perform the product's normal verification before integration.
 
+## Added in 0.2
+
+- **Generated inspection first:** versioned data-only bundles from the product's own compiled exports. Studio indexes source locations rather than reinterpreting every helper to understand the model.
+- **Architecture questions:** upstream, downstream, shortest path, consumers, port owner and potential impact over declared bindings. Explicit group views and source-linked entity inspection; no inferred domains from ID prefixes.
+- **Trace:** ordered capture import, identity checks, explicit causal paths, filtering, backward/forward inspection and compatible-kernel comparison of recorded decisions. No live runtime is paused or executed.
+- **Code navigation:** exact exported/uniquely indexed source locations, file selection, line numbers and source-to-entity selection. Source drafts are shared per file, not accidentally duplicated per facet.
+- **Semantic editing:** split a decision-table region while preserving all output values and original invariant callbacks. Review the source/semantic diff and explore a separate candidate. Rule identity intentionally changes for the split portion.
+- **Scenarios:** local immutable named save/reopen with exact model identity. An event run without assertions is explicitly `unasserted`, not a passing behavior proof.
+- **Attachment CLI:** `npm start -- /path/to/product`, `npm run doctor -- /path/to/product`, and `bin/studio.mjs bundle` for existing compiled JSON. A version-2 `studio.workspace.json` names one generated bundle instead of repeating its source/logic inventories.
+- **Version boundaries:** mismatched producer/evaluator versions block simulation; changed source package pins also block misleading draft validation. Producer diagnostics are not discarded.
+
+The exporter and trace APIs are implemented in this development tool. No product generator hook, native observer, public npm release or live preview adapter was automatically installed in your apps.
+
 ## What works
 
 | Area | Delivered behavior |
@@ -48,7 +63,7 @@ The saved branch is **logic-checked source**, not a successful whole-product/nat
 | Logic | Actual ProductSpec `defineMachine`/`step` and `defineDecisionTable`/`decide`; exact cell identities, guard facts, why-not information, all table points within a budget, synthetic history and reset. |
 | Source | TypeScript/MJS parsing without executing repository code; supported static construction helpers/constants/import aliases; syntax diagnostics and original source spans; unsupported expressions are explicit. |
 | Visual authoring | Edit literal cell/root properties; append a machine transition; create a new table or machine using normal ProductSpec syntax. No new DSL keywords. |
-| Changes | Edit source text, validate supported declarations including supported original invariant callbacks, inspect source and semantic diffs, undo/redo edits, preserve per-facet drafts and export a real unified patch. |
+| Changes | Edit source text, validate supported declarations including supported original invariant callbacks, inspect source and semantic diffs, undo/redo edits, preserve one shared draft per source file and export a real unified patch. |
 | Candidate exploration | Open a validated draft as an independent in-memory candidate. Original source, project and synthetic run remain separate. |
 | Scenarios | Run explicit ordered virtual events with independent assertions; export scenario input; reject stale bundle identities and unknown relevant guard facts. |
 | Mock requests | Exact primitive-record fixture contracts, virtual latency, response ordering, same-operation deduplication, conflicting identity refusal, and no external fallback on a missing or ambiguous fixture. |
@@ -67,6 +82,14 @@ Current graph rendering is bounded to 160 visible nodes and 600 edges. Search na
 5. Attach your real repositories or import their generated ProductSpec JSON. Standalone tables do not turn into imaginary whole-application graphs.
 
 ## Custom product attachment
+
+Prefer a generated bundle when available:
+
+```json
+{"version":2,"projects":[{"id":"my-product","label":"My Product","bundle":"generated/my-product.studio.json"}]}
+```
+
+[INTEGRATION.md](INTEGRATION.md) covers the implemented export API, CLI and source/trace contracts. The older source/artifact form below remains useful for read-only attachment and supported standalone declarations.
 
 A root can contain `studio.workspace.json`. This is a local file-selection configuration, not a second product definition or a plugin loader:
 
@@ -125,14 +148,24 @@ This is not a full TypeScript type check, a full product build or native conform
 npm run verify
 # With the server running and Python Playwright/browser installed:
 python test/browser.py --url http://127.0.0.1:4317
+# Creates its own temporary synthetic fixture server:
+python test/browser_extended.py
+# Pure architecture, inspection and trace modules only:
+npm run test:core
 ```
 
 `npm run verify` checks module syntax and runs Node tests for source reading, laws, edit spans, imports, identity checks, scenarios, mocks, HTTP boundaries, local draft persistence and isolated Git branch saves. Browser tests use the actual UI and HTTP backend, not the old scripted concept.
 
-**Read [VERIFICATION.md](VERIFICATION.md) for the exact environment limitation:** the authoring environment could not download the locked packages. Local results used a separate source-extraction test harness and an older available TypeScript build. They are not proof of a clean `npm ci` or the released tarball's integration. The test harness is neither shipped nor a runtime fallback. The managed browser also required the explicitly reported HTTP-bridge test mode; direct HTTP/CSP checks were separate.
+**Read [VERIFICATION.md](VERIFICATION.md) for the exact environment limitation:** the authoring environment could not download the locked packages. Full local results used a separate source-check harness derived from the reviewed functions and an older available TypeScript build. The 24 pure core tests need neither that harness nor TypeScript. They are not proof of a clean `npm ci` or the released tarball's integration. The test harness is neither shipped nor a runtime fallback. The managed browser also required the explicitly reported HTTP-bridge test mode; direct HTTP/CSP checks were separate.
 
 ## Architecture and next implementation seams
 
+- `bin/studio.mjs`: generic serve/doctor/bundle entrypoint.
+- `adapter.mjs`, `lib/inspection.mjs`, `lib/exporter.mjs`: data-only build integration and provenance.
+- `lib/architecture.mjs`: derived typed entity graph, bounded views and deterministic queries.
+- `lib/provenance.mjs`: source positions without interpreting program semantics.
+- `lib/trace.mjs`: passive producer SDK, capture validation and recorded inspection.
+- `lib/scenario-store.mjs`: local immutable scenario persistence.
 - `server.mjs`: loopback HTTP and explicit operations.
 - `lib/source.mjs`: bounded AST construction reader and minimal source edits.
 - `lib/kernel.mjs`: actual package import and tool resource limits.
@@ -142,4 +175,4 @@ python test/browser.py --url http://127.0.0.1:4317
 - `lib/git-draft.mjs`: opt-in, conflict-checked Git draft refs without working-tree mutation.
 - `public/`: native browser ES modules and SVG. No frontend compilation step or CDN.
 
-The design handoff remains CircleKit PR #273. This implementation intentionally does not finish all D0-D8 capabilities. The next useful seams are product-owned full compilation/provenance adapters, actual native/media previews, real trace codecs, richer source lenses and exact document commands. Do not create another scheduler, DSL, library catalog or native renderer to fill those gaps. A port wire drawn by the viewer is not an implementation, and this first release does not visually rewire arbitrary product graphs.
+The design handoff remains CircleKit PR #273. This implementation intentionally does not finish all D0-D8 capabilities. The next useful work is a clean locked-package/direct-browser verification, then adopting the implemented bundle/trace interfaces in actual product-owned builds and runtime hooks. Full native/media previews, richer source lenses, a language-service editor and exact product-document commands remain later seams. Do not create another scheduler, DSL, library catalog or native renderer to fill those gaps. A port wire drawn by the viewer is not an implementation, and this first release does not visually rewire arbitrary product graphs.

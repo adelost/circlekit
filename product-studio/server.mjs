@@ -35,6 +35,7 @@ export async function createServer({ roots = [], gitDraftRoots = [], dataDir = p
         if (req.method === 'GET') {
           if (url.pathname === '/api/projects') return send(200, app.list());
           if (url.pathname === '/api/project') return send(200, app.view(app.require(url.searchParams.get('id'))));
+          if (url.pathname === '/api/scenarios') return send(200, await app.scenarios());
           if (url.pathname === '/api/drafts') return send(200, await app.savedDrafts());
           if (url.pathname === '/api/draft') return send(200, await app.savedDraft(url.searchParams.get('id')));
           throw new StudioError('http.route', 'Unknown read operation.', 404);
@@ -45,6 +46,11 @@ export async function createServer({ roots = [], gitDraftRoots = [], dataDir = p
         const body = boundedJson(Buffer.concat(chunks).toString('utf8'), 10_000_000);
         let value;
         switch (url.pathname) {
+          case '/api/save-scenario': value = await app.saveScenario(body); break;
+          case '/api/open-scenario': value = await app.openScenario(body); break;
+          case '/api/query': value = app.query(body); break;
+          case '/api/trace': value = app.importTrace(body); break;
+          case '/api/trace-frame': value = app.traceFrame(body); break;
           case '/api/reload': value = await app.refresh(body.project); break;
           case '/api/import': value = await app.importArtifact(body); break;
           case '/api/import-source': value = await app.importSource(body); break;
@@ -61,7 +67,7 @@ export async function createServer({ roots = [], gitDraftRoots = [], dataDir = p
         return send(200, value);
       }
       requireThat(req.method === 'GET', 'http.method', 'Method not allowed.', 405);
-      const routes = { '/': ['index.html', 'text/html'], '/app.js': ['app.js', 'text/javascript'], '/graph.js': ['graph.js', 'text/javascript'], '/style.css': ['style.css', 'text/css'] };
+      const routes = { '/': ['index.html', 'text/html'], '/app.js': ['app.js', 'text/javascript'], '/graph.js': ['graph.js', 'text/javascript'], '/studio-tools.js': ['studio-tools.js', 'text/javascript'], '/style.css': ['style.css', 'text/css'] };
       requireThat(routes[url.pathname], 'http.route', 'Not found.', 404);
       const [file, mime] = routes[url.pathname];
       res.writeHead(200, { ...headers, 'Content-Type': mime + '; charset=utf-8' }); res.end(await readFile(path.join(publicRoot, file)));
