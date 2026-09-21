@@ -31,7 +31,7 @@ class TheLockIsOneAnswerTest {
                 resolve(CircleActionTiming.IMMEDIATE, CircleActionHostCost.NONE, effect = effect).holdMs,
             )
             assertEquals(
-                if (effect == CircleActionEffect.MOVES_THE_VIEW) 0L else MenuDesign.wornTouchCostMs,
+                if (effect == CircleActionEffect.ACTS) MenuDesign.wornTouchCostMs else 0L,
                 resolve(CircleActionTiming.IMMEDIATE, CircleActionHostCost.WORN, effect = effect).holdMs,
             )
             assertEquals(
@@ -97,6 +97,30 @@ class TheLockIsOneAnswerTest {
                 CircleActionTiming.DELIBERATE,
                 CircleActionHostCost.WORN,
                 effect = CircleActionEffect.MOVES_THE_VIEW,
+                locked = true,
+            ).holdMs,
+        )
+    }
+
+    @Test
+    fun `local view browsing has no worn or lock cost`() {
+        listOf(false, true).forEach { locked ->
+            assertEquals(
+                0L,
+                resolve(
+                    CircleActionTiming.IMMEDIATE,
+                    CircleActionHostCost.WORN,
+                    effect = CircleActionEffect.BROWSES_LOCAL_VIEW,
+                    locked = locked,
+                ).holdMs,
+            )
+        }
+        assertEquals(
+            MenuDesign.holdDeliberateMs,
+            resolve(
+                CircleActionTiming.DELIBERATE,
+                CircleActionHostCost.WORN,
+                effect = CircleActionEffect.BROWSES_LOCAL_VIEW,
                 locked = true,
             ).holdMs,
         )

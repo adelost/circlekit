@@ -12,7 +12,7 @@ import androidx.compose.runtime.staticCompositionLocalOf
  */
 
 /** Product action timing is semantic data, not a per-screen millisecond.
- * Transport/camera steps are harmless and reversible; navigation/state
+ * Pure camera and local-view steps are harmless and reversible; navigation/state
  * changes keep the wrist-safe short intent gate.
  * WHAT: Defines the two product action timings.
  * WHY: Keeps semantic timing separate from host cost. */
@@ -122,7 +122,7 @@ internal fun resolveCircleTiming(
     }
     val declared = when {
         timing == CircleActionTiming.DELIBERATE -> holdMs
-        effect == CircleActionEffect.MOVES_THE_VIEW -> 0L
+        effect != CircleActionEffect.ACTS -> 0L
         else -> hostCost.holdMs
     }
     // The lock never SHORTENS a hold: a destructive control does not get cheaper because the wearer is
@@ -162,6 +162,12 @@ enum class CircleActionEffect {
      * and the aim. Anything that leaves something changed behind it is not in this class.
      */
     MOVES_THE_VIEW,
+
+    /**
+     * Moves a transient cursor inside the already open view and writes nothing.
+     * Time stepping, previous/next frames and returning to NOW are this class.
+     */
+    BROWSES_LOCAL_VIEW,
 }
 
 /**
