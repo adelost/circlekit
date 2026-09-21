@@ -69,6 +69,7 @@ rides: { "stream.pressure": { lane: "pressure", owner: "pressure-hub" } }
 ## 5. How to review a change
 
 - A diff that adds a fact touches one file under the product's `appspec/products/`, the generated projections, and nothing under the product's `app/src/main`. If it touches Kotlin, ask why.
+- A diff that adds a Kotlin branch on `phase`, `display` or another declared axis is a cell that escaped. Send it back.
 - A diff that adds a second copy of a colour, label, threshold or id is a fact that escaped. Send it back.
 - A diff that adds a file to a baseline is a gate being switched off. Send it back.
 - Every decided value carries the id of the cell, rule or lane that decided it. When a test or a recorded jump says `ground.lit.arrival`, that id is the line to read.
