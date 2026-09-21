@@ -69,7 +69,6 @@ rides: { "stream.pressure": { lane: "pressure", owner: "pressure-hub" } }
 ## 5. How to review a change
 
 - A diff that adds a fact touches one file under the product's `appspec/products/`, the generated projections, and nothing under the product's `app/src/main`. If it touches Kotlin, ask why.
-- A diff that adds a Kotlin branch on `phase`, `display` or another declared axis is a cell that escaped. Send it back.
 - A diff that adds a second copy of a colour, label, threshold or id is a fact that escaped. Send it back.
 - A diff that adds a file to a baseline is a gate being switched off. Send it back.
 - Every decided value carries the id of the cell, rule or lane that decided it. When a test or a recorded jump says `ground.lit.arrival`, that id is the line to read.
@@ -112,3 +111,7 @@ In a product (Skyvw), two loops, not one. After a cell or copy change, the short
 ```
 
 An example in this guide is a claim; the type-checked copy of it lives in the kit's tests, and a change to the shape that breaks the example turns that test red before the guide can go stale.
+
+## 9. Planned visual workbench
+
+[Product Studio: English UX, architecture, pseudocode and worker plan](../docs/plans/product-studio/README.md) describes a proposed visual viewer/editor over this language. Its HTML reference is a disconnected storyboard, not an implemented compiler or runtime. The current API and laws above remain authoritative. Start implementation with the handoff's D0/D1 cards, not by creating a second DSL.
