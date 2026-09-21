@@ -22,9 +22,9 @@ import org.junit.Test
  */
 class RingRowLogicTest {
     @Test
-    fun `round rows use the same 128 dp chord as launcher grids`() {
-        assertEquals(32f, roundMenuContentInsetDp(192f), 0.001f)
-        assertEquals(96f, roundMenuContentInsetDp(320f), 0.001f)
+    fun `round rows use the same 136 dp chord as launcher grids`() {
+        assertEquals(28f, roundMenuContentInsetDp(192f), 0.001f)
+        assertEquals(92f, roundMenuContentInsetDp(320f), 0.001f)
         assertEquals(0f, roundMenuContentInsetDp(120f), 0.001f)
     }
     @Test
