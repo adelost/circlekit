@@ -142,3 +142,14 @@ If a command fails, treat the failure as an environment or concrete integration 
 - optional evidence remains optional.
 
 Record the exact failing command, error and branch SHA before changing anything. Fix the root cause, rerun only that owner path, and update this handoff if the required command changes.
+
+
+## Verification policy: NO CI
+
+**Do not add GitHub Actions, CI workflows, automated repository gates, or remote test runners for this work.**
+
+Verification is intentionally owner-run on the user's own hardware. Keep test and smoke commands as explicit local commands in the handoff/product documentation.
+
+A future AI may run those commands when it has access to the user's machine, but it must not convert them into GitHub CI.
+
+If a local command fails, record the exact command, branch SHA and error, then fix that concrete issue. Do not add remote automation as a workaround.
