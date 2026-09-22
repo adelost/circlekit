@@ -4,11 +4,12 @@ import { constants } from 'node:fs';
 import { boundedJson, plain, requireThat, StudioError } from './util.mjs';
 
 export const SEMANTIC_COMMANDS = new Set(['inspect', 'query', 'source', 'simulate', 'scenario', 'trace']);
-const COMMON = ['workspace', 'product', 'examples', 'pretty', 'expect-model'];
+const COMMON = ['workspace', 'product', 'examples', 'pretty', 'expect-model', 'amux-root'];
 const SPEC = {
-  serve: ['workspace', 'port', 'data-dir', 'allow-git-drafts'],
-  doctor: ['workspace', 'product', 'examples', 'pretty'],
-  bundle: ['root', 'product', 'compiler-version', 'product-id', 'source-revision', 'facet', 'source', 'output'],
+  serve: ['workspace', 'port', 'data-dir', 'allow-git-drafts', 'amux-root'],
+  doctor: ['workspace', 'product', 'examples', 'pretty', 'amux-root'],
+  contracts: ['product', 'pretty', 'amux-root'],
+  bundle: ['root', 'product', 'compiler-version', 'product-id', 'source-revision', 'facet', 'source', 'output', 'amux-root'],
   inspect: [...COMMON, 'entity', 'search', 'fields', 'max', 'offset'],
   query: [...COMMON, 'kind', 'from', 'to', 'purposes'],
   source: [...COMMON, 'entity'],
@@ -17,11 +18,12 @@ const SPEC = {
   trace: [...COMMON, 'file', 'cursor', 'entity', 'operation', 'search', 'max', 'offset'],
 };
 const BOOLEAN = new Set(['examples', 'pretty']);
-const REQUIRED = { query: ['kind', 'from'], source: ['entity'], simulate: ['facet', 'input'], scenario: ['file'], trace: ['file'], bundle: ['compiler-version'] };
+const REQUIRED = { contracts: ['amux-root'], query: ['kind', 'from'], source: ['entity'], simulate: ['facet', 'input'], scenario: ['file'], trace: ['file'], bundle: ['compiler-version'] };
 
 export const HELP = `Product Studio
 
   v1d-studio [serve] [repository] [--workspace repository]...
+  v1d-studio contracts [repository] --amux-root TRUSTED_AMUX [--product ID] [--pretty]
   v1d-studio doctor [repository] [--product ID]
   v1d-studio inspect [repository] [--product ID] [--entity KEY | --search TEXT]
   v1d-studio query [repository] --kind upstream|downstream|consumers|owner|impact|path
@@ -46,6 +48,10 @@ No path is ok:true with found:false; unsupported/needs-facts/failed assertions
 are ok:false. A scenario with no assertions is ok:true but unasserted, not proven.
 Exit: 0 successful operation; 1 failed/refused operation; 2 invalid command usage.
 @input and --file paths are relative to the caller's current directory.
+
+Wording validation: --amux-root explicitly selects a trusted AMUX checkout.
+The contracts command checks source only and requires that evaluator; serve without
+it still shows intent but never labels wording as locally validated.
 
 Serve only: --port 4317 --data-dir DIR --allow-git-drafts EXACT_REPOSITORY
 The existing bundle command writes only its named generated output. Read/debug
@@ -136,7 +142,8 @@ export async function executeSemanticCli(parsed, { cwd = process.cwd() } = {}) {
   const { openHeadlessStudio, selectProject, SemanticStudio } = await import('./semantic.mjs');
   const roots = [...positional, ...repeated.workspace].map(r => path.resolve(cwd, r));
   if (!roots.length && !v.examples) roots.push(cwd);
-  const session = await openHeadlessStudio({ roots, examples: !!v.examples });
+  const evaluateContract = v['amux-root'] ? await (await import('./documentation.mjs')).loadContractEvaluator(path.resolve(cwd,v['amux-root'])) : undefined;
+  const session = await openHeadlessStudio({ roots, examples: !!v.examples, evaluateContract });
   const chosen = selectProject(session.projects, v.product);
   const service = new SemanticStudio(session.workbench, chosen.key, { expectModel: v['expect-model'] });
   const options = { entity: v.entity, search: v.search, fields: v.fields, max: v.max, offset: v.offset,

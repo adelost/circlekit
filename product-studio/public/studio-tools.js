@@ -1,3 +1,4 @@
+import { intentPanel } from './documentation.js';
 /** Presentation only. All graph queries, trace checks and source validation remain server-side. */
 export function architectureControls(project, state, escape) {
   const options = project.architecture.entities.filter(e => ['node','component','port','facet'].includes(e.kind));
@@ -27,6 +28,7 @@ export function entityInspector(project, selection, escape) {
   return `<div class="section-label">${escape(e.kind)}</div><h2>${escape(e.id)}</h2><code>${escape(e.key)}</code>
     <div class="toolbar inspector-actions"><button data-source-entity="${escape(e.key)}" ${!origin ? 'disabled' : ''}>Open source</button><button data-query-entity="${escape(e.key)}">Potential impact</button></div>
     ${origin ? `<div class="notice info">${escape(origin.file)}<p>${escape(origin.provenance)} · ${escape(origin.editing)}</p></div>` : `<div class="notice">${escape(unresolved?.reason ?? 'Source mapping unavailable.')}</div>`}
+    ${intentPanel(e.intent,project,escape)}
     <details><summary>Declared properties</summary><pre>${e.data ? escape(JSON.stringify(e.data,null,2)) : 'Loading selected entity details…'}</pre></details>
     <div class="section-label">Direct declared relations</div><div class="compact-list">${touching.slice(0,40).map(edge=>`<button data-entity="${escape(edge.from === e.key ? edge.to : edge.from)}"><small>${escape(edge.kind)} · ${escape(edge.evidence ?? 'compiler')}</small><p>${escape(edge.from === e.key ? edge.to : edge.from)}</p></button>`).join('') || '<small>No explicit relations exported.</small>'}</div>`;
 }

@@ -1,3 +1,4 @@
+import { intentForEntity } from './documentation.mjs';
 import { Workbench } from './workspaces.mjs';
 import { plain, requireThat, errorPayload } from './util.mjs';
 import { isDigest } from './inspection.mjs';
@@ -6,10 +7,10 @@ const COMMANDS = new Set(['inspect', 'query', 'source', 'simulate', 'scenario', 
 const INDEX_FIELDS = ['key', 'id', 'kind', 'label', 'group', 'parent', 'owner'];
 
 /** Same loader as the GUI, without HTTP, persistent storage or implicit examples. */
-export async function openHeadlessStudio({ roots = [], examples = false } = {}) {
+export async function openHeadlessStudio({ roots = [], examples = false, evaluateContract } = {}) {
   requireThat(Array.isArray(roots) && roots.length <= 16, 'workspace.limit', 'Attach at most 16 workspace roots.');
   requireThat(roots.length > 0 || examples, 'workspace.required', 'Choose a repository or explicitly use --examples.');
-  const workbench = new Workbench({ dataDir: undefined, gitDraftRoots: [] });
+  const workbench = new Workbench({ dataDir: undefined, gitDraftRoots: [], evaluateContract });
   await workbench.initialize(roots, { includeFixtures: examples });
   const projects = workbench.list();
   requireThat(projects.length > 0, 'project.missing', 'No product was found. Add studio.workspace.json or attach a supported existing repository.', 404);
@@ -114,7 +115,7 @@ export class SemanticStudio {
     const { architecture, sourceIndex, facets } = this.view;
     if (key !== undefined) {
       const entity = this.entity(key);
-      return { entity, ports: architecture.entities.filter(e => e.owner === key).map(indexRow),
+      return { entity, intent:intentForEntity(this.view.documentation,architecture,key), ports: architecture.entities.filter(e => e.owner === key).map(indexRow),
         relations: architecture.edges.filter(e => e.from === key || e.to === key),
         source: sourceIndex.origins.find(o => o.entityKey === key) ?? null,
         sourceLimitation: sourceIndex.unresolved.find(o => o.entityKey === key)?.reason ?? null };

@@ -1,3 +1,4 @@
+import { readDocumentationInputs, documentationFor, documentationPage, intentForEntity, withIntentCaptions } from './documentation.mjs';
 import { freezeData, buildSearchIndex, summarizeView, compareSnapshots } from './snapshot.mjs';
 import { ChangeMonitor } from './changes.mjs';
 import { readFile, writeFile, mkdir, readdir, realpath, mkdtemp, link, rm } from 'node:fs/promises';
@@ -43,7 +44,7 @@ async function sourceCompilerPin(root, sources) {
 }
 
 export class Workbench {
-  constructor({ dataDir, gitDraftRoots = [] }) { this.dataDir = dataDir; this.gitDraftRoots = new Set(gitDraftRoots.map(root => path.resolve(root))); this.projects = new Map(); this.drafts = new Map(); this.snapshots = new WeakMap(); this.searchIndexes = new WeakMap(); this.previous = new Map(); this.monitor = new ChangeMonitor(); this.loads = new Map(); this.metrics = { snapshotBuilds: 0 }; }
+  constructor({ dataDir, gitDraftRoots = [], evaluateContract }) { this.evaluateContract = evaluateContract; this.dataDir = dataDir; this.gitDraftRoots = new Set(gitDraftRoots.map(root => path.resolve(root))); this.projects = new Map(); this.drafts = new Map(); this.snapshots = new WeakMap(); this.searchIndexes = new WeakMap(); this.previous = new Map(); this.monitor = new ChangeMonitor(); this.loads = new Map(); this.metrics = { snapshotBuilds: 0 }; }
   async initialize(roots = [], { includeFixtures = true } = {}) {
     if (includeFixtures) {
       const fixtures = boundedJson(await readFile(path.join(fixtureRoot, 'catalog.json'), 'utf8'));
@@ -100,6 +101,13 @@ export class Workbench {
         sources.push({ path: relative, text: file.text, parsed: { facets: [], diagnostics: [{ rule: e.code ?? 'source.read', message: e.message }], dataExports: {}, digest: digest(file.text), valid: false } });
       }
     }
+    const documentationInputs = await readDocumentationInputs(config.root, config.documentation ?? {}, sourcePaths);
+    for (const file of documentationInputs.sources) if (!sources.some(s => s.path === file.path)) {
+      totalSourceBytes += Buffer.byteLength(file.text);
+      requireThat(totalSourceBytes <= 32_000_000, 'workspace.budget', 'Attached source exceeds 32 MB. Select narrower documentation roots.');
+      sources.push({ ...file, documentationOnly: true,
+        parsed: { facets: [], diagnostics: [], dataExports: {}, digest: digest(file.text), valid: false, mode: 'source-index' } });
+    }
     if (config.graph) { const graph = await exists(config.root, config.graph); if (graph) graphDigest = digest(graph.text); }
     graphDigest ??= imported.inspection?.artifacts.graphSha256 ?? null;
     let revision = config.revision ?? null;
@@ -108,11 +116,12 @@ export class Workbench {
     for (const file of [...new Set([config.bundle, config.artifact, config.graph, 'studio.workspace.json', 'package-lock.json', 'ui/package-lock.json', 'appspec/package-lock.json', 'showcase-product/package-lock.json'].filter(Boolean))]) {
       const value = await exists(config.root, file); if (value) readSet.push({ file, digest: digest(value.text) });
     }
-    const pins = !config.fixture ? await sourceCompilerPin(config.root,sources) : {versions:[],files:[]};
+    const pins = !config.fixture ? await sourceCompilerPin(config.root,sources.filter(s=>!s.documentationOnly)) : {versions:[],files:[]};
     const sourceCompatibility = pins.versions.length === 1 ? compatibilityReport({compiler:{version:pins.versions[0]}},TOOL_VERSIONS.productSpec) : pins.versions.length > 1 ? {inspect:true,simulate:false,reason:'Attached source files use different ProductSpec versions. Export separate inspection bundles for their package boundaries.'} : null;
     const compilerCompatibility = imported.compatibility ?? sourceCompatibility;
     for (const item of pins.files) if(!readSet.some(r=>r.file===item.file))readSet.push(item);
-    const p = { key, config, sources, imported, graphDigest, errors, revision, readSet, compilerCompatibility, sourceCompatibility, evidence: null, trace: null };
+    for (const item of documentationInputs.readSet) if(!readSet.some(r=>r.file===item.file))readSet.push(item);
+    const p = { key, config, sources, documentationInputs, imported, graphDigest, errors, revision, readSet, compilerCompatibility, sourceCompatibility, evidence: null, trace: null };
     const view = this.view(p);
     if (publish) this.projects.set(key, p);
     return publish ? view : p;
@@ -131,7 +140,7 @@ export class Workbench {
   buildSnapshot(p) {
     this.metrics.snapshotBuilds++;
     const facets = this.facets(p).map(f => ({ ...f, source: f.source ? { ...f.source } : null }));
-    const sourceSet = p.sources.map(s => ({ path: s.path, digest: s.parsed.digest }));
+    const sourceSet = p.sources.filter(s=>!s.documentationOnly).map(s => ({ path: s.path, digest: s.parsed.digest }));
     const bundleDigest = digest({ versions: TOOL_VERSIONS, key: p.key, sourceSet, productDigest: p.imported.identity.productDigest, readSet: p.readSet, revision: p.revision });
     const modelDigest = p.imported.identity.modelDigest ?? digest({ product: p.imported.product, facets: facets.map(f => ({ kind:f.kind, compiled:f.compiled })), versions: TOOL_VERSIONS, sourceSet });
     const inspection = p.imported.inspection;
@@ -145,11 +154,17 @@ export class Workbench {
       if (origin) { f.file = origin.file; f.source = { file:origin.file, ...origin.span, span:origin.span, line:origin.line, digest:origin.sourceDigest }; }
     }
     const sourceIdentity = inspection ? checkSourceIdentity(inspection, p.sources) : null;
+    const documentation = documentationFor(p.documentationInputs ?? {
+      sources: p.sources.map(s=>({path:s.path,text:s.text})), reports:[], diagnostics:[], roots:[], repository:null,
+    }, architecture, { inspection, revision:p.revision, evaluateContract:this.evaluateContract });
+    const modelDiagnostics = [...p.errors, ...(inspection?.diagnostics ?? []), ...p.sources.flatMap(s => s.parsed.diagnostics), ...sourceIndex.diagnostics];
     const gallery = p.imported.product?.showcase?.cases ?? p.sources.flatMap(s => Object.values(s.parsed.dataExports).flat()).filter(v => v.title && v.scenarios);
     return { key: p.key, label: p.config.label, fixture: !!p.config.fixture, originKind: p.config.originKind ?? (p.config.fixture ? 'fixture' : 'workspace'), revision: p.revision,
-      toolVersions: TOOL_VERSIONS, modelDigest, productId: inspection?.productId ?? p.imported.product?.id ?? p.config.id, architecture, canvas: architectureSlice(architecture), sourceIndex, sourceIdentity, compatibility: p.compilerCompatibility ?? p.imported.compatibility ?? null, trace: null, scenarios: inspection?.scenarios ?? [], provenance: p.config.provenance ?? null, bundleDigest, product: p.imported.product, graph: graphOf(p.imported.product), facets, gallery,
-      sources: p.sources.map(s => ({ path: s.path, digest: s.parsed.digest, text: s.text, diagnostics: s.parsed.diagnostics, valid: s.parsed.valid })),
-      diagnostics: [...p.errors, ...(inspection?.diagnostics ?? []), ...p.sources.flatMap(s => s.parsed.diagnostics), ...sourceIndex.diagnostics], evidence: null,
+      toolVersions: TOOL_VERSIONS, modelDigest, productId: inspection?.productId ?? p.imported.product?.id ?? p.config.id, architecture, canvas: withIntentCaptions(architectureSlice(architecture),documentation,architecture), sourceIndex, sourceIdentity, compatibility: p.compilerCompatibility ?? p.imported.compatibility ?? null, trace: null, scenarios: inspection?.scenarios ?? [], provenance: p.config.provenance ?? null, bundleDigest, product: p.imported.product, graph: graphOf(p.imported.product), facets, gallery,
+      sources: [...p.sources.map(s => ({ path: s.path, digest: s.parsed.digest, text: s.text, diagnostics: s.parsed.diagnostics, valid: s.parsed.valid })),
+        ...(p.documentationInputs?.evidenceSources??[]).filter(s=>!p.sources.some(p=>p.path===s.path)).map(s=>({...s,digest:digest(s.text),diagnostics:[],valid:false}))],
+      documentation, diagnostics: modelDiagnostics,
+      problems: [...modelDiagnostics,...documentation.diagnostics], evidence: null,
       capabilities: { gitDrafts: !p.config.fixture && !!p.config.root && this.gitDraftRoots.has(p.config.root), inspect: true, simulate: facets.some(f => f.runnable !== false), sourceDrafts: p.sources.length > 0, architectureQueries: architecture.coverage.owners > 0, recordedTrace: true, nativePreview: false, documentWrites: false, liveExecution: false },
       validationNotice: p.imported.product ? 'Imported structure checked. Source freshness, full product compilation and native conformance have not been established by this viewer.' : 'Standalone declarations. This is not a complete application graph.' };
   }
@@ -175,8 +190,9 @@ export class Workbench {
     const { view } = this.checkedView(request);
     const entity = view.architecture.entities.find(e => e.key === request.entity);
     requireThat(entity, 'entity.missing', 'Entity is not in this snapshot.', 404);
-    return { entity, relations: view.architecture.edges.filter(e => e.from === entity.key || e.to === entity.key) };
+    return { entity: { ...entity, intent:intentForEntity(view.documentation,view.architecture,entity.key) }, relations: view.architecture.edges.filter(e => e.from === entity.key || e.to === entity.key) };
   }
+  documentation(request) { const { view } = this.checkedView(request); return documentationPage(view.documentation,request); }
   interfaceDetails(request) {
     const { view } = this.checkedView(request);
     return { gallery: view.gallery, artifactScopes: view.product?.artifactScopes ?? [], evidence: view.evidence };
@@ -219,7 +235,7 @@ export class Workbench {
   query(request) {
     const { view } = this.checkedView(request);
     const result = request.query ? queryArchitecture(view.architecture, request.query) : null;
-    return { result, canvas: architectureSlice(view.architecture, { ...(request.filter ?? {}), result }) };
+    return { result, canvas: withIntentCaptions(architectureSlice(view.architecture, { ...(request.filter ?? {}), result }),view.documentation,view.architecture) };
   }
   importTrace(request) {
     const { p, view } = this.checkedView(request);

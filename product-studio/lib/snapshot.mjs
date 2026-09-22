@@ -67,8 +67,8 @@ export const traceMetadata = trace => trace ? (({ events, ...meta }) => ({ ...me
 
 /** Omit source text, raw product duplication, native details and event arrays. */
 export function summarizeView(view) {
-  const { product, graph, architecture, sources, trace, evidence, gallery, ...rest } = view;
-  return { ...rest, transport: 'summary-v1', product: product ? { kind: product.kind, schemaVersion: product.schemaVersion,
+  const { product, graph, architecture, sources, trace, evidence, gallery, documentation, ...rest } = view;
+  return { ...rest, documentation: documentation ? {scope:documentation.scope,contracts:documentation.contracts.length,legacy:documentation.legacy.length,reports:documentation.reports.length,unresolved:documentation.unresolved.length,notice:documentation.notice} : null, transport: 'summary-v1', product: product ? { kind: product.kind, schemaVersion: product.schemaVersion,
     id: product.id, artifacts: product.artifacts, artifactScopes: [] } : null,
     graph: { nodes: graph.nodes.map(({ id, kind }) => ({ id, kind })), ports: [], edges: [] },
     architecture: { ...architecture, edges: [], entities: architecture.entities.map(({ data, ...e }) => e) },

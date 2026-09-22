@@ -33,6 +33,9 @@ jobs:
           ref: e34b7358041442c7dc4e0d57df5a778390eefa56
           path: .verification-amux
           persist-credentials: false
+      - name: Install the grammar owner's locked dependencies without hooks
+        working-directory: .verification-amux
+        run: npm ci --ignore-scripts
       - name: Actual AMUX grammar and selected service sources
         working-directory: product-studio
         run: node scripts/verify-amux-contracts.mjs ../.verification-amux

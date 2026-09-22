@@ -35,7 +35,7 @@ export function drawGraph(host, { nodes, edges, key, legacyKey, selected, active
   function clientPoint(e, inViewport=true) { return new DOMPoint(e.clientX,e.clientY).matrixTransform((inViewport?viewport:svg).getScreenCTM().inverse()); }
   shown.forEach(n=>{
     const g=node('g',{class:`graph-node ${n.kind??'service'}`,tabindex:0,role:'button','aria-label':`${n.label??n.id}, ${n.kind??'node'}`});
-    g.append(node('title',{},String(n.label??n.id)),node('rect',{width:215,height:78,rx:12}),node('circle',{cx:17,cy:23,r:4,class:'node-dot'}),
+    g.append(node('title',{},String(n.label??n.id)+(n.description?'\n'+n.description:'')),node('rect',{width:215,height:78,rx:12}),node('circle',{cx:17,cy:23,r:4,class:'node-dot'}),
       node('text',{x:31,y:29,class:'node-title'},String(n.label??n.id).slice(0,24)),node('text',{x:17,y:54,class:'node-subtitle'},String(n.subtitle??n.kind??'node').slice(0,32)),
       node('circle',{cx:0,cy:39,r:4,class:'socket'}),node('circle',{cx:215,cy:39,r:4,class:'socket'}));
     nodeLayer.append(g);nodeItems.set(n.id,g);let drag=null;

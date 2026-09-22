@@ -18,6 +18,12 @@ export async function main(args = process.argv.slice(2), { cwd = process.cwd(), 
       stdout.write(formatJson(response, v.pretty));
       return response.ok ? 0 : 1;
     }
+    const evaluateContract = v['amux-root'] ? await (await import('../lib/documentation.mjs')).loadContractEvaluator(path.resolve(cwd,v['amux-root'])) : undefined;
+    if (command === 'contracts') {
+      const { checkWorkspaceContracts } = await import('../lib/documentation.mjs');
+      const report = await checkWorkspaceContracts(path.resolve(cwd,positional[0]??'.'), {product:v.product,evaluateContract});
+      stdout.write(formatJson(report,v.pretty)); return report.ok ? 0 : 1;
+    }
     if (command === 'bundle') {
       const { writeInspectionBundle } = await import('../lib/exporter.mjs');
       const { relativeSourcePath } = await import('../lib/inspection.mjs');
@@ -36,7 +42,7 @@ export async function main(args = process.argv.slice(2), { cwd = process.cwd(), 
       requireThat(relativeSourcePath(output) && output.endsWith('.studio.json'), 'cli.output', 'Select a relative .studio.json output path.');
       // Build the envelope once: do not re-read source twice and discard the first identity.
       const receipt = await writeInspectionBundle({ root, output, productId, product, facets,
-        sourceFiles: repeated.source, sourceRevision: v['source-revision'] ?? null,
+        sourceFiles: repeated.source, evaluateContract, sourceRevision: v['source-revision'] ?? null,
         compiler: { name: '@v1d/product-spec', version: v['compiler-version'] } });
       stdout.write(formatJson({ ...receipt, workspaceConfiguration: {
         version: 2, projects: [{ id: productId, label: productId, bundle: output }],
@@ -47,7 +53,7 @@ export async function main(args = process.argv.slice(2), { cwd = process.cwd(), 
     if (command === 'doctor') {
       const { openHeadlessStudio, selectProject } = await import('../lib/semantic.mjs');
       if (!roots.length && !v.examples) roots.push(cwd);
-      const { workbench, projects } = await openHeadlessStudio({ roots, examples: !!v.examples });
+      const { workbench, projects } = await openHeadlessStudio({ roots, examples: !!v.examples, evaluateContract });
       const selected = v.product === undefined ? projects : [selectProject(projects, v.product)];
       const reports = selected.map(p => {
         const view = workbench.view(workbench.require(p.key));
@@ -56,6 +62,7 @@ export async function main(args = process.argv.slice(2), { cwd = process.cwd(), 
           sourceIdentity: view.sourceIdentity?.kind ?? 'not-exported',
           compiler: view.compatibility ?? { evaluator: view.toolVersions.productSpec, producer: null },
           owners: view.architecture.coverage.owners, facets: view.facets.length,
+          contracts: {scope:view.documentation.scope,problems:view.documentation.diagnostics},
           sourceLocations: view.sourceIndex.origins.length, supported: view.capabilities, diagnostics: view.diagnostics };
       });
       const ok = reports.length > 0 && !reports.some(p => p.diagnostics.some(d => d.severity !== 'warning' && d.severity !== 'info')
@@ -69,7 +76,7 @@ export async function main(args = process.argv.slice(2), { cwd = process.cwd(), 
       catch (error) { if (error.code !== 'ENOENT') throw error; }
     }
     const { createServer } = await import('../server.mjs');
-    const { origin } = await createServer({ roots, port: v.port ?? 4317,
+    const { origin } = await createServer({ roots, evaluateContract, port: v.port ?? 4317,
       dataDir: path.resolve(cwd, v['data-dir'] ?? path.join(os.homedir(), '.local/state/product-studio')),
       gitDraftRoots: repeated['allow-git-drafts'].map(r => path.resolve(cwd, r)) });
     stdout.write(`Product Studio: ${origin}\nRead-only product attachment. Scenario execution is synthetic; no generators or providers are started.\n`);

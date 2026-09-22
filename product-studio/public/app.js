@@ -67,7 +67,7 @@ function selectedCell() {
 
 function render() {
   if (!project) return;
-  const f = facet(), query = state.search.toLowerCase(), title = { System: 'Explore the system', Logic: f?.kind === 'machine' ? 'Lifecycle logic' : 'Policy decisions', Scenarios: 'Explore possible outcomes', Interface: 'Components & surfaces', Changes: 'Code & review', Trace: 'Follow recorded execution', Problems: 'Problems & evidence', Compare: 'Review model changes', Welcome: 'Your product at a glance' }[state.view];
+  const f = facet(), query = state.search.toLowerCase(), title = { System: 'Explore the system', Logic: f?.kind === 'machine' ? 'Lifecycle logic' : 'Policy decisions', Scenarios: 'Explore possible outcomes', Interface: 'Components & surfaces', Changes: 'Code & review', Trace: 'Follow recorded execution', Problems: 'Problems & evidence', Compare: 'Review model changes', Welcome: 'Your product at a glance', Intent: 'Intent, structure and behavior' }[state.view];
   const list = project.facets.filter(item => item.id.toLowerCase().includes(query));
   const sourceLabel = ({ fixture: 'Public source fixture', example: 'Synthetic example', workspace: 'Local workspace', 'source-draft': 'Source draft', 'imported-artifact': 'Imported artifact' })[project.originKind] ?? 'Local data';
   const html = `<div class="shell" data-mode="${state.text !== null ? 'candidate' : state.mode === 'Simulation' ? 'simulation' : state.mode.startsWith('Recorded') ? 'recorded' : 'declared'}">
@@ -88,7 +88,7 @@ function render() {
       ${project.diagnostics.length ? `<details class="notice"><summary>${project.diagnostics.length} source or artifact diagnostics</summary>${diagnostics(project.diagnostics)}</details>` : ''}
       ${project.sourceIdentity && project.sourceIdentity.kind !== 'matched' ? banner(project.sourceIdentity.message) : ''}
       ${project.compatibility?.reason ? banner(project.compatibility.reason) : ''}
-      ${['Problems','Compare','Welcome'].includes(state.view) ? experience.page(state.view) : state.view === 'Trace' ? traceView(project,state,escape) : state.view === 'System' ? systemView() : state.view === 'Logic' ? logicView() : state.view === 'Scenarios' ? scenariosView() : state.view === 'Interface' ? interfaceView() : changesView()}
+      ${['Problems','Compare','Welcome','Intent'].includes(state.view) ? experience.page(state.view) : state.view === 'Trace' ? traceView(project,state,escape) : state.view === 'System' ? systemView() : state.view === 'Logic' ? logicView() : state.view === 'Scenarios' ? scenariosView() : state.view === 'Interface' ? interfaceView() : changesView()}
     </main><aside class="inspector" aria-label="Selected object inspector">${inspector()}</aside></div>
     <footer class="footer"><span class="safe">● No external execution</span><span>${escape(state.mode)}</span><span class="optional">${escape(project.revision?.slice(0, 7) ?? project.bundleDigest.slice(0, 8))}</span><span class="spacer"></span><span id="edit-status">${state.text !== null ? 'Draft changes · source unchanged' : 'Source read-only'}</span><span class="optional">Runtime disconnected</span></footer>
   </div>`;
@@ -98,6 +98,7 @@ function render() {
   if (f?.kind === 'decision-table' && f.runnable !== false && state.view === 'Logic' && state.tableRows === null) loadTable();
 }
 function subtitle() {
+  if (state.view === 'Intent') return 'Type-owned responsibility and boundaries, with explicitly scoped test reports. No new runtime or test registry.';
   if (state.view === 'Logic') return 'The installed ProductSpec kernel decides. Synthetic inputs do not execute native code or provider effects.';
   if (state.view === 'System') return 'Declared topology, typed ports and ownership. A graph is not an execution receipt.';
   if (state.view === 'Scenarios') return 'Repeatable event sequences and explicit fixture boundaries. Virtual time only.';
