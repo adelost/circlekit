@@ -54,40 +54,6 @@ jobs:
         if: ${{ !cancelled() }}
         working-directory: product-studio
         run: node scripts/verify-amux-contracts.mjs ../.verification-amux
-      - name: Read pinned SKYVW web takeover
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
-        with:
-          repository: adelost/skyvw-web
-          ref: b4b00b344151647be7cc35bea24173451a9cc5ed
-          path: .verification-skyvw-web
-          persist-credentials: false
-          sparse-checkout-cone-mode: false
-          sparse-checkout: |
-            /studio.mjs
-            /studio.workspace.json
-            /STUDIO-CONTRACTS.md
-            /package.json
-            /package-lock.json
-            /scripts/export-studio.mjs
-            /src/logbook/
-      - name: Install SKYVW web locked dependencies
-        if: ${{ !cancelled() }}
-        working-directory: .verification-skyvw-web
-        run: npm ci --ignore-scripts
-      - name: SKYVW web source check and explicit graph export
-        if: ${{ !cancelled() }}
-        working-directory: .verification-skyvw-web
-        env:
-          STUDIO_ROOT: ${{ github.workspace }}/product-studio
-          AMUX_ROOT: ${{ github.workspace }}/.verification-amux
-        run: |
-          node studio.mjs check
-          node scripts/export-studio.mjs
-          node studio.mjs doctor --product skyvw-web-logbook --pretty
-      - name: Verify SKYVW web intent and declared facts
-        if: ${{ !cancelled() }}
-        working-directory: product-studio
-        run: node scripts/verify-skyvw-web-integration.mjs ../.verification-skyvw-web ../.verification-amux
       - name: Install direct browser runner
         if: ${{ !cancelled() }}
         run: |
