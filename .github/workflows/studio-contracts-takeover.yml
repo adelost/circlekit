@@ -54,22 +54,6 @@ jobs:
         if: ${{ !cancelled() }}
         working-directory: product-studio
         run: node scripts/verify-amux-contracts.mjs ../.verification-amux
-      - name: Read pinned SKYVW native takeover
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
-        with:
-          repository: adelost/skydive-altimeter
-          ref: 1eb1476a32324c13d9fec82c0ccc8c375ced1a81
-          path: .verification-skyvw-native
-          persist-credentials: false
-          sparse-checkout-cone-mode: false
-          sparse-checkout: |
-            /studio.mjs
-            /studio.workspace.json
-            /STUDIO-CONTRACTS.md
-            /appspec/products/skyvw/
-            /appspec/generated/skyvw/
-            /appspec/package-lock.json
-            /app/src/main/java/com/adelost/skydivealtimeter/appspec/generated/GeneratedSkyvwNativeLegoCatalogPortIds.kt
       - name: Read pinned SKYVW web takeover
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
@@ -86,15 +70,6 @@ jobs:
             /package-lock.json
             /scripts/export-studio.mjs
             /src/logbook/
-      - name: SKYVW native source and artifact smoke
-        if: ${{ !cancelled() }}
-        working-directory: .verification-skyvw-native
-        env:
-          STUDIO_ROOT: ${{ github.workspace }}/product-studio
-          AMUX_ROOT: ${{ github.workspace }}/.verification-amux
-        run: |
-          node studio.mjs check
-          node studio.mjs doctor --product skyvw --pretty
       - name: Install SKYVW web locked dependencies
         if: ${{ !cancelled() }}
         working-directory: .verification-skyvw-web
@@ -109,10 +84,10 @@ jobs:
           node studio.mjs check
           node scripts/export-studio.mjs
           node studio.mjs doctor --product skyvw-web-logbook --pretty
-      - name: Verify SKYVW intent, declared facts and legacy separation
+      - name: Verify SKYVW web intent and declared facts
         if: ${{ !cancelled() }}
         working-directory: product-studio
-        run: node scripts/verify-skyvw-integration.mjs ../.verification-skyvw-native ../.verification-skyvw-web ../.verification-amux
+        run: node scripts/verify-skyvw-web-integration.mjs ../.verification-skyvw-web ../.verification-amux
       - name: Install direct browser runner
         if: ${{ !cancelled() }}
         run: |
