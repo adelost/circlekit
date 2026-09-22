@@ -169,12 +169,21 @@ function generatedKotlinIds(source) {
     if(!rootObject)continue;
     try{values.set(rootObject+'.'+match[1],JSON.parse(match[2]));}catch{}
   }
+  const objectValues=new Map();
   for(const match of source.matchAll(/\bdata\s+object\s+([A-Za-z_][A-Za-z0-9_]*)[\s\S]*?override\s+val\s+value\s*=\s*("(?:\\.|[^"\\\n])*")\s*\}/g)) {
     try {
       const value=JSON.parse(match[2]);
-      if(rootObject)values.set(rootObject+'.PortIds.'+match[1],value);
+      objectValues.set(match[1],value);
+      if(rootObject) {
+        values.set(rootObject+'.'+match[1],value);
+        values.set(rootObject+'.PortIds.'+match[1],value);
+      }
       values.set('PortIds.'+match[1],value);
     } catch {}
+  }
+  for(const match of source.matchAll(/\bval\s+([A-Za-z_][A-Za-z0-9_]*)[^=\n]*=\s*([A-Za-z_][A-Za-z0-9_]*)\b/g)) {
+    const value=objectValues.get(match[2]);
+    if(value!==undefined&&rootObject)values.set(rootObject+'.'+match[1],value);
   }
   return values;
 }

@@ -33,7 +33,8 @@ test('Kotlin generated IDs and optional annotations stay associations, not runti
   const located=testSourceIndex(sourceText,source.path)[0];
   const ids={path:'generated/GeneratedProductPortIds.kt',text:[
     'object GeneratedProductPortIds {',
-    '  data object RECORDING_PRESSURE : PortId { override val value = "recording.service.pressure" }',
+    '  data object RECORDING_PRESSURE_VALUE : PortId { override val value = "recording.service.pressure" }',
+    '  val RECORDING_PRESSURE: PortId = RECORDING_PRESSURE_VALUE',
     '}',
   ].join('\\n')};
   const architecture={entities:[
