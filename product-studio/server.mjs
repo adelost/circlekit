@@ -11,7 +11,7 @@ import { KERNEL_VERSION } from './lib/kernel.mjs';
 const publicRoot = fileURLToPath(new URL('./public/', import.meta.url));
 export async function createServer({ roots = [], gitDraftRoots = [], dataDir = path.join(os.homedir(), '.local/state/product-studio'), port = 4317 } = {}) {
   const authorized = await Promise.all(gitDraftRoots.map(root => realpath(root)));
-  const app = new Workbench({ dataDir, gitDraftRoots: authorized }); await app.initialize(roots);
+  const app = new Workbench({ dataDir, gitDraftRoots: authorized }); await app.initialize(roots, { includeFixtures: roots.length === 0 });
   const token = randomBytes(32).toString('hex');
   let origin = '', inFlight = 0;
   const server = http.createServer(async (req, res) => {
@@ -20,7 +20,9 @@ export async function createServer({ roots = [], gitDraftRoots = [], dataDir = p
       'Cross-Origin-Resource-Policy': 'same-origin', 'X-Frame-Options': 'DENY',
       'Content-Security-Policy': "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; media-src blob:; connect-src 'self'; object-src 'none'; base-uri 'none'; frame-ancestors 'none'",
     };
-    const send = (status, value) => { res.writeHead(status, { ...headers, 'Content-Type': 'application/json; charset=utf-8' }); res.end(JSON.stringify(value)); };
+    const send = (status, value) => { const text = JSON.stringify(value);
+      requireThat(Buffer.byteLength(text) <= 40_000_000, 'output.size', 'Response exceeds the transport budget. Narrow the selection.', 413);
+      res.writeHead(status, { ...headers, 'Content-Type': 'application/json; charset=utf-8' }); res.end(text); };
     let acquired = false;
     try {
       requireThat(req.headers.host === new URL(origin).host, 'http.host', 'Unrecognized local host.', 403);
@@ -34,7 +36,7 @@ export async function createServer({ roots = [], gitDraftRoots = [], dataDir = p
         inFlight++; acquired = true;
         if (req.method === 'GET') {
           if (url.pathname === '/api/projects') return send(200, app.list());
-          if (url.pathname === '/api/project') return send(200, app.view(app.require(url.searchParams.get('id'))));
+          if (url.pathname === '/api/project') return send(200, url.searchParams.get('mode') === 'summary' ? app.summary(app.require(url.searchParams.get('id'))) : app.view(app.require(url.searchParams.get('id'))));
           if (url.pathname === '/api/scenarios') return send(200, await app.scenarios());
           if (url.pathname === '/api/drafts') return send(200, await app.savedDrafts());
           if (url.pathname === '/api/draft') return send(200, await app.savedDraft(url.searchParams.get('id')));
@@ -46,12 +48,21 @@ export async function createServer({ roots = [], gitDraftRoots = [], dataDir = p
         const body = boundedJson(Buffer.concat(chunks).toString('utf8'), 10_000_000);
         let value;
         switch (url.pathname) {
+          case '/api/source': value = app.sourceText(body); break;
+          case '/api/entity': value = app.entityDetails(body); break;
+          case '/api/interface': value = app.interfaceDetails(body); break;
+          case '/api/search': value = app.search(body); break;
+          case '/api/changes': value = await app.changes(body); break;
+          case '/api/compare': value = app.compare(body); break;
+          case '/api/trace-page': value = app.tracePage(body); break;
+          case '/api/trace-export': { const {p} = app.checkedView(body); requireThat(p.trace && p.trace.traceDigest === body.traceDigest, 'trace.identity', 'Select the exact loaded trace.'); value = p.trace; break; }
+
           case '/api/save-scenario': value = await app.saveScenario(body); break;
           case '/api/open-scenario': value = await app.openScenario(body); break;
           case '/api/query': value = app.query(body); break;
           case '/api/trace': value = app.importTrace(body); break;
           case '/api/trace-frame': value = app.traceFrame(body); break;
-          case '/api/reload': value = await app.refresh(body.project); break;
+          case '/api/reload': { app.checkedView(body); const v = await app.refresh(body.project, { automatic: body.automatic === true }); value = body.summary ? app.summary(app.require(v.key)) : v; break; }
           case '/api/import': value = await app.importArtifact(body); break;
           case '/api/import-source': value = await app.importSource(body); break;
           case '/api/evaluate': value = app.evaluate(body); break;
@@ -64,10 +75,11 @@ export async function createServer({ roots = [], gitDraftRoots = [], dataDir = p
           case '/api/snapshot': value = app.snapshot(body); break;
           default: throw new StudioError('http.route', 'Unknown operation.', 404);
         }
+        if (body.summary && ['/api/import','/api/import-source','/api/trace','/api/snapshot'].includes(url.pathname) && value?.key) value = app.summary(app.require(value.key));
         return send(200, value);
       }
       requireThat(req.method === 'GET', 'http.method', 'Method not allowed.', 405);
-      const routes = { '/': ['index.html', 'text/html'], '/app.js': ['app.js', 'text/javascript'], '/graph.js': ['graph.js', 'text/javascript'], '/studio-tools.js': ['studio-tools.js', 'text/javascript'], '/style.css': ['style.css', 'text/css'] };
+      const routes = { '/': ['index.html', 'text/html'], '/app.js': ['app.js', 'text/javascript'], '/graph.js': ['graph.js', 'text/javascript'], '/studio-tools.js': ['studio-tools.js', 'text/javascript'], '/dom.js': ['dom.js', 'text/javascript'], '/experience.js': ['experience.js', 'text/javascript'], '/style.css': ['style.css', 'text/css'] };
       requireThat(routes[url.pathname], 'http.route', 'Not found.', 404);
       const [file, mime] = routes[url.pathname];
       res.writeHead(200, { ...headers, 'Content-Type': mime + '; charset=utf-8' }); res.end(await readFile(path.join(publicRoot, file)));

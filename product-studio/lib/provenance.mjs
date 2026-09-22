@@ -11,6 +11,7 @@ export function indexSource(text, file) {
   requireThat(typeof text === 'string' && text.length <= 1000000, 'source.index-size', 'Source exceeds the indexing budget.');
   if (!/\.(?:ts|mjs|js)$/.test(file)) return { file, digest: digest(text), candidates: [], symbols: [],
     diagnostics: [{ rule: 'source.language', message: 'Syntax indexing is unavailable for this language. Explicit exported source locations remain usable.', file }] };
+  const sourceDigest = digest(text);
   const source = ts.createSourceFile(file, text, ts.ScriptTarget.Latest, true, /\.m?js$/.test(file) ? ts.ScriptKind.JS : ts.ScriptKind.TS);
   const candidates = [], symbols = [], imports = new Map();
   for (const statement of source.statements) {
@@ -34,7 +35,7 @@ export function indexSource(text, file) {
       if (constructor) knownConstructor = constructor;
       if (constructor === 'on' && node.arguments.length >= 3) {
         const id = literal(node.arguments[0]);
-        if (id) candidates.push({ id, parentIds: ancestors, file, sourceDigest: digest(text), span: span(node),
+        if (id) candidates.push({ id, parentIds: ancestors, file, sourceDigest, span: span(node),
           fields: { region: span(node.arguments[1]), values: span(node.arguments[2]) }, symbol: ownerSymbol,
           constructor, ...position(node), provenance: 'syntax-location' });
       }
@@ -45,7 +46,7 @@ export function indexSource(text, file) {
       if (id) {
         const fields = Object.fromEntries(node.properties.filter(p => ts.isPropertyAssignment(p) && propertyName(p.name))
           .map(p => [propertyName(p.name), span(p.initializer)]));
-        candidates.push({ id, parentIds: ancestors, file, sourceDigest: digest(text), span: span(node), fields,
+        candidates.push({ id, parentIds: ancestors, file, sourceDigest, span: span(node), fields,
           symbol: ownerSymbol, constructor: knownConstructor, ...position(node), provenance: 'syntax-location' });
         ancestors = [...ancestors, id];
       }
@@ -53,7 +54,7 @@ export function indexSource(text, file) {
     ts.forEachChild(node, child => visit(child, ancestors, ownerSymbol, knownConstructor));
   }
   visit(source);
-  return { file, digest: digest(text), candidates, symbols,
+  return { file, digest: sourceDigest, candidates, symbols,
     diagnostics: source.parseDiagnostics.map(d => ({ rule: 'source.syntax', message: ts.flattenDiagnosticMessageText(d.messageText, '\n'),
       file, line: source.getLineAndCharacterOfPosition(d.start ?? 0).line + 1 })) };
 }
@@ -64,13 +65,14 @@ export function locateEntities(architecture, sources, explicitOrigins = []) {
   const candidates = indexes.flatMap(i => i.candidates), candidatesById = new Map();
   for (const c of candidates) { const list=candidatesById.get(c.id) ?? []; list.push(c); candidatesById.set(c.id,list); }
   const sourceByPath = new Map(sources.map(s => [s.path ?? s.file, s]));
+  const digestsByPath = new Map(indexes.map(index=>[index.file,index.digest]));
   const origins = [], unresolved = [];
   const explicit = new Map(explicitOrigins.map(o => [o.entityKey, o]));
   for (const entity of architecture.entities) {
     const supplied = explicit.get(entity.key);
     if (supplied) {
       const source = sourceByPath.get(supplied.file);
-      if (!source || digest(source.text) !== supplied.sourceDigest || supplied.span && supplied.span.end > source.text.length) {
+      if (!source || digestsByPath.get(supplied.file) !== supplied.sourceDigest || supplied.span && supplied.span.end > source.text.length) {
         unresolved.push({ entityKey: entity.key, reason: 'Original source is unavailable or changed.' }); continue;
       }
       origins.push({ ...supplied, status: 'matched', provenance: 'adapter-source-map' }); continue;

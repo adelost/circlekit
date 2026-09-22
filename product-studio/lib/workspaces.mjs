@@ -1,3 +1,5 @@
+import { freezeData, buildSearchIndex, summarizeView, compareSnapshots } from './snapshot.mjs';
+import { ChangeMonitor } from './changes.mjs';
 import { readFile, writeFile, mkdir, readdir, realpath, mkdtemp, link, rm } from 'node:fs/promises';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
@@ -8,7 +10,7 @@ import { saveGitDraft as commitGitDraft } from './git-draft.mjs';
 import { architectureOf, architectureSlice, queryArchitecture, entityKey } from './architecture.mjs';
 import { locateEntities } from './provenance.mjs';
 import { checkSourceIdentity, compatibilityReport } from './inspection.mjs';
-import { decodeTrace, inspectTrace } from './trace.mjs';
+import { decodeTrace, inspectTrace, traceEventIndex } from './trace.mjs';
 import { TOOL_VERSIONS } from './kernel.mjs';
 import { analyzeSource } from './source.mjs';
 import { decodeArtifact, graphOf, attachSnapshot } from './model.mjs';
@@ -41,7 +43,7 @@ async function sourceCompilerPin(root, sources) {
 }
 
 export class Workbench {
-  constructor({ dataDir, gitDraftRoots = [] }) { this.dataDir = dataDir; this.gitDraftRoots = new Set(gitDraftRoots.map(root => path.resolve(root))); this.projects = new Map(); this.drafts = new Map(); }
+  constructor({ dataDir, gitDraftRoots = [] }) { this.dataDir = dataDir; this.gitDraftRoots = new Set(gitDraftRoots.map(root => path.resolve(root))); this.projects = new Map(); this.drafts = new Map(); this.snapshots = new WeakMap(); this.searchIndexes = new WeakMap(); this.previous = new Map(); this.monitor = new ChangeMonitor(); this.loads = new Map(); this.metrics = { snapshotBuilds: 0 }; }
   async initialize(roots = [], { includeFixtures = true } = {}) {
     if (includeFixtures) {
       const fixtures = boundedJson(await readFile(path.join(fixtureRoot, 'catalog.json'), 'utf8'));
@@ -68,10 +70,10 @@ export class Workbench {
       }
     }
   }
-  async load(config) {
+  async load(config, { publish = true } = {}) {
     requireThat(typeof config.id === 'string' && typeof config.label === 'string' && Array.isArray(config.sources ?? []) && (config.sources ?? []).length <= 32, 'workspace.config', 'Invalid workspace declaration.');
     const key = `${config.id}-${digest(config.root).slice(0, 10)}`;
-    const sources = [], errors = [];
+    const sources = [], errors = []; let totalSourceBytes = 0;
     let imported = { product: null, facets: [], identity: {} }, graphDigest = null;
     const artifactPath = config.bundle ?? config.artifact;
     if (artifactPath) {
@@ -86,6 +88,8 @@ export class Workbench {
     for (const relative of sourcePaths) {
       const file = await exists(config.root, relative);
       if (!file) { errors.push({ rule: 'source.missing', message: `Configured source unavailable: ${relative}` }); continue; }
+      totalSourceBytes += Buffer.byteLength(file.text);
+      requireThat(totalSourceBytes <= 32_000_000, 'workspace.budget', 'Attached source exceeds 32 MB. Export a focused source set.');
       try {
         // A compiled bundle is the primary meaning. Source is indexed, never reinterpreted to replace it.
         const parsed = imported.inspection
@@ -109,7 +113,9 @@ export class Workbench {
     const compilerCompatibility = imported.compatibility ?? sourceCompatibility;
     for (const item of pins.files) if(!readSet.some(r=>r.file===item.file))readSet.push(item);
     const p = { key, config, sources, imported, graphDigest, errors, revision, readSet, compilerCompatibility, sourceCompatibility, evidence: null, trace: null };
-    this.projects.set(key, p); return this.view(p);
+    const view = this.view(p);
+    if (publish) this.projects.set(key, p);
+    return publish ? view : p;
   }
   require(key) { const p = this.projects.get(key); requireThat(p, 'project.missing', 'Project is not loaded.', 404); return p; }
   list() { return [...this.projects.values()].map(p => ({ key: p.key, id: p.config.id, productId: p.imported.inspection?.productId ?? p.imported.product?.id ?? p.config.id, label: p.config.label, fixture: !!p.config.fixture, originKind: p.config.originKind ?? (p.config.fixture ? 'fixture' : 'workspace'), revision: p.revision })); }
@@ -122,8 +128,9 @@ export class Workbench {
     }
     return [...combined.values()];
   }
-  view(p) {
-    const facets = this.facets(p);
+  buildSnapshot(p) {
+    this.metrics.snapshotBuilds++;
+    const facets = this.facets(p).map(f => ({ ...f, source: f.source ? { ...f.source } : null }));
     const sourceSet = p.sources.map(s => ({ path: s.path, digest: s.parsed.digest }));
     const bundleDigest = digest({ versions: TOOL_VERSIONS, key: p.key, sourceSet, productDigest: p.imported.identity.productDigest, readSet: p.readSet, revision: p.revision });
     const modelDigest = p.imported.identity.modelDigest ?? digest({ product: p.imported.product, facets: facets.map(f => ({ kind:f.kind, compiled:f.compiled })), versions: TOOL_VERSIONS, sourceSet });
@@ -140,11 +147,62 @@ export class Workbench {
     const sourceIdentity = inspection ? checkSourceIdentity(inspection, p.sources) : null;
     const gallery = p.imported.product?.showcase?.cases ?? p.sources.flatMap(s => Object.values(s.parsed.dataExports).flat()).filter(v => v.title && v.scenarios);
     return { key: p.key, label: p.config.label, fixture: !!p.config.fixture, originKind: p.config.originKind ?? (p.config.fixture ? 'fixture' : 'workspace'), revision: p.revision,
-      toolVersions: TOOL_VERSIONS, modelDigest, productId: inspection?.productId ?? p.imported.product?.id ?? p.config.id, architecture, canvas: architectureSlice(architecture), sourceIndex, sourceIdentity, compatibility: p.compilerCompatibility ?? p.imported.compatibility ?? null, trace: p.trace ?? null, scenarios: inspection?.scenarios ?? [], provenance: p.config.provenance ?? null, bundleDigest, product: p.imported.product, graph: graphOf(p.imported.product), facets, gallery,
+      toolVersions: TOOL_VERSIONS, modelDigest, productId: inspection?.productId ?? p.imported.product?.id ?? p.config.id, architecture, canvas: architectureSlice(architecture), sourceIndex, sourceIdentity, compatibility: p.compilerCompatibility ?? p.imported.compatibility ?? null, trace: null, scenarios: inspection?.scenarios ?? [], provenance: p.config.provenance ?? null, bundleDigest, product: p.imported.product, graph: graphOf(p.imported.product), facets, gallery,
       sources: p.sources.map(s => ({ path: s.path, digest: s.parsed.digest, text: s.text, diagnostics: s.parsed.diagnostics, valid: s.parsed.valid })),
-      diagnostics: [...p.errors, ...(inspection?.diagnostics ?? []), ...p.sources.flatMap(s => s.parsed.diagnostics), ...sourceIndex.diagnostics], evidence: p.evidence,
+      diagnostics: [...p.errors, ...(inspection?.diagnostics ?? []), ...p.sources.flatMap(s => s.parsed.diagnostics), ...sourceIndex.diagnostics], evidence: null,
       capabilities: { gitDrafts: !p.config.fixture && !!p.config.root && this.gitDraftRoots.has(p.config.root), inspect: true, simulate: facets.some(f => f.runnable !== false), sourceDrafts: p.sources.length > 0, architectureQueries: architecture.coverage.owners > 0, recordedTrace: true, nativePreview: false, documentWrites: false, liveExecution: false },
       validationNotice: p.imported.product ? 'Imported structure checked. Source freshness, full product compilation and native conformance have not been established by this viewer.' : 'Standalone declarations. This is not a complete application graph.' };
+  }
+  view(p) {
+    let snapshot = this.snapshots.get(p);
+    if (!snapshot) {
+      snapshot = freezeData(this.buildSnapshot(p));
+      this.snapshots.set(p, snapshot);
+      this.searchIndexes.set(p, buildSearchIndex(snapshot));
+    }
+    // Captures are overlays; they must never invalidate model/provenance indexes.
+    return p.trace || p.evidence ? Object.freeze({ ...snapshot, trace: p.trace, evidence: p.evidence }) : snapshot;
+  }
+  summary(p) { return summarizeView(this.view(p)); }
+  sourceText(request) {
+    const { view } = this.checkedView(request);
+    const source = view.sources.find(s => s.path === request.file);
+    requireThat(source, 'source.unavailable', 'Select an attached source file.', 404);
+    requireThat(!request.sourceDigest || source.digest === request.sourceDigest, 'source.identity', 'Source identity differs.', 409);
+    return { ...source, bundleDigest: view.bundleDigest };
+  }
+  entityDetails(request) {
+    const { view } = this.checkedView(request);
+    const entity = view.architecture.entities.find(e => e.key === request.entity);
+    requireThat(entity, 'entity.missing', 'Entity is not in this snapshot.', 404);
+    return { entity, relations: view.architecture.edges.filter(e => e.from === entity.key || e.to === entity.key) };
+  }
+  interfaceDetails(request) {
+    const { view } = this.checkedView(request);
+    return { gallery: view.gallery, artifactScopes: view.product?.artifactScopes ?? [], evidence: view.evidence };
+  }
+  search(request) {
+    const { p } = this.checkedView(request);
+    return this.searchIndexes.get(p)(request.text ?? '', request.max ?? 50);
+  }
+  changes(request) { const { p } = this.checkedView(request); return this.monitor.inspect(p); }
+  compare(request) {
+    const { p, view } = this.checkedView(request);
+    const before = request.beforeProject ? this.view(this.require(request.beforeProject)) : this.previous.get(p.key);
+    requireThat(before, 'compare.missing', 'Reload a newer build or select an already imported prior model.');
+    return compareSnapshots(before, view);
+  }
+  tracePage(request) {
+    const { p } = this.checkedView(request);
+    requireThat(p.trace, 'trace.missing', 'Import a trace first.');
+    requireThat(!request.traceDigest || request.traceDigest === p.trace.traceDigest, 'trace.identity', 'Trace changed. Reload before stepping.', 409);
+    const frame = this.traceFrame(request);
+    const offset = request.offset ?? 0, limit = request.limit ?? 200;
+    requireThat(Number.isInteger(offset) && offset >= 0 && Number.isInteger(limit) && limit > 0 && limit <= 600, 'trace.page', 'Invalid trace page.');
+    return { ...frame, events: frame.events.slice(offset, offset + limit).map(e => ({ ...e, eventIndex: traceEventIndex(p.trace, e.sequence) })),
+      causalPath: frame.causalPath.map(e => ({...e,eventIndex:traceEventIndex(p.trace,e.sequence)})),
+      total: frame.events.length, offset, nextOffset: offset + limit < frame.events.length ? offset + limit : null,
+      traceDigest: p.trace.traceDigest, totalEvents: p.trace.events.length };
   }
   getFacet(key, id, expectedDigest) {
     const p = this.require(key), view = this.view(p);
@@ -165,7 +223,7 @@ export class Workbench {
   }
   importTrace(request) {
     const { p, view } = this.checkedView(request);
-    p.trace = decodeTrace(request.text, view); return this.view(p);
+    p.trace = freezeData(decodeTrace(request.text, view)); return this.view(p);
   }
   traceFrame(request) {
     const { p, view } = this.checkedView(request);
@@ -205,7 +263,31 @@ export class Workbench {
     requireThat(document.modelDigest === view.modelDigest && document.facetId === request.facetId, 'scenario.identity', 'Saved scenario belongs to a different model or declaration.');
     return { ...document, scenario:{...document.scenario, bundleDigest:view.bundleDigest} };
   }
-  async refresh(key) { const p = this.require(key); requireThat(p.config.root, 'project.reload', 'An imported artifact is a fixed snapshot; import a new revision instead.'); return this.load(p.config); }
+  async refresh(key, { automatic = false } = {}) {
+    if (this.loads.has(key)) return this.loads.get(key);
+    const old = this.require(key);
+    requireThat(old.config.root, 'project.reload', 'An imported artifact is a fixed snapshot; import a new revision instead.');
+    const pending = (async () => {
+      const manifest = await exists(old.config.root,'studio.workspace.json');
+      const expectedManifest = old.readSet?.find(s=>s.file==='studio.workspace.json')?.digest ?? null;
+      requireThat((manifest ? digest(manifest.text) : null) === expectedManifest,
+        'reload.configuration', 'Workspace selection changed. Restart Studio to load the new manifest.');
+      const candidate = await this.load(old.config, { publish: false });
+      const view = this.view(candidate);
+      requireThat(this.require(key) === old, 'project.conflict', 'Another load replaced this project.', 409);
+      // Incomplete generated writes never replace the current usable snapshot.
+      requireThat(!old.config.bundle || !!candidate.imported.inspection, 'reload.incomplete', 'Generated bundle is unavailable or invalid; the previous snapshot was retained.');
+      if (automatic) requireThat(view.sourceIdentity?.kind === 'matched'
+        && !view.diagnostics.some(d => !['info','warning'].includes(d.severity)),
+        'reload.incomplete', 'The new build is not yet correlated and valid; the previous snapshot was retained.');
+      if (view.bundleDigest !== this.view(old).bundleDigest) {
+        this.previous.set(key, this.view(old));
+        if (this.previous.size > 8) this.previous.delete(this.previous.keys().next().value);
+      }
+      this.projects.set(key, candidate); return view;
+    })().finally(() => this.loads.delete(key));
+    this.loads.set(key, pending); return pending;
+  }
   async importArtifact({ text, label = 'Imported artifact' }) {
     requireThat(this.projects.size < 64, 'project.limit', 'Close a session before importing more than 64 projects.');
     const imported = decodeArtifact(text), key = 'import-' + digest(text).slice(0, 16);
@@ -289,7 +371,7 @@ export class Workbench {
     let graphDigest = p.graphDigest;
     if (request.graphText) { requireThat(typeof request.graphText === 'string' && request.graphText.length <= 8_000_000, 'graph.size', 'Graph file too large.'); graphDigest = digest(request.graphText); }
     const evidence = attachSnapshot(p.imported.product, p.imported.identity.productDigest, graphDigest, request.text);
-    p.graphDigest = graphDigest; p.evidence = evidence;
+    p.graphDigest = graphDigest; p.evidence = freezeData(evidence);
     return this.view(p);
   }
 }
