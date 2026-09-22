@@ -26,3 +26,20 @@ jobs:
       - name: Syntax and unit contracts
         working-directory: product-studio
         run: npm run verify
+      - name: Install direct browser test runner
+        run: |
+          python -m pip install playwright==1.55.0
+          python -m playwright install --with-deps chromium
+      - name: Direct browser acceptance
+        working-directory: product-studio
+        run: |
+          node server.mjs --port 4317 --data-dir "$RUNNER_TEMP/studio-drafts" > "$RUNNER_TEMP/studio-server.log" 2>&1 &
+          server=$!
+          trap 'kill "$server" 2>/dev/null || true' EXIT
+          for n in $(seq 1 30); do curl -fsS http://127.0.0.1:4317/api/bootstrap >/dev/null && break; sleep 1; done
+          failed=0
+          python test/browser.py || failed=1
+          python test/browser_experience.py || failed=1
+          python test/browser_extended.py || failed=1
+          if [ -f test/browser_documentation.py ]; then python test/browser_documentation.py || failed=1; fi
+          exit "$failed"
