@@ -9,6 +9,10 @@ export const simulationPresentationContract = {
 } as const;
 
 /** One simulator owner; physics stays native and UI receives one immutable state. */
+/**
+ * WHAT: Tracks simulated flight state and exposes its current presentation.
+ * WHY: Keeps native physics and simulation feeds separate from UI controls.
+ */
 export const simulationRuntimeOwner = service({
   id: "simulation.runtime-owner",
   inputs: [port("compass", compassStateContract)],

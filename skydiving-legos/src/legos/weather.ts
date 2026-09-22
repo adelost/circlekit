@@ -81,6 +81,10 @@ export const weatherDevWindPresentationContract = {
  * The product sees one weather service. Repository, scheduling and cache
  * mechanics are native implementation details of this single lifecycle.
  */
+/**
+ * WHAT: Fetches weather observations and retains current and selected-time results.
+ * WHY: Keeps provider lifecycle and cache writes outside weather presentation.
+ */
 export const weatherService = service({
   id: "weather.service",
   inputs: [

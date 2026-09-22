@@ -90,6 +90,10 @@ export const networkProbePresentationContract = {
   fields: [field("results", valueRef("runtime.network-probe-result-list"))],
 } as const;
 
+/**
+ * WHAT: Reads distribution capabilities for product presentation.
+ * WHY: Keeps build-channel decisions outside controls and runtime feature owners.
+ */
 export const buildCapabilitiesSource = service({
   id: "runtime.build-capabilities-source",
   inputs: [],
@@ -101,6 +105,10 @@ export const buildCapabilitiesSource = service({
 });
 
 /** Platform battery reads; manager access stays native. */
+/**
+ * WHAT: Reads platform battery observations.
+ * WHY: Keeps device manager access outside battery presentation.
+ */
 export const batteryObservationSource = service({
   id: "runtime.battery-source",
   inputs: [],
@@ -112,6 +120,10 @@ export const batteryObservationSource = service({
 });
 
 /** Drain estimation and persistence; the HUD state seam stays native until typed UI wiring lands. */
+/**
+ * WHAT: Tracks battery state and stores drain history.
+ * WHY: Keeps estimation and persistence separate from battery presentation consumers.
+ */
 export const batteryRuntimeOwner = service({
   id: "runtime.battery-runtime",
   inputs: [],
@@ -123,6 +135,10 @@ export const batteryRuntimeOwner = service({
   },
 });
 
+/**
+ * WHAT: Reads wall-clock time for product consumers.
+ * WHY: Keeps platform clock access separate from time-dependent calculations and presentation.
+ */
 export const wallClockSource = service({
   id: "runtime.wall-clock-source",
   inputs: [],
@@ -134,6 +150,10 @@ export const wallClockSource = service({
 });
 
 /** Wraps every registered runtime service run; retry policy stays native. */
+/**
+ * WHAT: Tracks runtime service execution and emits incident receipts.
+ * WHY: Keeps supervision separate from service-specific work and retry implementation.
+ */
 export const runtimeSupervisor = service({
   id: "runtime.supervisor",
   inputs: [],
@@ -145,6 +165,10 @@ export const runtimeSupervisor = service({
 });
 
 /** Privacy-safe incident receipts: ledger plus user-driven share. */
+/**
+ * WHAT: Stores incident receipts and dispatches user-requested reports.
+ * WHY: Keeps diagnostics persistence and sharing outside service execution and presentation.
+ */
 export const diagnosticsReporter = service({
   id: "runtime.diagnostics-reporter",
   inputs: [],
@@ -157,6 +181,10 @@ export const diagnosticsReporter = service({
 });
 
 /** Decides when the product fetches; scheduling math stays native. */
+/**
+ * WHAT: Schedules product fetches from flight context and manual requests.
+ * WHY: Keeps refresh policy separate from transport and cache execution.
+ */
 export const fetchPolicyOwner = service({
   id: "runtime.fetch-policy",
   inputs: [
@@ -179,6 +207,10 @@ export const fetchPolicyOwner = service({
 });
 
 /** Executes fetches per source; transports and caches stay native. */
+/**
+ * WHAT: Dispatches requested fetch operations to their source owners.
+ * WHY: Keeps transport and cache execution separate from refresh controls and policy.
+ */
 export const fetchDispatch = service({
   id: "runtime.fetch-dispatch",
   inputs: [

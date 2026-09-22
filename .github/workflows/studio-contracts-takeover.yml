@@ -1,9 +1,9 @@
 name: Studio contracts takeover verification
-# Temporary branch-local verification, not a product startup or release gate.
+# Branch-local development verification, never a product startup or release gate.
 on:
   push:
     branches: [feat/studio-contracts-takeover-20260922]
-    paths: [product-studio/**, skydiving-legos/**, link-product/**, showcase-product/**, studio.workspace.json, .github/workflows/studio-contracts-takeover.yml]
+    paths: [product-studio/**, skydiving-legos/**, link-product/**, showcase-product/**, studio.workspace.json, studio.mjs, .github/workflows/studio-contracts-takeover.yml]
   workflow_dispatch:
 permissions:
   contents: read
@@ -22,33 +22,30 @@ jobs:
       - name: Install locked Studio dependencies
         working-directory: product-studio
         run: npm ci --ignore-scripts
-      - name: Read the pinned public grammar owner
+      - name: Read the isolated public AMUX companion
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
           repository: adelost/agentmux
-          ref: e34b7358041442c7dc4e0d57df5a778390eefa56
+          ref: 2c6991f954f58207c1918067809a4e027356166c
           path: .verification-amux
           persist-credentials: false
       - name: Install locked grammar dependencies without hooks
         working-directory: .verification-amux
         run: npm ci --ignore-scripts
-      - name: Prepare public-source verification archive
+      - name: Fetch immutable public compiler inputs for consumer-version verification
         run: |
-          mkdir -p "$RUNNER_TEMP/studio-verification/circlekit" "$RUNNER_TEMP/studio-verification/agentmux"
-          git archive HEAD product-studio product-spec product-emit skydiving-legos link-product showcase-product bddkit README.md | tar -x -C "$RUNNER_TEMP/studio-verification/circlekit"
-          git -C .verification-amux archive HEAD | tar -x -C "$RUNNER_TEMP/studio-verification/agentmux"
-          cp -a product-studio/node_modules "$RUNNER_TEMP/studio-verification/circlekit/product-studio/"
-          cp -a .verification-amux/node_modules "$RUNNER_TEMP/studio-verification/agentmux/"
-          git rev-parse HEAD > "$RUNNER_TEMP/studio-verification/circlekit.commit"
-          git -C .verification-amux rev-parse HEAD > "$RUNNER_TEMP/studio-verification/agentmux.commit"
-          tar -czf "$RUNNER_TEMP/studio-public-verification.tgz" -C "$RUNNER_TEMP/studio-verification" .
+          mkdir -p "$RUNNER_TEMP/compiler-inputs"
+          for version in 0.3.52 0.3.64; do
+            curl --fail --silent --show-error --location "https://circlekit.pages.dev/npm/v1d/product-spec/$version/v1d-product-spec-$version.tgz" -o "$RUNNER_TEMP/compiler-inputs/product-spec-$version.tgz"
+          done
+          cd "$RUNNER_TEMP/compiler-inputs"
+          sha512sum *.tgz > SHA512SUMS
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
-          name: public-verification-workspace
-          path: ${{ runner.temp }}/studio-public-verification.tgz
+          name: compiler-verification-inputs
+          path: ${{ runner.temp }}/compiler-inputs/
           retention-days: 1
       - name: Syntax and unit contracts
-        id: unit
         working-directory: product-studio
         run: npm run verify
       - name: Actual AMUX grammar and selected service sources
