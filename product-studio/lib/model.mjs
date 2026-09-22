@@ -1,12 +1,13 @@
 import { compileDeclaration, KERNEL_VERSION } from './kernel.mjs';
 import { boundedJson, digest, plain, requireThat, StudioError, canonicalJson } from './util.mjs';
 import { validateInspectionBundle, compatibilityReport } from './inspection.mjs';
+import { validateGraphProduct } from './graph-data.mjs';
 
 export function decodeArtifact(text, name = 'artifact.json') {
   const data = boundedJson(text);
   if (data?.kind === 'product-studio-bundle' && data.version === 2) {
     const inspection = validateInspectionBundle(data), compatibility = compatibilityReport(inspection, KERNEL_VERSION);
-    const product = data.product ? decodeProduct(data.product) : null;
+    const product = data.product ? decodeProductLike(data.product) : null;
     const facets = mergeFacets(data.facets, (product?.decisionTables ?? []).map(compiled => ({ id: compiled.id, kind: 'decision-table', compiled })));
     const producerErrors = inspection.diagnostics.some(d => d.severity === 'error');
     const decoded = facets.map(f => decodeFacet(f, compatibility));
@@ -15,7 +16,7 @@ export function decodeArtifact(text, name = 'artifact.json') {
   }
   if (data?.kind === 'product-studio-bundle' && data.version === 1) {
     requireThat(Array.isArray(data.facets) && data.facets.length <= 100, 'bundle.facets', 'Invalid facet list.');
-    const product = data.product ? decodeProduct(data.product) : null;
+    const product = data.product ? decodeProductLike(data.product) : null;
     return { product, facets: mergeFacets(data.facets, (product?.decisionTables ?? []).map(compiled => ({ kind: 'decision-table', compiled }))).map(f => decodeFacet(f)),
       identity: { source: name, productDigest: null }, raw: text };
   }
@@ -50,6 +51,11 @@ function decodeFacet(f, compatibility = null) {
     runnable: true, kernelVersion: KERNEL_VERSION, editable: false, source: null };
 }
 function tableFacets(product) { return (product.decisionTables ?? []).map(compiled => decodeFacet({ kind: 'decision-table', compiled })); }
+
+function decodeProductLike(product) {
+  if (product?.kind === 'product-spec-graph') return validateGraphProduct(product);
+  return decodeProduct(product);
+}
 
 /** Viewer integrity checks, not the whole compiler or native-conformance proof. */
 export function decodeProduct(product) {
