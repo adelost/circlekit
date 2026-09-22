@@ -26,6 +26,16 @@ jobs:
       - name: Syntax and unit contracts
         working-directory: product-studio
         run: npm run verify
+      - name: Read the pinned public grammar owner
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          repository: adelost/agentmux
+          ref: e34b7358041442c7dc4e0d57df5a778390eefa56
+          path: .verification-amux
+          persist-credentials: false
+      - name: Actual AMUX grammar and selected service sources
+        working-directory: product-studio
+        run: node scripts/verify-amux-contracts.mjs ../.verification-amux
       - name: Install direct browser test runner
         run: |
           python -m pip install playwright==1.55.0
