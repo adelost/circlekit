@@ -32,19 +32,6 @@ jobs:
       - name: Install locked grammar dependencies without hooks
         working-directory: .verification-amux
         run: npm ci --ignore-scripts
-      - name: Fetch immutable public compiler inputs for consumer-version verification
-        run: |
-          mkdir -p "$RUNNER_TEMP/compiler-inputs"
-          for version in 0.3.52 0.3.64; do
-            curl --fail --silent --show-error --location "https://circlekit.pages.dev/npm/v1d/product-spec/$version/v1d-product-spec-$version.tgz" -o "$RUNNER_TEMP/compiler-inputs/product-spec-$version.tgz"
-          done
-          cd "$RUNNER_TEMP/compiler-inputs"
-          sha512sum *.tgz > SHA512SUMS
-      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
-        with:
-          name: compiler-verification-inputs
-          path: ${{ runner.temp }}/compiler-inputs/
-          retention-days: 1
       - name: Syntax and unit contracts
         working-directory: product-studio
         run: |

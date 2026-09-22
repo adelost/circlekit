@@ -130,3 +130,8 @@ For new products, add a small `studio.workspace.json` selecting the actual sourc
 The alternative was more metadata: `purpose`, `owns`, `doesNotOwn`, duplicated dependency lists and a test registry. That creates stale parallel truths.
 
 This design writes only information that cannot be derived reliably: responsibility and boundary intent. ProductSpec supplies declared structure, test tools supply behavior evidence, and traces supply observations.
+
+
+## Current implementation handoff
+
+For exact branch topology, owner-run smoke commands and the remaining optional-evidence backlog, read [HANDOFF-LIVING-DOCUMENTATION.md](HANDOFF-LIVING-DOCUMENTATION.md).

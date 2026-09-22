@@ -76,7 +76,7 @@ export async function exportAuthoring({root,packageRoot='.',files,entry,exportNa
       if(!status.trim())revision=(await exec('git',['-C',base,'rev-parse','HEAD'],{timeout:3000})).stdout.trim();
     } catch {}
     for(const file of read)requireThat(digest((await safeFile(base,file.relative)).text)===digest(file.text),'export.stale','Product source changed during compilation.');
-    return writeInspectionBundle({root:base,output,productId,product,sourceFiles:files,sourceRevision:revision,evaluateContract,
-      compiler:{name:'@v1d/product-spec',version:compilerPackage.version}});
+    return writeInspectionBundle({root:base,output,productId,product,sourceFiles:files,sourceSnapshot:read,
+      sourceRevision:revision,evaluateContract,compiler:{name:'@v1d/product-spec',version:compilerPackage.version}});
   } finally { await rm(staging,{recursive:true,force:true}); }
 }
