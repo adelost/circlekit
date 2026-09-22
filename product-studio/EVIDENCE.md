@@ -73,3 +73,10 @@ When the product uses a different ProductSpec version, `--kernel-root` selects t
 ## Viewer boundary
 
 Configure reports with `documentation.bddReports`. Missing reports are informational. No evidence adapter runs as part of `node studio.mjs` or `node studio.mjs check`.
+
+
+## Verification policy: NO CI
+
+**Do not add GitHub Actions or other CI for these evidence adapters.**
+
+Vitest, JUnit import, declaration laws and smoke commands are owner-run on the user's own hardware. Product Studio must never turn these commands into remote repository automation or merge gates.
