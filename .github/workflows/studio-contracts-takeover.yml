@@ -61,6 +61,15 @@ jobs:
           ref: 1eb1476a32324c13d9fec82c0ccc8c375ced1a81
           path: .verification-skyvw-native
           persist-credentials: false
+          sparse-checkout-cone-mode: false
+          sparse-checkout: |
+            /studio.mjs
+            /studio.workspace.json
+            /STUDIO-CONTRACTS.md
+            /appspec/products/skyvw/
+            /appspec/generated/skyvw/
+            /appspec/package-lock.json
+            /app/src/main/java/com/adelost/skydivealtimeter/appspec/generated/GeneratedSkyvwNativeLegoCatalogPortIds.kt
       - name: Read pinned SKYVW web takeover
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
@@ -68,6 +77,15 @@ jobs:
           ref: b4b00b344151647be7cc35bea24173451a9cc5ed
           path: .verification-skyvw-web
           persist-credentials: false
+          sparse-checkout-cone-mode: false
+          sparse-checkout: |
+            /studio.mjs
+            /studio.workspace.json
+            /STUDIO-CONTRACTS.md
+            /package.json
+            /package-lock.json
+            /scripts/export-studio.mjs
+            /src/logbook/
       - name: SKYVW native source and artifact smoke
         if: ${{ !cancelled() }}
         working-directory: .verification-skyvw-native
