@@ -1,4 +1,4 @@
-import { compileDeclaration, kernel, KERNEL_VERSION } from './kernel.mjs';
+import { kernel as studioKernel, KERNEL_VERSION } from './kernel.mjs';
 import { behaviorReport } from './report-output.mjs';
 import { digest, requireThat } from './util.mjs';
 
@@ -13,17 +13,20 @@ export const declarationLawId=(modelDigest,key,law)=>
 function sourceFor(entity,origins,artifactFile) {
   return origins.get(entity.key)?.file??entity.data?.source?.file??artifactFile??null;
 }
-function validate(entity) {
+function validate(entity,evaluator) {
   if(entity.kind==='node-type') {
-    kernel.validateProductNodeType(structuredClone(entity.data));
+    evaluator.validateProductNodeType(structuredClone(entity.data));
     return;
   }
   const compiled=structuredClone(entity.data.compiled);
   if(Array.isArray(compiled.invariants)&&compiled.invariants.some(value=>typeof value==='string'))compiled.invariants=[];
-  compileDeclaration(entity.data.kind,compiled);
+  if(entity.data.kind==='machine')evaluator.defineMachine(compiled);
+  else evaluator.defineDecisionTable(compiled);
 }
 
-export function generateDeclarationEvidence(view,{artifactFile=null,repository=null}={}) {
+export function generateDeclarationEvidence(view,{
+  artifactFile=null,repository=null,evaluator=studioKernel,evaluatorVersion=KERNEL_VERSION,
+}={}) {
   const startedAt=Date.now(),origins=new Map(view.sourceIndex.origins.map(origin=>[origin.entityKey,origin])),tests=[];
   const candidates=view.architecture.entities.filter(entity=>lawName(entity));
   requireThat(candidates.length>0,'evidence.law-scope','No ProductSpec node types or finite facets are available in this selection.');
@@ -31,14 +34,14 @@ export function generateDeclarationEvidence(view,{artifactFile=null,repository=n
     const law=lawName(entity),file=sourceFor(entity,origins,artifactFile);
     requireThat(file,'evidence.law-source','Attach source or a generated artifact path before exporting declaration evidence.');
     let status='passed',then;
-    const incompatible=!view.compatibility || view.compatibility.simulate!==true
-      ||entity.kind==='facet'&&entity.data.runnable===false;
+    const producer=view.compatibility?.producer??null;
+    const incompatible=!producer||producer!==evaluatorVersion;
     if(incompatible) {
       status='skipped';
       then='Producer/evaluator identity is missing or mismatched, so no declaration law was re-evaluated.';
     } else {
       try {
-        validate(entity);
+        validate(entity,evaluator);
         then='The matching ProductSpec kernel accepted this structural declaration. Runtime behavior and product-source freshness are not proven.';
       } catch(error) {
         status='failed';
@@ -52,7 +55,7 @@ export function generateDeclarationEvidence(view,{artifactFile=null,repository=n
       level:'unit',documentation:'scenario',
       scenarios:[{name,phases:{
         given:'Compiled model '+view.modelDigest+' and entity '+entity.key+'.',
-        when:'ProductSpec '+KERNEL_VERSION+' evaluates '+law+'.',
+        when:'ProductSpec '+evaluatorVersion+' evaluates '+law+'.',
         then,
       },documented:true}],
       status,durationMs:0,retryCount:0,flaky:false,
@@ -60,7 +63,7 @@ export function generateDeclarationEvidence(view,{artifactFile=null,repository=n
   }
   const allSkipped=tests.every(test=>test.status==='skipped');
   return behaviorReport({
-    framework:'product-spec-laws',frameworkVersion:KERNEL_VERSION,project:view.productId,repository,
+    framework:'product-spec-laws',frameworkVersion:evaluatorVersion,project:view.productId,repository,
     startedAt,finishedAt:Date.now(),status:allSkipped?'interrupted':null,tests,
   });
 }

@@ -20,7 +20,18 @@ export function decodeArtifact(text, name = 'artifact.json', {evaluator=kernel,e
     return { product, facets: mergeFacets(data.facets, (product?.decisionTables ?? []).map(compiled => ({ kind: 'decision-table', compiled }))).map(f => decodeFacet(f,null,evaluator,evaluatorVersion)),
       identity: { source: name, productDigest: null }, raw: text };
   }
-  if (data?.kind === 'product-spec-ir') return { product: decodeProduct(data), facets: tableFacets(data,evaluator,evaluatorVersion), identity: { source: name, productDigest: digest(text) }, raw: text };
+  if (data?.kind === 'product-spec-ir') {
+    const product=decodeProduct(data);
+    let compatibility=null;
+    if(data.productSpecVersion!==undefined) {
+      requireThat(typeof data.productSpecVersion==='string'
+        &&/^\d+\.\d+\.\d+(?:[-+][A-Za-z0-9.-]+)?$/.test(data.productSpecVersion),
+        'product.compiler','Embedded productSpecVersion must be a semantic version.');
+      compatibility=compatibilityReport({compiler:{version:data.productSpecVersion}},evaluatorVersion);
+    }
+    return { product, facets: tableFacets(product,evaluator,evaluatorVersion,compatibility), compatibility,
+      identity: { source: name, productDigest: digest(text) }, raw: text };
+  }
   if (data?.states && data.inputs && data.cells) return { product: null, facets: [decodeFacet({ kind: 'machine', compiled: data })], identity: { source: name }, raw: text };
   if (data?.axes && data.columns && data.cells) return { product: null, facets: [decodeFacet({ kind: 'decision-table', compiled: data })], identity: { source: name }, raw: text };
   throw new StudioError('artifact.schema', 'Expected ProductSpec IR, a machine, a decision table, or a supported Product Studio inspection bundle.');
@@ -50,8 +61,8 @@ function decodeFacet(f, compatibility = null, evaluator = kernel, evaluatorVersi
     validation: descriptions.length ? 'structure-only-invariant-code-unavailable' : 'shared-kernel',
     runnable: true, kernelVersion: evaluatorVersion, editable: false, source: null };
 }
-function tableFacets(product,evaluator,version) {
-  return (product.decisionTables ?? []).map(compiled => decodeFacet({kind:'decision-table',compiled},null,evaluator,version));
+function tableFacets(product,evaluator,version,compatibility=null) {
+  return (product.decisionTables ?? []).map(compiled => decodeFacet({kind:'decision-table',compiled},compatibility,evaluator,version));
 }
 
 function decodeProductLike(product) {

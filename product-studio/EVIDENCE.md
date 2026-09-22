@@ -68,7 +68,7 @@ node studio.mjs laws --product PRODUCT_ID --output test-results/declaration-laws
 
 The report validates ProductSpec node types with `validateProductNodeType` and finite machine/decision-table facets through the shared ProductSpec kernel.
 
-When the producer and Studio evaluator versions differ, affected checks are `skipped`. They are never silently revalidated with a newer compiler. Generated-law IDs include the exact Studio model digest and are associated only when that digest still matches.
+When the product uses a different ProductSpec version, `--kernel-root` selects that product's installed, lockfile-matching compiler. Without an exact producer/evaluator match, affected checks are `skipped`. They are never silently revalidated with a newer compiler. Generated-law IDs include the exact Studio model digest and are associated only when that digest still matches.
 
 ## Viewer boundary
 

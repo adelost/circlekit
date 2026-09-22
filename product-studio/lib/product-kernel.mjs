@@ -40,3 +40,13 @@ export async function loadProductKernel(root,packageRoot='.',expectedVersion=nul
     'kernel.version','The loaded artifact was produced by another ProductSpec version. Regenerate it with the product owner.');
   return {kernel:await import(entry),version:installed.version,entry};
 }
+
+/** Declaration laws require the product evaluator's structural validation API. */
+export async function loadProductSpecKernel(root,packageRoot='.') {
+  const selected=await loadProductKernel(root,packageRoot);
+  requireThat(typeof selected.kernel.validateProductNodeType==='function'
+    &&typeof selected.kernel.defineMachine==='function'
+    &&typeof selected.kernel.defineDecisionTable==='function',
+  'kernel.api','The selected ProductSpec package lacks the declaration validation API required by Studio evidence.');
+  return {...selected,packageRoot};
+}
