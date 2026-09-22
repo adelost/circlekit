@@ -182,7 +182,7 @@ export class Workbench {
     const sourceIdentity = inspection ? checkSourceIdentity(inspection, p.sources) : null;
     const documentation = documentationFor(p.documentationInputs ?? {
       sources: p.sources.map(s=>({path:s.path,text:s.text})), reports:[], diagnostics:[], roots:[], repository:null,
-    }, architecture, { inspection, revision:p.revision, evaluateContract:this.evaluateContract });
+    }, architecture, { inspection, revision:p.revision, evaluateContract:this.evaluateContract, modelDigest });
     const modelDiagnostics = [...p.errors, ...(inspection?.diagnostics ?? []), ...p.sources.flatMap(s => s.parsed.diagnostics), ...sourceIndex.diagnostics];
     const gallery = p.imported.product?.showcase?.cases ?? p.sources.flatMap(s => Object.values(s.parsed.dataExports).flat()).filter(v => v.title && v.scenarios);
     return { key: p.key, label: p.config.label, fixture: !!p.config.fixture, originKind: p.config.originKind ?? (p.config.fixture ? 'fixture' : 'workspace'), revision: p.revision,
