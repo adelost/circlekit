@@ -1,0 +1,28 @@
+name: Studio contracts takeover verification
+
+# Deliberately branch-local: not a product build, PR gate or release workflow.
+on:
+  push:
+    branches: [feat/studio-contracts-takeover-20260922]
+    paths: [product-studio/**, .github/workflows/studio-contracts-takeover.yml]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verify:
+    if: github.repository == 'adelost/circlekit' && github.ref == 'refs/heads/feat/studio-contracts-takeover-20260922'
+    runs-on: ubuntu-22.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: '22.16.0'
+      - name: Install exactly the locked Studio dependencies
+        working-directory: product-studio
+        run: npm ci --ignore-scripts
+      - name: Syntax and unit contracts
+        working-directory: product-studio
+        run: npm run verify
