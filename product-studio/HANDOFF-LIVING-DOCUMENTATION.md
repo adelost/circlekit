@@ -18,9 +18,15 @@ Use these branches together until the stack lands:
 | Repository | Branch | Relationship |
 |---|---|---|
 | `adelost/circlekit` | `feat/studio-contracts-takeover-20260922` | PR #276, stacked above Product Studio #275 |
-| `adelost/skydive-altimeter` | `feat/studio-contracts-takeover-20260922` | continuation of the existing living-doc companion |
-| `adelost/skyvw-web` | `feat/studio-contracts-takeover-20260922` | web companion |
+| `adelost/skydive-altimeter` | `feat/studio-contracts-takeover-20260922` | PR #1664, stacked above #1663 |
+| `adelost/skyvw-web` | `feat/studio-contracts-takeover-20260922` | PR #35 against `main` |
 | `adelost/agentmux` | `feat/studio-contracts-takeover-20260922` | grammar/wake-word companion |
+
+Current reviewed heads at handoff time:
+
+- CircleKit: `4add64c8efe325724a884f920787a14553eb85da`
+- SKYVW native: `76fe155c17f8118bdcc265c53300ac878abdae88`
+- SKYVW web: `6e834b6c0e62947b99c11443aaf7a94bdf82603d`
 
 The other agent's original branches were not force-pushed or rewritten.
 
@@ -119,3 +125,20 @@ If implemented later, keep them as optional evidence. A test result is not runti
 - Product Studio does not execute product code while browsing.
 - The explicit web exporter is a trusted authoring command and is separate from the read-only viewer.
 - Product compiler pins remain authoritative.
+
+
+## Next owner starts here
+
+Do not redesign the feature. Start by checking out the heads above in sibling directories and run the native/web command blocks in this document.
+
+If those commands pass, review PR #276, #1664 and #35 as one logical stack.
+
+If a command fails, treat the failure as an environment or concrete integration bug first. The intended architecture is already fixed:
+
+- generic Studio code stays in CircleKit,
+- product-specific smoke stays in the product repository,
+- AMUX owns wording grammar,
+- product compiler versions stay authoritative,
+- optional evidence remains optional.
+
+Record the exact failing command, error and branch SHA before changing anything. Fix the root cause, rerun only that owner path, and update this handoff if the required command changes.
