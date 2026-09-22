@@ -31,11 +31,11 @@ export function generateDeclarationEvidence(view,{artifactFile=null,repository=n
     const law=lawName(entity),file=sourceFor(entity,origins,artifactFile);
     requireThat(file,'evidence.law-source','Attach source or a generated artifact path before exporting declaration evidence.');
     let status='passed',then;
-    const incompatible=view.compatibility?.simulate===false
+    const incompatible=!view.compatibility || view.compatibility.simulate!==true
       ||entity.kind==='facet'&&entity.data.runnable===false;
     if(incompatible) {
       status='skipped';
-      then='No matching ProductSpec evaluator was available, so no declaration law was re-evaluated.';
+      then='Producer/evaluator identity is missing or mismatched, so no declaration law was re-evaluated.';
     } else {
       try {
         validate(entity);
@@ -58,9 +58,10 @@ export function generateDeclarationEvidence(view,{artifactFile=null,repository=n
       status,durationMs:0,retryCount:0,flaky:false,
     });
   }
+  const allSkipped=tests.every(test=>test.status==='skipped');
   return behaviorReport({
     framework:'product-spec-laws',frameworkVersion:KERNEL_VERSION,project:view.productId,repository,
-    startedAt,finishedAt:Date.now(),tests,
+    startedAt,finishedAt:Date.now(),status:allSkipped?'interrupted':null,tests,
   });
 }
 
