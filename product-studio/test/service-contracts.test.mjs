@@ -32,9 +32,11 @@ test('Given a shadowed import or unrelated function When scanning Then neither i
    `const other={service(x){return x}};other.service({id:'also-not-product'});`);
   assert.equal(r.contracts.length,0);assert.equal(r.diagnostics.length,0);
 });
-test('Given a service factory with a computed ID When scanning Then unknown coverage fails explicitly',()=>{
+test('Given a documented service factory with a computed ID When scanning Then intent is checked but identity stays explicit',()=>{
   const r=scan(pre+doc+`\nfunction make(id:string){return service({id});}`);
-  assert.ok(r.diagnostics.some(d=>d.rule==='contract.service.id'));assert.equal(r.complete,false);
+  assert.ok(r.diagnostics.some(d=>d.rule==='contract.service.id'&&d.severity==='info'));
+  assert.equal(r.complete,true);assert.equal(r.identityComplete,false);
+  assert.equal(r.contracts[0].contract.status,'present');
 });
 test('Given an escaped constructor When scanning Then callback-based services cannot disappear',()=>{
   const r=scan(pre+`const all=options.map(service);`);

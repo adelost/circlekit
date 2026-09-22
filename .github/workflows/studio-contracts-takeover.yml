@@ -47,7 +47,9 @@ jobs:
           retention-days: 1
       - name: Syntax and unit contracts
         working-directory: product-studio
-        run: npm run verify
+        run: |
+          npm run verify
+          node --check ../studio.mjs
       - name: Actual AMUX grammar and selected service sources
         if: ${{ !cancelled() }}
         working-directory: product-studio

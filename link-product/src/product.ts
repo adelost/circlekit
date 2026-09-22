@@ -77,6 +77,10 @@ const linkPositionAvailability = defineStateAuthority({
   presentation: linkPositionAvailabilityPresentation,
 });
 
+/**
+ * WHAT: Tracks the active Link page and routes page changes.
+ * WHY: Keeps page state separate from position presentation and component mounts.
+ */
 const linkNavigationService = service({
   id: "link.navigation-service",
   inputs: [],

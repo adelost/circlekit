@@ -37,10 +37,14 @@ assert.equal(documented.contracts[0].contract.status,'validated');
 console.log(JSON.stringify({corpus:{good:good.length,bad:bad.length},scannerMutation:{missing:'rejected',documented:'validated'}}));
 const report=await checkWorkspaceContracts(root,{evaluateContract});
 console.log(JSON.stringify({owner:'AMUX',projects:report.projects.map(p=>({id:p.id,services:p.serviceCount,complete:p.complete,ok:p.ok,diagnostics:p.diagnostics}))}));
-const kit=path.resolve(import.meta.dirname,'../..');
+const kit=path.resolve(import.meta.dirname,'../..'), ownerReports=[];
 for(const sourceRoot of ['skydiving-legos/src','link-product/src','showcase-product/src']) {
  const inputs=await readDocumentationInputs(kit,{sourceRoots:[sourceRoot]});
  const scan=scanSourceContracts(inputs.sources,{evaluateContract});
- console.log(JSON.stringify({owner:sourceRoot,files:scan.files,services:scan.serviceCount,complete:scan.complete,diagnostics:[...inputs.diagnostics,...scan.diagnostics],contracts:scan.contracts.map(c=>({id:c.id,file:c.source.file,line:c.source.line,status:c.contract.status}))}));
+ const diagnostics=[...inputs.diagnostics,...scan.diagnostics];
+ const ok=scan.complete&&!diagnostics.some(d=>d.severity==='error'||d.severity==='warning');
+ ownerReports.push({sourceRoot,ok,scan,diagnostics});
+ console.log(JSON.stringify({owner:sourceRoot,files:scan.files,services:scan.serviceCount,complete:scan.complete,identityComplete:scan.identityComplete,ok,diagnostics,contracts:scan.contracts.map(c=>({id:c.id,file:c.source.file,line:c.source.line,status:c.contract.status}))}));
 }
 assert(report.ok,'The actual AMUX companion sources must pass the same scanner and grammar.');
+assert(ownerReports.every(r=>r.ok),'Every selected CircleKit service source must pass the same scanner and AMUX grammar.');

@@ -24,6 +24,10 @@ export const showcaseCatalogPresentation = present({
 } as const);
 
 /** The only effect owner: it mutates the host navigation stack. */
+/**
+ * WHAT: Tracks the active Showcase page and routes catalog selections.
+ * WHY: Keeps host navigation effects outside catalog presentation and components.
+ */
 export const showcaseNavigationService = service({
   id: "showcase.navigation-service",
   inputs: [
