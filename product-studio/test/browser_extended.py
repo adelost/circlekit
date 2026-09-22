@@ -1,29 +1,22 @@
-"""Extended architecture/source/trace journeys over the actual app and HTTP server.
+"""Direct-browser architecture/source/trace journeys over the actual server.
 
-The synthetic fixture intentionally does not claim to be a native product. Direct
-HTTP is the default. --http-bridge is an explicit constrained-browser fallback,
-not proof of normal browser CSP/module loading or the published package install.
+The fixture is synthetic, not a connected native product. The former flattened
+HTTP bridge is refused; ordinary browser loading is part of the acceptance path.
 """
-import argparse,json,subprocess,urllib.request,urllib.error
+import argparse,json,subprocess
 from pathlib import Path
 from playwright.sync_api import sync_playwright
 ROOT=Path(__file__).resolve().parents[1]
 p=argparse.ArgumentParser();p.add_argument('--chromium');p.add_argument('--http-bridge',action='store_true');p.add_argument('--output',default='test-results/extended');args=p.parse_args()
+if args.http_bridge:
+    p.error('The current modular UI requires direct HTTP verification. The historical bridge is not supported for this revision.')
 out=Path(args.output);out.mkdir(parents=True,exist_ok=True)
 process=subprocess.Popen(['node','test/serve-fixture.mjs'],cwd=ROOT,stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True)
-checks=[];errors=[];requests=[]
+checks=[];errors=[]
 try:
     first=process.stdout.readline()
     if not first: raise RuntimeError(process.stderr.read())
     fixture=json.loads(first)
-    def bridge(url,options=None):
-        options=options or {}
-        if not url.startswith('/api/'):raise ValueError('Only local Studio API routes are bridged.')
-        requests.append(url);data=options.get('body')
-        req=urllib.request.Request(fixture['origin']+url,data=data.encode() if isinstance(data,str) else None,method=options.get('method','GET'),headers=options.get('headers',{}))
-        try:
-            with urllib.request.urlopen(req,timeout=20) as r:return {'body':r.read().decode(),'status':r.status}
-        except urllib.error.HTTPError as e:return {'body':e.read().decode(),'status':e.code}
     def check(name,truth):
         if not truth:page.screenshot(path=str(out/'failure.png'),full_page=True)
         assert truth,name
@@ -33,16 +26,7 @@ try:
         if args.chromium:opts['executable_path']=args.chromium
         browser=pw.chromium.launch(**opts);page=browser.new_page(viewport={'width':1600,'height':1120},accept_downloads=True)
         page.on('pageerror',lambda e:errors.append(str(e)))
-        if args.http_bridge:
-            page.expose_function('__studioHttp',bridge)
-            html=(ROOT/'public/index.html').read_text().replace('<link rel="stylesheet" href="/style.css">','<style>'+(ROOT/'public/style.css').read_text()+'</style>').replace('<script type="module" src="/app.js"></script>','')
-            page.set_content(html)
-            page.evaluate("""()=>{window.fetch=async(url,options)=>{const r=await window.__studioHttp(url,options||{});return new Response(r.body,{status:r.status,headers:{'content-type':'application/json'}})}}""")
-            graph=(ROOT/'public/graph.js').read_text().replace('export function drawGraph','function drawGraph')
-            tools=(ROOT/'public/studio-tools.js').read_text().replace('export function ','function ')
-            app=(ROOT/'public/app.js').read_text().replace("import { drawGraph } from './graph.js';",'').replace("import { architectureControls, sourceNavigator, entityInspector, traceView, installDocumentState } from './studio-tools.js';",'')
-            page.add_script_tag(type='module',content=graph+'\n'+tools+'\n'+app)
-        else:page.goto(fixture['origin'])
+        page.goto(fixture['origin'])
         page.wait_for_selector('#project')
         page.locator('#project').select_option(label='Architecture example');page.wait_for_selector('[data-view="System"]');page.locator('[data-view="System"]').click()
         page.wait_for_selector('#query-from')
@@ -73,7 +57,7 @@ try:
         page.screenshot(path=str(out/'trace.png'),full_page=True)
         page.locator('[data-action="trace-first"]').click();page.wait_for_function("document.querySelector('main').textContent.includes('#0 · message')")
         check('Backward trace navigation does not run product logic','#0 · message' in page.locator('main').inner_text())
-        page.locator('#project').select_option(label='AMUX · policies');page.wait_for_selector('[data-fact="need"]')
+        page.locator('#file-import').set_input_files(str(ROOT/'fixtures/amux.mjs'));page.wait_for_selector('[data-fact="need"]')
         page.locator('[data-cell="within-policy"]').click();page.locator('[data-action="split-region"]').click();page.locator('#split-axis').select_option('readiness');page.locator('#split-values').fill('["SAFE"]');page.locator('#split-id').fill('within-policy-safe');page.locator('#split-form button[type="submit"]').click()
         page.wait_for_selector('[data-action="simulate-draft"]:enabled')
         check('Semantic region split produces validated ordinary source','within-policy-safe' in page.locator('#source-editor').input_value())
@@ -91,7 +75,7 @@ try:
             check('Extended view has no page overflow at '+str(width),page.evaluate('document.documentElement.scrollWidth<=innerWidth+1'))
         check('No application JavaScript errors',not errors)
         browser.close()
-    report={'mode':'http-bridge' if args.http_bridge else 'direct-http','kernel':fixture['kernelVersion'],'checks':checks,'errors':errors,'apiRequests':len(requests)}
+    report={'mode':'direct-http','kernel':fixture['kernelVersion'],'checks':checks,'errors':errors}
     (out/'report.json').write_text(json.dumps(report,indent=2));print(json.dumps({'passed':len(checks),'errors':errors,'kernel':fixture['kernelVersion']},indent=2))
 finally:
     process.terminate()

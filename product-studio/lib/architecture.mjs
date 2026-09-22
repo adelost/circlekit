@@ -82,7 +82,11 @@ export function architectureOf(product, facets = [], metadata = {}) {
 
 const ownerKinds = new Set(['node', 'component']);
 /** Owner-level reachability is potential impact: internal input-to-output causality is not asserted. */
+const dependencyIndexes = new WeakMap();
 function dependencyGraph(architecture, purposes) {
+  let cached = dependencyIndexes.get(architecture);
+  const cacheKey = [...purposes].sort().join(',');
+  if (cached?.has(cacheKey)) return cached.get(cacheKey);
   const entities = new Map(architecture.entities.map(e => [e.key, e]));
   const connections = architecture.edges.filter(e => e.kind === 'binding' && purposes.includes(e.purpose))
     .map(e => ({ from: entities.get(e.from)?.owner, to: entities.get(e.to)?.owner, edge: e }));
@@ -91,7 +95,12 @@ function dependencyGraph(architecture, purposes) {
     requireThat(entity, 'query.selection', 'Selected architecture entity is not in this bundle.');
     return ownerKinds.has(entity.kind) ? entity.key : entity.kind === 'port' ? entity.owner : null;
   };
-  return { entities, connections, toOwner };
+  const result = { entities, connections, toOwner };
+  if (Object.isFrozen(architecture)) {
+    if (!cached) { cached = new Map(); dependencyIndexes.set(architecture, cached); }
+    cached.set(cacheKey, result);
+  }
+  return result;
 }
 
 export function queryArchitecture(architecture, request) {
@@ -116,6 +125,9 @@ export function queryArchitecture(architecture, request) {
     const from = backwards ? c.to : c.from, to = backwards ? c.from : c.to;
     const list = adjacent.get(from) ?? []; list.push({ to, c }); adjacent.set(from, list);
   }
+  const maxDepth = request.maxDepth ?? Infinity;
+  requireThat(maxDepth === Infinity || Number.isInteger(maxDepth) && maxDepth >= 0 && maxDepth <= 20, 'query.depth', 'Focus depth must be 0..20.');
+  const depths = new Map([[start,0]]);
   const reached = new Set([start]), previous = new Map(), queue = [start], selectedEdges = new Map();
   const targetEntity = request.kind === 'path' ? entities.get(request.to) : null;
   const goal = request.kind === 'path' ? toOwner(request.to) : null;
@@ -123,13 +135,14 @@ export function queryArchitecture(architecture, request) {
   if (request.kind === 'path') requireThat(goal, 'query.target', 'Choose a target owner or port for the path query.');
   for (let cursor = 0; cursor < queue.length; cursor++) {
     const owner = queue[cursor];
+    if (depths.get(owner) >= maxDepth) continue;
     for (const { to, c } of adjacent.get(owner) ?? []) {
       if (request.kind === 'path' && to === goal && targetEntity?.kind === 'port' && c.edge.to !== targetEntity.key) continue;
       // A selected port seeds only its own edges. Later owners remain potential dependencies.
       if (owner === start && selected.kind === 'port' && (backwards ? c.edge.to : c.edge.from) !== selected.key) continue;
       selectedEdges.set(c.edge.id, c.edge);
       if (!reached.has(to)) {
-        reached.add(to); previous.set(to, { owner, edge: c.edge });
+        reached.add(to); depths.set(to, depths.get(owner) + 1); previous.set(to, { owner, edge: c.edge });
         if (request.kind !== 'consumers') queue.push(to);
       }
     }

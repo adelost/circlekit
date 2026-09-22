@@ -1,3 +1,5 @@
+import { patchHTML } from './dom.js';
+import { createExperience, hasDrafts } from './experience.js';
 import { drawGraph } from './graph.js';
 import { architectureControls, sourceNavigator, entityInspector, traceView, installDocumentState } from './studio-tools.js';
 
@@ -6,12 +8,15 @@ const escape = value => String(value ?? '').replace(/[&<>"']/g, c => ({ '&': '&a
 const pretty = value => JSON.stringify(value, null, 2);
 const views = ['System', 'Logic', 'Scenarios', 'Interface', 'Changes', 'Trace'];
 let token, projects = [], project, state, generation = 0, graph, busy = false, toastTimer;
+let experience, graphHost, graphSignature = '', bindingController, sourcePending = new Map();
+function listen(element,type,handler) { element?.addEventListener(type,handler,{signal:bindingController.signal}); }
 const sessions = new Map();
 const freshState = () => ({ view: 'Logic', facetId: null, selected: null, search: '', facts: {}, guards: {}, input: null,
   machineState: null, result: null, timeline: [], cursor: -1, mode: 'Declared', text: null, draft: null,
   dirty: false, perFacet: new Map(), undo: [], redo: [], tableRows: null, scenarioText: null, scenarioResult: null, mockText: null, mockResult: null, archivedRuns: [] });
 
 async function api(route, body) {
+  if (body && ['import','import-source','trace','snapshot'].includes(route)) body = {...body,summary:true};
   const response = await fetch('/api/' + route, { method: body === undefined ? 'GET' : 'POST',
     headers: { 'x-studio-token': token, ...(body === undefined ? {} : { 'content-type': 'application/json' }) },
     ...(body === undefined ? {} : { body: JSON.stringify(body) }) });
@@ -26,30 +31,32 @@ const action = (name, label, cls = '', disabled = false) => `<button data-action
 const options = (values, selected) => values.map(v => `<option value="${escape(v)}" ${v === selected ? 'selected' : ''}>${escape(v)}</option>`).join('');
 const banner = (text, kind = 'info') => `<div class="notice ${kind}">${escape(text)}</div>`;
 const empty = (title, text, extra = '') => `<div class="empty"><span class="symbol">◇</span><h2>${escape(title)}</h2><p>${escape(text)}</p>${extra}</div>`;
-const panel = (title, body, toolbar = '') => `<section class="panel"><header class="panel-head"><h2>${title}</h2><div class="toolbar">${toolbar}</div></header>${body}</section>`;
+const panel = (title, body, toolbar = '') => `<section class="panel" data-key="${escape(title)}"><header class="panel-head"><h2>${title}</h2><div class="toolbar">${toolbar}</div></header>${body}</section>`;
 function requestContext() { return { project: project.key, facetId: state.facetId, bundleDigest: project.bundleDigest, sourceDigest: state?.document?.().baseDigest ?? source()?.digest }; }
 function download(name, text, mime = 'application/json') { const url = URL.createObjectURL(new Blob([text], { type: mime })); const link = document.createElement('a'); link.href = url; link.download = name; link.click(); setTimeout(() => URL.revokeObjectURL(url), 1500); }
 
 async function loadProject(key) {
   const ticket = ++generation;
-  const p = await api('project?id=' + encodeURIComponent(key));
+  const p = await api('project?id=' + encodeURIComponent(key) + '&mode=summary');
   if (ticket !== generation) return;
+  const isFirstVisit = !sessions.has(key);
   project = p; state = sessions.get(key) ?? freshState(); sessions.set(key, state); installDocumentState(state,p);
   if (!p.facets.some(f => f.id === state.facetId)) selectFacet(p.facets[0]?.id ?? null, false);
-  if (!p.facets.length) state.view = p.gallery.length ? 'Interface' : p.sources.length ? 'Changes' : 'System';
+  if (!p.facets.length) state.view = p.catalogAvailable ? 'Interface' : p.sources.length ? 'Changes' : 'System';
+  if (isFirstVisit && !p.fixture && p.originKind !== 'imported-artifact') state.view = 'Welcome';
   render();
 }
 function selectFacet(id, paint = true) {
   ++generation;
-  const keys = ['selected','facts','guards','input','machineState','result','timeline','cursor','mode','tableRows','scenarioText','scenarioResult','archivedRuns'];
+  const keys = ['selected','facts','guards','input','machineState','result','timeline','cursor','mode','tableRows','scenarioText','scenarioDirty','scenarioResult','archivedRuns'];
   if (state.facetId) state.perFacet.set(state.facetId, Object.fromEntries(keys.map(k => [k, state[k]])));
   const remembered = state.perFacet.get(id);
   state.facetId = id; state.selected = null; state.result = null; state.tableRows = null; state.mode = 'Declared';
   state.timeline = []; state.cursor = -1;
-  state.scenarioText = null; state.scenarioResult = null;
+  state.scenarioText = null; state.scenarioDirty = false; state.scenarioResult = null; state.sourceLoadError = null;
   const f = facet(); state.sourcePath = f?.file ?? project.sources[0]?.path ?? null; state.sourceSpan = null;
-  if (f?.kind === 'machine') { state.machineState = f.compiled.initial; state.input = f.compiled.inputs[0]; state.guards = Object.fromEntries(f.compiled.guards.map(g => [g, 'unknown'])); }
-  if (f?.kind === 'decision-table') state.facts = Object.fromEntries(Object.entries(f.compiled.axes).map(([k, v]) => [k, v[0]]));
+  if (f?.kind === 'machine' && f.runnable !== false) { state.machineState = f.compiled.initial; state.input = f.compiled.inputs[0]; state.guards = Object.fromEntries(f.compiled.guards.map(g => [g, 'unknown'])); }
+  if (f?.kind === 'decision-table' && f.runnable !== false) state.facts = Object.fromEntries(Object.entries(f.compiled.axes).map(([k, v]) => [k, v[0]]));
   if (remembered) Object.assign(state, remembered);
   if (paint) render();
 }
@@ -60,10 +67,10 @@ function selectedCell() {
 
 function render() {
   if (!project) return;
-  const f = facet(), query = state.search.toLowerCase(), title = { System: 'Explore the system', Logic: f?.kind === 'machine' ? 'Lifecycle logic' : 'Policy decisions', Scenarios: 'Explore possible outcomes', Interface: 'Components & surfaces', Changes: 'Code & review', Trace: 'Follow recorded execution' }[state.view];
+  const f = facet(), query = state.search.toLowerCase(), title = { System: 'Explore the system', Logic: f?.kind === 'machine' ? 'Lifecycle logic' : 'Policy decisions', Scenarios: 'Explore possible outcomes', Interface: 'Components & surfaces', Changes: 'Code & review', Trace: 'Follow recorded execution', Problems: 'Problems & evidence', Compare: 'Review model changes', Welcome: 'Your product at a glance' }[state.view];
   const list = project.facets.filter(item => item.id.toLowerCase().includes(query));
   const sourceLabel = ({ fixture: 'Public source fixture', example: 'Synthetic example', workspace: 'Local workspace', 'source-draft': 'Source draft', 'imported-artifact': 'Imported artifact' })[project.originKind] ?? 'Local data';
-  $('#app').innerHTML = `<div class="shell">
+  const html = `<div class="shell" data-mode="${state.text !== null ? 'candidate' : state.mode === 'Simulation' ? 'simulation' : state.mode.startsWith('Recorded') ? 'recorded' : 'declared'}">
     <header class="topbar"><div class="brand"><div class="brand-mark">P</div><span>PRODUCT STUDIO</span></div>
       <select class="project-select" id="project" aria-label="Select product">${projects.map(p => `<option value="${escape(p.key)}" ${p.key === project.key ? 'selected' : ''}>${escape(p.label)}</option>`).join('')}</select>
       <nav aria-label="Workbench views">${views.map(v => `<button data-view="${v}" class="${v === state.view ? 'active' : ''}" ${v === state.view ? 'aria-current="page"' : ''}>${v}</button>`).join('')}</nav>
@@ -77,15 +84,17 @@ function render() {
       <div class="explorer-actions">${action('import', '+ Import source / JSON', 'subtle')}${action('new', '+ New declaration', 'subtle')}${action('saved', 'Open saved drafts', 'subtle')}${action('connect-help', 'Attach repositories', 'subtle')}</div>
       <div class="section-label">Evidence boundary</div><small>${escape(project.provenance ?? project.validationNotice)}</small>
     </aside>
-    <main class="content"><div class="page-heading"><div><div class="eyebrow">${escape(project.label)} / ${escape(state.facetId ?? state.view)}</div><h1>${title}</h1><p class="subtitle">${escape(subtitle())}</p></div><div class="toolbar">${action('explorer', 'Explorer', 'mobile-toggle')}${action('inspector', 'Inspector', 'mobile-toggle')}<span class="badge">${sourceLabel}</span></div></div>
+    <main class="content">${experience?.toolbar() ?? ''}${experience?.notices() ?? ''}<div class="page-heading"><div><div class="eyebrow">${escape(project.label)} / ${escape(state.facetId ?? state.view)}</div><h1>${title}</h1><p class="subtitle">${escape(subtitle())}</p></div><div class="toolbar">${action('explorer', 'Explorer', 'mobile-toggle')}${action('inspector', 'Inspector', 'mobile-toggle')}<span class="badge">${sourceLabel}</span></div></div>
       ${project.diagnostics.length ? `<details class="notice"><summary>${project.diagnostics.length} source or artifact diagnostics</summary>${diagnostics(project.diagnostics)}</details>` : ''}
       ${project.sourceIdentity && project.sourceIdentity.kind !== 'matched' ? banner(project.sourceIdentity.message) : ''}
       ${project.compatibility?.reason ? banner(project.compatibility.reason) : ''}
-      ${state.view === 'Trace' ? traceView(project,state,escape) : state.view === 'System' ? systemView() : state.view === 'Logic' ? logicView() : state.view === 'Scenarios' ? scenariosView() : state.view === 'Interface' ? interfaceView() : changesView()}
+      ${['Problems','Compare','Welcome'].includes(state.view) ? experience.page(state.view) : state.view === 'Trace' ? traceView(project,state,escape) : state.view === 'System' ? systemView() : state.view === 'Logic' ? logicView() : state.view === 'Scenarios' ? scenariosView() : state.view === 'Interface' ? interfaceView() : changesView()}
     </main><aside class="inspector" aria-label="Selected object inspector">${inspector()}</aside></div>
     <footer class="footer"><span class="safe">● No external execution</span><span>${escape(state.mode)}</span><span class="optional">${escape(project.revision?.slice(0, 7) ?? project.bundleDigest.slice(0, 8))}</span><span class="spacer"></span><span id="edit-status">${state.text !== null ? 'Draft changes · source unchanged' : 'Source read-only'}</span><span class="optional">Runtime disconnected</span></footer>
   </div>`;
-  bind(); renderGraph();
+  patchHTML($('#app'), html);
+  bind(); renderGraph(); experience?.afterRender();
+  if ((state.view === 'Changes' || state.showCode) && source() && source().text === undefined && !state.sourceLoadError) ensureSource().catch(e => { state.sourceLoadError=e.message; render(); toast(e.message); });
   if (f?.kind === 'decision-table' && f.runnable !== false && state.view === 'Logic' && state.tableRows === null) loadTable();
 }
 function subtitle() {
@@ -101,12 +110,13 @@ function diagnostics(items) { return `<ul class="error-list">${items.map(d => `<
 function systemView() {
   if (!project.product) return panel('Standalone declarations', empty('No full product graph loaded', 'This product exposes the facets listed below. Studio does not invent connections or algorithms.', `<div class="card-grid">${project.facets.map(f => `<button class="catalog-card" data-facet="${escape(f.id)}"><span class="badge">${f.kind}</span><h3>${escape(f.id)}</h3><p>${f.compiled.cells?.length ?? 0} declared cells</p></button>`).join('')}</div>`) + banner(project.validationNotice));
   const p = project.product;
-  return architectureControls(project,state,escape) + panel(`Declared topology <span class="badge">${project.graph.nodes.length} owners</span>`, `<div id="graph" class="graph-host"></div><div class="risk-caption">${state.canvas?.shownOwners ?? project.canvas?.shownOwners ?? project.graph.nodes.length} of ${project.architecture.coverage.owners} owners in scope; at most 160 rendered. Port types and contracts are visible in the inspector; graph layout never changes the program.</div>`, `${action('fit', 'Fit')}${action('zoom-in', '+')}${action('zoom-out', '−')}${action('snapshot', 'Import snapshot')}`)
+  return architectureControls(project,state,escape) + panel(`Declared topology <span class="badge">${project.graph.nodes.length} owners</span>`, `<div id="graph" data-managed="graph" class="graph-host"></div><div class="risk-caption">${state.canvas?.shownOwners ?? project.canvas?.shownOwners ?? project.graph.nodes.length} of ${project.architecture.coverage.owners} owners in scope; at most 160 rendered. Port types and contracts are visible in the inspector; graph layout never changes the program.</div>`, `${action('fit', 'Fit')}${action('zoom-in', '+')}${action('zoom-out', '−')}<button data-exp="arrange">Arrange</button><button data-exp="focus">Focus ±2</button>${action('snapshot', 'Import snapshot')}`)
     + banner(project.validationNotice)
     + panel('Artifacts & surfaces', `<div class="panel-body"><div class="card-grid">${p.artifacts.map(a => `<button class="catalog-card" data-artifact="${escape(a.id)}"><span class="badge">Artifact</span><h3>${escape(a.id)}</h3><p>${escape((a.serves ?? []).join(' / '))}</p><code>${escape(a.entryScreen)}</code></button>`).join('')}</div></div>`)
     + (project.evidence ? evidenceView() : '');
 }
 function evidenceView() {
+  if(!project.evidence.snapshot)return banner('Loading captured port summary…');
   const e = project.evidence.snapshot;
   return panel('Recorded port snapshot', `<div class="panel-body">${banner(project.evidence.notice)}<small>Captured ${escape(new Date(e.takenAtMs).toISOString())}</small><div class="table-wrap"><table><thead><tr><th>Port</th><th>Count</th><th>Last age at capture</th><th>Quality</th><th>Summary</th></tr></thead><tbody>${e.ports.map(p => `<tr><td>${escape(p.port)}</td><td>${p.count}</td><td>${Math.round((e.takenAtMs - p.lastAtMs) / 1000)} s</td><td>${escape(p.lastQuality)}</td><td>${escape(p.lastSummary)}</td></tr>`).join('')}</tbody></table></div></div>`);
 }
@@ -117,7 +127,7 @@ function logicView() {
   if (f.kind === 'machine') {
     const m = f.compiled;
     if (f.runnable === false) return banner(f.blockedReason ?? 'This facet is inspect-only.') + panel('Compiled model', `<pre class="panel-body">${escape(pretty(m))}</pre>`);
-    return panel(`State machine <code>${escape(f.id)}</code>`, `<div id="graph" class="graph-host"></div><div class="risk-caption">${m.states.length} states · ${m.cells.length} declared transitions · ${escape(m.ordering)} · no-match: ${escape(m.otherwise)}</div>`, `${action('fit', 'Fit')}${action('zoom-in', '+')}${action('zoom-out', '−')}${action('add-cell', '+ Transition', '', !f.editable)}${action('edit-root', 'Definition', '', !f.editable)}${action('edit-source', 'Open source', '', !source())}`)
+    return panel(`State machine <code>${escape(f.id)}</code>`, `<div id="graph" data-managed="graph" class="graph-host"></div><div class="risk-caption">${m.states.length} states · ${m.cells.length} declared transitions · ${escape(m.ordering)} · no-match: ${escape(m.otherwise)}</div>`, `${action('fit', 'Fit')}${action('zoom-in', '+')}${action('zoom-out', '−')}${action('add-cell', '+ Transition', '', !f.editable)}${action('edit-root', 'Definition', '', !f.editable)}${action('edit-source', 'Open source', '', !source())}`)
       + panel('Simulation inputs', `<div class="panel-body"><div class="fact-grid"><label>Synthetic state<select id="machine-state">${options(m.states, state.machineState)}</select></label><label>Event<select id="machine-input">${options(m.inputs, state.input)}</select></label><label>Virtual time (ms)<input id="virtual-time" type="number" min="0" step="1" value="${state.timeline.at(-1)?.atMs ?? 0}"></label></div><div class="toolbar">${action('step', '▷ Step event', 'primary', f.runnable === false)}${action('reset', 'Reset simulation')}${action('export-run', 'Export scenario', '', !state.timeline.length)}<span class="badge simulation">Synthetic guards</span></div>${resultView()}</div>`)
       + timelineView() + (state.showCode ? changesView() : `<button data-action="toggle-code" class="subtle">Code alongside this model</button>`);
   }
@@ -125,7 +135,7 @@ function logicView() {
   if (f.runnable === false) return banner(f.blockedReason ?? 'This table is inspect-only.') + panel('Compiled model', `<pre class="panel-body">${escape(pretty(m))}</pre>`);
   return panel(`Decision table <code>${escape(f.id)}</code>`, `<div class="panel-body"><div class="fact-grid">${Object.entries(m.axes).map(([a, v]) => `<label>${escape(a)}<select data-fact="${escape(a)}">${options(v, state.facts[a])}</select></label>`).join('')}</div><div class="toolbar">${action('evaluate', '▷ Evaluate point', 'primary', f.runnable === false)}${action('edit-source', 'Open source', '', !source())}<span class="badge">${Object.values(m.axes).reduce((n, a) => n * a.length, 1)} points · ${m.cells.length} cells</span></div>${resultView()}</div>`)
     + panel('Named regions', `<div class="table-wrap"><table><thead><tr><th>Cell</th><th>Region (omitted axes cover all values)</th><th>Values</th><th></th></tr></thead><tbody>${m.cells.map(c => `<tr data-cell="${escape(c.id)}" tabindex="0" class="${state.selected?.id === c.id ? 'selected' : ''}"><td><code>${escape(c.id)}</code></td><td>${escape(JSON.stringify(c.region))}</td><td>${escape(JSON.stringify(c.values))}</td><td>Inspect ↗</td></tr>`).join('')}</tbody></table></div>`)
-    + panel('Every declared point', `<div class="table-wrap">${state.tableRows ? `<table><thead><tr>${Object.keys(m.axes).map(a => `<th>${escape(a)}</th>`).join('')}<th>Cell</th><th>Values</th></tr></thead><tbody>${state.tableRows.map((r, i) => `<tr data-point="${i}" tabindex="0">${Object.values(r.at).map(v => `<td>${escape(v)}</td>`).join('')}<td>${escape(r.cell)}</td><td>${escape(JSON.stringify(r.values))}</td></tr>`).join('')}</tbody></table>` : '<div class="empty">Loading results from the shared kernel…</div>'}</div>`);
+    + panel('Every declared point', `<div class="toolbar panel-body"><button data-action="table-prev">Previous 100</button><span>Rows ${(state.tableOffset??0)+1}–${Math.min((state.tableOffset??0)+100,state.tableRows?.length??0)} of ${state.tableRows?.length??0}</span><button data-action="table-next">Next 100</button></div><div class="table-wrap">${state.tableRows ? `<table><thead><tr>${Object.keys(m.axes).map(a => `<th>${escape(a)}</th>`).join('')}<th>Cell</th><th>Values</th></tr></thead><tbody>${state.tableRows.slice(state.tableOffset??0,(state.tableOffset??0)+100).map((r, localIndex) => `<tr data-point="${localIndex+(state.tableOffset??0)}" tabindex="0">${Object.values(r.at).map(v => `<td>${escape(v)}</td>`).join('')}<td>${escape(r.cell)}</td><td>${escape(JSON.stringify(r.values))}</td></tr>`).join('')}</tbody></table>` : '<div class="empty">Loading results from the shared kernel…</div>'}</div>`);
 }
 function resultView() {
   const r = state.result;
@@ -162,11 +172,12 @@ function interfaceView() {
 function changesView() {
   const src = source(), f = facet();
   if (!src) return empty('Source not attached', 'Compiled JSON cannot recover imports, helper families or invariant code. Attach a supported source file to edit.');
+  if (src.text === undefined) return banner(state.sourceLoadError ?? 'Loading this source file from the exact snapshot…');
   const text = state.text ?? src.text, d = state.draft;
   const sourceChanged = text !== src.text;
-  return banner('Changes stay in a separate Studio draft. No repository source, video document, agent or runtime is changed. Export the patch and apply it through the product owner.')
+  return (experience?.proof() ?? '') + banner('Changes stay in a separate Studio draft. No repository source, video document, agent or runtime is changed. Export the patch and apply it through the product owner.')
     + sourceNavigator(project,state,escape)
-    + panel(`Source <code>${escape(src.path)}</code>`, `<div class="source-editor-wrap"><pre id="line-gutter" aria-hidden="true">${Array.from({length:text.split('\n').length},(_,i)=>i+1).join('\n')}</pre><textarea class="code-editor" id="source-editor" spellcheck="false" aria-label="DSL source editor" >${escape(text)}</textarea></div><div class="panel-body"><div class="toolbar">${action('validate', 'Validate draft', 'primary')}${action('undo', 'Undo edit', '', !state.undo.length)}${action('redo', 'Redo edit', '', !state.redo.length)}${action('simulate-draft', 'Explore this draft', '', !d?.valid)}${action('save', 'Save local draft', '', !d)}${action('git-save', 'Save Git draft branch', '', !d?.valid || !project.capabilities.gitDrafts)}${action('patch', 'Download patch', '', !d || !d.valid)}${action('download-source', 'Export source')}</div><small>${sourceChanged ? 'Source edits stay separate. Validation has a deliberately bounded scope.' : 'Source is unchanged.'} ${project.capabilities.gitDrafts ? 'Git draft saves enabled for this exact repository.' : 'Git branch saving is disabled unless explicitly enabled at server startup.'}</small></div>`)
+    + panel(`Source <code>${escape(src.path)}</code>`, `<div class="source-editor-wrap"><pre id="line-gutter" aria-hidden="true">${Array.from({length:text.split('\n').length},(_,i)=>i+1).join('\n')}</pre><textarea class="code-editor" id="source-editor" data-document="${escape(src.path)}" spellcheck="false" aria-label="DSL source editor" >${escape(text)}</textarea></div><div class="panel-body"><div class="toolbar">${action('validate', 'Validate draft', 'primary')}${action('undo', 'Undo edit', '', !state.undo.length)}${action('redo', 'Redo edit', '', !state.redo.length)}${action('simulate-draft', 'Explore this draft', '', !d?.valid)}${action('save', 'Save local draft', '', !d)}${action('git-save', 'Save Git draft branch', '', !d?.valid || !project.capabilities.gitDrafts)}${action('patch', 'Download patch', '', !d || !d.valid)}${action('download-source', 'Export source')}</div><small>${sourceChanged ? 'Source edits stay separate. Validation has a deliberately bounded scope.' : 'Source is unchanged.'} ${project.capabilities.gitDrafts ? 'Git draft saves enabled for this exact repository.' : 'Git branch saving is disabled unless explicitly enabled at server startup.'}</small></div>`)
     + (d ? panel('Validation & semantic diff', `<div class="panel-body">${banner(d.valid ? 'Supported declarations passed the shared kernel. Full product build and native behavior are not verified.' : 'Draft is invalid or contains an unsupported expression. It can be saved as an invalid draft, but not exported as validated.', d.valid ? 'success' : 'error')}${diagnostics(d.diagnostics)}<small>${d.diff.changes.length} changed paths${d.diff.truncated ? ' (truncated)' : ''}</small><pre>${escape(pretty(d.diff.changes))}</pre><details><summary>Source patch</summary><pre class="diff">${escape(d.patch)}</pre></details></div>`) : '')
     + panel('Persistence boundaries', '<div class="panel-body"><p><strong>Local draft</strong> preserves the proposed source and base revision in Studio storage.</p><p><strong>Patch</strong> is a reviewable source change. It is not applied automatically.</p><p><strong>Video project</strong> and <strong>native runtime</strong> changes require their existing owners and are not available here.</p></div>');
 }
@@ -175,7 +186,7 @@ function inspector() {
   const f = facet(), cell = selectedCell();
   if (state.selected?.kind === 'node' && state.view === 'System') {
     const n = project.graph.nodes.find(n => n.id === state.selected.id);
-    if (n) return `<div class="section-label">${escape(n.kind)}</div><h2>${escape(n.id)}</h2><dl class="properties"><dt>Type</dt><dd>${escape(n.type?.id ?? 'Not exported')}</dd><dt>Ports</dt><dd>${n.ports.length}</dd></dl><details open><summary>Declared ports</summary><pre>${escape(pretty(n.ports))}</pre></details><details><summary>Type and runtime contract</summary><pre>${escape(pretty(n.type))}</pre></details><details><summary>Instance</summary><pre>${escape(pretty(n.declaration))}</pre></details>${banner('Inspect only. Connecting ports requires source provenance and full product validation, which this adapter has not supplied.')}`;
+    if (n) return `<div class="section-label">${escape(n.kind)}</div><h2>${escape(n.id)}</h2><dl class="properties"><dt>Type</dt><dd>${escape(n.type?.id ?? 'Not exported')}</dd><dt>Ports</dt><dd>${n.ports?.length ?? 0}</dd></dl><details open><summary>Declared ports</summary><pre>${escape(pretty(n.ports))}</pre></details><details><summary>Type and runtime contract</summary><pre>${escape(pretty(n.type))}</pre></details><details><summary>Instance</summary><pre>${escape(pretty(n.declaration))}</pre></details>${banner('Inspect only. Connecting ports requires source provenance and full product validation, which this adapter has not supplied.')}`;
   }
   if (state.selected?.kind === 'case') {
     const c = project.gallery.find(c => c.id === state.selected.id);
@@ -186,6 +197,7 @@ function inspector() {
     return `<div class="section-label">Declared scope</div><pre>${escape(pretty(value))}</pre><hr>${banner('Declared capability is not proof of a connected renderer.')}`;
   }
   if (!f) return `<div class="section-label">Inspection</div><h2>Select an object</h2><p class="subtitle">Choose a declaration, node, component case or artifact.</p><hr><span class="badge warning">No runtime connected</span>`;
+  if (f.runnable === false || !['machine','decision-table'].includes(f.kind)) return `<h2>${escape(f.id)}</h2>${banner(f.blockedReason ?? 'Inspection only')}<details><summary>Raw exported model</summary><pre>${escape(pretty(f.compiled))}</pre></details>`;
   if (f.kind === 'machine') {
     const relevant = new Set(f.compiled.cells.filter(c => c.from === state.machineState && c.on === state.input).flatMap(c => [...c.requires, ...c.forbids]));
     return `<div class="section-label">${cell ? 'Transition definition' : 'Machine'}</div><h2>${escape(cell?.id ?? f.id)}</h2>${cell ? `<dl class="properties"><dt>From</dt><dd>${escape(cell.from)}</dd><dt>Event</dt><dd>${escape(cell.on)}</dd><dt>To</dt><dd>${escape(cell.to)}</dd></dl><div class="toolbar">${action('use-cell', 'Use as synthetic input')}${action('edit-cell', 'Edit definition', '', !f.editable)}</div><hr>` : ''}
@@ -197,7 +209,7 @@ function inspector() {
 }
 
 function renderGraph() {
-  const host = $('#graph'); if (!host) return;
+  const host = $('#graph'); if (!host) { graph?.destroy(); graph=null; graphHost=null; graphSignature=''; return; }
   const f = facet(); let nodes, edges;
   if (state.view === 'Logic' && f?.kind === 'machine') {
     nodes = f.compiled.states.map(id => ({ id, label: id, kind: 'state', subtitle: f.compiled.rests.includes(id) ? 'Rest state · may wait' : 'Deadline exit required' }));
@@ -206,11 +218,15 @@ function renderGraph() {
     const canvas = state.canvas ?? project.canvas;
     if (canvas) { nodes=canvas.nodes; edges=canvas.edges; } else {
     const q = state.search.toLowerCase();
-    nodes = project.graph.nodes.filter(n => !q || `${n.id} ${n.kind} ${n.ports.map(p => p.ref).join(' ')}`.toLowerCase().includes(q)).map(n => ({ ...n, label: n.id, subtitle: `${n.kind} · ${n.ports.length} ports` }));
+    nodes = project.graph.nodes.filter(n => !q || `${n.id} ${n.kind} ${(n.ports ?? []).map(p => p.ref).join(' ')}`.toLowerCase().includes(q)).map(n => ({ ...n, label: n.id, subtitle: `${n.kind} · ${n.ports?.length ?? 0} ports` }));
     edges = project.graph.edges.map(e => ({ ...e, label: e.purpose ?? e.kind ?? 'binding' }));
     }
   }
-  graph = drawGraph(host, { nodes, edges, key: project.key + ':' + (f?.id ?? 'system') + ':' + state.view,
+  const cameraKey = project.key + ':' + state.view + ':' + (state.view === 'System' ? (state.architectureMode ?? 'owners') + ':' + (state.architectureGroup ?? '') : f?.id ?? 'system');
+  const signature = JSON.stringify({cameraKey, model:project.modelDigest, nodes, edges});
+  if (host === graphHost && signature === graphSignature && (!state.selected?.id || graph.has(state.selected.id) || !nodes.some(n=>n.id===state.selected.id))) { graph.select(state.selected?.id,state.view==='Logic'?state.machineState:null); return; }
+  graph?.destroy();graphHost=host;graphSignature=signature;
+  graph = drawGraph(host, { nodes, edges, key: cameraKey, legacyKey:project.key+':'+(f?.id??'system')+':'+state.view,
     selected: state.selected?.id, active: state.view === 'Logic' ? state.machineState : null,
     onSelect: (kind, id) => { if (state.view === 'System' && state.architectureMode === 'domains') { state.architectureGroup=id; state.architectureMode='owners'; refreshArchitecture(); return; } state.selected = { kind: state.view === 'System' && kind === 'node' ? 'entity' : state.view === 'Logic' && kind === 'edge' ? 'cell' : kind, id }; render(); if (innerWidth < 950) $('.inspector').classList.add('open'); } });
 }
@@ -219,23 +235,24 @@ async function loadTable() {
   try { const rows = await api('table', requestContext()); if (ticket === generation && id === state.facetId) { state.tableRows = rows; render(); } } catch (e) { toast(e.message); }
 }
 function bind() {
+  bindingController?.abort(); bindingController = new AbortController();
   $('#project').onchange = e => loadProject(e.target.value).catch(e => toast(e.message));
-  $('#search').oninput = e => { const start = e.target.selectionStart; state.search = e.target.value; render(); $('#search').focus(); $('#search').setSelectionRange(start, start); };
+  $('#search').oninput = e => { state.search = e.target.value; clearTimeout(state.searchTimer); state.searchTimer=setTimeout(()=>{if(state.view==='System')refreshArchitecture();else render();},120); };
   document.querySelectorAll('[data-view]').forEach(b => b.onclick = () => { state.view = b.dataset.view; render(); });
   document.querySelectorAll('[data-facet]').forEach(b => b.onclick = () => { selectFacet(b.dataset.facet, false); state.view = 'Logic'; render(); });
-  document.querySelectorAll('[data-node]').forEach(b => b.onclick = () => { state.view = 'System'; state.selected = { kind: 'node', id: b.dataset.node }; render(); });
+  document.querySelectorAll('[data-node]').forEach(b => b.onclick = () => { state.view = 'System'; state.selected = { kind: 'entity', id: project.architecture.entities.find(e=>e.id===b.dataset.node && ['node','component'].includes(e.kind))?.key };  render(); });
   document.querySelectorAll('[data-cell]').forEach(b => { const choose = () => { state.selected = { kind: 'cell', id: b.dataset.cell }; render(); }; b.onclick = choose; b.onkeydown = e => { if (e.key === 'Enter') choose(); }; });
   document.querySelectorAll('[data-point]').forEach(b => { const choose = () => { state.facts = { ...state.tableRows[Number(b.dataset.point)].at }; perform('evaluate'); }; b.onclick = choose; b.onkeydown = e => { if (e.key === 'Enter') choose(); }; });
   document.querySelectorAll('[data-case]').forEach(b => b.onclick = () => { state.selected = { kind: 'case', id: b.dataset.case }; render(); if (innerWidth < 950) $('.inspector').classList.add('open'); });
   document.querySelectorAll('[data-artifact],[data-scope]').forEach(b => b.onclick = () => { state.selected = { kind: b.dataset.artifact ? 'artifact' : 'scope', id: b.dataset.artifact ?? b.dataset.scope }; render(); });
   document.querySelectorAll('[data-guard]').forEach(b => b.onchange = () => { ++generation; state.guards[b.dataset.guard] = b.value === 'unknown' ? 'unknown' : b.value === 'true'; state.result = null; render(); });
-  document.querySelectorAll('[data-fact]').forEach(b => b.onchange = () => { ++generation; state.facts[b.dataset.fact] = b.value; state.result = null; });
+  document.querySelectorAll('[data-fact]').forEach(b => b.onchange = () => { ++generation; state.facts[b.dataset.fact] = b.value; state.result = null; render(); });
   document.querySelectorAll('[data-history]').forEach(b => b.onclick = () => { state.cursor = Number(b.dataset.history); const frame = state.timeline[state.cursor]; state.machineState = frame.to; state.result = frame; state.mode = 'Simulation'; render(); });
-  $('#machine-state')?.addEventListener('change', e => { ++generation; state.machineState = e.target.value; state.result = null; render(); });
-  $('#machine-input')?.addEventListener('change', e => { ++generation; state.input = e.target.value; render(); });
-  $('#scenario-editor')?.addEventListener('input', e => { ++generation; state.scenarioText = e.target.value; });
-  $('#mock-editor')?.addEventListener('input', e => { ++generation; state.mockText = e.target.value; });
-  $('#source-editor')?.addEventListener('input', e => { ++generation; if (state.text === null) state.undo.push(source().text); state.text = e.target.value; state.draft = null; state.dirty = true; $('#edit-status').textContent = 'Unvalidated draft · source unchanged'; updateGutter(e.target.value); });
+  listen($('#machine-state'),'change', e => { ++generation; state.machineState = e.target.value; state.result = null; render(); });
+  listen($('#machine-input'),'change', e => { ++generation; state.input = e.target.value; render(); });
+  listen($('#scenario-editor'),'input', e => { ++generation; state.scenarioText = e.target.value; state.scenarioDirty = true; state.scenarioResult = null; });
+  listen($('#mock-editor'),'input', e => { ++generation; state.mockText = e.target.value; state.mockDirty = true; state.mockResult = null; });
+  listen($('#source-editor'),'input', e => { ++generation; if (state.text === null) state.undo.push(source().text); state.text = e.target.value; state.draft = null; state.dirty = true; state.scenarioResult = null; $('#edit-status').textContent = 'Unvalidated draft · source unchanged'; updateGutter(e.target.value); });
   document.querySelectorAll('[data-action]').forEach(b => b.onclick = () => perform(b.dataset.action));
   bindStudioTools();
 }
@@ -250,6 +267,8 @@ async function perform(name) {
   busy = true;
   try {
     const f = facet(), cell = selectedCell();
+    if (['validate','edit-cell','edit-root','add-cell','split-region','download-source','patch'].includes(name) && source()?.text === undefined) { await ensureSource(); if(ticket!==generation)return; }
+    if (name==='table-prev'||name==='table-next') { state.tableOffset=Math.max(0,Math.min(Math.max(0,(state.tableRows?.length??0)-1), (state.tableOffset??0)+(name==='table-next'?100:-100)));render();return; }
     if (await performStudioTool(name)) return;
     if (name === 'explorer' || name === 'inspector') { $('.' + name).classList.toggle('open'); return; }
     if (name === 'fit') return graph?.reset();
@@ -257,7 +276,7 @@ async function perform(name) {
     if (name === 'import') return $('#file-import').click();
     if (name === 'snapshot') return $('#snapshot-import').click();
     if (name === 'connect-help') return showInfo('Attach real repositories', 'Stop this server and start it with the repositories you want to inspect. No clone, worktree or product process is started.', 'npm start -- --workspace /path/to/skydive-altimeter --workspace /path/to/agentmux --workspace /path/to/ai-dsl --workspace /path/to/circlekit');
-    if (name === 'reload') { if ([...state.documents.values()].some(d => d.dirty)) return toast('The current draft is retained. Return it to the original text or switch to a separate draft before reloading.'); state.perFacet.clear(); const p = await api('reload', { project: project.key }); if (ticket === generation) { project = p; installDocumentState(state,p); state.canvas=null; state.queryResult=null; state.facetId = null; selectFacet(p.facets[0]?.id ?? null, false); render(); toast('Reloaded configured sources and existing artifacts. No generator was run.'); } return; }
+    if (name === 'reload') { await reloadProject(false); return; }
     if (name === 'use-cell' && cell && f?.kind === 'machine') {
       state.guards = Object.fromEntries(f.compiled.guards.map(g => [g, cell.requires.includes(g)]));
       state.machineState = cell.from; state.input = cell.on; state.mode = 'Simulation'; state.result = null; render(); toast('Guard values explicitly set as synthetic input. This is not observed runtime evidence.'); return;
@@ -286,8 +305,8 @@ async function perform(name) {
     if (name === 'simulate-draft') { const d = state.draft; const p = await api('import-source', { text: d.text, file: d.file, label: 'Candidate · ' + state.facetId }); projects = await api('projects'); await loadProject(p.key); toast('Independent candidate loaded. The original project, source and simulation were retained.'); return; }
     if (name === 'patch') return download(source().path.split('/').at(-1) + '.patch', state.draft.patch, 'text/x-diff');
     if (name === 'download-source') return download(source().path.split('/').at(-1), state.text ?? source().text, 'text/plain');
-    if (name === 'undo' && state.undo.length) { state.redo.push(state.text ?? source().text); state.text = state.undo.pop(); state.draft = null; render(); return; }
-    if (name === 'redo' && state.redo.length) { state.undo.push(state.text ?? source().text); state.text = state.redo.pop(); state.draft = null; render(); return; }
+    if (name === 'undo' && state.undo.length) { state.redo.push(state.text ?? source().text); state.text = state.undo.pop(); state.draft = null; state.dirty = state.text !== source().text; render(); return; }
+    if (name === 'redo' && state.redo.length) { state.undo.push(state.text ?? source().text); state.text = state.redo.pop(); state.draft = null; state.dirty = state.text !== source().text; render(); return; }
     if (name === 'edit-cell') return editDialog(f, cell);
     if (name === 'edit-root') return editDialog(f, f.compiled, true);
     if (name === 'add-cell') return addCellDialog(f);
@@ -304,7 +323,7 @@ async function perform(name) {
     if (name === 'run-mocks') { const result = await api('mocks', { scenario: JSON.parse(state.mockText) }); if (ticket === generation) { state.mockResult = result; state.mode = 'Simulation'; render(); } return; }
     if (name === 'scenario-from-run') { state.scenarioText = pretty(exportScenario()); render(); return; }
     if (name === 'export-run' || name === 'download-scenario') return download('scenario.json', name === 'export-run' ? pretty(exportScenario()) : state.scenarioText);
-    if (name === 'download-mocks') return download('boundary-fixtures.json', state.mockText);
+    if (name === 'download-mocks') {download('boundary-fixtures.json', state.mockText);state.mockDirty=false;return;}
   } catch (e) { if (ticket === generation) { if (['step','evaluate'].includes(name)) state.result = null; if (name === 'run-scenario') state.scenarioResult = null; if (name === 'run-mocks') state.mockResult = null; render(); toast((e.code ? e.code + ': ' : '') + e.message); } }
   finally { busy = false; }
 }
@@ -375,10 +394,12 @@ async function refreshArchitecture(query=null) {
     state.canvas=result.canvas;state.queryResult=result.result;render();
   }catch(error){if(ticket===generation)toast(error.message);}
 }
-function openEntitySource(key) {
+async function openEntitySource(key) {
   const origin=project.sourceIndex.origins.find(o=>o.entityKey===key);
   if(!origin) return toast('A unique, current source location is not available for this entity.');
-  ++generation;state.sourcePath=origin.file;state.sourceSpan=origin.span;state.selected={kind:'entity',id:key};state.view='Changes';render();
+  ++generation;state.sourcePath=origin.file;state.sourceSpan=origin.span;state.selected={kind:'entity',id:key};state.view='Changes';state.sourceLoadError=null;render();
+  const ticket=generation;try { await ensureSource(); } catch(error){toast(error.message);return;}
+  if(ticket!==generation)return;
   const editor=$('#source-editor');
   if(editor && origin.span && (state.text===null || state.text===source().text)) {
     editor.focus();editor.setSelectionRange(origin.span.start,origin.span.end);
@@ -390,36 +411,36 @@ function bindStudioTools() {
   const from=$('#query-from'),to=$('#query-to');
   if(from){from.value=state.queryFrom ?? (state.selected?.kind==='entity' ? state.selected.id : project.architecture.entities.find(e=>e.kind==='node')?.key ?? '');from.onchange=()=>{state.queryFrom=from.value;};}
   if(to){to.value=state.queryTo ?? project.architecture.entities.find(e=>e.kind==='component')?.key ?? from?.value;to.onchange=()=>{state.queryTo=to.value;};}
-  $('#query-context')?.addEventListener('change',e=>{state.includeContext=e.target.checked;});
-  for(const field of ['mode','group']) $('#architecture-'+field)?.addEventListener('change',e=>{state[field==='mode'?'architectureMode':'architectureGroup']=e.target.value;refreshArchitecture();});
+  listen($('#query-context'),'change',e=>{state.includeContext=e.target.checked;});
+  for(const field of ['mode','group']) listen($('#architecture-'+field),'change',e=>{state[field==='mode'?'architectureMode':'architectureGroup']=e.target.value;refreshArchitecture();});
   document.querySelectorAll('[data-query]').forEach(b=>b.onclick=()=>refreshArchitecture({kind:b.dataset.query,from:$('#query-from').value,to:$('#query-to').value,purposes:state.includeContext?['data','demand','context']:['data']}));
   document.querySelectorAll('[data-query-entity]').forEach(b=>b.onclick=()=>{state.view='System';state.queryFrom=b.dataset.queryEntity;refreshArchitecture({kind:'impact',from:b.dataset.queryEntity});});
   document.querySelectorAll('[data-source-entity]').forEach(b=>b.onclick=()=>openEntitySource(b.dataset.sourceEntity));
   document.querySelectorAll('[data-entity]').forEach(b=>b.onclick=()=>{state.selected={kind:'entity',id:b.dataset.entity};state.queryFrom=b.dataset.entity;render();if(innerWidth<950)$('.inspector').classList.add('open');});
   document.querySelectorAll('[data-trace-sequence]').forEach(b=>{
-    const choose=()=>loadTraceFrame(project.trace.events.findIndex(e=>e.sequence===Number(b.dataset.traceSequence)));
+    const choose=()=>loadTraceFrame(Number(b.dataset.traceIndex));
     b.onclick=choose;b.onkeydown=e=>{if(e.key==='Enter')choose();};
   });
-  $('#trace-cursor')?.addEventListener('change',e=>loadTraceFrame(Number(e.target.value)));
-  $('#source-file')?.addEventListener('change',e=>{++generation;state.sourcePath=e.target.value;state.sourceSpan=null;render();});
+  listen($('#trace-cursor'),'change',e=>loadTraceFrame(Number(e.target.value)));
+  listen($('#source-file'),'change',e=>{++generation;state.sourcePath=e.target.value;state.sourceSpan=null;state.sourceLoadError=null;render();});
   const editor=$('#source-editor');
-  editor?.addEventListener('scroll',()=>{const g=$('#line-gutter');if(g)g.scrollTop=editor.scrollTop;});
-  editor?.addEventListener('click',()=>{
+  listen(editor,'scroll',()=>{const g=$('#line-gutter');if(g)g.scrollTop=editor.scrollTop;});
+  listen(editor,'click',()=>{
     const at=editor.selectionStart,line=editor.value.slice(0,at).split('\n').length;
     if($('#source-position'))$('#source-position').textContent=`Line ${line} · offset ${at}`;
     if(editor.value!==source().text)return;
     const candidates=project.sourceIndex.origins.filter(o=>o.file===source().path && o.span && o.span.start<=at && at<=o.span.end)
       .sort((a,b)=>(a.span.end-a.span.start)-(b.span.end-b.span.start));
-    if(candidates[0]){state.selected={kind:'entity',id:candidates[0].entityKey};$('.inspector').innerHTML=inspector();
+    if(candidates[0]){state.selected={kind:'entity',id:candidates[0].entityKey};patchHTML($('.inspector'),inspector());
       document.querySelectorAll('[data-source-entity]').forEach(b=>b.onclick=()=>openEntitySource(b.dataset.sourceEntity));
-      document.querySelectorAll('[data-query-entity]').forEach(b=>b.onclick=()=>{state.view='System';state.queryFrom=b.dataset.queryEntity;refreshArchitecture({kind:'impact',from:b.dataset.queryEntity});});}
+      document.querySelectorAll('[data-query-entity]').forEach(b=>b.onclick=()=>{state.view='System';state.queryFrom=b.dataset.queryEntity;refreshArchitecture({kind:'impact',from:b.dataset.queryEntity});});experience?.afterRender();}
   });
 }
 async function loadTraceFrame(cursor) {
   if(!project.trace)return;
   const ticket=++generation;
   try {
-    const result=await api('trace-frame',{...requestContext(),filter:{cursor,search:state.traceSearch ?? '',operationId:state.traceOperation || null}});
+    const result=await api('trace-page',{...requestContext(),traceDigest:project.trace.traceDigest,offset:state.traceOffset??0,limit:200,filter:{cursor,search:state.traceSearch ?? '',operationId:state.traceOperation || null}});
     if(ticket!==generation)return;
     state.traceCursor=cursor;state.traceFrame=result;state.mode=project.trace.provenance==='synthetic'?'Simulation':'Recorded trace';
     if(result.current)state.selected={kind:'entity',id:result.current.entityKey};render();
@@ -433,21 +454,22 @@ async function performStudioTool(name) {
     download('trace-header.json',pretty({kind:'product-studio-trace',version:1,productId:project.productId,modelDigest:project.modelDigest,
       sessionId:'replace-with-actual-session',clock:{domain:'monotonic',unit:'ms'},provenance:'synthetic',truncation:{droppedBefore:0,gaps:[]},events:[]}));return true;
   }
-  if(name==='export-trace'){const {traceDigest,notice,incompleteCausality,complete,...trace}=project.trace;download('recorded-trace.json',pretty(trace));return true;}
+  if(name==='export-trace'){const loaded=await api('trace-export',{...requestContext(),traceDigest:project.trace.traceDigest});const {traceDigest,notice,incompleteCausality,complete,...trace}=loaded;download('recorded-trace.json',pretty(trace));return true;}
   if(name.startsWith('trace-') && project.trace){
-    const last=project.trace.events.length-1,at=state.traceCursor ?? last;
-    if(name==='trace-filter'){state.traceSearch=$('#trace-search').value;state.traceOperation=$('#trace-operation').value;await loadTraceFrame(at);}
+    const last=project.trace.eventCount-1,at=state.traceCursor ?? last;
+    if(name==='trace-page-next'||name==='trace-page-prev'){state.traceOffset=Math.max(0,(state.traceOffset??0)+(name==='trace-page-next'?200:-200));await loadTraceFrame(at);return true;}
+    if(name==='trace-filter'){state.traceOffset=0;state.traceSearch=$('#trace-search').value;state.traceOperation=$('#trace-operation').value;await loadTraceFrame(at);}
     else if(['trace-first','trace-last','trace-back','trace-next'].includes(name))await loadTraceFrame(name==='trace-first'?Math.min(0,last):name==='trace-last'?last:Math.max(Math.min(0,last),Math.min(last,at+(name==='trace-next'?1:-1))));
     else return false;return true;
   }
   if(name==='save-scenario'){
-    const scenario=JSON.parse(state.scenarioText),receipt=await api('save-scenario',{...requestContext(),title:scenario.id ?? 'Scenario',scenario});toast(receipt.message);return true;
+    const scenario=JSON.parse(state.scenarioText),receipt=await api('save-scenario',{...requestContext(),title:scenario.id ?? 'Scenario',scenario});state.scenarioDirty=false;toast(receipt.message);return true;
   }
   if(name==='open-scenarios'){
     const rows=await api('scenarios'),d=$('#dialog');
     d.innerHTML=`<h2>Saved scenarios</h2><p class="subtitle">Only scenarios matching the selected model and declaration can be loaded.</p><div class="compact-list">${rows.map(r=>`<button data-scenario-id="${escape(r.id)}" ${r.modelDigest!==project.modelDigest || r.facetId!==state.facetId?'disabled':''}>${escape(r.title)}<p>${escape(r.facetId)}</p></button>`).join('') || '<p>No saved scenarios.</p>'}</div><button id="close-dialog">Close</button>`;
     d.showModal();$('#close-dialog').onclick=()=>d.close();
-    document.querySelectorAll('[data-scenario-id]').forEach(b=>b.onclick=async()=>{const ticket=generation;try{const r=await api('open-scenario',{...requestContext(),id:b.dataset.scenarioId});if(ticket!==generation)return;state.scenarioText=pretty(r.scenario);state.scenarioResult=null;d.close();render();}catch(error){toast(error.message);}});return true;
+    document.querySelectorAll('[data-scenario-id]').forEach(b=>b.onclick=async()=>{const ticket=generation;try{const r=await api('open-scenario',{...requestContext(),id:b.dataset.scenarioId});if(ticket!==generation)return;state.scenarioText=pretty(r.scenario);state.scenarioDirty=false;state.scenarioResult=null;d.close();render();}catch(error){toast(error.message);}});return true;
   }
   if(name==='split-region'){splitRegionDialog();return true;}
   return false;
@@ -464,9 +486,45 @@ function splitRegionDialog() {
 $('#trace-import').onchange=async e=>{const file=e.target.files[0];if(!file)return;const ticket=++generation;try{
   if(file.size>8000000)throw new Error('Trace exceeds the 8 MB import limit.');
   const p=await api('trace',{...requestContext(),text:await file.text()});if(ticket!==generation)return;
-  project=p;state.view='Trace';state.traceFrame=null;await loadTraceFrame(p.trace.events.length-1);
+  project=p;installDocumentState(state,p);state.traceOffset=0;state.view='Trace';state.traceFrame=null;await loadTraceFrame(p.trace.eventCount-1);
 }catch(error){if(ticket===generation)toast(error.message);}finally{e.target.value='';}};
 
+
+async function ensureSource() {
+  const p=project, s=source(); if(!s || s.text !== undefined)return s;
+  const key=p.bundleDigest+':'+s.path;
+  if(sourcePending.has(key))return sourcePending.get(key);
+  const task=api('source',{project:p.key,bundleDigest:p.bundleDigest,file:s.path,sourceDigest:s.digest}).then(value=>{
+    if(project.bundleDigest===p.bundleDigest){s.text=value.text;state.sourceLoadError=null;render();
+      if(state.sourceLine&&state.sourcePath===s.path){const lines=s.text.split('\n'),at=lines.slice(0,state.sourceLine-1).join('\n').length;const editor=$('#source-editor');editor?.setSelectionRange(at,at);if(editor)editor.scrollTop=Math.max(0,state.sourceLine-3)*20;state.sourceLine=null;}}
+    return value;
+  }).finally(()=>sourcePending.delete(key));
+  sourcePending.set(key,task);return task;
+}
+async function reloadProject(automatic=false) {
+  if(hasDrafts(state)){toast('Your source/scenario draft is retained. Export or open it as a candidate before replacing the loaded build.');return;}
+  const owner=state,old=project,ticket=++generation;
+  const p=await api('reload',{project:old.key,bundleDigest:old.bundleDigest,automatic,summary:true});
+  if(ticket!==generation||state!==owner)return;
+  if(hasDrafts(owner)){owner.pendingBuild='A build arrived while you were editing. Your draft is retained; open a candidate before loading it.';render();return;}
+  const selected=owner.selected,facetId=owner.facetId,view=owner.view,file=owner.sourcePath;
+  owner.documents.clear();owner.perFacet.clear();owner.traceFrame=null;owner.canvas=null;owner.queryResult=null;owner.comparison=null;
+  project=p;installDocumentState(owner,p);owner.facetId=null;
+  selectFacet(p.facets.some(f=>f.id===facetId)?facetId:p.facets[0]?.id??null,false);
+  owner.view=view;owner.selected=selected?.kind==='entity'&&!p.architecture.entities.some(e=>e.key===selected.id)?null:selected;
+  if(file&&p.sources.some(s=>s.path===file))owner.sourcePath=file;
+  owner.pendingBuild=null;owner.sourceLoadError=null;owner.scenarioResult=null;owner.result=null;owner.mode='Declared';render();
+  toast('New build loaded. Selection was retained where its identity still exists; previous build is available in Compare.');
+}
+async function focusNeighborhood(){
+  const from=state.selected?.kind==='entity'?state.selected.id:state.queryFrom;if(!from)return toast('Select an owner or port first.');
+  const identity=requestContext(),ticket=++generation,purposes=state.includeContext?['data','demand','context']:['data'];
+  const [up,down]=await Promise.all(['upstream','downstream'].map(kind=>api('query',{...identity,query:{kind,from,purposes,maxDepth:2}})));
+  if(ticket!==generation)return;
+  const keys=new Set([...up.result.keys,...down.result.keys]),edges=new Set([...up.result.edgeIds,...down.result.edgeIds]);
+  state.canvas={nodes:[...new Map([...up.canvas.nodes,...down.canvas.nodes].map(n=>[n.id,n])).values()],edges:[...new Map([...up.canvas.edges,...down.canvas.edges].map(e=>[e.id,e])).values()],shownOwners:keys.size};
+  state.queryResult={keys:[...keys],edgeIds:[...edges],supported:true,message:'Two declared dependency levels in each direction. Internal algorithm causality is not inferred.'};state.view='System';render();
+}
 $('#file-import').onchange = async e => {
   const file = e.target.files[0]; if (!file) return;
   try {
@@ -478,16 +536,20 @@ $('#file-import').onchange = async e => {
 };
 $('#snapshot-import').onchange = async e => {
   const file = e.target.files[0]; if (!file) return; const ticket = generation;
-  try { if (file.size > 8_000_000) throw new Error('Snapshot is too large.'); const p = await api('snapshot', { project: project.key, text: await file.text() }); if (ticket === generation) { project = p; state.mode = 'Recorded snapshot'; render(); } }
+  try { if (file.size > 8_000_000) throw new Error('Snapshot is too large.'); const p = await api('snapshot', { project: project.key, text: await file.text() }); if (ticket === generation) { project = p; installDocumentState(state,p); const details=await api('interface',requestContext()); project.evidence=details.evidence; state.mode = 'Recorded snapshot'; render(); } }
   catch (err) { toast(err.message); } finally { e.target.value = ''; }
 };
-window.addEventListener('beforeunload', e => { if ([...sessions.values()].some(s => [...(s.documents?.values() ?? [])].some(d => d.dirty))) { e.preventDefault(); e.returnValue = ''; } });
+window.addEventListener('beforeunload', e => { if ([...sessions.values()].some(s => s.scenarioDirty || s.mockDirty || [...(s.perFacet?.entries() ?? [])].some(([id,f])=>id!==s.facetId && f.scenarioDirty) || [...(s.documents?.values() ?? [])].some(d => d.dirty))) { e.preventDefault(); e.returnValue = ''; } });
 window.addEventListener('keydown', e => { if ((e.ctrlKey || e.metaKey) && e.key === 'Enter' && $('#source-editor')) { e.preventDefault(); perform('validate'); return; } if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') { e.preventDefault(); $('#search')?.focus(); $('.explorer')?.classList.add('open'); } });
+experience=createExperience({getProject:()=>project,getState:()=>state,getProjects:()=>projects,
+  api,render,loadProject,selectFacet,loadTraceFrame,perform,toast,escape,showInfo,
+  reload:reloadProject,focus:focusNeighborhood,arrange:()=>graph?.arrange(),isBusy:()=>busy});
 try {
   const bootstrap = await fetch('/api/bootstrap').then(r => r.json()); token = bootstrap.token; projects = bootstrap.projects;
   if (!projects.length) throw new Error('No fixture or configured workspace is available.');
   const link = new URLSearchParams(location.hash.slice(1));
   const wanted = projects.find(p => p.key === link.get('project'));
   await loadProject(wanted?.key ?? projects[0].key);
+  await experience.restoreInitial();
   if (link.has('entity') && project.architecture.entities.some(e=>e.key===link.get('entity'))) { state.view='System';state.selected={kind:'entity',id:link.get('entity')};render(); }
 } catch (e) { $('#app').innerHTML = `<main class="loading"><h1>Product Studio could not start</h1><pre>${escape(e.message)}</pre><p>Check the local terminal and installed package versions.</p></main>`; }
