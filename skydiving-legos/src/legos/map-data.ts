@@ -183,6 +183,10 @@ export const mapSelection = derive({
 });
 
 /** Coarse owner matching the real MapRuntime -> Coordinator -> sources construction chain. */
+/**
+ * WHAT: Fetches map resources and exposes the current scene and cache state.
+ * WHY: Keeps network and storage lifecycles outside map renderers.
+ */
 export const mapRuntimeOwner = service({
   id: "map.runtime-owner",
   inputs: [
@@ -224,6 +228,10 @@ export const mapRuntimeOwner = service({
  * ReplayGroundContext -> context-update callback without free valueRefs.
  * AndroidReplayGroundSources therefore remains an internal implementation and
  * this Lego exposes no fabricated interface-handle or pass-through edge.
+ */
+/**
+ * WHAT: Resolves replay ground scenes from selection and interaction requests.
+ * WHY: Keeps asynchronous terrain acquisition separate from replay presentation.
  */
 export const replayGroundOperation = service({
   id: "map.replay-ground-operation",
