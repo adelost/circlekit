@@ -163,3 +163,5 @@ dependencies are rejected.
 ## Test-run observation
 
 `v1d-studio record` selects the `studio-trace` package condition only for its child test process. In that condition, `decide` and `step` record their real cell outcomes. Normal imports use the unchanged pure functions and load no tracing module. A host binding can pass its named functions through `bindPortImplementations`; normal execution receives the same object, while the test condition observes calls by their declared port names. Studio, not the product, attaches model identity and writes the trace file.
+
+`@v1d/product-spec/observation` is the optional transport-free development seam. `createObservationScope({ onObservation })` returns `decide`, `step` and `bindPortImplementations` wrappers. Its events say `evaluated` for logic and `returned` for ports; they never claim that a state was applied or a Promise succeeded. The callback must only enqueue bounded data. Its failure cannot change the application's return value or exception. No network, file writer or viewer is imported by the normal ProductSpec entry.

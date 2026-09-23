@@ -57,7 +57,7 @@ export function convergenceFor(view, compareLogic) {
   else {
     for (const [index, event] of trace.events.entries()) {
       if (!event.logic) continue;
-      const check = compareLogic(event.logic);
+      const check = compareLogic(event.logic,event.phase);
       if (check.kind === 'different') {
         counts.trace.different++;
         reasons.push({ kind: 'trace', entityKey: event.entityKey, sequence: event.sequence, index,
@@ -66,9 +66,10 @@ export function convergenceFor(view, compareLogic) {
       else counts.trace.unknown++;
     }
     if (counts.trace.unknown) gaps.push(`${counts.trace.unknown} trace steps have unknown or unavailable logic comparisons.`);
+    if (trace.version === 2 && !trace.complete) gaps.push('Live capture is open, interrupted or contains loss; the observed window is incomplete.');
   }
   const evidence = counts.laws.passed + counts.trace.consistent + counts.contracts.validated;
-  const verdict = reasons.length ? 'Diverged' : evidence && !incomplete ? 'Converged' : 'Unknown';
+  const verdict = reasons.length ? 'Diverged' : evidence && !incomplete && !(trace?.version === 2 && !trace.complete) ? 'Converged' : 'Unknown';
   if (verdict === 'Unknown' && !gaps.length) gaps.push('No comparable declaration law, validated contract or recorded trace is loaded.');
   return { verdict, label: verdict === 'Diverged' ? `Diverged: ${reasons.length}` : verdict,
     count: reasons.length, reasons, gaps, counts, kernel, traceIdentity,

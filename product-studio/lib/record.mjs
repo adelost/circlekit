@@ -2,7 +2,7 @@ import { spawn } from 'node:child_process';
 import { mkdtemp, mkdir, readFile, readdir, rename, rm, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
-import { entityKey } from './architecture.mjs';
+import { eventFor } from './observation.mjs';
 import { decodeTrace } from './trace.mjs';
 import { openHeadlessStudio, selectProject } from './semantic.mjs';
 import { boundedJson, requireThat } from './util.mjs';
@@ -24,30 +24,6 @@ export function parseRecordArgs(args) {
   }
   requireThat(product !== null && command[0], 'record.product', 'Choose a workspace product and one test command.');
   return { root, product, command };
-}
-
-function eventFor(raw, view) {
-  requireThat(raw && typeof raw === 'object' && ['decision', 'transition', 'port'].includes(raw.kind),
-    'record.event', 'A test trace contains an unsupported event.');
-  if (raw.kind === 'port') {
-    const key = entityKey('port', raw.portRef);
-    requireThat(view.architecture.entities.some(entity => entity.key === key),
-      'record.port', `Recorded port '${raw.portRef}' is absent from the compiled product.`);
-    return { kind: 'port', entityKey: key, summary: `Port ${raw.portRef}` };
-  }
-  const kind = raw.kind === 'decision' ? 'decision-table' : 'machine';
-  const facet = view.facets.find(item => item.kind === kind && item.id === raw.facetId);
-  requireThat(facet, 'record.facet', `Recorded ${kind} '${raw.facetId}' is absent from the compiled model.`);
-  const cell = raw.cellId === null ? null : facet.compiled.cells.find(item => item.id === raw.cellId);
-  requireThat(raw.cellId === null || cell, 'record.cell', `Recorded cell '${raw.cellId}' is absent from ${raw.facetId}.`);
-  requireThat(raw.kind !== 'decision' || cell, 'record.cell', `Decision '${raw.facetId}' must name its cell.`);
-  const logic = raw.kind === 'decision'
-    ? { facetId: raw.facetId, cellId: raw.cellId, facts: raw.facts, values: raw.values }
-    : { facetId: raw.facetId, cellId: raw.cellId, from: raw.from, to: raw.to, input: raw.input, guards: raw.guards };
-  return { kind: raw.kind, entityKey: cell
-    ? entityKey('cell', cell.id, `${kind}/${raw.facetId}`) : entityKey('facet', raw.facetId, kind),
-  summary: raw.kind === 'decision' ? `${raw.facetId}: ${raw.cellId}` : `${raw.from} → ${raw.to} via ${raw.input}`,
-  logic };
 }
 
 async function rawEvents(directory) {

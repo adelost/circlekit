@@ -56,6 +56,8 @@ test("a traced generated machine records the real cell and all guards only durin
   assert.match(kotlin, /GeneratedAcmeDoorGuard\.entries\.associate \{ it\.name to \(it in guards\) \}/u);
   assert.match(kotlin, /System\.getenv\("V1D_STUDIO_TRACE_DIR"\)/u);
   assert.match(emitStudioTraceSinkKotlin("FixtureTrace"), /fun transition\(facetId: String, cellId: String\?/u);
+  assert.match(emitStudioTraceSinkKotlin("FixtureTrace"), /var observer: \(\(String\) -> Unit\)\?/u);
+  assert.match(emitStudioTraceSinkKotlin("FixtureTrace"), /enabled: Boolean get\(\) = output != null \|\| observer != null/u);
   assert.throws(() => emitMachineKotlin(door, { ...options, traceSink: "UnsafeTrace" }), /release-false build guard/u);
 });
 

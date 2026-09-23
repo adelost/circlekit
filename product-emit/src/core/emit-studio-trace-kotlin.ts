@@ -1,12 +1,13 @@
 /** WHAT: Builds a dormant Kotlin trace sink beside generated decisions. WHY: Keeps test evidence out of the release execution path. */
 export function emitStudioTraceSinkKotlin(name: string): string {
   if (!/^[A-Za-z][A-Za-z0-9_]*$/u.test(name)) throw new Error(`invalid Kotlin trace sink '${name}'`);
-  return `/** Writes only when v1d-studio record gives this test process a private trace directory. */
-internal object ${name} {
+  return `/** Optional test-file or debug observer, never an application decision source. */
+object ${name} {
     private val output = System.getenv("V1D_STUDIO_TRACE_DIR")?.takeIf { it.isNotBlank() }?.let {
         java.io.File(it, "kotlin-" + java.util.UUID.randomUUID() + ".jsonl")
     }
-    val enabled: Boolean get() = output != null
+    @Volatile var observer: ((String) -> Unit)? = null
+    val enabled: Boolean get() = output != null || observer != null
 
     private fun quoted(text: String): String = buildString {
         append('"')
@@ -26,7 +27,14 @@ internal object ${name} {
     private fun booleans(values: Map<String, Boolean>): String = values.entries.joinToString(",", "{", "}") {
         quoted(it.key) + ":" + it.value
     }
-    private fun append(row: String) { output?.appendText(row + "\\n") }
+    private fun append(row: String) {
+        try { output?.appendText(row + "\\n") } catch (failure: Exception) {
+            System.err.println("Studio test trace unavailable: " + failure.javaClass.simpleName)
+        }
+        try { observer?.invoke(row.dropLast(1) + ",\\\"phase\\\":\\\"evaluated\\\"}") } catch (failure: Exception) {
+            System.err.println("Studio observation unavailable: " + failure.javaClass.simpleName)
+        }
+    }
 
     fun decision(facetId: String, cellId: String, facts: Map<String, String>, valuesJson: String) {
         append("{\\\"kind\\\":\\\"decision\\\",\\\"facetId\\\":" + quoted(facetId)

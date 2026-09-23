@@ -1,6 +1,6 @@
 {
   "name": "@v1d/product-spec",
-  "version": "0.3.67",
+  "version": "0.3.68",
   "description": "Product-neutral typed authoring and compiler core for v1d applications",
   "type": "module",
   "files": [
@@ -16,6 +16,10 @@
     "./foundation": {
       "types": "./dist/src/foundation.d.ts",
       "import": "./dist/src/foundation.js"
+    },
+    "./observation": {
+      "types": "./dist/src/observation.d.ts",
+      "import": "./dist/src/observation.js"
     }
   },
   "bin": {
