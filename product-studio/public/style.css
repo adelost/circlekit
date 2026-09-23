@@ -23,3 +23,7 @@
 .graph-svg{height:480px}.graph-node:focus-visible rect,.graph-edge:focus-visible path{stroke:var(--cyan);stroke-width:3}
 @media(max-width:720px){.experience-bar{gap:8px}.experience-bar kbd{display:none}.graph-svg{height:310px}.proof-strip{gap:10px}.trace-lane{grid-template-columns:100px minmax(0,1fr)}}
 .view-menu{position:relative;font-size:11px}.view-menu summary{cursor:pointer;border:1px solid var(--line);border-radius:6px;padding:7px 9px}.view-menu[open]>.compact-list{position:absolute;top:34px;left:0;min-width:180px;padding:10px;z-index:30;background:var(--panel);border:1px solid var(--line);border-radius:8px}
+
+.contract-card{border:1px solid var(--line);border-radius:8px;padding:13px;margin:14px 0;background:var(--panel2)}
+.contract-card .section-label{margin:4px 0 6px}.contract-card p{margin-bottom:10px}
+.test-contract{padding:12px 0;border-top:1px solid var(--line)}.test-contract strong{display:block;margin:8px 0}.test-contract p{font-size:12px;margin:4px 0}
