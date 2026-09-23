@@ -10,6 +10,7 @@ const views = ['System', 'Logic', 'Scenarios', 'Interface', 'Changes', 'Trace'];
 const mobileViews = [['Welcome','Overview'],...views.map(view=>[view,view]),['Intent','Intent & behavior'],['Problems','Problems'],['Compare','Compare']];
 let token, projects = [], project, state, generation = 0, graph, busy = false, toastTimer;
 let experience, graphHost, graphSignature = '', bindingController, sourcePending = new Map();
+let livePollBusy=false,liveReceiverAvailable=false;
 function listen(element,type,handler) { element?.addEventListener(type,handler,{signal:bindingController.signal}); }
 const sessions = new Map();
 const freshState = () => ({ view: 'Logic', facetId: null, selected: null, search: '', facts: {}, guards: {}, input: null,
@@ -28,6 +29,7 @@ async function api(route, body) {
 function toast(message) { clearTimeout(toastTimer); $('#toast').textContent = message; $('#toast').style.display = 'block'; toastTimer = setTimeout(() => { $('#toast').style.display = 'none'; }, 7000); }
 function facet() { return project?.facets.find(f => f.id === state.facetId); }
 function source() { const f = facet(); return project?.sources.find(s => s.path === state?.sourcePath) ?? project?.sources.find(s => s.path === f?.file) ?? project?.sources[0]; }
+function selectedConvergence() { return state.view==='Trace'&&state.liveTrace?state.liveConvergence:project.convergence; }
 const action = (name, label, cls = '', disabled = false) => `<button data-action="${name}" class="${cls}" ${disabled ? 'disabled' : ''}>${label}</button>`;
 const options = (values, selected) => values.map(v => `<option value="${escape(v)}" ${v === selected ? 'selected' : ''}>${escape(v)}</option>`).join('');
 const banner = (text, kind = 'info') => `<div class="notice ${kind}">${escape(text)}</div>`;
@@ -42,6 +44,7 @@ async function loadProject(key) {
   if (ticket !== generation) return;
   const isFirstVisit = !sessions.has(key);
   project = p; state = sessions.get(key) ?? freshState(); sessions.set(key, state); installDocumentState(state,p);
+  if(p.trace?.version===2){state.liveCaptureId??=p.trace.capture.id;state.liveFollowTail??=true;}
   if (!p.facets.some(f => f.id === state.facetId)) selectFacet(p.facets.find(f=>['machine','decision-table'].includes(f.kind))?.id ?? p.facets[0]?.id ?? null, false);
   if (isFirstVisit) state.view = initialProjectView(p);
   render();
@@ -68,6 +71,7 @@ function selectedCell() {
 
 function render() {
   if (!project) return;
+  const convergence=selectedConvergence();
   const f = facet(), query = state.search.toLowerCase(), title = { System: 'Explore the system', Logic: f?.kind === 'machine' ? 'Lifecycle logic' : 'Policy decisions', Scenarios: 'Explore possible outcomes', Interface: 'Components & surfaces', Changes: 'Code & review', Trace: 'Trace', Problems: 'Problems & evidence', Compare: 'Review model changes', Welcome: 'Overview', Intent: 'Intent, structure and behavior' }[state.view];
   const list = project.facets.filter(item => item.id.toLowerCase().includes(query));
   const sourceLabel = ({ fixture: 'Public source fixture', example: 'Synthetic example', workspace: 'Local workspace', 'source-draft': 'Source draft', 'imported-artifact': 'Imported artifact' })[project.originKind] ?? 'Local data';
@@ -79,7 +83,7 @@ function render() {
     <header class="topbar"><div class="brand"><div class="brand-mark">P</div><span>PRODUCT STUDIO</span></div>
       <select class="project-select" id="project" aria-label="Select product">${projects.map(p => `<option value="${escape(p.key)}" ${p.key === project.key ? 'selected' : ''}>${escape(p.label)}</option>`).join('')}</select>
       <nav aria-label="Workbench views">${views.map(v => `<button data-view="${v}" class="${v === state.view ? 'active' : ''}" ${v === state.view ? 'aria-current="page"' : ''}>${v}</button>`).join('')}<select id="mobile-view" aria-label="Workbench view">${mobileViews.map(([id,label])=>`<option value="${escape(id)}" ${id===state.view?'selected':''}>${escape(label)}</option>`).join('')}</select></nav>
-      <div class="spacer"></div><div class="top-actions"><button id="convergence-badge" class="badge convergence ${project.convergence?.verdict === 'Converged' ? 'good' : project.convergence?.verdict === 'Diverged' ? 'error' : ''}" aria-label="Convergence details">${escape(project.convergence?.label ?? 'Unknown')}</button><span class="badge top-mode ${state.mode === 'Simulation' ? 'simulation' : ''}">${escape(state.mode)}</span>${action('reload', '↻', 'subtle', !project.key || project.key.startsWith('import-') || project.key.startsWith('source-'))}</div>
+      <div class="spacer"></div><div class="top-actions"><button id="convergence-badge" class="badge convergence ${convergence?.verdict === 'Converged' ? 'good' : convergence?.verdict === 'Diverged' ? 'error' : ''}" aria-label="Convergence details">${escape(convergence?.label ?? 'Unknown')}</button><span class="badge top-mode ${state.mode === 'Simulation' ? 'simulation' : ''}">${escape(state.mode)}</span>${action('reload', '↻', 'subtle', !project.key || project.key.startsWith('import-') || project.key.startsWith('source-'))}</div>
     </header>
     <div class="main-grid"><aside class="explorer" aria-label="Program explorer">
       <div class="section-label">Workspace</div><input id="search" aria-label="Search nodes, ports or rules" placeholder="Search nodes, ports or rules" value="${escape(state.search)}">
@@ -93,7 +97,7 @@ function render() {
       ${project.compatibility?.reason ? banner(project.compatibility.reason) : ''}
       ${['Problems','Compare','Welcome','Intent'].includes(state.view) ? experience.page(state.view) : state.view === 'Trace' ? traceView(project,state,escape) : state.view === 'System' ? systemView() : state.view === 'Logic' ? logicView() : state.view === 'Scenarios' ? scenariosView() : state.view === 'Interface' ? interfaceView() : changesView()}
     </main><aside class="inspector" aria-label="Selected object inspector">${inspector()}</aside></div>
-    <footer class="footer"><span class="safe">● No external execution</span><span>${escape(state.mode)}</span><span class="optional">${escape(project.revision?.slice(0, 7) ?? project.bundleDigest.slice(0, 8))}</span><span class="spacer"></span><span id="edit-status">${state.text !== null ? 'Draft changes · source unchanged' : 'Source read-only'}</span><span class="optional">Runtime disconnected</span></footer>
+    <footer class="footer"><span class="safe">● No runtime control</span><span>${escape(state.mode)}</span><span class="optional">${escape(project.revision?.slice(0, 7) ?? project.bundleDigest.slice(0, 8))}</span><span class="spacer"></span><span id="edit-status">${state.text !== null ? 'Draft changes · source unchanged' : 'Source read-only'}</span><span class="optional">${escape(state.liveStatus?.state==='observing'?'Receiver connected':state.liveStatus?.state==='model-mismatch'?'Model mismatch':'Receiver disconnected')}</span></footer>
   </div>`;
   patchHTML($('#app'), html);
   bind(); renderGraph(); experience?.afterRender();
@@ -189,7 +193,8 @@ function changesView() {
 function inspector() {
   if (state.selected?.kind === 'entity') { const html=entityInspector(project,state.selected,escape); if(html) return html; }
   const f = facet(), cell = selectedCell();
-  const overview = state.selected ? '' : projectSummary(project,escape);
+  const overview = state.selected ? '' : projectSummary(state.view==='Trace'&&state.liveTrace
+    ?{...project,trace:state.liveTrace,convergence:selectedConvergence()}:project,escape);
   if (state.selected?.kind === 'node' && state.view === 'System') {
     const n = project.graph.nodes.find(n => n.id === state.selected.id);
     if (n) return `<div class="section-label">${escape(n.kind)}</div><h2>${escape(n.id)}</h2><dl class="properties"><dt>Type</dt><dd>${escape(n.type?.id ?? 'Not exported')}</dd><dt>Ports</dt><dd>${n.ports?.length ?? 0}</dd></dl><details open><summary>Declared ports</summary><pre>${escape(pretty(n.ports))}</pre></details><details><summary>Type and runtime contract</summary><pre>${escape(pretty(n.type))}</pre></details><details><summary>Instance</summary><pre>${escape(pretty(n.declaration))}</pre></details>${banner('Inspect only. Connecting ports requires source provenance and full product validation, which this adapter has not supplied.')}`;
@@ -232,7 +237,7 @@ function renderGraph() {
   const cameraKey = project.key + ':' + (state.view === 'System' ? 'System:'+(state.architectureMode ?? 'owners') + ':' + (state.architectureGroup ?? '') + ':' + (state.focusKey ?? 'all') : state.view+':'+(f?.id??'system')+(compact?':compact':'')+(flow?':flow-v1':''));
   const signature = JSON.stringify({cameraKey, model:project.modelDigest, nodes, edges});
   const marks=state.view==='Trace'&&state.traceFrame?(f?.kind==='machine'
-    ?traceGraphMarks(f,state.traceFrame,traceEventRows(project,state))
+    ?traceGraphMarks(f,state.traceFrame,traceEventRows(project,state),state.liveTrace??project.trace)
     :!f?traceArchitectureMarks(project,state.traceFrame,traceEventRows(project,state)):null):null;
   const selected=state.view==='Trace'?marks?.currentEdge:state.selected?.id,active=state.view==='Trace'?marks?.currentTo:state.view==='Logic'?state.machineState:null;
   if (host === graphHost && signature === graphSignature && (!selected || graph.has(selected) || !nodes.some(n=>n.id===selected))) { graph.select(selected,active,marks); return; }
@@ -360,7 +365,7 @@ function showInfo(title, text, code = '') {
   d.showModal(); $('#close-dialog').onclick = () => d.close();
 }
 function showConvergence() {
-  const c=project.convergence,d=$('#dialog');
+  const c=selectedConvergence(),d=$('#dialog');
   d.innerHTML=`<h2>${escape(c.label)}</h2><p class="subtitle">Loaded evidence for ${escape(project.label)}. No tests or product code ran to produce this verdict.</p>
     <p class="muted">Laws ${c.counts.laws.passed} passed, ${c.counts.laws.failed} failed, ${c.counts.laws.skipped} skipped. Trace ${c.counts.trace.consistent} consistent, ${c.counts.trace.different} different, ${c.counts.trace.unknown} unknown. WHAT/WHY ${c.counts.contracts.validated}/${c.counts.contracts.total} validated, ${c.counts.contracts.matched} matched to exported source provenance, ${c.counts.contracts.external} external or unmapped.</p>
     <p class="muted">Kernel ${escape(c.kernel.producer ?? 'unknown')} / ${escape(c.kernel.evaluator)}: ${c.kernel.match?'matched':'unknown or different'}. Trace identity: ${c.traceIdentity.loaded?'matched loaded artifact or model':'unavailable'}.</p>
@@ -460,10 +465,11 @@ function bindStudioTools() {
   document.querySelectorAll('[data-source-entity]').forEach(b=>b.onclick=()=>openEntitySource(b.dataset.sourceEntity));
   document.querySelectorAll('[data-entity]').forEach(b=>b.onclick=()=>{state.selected={kind:'entity',id:b.dataset.entity};state.queryFrom=b.dataset.entity;render();if(innerWidth<950)$('.inspector').classList.add('open');});
   document.querySelectorAll('[data-trace-sequence]').forEach(b=>{
-    const choose=()=>loadTraceFrame(Number(b.dataset.traceIndex));
+    const choose=()=>{const cursor=Number(b.dataset.traceIndex);state.liveFollowTail=cursor>=(state.liveTrace??project.trace)?.eventCount-1;loadTraceFrame(cursor);};
     b.onclick=choose;b.onkeydown=e=>{if(e.key==='Enter')choose();};
   });
-  listen($('#trace-cursor'),'change',e=>loadTraceFrame(Number(e.target.value)));
+  listen($('#trace-cursor'),'change',e=>{const cursor=Number(e.target.value);state.liveFollowTail=cursor>=(state.liveTrace??project.trace)?.eventCount-1;loadTraceFrame(cursor);});
+  listen($('#live-session'),'change',e=>loadLiveSession(e.target.value));
   listen($('#source-file'),'change',e=>{++generation;state.sourcePath=e.target.value;state.sourceSpan=null;state.sourceLoadError=null;render();});
   const editor=$('#source-editor');
   listen(editor,'scroll',()=>{const g=$('#line-gutter');if(g)g.scrollTop=editor.scrollTop;});
@@ -479,28 +485,79 @@ function bindStudioTools() {
   });
 }
 async function loadTraceFrame(cursor) {
-  if(!project.trace)return;
+  const selected=state.liveTrace??project.trace;
+  if(!selected)return;
   const ticket=++generation;
   try {
-    const result=await api('trace-page',{...requestContext(),traceDigest:project.trace.traceDigest,offset:state.traceOffset??0,limit:200,filter:{cursor,search:state.traceSearch ?? '',operationId:state.traceOperation || null}});
+    const result=await api('trace-page',{...requestContext(),traceDigest:selected.traceDigest,
+      ...(selected.version===2?{captureId:selected.capture.id}:{}),offset:state.traceOffset??0,limit:200,
+      filter:{cursor,search:state.traceSearch ?? '',operationId:state.traceOperation || null}});
     if(ticket!==generation)return;
-    state.traceCursor=cursor;state.traceFrame=result;state.mode=project.trace.provenance==='synthetic'?'Simulation'
-      :project.trace.provenance==='test-run'?'Test run':'Recorded trace';
+    state.traceCursor=cursor;state.traceFrame=result;state.mode=selected.provenance==='synthetic'?'Simulation'
+      :selected.provenance==='test-run'?'Test run':'Recorded trace';
     if(result.current)state.selected={kind:'entity',id:result.current.entityKey};render();
     if(result.totalEvents>result.events.length||state.traceSearch||state.traceOperation)loadTraceHistory();
   }catch(error){if(ticket===generation)toast(error.message);}
 }
 function loadTraceHistory() {
-  const owner=project,view=state,digest=owner.trace?.traceDigest;
+  const owner=project,view=state,selected=view.liveTrace??owner.trace,digest=selected?.traceDigest;
   if(!digest||view.traceHistory?.digest===digest||view.traceHistoryPending||view.traceHistoryError?.digest===digest)return;
-  view.traceHistoryPending=api('trace-export',{project:owner.key,bundleDigest:owner.bundleDigest,traceDigest:digest})
+  view.traceHistoryPending=api('trace-export',{project:owner.key,bundleDigest:owner.bundleDigest,traceDigest:digest,
+    ...(selected.version===2?{captureId:selected.capture.id}:{})})
     .then(trace=>{
-      if(project!==owner||state!==view||project.trace?.traceDigest!==digest)return;
-      view.traceHistory={digest,events:trace.events.map((event,eventIndex)=>({eventIndex,kind:event.kind,entityKey:event.entityKey,logic:event.logic}))};render();
+      if(project!==owner||state!==view||(view.liveTrace??project.trace)?.traceDigest!==digest)return;
+      view.traceHistory={digest,events:trace.events.map((event,eventIndex)=>({eventIndex,sequence:event.sequence,kind:event.kind,phase:event.phase,entityKey:event.entityKey,logic:event.logic}))};render();
     }).catch(error=>{
-      if(project!==owner||state!==view||project.trace?.traceDigest!==digest)return;
+      if(project!==owner||state!==view||(view.liveTrace??project.trace)?.traceDigest!==digest)return;
       view.traceHistoryError={digest,message:error.message};render();
     }).finally(()=>{view.traceHistoryPending=null;});
+}
+async function loadLiveSession(captureId) {
+  if(!project.trace||state.liveCaptureId===captureId)return;
+  const owner=project,view=state,ticket=++generation;
+  try {
+    const result=captureId===owner.trace.capture?.id?null:await api('live-snapshot',{project:owner.key,bundleDigest:owner.bundleDigest,captureId});
+    if(ticket!==generation||project!==owner||state!==view)return;
+    state.liveTrace=result?{...result.trace,eventCount:result.trace.events.length}:null;
+    state.liveConvergence=result?.convergence??null;
+    state.liveCaptureId=captureId;state.liveFollowTail=true;
+    state.traceFrame=null;state.traceHistory=null;state.traceHistoryError=null;state.traceOffset=0;
+    await loadTraceFrame((state.liveTrace??project.trace).eventCount-1);
+  }catch(error){if(ticket===generation){state.liveError=error.message;render();}}
+}
+
+async function pollLiveTrace() {
+  if(livePollBusy||document.hidden||!project||state.view!=='Trace'||!liveReceiverAvailable&&project.trace?.version!==2)return;
+  livePollBusy=true;
+  const key=project.key,view=state,ticket=generation;
+  try {
+    const status=liveReceiverAvailable?await api('live-status?project='+encodeURIComponent(key)):view.liveStatus;
+    const latest=await api('project?id='+encodeURIComponent(key)+'&mode=summary');
+    if(ticket!==generation||project.key!==key||state!==view||state.view!=='Trace')return;
+    if(latest.modelDigest!==project.modelDigest||latest.bundleDigest!==project.bundleDigest){
+      if(view.liveError!=='Model changed. Reload this project.'){view.liveError='Model changed. Reload this project.';render();}return;
+    }
+    const previous=project.trace,changed=latest.trace?.traceDigest!==previous?.traceDigest;
+    const statusChanged=JSON.stringify(status)!==JSON.stringify(view.liveStatus);
+    if(!changed&&!statusChanged&&!view.liveError)return;
+    const follow=view.liveFollowTail!==false&&(!view.liveCaptureId||view.liveCaptureId===previous?.capture?.id);
+    if(changed&&previous?.capture?.id!==latest.trace?.capture?.id&&!follow&&view.liveCaptureId===previous?.capture?.id&&!view.liveTrace){
+      const retained=await api('live-snapshot',{project:key,bundleDigest:project.bundleDigest,captureId:previous.capture.id});
+      if(ticket!==generation||project.key!==key||state!==view||state.view!=='Trace')return;
+      view.liveTrace={...retained.trace,eventCount:retained.trace.events.length};
+      view.liveConvergence=retained.convergence;
+    }
+    if(changed)project={...project,trace:latest.trace,convergence:latest.convergence};
+    view.liveStatus=status;view.liveError=null;
+    if(latest.trace?.version!==2){if(statusChanged)render();return;}
+    if(follow)view.liveCaptureId=latest.trace.capture.id;
+    if(changed&&view.liveCaptureId===latest.trace.capture.id){
+      view.liveTrace=null;view.liveConvergence=null;view.traceHistory=null;view.traceHistoryError=null;
+      const last=latest.trace.eventCount-1;
+      await loadTraceFrame(follow?last:Math.min(view.traceCursor??last,last));
+    }else if(changed||statusChanged)render();
+  }catch(error){if(project?.key===key&&state===view&&view.liveError!==error.message){view.liveError=error.message;render();}}
+  finally{livePollBusy=false;}
 }
 async function performStudioTool(name) {
   if(name==='clear-query'){state.canvas=null;state.queryResult=null;await refreshArchitecture();return true;}
@@ -510,12 +567,16 @@ async function performStudioTool(name) {
     download('trace-header.json',pretty({kind:'product-studio-trace',version:1,modelDigest:project.modelDigest,
       provenance:'synthetic',events:[]}));return true;
   }
-  if(name==='export-trace'){const loaded=await api('trace-export',{...requestContext(),traceDigest:project.trace.traceDigest});const {traceDigest,notice,incompleteCausality,complete,...trace}=loaded;download('recorded-trace.json',pretty(trace));return true;}
-  if(name.startsWith('trace-') && project.trace){
-    const last=project.trace.eventCount-1,at=state.traceCursor ?? last;
+  if(name==='export-trace'){const selected=state.liveTrace??project.trace;const loaded=await api('trace-export',{...requestContext(),traceDigest:selected.traceDigest,
+    ...(selected.version===2?{captureId:selected.capture.id}:{})});const {traceDigest,notice,incompleteCausality,complete,...trace}=loaded;download('recorded-trace.json',pretty(trace));return true;}
+  if(name.startsWith('trace-') && (state.liveTrace??project.trace)){
+    const last=(state.liveTrace??project.trace).eventCount-1,at=state.traceCursor ?? last;
     if(name==='trace-page-next'||name==='trace-page-prev'){state.traceOffset=Math.max(0,(state.traceOffset??0)+(name==='trace-page-next'?200:-200));await loadTraceFrame(at);return true;}
     if(name==='trace-filter'){state.traceOffset=0;state.traceSearch=$('#trace-search').value;state.traceOperation=$('#trace-operation').value;await loadTraceFrame(at);}
-    else if(['trace-first','trace-last','trace-back','trace-next'].includes(name))await loadTraceFrame(name==='trace-first'?Math.min(0,last):name==='trace-last'?last:Math.max(Math.min(0,last),Math.min(last,at+(name==='trace-next'?1:-1))));
+    else if(['trace-first','trace-last','trace-back','trace-next'].includes(name)){
+      const cursor=name==='trace-first'?Math.min(0,last):name==='trace-last'?last:Math.max(Math.min(0,last),Math.min(last,at+(name==='trace-next'?1:-1)));
+      state.liveFollowTail=cursor===last;await loadTraceFrame(cursor);
+    }
     else return false;return true;
   }
   if(name==='save-scenario'){
@@ -604,10 +665,12 @@ experience=createExperience({getProject:()=>project,getState:()=>state,getProjec
   reload:reloadProject,focus:focusNeighborhood,arrange:()=>graph?.arrange(),isBusy:()=>busy});
 try {
   const bootstrap = await fetch('/api/bootstrap').then(r => r.json()); token = bootstrap.token; projects = bootstrap.projects;
+  liveReceiverAvailable=bootstrap.liveEnabled===true;
   if (!projects.length) throw new Error('No fixture or configured workspace is available.');
   const link = new URLSearchParams(location.hash.slice(1));
   const wanted = projects.find(p => p.key === link.get('project'));
   await loadProject(wanted?.key ?? projects[0].key);
   await experience.restoreInitial();
   if (link.has('entity') && project.architecture.entities.some(e=>e.key===link.get('entity'))) { state.view='System';state.selected={kind:'entity',id:link.get('entity')};render(); }
+  setInterval(pollLiveTrace,900);
 } catch (e) { $('#app').innerHTML = `<main class="loading"><h1>Product Studio could not start</h1><pre>${escape(e.message)}</pre><p>Check the local terminal and installed package versions.</p></main>`; }

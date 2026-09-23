@@ -140,12 +140,16 @@ export function drawGraph(host, { nodes, edges, key, legacyKey, selected, active
       g.classList.toggle('trace-past',!!trace?.pastNodes.has(id));
       g.classList.toggle('trace-from',id===trace?.currentFrom);
       g.classList.toggle('trace-to',id===trace?.currentTo);
+      g.classList.toggle('trace-evaluated',id===trace?.currentTo&&trace?.currentPhase==='evaluated');
+      g.classList.toggle('trace-applied',id===trace?.currentTo&&trace?.currentPhase==='applied');
       if(id===trace?.currentTo)g.setAttribute('aria-current','step');else g.removeAttribute('aria-current');
     }
     for(const {e,g}of edgeItems){
       g.classList.toggle('selected',e.id===next);
       g.classList.toggle('trace-past',!!trace?.pastEdges.has(e.id));
       g.classList.toggle('trace-current',e.id===trace?.currentEdge);
+      g.classList.toggle('trace-evaluated',e.id===trace?.currentEdge&&trace?.currentPhase==='evaluated');
+      g.classList.toggle('trace-applied',e.id===trace?.currentEdge&&trace?.currentPhase==='applied');
       if(e.id===trace?.currentEdge)g.setAttribute('aria-current','step');else g.removeAttribute('aria-current');
     }
   }

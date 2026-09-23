@@ -32,7 +32,7 @@ export async function createServer({ roots = [], gitDraftRoots = [], dataDir = p
       if (req.headers.origin) requireThat(req.headers.origin === origin, 'http.origin', 'Cross-origin requests are disabled.', 403);
       requireThat(req.headers['sec-fetch-site'] !== 'cross-site', 'http.origin', 'Cross-site requests are disabled.', 403);
       const url = new URL(req.url, origin);
-      if (url.pathname === '/api/bootstrap' && req.method === 'GET') return send(200, { token, kernelVersion: KERNEL_VERSION, projects: app.list(), sourceWrites: false, externalCalls: false });
+      if (url.pathname === '/api/bootstrap' && req.method === 'GET') return send(200, { token, kernelVersion: KERNEL_VERSION, projects: app.list(), liveEnabled:!!live, sourceWrites: false, externalCalls: false });
       if (url.pathname.startsWith('/api/')) {
         requireThat(req.headers['x-studio-token'] === token, 'http.token', 'A current local Studio session is required.', 403);
         requireThat(inFlight < 4, 'http.busy', 'The workbench is busy. Retry this operation.', 429);
@@ -50,10 +50,16 @@ export async function createServer({ roots = [], gitDraftRoots = [], dataDir = p
         let size = 0; const chunks = [];
         for await (const chunk of req) { size += chunk.length; requireThat(size <= 10_000_000, 'input.size', 'Request body is too large.', 413); chunks.push(chunk); }
         const body = boundedJson(Buffer.concat(chunks).toString('utf8'), 10_000_000);
+        const selectedCapture=()=>{
+          requireThat(live, 'live.disabled', 'Start Studio with --live to read a capture.', 404);
+          const {p,view}=app.checkedView(body);return live.selectedSnapshot(p.key,body.captureId,view);
+        };
         let value;
         switch (url.pathname) {
           case '/api/live-ticket': requireThat(live, 'live.disabled', 'Start Studio with --live to enable the local receiver.', 404);
             value = live.issueTicket(body); break;
+          case '/api/live-snapshot': { const trace=selectedCapture();
+            value={trace,convergence:app.convergenceForTrace(app.require(body.project),trace)};break; }
           case '/api/documentation': value = app.documentation(body); break;
           case '/api/source': value = app.sourceText(body); break;
           case '/api/entity': value = app.entityDetails(body); break;
@@ -61,8 +67,10 @@ export async function createServer({ roots = [], gitDraftRoots = [], dataDir = p
           case '/api/search': value = app.search(body); break;
           case '/api/changes': value = await app.changes(body); break;
           case '/api/compare': value = app.compare(body); break;
-          case '/api/trace-page': value = app.tracePage(body); break;
-          case '/api/trace-export': { const {p} = app.checkedView(body); requireThat(p.trace && p.trace.traceDigest === body.traceDigest, 'trace.identity', 'Select the exact loaded trace.'); value = p.trace; break; }
+          case '/api/trace-page': value=app.tracePage(body,body.captureId===undefined?null:selectedCapture());break;
+          case '/api/trace-export': { const {p} = app.checkedView(body);
+            const selected=body.captureId===undefined?p.trace:selectedCapture();
+            requireThat(selected && selected.traceDigest === body.traceDigest, 'trace.identity', 'Select the exact loaded trace.'); value = selected; break; }
 
           case '/api/save-scenario': value = await app.saveScenario(body); break;
           case '/api/open-scenario': value = await app.openScenario(body); break;

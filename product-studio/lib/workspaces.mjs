@@ -272,6 +272,10 @@ export class Workbench {
     const view = this.view(p);
     return convergenceFor(view, (logic,phase) => this.compareTraceLogic(p, view, logic,phase));
   }
+  convergenceForTrace(p,trace) {
+    const view=this.view(p);
+    return convergenceFor({...view,trace},(logic,phase)=>this.compareTraceLogic(p,view,logic,phase));
+  }
   sourceText(request) {
     const { view } = this.checkedView(request);
     const source = view.sources.find(s => s.path === request.file);
@@ -301,17 +305,18 @@ export class Workbench {
     requireThat(before, 'compare.missing', 'Reload a newer build or select an already imported prior model.');
     return compareSnapshots(before, view);
   }
-  tracePage(request) {
+  tracePage(request, selectedTrace = null) {
     const { p } = this.checkedView(request);
-    requireThat(p.trace, 'trace.missing', 'Import a trace first.');
-    requireThat(!request.traceDigest || request.traceDigest === p.trace.traceDigest, 'trace.identity', 'Trace changed. Reload before stepping.', 409);
-    const frame = this.traceFrame(request);
+    const trace=selectedTrace??p.trace;
+    requireThat(trace, 'trace.missing', 'Import a trace first.');
+    requireThat(!request.traceDigest || request.traceDigest === trace.traceDigest, 'trace.identity', 'Trace changed. Reload before stepping.', 409);
+    const frame = this.traceFrame(request,trace);
     const offset = request.offset ?? 0, limit = request.limit ?? 200;
     requireThat(Number.isInteger(offset) && offset >= 0 && Number.isInteger(limit) && limit > 0 && limit <= 600, 'trace.page', 'Invalid trace page.');
-    return { ...frame, events: frame.events.slice(offset, offset + limit).map(e => ({ ...e, eventIndex: traceEventIndex(p.trace, e.sequence) })),
-      causalPath: frame.causalPath.map(e => ({...e,eventIndex:traceEventIndex(p.trace,e.sequence)})),
+    return { ...frame, events: frame.events.slice(offset, offset + limit).map(e => ({ ...e, eventIndex: traceEventIndex(trace, e.sequence) })),
+      causalPath: frame.causalPath.map(e => ({...e,eventIndex:traceEventIndex(trace,e.sequence)})),
       total: frame.events.length, offset, nextOffset: offset + limit < frame.events.length ? offset + limit : null,
-      traceDigest: p.trace.traceDigest, totalEvents: p.trace.events.length };
+      traceDigest: trace.traceDigest, totalEvents: trace.events.length };
   }
   getFacet(key, id, expectedDigest) {
     const p = this.require(key), view = this.view(p);
@@ -334,10 +339,11 @@ export class Workbench {
     const { p, view } = this.checkedView(request);
     p.trace = freezeData(decodeTrace(request.text, view,{fileName:request.fileName})); return this.view(p);
   }
-  traceFrame(request) {
+  traceFrame(request, selectedTrace = null) {
     const { p, view } = this.checkedView(request);
-    requireThat(p.trace, 'trace.missing', 'Import a compatible trace first.');
-    const frame = inspectTrace(p.trace, request.filter);
+    const trace=selectedTrace??p.trace;
+    requireThat(trace, 'trace.missing', 'Import a compatible trace first.');
+    const frame = inspectTrace(trace, request.filter);
     if (frame.current?.logic) frame.logicCheck = this.compareTraceLogic(p, view, frame.current.logic, frame.current.phase);
     return frame;
   }
