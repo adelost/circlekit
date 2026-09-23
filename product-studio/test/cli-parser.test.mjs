@@ -19,6 +19,12 @@ test('the documented check command uses the shared contracts path', () => {
   assert.equal(parsed.command,'contracts');
   assert.equal(parsed.values.product,'skyvw');
 });
+test('explicit workspace export is selected as a write command', () => {
+  const parsed=parseCli(['export','--product','skyvw-web-logbook']);
+  assert.equal(parsed.command,'export');
+  assert.equal(parsed.values.product,'skyvw-web-logbook');
+  assert.throws(()=>parseCli(['export','--output','other.studio.json']),error=>error.code==='cli.usage');
+});
 test('unknown, duplicate and write flags are refused on every read command', () => {
   for (const args of [
     ['inspect', '--wat', 'x'], ['inspect', '--product', 'a', '--product', 'b'],

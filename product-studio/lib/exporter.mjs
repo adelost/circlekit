@@ -1,5 +1,5 @@
 import { scanSourceContracts } from './service-contracts.mjs';
-import { writeFile, rename, rm } from 'node:fs/promises';
+import { writeFile, rename, rm, mkdir, realpath } from 'node:fs/promises';
 import path from 'node:path';
 import { randomBytes } from 'node:crypto';
 import { createInspectionBundle, relativeSourcePath } from './inspection.mjs';
@@ -35,16 +35,20 @@ export async function prepareInspection({ root, sourceFiles = [], sourceSnapshot
     contractDiagnostics: scan.diagnostics });
 }
 
-/** Writes one generated artifact in an existing, owner-selected directory. Never writes source. */
+/** Writes one generated artifact below the selected repository. Never writes source. */
 export async function writeInspectionBundle({ root, output, ...input }) {
   requireThat(relativeSourcePath(output) && output.endsWith('.studio.json'), 'export.path', 'Choose a generated .studio.json output path.');
   const bundle = await prepareInspection({ root, ...input });
-  const target = path.resolve(root, output), directory = path.dirname(target);
-  // Reject existing symlink parents, including those below the selected root.
-  const { realpath } = await import('node:fs/promises');
   const base = await realpath(root);
-  requireThat((await realpath(directory)).startsWith(base + path.sep) || await realpath(directory) === base,
-    'export.escape', 'Generated output directory resolves outside the selected root.');
+  let directory=base;
+  for(const segment of path.dirname(output).split(path.sep).filter(part=>part!=='.')) {
+    const next=path.join(directory,segment);
+    try { await mkdir(next); } catch(error) { if(error.code!=='EEXIST')throw error; }
+    directory=await realpath(next);
+    requireThat(directory===base||directory.startsWith(base+path.sep),
+      'export.escape','Generated output directory resolves outside the selected root.');
+  }
+  const target=path.join(directory,path.basename(output));
   const temporary = path.join(directory, `.studio-${randomBytes(12).toString('hex')}.tmp`);
   try {
     await writeFile(temporary, JSON.stringify(bundle, null, 2) + '\n', { flag: 'wx', mode: 0o600 });

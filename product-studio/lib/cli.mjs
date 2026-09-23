@@ -9,6 +9,7 @@ const SPEC = {
   serve: ['workspace', 'port', 'data-dir', 'allow-git-drafts', 'amux-root'],
   doctor: ['workspace', 'product', 'examples', 'pretty', 'amux-root'],
   contracts: ['product', 'pretty', 'amux-root'],
+  export: ['product', 'pretty', 'amux-root'],
   bundle: ['root', 'product', 'compiler-version', 'product-id', 'source-revision', 'facet', 'source', 'output', 'amux-root'],
   inspect: [...COMMON, 'entity', 'search', 'fields', 'max', 'offset'],
   query: [...COMMON, 'kind', 'from', 'to', 'purposes'],
@@ -26,6 +27,7 @@ export const HELP = `Product Studio
   v1d-studio check [repository] [--product ID] [--pretty]
   v1d-studio contracts [repository] [--amux-root TRUSTED_AMUX]
   v1d-studio doctor [repository] [--product ID]
+  v1d-studio export [repository] [--product ID]
   v1d-studio inspect [repository] [--product ID] [--entity KEY | --search TEXT]
   v1d-studio query [repository] --kind upstream|downstream|consumers|owner|impact|path
                    --from KEY [--to KEY] [--purposes data,demand,context]
@@ -57,7 +59,8 @@ explicitly selects another trusted checkout. The check command refuses when
 AMUX is unavailable; serve can still show intent without claiming validation.
 
 Serve only: --port 4317 --data-dir DIR --allow-git-drafts EXACT_REPOSITORY
-The existing bundle command writes only its named generated output. Read/debug
+The explicit export command compiles only the selected workspace's authoring
+closure and writes its named bundle. The bundle command writes only its named output. Read/debug
 commands never build, call providers, create drafts, edit source or modify Git.
 See CLI.md for complete examples, identity rules and error handling.
 `;
