@@ -25,6 +25,8 @@
 @media(min-width:951px){.shell[data-view=Welcome] .main-grid,.shell[data-view=Problems] .main-grid,.shell[data-view=Compare] .main-grid,.shell[data-view=Intent] .main-grid{grid-template-columns:minmax(180px,220px) minmax(0,1fr)}.shell[data-view=Welcome] .inspector,.shell[data-view=Problems] .inspector,.shell[data-view=Compare] .inspector,.shell[data-view=Intent] .inspector{display:none}}
 .report-title{display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap}.report-title small{white-space:nowrap}
 .graph-svg{height:480px}.graph-node:focus-visible rect,.graph-edge:focus-visible path{stroke:var(--cyan);stroke-width:3}
+.graph-edge .edge-label{opacity:0;pointer-events:none}.graph-edge:hover .edge-label,.graph-edge:focus-visible .edge-label,.graph-edge.selected .edge-label{opacity:1}
+.decision-reasons{display:grid;gap:10px}.decision-reasons>div{border-bottom:1px solid var(--line);padding-bottom:9px}.decision-reasons p{margin-top:4px;font-size:12px;overflow-wrap:anywhere}.decision-reasons .safe{color:var(--green)}
 @media(max-width:720px){.experience-bar{gap:8px}.experience-bar kbd{display:none}.graph-svg{height:310px}.proof-strip{gap:10px}.trace-lane{grid-template-columns:100px minmax(0,1fr)}}
 .view-menu{position:relative;font-size:11px}.view-menu summary{cursor:pointer;border:1px solid var(--line);border-radius:6px;padding:7px 9px}.view-menu[open]>.compact-list{position:absolute;top:34px;left:0;min-width:180px;padding:10px;z-index:30;background:var(--panel);border:1px solid var(--line);border-radius:8px}
 #mobile-view{display:none}

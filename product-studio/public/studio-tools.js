@@ -37,13 +37,23 @@ function entityLabel(project,key) {
 export function entityInspector(project, selection, escape) {
   const e=project.architecture.entities.find(e=>e.key===selection.id); if(!e) return null;
   const origin=project.sourceIndex.origins.find(o=>o.entityKey===e.key), unresolved=project.sourceIndex.unresolved.find(o=>o.entityKey===e.key);
+  const ownerOrigin=e.kind==='port'&&!origin?project.sourceIndex.origins.find(o=>o.entityKey===e.owner):null;
   const touching=project.architecture.edges.filter(edge=>edge.from===e.key || edge.to===e.key);
   return `<div class="section-label">${escape(e.kind)}</div><h2>${escape(e.id)}</h2><details class="exact-key"><summary>Exact key</summary><code>${escape(e.key)}</code></details>
-    <div class="toolbar inspector-actions"><button data-source-entity="${escape(e.key)}" ${!origin ? 'disabled' : ''}>Open source</button><button data-query-entity="${escape(e.key)}">Potential impact</button></div>
-    ${origin ? `<div class="notice info">${escape(origin.file)}<p>${escape(origin.provenance)} · ${escape(origin.editing)}</p></div>` : `<div class="notice">${escape(unresolved?.reason ?? 'Source mapping unavailable.')}</div>`}
+    <div class="toolbar inspector-actions"><button data-source-entity="${escape(origin?e.key:e.owner)}" ${!origin&&!ownerOrigin ? 'disabled' : ''}>${ownerOrigin?'Open owner source':'Open source'}</button><button data-query-entity="${escape(e.key)}">Potential impact</button></div>
+    ${origin ? `<div class="notice info">${escape(origin.file)}<p>${escape(origin.provenance)} · ${escape(origin.editing)}</p></div>`
+      : ownerOrigin ? `<p class="muted">Owner declaration: ${escape(ownerOrigin.file)}. This port has no exact source span.</p>`
+      : `<p class="muted">${escape(unresolved?.reason ?? 'Source location unavailable in the loaded model.')}</p>`}
     ${['node','component'].includes(e.kind)?intentPanel(e.intent,project,escape):''}
     <details><summary>Declared properties</summary><pre>${e.data ? escape(JSON.stringify(e.data,null,2)) : 'Loading selected entity details…'}</pre></details>
     <div class="section-label">Direct declared relations</div><div class="compact-list">${touching.slice(0,40).map(edge=>`<button data-entity="${escape(edge.from === e.key ? edge.to : edge.from)}"><small>${escape(edge.kind)} · ${escape(edge.evidence ?? 'compiler')}</small><p>${escape(entityLabel(project,edge.from === e.key ? edge.to : edge.from))}</p></button>`).join('') || '<small>No explicit relations exported.</small>'}</div>`;
+}
+
+export function decisionReasons(alternatives, escape) {
+  if (!Array.isArray(alternatives)) return '<p class="muted">Evaluate a point to see why each cell matches or differs.</p>';
+  return `<div class="decision-reasons">${alternatives.map(row=>`<div><strong>${escape(row.id)}</strong>${row.mismatch.length
+    ?row.mismatch.map(({axis,expected,actual})=>`<p>${escape(axis)}: expected <code>${escape(JSON.stringify(expected))}</code> → <code>${escape(JSON.stringify(actual))}</code></p>`).join('')
+    :'<p class="safe">Matched</p>'}</div>`).join('')}</div>`;
 }
 
 function traceStateBand(trace,cursor,E) {
