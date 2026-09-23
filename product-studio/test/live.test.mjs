@@ -172,6 +172,14 @@ test('A38 only declared finite decision facts and values pass the live boundary'
   assert.throws(()=>eventFor({...raw,values:{...cell.values,secret:'private'}},model,{live:true}),
     error=>error.code==='live.event-field');
 });
+test('a bounded contradictory applied cell is retained on the declared facet',()=>{
+  const facet=view.facets.find(f=>f.kind==='machine');
+  const raw={kind:'transition',phase:'applied',sequence:0,atMs:1,facetId:facet.id,
+    cellId:'unexpected-cell',from:facet.compiled.initial,to:'FAILURE',input:facet.compiled.inputs[0],guards:{}};
+  const event=eventFor(raw,view,{live:true});
+  assert.equal(event.entityKey,`facet:machine:${facet.id}`);
+  assert.equal(event.logic.cellId,'unexpected-cell');
+});
 test('A03 repeated invalid pairing is rate limited on the loopback upgrade',async()=>{
   const isolated=await createServer({port:0,dataDir:root,liveEnabled:true});
   try {

@@ -66,7 +66,8 @@ export function eventFor(raw, view, { live = false } = {}) {
   requireThat(raw.kind !== 'decision' || cell || live, 'observation.cell', `Decision '${raw.facetId}' must name its cell.`);
   const logic = raw.kind === 'decision'
     ? { facetId: raw.facetId, cellId: raw.cellId, facts: raw.facts, values: raw.values }
-    : { facetId: raw.facetId, cellId: cell?.id ?? null, from: raw.from, to: raw.to, input: raw.input, guards: raw.guards };
+    : { facetId: raw.facetId, cellId: cell?.id ?? (live ? raw.cellId ?? null : null),
+      from: raw.from, to: raw.to, input: raw.input, guards: raw.guards };
   return { kind: raw.kind, entityKey: cell
     ? entityKey('cell', cell.id, `${kind}/${raw.facetId}`) : entityKey('facet', raw.facetId, kind),
   summary: raw.kind === 'decision' ? `${raw.facetId}: ${raw.cellId}` : `${raw.from} → ${raw.to} via ${raw.input}`,
