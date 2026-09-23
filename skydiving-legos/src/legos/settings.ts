@@ -75,6 +75,10 @@ export const settingsWriteContract = {
   fields: [field("write", valueRef("settings.write"))],
 } as const;
 
+/**
+ * WHAT: Routes typed settings writes to the settings runtime.
+ * WHY: Keeps UI write intents separate from persistence implementation.
+ */
 export const settingsCommandOwner = service({
   id: "settings.command-owner",
   inputs: [port("write", settingsWriteContract)],
@@ -89,6 +93,10 @@ export const settingsCommandOwner = service({
 /**
  * Typed power/flight settings owner over the existing SettingsIr stores;
  * alarm-ladder coercion and pull/spot normalisation live here.
+ */
+/**
+ * WHAT: Stores power and flight settings and publishes their typed state.
+ * WHY: Keeps setting persistence and normalization separate from product calculations and presentation.
  */
 export const settingsRuntimeOwner = service({
   id: "settings.runtime-owner",
@@ -111,6 +119,10 @@ export const settingsRuntimeOwner = service({
 });
 
 /** Debug settings owner; fixture actions and QA bridges stay native. */
+/**
+ * WHAT: Stores developer settings and publishes their presentation state.
+ * WHY: Keeps debug fixture controls separate from production settings ownership.
+ */
 export const devSettingsOwner = service({
   id: "settings.dev-owner",
   inputs: [
@@ -129,6 +141,10 @@ export const devSettingsOwner = service({
 });
 
 /** Diagnostics settings owner; GPS filter application and raw-log lifecycle react as effects. */
+/**
+ * WHAT: Stores diagnostics settings and applies their runtime effects.
+ * WHY: Keeps diagnostic controls and persistence separate from normal product settings.
+ */
 export const diagnosticsSettingsOwner = service({
   id: "settings.diagnostics-owner",
   inputs: [],
