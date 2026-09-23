@@ -38,6 +38,11 @@ test('U6 the three declared normalizers yield the one pixel box format',()=>{
   assert.equal(visionContracts.length,5);
 });
 
+test('U6 a broken ratio law names its authored contract field',()=>{
+  assert.throws(()=>assertContractPayload(yoloRatio,{cx:.5,cy:.5,w:1.2,h:.1}),
+    /vision\.yolo\.cxcywh\.ratio.*w.*0\.\.1.*vision-box\.ts:\d+/u);
+});
+
 // One generated law proof per authored contract. Cases come from the fields, not a copied registry.
 for(const contract of visionContracts) test(`${contract.id} generates a positive and every negative field-law case`,()=>{
   const valid:Record<string,string|number|boolean>=Object.fromEntries(contract.fields.map(item=>[item.name,
