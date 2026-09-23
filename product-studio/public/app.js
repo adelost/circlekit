@@ -10,6 +10,7 @@ const views = ['System', 'Logic', 'Scenarios', 'Interface', 'Changes', 'Trace'];
 const mobileViews = [['Welcome','Overview'],...views.map(view=>[view,view]),['Intent','Intent & behavior'],['Problems','Problems'],['Compare','Compare']];
 let token, projects = [], project, state, generation = 0, graph, busy = false, toastTimer;
 let experience, graphHost, graphSignature = '', bindingController, sourcePending = new Map();
+let livePollBusy=false,liveStatusUnsupported=false;
 function listen(element,type,handler) { element?.addEventListener(type,handler,{signal:bindingController.signal}); }
 const sessions = new Map();
 const freshState = () => ({ view: 'Logic', facetId: null, selected: null, search: '', facts: {}, guards: {}, input: null,
@@ -42,6 +43,7 @@ async function loadProject(key) {
   if (ticket !== generation) return;
   const isFirstVisit = !sessions.has(key);
   project = p; state = sessions.get(key) ?? freshState(); sessions.set(key, state); installDocumentState(state,p);
+  if(p.trace?.version===2){state.liveCaptureId??=p.trace.capture.id;state.liveFollowTail??=true;}
   if (!p.facets.some(f => f.id === state.facetId)) selectFacet(p.facets.find(f=>['machine','decision-table'].includes(f.kind))?.id ?? p.facets[0]?.id ?? null, false);
   if (isFirstVisit) state.view = initialProjectView(p);
   render();
@@ -232,7 +234,7 @@ function renderGraph() {
   const cameraKey = project.key + ':' + (state.view === 'System' ? 'System:'+(state.architectureMode ?? 'owners') + ':' + (state.architectureGroup ?? '') + ':' + (state.focusKey ?? 'all') : state.view+':'+(f?.id??'system')+(compact?':compact':'')+(flow?':flow-v1':''));
   const signature = JSON.stringify({cameraKey, model:project.modelDigest, nodes, edges});
   const marks=state.view==='Trace'&&state.traceFrame?(f?.kind==='machine'
-    ?traceGraphMarks(f,state.traceFrame,traceEventRows(project,state))
+    ?traceGraphMarks(f,state.traceFrame,traceEventRows(project,state),state.liveTrace??project.trace)
     :!f?traceArchitectureMarks(project,state.traceFrame,traceEventRows(project,state)):null):null;
   const selected=state.view==='Trace'?marks?.currentEdge:state.selected?.id,active=state.view==='Trace'?marks?.currentTo:state.view==='Logic'?state.machineState:null;
   if (host === graphHost && signature === graphSignature && (!selected || graph.has(selected) || !nodes.some(n=>n.id===selected))) { graph.select(selected,active,marks); return; }
@@ -460,10 +462,11 @@ function bindStudioTools() {
   document.querySelectorAll('[data-source-entity]').forEach(b=>b.onclick=()=>openEntitySource(b.dataset.sourceEntity));
   document.querySelectorAll('[data-entity]').forEach(b=>b.onclick=()=>{state.selected={kind:'entity',id:b.dataset.entity};state.queryFrom=b.dataset.entity;render();if(innerWidth<950)$('.inspector').classList.add('open');});
   document.querySelectorAll('[data-trace-sequence]').forEach(b=>{
-    const choose=()=>loadTraceFrame(Number(b.dataset.traceIndex));
+    const choose=()=>{const cursor=Number(b.dataset.traceIndex);state.liveFollowTail=cursor>=(state.liveTrace??project.trace)?.eventCount-1;loadTraceFrame(cursor);};
     b.onclick=choose;b.onkeydown=e=>{if(e.key==='Enter')choose();};
   });
-  listen($('#trace-cursor'),'change',e=>loadTraceFrame(Number(e.target.value)));
+  listen($('#trace-cursor'),'change',e=>{const cursor=Number(e.target.value);state.liveFollowTail=cursor>=(state.liveTrace??project.trace)?.eventCount-1;loadTraceFrame(cursor);});
+  listen($('#live-session'),'change',e=>loadLiveSession(e.target.value));
   listen($('#source-file'),'change',e=>{++generation;state.sourcePath=e.target.value;state.sourceSpan=null;state.sourceLoadError=null;render();});
   const editor=$('#source-editor');
   listen(editor,'scroll',()=>{const g=$('#line-gutter');if(g)g.scrollTop=editor.scrollTop;});
@@ -479,28 +482,75 @@ function bindStudioTools() {
   });
 }
 async function loadTraceFrame(cursor) {
-  if(!project.trace)return;
+  const selected=state.liveTrace??project.trace;
+  if(!selected)return;
   const ticket=++generation;
   try {
-    const result=await api('trace-page',{...requestContext(),traceDigest:project.trace.traceDigest,offset:state.traceOffset??0,limit:200,filter:{cursor,search:state.traceSearch ?? '',operationId:state.traceOperation || null}});
+    const result=await api('trace-page',{...requestContext(),traceDigest:selected.traceDigest,
+      ...(selected.version===2?{captureId:selected.capture.id}:{}),offset:state.traceOffset??0,limit:200,
+      filter:{cursor,search:state.traceSearch ?? '',operationId:state.traceOperation || null}});
     if(ticket!==generation)return;
-    state.traceCursor=cursor;state.traceFrame=result;state.mode=project.trace.provenance==='synthetic'?'Simulation'
-      :project.trace.provenance==='test-run'?'Test run':'Recorded trace';
+    state.traceCursor=cursor;state.traceFrame=result;state.mode=selected.provenance==='synthetic'?'Simulation'
+      :selected.provenance==='test-run'?'Test run':'Recorded trace';
     if(result.current)state.selected={kind:'entity',id:result.current.entityKey};render();
     if(result.totalEvents>result.events.length||state.traceSearch||state.traceOperation)loadTraceHistory();
   }catch(error){if(ticket===generation)toast(error.message);}
 }
 function loadTraceHistory() {
-  const owner=project,view=state,digest=owner.trace?.traceDigest;
+  const owner=project,view=state,selected=view.liveTrace??owner.trace,digest=selected?.traceDigest;
   if(!digest||view.traceHistory?.digest===digest||view.traceHistoryPending||view.traceHistoryError?.digest===digest)return;
-  view.traceHistoryPending=api('trace-export',{project:owner.key,bundleDigest:owner.bundleDigest,traceDigest:digest})
+  view.traceHistoryPending=api('trace-export',{project:owner.key,bundleDigest:owner.bundleDigest,traceDigest:digest,
+    ...(selected.version===2?{captureId:selected.capture.id}:{})})
     .then(trace=>{
-      if(project!==owner||state!==view||project.trace?.traceDigest!==digest)return;
-      view.traceHistory={digest,events:trace.events.map((event,eventIndex)=>({eventIndex,kind:event.kind,entityKey:event.entityKey,logic:event.logic}))};render();
+      if(project!==owner||state!==view||(view.liveTrace??project.trace)?.traceDigest!==digest)return;
+      view.traceHistory={digest,events:trace.events.map((event,eventIndex)=>({eventIndex,sequence:event.sequence,kind:event.kind,phase:event.phase,entityKey:event.entityKey,logic:event.logic}))};render();
     }).catch(error=>{
-      if(project!==owner||state!==view||project.trace?.traceDigest!==digest)return;
+      if(project!==owner||state!==view||(view.liveTrace??project.trace)?.traceDigest!==digest)return;
       view.traceHistoryError={digest,message:error.message};render();
     }).finally(()=>{view.traceHistoryPending=null;});
+}
+async function loadLiveSession(captureId) {
+  if(!project.trace||state.liveCaptureId===captureId)return;
+  const owner=project,view=state,ticket=++generation;
+  try {
+    const trace=captureId===owner.trace.capture?.id?null:await api('live-snapshot',{project:owner.key,captureId});
+    if(ticket!==generation||project!==owner||state!==view)return;
+    state.liveTrace=trace;state.liveCaptureId=captureId;state.liveFollowTail=true;
+    state.traceFrame=null;state.traceHistory=null;state.traceHistoryError=null;state.traceOffset=0;
+    await loadTraceFrame((trace??project.trace).eventCount-1);
+  }catch(error){if(ticket===generation){state.liveError=error.message;render();}}
+}
+
+async function pollLiveTrace() {
+  if(livePollBusy||document.hidden||!project||state.view!=='Trace'||liveStatusUnsupported&&project.trace?.version!==2)return;
+  livePollBusy=true;
+  const key=project.key,view=state,ticket=generation;
+  try {
+    let status=view.liveStatus;
+    if(!liveStatusUnsupported)try {
+      status=await api('live-status?project='+encodeURIComponent(key));
+    }catch(error){if(error.code==='http.route')liveStatusUnsupported=true;else throw error;}
+    if(liveStatusUnsupported&&project.trace?.version!==2)return;
+    const latest=await api('project?id='+encodeURIComponent(key)+'&mode=summary');
+    if(ticket!==generation||project.key!==key||state!==view)return;
+    if(latest.modelDigest!==project.modelDigest||latest.bundleDigest!==project.bundleDigest){
+      if(view.liveError!=='Model changed. Reload this project.'){view.liveError='Model changed. Reload this project.';render();}return;
+    }
+    const previous=project.trace,changed=latest.trace?.traceDigest!==previous?.traceDigest;
+    const statusChanged=JSON.stringify(status)!==JSON.stringify(view.liveStatus);
+    if(!changed&&!statusChanged&&!view.liveError)return;
+    if(changed)project={...project,trace:latest.trace,convergence:latest.convergence};
+    view.liveStatus=status;view.liveError=null;
+    if(latest.trace?.version!==2){if(statusChanged)render();return;}
+    const follow=view.liveFollowTail!==false&&(!view.liveCaptureId||view.liveCaptureId===previous?.capture?.id);
+    if(follow)view.liveCaptureId=latest.trace.capture.id;
+    if(changed&&view.liveCaptureId===latest.trace.capture.id){
+      view.liveTrace=null;view.traceHistory=null;view.traceHistoryError=null;
+      const last=latest.trace.eventCount-1;
+      await loadTraceFrame(follow?last:Math.min(view.traceCursor??last,last));
+    }else if(changed||statusChanged)render();
+  }catch(error){if(project?.key===key&&state===view&&view.liveError!==error.message){view.liveError=error.message;render();}}
+  finally{livePollBusy=false;}
 }
 async function performStudioTool(name) {
   if(name==='clear-query'){state.canvas=null;state.queryResult=null;await refreshArchitecture();return true;}
@@ -510,12 +560,16 @@ async function performStudioTool(name) {
     download('trace-header.json',pretty({kind:'product-studio-trace',version:1,modelDigest:project.modelDigest,
       provenance:'synthetic',events:[]}));return true;
   }
-  if(name==='export-trace'){const loaded=await api('trace-export',{...requestContext(),traceDigest:project.trace.traceDigest});const {traceDigest,notice,incompleteCausality,complete,...trace}=loaded;download('recorded-trace.json',pretty(trace));return true;}
-  if(name.startsWith('trace-') && project.trace){
-    const last=project.trace.eventCount-1,at=state.traceCursor ?? last;
+  if(name==='export-trace'){const selected=state.liveTrace??project.trace;const loaded=await api('trace-export',{...requestContext(),traceDigest:selected.traceDigest,
+    ...(selected.version===2?{captureId:selected.capture.id}:{})});const {traceDigest,notice,incompleteCausality,complete,...trace}=loaded;download('recorded-trace.json',pretty(trace));return true;}
+  if(name.startsWith('trace-') && (state.liveTrace??project.trace)){
+    const last=(state.liveTrace??project.trace).eventCount-1,at=state.traceCursor ?? last;
     if(name==='trace-page-next'||name==='trace-page-prev'){state.traceOffset=Math.max(0,(state.traceOffset??0)+(name==='trace-page-next'?200:-200));await loadTraceFrame(at);return true;}
     if(name==='trace-filter'){state.traceOffset=0;state.traceSearch=$('#trace-search').value;state.traceOperation=$('#trace-operation').value;await loadTraceFrame(at);}
-    else if(['trace-first','trace-last','trace-back','trace-next'].includes(name))await loadTraceFrame(name==='trace-first'?Math.min(0,last):name==='trace-last'?last:Math.max(Math.min(0,last),Math.min(last,at+(name==='trace-next'?1:-1))));
+    else if(['trace-first','trace-last','trace-back','trace-next'].includes(name)){
+      const cursor=name==='trace-first'?Math.min(0,last):name==='trace-last'?last:Math.max(Math.min(0,last),Math.min(last,at+(name==='trace-next'?1:-1)));
+      state.liveFollowTail=cursor===last;await loadTraceFrame(cursor);
+    }
     else return false;return true;
   }
   if(name==='save-scenario'){
@@ -610,4 +664,5 @@ try {
   await loadProject(wanted?.key ?? projects[0].key);
   await experience.restoreInitial();
   if (link.has('entity') && project.architecture.entities.some(e=>e.key===link.get('entity'))) { state.view='System';state.selected={kind:'entity',id:link.get('entity')};render(); }
+  setInterval(pollLiveTrace,900);
 } catch (e) { $('#app').innerHTML = `<main class="loading"><h1>Product Studio could not start</h1><pre>${escape(e.message)}</pre><p>Check the local terminal and installed package versions.</p></main>`; }
