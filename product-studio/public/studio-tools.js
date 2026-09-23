@@ -34,7 +34,7 @@ export function projectSummary(project,escape) {
   const tone=verdict==='Converged'?'good':verdict==='Diverged'?'error':'warning';
   const laws=(counts?.laws?.passed??0)+(counts?.laws?.failed??0)+(counts?.laws?.skipped??0),steps=project.trace?.eventCount??0;
   const validated=counts?.contracts?.validated??0,total=counts?.contracts?.total??0;
-  return `<div class="section-label">Project evidence</div><h2><span class="badge ${tone}">${escape(c?.label??verdict)}</span></h2><p class="project-evidence">${laws} laws · ${steps} trace steps<br>WHAT/WHY ${validated}/${total}</p><small>Loaded evidence only. Select an object for its details.</small>`;
+  return `<div class="section-label">Project evidence</div><h2><span class="badge ${tone}">${escape(c?.label??verdict)}</span></h2><p class="project-evidence">${laws} laws · ${steps} trace steps<br>WHAT/WHY ${validated}/${total}</p><small>${escape(project.provenance ?? project.validationNotice ?? 'Loaded evidence only.')}</small>`;
 }
 function traceTime(ms,domain) {
   if(domain==='wall')return new Date(ms).toISOString().slice(11,19)+' UTC';
@@ -47,7 +47,7 @@ export function architectureControls(project, state, escape) {
   const options = project.architecture.entities.filter(e => ['node','component','port','facet'].includes(e.kind));
   const optionHtml = options.map(e => `<option value="${escape(e.key)}">${escape(e.kind)} · ${escape(e.id)}</option>`).join('');
   const groups = project.architecture.groups.map(g => `<option value="${escape(g.id)}" ${state.architectureGroup === g.id ? 'selected' : ''}>${escape(g.label)}</option>`).join('');
-  return `<section class="panel"><header class="panel-head"><h2>Architecture questions</h2><span class="badge">Declared dependencies</span></header>
+  return `<details class="panel" ${state.queryResult ? 'open' : ''}><summary class="panel-head"><h2>Architecture questions</h2><span class="badge">Declared dependencies</span></summary>
     <div class="panel-body"><div class="fact-grid">
       <label>From / selected entity<select id="query-from">${optionHtml}</select></label>
       <label>To (for shortest path)<select id="query-to">${optionHtml}</select></label>
@@ -55,7 +55,7 @@ export function architectureControls(project, state, escape) {
       <label>Group scope<select id="architecture-group"><option value="">All owners</option><option value="__ungrouped" ${state.architectureGroup === '__ungrouped' ? 'selected' : ''}>Ungrouped</option>${groups}</select></label>
     </div><div class="toolbar query-actions">${['upstream','downstream','path','consumers','owner','impact'].map(kind=>`<button data-query="${kind}">${{upstream:'What feeds this?',downstream:'What uses this?',path:'Find path',owner:'Who owns this?',impact:'What could change?'}[kind] ?? kind[0].toUpperCase()+kind.slice(1)}</button>`).join('')}
       <button data-action="clear-query" class="subtle">Clear focus</button><label class="inline-check"><input id="query-context" type="checkbox" ${state.includeContext ? 'checked' : ''}> Include demand/context</label>
-    </div>${state.queryResult ? `<div class="notice ${state.queryResult.supported && state.queryResult.found !== false ? 'info' : ''}">${escape(state.queryResult.message)}<p>${state.queryResult.keys.length} selected entities · ${state.queryResult.edgeIds.length} binding edges</p>${state.queryResult.affectedMounts?.length ? `<p>${state.queryResult.affectedMounts.length} potentially affected mounts: ${escape([...new Set(state.queryResult.affectedMounts.map(m=>m.artifactRef))].join(', '))}</p>` : ''}</div>` : ''}</div></section>`;
+    </div>${state.queryResult ? `<div class="notice ${state.queryResult.supported && state.queryResult.found !== false ? 'info' : ''}">${escape(state.queryResult.message)}<p>${state.queryResult.keys.length} selected entities · ${state.queryResult.edgeIds.length} binding edges</p>${state.queryResult.affectedMounts?.length ? `<p>${state.queryResult.affectedMounts.length} potentially affected mounts: ${escape([...new Set(state.queryResult.affectedMounts.map(m=>m.artifactRef))].join(', '))}</p>` : ''}</div>` : ''}</div></details>`;
 }
 
 export function sourceNavigator(project, state, escape) {
@@ -77,10 +77,10 @@ export function entityInspector(project, selection, escape) {
   const ownerOrigin=e.kind==='port'&&!origin?project.sourceIndex.origins.find(o=>o.entityKey===e.owner):null;
   const touching=project.architecture.edges.filter(edge=>edge.from===e.key || edge.to===e.key);
   return `<div class="section-label">${escape(e.kind)}</div><h2>${escape(e.id)}</h2><details class="exact-key"><summary>Exact key</summary><code>${escape(e.key)}</code></details>
-    <div class="toolbar inspector-actions"><button data-source-entity="${escape(origin?e.key:e.owner)}" ${!origin&&!ownerOrigin ? 'disabled' : ''}>${ownerOrigin?'Open owner source':'Open source'}</button><button data-query-entity="${escape(e.key)}">Potential impact</button></div>
+    <div class="toolbar inspector-actions">${origin || ownerOrigin ? `<button data-source-entity="${escape(origin?e.key:e.owner)}">${ownerOrigin?'Open owner source':'Open source'}</button>` : ''}<button data-query-entity="${escape(e.key)}">Potential impact</button></div>
     ${origin ? `<div class="notice info">${escape(origin.file)}<p>${escape(origin.provenance)} · ${escape(origin.editing)}</p></div>`
       : ownerOrigin ? `<p class="muted">Owner declaration: ${escape(ownerOrigin.file)}. This port has no exact source span.</p>`
-      : `<p class="muted">${escape(unresolved?.reason ?? 'Source location unavailable in the loaded model.')}</p>`}
+      : `<small class="muted">${escape(unresolved?.reason ?? 'Source location unavailable in the loaded model.')}</small>`}
     ${['node','component'].includes(e.kind)?intentPanel(e.intent,project,escape):''}
     <details><summary>Declared properties</summary><pre>${e.data ? escape(JSON.stringify(e.data,null,2)) : 'Loading selected entity details…'}</pre></details>
     <div class="section-label">Direct declared relations</div><div class="compact-list">${touching.slice(0,40).map(edge=>`<button data-entity="${escape(edge.from === e.key ? edge.to : edge.from)}"><small>${escape(edge.kind)} · ${escape(edge.evidence ?? 'compiler')}</small><p>${escape(entityLabel(project,edge.from === e.key ? edge.to : edge.from))}</p></button>`).join('') || '<small>No explicit relations exported.</small>'}</div>`;
