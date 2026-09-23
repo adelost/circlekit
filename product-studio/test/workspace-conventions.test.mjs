@@ -75,7 +75,7 @@ test('an old checkout without a workspace file names the safe update path instea
   await mkdir(path.dirname(source),{recursive:true});
   await writeFile(source,'export const legacy = {};\n');
   await assert.rejects(openHeadlessStudio({roots:[root]}),error=>error.code==='workspace.missing'
-    && error.message.includes('studio.workspace.json') && error.message.includes('origin/main')
+    && error.message.includes('studio.workspace.json') && error.message.includes('default branch')
     && !error.message.includes('SKYVW'));
 });
 
