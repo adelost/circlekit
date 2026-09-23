@@ -17,6 +17,20 @@ test('compact test trace derives its envelope and event coordinates from the sel
   assert.deepEqual(trace.truncation,{droppedBefore:0,gaps:[]});
   assert.deepEqual(inspectTrace(trace).causalPath.map(e=>e.sequence),[0,1]);
 });
+test('real virtual atMs survives while sequence is derived from event order',()=>{
+  const partial={kind:'product-studio-trace',version:1,modelDigest:identity.modelDigest,
+    events:[0,20000,60000].map(atMs=>({atMs,kind:'port',entityKey:'port::a.out'}))};
+  const trace=decodeTrace(JSON.stringify(partial),identity,{fileName:'jump-trace.json'});
+  assert.deepEqual(trace.events.map(e=>[e.sequence,e.atMs]),[[0,0],[1,20000],[2,60000]]);
+  assert.equal(trace.clock.domain,'virtual');assert.equal(trace.sessionId,'jump-trace.json');
+});
+test('explicit sequences survive while omitted event times derive independently',()=>{
+  const partial={kind:'product-studio-trace',version:1,modelDigest:identity.modelDigest,
+    sessionId:'manual',provenance:'synthetic',events:[0,1].map(sequence=>({sequence,kind:'port',entityKey:'port::a.out'}))};
+  const trace=decodeTrace(JSON.stringify(partial),identity);
+  assert.deepEqual(trace.events.map(e=>[e.sequence,e.atMs]),[[0,0],[1,1]]);
+  assert.equal(trace.sessionId,'manual');assert.equal(trace.provenance,'synthetic');
+});
 test('compact trace refuses mixed or incomplete event coordinates',()=>{
   const base={kind:'product-studio-trace',version:1,modelDigest:identity.modelDigest};
   for(const events of [[{...event(),sequence:0},{kind:'port',entityKey:'port::a.out'}],
@@ -28,12 +42,13 @@ test('compact trace keeps required identity and refuses a foreign product',()=>{
   assert.throws(()=>decodeTrace(JSON.stringify(compact),identity,{fileName:'trace.json'}),/identity|digest/i);
   assert.throws(()=>decodeTrace(JSON.stringify({...compact,modelDigest:identity.modelDigest,productId:'foreign'}),identity,{fileName:'trace.json'}),/match/i);
 });
-test('compact recorded origin must be explicit and hybrid envelope is refused',()=>{
+test('recorded origin and clock can be explicit while other envelope fields derive',()=>{
   const compact={kind:'product-studio-trace',version:1,modelDigest:identity.modelDigest,
     events:[{kind:'port',entityKey:'port::a.out'}]};
   const recorded=decodeTrace(JSON.stringify({...compact,provenance:'recorded'}),identity,{fileName:'trace.json'});
   assert.equal(recorded.provenance,'recorded');
-  assert.throws(()=>decodeTrace(JSON.stringify({...compact,clock:{domain:'wall',unit:'ms'}}),identity,{fileName:'trace.json'}),/Mixed envelopes/);
+  const explicitClock=decodeTrace(JSON.stringify({...compact,clock:{domain:'virtual',unit:'ms'}}),identity,{fileName:'trace.json'});
+  assert.equal(explicitClock.clock.domain,'virtual');
 });
 
 test('passive recorder stores ordered bounded events and exact model identity',()=>{const r=recorder();r.record(event());r.record({...event(2),causedBy:0});const t=decodeTrace(JSON.stringify(r.snapshot()),identity);assert.equal(t.events.length,2);assert.equal(t.complete,true);assert.equal(t.sessionId,'session-1');});
