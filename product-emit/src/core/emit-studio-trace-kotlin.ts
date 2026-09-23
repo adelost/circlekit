@@ -1,4 +1,4 @@
-/** A dormant, dependency-free sink emitted beside test-observable Kotlin decisions. */
+/** WHAT: Builds a dormant Kotlin trace sink beside generated decisions. WHY: Keeps test evidence out of the release execution path. */
 export function emitStudioTraceSinkKotlin(name: string): string {
   if (!/^[A-Za-z][A-Za-z0-9_]*$/u.test(name)) throw new Error(`invalid Kotlin trace sink '${name}'`);
   return `/** Writes only when v1d-studio record gives this test process a private trace directory. */
