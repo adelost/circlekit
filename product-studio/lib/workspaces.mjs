@@ -139,7 +139,7 @@ export class Workbench {
     // Never relink an old compiled model to changed source merely because an ID still matches.
     const exportedDigests = new Map((inspection?.sources ?? []).map(s => [s.file, s.digest]));
     const correlatedSources = inspection ? p.sources.filter(s => exportedDigests.get(s.path) === s.parsed.digest) : p.sources;
-    const sourceIndex = locateEntities(architecture, correlatedSources, inspection?.origins ?? []);
+    const sourceIndex = locateEntities(architecture, correlatedSources, inspection?.origins ?? [], inspection?.contracts ?? []);
     for (const f of facets) {
       const origin = sourceIndex.origins.find(o => o.entityKey === entityKey('facet', f.id, f.kind));
       if (origin) { f.file = origin.file; f.source = { file:origin.file, ...origin.span, span:origin.span, line:origin.line, digest:origin.sourceDigest }; }
@@ -147,7 +147,7 @@ export class Workbench {
     const sourceIdentity = inspection ? checkSourceIdentity(inspection, p.sources) : null;
     const gallery = p.imported.product?.showcase?.cases ?? p.sources.flatMap(s => Object.values(s.parsed.dataExports).flat()).filter(v => v.title && v.scenarios);
     return { key: p.key, label: p.config.label, fixture: !!p.config.fixture, originKind: p.config.originKind ?? (p.config.fixture ? 'fixture' : 'workspace'), revision: p.revision,
-      toolVersions: TOOL_VERSIONS, modelDigest, productId: inspection?.productId ?? p.imported.product?.id ?? p.config.id, architecture, canvas: architectureSlice(architecture), sourceIndex, sourceIdentity, compatibility: p.compilerCompatibility ?? p.imported.compatibility ?? null, trace: null, scenarios: inspection?.scenarios ?? [], provenance: p.config.provenance ?? null, bundleDigest, product: p.imported.product, graph: graphOf(p.imported.product), facets, gallery,
+      toolVersions: TOOL_VERSIONS, modelDigest, productId: inspection?.productId ?? p.imported.product?.id ?? p.config.id, architecture, canvas: architectureSlice(architecture), sourceIndex, sourceIdentity, compatibility: p.compilerCompatibility ?? p.imported.compatibility ?? null, trace: null, scenarios: inspection?.scenarios ?? [], testContracts: inspection?.testContracts ?? [], provenance: p.config.provenance ?? null, bundleDigest, product: p.imported.product, graph: graphOf(p.imported.product), facets, gallery,
       sources: p.sources.map(s => ({ path: s.path, digest: s.parsed.digest, text: s.text, diagnostics: s.parsed.diagnostics, valid: s.parsed.valid })),
       diagnostics: [...p.errors, ...(inspection?.diagnostics ?? []), ...p.sources.flatMap(s => s.parsed.diagnostics), ...sourceIndex.diagnostics], evidence: null,
       capabilities: { gitDrafts: !p.config.fixture && !!p.config.root && this.gitDraftRoots.has(p.config.root), inspect: true, simulate: facets.some(f => f.runnable !== false), sourceDrafts: p.sources.length > 0, architectureQueries: architecture.coverage.owners > 0, recordedTrace: true, nativePreview: false, documentWrites: false, liveExecution: false },
