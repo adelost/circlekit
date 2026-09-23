@@ -87,14 +87,29 @@ Two laws for mapping code (row 155, the language freeze in Skyvw's docs/plans/20
 - **Existing code is a valid leaf.** A component or service implemented in code with declared ports is not debt and has no colour; there is no DSL coverage target. A leaf is refined into declarations only where the declaration buys simpler logic (fewer branches, one source of truth), portability (a second platform consumes it) or a proof (a law refused at build), and the row names which. "More DSL" is never a reason on its own.
 - **A mapped edge is bound or says it is not.** An edge in a product graph is runtime-bound (generated bindings carry it, the port ledger can see it) or explicitly observational, and an observational edge exists only on nodes that are not wired. The compiled product keeps every strict check; mapping never switches a check off for runnable code.
 
-## 7. What not to do
+## 7. Service intent
+
+A `service(...)` is an effect-owning architecture boundary. Give each authored service two short source sentences:
+
+```text
+WHAT: <stable responsibility>
+WHY: <boundary, coupling or failure mode it protects>
+```
+
+Do not restate ports, effects, lifetime, durability, state ownership or consumers; the DSL already declares those. WHAT/WHY is inspection/documentation metadata and never changes Product IR semantics or generated native output.
+
+Repositories using AMUX contract lint should run the changed-source strict check before merge; the linter owns wording quality and also finds ProductSpec services nested inside factories. Product Studio may display the same contract beside the compiled facts. Missing prose stays missing rather than being generated from an ID.
+
+Tests document behavior separately. Existing Given/When/Then or named tests may be associated with exact ProductSpec entity IDs for inspection, but a declared test is not a passing result and a passing unit test is not runtime observation.
+
+## 8. What not to do
 
 - No functions in a cell, a region or a ride: the shape refuses them. Build-time invariants are code and never enter the projections.
 - No side fields beside a table: a rule that is really a cell becomes an axis.
 - No silent default on a declared enum: an unreadable value is reported, not replaced.
 - No file added to a baseline to get green.
 
-## 8. Commands
+## 9. Commands
 
 In this repo, the kit:
 
