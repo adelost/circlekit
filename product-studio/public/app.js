@@ -1,7 +1,7 @@
 import { patchHTML } from './dom.js';
 import { createExperience, hasDrafts } from './experience.js';
-import { drawGraph } from './graph.js';
-import { architectureControls, sourceNavigator, entityInspector, decisionReasons, traceView, installDocumentState } from './studio-tools.js';
+import { drawGraph, machineGraph } from './graph.js';
+import { architectureControls, sourceNavigator, entityInspector, decisionReasons, traceView, traceFacet, traceGraphMarks, decisionRegionTable, initialProjectView, projectSummary, installDocumentState } from './studio-tools.js';
 
 const $ = selector => document.querySelector(selector);
 const escape = value => String(value ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -42,10 +42,10 @@ async function loadProject(key) {
   if (ticket !== generation) return;
   const isFirstVisit = !sessions.has(key);
   project = p; state = sessions.get(key) ?? freshState(); sessions.set(key, state); installDocumentState(state,p);
-  if (!p.facets.some(f => f.id === state.facetId)) selectFacet(p.facets[0]?.id ?? null, false);
-  if (!p.facets.length) state.view = p.catalogAvailable ? 'Interface' : p.sources.length ? 'Changes' : 'System';
-  if (isFirstVisit && !p.fixture && p.originKind !== 'imported-artifact') state.view = 'Welcome';
+  if (!p.facets.some(f => f.id === state.facetId)) selectFacet(p.facets.find(f=>['machine','decision-table'].includes(f.kind))?.id ?? p.facets[0]?.id ?? null, false);
+  if (isFirstVisit) state.view = initialProjectView(p);
   render();
+  if (state.view === 'Trace' && p.trace && !state.traceFrame) await loadTraceFrame(p.trace.eventCount-1);
 }
 function selectFacet(id, paint = true) {
   ++generation;
@@ -140,7 +140,7 @@ function logicView() {
   const m = f.compiled;
   if (f.runnable === false) return banner(f.blockedReason ?? 'This table is inspect-only.') + panel('Compiled model', `<pre class="panel-body">${escape(pretty(m))}</pre>`);
   return panel(`Decision table <code>${escape(f.id)}</code>`, `<div class="panel-body"><div class="fact-grid">${Object.entries(m.axes).map(([a, v]) => `<label>${escape(a)}<select data-fact="${escape(a)}">${options(v, state.facts[a])}</select></label>`).join('')}</div><div class="toolbar">${action('evaluate', '▷ Evaluate point', 'primary', f.runnable === false)}${action('edit-source', 'Open source', '', !source())}<span class="badge">${Object.values(m.axes).reduce((n, a) => n * a.length, 1)} points · ${m.cells.length} cells</span></div>${resultView()}</div>`)
-    + panel('Named regions', `<div class="table-wrap"><table><thead><tr><th>Cell</th><th>Region (omitted axes cover all values)</th><th>Values</th><th></th></tr></thead><tbody>${m.cells.map(c => `<tr data-cell="${escape(c.id)}" tabindex="0" class="${state.selected?.id === c.id ? 'selected' : ''}"><td><code>${escape(c.id)}</code></td><td>${escape(JSON.stringify(c.region))}</td><td>${escape(JSON.stringify(c.values))}</td><td>Inspect ↗</td></tr>`).join('')}</tbody></table></div>`)
+    + panel('Named regions', decisionRegionTable(f,escape,state.selected?.id))
     + panel('Every declared point', `<div class="toolbar panel-body"><button data-action="table-prev">Previous 100</button><span>Rows ${(state.tableOffset??0)+1}–${Math.min((state.tableOffset??0)+100,state.tableRows?.length??0)} of ${state.tableRows?.length??0}</span><button data-action="table-next">Next 100</button></div><div class="table-wrap">${state.tableRows ? `<table><thead><tr>${Object.keys(m.axes).map(a => `<th>${escape(a)}</th>`).join('')}<th>Cell</th><th>Values</th></tr></thead><tbody>${state.tableRows.slice(state.tableOffset??0,(state.tableOffset??0)+100).map((r, localIndex) => `<tr data-point="${localIndex+(state.tableOffset??0)}" tabindex="0">${Object.values(r.at).map(v => `<td>${escape(v)}</td>`).join('')}<td>${escape(r.cell)}</td><td>${escape(JSON.stringify(r.values))}</td></tr>`).join('')}</tbody></table>` : '<div class="empty">Loading results from the shared kernel…</div>'}</div>`);
 }
 function resultView() {
@@ -190,6 +190,7 @@ function changesView() {
 function inspector() {
   if (state.selected?.kind === 'entity') { const html=entityInspector(project,state.selected,escape); if(html) return html; }
   const f = facet(), cell = selectedCell();
+  const overview = state.selected ? '' : projectSummary(project,escape);
   if (state.selected?.kind === 'node' && state.view === 'System') {
     const n = project.graph.nodes.find(n => n.id === state.selected.id);
     if (n) return `<div class="section-label">${escape(n.kind)}</div><h2>${escape(n.id)}</h2><dl class="properties"><dt>Type</dt><dd>${escape(n.type?.id ?? 'Not exported')}</dd><dt>Ports</dt><dd>${n.ports?.length ?? 0}</dd></dl><details open><summary>Declared ports</summary><pre>${escape(pretty(n.ports))}</pre></details><details><summary>Type and runtime contract</summary><pre>${escape(pretty(n.type))}</pre></details><details><summary>Instance</summary><pre>${escape(pretty(n.declaration))}</pre></details>${banner('Inspect only. Connecting ports requires source provenance and full product validation, which this adapter has not supplied.')}`;
@@ -202,26 +203,24 @@ function inspector() {
     const value = state.selected.kind === 'artifact' ? project.product?.artifacts.find(a => a.id === state.selected.id) : project.product?.artifactScopes[Number(state.selected.id)];
     return `<div class="section-label">Declared scope</div><pre>${escape(pretty(value))}</pre><hr>${banner('Declared capability is not proof of a connected renderer.')}`;
   }
-  if (['Welcome','Problems','Compare','System','Trace','Intent'].includes(state.view))
-    return `<div class="section-label">Inspection</div><h2>${state.view==='Trace'?'Select an event':'Select an object'}</h2>`;
-  if (!f) return `<div class="section-label">Inspection</div><h2>Select an object</h2><p class="subtitle">Choose a declaration, node, component case or artifact.</p><hr><span class="badge warning">No runtime connected</span>`;
-  if (f.runnable === false || !['machine','decision-table'].includes(f.kind)) return `<h2>${escape(f.id)}</h2>${banner(f.blockedReason ?? 'Inspection only')}<details><summary>Raw exported model</summary><pre>${escape(pretty(f.compiled))}</pre></details>`;
+  if (['Welcome','Problems','Compare','System','Trace','Intent'].includes(state.view)) return overview;
+  if (!f) return overview;
+  if (f.runnable === false || !['machine','decision-table'].includes(f.kind)) return `${overview}<h2>${escape(f.id)}</h2>${banner(f.blockedReason ?? 'Inspection only')}<details><summary>Raw exported model</summary><pre>${escape(pretty(f.compiled))}</pre></details>`;
   if (f.kind === 'machine') {
     const relevant = new Set(f.compiled.cells.filter(c => c.from === state.machineState && c.on === state.input).flatMap(c => [...c.requires, ...c.forbids]));
-    return `<div class="section-label">${cell ? 'Transition definition' : 'Machine'}</div><h2>${escape(cell?.id ?? f.id)}</h2>${cell ? `<dl class="properties"><dt>From</dt><dd>${escape(cell.from)}</dd><dt>Event</dt><dd>${escape(cell.on)}</dd><dt>To</dt><dd>${escape(cell.to)}</dd></dl><div class="toolbar">${action('use-cell', 'Use as synthetic input')}${action('edit-cell', 'Edit definition', '', !f.editable)}</div><hr>` : ''}
+    return `${overview}<div class="section-label">${cell ? 'Transition definition' : 'Machine'}</div><h2>${escape(cell?.id ?? f.id)}</h2>${cell ? `<dl class="properties"><dt>From</dt><dd>${escape(cell.from)}</dd><dt>Event</dt><dd>${escape(cell.on)}</dd><dt>To</dt><dd>${escape(cell.to)}</dd></dl><div class="toolbar">${action('use-cell', 'Use as synthetic input')}${action('edit-cell', 'Edit definition', '', !f.editable)}</div><hr>` : ''}
       <div class="section-label">Scenario facts · not definition edits</div><small>Required for this event are marked •. Unknown blocks stepping.</small>
       ${f.compiled.guards.map(g => `<label class="guard-row ${String(state.guards[g])}"><code>${relevant.has(g) ? '• ' : ''}${escape(g)}</code><select data-guard="${escape(g)}" aria-label="Scenario guard ${escape(g)}"><option value="unknown" ${state.guards[g] === 'unknown' ? 'selected' : ''}>Unknown</option><option value="true" ${state.guards[g] === true ? 'selected' : ''}>True</option><option value="false" ${state.guards[g] === false ? 'selected' : ''}>False</option></select></label>`).join('')}
       <hr><div class="section-label">Source ${f.source ? `· line ${f.source.line}` : ''}</div><pre class="source-excerpt">${escape(pretty(cell ?? { id: f.id, initial: f.compiled.initial, rests: f.compiled.rests, deadlines: f.compiled.deadlines }))}</pre><hr><small>Guards are supplied facts. No sensor, deadline timer or native field update runs here.</small>`;
   }
-  return `<div class="section-label">Decision region</div><h2>${escape(cell?.id ?? f.id)}</h2>${cell ? `<dl class="properties"><dt>Region</dt><dd><pre>${escape(pretty(cell.region))}</pre></dd><dt>Values</dt><dd><pre>${escape(pretty(cell.values))}</pre></dd></dl>${action('edit-cell', 'Edit region / values', '', !f.editable)} ${action('split-region', 'Split region', '', !f.editable)}` : '<p class="subtitle">Select a named cell or evaluate a point.</p>'}<hr><div class="section-label">Product invariants</div>${(f.compiled.invariants ?? []).length ? f.compiled.invariants.map(v => `<p class="notice info">${escape(v)}</p>`).join('') : '<small>No additional product invariants in this table.</small>'}<hr><div class="section-label">Why / why not</div>${decisionReasons(state.result?.alternatives,escape)}${f.validation.includes('structure-only') ? banner('Invariant callback code was not present in the imported artifact. It was not re-executed.') : ''}`;
+  return `${overview}<div class="section-label">Decision region</div><h2>${escape(cell?.id ?? f.id)}</h2>${cell ? `<dl class="properties"><dt>Region</dt><dd><pre>${escape(pretty(cell.region))}</pre></dd><dt>Values</dt><dd><pre>${escape(pretty(cell.values))}</pre></dd></dl>${action('edit-cell', 'Edit region / values', '', !f.editable)} ${action('split-region', 'Split region', '', !f.editable)}` : '<p class="subtitle">Select a named cell or evaluate a point.</p>'}<hr><div class="section-label">Product invariants</div>${(f.compiled.invariants ?? []).length ? f.compiled.invariants.map(v => `<p class="notice info">${escape(v)}</p>`).join('') : '<small>No additional product invariants in this table.</small>'}<hr><div class="section-label">Why / why not</div>${decisionReasons(state.result?.alternatives,escape)}${f.validation.includes('structure-only') ? banner('Invariant callback code was not present in the imported artifact. It was not re-executed.') : ''}`;
 }
 
 function renderGraph() {
   const host = $('#graph'); if (!host) { graph?.destroy(); graph=null; graphHost=null; graphSignature=''; return; }
-  const f = facet(); let nodes, edges;
-  if (state.view === 'Logic' && f?.kind === 'machine') {
-    nodes = f.compiled.states.map(id => ({ id, label: id, kind: 'state', subtitle: f.compiled.rests.includes(id) ? 'Rest state · may wait' : 'Deadline exit required' }));
-    edges = f.compiled.cells.map(c => ({ id: c.id, source: c.from, target: c.to, label: c.on }));
+  const f = state.view==='Trace'?traceFacet(project,state):facet(); let nodes, edges;
+  if (['Logic','Trace'].includes(state.view) && f?.kind === 'machine') {
+    ({nodes,edges}=machineGraph(f));
   } else {
     const canvas = state.canvas ?? project.canvas;
     if (canvas) { nodes=canvas.nodes; edges=canvas.edges; } else {
@@ -230,13 +229,17 @@ function renderGraph() {
     edges = project.graph.edges.map(e => ({ ...e, label: e.purpose ?? e.kind ?? 'binding' }));
     }
   }
-  const cameraKey = project.key + ':' + state.view + ':' + (state.view === 'System' ? (state.architectureMode ?? 'owners') + ':' + (state.architectureGroup ?? '') + ':' + (state.focusKey ?? 'all') : f?.id ?? 'system');
+  const compact=state.view==='Trace'&&host.clientWidth<700;
+  const cameraKey = project.key + ':' + (state.view === 'System' ? 'System:'+(state.architectureMode ?? 'owners') + ':' + (state.architectureGroup ?? '') + ':' + (state.focusKey ?? 'all') : state.view+':'+(f?.id??'system')+(compact?':compact':''));
   const signature = JSON.stringify({cameraKey, model:project.modelDigest, nodes, edges});
-  if (host === graphHost && signature === graphSignature && (!state.selected?.id || graph.has(state.selected.id) || !nodes.some(n=>n.id===state.selected.id))) { graph.select(state.selected?.id,state.view==='Logic'?state.machineState:null); return; }
+  const marks=state.view==='Trace'&&f?.kind==='machine'&&state.traceFrame?traceGraphMarks(f,state.traceFrame):null;
+  const selected=state.view==='Trace'?marks?.currentEdge:state.selected?.id,active=state.view==='Trace'?marks?.currentTo:state.view==='Logic'?state.machineState:null;
+  if (host === graphHost && signature === graphSignature && (!selected || graph.has(selected) || !nodes.some(n=>n.id===selected))) { graph.select(selected,active,marks); return; }
   graph?.destroy();graphHost=host;graphSignature=signature;
-  graph = drawGraph(host, { nodes, edges, key: cameraKey, legacyKey:project.key+':'+(f?.id??'system')+':'+state.view,
-    selected: state.selected?.id, active: state.view === 'Logic' ? state.machineState : null,
-    onSelect: (kind, id) => { if (state.view === 'System' && state.architectureMode === 'domains') { state.architectureGroup=id; state.architectureMode='owners'; refreshArchitecture(); return; } state.selected = { kind: state.view === 'System' && kind === 'node' ? 'entity' : state.view === 'Logic' && kind === 'edge' ? 'cell' : kind, id }; render(); if (innerWidth < 950) $('.inspector').classList.add('open'); } });
+  graph = drawGraph(host, { nodes, edges, key: cameraKey, legacyKey:state.view==='Trace'?null:project.key+':'+(f?.id??'system')+':'+state.view,
+    columns:compact?2:3,viewWidth:compact?650:1000,viewHeight:state.view==='Trace'?350:550,
+    selected, active, trace:marks,
+    onSelect: (kind, id) => { if (state.view === 'System' && state.architectureMode === 'domains') { state.architectureGroup=id; state.architectureMode='owners'; refreshArchitecture(); return; } if(state.view==='Trace'){selectFacet(f.id,false);state.view='Logic';} state.selected = { kind: state.view === 'System' && kind === 'node' ? 'entity' : state.view === 'Logic' && kind === 'edge' ? 'cell' : kind, id }; render(); if (innerWidth < 950) $('.inspector').classList.add('open'); } });
 }
 async function loadTable() {
   const ticket = generation, id = state.facetId; state.tableRows = [];
@@ -259,7 +262,7 @@ function bind() {
   listen($('#mobile-view'),'change',e=>showView(e.target.value));
   document.querySelectorAll('[data-facet]').forEach(b => b.onclick = () => { selectFacet(b.dataset.facet, false); state.view = 'Logic'; render(); });
   document.querySelectorAll('[data-node]').forEach(b => b.onclick = () => { state.view = 'System'; state.selected = { kind: 'entity', id: project.architecture.entities.find(e=>e.id===b.dataset.node && ['node','component'].includes(e.kind))?.key };  render(); });
-  document.querySelectorAll('[data-cell]').forEach(b => { const choose = () => { state.selected = { kind: 'cell', id: b.dataset.cell }; render(); }; b.onclick = choose; b.onkeydown = e => { if (e.key === 'Enter') choose(); }; });
+  document.querySelectorAll('[data-cell]').forEach(b => { const choose = () => { if(state.view==='Trace'){const f=traceFacet(project,state);if(f){selectFacet(f.id,false);state.view='Logic';}} state.selected = { kind: 'cell', id: b.dataset.cell }; render(); }; b.onclick = choose; b.onkeydown = e => { if (e.key === 'Enter') choose(); }; });
   document.querySelectorAll('[data-point]').forEach(b => { const choose = () => { state.facts = { ...state.tableRows[Number(b.dataset.point)].at }; perform('evaluate'); }; b.onclick = choose; b.onkeydown = e => { if (e.key === 'Enter') choose(); }; });
   document.querySelectorAll('[data-case]').forEach(b => b.onclick = () => { state.selected = { kind: 'case', id: b.dataset.case }; render(); if (innerWidth < 950) $('.inspector').classList.add('open'); });
   document.querySelectorAll('[data-artifact],[data-scope]').forEach(b => b.onclick = () => { state.selected = { kind: b.dataset.artifact ? 'artifact' : 'scope', id: b.dataset.artifact ?? b.dataset.scope }; render(); });

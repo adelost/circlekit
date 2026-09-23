@@ -1,4 +1,37 @@
 import { intentPanel } from './documentation.js';
+export function initialProjectView(project) {
+  if (project.trace?.eventCount > 0) return 'Trace';
+  if (project.facets.some(f => ['machine','decision-table'].includes(f.kind))) return 'Logic';
+  if (project.product && project.graph.nodes.length) return 'System';
+  if (project.catalogAvailable) return 'Interface';
+  return project.sources.length ? 'Changes' : 'Welcome';
+}
+
+export const traceFacet = (project,state) => project.facets.find(f => f.id === state.traceFrame?.current?.logic?.facetId) ?? null;
+
+export function traceGraphMarks(facet, frame) {
+  const pastNodes=new Set(),pastEdges=new Set(),cells=new Map(facet.compiled.cells.map(c=>[c.id,c]));
+  const states=new Set(facet.compiled.states);
+  const recorded=logic=>logic?.facetId===facet.id && states.has(logic.from) && states.has(logic.to);
+  const edge=logic=>cells.get(logic.cellId)?.from===logic.from && cells.get(logic.cellId)?.to===logic.to?logic.cellId:null;
+  for(const event of frame.events??[]) if(event.eventIndex<frame.cursor && event.kind==='transition' && recorded(event.logic)) {
+    pastNodes.add(event.logic.from);pastNodes.add(event.logic.to);
+    if(edge(event.logic))pastEdges.add(event.logic.cellId);
+  }
+  const current=recorded(frame.current?.logic)?frame.current.logic:null;
+  return {pastNodes,pastEdges,currentFrom:current?.from??null,currentTo:current?.to??null,currentEdge:current?edge(current):null};
+}
+
+export function decisionRegionTable(facet,escape,selectedCellId=null,trace=false) {
+  return `<div class="table-wrap"><table><thead><tr><th>Cell</th><th>Region (omitted axes cover all values)</th><th>Values</th><th></th></tr></thead><tbody>${facet.compiled.cells.map(c => `<tr data-cell="${escape(c.id)}" tabindex="0" ${trace&&selectedCellId===c.id?'aria-current="step"':''} class="${selectedCellId===c.id?(trace?'trace-current':'selected'):''}"><td><code>${escape(c.id)}</code></td><td>${escape(JSON.stringify(c.region))}</td><td>${escape(JSON.stringify(c.values))}</td><td>Inspect ↗</td></tr>`).join('')}</tbody></table></div>`;
+}
+export function projectSummary(project,escape) {
+  const c=project.convergence,verdict=c?.verdict??'Unknown',counts=c?.counts;
+  const tone=verdict==='Converged'?'good':verdict==='Diverged'?'error':'warning';
+  const laws=(counts?.laws?.passed??0)+(counts?.laws?.failed??0)+(counts?.laws?.skipped??0),steps=project.trace?.eventCount??0;
+  const validated=counts?.contracts?.validated??0,total=counts?.contracts?.total??0;
+  return `<div class="section-label">Project evidence</div><h2><span class="badge ${tone}">${escape(c?.label??verdict)}</span></h2><p class="project-evidence">${laws} laws · ${steps} trace steps<br>WHAT/WHY ${validated}/${total}</p><small>Loaded evidence only. Select an object for its details.</small>`;
+}
 function traceTime(ms,domain) {
   if(domain==='wall')return new Date(ms).toISOString().slice(11,19)+' UTC';
   if(ms<1000)return ms+' ms';
@@ -94,8 +127,14 @@ export function traceView(project, state, escape) {
   if(!trace) return `<section class="panel"><header class="panel-head"><h2>Recorded trace</h2><button data-action="import-trace">Import trace</button></header><div class="panel-body"><div class="notice info">Import ordered events from a product-owned recorder. Count-only snapshots cannot be played as event history.</div><p class="muted">Producer identity for this selection:</p><pre>${escape(JSON.stringify({productId:project.productId,modelDigest:project.modelDigest},null,2))}</pre><button data-action="trace-format">Export recorder example</button><p class="muted">The example records nothing automatically. Connect actual runtime hooks through their existing owner.</p></div></section>`;
   const frame=state.traceFrame, cursor=state.traceCursor ?? trace.eventCount-1, max=Math.max(0,trace.eventCount-1);
   const rows=frame?.events ?? [];
+  const f=traceFacet(project,state);
+  const marks=f?.kind==='machine'&&frame?traceGraphMarks(f,frame):null;
+  const current=marks?.currentTo ? `<div class="trace-step-cue"><span class="section-label">Current state</span><strong>${escape(marks.currentFrom)} <span aria-hidden="true">→</span> ${escape(marks.currentTo)}</strong>${marks.currentEdge?`<span class="badge">${escape(f.compiled.cells.find(c=>c.id===marks.currentEdge)?.on??marks.currentEdge)}</span>`:''}</div>` : '';
+  const model=f?.kind==='machine' ? `<div class="trace-model"><div class="section-label">${escape(f.id)} · recorded transition</div>${current}<div id="graph" data-managed="graph" class="graph-host"></div><small>Past transitions shown from the loaded trace page. Layout and camera stay in this machine.</small></div>`
+    : f?.kind==='decision-table' ? `<div class="trace-model"><div class="section-label">${escape(f.id)} · recorded decision</div>${decisionRegionTable(f,escape,frame.current.logic?.cellId,true)}</div>` : '';
   return `<section class="panel"><header class="panel-head"><h2>${trace.provenance === 'synthetic' ? 'Synthetic trace' : trace.provenance === 'test-run' ? 'Test run trace' : 'Recorded trace'} <code>${escape(trace.sessionId)}</code></h2><div class="toolbar"><button data-action="import-trace">Import another</button><button data-action="export-trace">Export trace</button></div></header>
     <div class="panel-body"><div class="notice ${trace.complete ? 'info' : ''}">${escape(trace.notice)}<p>${trace.eventCount} retained events · ${trace.truncation.droppedBefore} dropped before capture${trace.truncation.gaps.length ? ` · ${trace.truncation.gaps.length} recorded gaps` : ''}</p></div>
+      ${model}
       ${traceStateBand(trace,cursor,escape)}
       <div class="toolbar"><button data-action="trace-first">⏮ First</button><button data-action="trace-back">◁ Back</button><button data-action="trace-next">Next ▷</button><button data-action="trace-last">Last ⏭</button><label>Frame <input id="trace-cursor" type="range" min="0" max="${max}" value="${Math.max(0,cursor)}" ${trace.eventCount ? '' : 'disabled'}></label><code>${cursor+1} / ${trace.eventCount}</code><span class="badge">${escape(trace.clock.domain)} ms</span></div>
       <div class="fact-grid"><label>Filter recorded text<input id="trace-search" value="${escape(state.traceSearch ?? '')}" placeholder="Entity, cell or summary"></label><label>Operation ID<input id="trace-operation" value="${escape(state.traceOperation ?? '')}" placeholder="Exact operation ID"></label><button data-action="trace-filter">Filter</button></div>
