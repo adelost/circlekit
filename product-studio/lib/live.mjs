@@ -118,7 +118,8 @@ export class LiveSessionHub {
     this.reconnects.set(digest(reconnectCredential),{
       project:p.key,producer:claim.producer,origin:claim.origin,expires:this.now()+RECONNECT_MS,
     });
-    const session={ socket,p,view,writer,id:message.captureId,scope:message.scope,through:-1,ended:false };
+    const session={ socket,p,view,writer,id:message.captureId,scope:message.scope,through:-1,ended:false,
+      count:0,dropped:0,ending:'open' };
     session.bytes=Buffer.byteLength(JSON.stringify(writer.snapshot()));
     requireThat(this.retainedBytes+session.bytes<=RETAINED_BYTES,'live.overloaded','Receiver retention budget exhausted.');
     this.retainedBytes+=session.bytes;
@@ -149,6 +150,8 @@ export class LiveSessionHub {
     session.bytes=Buffer.byteLength(JSON.stringify(session.writer.snapshot()));
     this.retainedBytes+=session.bytes;
     session.through=through;
+    session.count+=events.length;
+    session.dropped+=message.dropped.reduce((count,gap)=>count+gap.to-gap.from+1,0);
     session.p.trace=decodeTrace(JSON.stringify(session.writer.snapshot()),session.view);
     this.statuses.set(session.p.key,{label:'Live',state:'observing',events:session.p.trace.events.length,captureId:session.id});
     return {type:'ack',through};
@@ -158,7 +161,7 @@ export class LiveSessionHub {
     onlyKeys(message,['type','through'],'live.end');
     requireThat(message.type === 'end' && message.through === session.through,
       'live.end','Finish only after the final batch watermark was acknowledged.');
-    session.writer.end(message.through);session.ended=true;
+    session.writer.end(message.through);session.ended=true;session.ending='clean';
     this.retainedBytes-=session.bytes;
     session.bytes=Buffer.byteLength(JSON.stringify(session.writer.snapshot()));
     this.retainedBytes+=session.bytes;
@@ -197,6 +200,7 @@ export class LiveSessionHub {
     socket.on('close',()=>{
       clearTimeout(deadline);this.sockets.delete(socket);this.pending.delete(socket);this.active.delete(socket);
       if(session && !session.ended) {
+        session.ending='interrupted';
         session.writer.interrupt();session.p.trace=decodeTrace(JSON.stringify(session.writer.snapshot()),session.view);
         this.retainedBytes-=session.bytes;
         session.bytes=Buffer.byteLength(JSON.stringify(session.writer.snapshot()));
@@ -207,7 +211,20 @@ export class LiveSessionHub {
     socket.on('error',()=>socket.terminate());
   }
 
-  status(project) { return this.statuses.get(project)??{label:'Disconnected',state:'disconnected',events:0}; }
+  status(project) {
+    const current=this.app.view(this.app.require(project));
+    const sessions=[...this.captures.values()].filter(capture=>capture.p.key===project)
+      .map(capture=>({id:capture.id,events:capture.count,drops:capture.dropped,ending:capture.ending,
+        modelMatched:capture.view.modelDigest===current.modelDigest&&capture.view.bundleDigest===current.bundleDigest}));
+    return {...(this.statuses.get(project)??{label:'Disconnected',state:'disconnected',events:0}),sessions};
+  }
+  selectedSnapshot(project,captureId,currentView) {
+    const capture=this.captures.get(captureId);
+    requireThat(capture?.p.key===project,'live.capture','Capture does not belong to this project.',404);
+    requireThat(capture.view.modelDigest===currentView.modelDigest&&capture.view.bundleDigest===currentView.bundleDigest,
+      'live.model-mismatch','Capture belongs to another compiled build.',409);
+    return decodeTrace(JSON.stringify(capture.writer.snapshot()),capture.view);
+  }
   snapshot(captureId) { return this.captures.get(captureId)?.writer.snapshot()??null; }
   close() { clearInterval(this.liveness);for(const socket of this.sockets)socket.terminate();this.ws.close(); }
 }

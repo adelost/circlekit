@@ -55,8 +55,9 @@ function liveStatusLine(trace,state,escape) {
   if(trace.version!==2)return '';
   const selected=state.liveCaptureId??trace.capture.id;
   const sessions=state.liveStatus?.sessions?.length?state.liveStatus.sessions:[{id:trace.capture.id}];
+  const selectedSession=sessions.find(session=>session.id===selected);
   const connected=state.liveStatus?.state==='observing'&&state.liveStatus.captureId===selected;
-  const matched=state.liveStatus?.state!=='model-mismatch';
+  const matched=selectedSession?.modelMatched??state.liveStatus?.state!=='model-mismatch';
   return `<div class="toolbar trace-live-status"><label>Session<select id="live-session">${sessions.map(session=>
     `<option value="${escape(session.id)}" ${session.id===selected?'selected':''}>${escape(session.id)}</option>`).join('')}</select></label>
     <span class="badge ${connected?'good':'warning'}">${connected?'Connected':'Disconnected'}</span>

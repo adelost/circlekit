@@ -29,6 +29,7 @@ async function api(route, body) {
 function toast(message) { clearTimeout(toastTimer); $('#toast').textContent = message; $('#toast').style.display = 'block'; toastTimer = setTimeout(() => { $('#toast').style.display = 'none'; }, 7000); }
 function facet() { return project?.facets.find(f => f.id === state.facetId); }
 function source() { const f = facet(); return project?.sources.find(s => s.path === state?.sourcePath) ?? project?.sources.find(s => s.path === f?.file) ?? project?.sources[0]; }
+function selectedConvergence() { return state.view==='Trace'&&state.liveTrace?state.liveConvergence:project.convergence; }
 const action = (name, label, cls = '', disabled = false) => `<button data-action="${name}" class="${cls}" ${disabled ? 'disabled' : ''}>${label}</button>`;
 const options = (values, selected) => values.map(v => `<option value="${escape(v)}" ${v === selected ? 'selected' : ''}>${escape(v)}</option>`).join('');
 const banner = (text, kind = 'info') => `<div class="notice ${kind}">${escape(text)}</div>`;
@@ -70,6 +71,7 @@ function selectedCell() {
 
 function render() {
   if (!project) return;
+  const convergence=selectedConvergence();
   const f = facet(), query = state.search.toLowerCase(), title = { System: 'Explore the system', Logic: f?.kind === 'machine' ? 'Lifecycle logic' : 'Policy decisions', Scenarios: 'Explore possible outcomes', Interface: 'Components & surfaces', Changes: 'Code & review', Trace: 'Trace', Problems: 'Problems & evidence', Compare: 'Review model changes', Welcome: 'Overview', Intent: 'Intent, structure and behavior' }[state.view];
   const list = project.facets.filter(item => item.id.toLowerCase().includes(query));
   const sourceLabel = ({ fixture: 'Public source fixture', example: 'Synthetic example', workspace: 'Local workspace', 'source-draft': 'Source draft', 'imported-artifact': 'Imported artifact' })[project.originKind] ?? 'Local data';
@@ -81,7 +83,7 @@ function render() {
     <header class="topbar"><div class="brand"><div class="brand-mark">P</div><span>PRODUCT STUDIO</span></div>
       <select class="project-select" id="project" aria-label="Select product">${projects.map(p => `<option value="${escape(p.key)}" ${p.key === project.key ? 'selected' : ''}>${escape(p.label)}</option>`).join('')}</select>
       <nav aria-label="Workbench views">${views.map(v => `<button data-view="${v}" class="${v === state.view ? 'active' : ''}" ${v === state.view ? 'aria-current="page"' : ''}>${v}</button>`).join('')}<select id="mobile-view" aria-label="Workbench view">${mobileViews.map(([id,label])=>`<option value="${escape(id)}" ${id===state.view?'selected':''}>${escape(label)}</option>`).join('')}</select></nav>
-      <div class="spacer"></div><div class="top-actions"><button id="convergence-badge" class="badge convergence ${project.convergence?.verdict === 'Converged' ? 'good' : project.convergence?.verdict === 'Diverged' ? 'error' : ''}" aria-label="Convergence details">${escape(project.convergence?.label ?? 'Unknown')}</button><span class="badge top-mode ${state.mode === 'Simulation' ? 'simulation' : ''}">${escape(state.mode)}</span>${action('reload', '↻', 'subtle', !project.key || project.key.startsWith('import-') || project.key.startsWith('source-'))}</div>
+      <div class="spacer"></div><div class="top-actions"><button id="convergence-badge" class="badge convergence ${convergence?.verdict === 'Converged' ? 'good' : convergence?.verdict === 'Diverged' ? 'error' : ''}" aria-label="Convergence details">${escape(convergence?.label ?? 'Unknown')}</button><span class="badge top-mode ${state.mode === 'Simulation' ? 'simulation' : ''}">${escape(state.mode)}</span>${action('reload', '↻', 'subtle', !project.key || project.key.startsWith('import-') || project.key.startsWith('source-'))}</div>
     </header>
     <div class="main-grid"><aside class="explorer" aria-label="Program explorer">
       <div class="section-label">Workspace</div><input id="search" aria-label="Search nodes, ports or rules" placeholder="Search nodes, ports or rules" value="${escape(state.search)}">
@@ -191,7 +193,8 @@ function changesView() {
 function inspector() {
   if (state.selected?.kind === 'entity') { const html=entityInspector(project,state.selected,escape); if(html) return html; }
   const f = facet(), cell = selectedCell();
-  const overview = state.selected ? '' : projectSummary(project,escape);
+  const overview = state.selected ? '' : projectSummary(state.view==='Trace'&&state.liveTrace
+    ?{...project,trace:state.liveTrace,convergence:selectedConvergence()}:project,escape);
   if (state.selected?.kind === 'node' && state.view === 'System') {
     const n = project.graph.nodes.find(n => n.id === state.selected.id);
     if (n) return `<div class="section-label">${escape(n.kind)}</div><h2>${escape(n.id)}</h2><dl class="properties"><dt>Type</dt><dd>${escape(n.type?.id ?? 'Not exported')}</dd><dt>Ports</dt><dd>${n.ports?.length ?? 0}</dd></dl><details open><summary>Declared ports</summary><pre>${escape(pretty(n.ports))}</pre></details><details><summary>Type and runtime contract</summary><pre>${escape(pretty(n.type))}</pre></details><details><summary>Instance</summary><pre>${escape(pretty(n.declaration))}</pre></details>${banner('Inspect only. Connecting ports requires source provenance and full product validation, which this adapter has not supplied.')}`;
@@ -362,7 +365,7 @@ function showInfo(title, text, code = '') {
   d.showModal(); $('#close-dialog').onclick = () => d.close();
 }
 function showConvergence() {
-  const c=project.convergence,d=$('#dialog');
+  const c=selectedConvergence(),d=$('#dialog');
   d.innerHTML=`<h2>${escape(c.label)}</h2><p class="subtitle">Loaded evidence for ${escape(project.label)}. No tests or product code ran to produce this verdict.</p>
     <p class="muted">Laws ${c.counts.laws.passed} passed, ${c.counts.laws.failed} failed, ${c.counts.laws.skipped} skipped. Trace ${c.counts.trace.consistent} consistent, ${c.counts.trace.different} different, ${c.counts.trace.unknown} unknown. WHAT/WHY ${c.counts.contracts.validated}/${c.counts.contracts.total} validated, ${c.counts.contracts.matched} matched to exported source provenance, ${c.counts.contracts.external} external or unmapped.</p>
     <p class="muted">Kernel ${escape(c.kernel.producer ?? 'unknown')} / ${escape(c.kernel.evaluator)}: ${c.kernel.match?'matched':'unknown or different'}. Trace identity: ${c.traceIdentity.loaded?'matched loaded artifact or model':'unavailable'}.</p>
@@ -513,9 +516,11 @@ async function loadLiveSession(captureId) {
   if(!project.trace||state.liveCaptureId===captureId)return;
   const owner=project,view=state,ticket=++generation;
   try {
-    const trace=captureId===owner.trace.capture?.id?null:await api('live-snapshot',{project:owner.key,captureId});
+    const result=captureId===owner.trace.capture?.id?null:await api('live-snapshot',{project:owner.key,bundleDigest:owner.bundleDigest,captureId});
     if(ticket!==generation||project!==owner||state!==view)return;
-    state.liveTrace=trace;state.liveCaptureId=captureId;state.liveFollowTail=true;
+    state.liveTrace=result?{...result.trace,eventCount:result.trace.events.length}:null;
+    state.liveConvergence=result?.convergence??null;
+    state.liveCaptureId=captureId;state.liveFollowTail=true;
     state.traceFrame=null;state.traceHistory=null;state.traceHistoryError=null;state.traceOffset=0;
     await loadTraceFrame((trace??project.trace).eventCount-1);
   }catch(error){if(ticket===generation){state.liveError=error.message;render();}}
@@ -535,13 +540,19 @@ async function pollLiveTrace() {
     const previous=project.trace,changed=latest.trace?.traceDigest!==previous?.traceDigest;
     const statusChanged=JSON.stringify(status)!==JSON.stringify(view.liveStatus);
     if(!changed&&!statusChanged&&!view.liveError)return;
+    const follow=view.liveFollowTail!==false&&(!view.liveCaptureId||view.liveCaptureId===previous?.capture?.id);
+    if(changed&&previous?.capture?.id!==latest.trace?.capture?.id&&!follow&&view.liveCaptureId===previous?.capture?.id&&!view.liveTrace){
+      const retained=await api('live-snapshot',{project:key,bundleDigest:project.bundleDigest,captureId:previous.capture.id});
+      if(ticket!==generation||project.key!==key||state!==view)return;
+      view.liveTrace={...retained.trace,eventCount:retained.trace.events.length};
+      view.liveConvergence=retained.convergence;
+    }
     if(changed)project={...project,trace:latest.trace,convergence:latest.convergence};
     view.liveStatus=status;view.liveError=null;
     if(latest.trace?.version!==2){if(statusChanged)render();return;}
-    const follow=view.liveFollowTail!==false&&(!view.liveCaptureId||view.liveCaptureId===previous?.capture?.id);
     if(follow)view.liveCaptureId=latest.trace.capture.id;
     if(changed&&view.liveCaptureId===latest.trace.capture.id){
-      view.liveTrace=null;view.traceHistory=null;view.traceHistoryError=null;
+      view.liveTrace=null;view.liveConvergence=null;view.traceHistory=null;view.traceHistoryError=null;
       const last=latest.trace.eventCount-1;
       await loadTraceFrame(follow?last:Math.min(view.traceCursor??last,last));
     }else if(changed||statusChanged)render();
