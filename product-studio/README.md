@@ -16,6 +16,7 @@ From a product root containing `studio.workspace.json`:
 
 ```bash
 v1d-studio check
+v1d-studio laws
 v1d-studio
 ```
 

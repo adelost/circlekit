@@ -63,14 +63,12 @@ Only literal generated values referenced in a located Kotlin test body are assoc
 ## ProductSpec declaration laws
 
 ```bash
-v1d-studio laws --product amux-link \
-  --kernel-root android/audio-inbox/product-spec \
-  --output test-results/amux-link-laws.json
+v1d-studio laws --product amux-link
 ```
 
 The report validates ProductSpec node types with `validateProductNodeType` and finite machine/decision-table facets through the shared ProductSpec kernel.
 
-When the product uses a different ProductSpec version, `--kernel-root` selects that product's installed, lockfile-matching compiler. Without an exact producer/evaluator match, affected checks are `skipped`. They are never silently revalidated with a newer compiler. Generated-law IDs include the exact Studio model digest and are associated only when that digest still matches.
+Studio derives the product's installed, lockfile-matching compiler from the workspace. `--kernel-root` explicitly selects another package when needed. Without an exact producer/evaluator match, affected checks are `skipped`. They are never silently revalidated with a newer compiler. The default report path is `test-results/<project-id>-laws.json`; generated-law IDs include the exact Studio model digest and are associated only when that digest still matches.
 
 ## Viewer boundary
 

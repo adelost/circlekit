@@ -43,7 +43,7 @@ export const HELP = `Product Studio
   v1d-studio bundle --root repository --product generated/product.json
                    --compiler-version X.Y.Z [--facet compiled-machine.json]...
                    [--source src/app.ts]... [--output generated/product.studio.json]
-  v1d-studio laws --product ID --kernel-root PACKAGE_DIR --output test-results/laws.json
+  v1d-studio laws [repository] [--product ID] [--kernel-root PACKAGE_DIR] [--output test-results/<project-id>-laws.json]
   v1d-studio junit --input result.xml --source-root TEST_DIR --output test-results/bdd-run.json
 
 Read/debug commands emit one JSON object, except plan emits Markdown. None starts HTTP or writes a product.
