@@ -19,7 +19,9 @@ export type FetchRetry = {
 
 export type FetchCache =
   | { readonly kind: "none" }
-  | { readonly kind: "value" | "coverage"; readonly maxAgeMs: number;
+  | { readonly kind: "value"; readonly maxAgeMs: number;
+      readonly homeRadiusM?: number; readonly onFailure: "keep-last-good" }
+  | { readonly kind: "coverage";
       readonly homeRadiusM?: number; readonly onFailure: "keep-last-good" };
 
 export type FetchFailure =
@@ -73,8 +75,8 @@ export function fetchService<const Spec extends FetchServiceSpec>(spec: Spec): F
     if (!["serve-stale", "fail"].includes(failure.offline)) fail("failure.offline");
     if (failure.offline === "serve-stale" && failure.cache?.kind === "none") fail("failure.cache for serve-stale");
   }
+  if (failure.cache?.kind === "value") positive(failure.cache.maxAgeMs, "failure.cache.maxAgeMs", fail);
   if (failure.cache?.kind === "value" || failure.cache?.kind === "coverage") {
-    positive(failure.cache.maxAgeMs, "failure.cache.maxAgeMs", fail);
     if (failure.cache.homeRadiusM !== undefined) positive(failure.cache.homeRadiusM, "failure.cache.homeRadiusM", fail);
     if (failure.cache.onFailure !== "keep-last-good") fail("failure.cache.onFailure");
   } else if (failure.cache?.kind !== "none") fail("failure.cache.kind");

@@ -42,6 +42,18 @@ test("local pending work has no invented network timeout", () => {
   assert.equal(declared.cadenceMs, 60_000);
 });
 
+test("coverage cache is spatial while a value cache needs a real age", () => {
+  const coverage = fetchService({ ...weather,
+    flow: { mode: "spatial", everyMs: 24 * 60 * 60_000, minSpacingMs: 10_000 },
+    freshness: { kind: "coverage", recheckAfterMs: 24 * 60 * 60_000 },
+    failure: { ...weather.failure, cache: { kind: "coverage", onFailure: "keep-last-good" } },
+  });
+  assert.equal(coverage.failure.cache.kind, "coverage");
+  assert.throws(() => fetchService({ ...weather,
+    failure: { ...weather.failure, cache: { kind: "value", onFailure: "keep-last-good" } },
+  } as unknown as FetchServiceSpec), /failure\.cache\.maxAgeMs/u);
+});
+
 function negativeTypes() {
   // @ts-expect-error A network fetch must declare its failure policy.
   fetchService({ id: "bad", flow: weather.flow, freshness: weather.freshness,
