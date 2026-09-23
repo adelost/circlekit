@@ -9,6 +9,7 @@ const SPEC = {
   serve: ['workspace', 'port', 'data-dir', 'allow-git-drafts', 'amux-root'],
   doctor: ['workspace', 'product', 'examples', 'pretty', 'amux-root'],
   converge: ['workspace', 'product', 'pretty', 'tasks', 'amux-root'],
+  review: ['workspace', 'product', 'changed', 'amux-root'],
   contracts: ['product', 'pretty', 'amux-root'],
   export: ['product', 'pretty', 'amux-root'],
   bundle: ['root', 'product', 'compiler-version', 'product-id', 'source-revision', 'facet', 'source', 'output', 'amux-root'],
@@ -31,6 +32,7 @@ export const HELP = `Product Studio
   v1d-studio contracts [repository] [--amux-root TRUSTED_AMUX]
   v1d-studio doctor [repository] [--product ID]
   v1d-studio converge [repository] [--product ID] [--tasks]
+  v1d-studio review [repository] [--product ID] [--changed ENTITY_OR_SOURCE]...
   v1d-studio export [repository] [--product ID]
   v1d-studio record [repository] --product ID -- TEST_COMMAND [ARGS...]
   v1d-studio inspect [repository] [--product ID] [--entity KEY | --search TEXT]
@@ -48,7 +50,7 @@ export const HELP = `Product Studio
   v1d-studio laws [repository] [--product ID] [--kernel-root PACKAGE_DIR] [--output test-results/<project-id>-laws.json]
   v1d-studio junit --input result.xml --source-root TEST_DIR --output test-results/bdd-run.json
 
-Read/debug commands emit one JSON object, except plan emits Markdown. None starts HTTP or writes a product.
+Read/debug commands emit one JSON object, except plan and review emit Markdown. None starts HTTP or writes a product.
 Repository defaults to the current directory. --examples explicitly loads samples;
 use --product workflow-example or amux-fixture. It is never an implicit fallback.
 Use --product with a manifest ID or an exact workspace key returned by doctor.
@@ -79,7 +81,7 @@ export function parseCli(args) {
   if (tokens.includes('--help') || tokens.includes('-h') || tokens[0] === 'help') return { help: true };
   const command = Object.hasOwn(SPEC, tokens[0]) ? tokens.shift() : 'serve';
   const values = Object.create(null), repeated = { workspace: [], facet: [], source: [], changed: [], 'allow-git-drafts': [] }, positional = [];
-  const repeatable = new Set(['workspace', ...(command === 'bundle' ? ['facet', 'source'] : []), ...(command === 'plan' ? ['changed'] : []), ...(command === 'serve' ? ['allow-git-drafts'] : [])]);
+  const repeatable = new Set(['workspace', ...(command === 'bundle' ? ['facet', 'source'] : []), ...(['plan','review'].includes(command) ? ['changed'] : []), ...(command === 'serve' ? ['allow-git-drafts'] : [])]);
   let optionsEnded = false;
   for (let i = 0; i < tokens.length; i++) {
     const token = tokens[i];
@@ -103,6 +105,8 @@ export function parseCli(args) {
     'cli.usage', 'Too many repeated inputs.');
   if (command === 'plan') requireThat(repeated.changed.length >= 1 && repeated.changed.length <= 32,
     'cli.usage', 'Use --changed 1..32 times with exact entity keys or source files.');
+  if (command === 'review') requireThat(repeated.changed.length <= 32,
+    'cli.usage', 'Use --changed at most 32 times with exact entity keys or source files.');
   for (const key of REQUIRED[command] ?? []) requireThat(values[key] !== undefined, 'cli.usage', `Missing --${key} for ${command}.`);
   const integer = (name, min, max) => {
     if (values[name] === undefined) return;

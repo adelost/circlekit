@@ -127,6 +127,20 @@ export async function main(args = process.argv.slice(2), { cwd = process.cwd(), 
         notice: 'Read-only attachment report, not a full build or runtime health check. Inspect capability details before simulation.' }, v.pretty));
       return ok ? 0 : 1;
     }
+    if (command === 'review') {
+      const { openHeadlessStudio, selectProject, SemanticStudio } = await import('../lib/semantic.mjs');
+      const { changedFilesForReview, reviewForChanges } = await import('../lib/review.mjs');
+      if (!roots.length) roots.push(cwd);
+      const session = await openHeadlessStudio({ roots, evaluateContract });
+      const chosen = selectProject(session.projects, v.product);
+      const project = session.workbench.require(chosen.key);
+      const service = new SemanticStudio(session.workbench, chosen.key);
+      const changes = repeated.changed.length ? repeated.changed : await changedFilesForReview(project.config.root);
+      requireThat(changes.length <= 32, 'review.limit', 'More than 32 changed files. Select a bounded scope with --changed.');
+      const convergence = session.workbench.convergence(project);
+      stdout.write(reviewForChanges({ service, project, changes, convergence }));
+      return 0;
+    }
     if (command === 'converge') {
       const { openHeadlessStudio, selectProject, SemanticStudio } = await import('../lib/semantic.mjs');
       if (!roots.length) roots.push(cwd);
