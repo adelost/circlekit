@@ -10,7 +10,7 @@ import { behaviorReport, testIdentity, writeBehaviorReport } from '../lib/report
 export function decodeJUnitXml(text) {
   requireThat(Buffer.byteLength(text)<=4_000_000&&!/<!DOCTYPE|<!ENTITY/iu.test(text),
     'evidence.junit-xml','JUnit input is oversized or contains unsupported entity declarations.');
-  const suites=[],stack=[],suiteStack=[];
+  const suites=[],stack=[],suiteStack=[],countScopes=[];
   const failedCases=new WeakSet(),errorCases=new WeakSet();
   let currentCase=null,caseCount=0;
   const parser=new SaxesParser();
@@ -18,6 +18,10 @@ export function decodeJUnitXml(text) {
   parser.on('opentag',({name,attributes:a})=>{
     const parent=stack.at(-1);
     if(!stack.length)requireThat(name==='testsuite'||name==='testsuites','evidence.junit-xml','Expected JUnit testsuite or testsuites.');
+    if(name==='testsuite'||name==='testsuites') {
+      requireThat(countScopes.length<64,'evidence.junit-xml','JUnit suite nesting exceeds 64 levels.');
+      countScopes.push({name,attributes:a,cases:[]});
+    }
     if(name==='testsuite'){
       const suite={name:a.name??null,timestamp:a.timestamp??null,seconds:a.time??null,
         tests:a.tests??null,failures:a.failures??null,errors:a.errors??null,skipped:a.skipped??null,cases:[]};
@@ -27,6 +31,7 @@ export function decodeJUnitXml(text) {
       currentCase={name:a.name??null,className:a.classname??null,file:a.file??null,line:a.line??null,
         seconds:a.time??null,status:'passed'};
       suiteStack.at(-1).cases.push(currentCase);
+      for(const scope of countScopes)scope.cases.push(currentCase);
       requireThat(++caseCount<=10_000,
         'evidence.junit-xml','JUnit input contains more than 10000 cases.');
     } else if(currentCase&&parent==='testcase'&&(name==='failure'||name==='error')) {
@@ -39,15 +44,18 @@ export function decodeJUnitXml(text) {
     const name=typeof tag==='string'?tag:tag.name;
     requireThat(stack.pop()===name,'evidence.junit-xml','Malformed JUnit XML.');
     if(name==='testcase')currentCase=null;
-    if(name==='testsuite') {
-      const suite=suiteStack.pop();
-      const counts={tests:suite.cases.length,
-        failures:suite.cases.filter(test=>failedCases.has(test)).length,
-        errors:suite.cases.filter(test=>errorCases.has(test)).length,
-        skipped:suite.cases.filter(test=>test.status==='skipped').length};
-      for(const [field,count] of Object.entries(counts))if(suite[field]!==null) {
-        requireThat(/^\d+$/.test(suite[field])&&Number.isSafeInteger(Number(suite[field]))&&Number(suite[field])===count,
-          'evidence.count','JUnit suite '+field+' count does not match its cases.');
+    if(name==='testsuite')suiteStack.pop();
+    if(name==='testsuite'||name==='testsuites') {
+      const scope=countScopes.pop();
+      const counts={tests:scope.cases.length,
+        failures:scope.cases.filter(test=>failedCases.has(test)).length,
+        errors:scope.cases.filter(test=>errorCases.has(test)).length,
+        skipped:scope.cases.filter(test=>test.status==='skipped').length};
+      for(const [field,count] of Object.entries(counts)) {
+        const declared=scope.attributes[field];
+        if(declared===undefined)continue;
+        requireThat(/^\d+$/.test(declared)&&Number.isSafeInteger(Number(declared))&&Number(declared)===count,
+          'evidence.count','JUnit '+scope.name+' '+field+' count does not match its cases.');
       }
     }
   });
