@@ -71,8 +71,10 @@ export async function main(args = process.argv.slice(2), { cwd = process.cwd(), 
       const authoring=selected.authoring;
       requireThat(authoring&&typeof authoring==='object'&&typeof selected.bundle==='string',
         'export.config','Declare authoring.entry, authoring.exportName, authoring.files and bundle in studio.workspace.json.');
+      const {workspaceConventions}=await import('../lib/workspaces.mjs');
+      const configured=await workspaceConventions(root,selected);
       const {exportAuthoring}=await import('../lib/build-export.mjs');
-      const receipt=await exportAuthoring({root,packageRoot:selected.kernelRoot??'.',
+      const receipt=await exportAuthoring({root,packageRoot:configured.kernelRoot??'.',
         files:authoring.files,entry:authoring.entry,exportName:authoring.exportName,
         kind:authoring.kind??'graph',productId:selected.id,output:selected.bundle,evaluateContract});
       stdout.write(formatJson({schemaVersion:1,ok:true,command,product:selected.id,...receipt},v.pretty));
