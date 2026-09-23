@@ -33,6 +33,13 @@ export async function main(args = process.argv.slice(2), { cwd = process.cwd(), 
       const {runLiveNode}=await import('../lib/live-run.mjs');
       return await runLiveNode(args.slice(2),{cwd,stdout});
     }
+    if(args[0]==='live'&&args[1]==='connect') {
+      parsed={command:'live connect'};
+      if(args.includes('--help')){stdout.write('v1d-studio live connect --device SERIAL [--port 17317]\nStages a one-time ticket for the installed debuggable SKYVW app. Never installs or replaces an adb mapping.\n');return 0;}
+      const {parseLiveConnectArgs,stageLiveAndroid}=await import('../lib/live-connect.mjs');
+      const result=await stageLiveAndroid(parseLiveConnectArgs(args.slice(2)),{cwd});
+      stdout.write(formatJson({schemaVersion:1,ok:true,command:'live connect',result}));return 0;
+    }
     if(args[0]==='record') {
       const { recordTestTrace } = await import('../lib/record.mjs');
       const amuxRoot = await installedAmuxRoot(cwd);
