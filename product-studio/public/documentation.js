@@ -44,6 +44,7 @@ export function documentationView(project,state,E) {
       <div class="toolbar"><button data-doc-offset="${Math.max(0,offset-50)}" ${offset===0?'disabled':''}>Previous 50</button><button data-doc-offset="${page.nextOffset??offset}" ${page.nextOffset===null?'disabled':''}>Next 50</button></div>`}
     </div></section>`;
 }
+/** WHAT: Builds the selected entity's intent and evidence panel. WHY: Keeps declared associations separate from proof of runtime coverage. */
 export function intentPanel(intent,project,E) {
   if(!intent)return '';
   const d=intent.declared;

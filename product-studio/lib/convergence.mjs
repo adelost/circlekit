@@ -1,4 +1,4 @@
-/** One read-only verdict from the evidence already attached to a Studio snapshot. */
+/** WHAT: Reports one verdict from evidence attached to a Studio snapshot. WHY: Keeps partial positive evidence from hiding unreadable model or intent. */
 export function convergenceFor(view, compareLogic) {
   const reasons = [], gaps = [], counts = { laws: { passed: 0, failed: 0, skipped: 0 },
     trace: { consistent: 0, different: 0, unknown: 0 }, contracts: { validated: 0, total: 0, matched: 0, external: 0 } };

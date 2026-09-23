@@ -70,6 +70,13 @@ test('a separate preceding block is not silently inherited by a line-comment ann
   assert.equal(result.proofKind, 'host');
   assert.deepEqual(result.associations, []);
 });
+test('a blank line ends an adjacent line-comment annotation group', () => {
+  const source = '// @covers node-type::other\n\n// @proof host\ntest("captures", () => {});\n';
+  const [located] = testSourceIndex(source, 'test/capture.test.mjs');
+  const result = testAnnotations(located, { knownKeys: new Set(['node-type::other']), byId: new Map() });
+  assert.equal(result.proofKind, 'host');
+  assert.deepEqual(result.associations, []);
+});
 
 function positiveView() {
   return {

@@ -7,6 +7,7 @@ import { safeFile, requireThat } from '../lib/util.mjs';
 import { scenarioDescriptions, testSourceIndex } from '../lib/test-source.mjs';
 import { behaviorReport, testIdentity, writeBehaviorReport } from '../lib/report-output.mjs';
 
+/** WHAT: Decodes bounded JUnit suites and their declared counters. WHY: Prevents contradictory XML from becoming passing evidence. */
 export function decodeJUnitXml(text) {
   requireThat(Buffer.byteLength(text)<=4_000_000&&!/<!DOCTYPE|<!ENTITY/iu.test(text),
     'evidence.junit-xml','JUnit input is oversized or contains unsupported entity declarations.');
