@@ -533,7 +533,7 @@ async function pollLiveTrace() {
   try {
     const status=liveReceiverAvailable?await api('live-status?project='+encodeURIComponent(key)):view.liveStatus;
     const latest=await api('project?id='+encodeURIComponent(key)+'&mode=summary');
-    if(ticket!==generation||project.key!==key||state!==view)return;
+    if(ticket!==generation||project.key!==key||state!==view||state.view!=='Trace')return;
     if(latest.modelDigest!==project.modelDigest||latest.bundleDigest!==project.bundleDigest){
       if(view.liveError!=='Model changed. Reload this project.'){view.liveError='Model changed. Reload this project.';render();}return;
     }
@@ -543,7 +543,7 @@ async function pollLiveTrace() {
     const follow=view.liveFollowTail!==false&&(!view.liveCaptureId||view.liveCaptureId===previous?.capture?.id);
     if(changed&&previous?.capture?.id!==latest.trace?.capture?.id&&!follow&&view.liveCaptureId===previous?.capture?.id&&!view.liveTrace){
       const retained=await api('live-snapshot',{project:key,bundleDigest:project.bundleDigest,captureId:previous.capture.id});
-      if(ticket!==generation||project.key!==key||state!==view)return;
+      if(ticket!==generation||project.key!==key||state!==view||state.view!=='Trace')return;
       view.liveTrace={...retained.trace,eventCount:retained.trace.events.length};
       view.liveConvergence=retained.convergence;
     }
