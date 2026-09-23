@@ -1,20 +1,29 @@
 import { defineMachine, type Machine } from "@v1d/product-spec";
 import type { SourcedKotlinEmissionOptions } from "./emission-options.js";
 import { kotlinStringLiteral } from "./kotlin-syntax.js";
+import { emitStudioTraceSinkKotlin } from "./emit-studio-trace-kotlin.js";
 
+/** WHAT: Names the generated machine and its optional debug trace boundary. WHY: Keeps release execution separate from test evidence. */
 export interface MachineKotlinOptions extends SourcedKotlinEmissionOptions {
   /** The machine in its symbols: `RecordingSession` makes `Generated<Product>RecordingSessionMachine`. */
   readonly machineName: string;
+  /** Test-run recording is opt-in at generation; the normal emitted machine remains unchanged. */
+  readonly traceSink?: string;
+  /** A build constant false in release, so tracing has no production execution path. */
+  readonly traceBuildGuard?: string;
 }
 
 /**
- * A machine as Kotlin, the file `Generated<Product><Machine>Machine.kt`: its states and guards as enums, every cell as
+ * The file `Generated<Product><Machine>Machine.kt` has its states and guards as enums, every cell as
  * data in declared order (from, the input's class name, to, requires, forbids), its rests and deadlines, and
  * `declaredNext(stage, inputName, guards)`, which answers as product-spec's `step()` does. The caller works out which guards hold, as it does for
  * `step()`; nothing here runs a predicate. A machine that breaks a law is refused before any Kotlin is written.
+ * WHAT: Builds a machine as Kotlin with named states, guards and cells.
+ * WHY: Keeps native transitions aligned with one validated declaration.
  */
 export function emitMachineKotlin(machine: Machine, options: MachineKotlinOptions): string {
   defineMachine({ ...machine } as Parameters<typeof defineMachine>[0]);
+  if (options.traceSink && !options.traceBuildGuard) throw new Error("a traced Kotlin machine needs a release-false build guard");
   const name = `Generated${options.symbolPrefix}${options.machineName}`;
   const state = `${name}State`;
   const guard = `${name}Guard`;
@@ -79,8 +88,11 @@ ${cells}
     fun declaredNext(stage: ${state}, inputName: String, guards: Set<${guard}>): ${cell}? {
         require(inputName in inputs) { "machine ${machine.id} has no input $inputName" }
         val cell = cells.firstOrNull { it.from == stage && it.on == inputName && guards.containsAll(it.requires) && it.forbids.none { held -> held in guards } }
-${noCell}        return cell
+${noCell}${options.traceSink ? `        if (${options.traceBuildGuard} && ${options.traceSink}.enabled) ${options.traceSink}.transition(${kotlinStringLiteral(machine.id)},
+            cell?.id, stage.name, cell?.to?.name ?: stage.name, inputName,
+            ${guard}.entries.associate { it.name to (it in guards) })
+` : ""}        return cell
     }
 }
-`;
+${options.traceSink ? `\n${emitStudioTraceSinkKotlin(options.traceSink)}` : ""}`;
 }

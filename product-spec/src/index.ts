@@ -12,6 +12,7 @@ export * from "./navigation-conformance-model.js";
 export * from "./output-manifest.js";
 export * from "./pin-check.js";
 export * from "./port-graph-model.js";
+export * from "./port-implementations.js";
 export * from "./node-instance-model.js";
 export * from "./product-model.js";
 export * from "./state-authority-model.js";

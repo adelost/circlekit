@@ -89,6 +89,8 @@ v1d-studio simulate --examples --product workflow-example \
 
 The example's expected result is `IDLE -> PENDING` via `send`; it is synthetic. `plan` prints Markdown for a PR; `converge` reports loaded evidence and can list contradictions with `--tasks`. [CLI.md](CLI.md) specifies the commands, identity checks and exit behavior. Read commands do not start HTTP or create drafts. No agent-write API or MCP was added.
 
+For test evidence, `v1d-studio record --product my-product -- TEST_COMMAND` runs one focused existing test. It derives the trace identity and `test-results/<project-id>-studio-trace.json` from the workspace. ProductSpec's test-only package condition observes JS decisions and machine steps; generated Kotlin looks only when its build's `DEBUG` constant is true. Named port implementations can use `bindPortImplementations`, which returns the same object in normal builds. Recording refuses an empty or failed test run and preserves the previous trace.
+
 ## Saving and safety
 
 Working-tree source writes are disabled. Changes can be saved separately as local Studio drafts or exported as patches. An explicitly enabled Git-draft option retains its existing separate role:

@@ -159,3 +159,7 @@ every direct `@v1d/*` dependency section, requires the immutable versioned
 HTTPS tarball URL, and verifies the exact resolved URL, version and sha512
 integrity in `package-lock.json`. Local `file:`, `workspace:` and project-path
 dependencies are rejected.
+
+## Test-run observation
+
+`v1d-studio record` selects the `studio-trace` package condition only for its child test process. In that condition, `decide` and `step` record their real cell outcomes. Normal imports use the unchanged pure functions and load no tracing module. A host binding can pass its named functions through `bindPortImplementations`; normal execution receives the same object, while the test condition observes calls by their declared port names. Studio, not the product, attaches model identity and writes the trace file.

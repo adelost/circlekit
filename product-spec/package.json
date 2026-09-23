@@ -1,6 +1,6 @@
 {
   "name": "@v1d/product-spec",
-  "version": "0.3.66",
+  "version": "0.3.67",
   "description": "Product-neutral typed authoring and compiler core for v1d applications",
   "type": "module",
   "files": [
@@ -10,6 +10,7 @@
   "exports": {
     ".": {
       "types": "./dist/src/index.d.ts",
+      "studio-trace": "./dist/src/studio-trace.js",
       "import": "./dist/src/index.js"
     },
     "./foundation": {

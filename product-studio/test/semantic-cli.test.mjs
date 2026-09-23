@@ -62,6 +62,27 @@ test('converge keeps the JSON envelope and exits 2 when no evidence exists', asy
   assert.equal(response.body.ok, false);
   assert.equal(response.body.error.code, 'convergence.unknown');
 });
+test('record derives trace identity and file from a focused test without product envelope code', async t => {
+  const { root } = await fixture(t);
+  const run = ['record', root, '--product', 'local', '--', process.execPath, '--input-type=module', '-e',
+    'import {writeFileSync} from "node:fs"; import {join} from "node:path";'
+    + 'const rows=[{kind:"decision",facetId:"fixture.policy",cellId:"allow",facts:{permission:"YES"},values:{action:"RUN"}},'
+    + '{kind:"port",portRef:"producer.out"}];'
+    + 'writeFileSync(join(process.env.V1D_STUDIO_TRACE_DIR,`node-${process.pid}.jsonl`),rows.map(row=>JSON.stringify(row)).join("\\n")+"\\n");'];
+  const response = await invoke(run, root);
+  assert.equal(response.code, 0);
+  assert.equal(response.body.events, 2);
+  assert.equal(response.body.file, 'test-results/local-studio-trace.json');
+  const trace = JSON.parse(await readFile(path.join(root, response.body.file), 'utf8'));
+  assert.deepEqual(Object.keys(trace).sort(), ['events', 'kind', 'modelDigest', 'version']);
+  assert.equal(trace.events[0].entityKey, entityKey('cell', 'allow', 'decision-table/fixture.policy'));
+  assert.equal(trace.events[1].entityKey, entityKey('port', 'producer.out'));
+  const before = await readFile(path.join(root, response.body.file), 'utf8');
+  const empty = await invoke(['record', root, '--product', 'local', '--', process.execPath, '-e', ''], root);
+  assert.equal(empty.code, 1);
+  assert.equal(empty.body.error.code, 'record.empty');
+  assert.equal(await readFile(path.join(root, response.body.file), 'utf8'), before);
+});
 async function fileSnapshot(root, prefix = '') {
   const files = {};
   for (const item of await readdir(path.join(root, prefix), { withFileTypes: true })) {
