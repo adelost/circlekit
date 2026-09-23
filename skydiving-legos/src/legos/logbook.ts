@@ -8,6 +8,10 @@ export const jumpSitesPresentationContract = {
 } as const;
 
 /** Deterministic tag suggestions plus durable user verdict deltas; wording lives in the UI layer. */
+/**
+ * WHAT: Stores user tag verdicts and applies deterministic jump-tag suggestions.
+ * WHY: Keeps annotation persistence separate from wording and logbook presentation.
+ */
 export const jumpTagsOwner = service({
   id: "logbook.tags-owner",
   inputs: [],
@@ -20,6 +24,10 @@ export const jumpTagsOwner = service({
 });
 
 /** Jump site catalogue: user aliases always win, aviation-target enrichment is best effort. */
+/**
+ * WHAT: Stores jump-site aliases and publishes the enriched site catalogue.
+ * WHY: Keeps user-owned names separate from best-effort aviation enrichment.
+ */
 export const jumpSitesOwner = service({
   id: "logbook.sites-owner",
   inputs: [],
