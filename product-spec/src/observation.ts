@@ -40,21 +40,40 @@ export function createObservationScope({onObservation,onFailure}: {
       return result;
     },
     bindPortImplementations<Ports extends object>(ports:Ports):Ports {
-      const methods=new Map<PropertyKey,Function>();
+      const methods=new Map<string,{source:Function;wrapped:Function}>();
       let proxy:Ports;
-      proxy=new Proxy(ports,{
-        get(target,property,receiver) {
-          const value=Reflect.get(target,property,receiver);
-          if(typeof property!=='string'||!Object.hasOwn(target,property)||typeof value!=='function')return value;
+      const wrap=(property:string,value:Function):Function=>{
           const cached=methods.get(property);
-          if(cached) return cached;
+          if(cached?.source===value)return cached.wrapped;
           const wrapped=function(this:unknown,...args:unknown[]) {
-            const result=Reflect.apply(value,this===proxy?target:this,args);
+            const result=Reflect.apply(value,this===proxy?ports:this,args);
             emit({kind:'port',phase:'returned',portRef:property});
             return result;
           };
-          methods.set(property,wrapped);return wrapped;
+          methods.set(property,{source:value,wrapped});return wrapped;
+      };
+      // The proxy target is an extensible facade. A frozen port owner's own method cannot be
+      // replaced by a get trap on that owner: JavaScript requires the exact original value.
+      const facade=Object.create(Reflect.getPrototypeOf(ports)) as Ports;
+      proxy=new Proxy(facade,{
+        get(_target,property) {
+          const value=Reflect.get(ports,property,ports);
+          return typeof property==='string'&&Object.hasOwn(ports,property)&&typeof value==='function'
+            ? wrap(property,value):value;
         },
+        set(_target,property,value) {return Reflect.set(ports,property,value,ports);},
+        has(_target,property) {return Reflect.has(ports,property);},
+        ownKeys() {return Reflect.ownKeys(ports);},
+        getOwnPropertyDescriptor(_target,property) {
+          const descriptor=Reflect.getOwnPropertyDescriptor(ports,property);
+          if(!descriptor)return undefined;
+          return 'value' in descriptor&&typeof property==='string'&&typeof descriptor.value==='function'
+            ? {...descriptor,configurable:true,value:wrap(property,descriptor.value)}
+            : {...descriptor,configurable:true};
+        },
+        getPrototypeOf() {return Reflect.getPrototypeOf(ports);},
+        defineProperty(_target,property,descriptor) {return Reflect.defineProperty(ports,property,descriptor);},
+        deleteProperty(_target,property) {return Reflect.deleteProperty(ports,property);},
       });
       return proxy;
     },
