@@ -163,6 +163,8 @@ The authenticated HTTP operation `POST /api/live-ticket` selects one loaded work
 
 The live boundary permits declared IDs, finite decision facts/results and boolean machine guards. It refuses arbitrary payloads, coordinates and free text. It retains at most eight captures, four active and 32 MB of encoded data in memory, with 64 KB messages. The local launcher passes a ticket **file path** to a child process; the secret itself is never an environment value, URL or shell argument. The file is mode 0600, read once and deleted. No captured data is persisted automatically.
 
+For one direct Node process, start Studio with `--live`, then run `v1d-studio live run --product ID -- node APP.mjs` from that product's root. The launcher compiles the selected identity from the product checkout using its installed kernel, compares it with the receiver, requests a one-time ticket, and starts the child only after those checks. The `v1d-observe` package condition captures existing `decide`, `step` and named port calls without editing their call sites. The ticket is never an environment value; the environment contains only a private file path. A completed short-lived Node process normally leaves an interrupted capture with its received prefix and unknown tail, not a false clean completion. `live run` refuses npm/shell wrappers so another process cannot consume the one-time ticket first.
+
 ## Exit and error contract
 
 | Situation | `ok` | Exit |
