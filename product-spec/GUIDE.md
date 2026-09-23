@@ -112,9 +112,3 @@ In a product (Skyvw), two loops, not one. After a cell or copy change, the short
 ```
 
 An example in this guide is a claim; the type-checked copy of it lives in the kit's tests, and a change to the shape that breaks the example turns that test red before the guide can go stale.
-
-## Proposed authoring improvements
-
-The [authoring DX review in PR #263](https://github.com/adelost/circlekit/pull/263) is a proposal, not a shipped ProductSpec API. Its first useful step is a small real-consumer baseline with output-equivalence and negative cases (W0). Then one interaction-family helper and one equivalent SKYVW adoption can prove whether a shared form removes repeated facts without hiding host coverage or changing stable IDs (W1).
-
-Ordered settings, reference diagnostics, AMUX axis wording, enforcement and versioned adoption are separate later candidates. Each needs its own measured duplication, unchanged behavior where promised and an owner-run check before becoming a rule. Product Studio's inspection and planning commands do not implement these authoring helpers.
