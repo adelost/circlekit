@@ -20,7 +20,7 @@ v1d-studio laws
 v1d-studio
 ```
 
-The workspace selects a compiled bundle. Studio derives the repository from Git `origin`, the nearest unambiguous installed ProductSpec, and optional `test-results/<project-id>-studio-trace.json`, `<project-id>-bdd-run.json` and `<project-id>-laws.json`. [INTEGRATION.md](INTEGRATION.md) covers explicit overrides and export. The normal loop is: specify intent and structure in the product's ProductSpec, run `plan` for declared impact, turn its findings into tasks, implement in ordinary product source, then run `converge` against available evidence. Only `plan` and `converge` are Studio commands in that loop.
+The workspace selects a compiled bundle. Studio derives the repository from Git `origin`, the nearest unambiguous installed ProductSpec, and optional `test-results/<project-id>-studio-trace.json`, `<project-id>-bdd-run.json` and `<project-id>-laws.json`. [INTEGRATION.md](INTEGRATION.md) covers explicit overrides and export. The normal loop is: specify intent and structure in the product's ProductSpec, run `review` for the current Git change, implement in ordinary product source, then run `converge` against available evidence. `review` composes the existing `plan` impact, type-owned WHAT/WHY, convergence and source identity; `plan --changed` remains the narrow explicit primitive. Neither command runs product code or writes source.
 
 When a product declares `authoring` in its workspace file, `v1d-studio export`
 explicitly rebuilds its named inspection bundle with the product's own locked
@@ -81,13 +81,14 @@ The initial transport includes compiled finite facets and a lightweight entity i
 ```bash
 v1d-studio doctor /path/to/product --pretty
 v1d-studio inspect /path/to/product --search recording
+v1d-studio review /path/to/product
 v1d-studio plan /path/to/product --changed src/recording.ts
 v1d-studio converge /path/to/product
 v1d-studio simulate --examples --product workflow-example \
   --facet example.request --input '{"state":"IDLE","input":"Send","guards":{}}'
 ```
 
-The example's expected result is `IDLE -> PENDING` via `send`; it is synthetic. `plan` prints Markdown for a PR; `converge` reports loaded evidence and can list contradictions with `--tasks`. [CLI.md](CLI.md) specifies the commands, identity checks and exit behavior. Read commands do not start HTTP or create drafts. No agent-write API or MCP was added.
+The example's expected result is `IDLE -> PENDING` via `send`; it is synthetic. `review` prints the Git change, declared impact, intent and loaded evidence as Markdown; `plan --changed` prints only declared impact. `converge` reports loaded evidence and can list contradictions with `--tasks`. [CLI.md](CLI.md) specifies the commands, identity checks and exit behavior. Read commands do not start HTTP or create drafts. No agent-write API or MCP was added.
 
 For test evidence, `v1d-studio record --product my-product -- TEST_COMMAND` runs one focused existing test. It derives the trace identity and `test-results/<project-id>-studio-trace.json` from the workspace. ProductSpec's test-only package condition observes JS decisions and machine steps; generated Kotlin looks only when its build's `DEBUG` constant is true. Named port implementations can use `bindPortImplementations`, which returns the same object in normal builds. Recording refuses an empty or failed test run and preserves the previous trace.
 

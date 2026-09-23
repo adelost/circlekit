@@ -24,6 +24,10 @@ test('plan accepts bounded changed entities and source files',()=>{
   assert.deepEqual(p.repeated.changed,['node-type::logbook.tags','appspec/products/skyvw/jumps/logbook-data.ts']);
   assert.throws(()=>parseCli(['plan','/repo']),e=>e.code==='cli.usage');
 });
+test('review accepts an empty implicit Git diff or explicit changed source', () => {
+  assert.deepEqual(parseCli(['review']).repeated.changed, []);
+  assert.deepEqual(parseCli(['review', '--changed', 'src/service.ts']).repeated.changed, ['src/service.ts']);
+});
 test('explicit workspace export is selected as a write command', () => {
   const parsed=parseCli(['export','--product','skyvw-web-logbook']);
   assert.equal(parsed.command,'export');

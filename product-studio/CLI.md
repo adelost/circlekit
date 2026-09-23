@@ -59,15 +59,16 @@ node bin/studio.mjs source /repo --entity 'facet:machine:recording.session'
 
 Impact traversal stops at depth 20 or 1000 owners and marks the result truncated when further consumers may exist.
 
-## Plan and converge
+## Review, plan and converge
 
 ```bash
+v1d-studio review /repo
 v1d-studio plan /repo --changed src/recording.ts --changed 'node-type::recording.session'
 v1d-studio converge /repo --product my-product
 v1d-studio converge /repo --product my-product --tasks
 ```
 
-`plan` prints a short Markdown block for a PR. A ProductIr facet must declare `ownerNodeTypeRef`; plan follows that owner through its instances to declared consumers. Standalone facets without an owner show `owner not declared`. Only loaded owners, ports, consumers, facets and tests appear; unknown source mappings stay explicit. `converge` reads existing laws, contracts and traces without running tests or generators. It exits 0 for Converged, 1 for Diverged and 2 for Unknown; `--tasks` includes one task per known contradiction.
+`review` composes the Git change (or explicit `--changed`), `plan`, WHAT/WHY, `converge` and source identity into Markdown without running code. It exits 0 when the report is produced, even for an empty diff; contradictions remain explicit in RESULT. `plan` is the narrower Markdown primitive. A ProductIr facet must declare `ownerNodeTypeRef`; plan follows that owner through its instances to declared consumers. Standalone facets without an owner show `owner not declared`. Only loaded owners, ports, consumers, facets and tests appear; unknown source mappings stay explicit. `converge` reads existing laws, contracts and traces without running tests or generators. It exits 0 for Converged, 1 for Diverged and 2 for Unknown; `--tasks` includes one task per known contradiction.
 
 ## Bound the output
 
@@ -160,7 +161,7 @@ The result includes explicit causal links, missing ancestor sequence, declared g
 | Missing facts, unsupported analysis, failed assertions, invalid identity/data | false | 1 |
 | Missing, duplicate, unknown or invalid command options | false | 2 |
 
-Successful semantic commands and failures emit one JSON object to stdout. Human `--help` text and the existing long-running `serve` startup text are exceptions. Normal semantic results are not printed to stderr. `--pretty` only changes whitespace. Operational trace disagreement is returned as evidence (`logicCheck.kind: "different"`), not rewritten or hidden by a failing transport.
+Successful semantic commands and failures emit one JSON object to stdout. `plan` and `review` emit Markdown; human `--help` and long-running `serve` startup text are the other exceptions. Normal semantic results are not printed to stderr. `--pretty` only changes JSON whitespace. Operational trace disagreement is returned as evidence (`logicCheck.kind: "different"`), not rewritten or hidden by a failing transport.
 
 `doctor` retains its top-level `projects` list and now includes `ok`, exact keys and model/view identities. Its success means attachments could be inspected, not that all simulation/preview capabilities or a full product build passed. Check each capability report.
 

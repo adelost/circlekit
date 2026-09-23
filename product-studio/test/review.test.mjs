@@ -1,0 +1,95 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { mkdtemp, rm, writeFile } from 'node:fs/promises';
+import { execFileSync } from 'node:child_process';
+import path from 'node:path';
+import os from 'node:os';
+import { changedFilesForReview, reviewForChanges } from '../lib/review.mjs';
+import { planForChanges } from '../lib/plan.mjs';
+import { entityKey } from '../lib/architecture.mjs';
+
+async function repository(t) {
+  const root = await mkdtemp(path.join(os.tmpdir(), 'studio-review-'));
+  t.after(() => rm(root, { recursive: true, force: true }));
+  const git = (...args) => execFileSync('git', args, { cwd: root, encoding: 'utf8' }).trim();
+  git('init', '-q', '-b', 'main');
+  git('config', 'user.name', 'Studio test');
+  git('config', 'user.email', 'studio@example.test');
+  await writeFile(path.join(root, 'tracked.ts'), 'before\n');
+  git('add', 'tracked.ts');
+  git('commit', '-qm', 'base');
+  return { root, git };
+}
+
+test('review sees tracked work against HEAD and untracked files', async t => {
+  const { root } = await repository(t);
+  await writeFile(path.join(root, 'tracked.ts'), 'after\n');
+  await writeFile(path.join(root, 'new.ts'), 'new\n');
+  assert.deepEqual(await changedFilesForReview(root), ['new.ts', 'tracked.ts']);
+});
+
+test('review includes committed branch changes since origin/main merge-base', async t => {
+  const { root, git } = await repository(t);
+  git('update-ref', 'refs/remotes/origin/main', 'HEAD');
+  await writeFile(path.join(root, 'committed.ts'), 'branch\n');
+  git('add', 'committed.ts');
+  git('commit', '-qm', 'feature');
+  await writeFile(path.join(root, 'tracked.ts'), 'worktree\n');
+  assert.deepEqual(await changedFilesForReview(root), ['committed.ts', 'tracked.ts']);
+});
+
+const selected = () => {
+  const view = { productId: 'demo', architecture: { entities: [], edges: [] },
+    documentation: { reports: [], contracts: [], diagnostics: [], unresolved: [] },
+    sourceIndex: { origins: [] }, sourceIdentity: { kind: 'not-exported' },
+    compatibility: { producer: '0.3.67', evaluator: '0.3.67' } };
+  const project = { config: { root: '/repo', id: 'demo' }, sources: [] };
+  return { service: { view, metadata: () => ({ producer: { productSpec: '0.3.67' },
+    evaluator: { productSpec: '0.3.67' }, sourceIdentity: view.sourceIdentity }),
+    plan: ({ changed }) => planForChanges(view, project, changed) }, project,
+    convergence: { verdict: 'Unknown', label: 'Unknown', reasons: [], gaps: ['No declaration-law report.'],
+    counts: { laws: { passed: 0, failed: 0, skipped: 0 }, trace: { consistent: 0, different: 0, unknown: 0 },
+      contracts: { validated: 0, total: 0 } }, kernel: { match: true }, traceIdentity: { loaded: false } },
+  };
+};
+
+test('a changed file without a declared entity is named without inventing an owner', () => {
+  const report = reviewForChanges({ ...selected(), changes: ['README.md'] });
+  assert.match(report, /README\.md/);
+  assert.match(report, /No declared entity changed/);
+  assert.match(report, /Unknown/);
+});
+
+test('an empty diff is a successful no-change review with the converge result', () => {
+  const report = reviewForChanges({ ...selected(), changes: [] });
+  assert.match(report, /No declared entity changed/);
+  assert.match(report, /RESULT[\s\S]*Unknown/);
+  assert.doesNotMatch(report, /Fix:/);
+});
+
+test('a changed machine uses its declared owner WHAT/WHY and inputs', () => {
+  const input = selected();
+  const facet = entityKey('facet', 'recording.session', 'machine');
+  const owner = entityKey('node-type', 'recording.runtime-owner');
+  input.service.view.architecture.entities = [
+    { key: facet, kind: 'facet', id: 'recording.session' },
+    { key: owner, kind: 'node-type', id: 'recording.runtime-owner', data: { id: 'recording.runtime-owner', inputs: [{ id: 'start' }] } },
+  ];
+  input.service.view.architecture.edges = [{ kind: 'owner', from: facet, to: owner }];
+  input.service.view.documentation.contracts = [{ entityKey: owner, contract: { what: 'Owns the recording session.', why: 'Keeps file writes ordered.' }, source: { file: 'runtime.ts', line: 4 } }];
+  const report = reviewForChanges({ ...input, changes: [facet] });
+  assert.match(report, /recording\.runtime-owner/);
+  assert.match(report, /WHAT: Owns the recording session/);
+  assert.match(report, /WHY: Keeps file writes ordered/);
+  assert.match(report, /Inputs: start/);
+  assert.match(report, /Machine\/table: recording\.session/);
+});
+
+test('a loaded law file for the previous model is not a checked evidence item', () => {
+  const input = selected();
+  input.project.config.documentation = { bddReports: ['test-results/demo-laws.json'] };
+  input.service.view.documentation.reports = [{ file: 'test-results/demo-laws.json', status: 'loaded', modelCorrelation: 'different-model' }];
+  const report = reviewForChanges({ ...input, changes: [] });
+  assert.match(report, /○ laws not for this model \(test-results\/demo-laws\.json\)/);
+  assert.doesNotMatch(report, /✓ laws/);
+});
