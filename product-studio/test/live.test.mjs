@@ -44,12 +44,14 @@ const hello=(secret,id,overrides={})=>({type:'hello',protocol:1,ticket:secret,pr
 
 test('A01 ordinary Studio has no live receiver or device action',async()=>{
   assert.equal(ordinary.live,null);
+  assert.equal((await fetch(ordinary.origin+'/api/bootstrap').then(r=>r.json())).liveEnabled,false);
   const response=await fetch(ordinary.origin+'/api/live-status?project='+item.key,{headers:{'x-studio-token':ordinary.token}});
   assert.equal(response.status,404);
   await assert.rejects(open(ordinary.origin.replace('http:','ws:')+'/runtime/v1'));
 });
 test('A02 opt-in receiver stays on loopback with the existing HTTP token and Origin guards',async()=>{
   assert.match(running.origin,/^http:\/\/127\.0\.0\.1:/);
+  assert.equal((await fetch(running.origin+'/api/bootstrap').then(r=>r.json())).liveEnabled,true);
   assert.equal((await fetch(running.origin+'/api/live-ticket',{method:'POST'})).status,403);
   assert.equal((await fetch(running.origin+'/api/projects',{headers:{origin:'https://elsewhere.invalid','x-studio-token':running.token}})).status,403);
   await assert.rejects(new Promise((resolve,reject)=>{
