@@ -10,7 +10,7 @@ const views = ['System', 'Logic', 'Scenarios', 'Interface', 'Changes', 'Trace'];
 const mobileViews = [['Welcome','Overview'],...views.map(view=>[view,view]),['Intent','Intent & behavior'],['Problems','Problems'],['Compare','Compare']];
 let token, projects = [], project, state, generation = 0, graph, busy = false, toastTimer;
 let experience, graphHost, graphSignature = '', bindingController, sourcePending = new Map();
-let livePollBusy=false,liveStatusUnsupported=false;
+let livePollBusy=false,liveReceiverAvailable=false;
 function listen(element,type,handler) { element?.addEventListener(type,handler,{signal:bindingController.signal}); }
 const sessions = new Map();
 const freshState = () => ({ view: 'Logic', facetId: null, selected: null, search: '', facts: {}, guards: {}, input: null,
@@ -522,15 +522,11 @@ async function loadLiveSession(captureId) {
 }
 
 async function pollLiveTrace() {
-  if(livePollBusy||document.hidden||!project||state.view!=='Trace'||liveStatusUnsupported&&project.trace?.version!==2)return;
+  if(livePollBusy||document.hidden||!project||state.view!=='Trace'||!liveReceiverAvailable&&project.trace?.version!==2)return;
   livePollBusy=true;
   const key=project.key,view=state,ticket=generation;
   try {
-    let status=view.liveStatus;
-    if(!liveStatusUnsupported)try {
-      status=await api('live-status?project='+encodeURIComponent(key));
-    }catch(error){if(error.code==='http.route')liveStatusUnsupported=true;else throw error;}
-    if(liveStatusUnsupported&&project.trace?.version!==2)return;
+    const status=liveReceiverAvailable?await api('live-status?project='+encodeURIComponent(key)):view.liveStatus;
     const latest=await api('project?id='+encodeURIComponent(key)+'&mode=summary');
     if(ticket!==generation||project.key!==key||state!==view)return;
     if(latest.modelDigest!==project.modelDigest||latest.bundleDigest!==project.bundleDigest){
@@ -658,6 +654,7 @@ experience=createExperience({getProject:()=>project,getState:()=>state,getProjec
   reload:reloadProject,focus:focusNeighborhood,arrange:()=>graph?.arrange(),isBusy:()=>busy});
 try {
   const bootstrap = await fetch('/api/bootstrap').then(r => r.json()); token = bootstrap.token; projects = bootstrap.projects;
+  liveReceiverAvailable=bootstrap.liveEnabled===true;
   if (!projects.length) throw new Error('No fixture or configured workspace is available.');
   const link = new URLSearchParams(location.hash.slice(1));
   const wanted = projects.find(p => p.key === link.get('project'));

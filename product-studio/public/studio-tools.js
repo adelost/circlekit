@@ -62,7 +62,8 @@ function liveStatusLine(trace,state,escape) {
     <span class="badge ${connected?'good':'warning'}">${connected?'Connected':'Disconnected'}</span>
     <span class="badge ${matched?'good':'error'}">${matched?'Model matched':'Model mismatch'}</span>
     <span class="badge">${trace.eventCount} events · ${dropped(trace)} dropped</span>
-    <span class="badge ${trace.capture.ending==='open'?'warning':''}">${trace.capture.ending==='open'?'Tail open':trace.capture.ending==='clean'?'Ended clean':'Tail interrupted'}</span></div>`;
+    <span class="badge ${trace.capture.ending==='open'?'warning':''}">${trace.capture.ending==='open'?'Tail open':trace.capture.ending==='clean'?'Ended clean':'Tail interrupted'}</span>
+    ${state.liveError?`<span class="badge error">${escape(state.liveError)}</span>`:''}</div>`;
 }
 
 export function decisionRegionTable(facet,escape,selectedCellId=null,trace=false) {
