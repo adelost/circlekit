@@ -81,6 +81,19 @@ test('a lost v2 span is written into the applied state path, not drawn as one ar
   assert.match(html,/data-trace-sequence="0"[^>]*>FLYING<\/button><span class="trace-gap"/);
 });
 
+test('an applied state discontinuity is shown as unlinked, never as a transition arrow', () => {
+  const live={...trace,version:2,eventCount:2,sessionId:'capture-one',capture:{id:'capture-one',ending:'open'},
+    truncation:{droppedBefore:0,gaps:[]},
+    statePath:[{state:'A',sequence:0,eventIndex:0},{state:'B',sequence:0,eventIndex:0},
+      {state:'C',sequence:1,eventIndex:1,breakBefore:true},{state:'D',sequence:1,eventIndex:1}]};
+  const current={sequence:1,kind:'transition',phase:'applied',atMs:1,entityKey:'facet:machine:jump.session',
+    logic:{facetId:'jump.session',from:'C',to:'D'},summary:'Applied'};
+  const html=studio.traceView(project(machine,live),{traceCursor:1,
+    traceFrame:{cursor:1,current,events:[],causalPath:[],nextOffset:null,total:2}},escape);
+  assert.match(html,/data-trace-sequence="0"[^>]*>B<\/button><span class="trace-gap">Unlinked<\/span>/u);
+  assert.doesNotMatch(html,/B<\/button><span aria-hidden="true">→<\/span>/u);
+});
+
 test('machine trace presents the shared graph before the event list', () => {
   const html=studio.traceView(project(machine,trace),{traceCursor:1,traceFrame:frame({facetId:'jump.session',cellId:'exit',from:'READY',to:'FLYING'})},escape);
   assert.match(html, /id="graph"[^>]*data-managed="graph"/);

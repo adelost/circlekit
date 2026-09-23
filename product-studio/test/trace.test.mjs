@@ -133,6 +133,25 @@ test('v2 never joins applied states across an observation loss',()=>{
   assert.deepEqual(decodeTrace(JSON.stringify(trace),identity).statePath.map(point=>point.state),['X','Y']);
 });
 
+test('v2 applied path marks an unobserved state jump instead of inventing an edge',()=>{
+  const row=(sequence,from,to,facetId='recording.session')=>({sequence,atMs:sequence,kind:'transition',
+    phase:'applied',instanceId:'one',entityKey:'node::a',logic:{facetId,from,to,input:'Tick'}});
+  const base={kind:'product-studio-trace',version:2,productId:'test',modelDigest:identity.modelDigest,
+    sessionId:'discontinuous',clock:{domain:'monotonic',unit:'ms'},provenance:'recorded',
+    capture:{id:'discontinuous',transport:'websocket',scope:{events:['transition'],facets:['recording.session'],appliedTransitions:true},through:1,ending:'open'},
+    truncation:{droppedBefore:0,gaps:[]},events:[row(0,'A','B'),row(1,'C','D')]};
+  const path=decodeTrace(JSON.stringify(base),identity).statePath;
+  assert.deepEqual(path.map(item=>item.state),['A','B','C','D']);
+  assert.equal(path[2].breakBefore,true);
+  assert.equal(path[1].breakBefore,undefined);
+  const continuous={...base,events:[row(0,'A','B'),row(1,'B','D')]};
+  assert.deepEqual(decodeTrace(JSON.stringify(continuous),identity).statePath.map(item=>item.state),['A','B','D']);
+  assert.equal(decodeTrace(JSON.stringify(continuous),identity).statePath.some(item=>item.breakBefore),false);
+  const mixed={...base,capture:{...base.capture,scope:{...base.capture.scope,facets:['recording.session','other.session']}},
+    events:[row(0,'A','B'),row(1,'C','D','other.session')]};
+  assert.deepEqual(decodeTrace(JSON.stringify(mixed),identity).statePath,[]);
+});
+
 test('a refused producer event does not consume sequence or create imaginary dropped history',()=>{
   const r=recorder();assert.throws(()=>r.record({...event(),payload:{secret:1}}));
   assert.equal(r.record(event(1)),0);

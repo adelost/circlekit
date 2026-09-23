@@ -149,7 +149,8 @@ function traceStateBand(trace,cursor,E) {
   const nodes=path.map((item,index)=>{
     const next=path[index+1],loss=next?gapBetween(item,next):0;
     return '<button data-trace-sequence="'+item.sequence+'" data-trace-index="'+(index===0?-1:item.eventIndex)+'"'+(index===active?' aria-current="step"':'')+'>'+E(item.state)+'</button>'
-      +(next?(loss?'<span class="trace-gap">Gap · '+loss+' dropped</span>':'<span aria-hidden="true">→</span>'):'');
+      +(next?(loss?'<span class="trace-gap">Gap · '+loss+' dropped</span>':next.breakBefore
+        ?'<span class="trace-gap">Unlinked</span>':'<span aria-hidden="true">→</span>'):'');
   }).join('');
   return '<div class="trace-state-band"><span class="section-label">State path</span><div class="trace-state-path">'+nodes+'</div>'
     +(trace.statePathTruncated?'<small>First 128 state changes shown.</small>':'')+'</div>';

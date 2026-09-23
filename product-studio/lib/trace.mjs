@@ -100,16 +100,22 @@ function validateEvent(event, knownEntities, version = 1) {
 function traceStatePath(events, version = 1, gaps = []) {
   if (version === 2) {
     const afterLoss = gaps.length ? gaps.at(-1).to : -1;
-    const instances = new Set(events.filter(e => e.sequence > afterLoss && e.kind === 'transition' && e.phase === 'applied')
-      .map(e => e.instanceId).filter(Boolean));
-    if (instances.size !== 1) return { statePath: [], statePathTruncated: false };
-    const instance = [...instances][0];
+    const applied = events.filter(e => e.sequence > afterLoss && e.kind === 'transition' && e.phase === 'applied');
+    if (applied.some(e => !short(e.instanceId) || !short(e.logic?.facetId)
+      || !short(e.logic?.from) || !short(e.logic?.to))) return { statePath: [], statePathTruncated: false };
+    const identities = new Set(applied.map(e => `${e.logic.facetId}\u0000${e.instanceId}`));
+    if (identities.size !== 1) return { statePath: [], statePathTruncated: false };
+    const identity = [...identities][0];
     const path=[];let truncated=false;
     for(const [eventIndex,event] of events.entries()) {
-      if(event.sequence<=afterLoss||event.kind!=='transition'||event.phase!=='applied'||event.instanceId!==instance)continue;
+      if(event.sequence<=afterLoss||event.kind!=='transition'||event.phase!=='applied'
+        ||`${event.logic?.facetId}\u0000${event.instanceId}`!==identity)continue;
       const {from,to}=event.logic??{};
-      if(!short(from)||!short(to))continue;
       if(!path.length)path.push({state:from,eventIndex,sequence:event.sequence});
+      else if(path.at(-1).state!==from) {
+        if(path.length===128){truncated=true;break;}
+        path.push({state:from,eventIndex,sequence:event.sequence,breakBefore:true});
+      }
       if(path.at(-1).state===to)continue;
       if(path.length===128){truncated=true;break;}
       path.push({state:to,eventIndex,sequence:event.sequence});
