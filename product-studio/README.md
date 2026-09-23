@@ -92,6 +92,8 @@ The example's expected result is `IDLE -> PENDING` via `send`; it is synthetic. 
 
 For test evidence, `v1d-studio record --product my-product -- TEST_COMMAND` runs one focused existing test. It derives the trace identity and `test-results/<project-id>-studio-trace.json` from the workspace. ProductSpec's test-only package condition observes JS decisions and machine steps; generated Kotlin looks only when its build's `DEBUG` constant is true. Named port implementations can use `bindPortImplementations`, which returns the same object in normal builds. Recording refuses an empty or failed test run and preserves the previous trace.
 
+Trace v1 remains readable with its original, unspecified application semantics. Trace v2 carries explicit `evaluated`, `applied` or `returned` phases, an optional opaque instance ID, a capture watermark and explicit loss ranges. Only an owner-side `applied` observation can identify an observed state. An open or interrupted capture, or one with losses, cannot be treated as complete evidence.
+
 ## Saving and safety
 
 Working-tree source writes are disabled. Changes can be saved separately as local Studio drafts or exported as patches. An explicitly enabled Git-draft option retains its existing separate role:

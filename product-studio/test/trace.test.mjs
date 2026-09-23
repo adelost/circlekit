@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createTraceRecorder, decodeTrace, inspectTrace } from '../lib/trace.mjs';
+import { createTraceRecorder, createLiveTraceRecorder, decodeTrace, inspectTrace } from '../lib/trace.mjs';
 const identity={productId:'test',modelDigest:'a'.repeat(64),architecture:{entities:[{key:'node::a'},{key:'port::a.out'}]}};
 const recorder = (capacity=20) => createTraceRecorder({...identity,sessionId:'session-1',clock:'monotonic',capacity});
 const event = (atMs=0) => ({atMs,kind:'port',entityKey:'port::a.out',summary:'Value delivered'});
@@ -82,6 +82,46 @@ test('the trace exposes each changed state once with a clickable event index',()
   const trace=decodeTrace(JSON.stringify(r.snapshot()),identity);
   assert.deepEqual(trace.statePath.map(item=>item.state),['STOPPED','ARMED','BUFFERING']);
   assert.deepEqual(trace.statePath.map(item=>item.eventIndex),[0,0,2]);
+});
+
+test('v2 distinguishes evaluated from applied and only applied identifies an observed state',()=>{
+  const base={kind:'product-studio-trace',version:2,productId:'test',modelDigest:identity.modelDigest,
+    sessionId:'live-one',clock:{domain:'monotonic',unit:'ms'},provenance:'recorded',
+    capture:{id:'capture-one',transport:'websocket',scope:{events:['transition'],facets:['recording.session'],appliedTransitions:true},through:1,ackThrough:1,ending:'clean'},
+    truncation:{droppedBefore:0,gaps:[]},events:[
+      {sequence:0,atMs:2,kind:'transition',phase:'evaluated',instanceId:'instance-a',entityKey:'node::a',logic:{facetId:'recording.session',from:'ARMED',to:'BUFFERING',input:'AltitudeObserved'}},
+      {sequence:1,atMs:3,kind:'transition',phase:'applied',instanceId:'instance-a',entityKey:'node::a',logic:{facetId:'recording.session',from:'ARMED',to:'ARMED',input:'AltitudeObserved'}},
+    ]};
+  const trace=decodeTrace(JSON.stringify(base),identity);
+  assert.equal(trace.complete,true);
+  assert.deepEqual(trace.statePath.map(item=>item.state),['ARMED']);
+  const evaluated=decodeTrace(JSON.stringify({...base,capture:{...base.capture,through:0,ending:'open'},events:base.events.slice(0,1)}),identity);
+  assert.deepEqual(evaluated.statePath,[]);
+  assert.equal(evaluated.complete,false);
+});
+test('v2 keeps trailing loss and an interrupted unknown tail',()=>{
+  const row={sequence:0,atMs:0,kind:'port',phase:'returned',entityKey:'port::a.out'};
+  const base={kind:'product-studio-trace',version:2,productId:'test',modelDigest:identity.modelDigest,
+    sessionId:'live-loss',clock:{domain:'monotonic',unit:'ms'},provenance:'recorded',
+    capture:{id:'capture-loss',transport:'websocket',scope:{events:['port'],facets:[],appliedTransitions:false},through:2,ending:'interrupted'},
+    truncation:{droppedBefore:0,gaps:[{from:1,to:2,reason:'producer-queue-full'}]},events:[row]};
+  const trace=decodeTrace(JSON.stringify(base),identity);
+  assert.equal(trace.complete,false);
+  assert.equal(trace.capture.through,2);
+  assert.equal(trace.capture.ending,'interrupted');
+  assert.throws(()=>decodeTrace(JSON.stringify({...base,truncation:{droppedBefore:0,gaps:[]}}),identity),/cover|gap|loss/i);
+  assert.throws(()=>decodeTrace(JSON.stringify({...base,capture:{...base.capture,through:1}}),identity),/cover|gap|loss/i);
+});
+test('v2 writer accepts a loss-only final watermark and preserves interruption',()=>{
+  const writer=createLiveTraceRecorder(identity,{id:'writer-one',scope:{events:['port'],facets:[],appliedTransitions:false}});
+  writer.append({through:2,events:[{sequence:0,atMs:1,kind:'port',phase:'returned',entityKey:'port::a.out'}],
+    gaps:[{from:1,to:2,reason:'producer-queue-full'}]});
+  writer.interrupt();
+  const saved=writer.snapshot();
+  assert.equal(saved.version,2);
+  assert.equal(saved.capture.ending,'interrupted');
+  assert.equal(decodeTrace(JSON.stringify(saved),identity).capture.through,2);
+  assert.throws(()=>writer.append({through:2,events:[],gaps:[]}),/sequence|watermark|ended/i);
 });
 
 test('a refused producer event does not consume sequence or create imaginary dropped history',()=>{

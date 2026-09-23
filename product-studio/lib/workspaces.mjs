@@ -267,7 +267,7 @@ export class Workbench {
   summary(p) { return { ...summarizeView(this.view(p)), convergence: this.convergence(p) }; }
   convergence(p) {
     const view = this.view(p);
-    return convergenceFor(view, logic => this.compareTraceLogic(p, view, logic));
+    return convergenceFor(view, (logic,phase) => this.compareTraceLogic(p, view, logic,phase));
   }
   sourceText(request) {
     const { view } = this.checkedView(request);
@@ -335,19 +335,20 @@ export class Workbench {
     const { p, view } = this.checkedView(request);
     requireThat(p.trace, 'trace.missing', 'Import a compatible trace first.');
     const frame = inspectTrace(p.trace, request.filter);
-    if (frame.current?.logic) frame.logicCheck = this.compareTraceLogic(p, view, frame.current.logic);
+    if (frame.current?.logic) frame.logicCheck = this.compareTraceLogic(p, view, frame.current.logic, frame.current.phase);
     return frame;
   }
-  compareTraceLogic(p, view, logic) {
+  compareTraceLogic(p, view, logic, phase = null) {
     const f = view.facets.find(f => f.id === logic.facetId);
-    if (!f || f.runnable === false) return { kind: 'unavailable', message: 'A matching runnable logic facet is not available.' };
+    if (!f || f.runnable === false || view.compatibility?.simulate === false)
+      return { kind: 'unavailable', message: 'The exact producer kernel is unavailable for comparison.' };
     try {
       const result = evaluateFacet(f, { state: logic.from, input: logic.input, guards: logic.guards, facts: logic.facts },p.kernel);
       const hasOutcome = result.kind === 'decision'
         ? Object.hasOwn(logic, 'cellId') && Object.hasOwn(logic, 'values')
-        : Object.hasOwn(logic, 'cellId') && Object.hasOwn(logic, 'to');
+        : Object.hasOwn(logic, 'to') && (phase === 'applied' || Object.hasOwn(logic, 'cellId'));
       const same = result.kind === 'decision' ? result.cell === logic.cellId && canonicalJson(result.values) === canonicalJson(logic.values)
-        : result.kind === 'transition' && result.cellId === logic.cellId && result.to === logic.to;
+        : result.kind === 'transition' && (phase === 'applied' && !logic.cellId || result.cellId === logic.cellId) && result.to === logic.to;
       return { kind: result.kind === 'needs-facts' || !hasOutcome ? 'unknown' : same ? 'consistent' : 'different', result,
         message: hasOutcome ? 'Comparison to this model, not authentication of the recorded event.' : 'Recorded outcome is incomplete; no agreement or contradiction is asserted.' };
     } catch (error) { return { kind: 'unavailable', message: error.message }; }
