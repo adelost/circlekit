@@ -16,10 +16,12 @@ const exec=promisify(execFile);
  * WHY: Keeps trusted authoring execution outside the read-only viewer and avoids compiler substitution.
  * This explicit helper executes selected authoring source. It is not a sandbox or startup path.
  */
-export async function exportAuthoring({root,packageRoot='.',files,entry,exportName,productId,output,evaluateContract}) {
+export async function exportAuthoring({root,packageRoot='.',files,entry,exportName,productId,output,kind='graph',evaluateContract}) {
   requireThat(Array.isArray(files)&&files.length>0&&files.length<=32&&new Set(files).size===files.length&&files.includes(entry),
     'export.inputs','Select one entry and at most 32 unique product-owned source files.');
-  requireThat(typeof exportName==='string'&&exportName.length>0,'export.export','Select an existing compiled graph export.');
+  requireThat(typeof exportName==='string'&&exportName.length>0,'export.export','Select an existing authoring export.');
+  requireThat(['graph','machine','decision-table'].includes(kind),'export.kind',
+    'Select graph, machine or decision-table authoring output.');
   const base=await realpath(root),compilerRoot=await realpath(path.resolve(base,packageRoot)),read=[];
   requireThat(compilerRoot===base||compilerRoot.startsWith(base+path.sep),'export.compiler-root','Compiler owner must be inside the selected product.');
   for(const file of files)read.push(await safeFile(base,file,1000000));
@@ -69,14 +71,17 @@ export async function exportAuthoring({root,packageRoot='.',files,entry,exportNa
     }
     const module=await import(pathToFileURL(path.join(staging,names.get(entry))).href);
     requireThat(Object.hasOwn(module,exportName),'export.export',`The selected source does not export ${exportName}.`);
-    const product=graphProduct(module[exportName],productId);
+    const exported=module[exportName];
+    const product=kind==='graph'?graphProduct(exported,productId):null;
+    const facets=kind==='graph'?[]:[{kind,id:exported?.id,compiled:exported}];
+    requireThat(kind==='graph'||typeof exported?.id==='string','export.facet','Finite authoring export needs a stable ID.');
     let revision=null;
     try {
       const status=(await exec('git',['-C',base,'status','--porcelain','--untracked-files=normal'],{timeout:3000})).stdout;
       if(!status.trim())revision=(await exec('git',['-C',base,'rev-parse','HEAD'],{timeout:3000})).stdout.trim();
     } catch {}
     for(const file of read)requireThat(digest((await safeFile(base,file.relative)).text)===digest(file.text),'export.stale','Product source changed during compilation.');
-    return writeInspectionBundle({root:base,output,productId,product,sourceFiles:files,sourceSnapshot:read,
+    return writeInspectionBundle({root:base,output,productId,product,facets,sourceFiles:files,sourceSnapshot:read,
       sourceRevision:revision,evaluateContract,compiler:{name:'@v1d/product-spec',version:compilerPackage.version}});
   } finally { await rm(staging,{recursive:true,force:true}); }
 }
