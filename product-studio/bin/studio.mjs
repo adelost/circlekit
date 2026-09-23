@@ -160,10 +160,10 @@ export async function main(args = process.argv.slice(2), { cwd = process.cwd(), 
       catch (error) { if (error.code !== 'ENOENT') throw error; }
     }
     const { createServer } = await import('../server.mjs');
-    const { origin } = await createServer({ roots, evaluateContract, port: v.port ?? 4317,
+    const { origin } = await createServer({ roots, evaluateContract, port: v.port ?? 4317, liveEnabled: !!v.live,
       dataDir: path.resolve(cwd, v['data-dir'] ?? path.join(os.homedir(), '.local/state/product-studio')),
       gitDraftRoots: repeated['allow-git-drafts'].map(r => path.resolve(cwd, r)) });
-    stdout.write(`Product Studio: ${origin}\nRead-only product attachment. Scenario execution is synthetic; no generators or providers are started.\n`);
+    stdout.write(`Product Studio: ${origin}\nRead-only product attachment. Runtime observation: ${v.live ? 'enabled on loopback' : 'off'}. No generators or providers are started.\n`);
     return 0;
   } catch (error) {
     const response = { schemaVersion: 1, ok: false, command: parsed?.command ?? null, error: errorPayload(error) };

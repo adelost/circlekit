@@ -7,11 +7,13 @@ import path from 'node:path';
 import { Workbench } from './lib/workspaces.mjs';
 import { StudioError, boundedJson, requireThat } from './lib/util.mjs';
 import { KERNEL_VERSION } from './lib/kernel.mjs';
+import { LiveSessionHub } from './lib/live.mjs';
 
 const publicRoot = fileURLToPath(new URL('./public/', import.meta.url));
-export async function createServer({ roots = [], gitDraftRoots = [], dataDir = path.join(os.homedir(), '.local/state/product-studio'), port = 4317, evaluateContract } = {}) {
+export async function createServer({ roots = [], gitDraftRoots = [], dataDir = path.join(os.homedir(), '.local/state/product-studio'), port = 4317, evaluateContract, liveEnabled = false, liveNow } = {}) {
   const authorized = await Promise.all(gitDraftRoots.map(root => realpath(root)));
   const app = new Workbench({ dataDir, gitDraftRoots: authorized, evaluateContract }); await app.initialize(roots, { includeFixtures: roots.length === 0 });
+  const live = liveEnabled ? new LiveSessionHub(app, { now: liveNow }) : null;
   const token = randomBytes(32).toString('hex');
   let origin = '', inFlight = 0;
   const server = http.createServer(async (req, res) => {
@@ -37,6 +39,7 @@ export async function createServer({ roots = [], gitDraftRoots = [], dataDir = p
         if (req.method === 'GET') {
           if (url.pathname === '/api/projects') return send(200, app.list());
           if (url.pathname === '/api/project') return send(200, url.searchParams.get('mode') === 'summary' ? app.summary(app.require(url.searchParams.get('id'))) : app.view(app.require(url.searchParams.get('id'))));
+          if (url.pathname === '/api/live-status' && live) { const project = url.searchParams.get('project'); app.require(project); return send(200, live.status(project)); }
           if (url.pathname === '/api/scenarios') return send(200, await app.scenarios());
           if (url.pathname === '/api/drafts') return send(200, await app.savedDrafts());
           if (url.pathname === '/api/draft') return send(200, await app.savedDraft(url.searchParams.get('id')));
@@ -48,6 +51,8 @@ export async function createServer({ roots = [], gitDraftRoots = [], dataDir = p
         const body = boundedJson(Buffer.concat(chunks).toString('utf8'), 10_000_000);
         let value;
         switch (url.pathname) {
+          case '/api/live-ticket': requireThat(live, 'live.disabled', 'Start Studio with --live to enable the local receiver.', 404);
+            value = live.issueTicket(body); break;
           case '/api/documentation': value = app.documentation(body); break;
           case '/api/source': value = app.sourceText(body); break;
           case '/api/entity': value = app.entityDetails(body); break;
@@ -92,23 +97,26 @@ export async function createServer({ roots = [], gitDraftRoots = [], dataDir = p
     } finally { if (acquired) inFlight--; }
   });
   server.requestTimeout = 15_000; server.headersTimeout = 10_000; server.maxHeadersCount = 40;
+  if (live) server.on('upgrade', (request, socket, head) => live.upgrade(request, socket, head));
   await new Promise((resolve, reject) => { server.once('error', reject); server.listen(port, '127.0.0.1', resolve); });
   origin = `http://127.0.0.1:${server.address().port}`;
-  return { server, origin, token, app };
+  server.on('close', () => live?.close());
+  return { server, origin, token, app, live };
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
-  const roots = [], gitDraftRoots = []; let port = 4317, dataDir;
+  const roots = [], gitDraftRoots = []; let port = 4317, dataDir, liveEnabled = false;
   const args = process.argv.slice(2);
   for (let i = 0; i < args.length; i++) {
     if (args[i] === '--workspace') { requireThat(args[i + 1], 'cli.argument', '--workspace requires a path.'); roots.push(path.resolve(args[++i])); }
     else if (args[i] === '--allow-git-drafts') { requireThat(args[i + 1], 'cli.argument', '--allow-git-drafts requires an exact repository path.'); gitDraftRoots.push(path.resolve(args[++i])); }
     else if (args[i] === '--port') port = Number(args[++i]);
     else if (args[i] === '--data-dir') dataDir = path.resolve(args[++i]);
-    else if (args[i] === '--help') { console.log('npm start -- [--workspace /path/to/repo]... [--port 4317] [--data-dir /path] [--allow-git-drafts /exact/repo]\nLoopback only. Sources are read-only; drafts are stored separately. No repository modules or external providers are executed.'); process.exit(0); }
+    else if (args[i] === '--live') liveEnabled = true;
+    else if (args[i] === '--help') { console.log('npm start -- [--workspace /path/to/repo]... [--port 4317] [--data-dir /path] [--allow-git-drafts /exact/repo] [--live]\nLoopback only. Sources are read-only; drafts are stored separately. --live enables the optional observation receiver.'); process.exit(0); }
     else throw new StudioError('cli.argument', `Unknown option: ${args[i]}`);
   }
   requireThat(Number.isInteger(port) && port >= 0 && port <= 65535, 'cli.port', 'Invalid port.');
-  const { origin } = await createServer({ roots, port, dataDir, gitDraftRoots });
+  const { origin } = await createServer({ roots, port, dataDir, gitDraftRoots, liveEnabled });
   console.log(`Product Studio: ${origin}\nProductSpec ${KERNEL_VERSION}; source inspection + pure logic simulation.\nWorking-tree writes: disabled. Git draft branches: ${gitDraftRoots.length ? 'explicitly enabled for selected roots' : 'disabled'}. External requests: disabled.\nAdd repositories with --workspace. Ctrl+C stops the workbench.`);
 }

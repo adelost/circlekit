@@ -20,7 +20,8 @@
   "dependencies": {
     "@v1d/product-spec": "https://circlekit.pages.dev/npm/v1d/product-spec/0.3.65/v1d-product-spec-0.3.65.tgz",
     "saxes": "6.0.0",
-    "typescript": "5.9.3"
+    "typescript": "5.9.3",
+    "ws": "8.21.3"
   },
   "license": "UNLICENSED",
   "bin": {

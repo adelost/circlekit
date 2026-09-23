@@ -2,6 +2,8 @@
 
 Product Studio makes software architecture executable and inspectable. It connects declared intent, compiled structure, test evidence and observed runtime behavior without treating them as the same thing.
 
+Runtime observation is off by default. The optional loopback-only receiver and bounded trace semantics are described in [CLI.md](CLI.md#optional-local-runtime-receiver); opening Studio never starts an app or attaches a device.
+
 ## Start
 
 Requires Node 22 or later and this package's locked dependencies.

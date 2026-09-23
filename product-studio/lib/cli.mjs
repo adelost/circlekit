@@ -6,7 +6,7 @@ import { boundedJson, plain, requireThat, StudioError } from './util.mjs';
 export const SEMANTIC_COMMANDS = new Set(['inspect', 'query', 'source', 'simulate', 'scenario', 'trace', 'plan']);
 const COMMON = ['workspace', 'product', 'examples', 'pretty', 'expect-model', 'amux-root'];
 const SPEC = {
-  serve: ['workspace', 'port', 'data-dir', 'allow-git-drafts', 'amux-root'],
+  serve: ['workspace', 'port', 'data-dir', 'allow-git-drafts', 'amux-root', 'live'],
   doctor: ['workspace', 'product', 'examples', 'pretty', 'amux-root'],
   converge: ['workspace', 'product', 'pretty', 'tasks', 'amux-root'],
   review: ['workspace', 'product', 'changed', 'amux-root'],
@@ -21,7 +21,7 @@ const SPEC = {
   scenario: [...COMMON, 'facet', 'file'],
   trace: [...COMMON, 'file', 'cursor', 'entity', 'operation', 'search', 'max', 'offset'],
 };
-const BOOLEAN = new Set(['examples', 'pretty', 'tasks']);
+const BOOLEAN = new Set(['examples', 'pretty', 'tasks', 'live']);
 const REQUIRED = { query: ['kind', 'from'], source: ['entity'], simulate: ['facet', 'input'], scenario: ['file'], trace: ['file'], bundle: ['compiler-version'] };
 
 /** WHAT: Describes the available Studio commands. WHY: Keeps shell help aligned with its strict parser. */
@@ -67,7 +67,8 @@ Wording validation uses the installed or sibling AMUX grammar. --amux-root
 explicitly selects another trusted checkout. The check command refuses when
 AMUX is unavailable; serve can still show intent without claiming validation.
 
-Serve only: --port 4317 --data-dir DIR --allow-git-drafts EXACT_REPOSITORY
+Serve only: --port 4317 --data-dir DIR --allow-git-drafts EXACT_REPOSITORY --live
+--live enables only the local read-only runtime receiver. Ordinary serve has no runtime socket.
 The explicit export command compiles only the selected workspace's authoring
 closure and writes its named bundle. The bundle command writes only its named output. Read/debug
 commands never build, call providers, create drafts, edit source or modify Git.
