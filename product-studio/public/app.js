@@ -105,7 +105,7 @@ function subtitle() {
   if (state.view === 'Logic') return 'Try declared rules with test inputs.';
   if (state.view === 'System') return 'Declared owners and connections.';
   if (state.view === 'Scenarios') return 'Explore event sequences with virtual time.';
-  if (state.view === 'Trace') return 'Step through the selected trace.';
+  if (state.view === 'Trace') return '';
   if (state.view === 'Interface') return 'Components and surfaces.';
   return '';
 }
