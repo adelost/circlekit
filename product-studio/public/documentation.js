@@ -16,11 +16,11 @@ function reportedTest(row,project,E) {
   const {report,test}=row;
   if(!test)return `<article class="notice"><strong>${E(report.file)}</strong><p>${report.status==='unavailable'?'No BDD report is available. Tests are never started by Studio.':report.status==='invalid'?'Invalid report; see Problems.':'This report contains no collected tests.'}</p></article>`;
   return `<article class="panel" data-key="${E(report.reportDigest+':'+test.id)}"><div class="panel-body">
-    <h3>${E(test.name)}</h3><p><span class="badge">${E(test.status)}</span> ${E(test.proofKind??test.level??'Unspecified proof kind')}${test.flaky?' · Flaky after retry':''} · ${E(report.modelCorrelation??report.correlation)}</p>
-    ${(test.scenarios??[]).map(s=>`<details open><summary>${E(s.name)}</summary><dl class="properties">${['given','when','then'].filter(k=>s.phases[k]).map(k=>`<dt>${k.toUpperCase()}</dt><dd>${E(s.phases[k])}</dd>`).join('')}</dl></details>`).join('')||'<p>No structured scenario description in this report.</p>'}
-    <p class="muted">${E(report.notice)} Source references are not executed service coverage.</p>
+    <div class="report-title"><h3>${E(test.name)}</h3><small>${E(report.run?.framework??'Report')}</small></div><p><span class="badge">${E(test.status)}</span> ${E(test.proofKind??test.level??'Unspecified proof kind')}${test.flaky?' · Flaky after retry':''} · ${E(report.modelCorrelation??report.correlation)}</p>
+    ${(test.scenarios??[]).map(s=>`<details><summary>${E(s.name)}</summary><dl class="properties">${['given','when','then'].filter(k=>s.phases[k]).map(k=>`<dt>${k.toUpperCase()}</dt><dd>${E(s.phases[k])}</dd>`).join('')}</dl></details>`).join('')||'<p>No structured scenario description in this report.</p>'}
+    <details><summary>Evidence scope</summary><p>${E(report.notice)}</p></details>
     ${sourceButton(test.file,test.line,project,E,'Open test')} <small>${E(test.file)}${test.line?':'+test.line:''}</small>
-    ${test.associations?.length?`<details><summary>${test.associations.length} exact ID references in the located test body</summary>${test.associations.map(a=>`<p><code>${E(a.entityKey)}</code> · ${E(a.kind)}</p>`).join('')}</details>`:'<p class="muted">No exact test-body association available. A test name is not used as a coverage claim.</p>'}
+    ${test.associations?.length?`<details><summary>${test.associations.length} exact ID references in the located test body</summary>${test.associations.map(a=>`<p><code>${E(a.entityKey)}</code> · ${E(a.kind)}</p>`).join('')}</details>`:''}
     </div></article>`;
 }
 export function documentationView(project,state,E) {
@@ -30,7 +30,8 @@ export function documentationView(project,state,E) {
   const error=state.documentationError?.ticket===ticket?state.documentationError.message:null;
   const scope=page?.scope??project.documentation?.scope;
   return `<section class="panel"><header class="panel-head"><h2>Intent & behavior</h2></header><div class="panel-body">
-    <p>Humans write intent. ProductSpec declares structure. Test runners report outcomes. Recorded traces remain separate observations.</p>
+    <p>WHAT/WHY, declared structure and test reports remain separate.</p>
+    ${section==='reports'?'<p class="muted">Results are producer-reported. Source references are not executed service coverage. Traces are separate.</p>':''}
     <div class="toolbar">${[['contracts','WHAT / WHY'],['legacy','Legacy reason'],['reports','Behavior reports']].map(([id,label])=>`<button data-doc-section="${id}" aria-pressed="${section===id}">${label}</button>`).join('')}</div>
     ${scope?`<p class="muted">${scope.services} local service declarations in ${scope.files} source files · ${scope.complete?'Static discovery complete for this scope':'Incomplete discovery; see Problems'}</p><details><summary>Selected source roots</summary><pre>${E((scope.sourceRoots??[]).join('\n'))}</pre></details>`:''}
     ${error?`<p class="notice">${E(error)} <button data-doc-retry>Retry</button></p>`:!page?'<p role="status">Loading selected documentation page…</p>':

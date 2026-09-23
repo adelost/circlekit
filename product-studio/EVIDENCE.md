@@ -30,7 +30,7 @@ The reporter targets the Vitest 4 public reporter model and refuses an incompati
 ## Existing JUnit XML
 
 ```bash
-node studio.mjs junit \
+v1d-studio junit \
   --input path/to/TEST-suite.xml \
   --source-root app/src/test \
   --repository adelost/skydive-altimeter \
@@ -63,7 +63,7 @@ Only literal generated values referenced in a located Kotlin test body are assoc
 ## ProductSpec declaration laws
 
 ```bash
-node studio.mjs laws --product PRODUCT_ID --output test-results/declaration-laws.json
+v1d-studio laws --product PRODUCT_ID --output test-results/declaration-laws.json
 ```
 
 The report validates ProductSpec node types with `validateProductNodeType` and finite machine/decision-table facets through the shared ProductSpec kernel.
@@ -72,7 +72,7 @@ When the product uses a different ProductSpec version, `--kernel-root` selects t
 
 ## Viewer boundary
 
-Configure reports with `documentation.bddReports`. Missing reports are informational. No evidence adapter runs as part of `node studio.mjs` or `node studio.mjs check`.
+Configure reports with `documentation.bddReports`. Missing reports are informational. No evidence adapter runs as part of `v1d-studio` or `v1d-studio check`.
 
 
 ## Verification policy: NO CI
