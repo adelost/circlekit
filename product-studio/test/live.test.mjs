@@ -56,6 +56,10 @@ test('A02 opt-in receiver stays on loopback with the existing HTTP token and Ori
     const socket=new NodeWebSocket(url,'v1d-runtime.v1',{origin:'https://elsewhere.invalid'});
     socket.once('open',resolve);socket.once('error',reject);
   }));
+  await assert.rejects(new Promise((resolve,reject)=>{
+    const socket=new NodeWebSocket(url,'v1d-runtime.v1',{headers:{Host:'attacker.invalid'}});
+    socket.once('open',resolve);socket.once('error',reject);
+  }));
   await assert.rejects(open(url+'?ticket=must-not-appear-in-url'));
 });
 test('A03 missing, expired and reused tickets cannot disclose or attach observations',async()=>{
