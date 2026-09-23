@@ -74,6 +74,10 @@ export const selectedFlightPresentationContract = {
 } as const;
 
 /** App-facing recording owner; synthetic intent handling stays native. */
+/**
+ * WHAT: Tracks the active recording session and routes recording commands.
+ * WHY: Keeps durable recording state separate from flight sensing and presentation.
+ */
 export const recordingRuntimeOwner = service({
   id: "recording.runtime-owner",
   inputs: [],
@@ -89,6 +93,10 @@ export const recordingRuntimeOwner = service({
 });
 
 /** A foreground host plus its ingestion runtime; repositories and codecs remain native details. */
+/**
+ * WHAT: Collects foreground recording inputs and applies the configured flight-transition policy.
+ * WHY: Keeps recorder ingestion effects separate from sensor producers and repositories.
+ */
 export const foregroundIngestionOwner = service({
   id: "recording.foreground-ingestion-owner",
   inputs: [
@@ -145,6 +153,10 @@ export const foregroundIngestionOwner = service({
 });
 
 /** One flight-log owner hides capture, recovery import, ledger and store implementation details. */
+/**
+ * WHAT: Stores flight history and publishes replay, catalogue, quarantine, and path views.
+ * WHY: Keeps capture, recovery import, and replay storage behind one durable log boundary.
+ */
 export const flightLogOwner = service({
   id: "recording.flight-log-owner",
   inputs: [
