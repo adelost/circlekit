@@ -14,7 +14,7 @@ export type FetchRetry = {
   /** Delays between attempts in the same scheduled operation. Empty means one attempt. */
   readonly attemptDelaysMs: readonly number[];
   /** Backoff after all attempts fail; the existing scheduler owns this clock. */
-  readonly afterFailureMs: readonly number[];
+  readonly afterFailureMs: readonly [number, ...number[]];
 };
 
 export type FetchCache =
@@ -63,8 +63,7 @@ export function fetchService<const Spec extends FetchServiceSpec>(spec: Spec): F
   if (!spec.failure || !["network", "local"].includes(spec.failure.transport)) fail("failure.policy");
   const failure = spec.failure;
   if (!failure.retry || !Array.isArray(failure.retry.attemptDelaysMs)
-      || !Array.isArray(failure.retry.afterFailureMs)
-      || (failure.retry.afterFailureMs.length === 0 && spec.onCrash !== "stop")
+      || !Array.isArray(failure.retry.afterFailureMs) || failure.retry.afterFailureMs.length === 0
       || failure.retry.attemptDelaysMs.length > 7 || failure.retry.afterFailureMs.length > 8) fail("failure.retry");
   failure.retry.attemptDelaysMs.forEach((ms) => positive(ms, "failure.retry.attemptDelaysMs", fail));
   failure.retry.afterFailureMs.forEach((ms) => positive(ms, "failure.retry.afterFailureMs", fail));
