@@ -29,6 +29,14 @@ test('a raw artifact hash identifies a trace without reproducing Studio modelDig
   assert.equal(decodeTrace(JSON.stringify(r.snapshot()),source).events.length,1);
   assert.throws(()=>decodeTrace(JSON.stringify(r.snapshot()),{...source,artifactSha256:'c'.repeat(64)}),/match/);
 });
+test('the trace exposes each changed state once with a clickable event index',()=>{
+  const r=recorder();
+  for(const [atMs,from,to] of [[0,'STOPPED','ARMED'],[1,'ARMED','ARMED'],[2,'ARMED','BUFFERING']])
+    r.record({atMs,kind:'transition',entityKey:'node::a',logic:{facetId:'recording.session',from,to,input:'Tick'}});
+  const trace=decodeTrace(JSON.stringify(r.snapshot()),identity);
+  assert.deepEqual(trace.statePath.map(item=>item.state),['STOPPED','ARMED','BUFFERING']);
+  assert.deepEqual(trace.statePath.map(item=>item.eventIndex),[0,0,2]);
+});
 
 test('a refused producer event does not consume sequence or create imaginary dropped history',()=>{
   const r=recorder();assert.throws(()=>r.record({...event(),payload:{secret:1}}));

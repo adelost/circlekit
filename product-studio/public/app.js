@@ -67,10 +67,12 @@ function selectedCell() {
 
 function render() {
   if (!project) return;
-  const f = facet(), query = state.search.toLowerCase(), title = { System: 'Explore the system', Logic: f?.kind === 'machine' ? 'Lifecycle logic' : 'Policy decisions', Scenarios: 'Explore possible outcomes', Interface: 'Components & surfaces', Changes: 'Code & review', Trace: 'Follow recorded execution', Problems: 'Problems & evidence', Compare: 'Review model changes', Welcome: 'Your product at a glance', Intent: 'Intent, structure and behavior' }[state.view];
+  const f = facet(), query = state.search.toLowerCase(), title = { System: 'Explore the system', Logic: f?.kind === 'machine' ? 'Lifecycle logic' : 'Policy decisions', Scenarios: 'Explore possible outcomes', Interface: 'Components & surfaces', Changes: 'Code & review', Trace: 'Trace', Problems: 'Problems & evidence', Compare: 'Review model changes', Welcome: 'Overview', Intent: 'Intent, structure and behavior' }[state.view];
   const list = project.facets.filter(item => item.id.toLowerCase().includes(query));
   const sourceLabel = ({ fixture: 'Public source fixture', example: 'Synthetic example', workspace: 'Local workspace', 'source-draft': 'Source draft', 'imported-artifact': 'Imported artifact' })[project.originKind] ?? 'Local data';
-  const html = `<div class="shell" data-mode="${state.text !== null ? 'candidate' : state.mode === 'Simulation' ? 'simulation' : state.mode.startsWith('Recorded') ? 'recorded' : 'declared'}">
+  const topic=state.view==='Trace' ? state.traceFrame?.current?.logic?.facetId ?? project.architecture.entities.find(e=>e.key===state.traceFrame?.current?.entityKey)?.id ?? 'Trace' : state.facetId??state.view;
+  const subtitleText=subtitle();
+  const html = `<div class="shell" data-view="${state.view}" data-mode="${state.text !== null ? 'candidate' : state.mode === 'Simulation' ? 'simulation' : (state.mode.startsWith('Recorded') || state.mode==='Test run') ? 'recorded' : 'declared'}">
     <header class="topbar"><div class="brand"><div class="brand-mark">P</div><span>PRODUCT STUDIO</span></div>
       <select class="project-select" id="project" aria-label="Select product">${projects.map(p => `<option value="${escape(p.key)}" ${p.key === project.key ? 'selected' : ''}>${escape(p.label)}</option>`).join('')}</select>
       <nav aria-label="Workbench views">${views.map(v => `<button data-view="${v}" class="${v === state.view ? 'active' : ''}" ${v === state.view ? 'aria-current="page"' : ''}>${v}</button>`).join('')}</nav>
@@ -84,7 +86,7 @@ function render() {
       <div class="explorer-actions">${action('import', '+ Import source / JSON', 'subtle')}${action('new', '+ New declaration', 'subtle')}${action('saved', 'Open saved drafts', 'subtle')}${action('connect-help', 'Attach repositories', 'subtle')}</div>
       <div class="section-label">Evidence boundary</div><small>${escape(project.provenance ?? project.validationNotice)}</small>
     </aside>
-    <main class="content">${experience?.toolbar() ?? ''}${experience?.notices() ?? ''}<div class="page-heading"><div><div class="eyebrow">${escape(project.label)} / ${escape(state.facetId ?? state.view)}</div><h1>${title}</h1><p class="subtitle">${escape(subtitle())}</p></div><div class="toolbar">${action('explorer', 'Explorer', 'mobile-toggle')}${action('inspector', 'Inspector', 'mobile-toggle')}<span class="badge">${sourceLabel}</span></div></div>
+    <main class="content">${experience?.toolbar() ?? ''}${experience?.notices() ?? ''}<div class="page-heading"><div><div class="eyebrow">${escape(project.label)} / ${escape(topic)}</div><h1>${title}</h1>${subtitleText?`<p class="subtitle">${escape(subtitleText)}</p>`:''}</div><div class="toolbar">${action('explorer', 'Explorer', 'mobile-toggle')}${action('inspector', 'Inspector', 'mobile-toggle')}<span class="badge">${sourceLabel}</span></div></div>
       ${project.diagnostics.length ? `<details class="notice"><summary>${project.diagnostics.length} source or artifact diagnostics</summary>${diagnostics(project.diagnostics)}</details>` : ''}
       ${project.sourceIdentity && project.sourceIdentity.kind !== 'matched' ? banner(project.sourceIdentity.message) : ''}
       ${project.compatibility?.reason ? banner(project.compatibility.reason) : ''}
@@ -98,13 +100,13 @@ function render() {
   if (f?.kind === 'decision-table' && f.runnable !== false && state.view === 'Logic' && state.tableRows === null) loadTable();
 }
 function subtitle() {
-  if (state.view === 'Intent') return 'Type-owned responsibility and boundaries, with explicitly scoped test reports. No new runtime or test registry.';
-  if (state.view === 'Logic') return 'The installed ProductSpec kernel decides. Synthetic inputs do not execute native code or provider effects.';
-  if (state.view === 'System') return 'Declared topology, typed ports and ownership. A graph is not an execution receipt.';
-  if (state.view === 'Scenarios') return 'Repeatable event sequences and explicit fixture boundaries. Virtual time only.';
-  if (state.view === 'Trace') return 'Exact-model event history, explicit causality and named decision evidence. Not a live debugger.';
-  if (state.view === 'Interface') return 'Inspect the real catalog and declared mount scopes. Native and media editors remain with their owners.';
-  return 'Supported source → shared compiler → semantic diff → local draft and reviewable patch.';
+  if (state.view === 'Intent') return 'Responsibility, boundaries and reported tests.';
+  if (state.view === 'Logic') return 'Try declared rules with test inputs.';
+  if (state.view === 'System') return 'Declared owners and connections.';
+  if (state.view === 'Scenarios') return 'Explore event sequences with virtual time.';
+  if (state.view === 'Trace') return 'Step through the selected trace.';
+  if (state.view === 'Interface') return 'Components and surfaces.';
+  return '';
 }
 function diagnostics(items) { return `<ul class="error-list">${items.map(d => `<li><code>${escape(d.rule)}</code> ${d.line ? `<small>line ${d.line}:${d.column}</small>` : ''}<p>${escape(d.message)}</p></li>`).join('')}</ul>`; }
 
@@ -197,6 +199,8 @@ function inspector() {
     const value = state.selected.kind === 'artifact' ? project.product?.artifacts.find(a => a.id === state.selected.id) : project.product?.artifactScopes[Number(state.selected.id)];
     return `<div class="section-label">Declared scope</div><pre>${escape(pretty(value))}</pre><hr>${banner('Declared capability is not proof of a connected renderer.')}`;
   }
+  if (['Welcome','Problems','Compare','System','Trace','Intent'].includes(state.view))
+    return `<div class="section-label">Inspection</div><h2>${state.view==='Trace'?'Select an event':'Select an object'}</h2>`;
   if (!f) return `<div class="section-label">Inspection</div><h2>Select an object</h2><p class="subtitle">Choose a declaration, node, component case or artifact.</p><hr><span class="badge warning">No runtime connected</span>`;
   if (f.runnable === false || !['machine','decision-table'].includes(f.kind)) return `<h2>${escape(f.id)}</h2>${banner(f.blockedReason ?? 'Inspection only')}<details><summary>Raw exported model</summary><pre>${escape(pretty(f.compiled))}</pre></details>`;
   if (f.kind === 'machine') {
@@ -223,7 +227,7 @@ function renderGraph() {
     edges = project.graph.edges.map(e => ({ ...e, label: e.purpose ?? e.kind ?? 'binding' }));
     }
   }
-  const cameraKey = project.key + ':' + state.view + ':' + (state.view === 'System' ? (state.architectureMode ?? 'owners') + ':' + (state.architectureGroup ?? '') : f?.id ?? 'system');
+  const cameraKey = project.key + ':' + state.view + ':' + (state.view === 'System' ? (state.architectureMode ?? 'owners') + ':' + (state.architectureGroup ?? '') + ':' + (state.focusKey ?? 'all') : f?.id ?? 'system');
   const signature = JSON.stringify({cameraKey, model:project.modelDigest, nodes, edges});
   if (host === graphHost && signature === graphSignature && (!state.selected?.id || graph.has(state.selected.id) || !nodes.some(n=>n.id===state.selected.id))) { graph.select(state.selected?.id,state.view==='Logic'?state.machineState:null); return; }
   graph?.destroy();graphHost=host;graphSignature=signature;
@@ -239,7 +243,11 @@ function bind() {
   bindingController?.abort(); bindingController = new AbortController();
   $('#project').onchange = e => loadProject(e.target.value).catch(e => toast(e.message));
   $('#search').oninput = e => { state.search = e.target.value; clearTimeout(state.searchTimer); state.searchTimer=setTimeout(()=>{if(state.view==='System')refreshArchitecture();else render();},120); };
-  document.querySelectorAll('[data-view]').forEach(b => b.onclick = () => { state.view = b.dataset.view; render(); });
+  document.querySelectorAll('[data-view]').forEach(b => b.onclick = () => {
+    state.view = b.dataset.view; render();
+    if(state.view==='Trace' && project.trace && !state.traceFrame)
+      loadTraceFrame(project.trace.eventCount-1);
+  });
   document.querySelectorAll('[data-facet]').forEach(b => b.onclick = () => { selectFacet(b.dataset.facet, false); state.view = 'Logic'; render(); });
   document.querySelectorAll('[data-node]').forEach(b => b.onclick = () => { state.view = 'System'; state.selected = { kind: 'entity', id: project.architecture.entities.find(e=>e.id===b.dataset.node && ['node','component'].includes(e.kind))?.key };  render(); });
   document.querySelectorAll('[data-cell]').forEach(b => { const choose = () => { state.selected = { kind: 'cell', id: b.dataset.cell }; render(); }; b.onclick = choose; b.onkeydown = e => { if (e.key === 'Enter') choose(); }; });
@@ -392,7 +400,7 @@ async function refreshArchitecture(query=null) {
   try {
     const result=await api('query',{...requestContext(),query,filter:{mode:state.architectureMode ?? 'owners',group:state.architectureGroup || null,query:state.search}});
     if(ticket!==generation) return;
-    state.canvas=result.canvas;state.queryResult=result.result;render();
+    state.canvas=result.canvas;state.queryResult=result.result;state.focusKey=null;render();
   }catch(error){if(ticket===generation)toast(error.message);}
 }
 async function openEntitySource(key) {
@@ -519,13 +527,15 @@ async function reloadProject(automatic=false) {
   toast('New build loaded. Selection was retained where its identity still exists; previous build is available in Compare.');
 }
 async function focusNeighborhood(){
-  const from=state.selected?.kind==='entity'?state.selected.id:state.queryFrom;if(!from)return toast('Select an owner or port first.');
+  const from=state.selected?.kind==='entity'?state.selected.id:state.queryFrom??$('#query-from')?.value;
+  if(!from)return toast('Select an owner or port first.');
   const identity=requestContext(),ticket=++generation,purposes=state.includeContext?['data','demand','context']:['data'];
   const [up,down]=await Promise.all(['upstream','downstream'].map(kind=>api('query',{...identity,query:{kind,from,purposes,maxDepth:2}})));
   if(ticket!==generation)return;
   const keys=new Set([...up.result.keys,...down.result.keys]),edges=new Set([...up.result.edgeIds,...down.result.edgeIds]);
   state.canvas={nodes:[...new Map([...up.canvas.nodes,...down.canvas.nodes].map(n=>[n.id,n])).values()],edges:[...new Map([...up.canvas.edges,...down.canvas.edges].map(e=>[e.id,e])).values()],shownOwners:keys.size};
-  state.queryResult={keys:[...keys],edgeIds:[...edges],supported:true,message:'Two declared dependency levels in each direction. Internal algorithm causality is not inferred.'};state.view='System';render();
+  state.queryResult={keys:[...keys],edgeIds:[...edges],supported:true,message:'Two declared dependency levels in each direction. Internal algorithm causality is not inferred.'};
+  state.selected={kind:'entity',id:from};state.focusKey=from;state.view='System';render();graph?.arrange();
 }
 $('#file-import').onchange = async e => {
   const file = e.target.files[0]; if (!file) return;

@@ -56,6 +56,19 @@ function validateEvent(event, knownEntities) {
   assertSerializable(event);
 }
 
+function traceStatePath(events) {
+  const path=[];let truncated=false;
+  for(const [eventIndex,event] of events.entries()) {
+    const {from,to}=event.kind==='transition'?event.logic??{}:{};
+    if(!short(from)||!short(to))continue;
+    if(!path.length)path.push({state:from,eventIndex,sequence:event.sequence});
+    if(path.at(-1).state===to)continue;
+    if(path.length===128){truncated=true;break;}
+    path.push({state:to,eventIndex,sequence:event.sequence});
+  }
+  return {statePath:path,statePathTruncated:truncated};
+}
+
 export function decodeTrace(text, { productId, modelDigest, artifactSha256 = null, architecture }) {
   const trace = boundedJson(text, 8_000_000);
   requireThat(plain(trace) && trace.kind === 'product-studio-trace' && trace.version === 1, 'trace.version', 'Unsupported trace format. A count-only port snapshot is not an event trace.');
@@ -93,7 +106,7 @@ export function decodeTrace(text, { productId, modelDigest, artifactSha256 = nul
   }
   requireThat(gapIndex === trace.truncation.gaps.length, 'trace.gap',
     'A declared gap does not match missing captured sequences. Trailing loss needs a future trace schema.');
-  return { ...trace, traceDigest: digest(canonicalJson(trace)),
+  return { ...trace, ...traceStatePath(trace.events), traceDigest: digest(canonicalJson(trace)),
     notice: trace.provenance === 'synthetic' ? 'Synthetic trace. No product runtime was observed.'
       : trace.provenance === 'test-run' ? 'Test run. Events were recorded by an owner-run test, not a live product session.'
       : 'Recorded events supplied by a producer. Identity is checked; the trace is not authenticated and does not prove sensor accuracy.',

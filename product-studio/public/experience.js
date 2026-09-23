@@ -2,6 +2,15 @@ import { documentationView } from './documentation.js';
 /** Navigation, local preferences and passive refresh. No DSL or execution authority. */
 const views = new Set(['System','Logic','Scenarios','Interface','Changes','Trace','Problems','Compare','Welcome','Intent']);
 const text = v => typeof v === 'string' && v.length <= 2000;
+const issueRows = project => (project.problems??project.diagnostics).map((issue,index)=>({issue,index}));
+const isProblem = row => ['error','warning'].includes(row.issue.severity??'error');
+function issueCard({issue,index},project,E) {
+  const file=issue.file??issue.sourceFile;
+  return '<div class="problem '+E(issue.severity??'error')+'"><strong>'+E(issue.rule)+'</strong> <span>'
+    +E(issue.severity??'error')+'</span><p>'+E(issue.message)+'</p><button data-problem="'+index+'"'
+    +(!project.sources.some(source=>source.path===file)?' disabled':'')+'>Open source'
+    +(issue.line?' · line '+issue.line:'')+'</button></div>';
+}
 export function parseRoute(hash) {
   try {
     const params = new URLSearchParams(hash.replace(/^#/,'')), raw = params.get('view');
@@ -60,10 +69,10 @@ export function createExperience(env) {
       if(ticket!==navigationTicket)return;lastRoute=JSON.stringify(r);render();
     }catch(e){if(ticket===navigationTicket)toast(e.message);}finally{if(ticket===navigationTicket)navigating=false;}
   }
-  function toolbar() {const p=P(),s=S();return `<div class="experience-bar" data-key="experience">
+  function toolbar() {const p=P(),s=S(),problems=issueRows(p).filter(isProblem).length;return `<div class="experience-bar" data-key="experience">
     <div class="toolbar"><button data-exp="back" aria-label="Back">←</button><button data-exp="forward" aria-label="Forward">→</button>
     <button data-exp="palette">Commands <kbd>Ctrl ⇧ P</kbd></button><button data-exp="bookmark">☆ Save view</button><details class="view-menu" data-key="view-menu"><summary>More views</summary><div class="compact-list"><button data-exp="welcome">Overview</button><button data-exp="bookmarks">Saved views</button><button data-exp="copy-link">Copy link</button><button data-exp="compare">Compare builds</button><button data-exp="intent">Intent &amp; behavior</button></div></details></div>
-    <div class="toolbar"><button data-exp="problems">Problems (${(p.problems??p.diagnostics).length})</button>
+    <div class="toolbar"><button data-exp="problems">Problems${problems?' ('+problems+')':''}</button>
     <label class="inline-check"><input id="watch-builds" type="checkbox" ${s.watchEnabled!==false?'checked':''}> Follow builds</label></div></div>`;}
   function notices(){const s=S();return `${s.routeWarning?`<div class="notice">${E(s.routeWarning)} <button data-exp="dismiss-route">Dismiss</button></div>`:''}
     ${s.watchError?`<div class="notice">Build check failed: ${E(s.watchError)}</div>`:''}
@@ -73,21 +82,26 @@ export function createExperience(env) {
     <span>Model <strong>${d?d.diff.changes.length+' changed paths':'Loaded snapshot'}</strong></span>
     <span>Scenarios <strong>${!d && s.scenarioResult?.bundleDigest===P().bundleDigest ? s.scenarioResult.assertionStatus : 'Not evaluated'}</strong></span><span>Runtime <strong>Not evaluated</strong></span></div>`;}
   function page(view) {
-    const p=P(),s=S(),problems=p.problems??p.diagnostics;
+    const p=P(),s=S(),rows=issueRows(p),blockers=rows.filter(isProblem),notes=rows.filter(row=>!isProblem(row));
+    const noteGroups=[...new Set(notes.map(row=>row.issue.rule))].map(rule=>{
+      const group=notes.filter(row=>row.issue.rule===rule);
+      return '<details><summary>'+group.length+' '+E(rule)+'</summary>'+group.map(row=>issueCard(row,p,E)).join('')+'</details>';
+    }).join('');
+    const notesPanel=notes.length?'<details><summary>'+notes.length+' notes</summary>'+noteGroups+'</details>':'';
     if(view==='Intent')return documentationView(p,s,E);
     if(view==='Problems')return `<section class="panel"><header class="panel-head"><h2>Problems & missing evidence</h2></header><div class="panel-body">
       <p class="muted">Compiler diagnostics and source mapping gaps are different. No missing runtime delivery is inferred from a disconnected runtime.</p>
-      ${problems.length?problems.map((d,i)=>`<div class="problem ${E(d.severity??'error')}"><strong>${E(d.rule)}</strong> <span>${E(d.severity??'error')}</span><p>${E(d.message)}</p>
-        <button data-problem="${i}" ${!p.sources.some(s=>s.path===(d.file??d.sourceFile))?'disabled':''}>Open source${d.line?' · line '+d.line:''}</button></div>`).join(''):'<p>No producer diagnostics reported. This is not a full build or runtime proof.</p>'}
+      ${blockers.length?blockers.map(row=>issueCard(row,p,E)).join(''):'<p>No errors or warnings.</p>'}
+      ${notesPanel}
       <details><summary>${p.sourceIndex.unresolved.length} entities without exact source mapping</summary>${p.sourceIndex.unresolved.slice(0,100).map(d=>`<p><code>${E(d.entityKey)}</code> ${E(d.reason)}</p>`).join('')}<small>First 100 shown. Missing provenance is not a code error.</small></details></div></section>`;
     if(view==='Compare'){const c=s.comparison;return `<section class="panel"><header class="panel-head"><h2>Compare declared builds</h2><button data-exp="run-compare">Compare previous load</button></header><div class="panel-body"><p>Reload a newer build to retain one prior snapshot, or import a prior bundle through the existing importer.</p>
       <label>Compare against an already loaded product<select id="compare-before"><option value="">Previous load</option>${env.getProjects().filter(x=>x.key!==p.key).map(x=>`<option value="${E(x.key)}">${E(x.label)}</option>`).join('')}</select></label>
       ${c?`<div class="notice info">${E(c.notice)}<p>${c.counts.added} added · ${c.counts.removed} removed · ${c.counts.changed} changed${c.truncated?' · result limited':''}</p></div><div class="compact-list">${c.changes.map((v,i)=>`<details data-key="${E(v.key)}"><summary>${E(v.status)} · ${E(v.kind)} · ${E(v.key)}</summary><div class="split"><pre>${E(JSON.stringify(v.before,null,2))}</pre><pre>${E(JSON.stringify(v.after,null,2))}</pre></div></details>`).join('')}</div>`:'<p class="muted">No comparison requested. No Git checkout, generator or model call is performed.</p>'}</div></section>`;}
-    return `<section class="panel"><div class="panel-body"><h2>${E(p.label)}</h2><p>Start with a question about your program, not a wall of nodes.</p><div class="onboarding-grid">
+    return `<section class="panel"><div class="panel-body"><h2>${E(p.label)}</h2><div class="onboarding-grid">
       <button data-exp="system"><strong>${p.architecture.coverage.owners} owners</strong><span>Explore architecture</span></button>
       <button data-exp="logic"><strong>${p.facets.length} logic declarations</strong><span>Explain a decision</span></button>
-      <button data-exp="problems"><strong>${p.sourceIndex.origins.length} source locations</strong><span>Review available evidence</span></button></div>
-      <div class="notice info">${E(p.provenance??p.validationNotice)}</div><p>Existing code remains a valid implementation leaf. Studio does not turn unmodelled algorithms into imaginary nodes.</p><button data-exp="palette">Find an object or command</button></div></section>`;
+      <button data-exp="palette"><strong>${p.sourceIndex.origins.length} source locations</strong><span>Find source</span></button></div>
+      <details class="scope-note"><summary>Scope</summary><p>${E(p.provenance??p.validationNotice)}</p></details></div></section>`;
   }
   function bookmarks(){const d=document.querySelector('#dialog'),items=savedBookmarks();d.innerHTML=`<h2>Saved views</h2><p>Links contain identities only, not source text or trace payloads.</p><div class="compact-list">${items.map((b,i)=>`<button data-bookmark="${i}">${E(b.title)}</button>`).join('')||'<p>No saved views.</p>'}</div><button data-close>Close</button>`;d.showModal();d.querySelector('[data-close]').onclick=()=>d.close();d.querySelectorAll('[data-bookmark]').forEach(b=>b.onclick=()=>{d.close();restore(items[Number(b.dataset.bookmark)].route);});}
   function palette(){
