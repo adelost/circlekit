@@ -18,6 +18,7 @@ import {
   decodeNativeBindingManifest,
   defineComponentType,
   defineDecisionTable,
+  defineMachine,
   on,
   bool,
   defineProductLibraryCatalog,
@@ -2259,6 +2260,7 @@ test("decision tables reach the product IR and its JSON only when declared", () 
   assert.equal("decisionTables" in fixture(), false);
   const table = defineDecisionTable({
     id: "fixture.screen",
+    ownerNodeTypeRef: controller.id,
     axes: { phase: ["IDLE", "ACTIVE"] },
     columns: { held: bool },
     cells: [on("fixture.idle", { phase: "IDLE" }, { held: false }), on("fixture.active", { phase: "ACTIVE" }, { held: true })],
@@ -2266,10 +2268,37 @@ test("decision tables reach the product IR and its JSON only when declared", () 
   });
   const product = fixture({ decisionTables: [table] });
   const json = JSON.parse(productJsonEmitter("out/product.json").emit(product)[0]!.content) as {
-    decisionTables: { id: string; cells: { id: string }[]; invariants: string[] }[];
+    decisionTables: { id: string; ownerNodeTypeRef: string; cells: { id: string }[]; invariants: string[] }[];
   };
-  assert.deepEqual(json.decisionTables.map(({ id, cells, invariants }) => ({ id, cells: cells.map((cell) => cell.id), invariants })), [
-    { id: "fixture.screen", cells: ["fixture.idle", "fixture.active"], invariants: ["idle never holds the screen"] },
+  assert.deepEqual(json.decisionTables.map(({ id, ownerNodeTypeRef, cells, invariants }) => ({ id, ownerNodeTypeRef, cells: cells.map((cell) => cell.id), invariants })), [
+    { id: "fixture.screen", ownerNodeTypeRef: controller.id, cells: ["fixture.idle", "fixture.active"], invariants: ["idle never holds the screen"] },
   ]);
   assert.throws(() => fixture({ decisionTables: [table, table] }), /duplicate decision table/);
+  assert.throws(() => fixture({ decisionTables: [{ ...table, ownerNodeTypeRef: undefined }] }), /needs ownerNodeTypeRef/);
+  assert.throws(() => fixture({ decisionTables: [{ ...table, ownerNodeTypeRef: "fixture.absent" }] }), /not a compiled node type/);
+});
+
+test("product-owned machines carry their real node type into IR; standalone machines remain independent", () => {
+  assert.equal("machines" in fixture(), false);
+  const machine = defineMachine({
+    id: "fixture.session", ownerNodeTypeRef: controller.id,
+    states: ["IDLE", "ACTIVE"], initial: "IDLE", inputs: ["Start", "Stop"], guards: [],
+    cells: [{ id: "start", from: "IDLE", on: "Start", to: "ACTIVE" },
+      { id: "stop", from: "ACTIVE", on: "Stop", to: "IDLE" }],
+    rests: ["IDLE", "ACTIVE"], deadlines: [], ordering: "exclusive", otherwise: "stay",
+  });
+  const product = fixture({ machines: [machine] });
+  const json = JSON.parse(productJsonEmitter("out/product.json").emit(product)[0]!.content) as {
+    machines: { id: string; ownerNodeTypeRef: string; cells: { id: string }[] }[];
+  };
+  assert.deepEqual(json.machines.map(({ id, ownerNodeTypeRef, cells }) => ({ id, ownerNodeTypeRef, cells: cells.map((cell) => cell.id) })), [
+    { id: "fixture.session", ownerNodeTypeRef: controller.id, cells: ["start", "stop"] },
+  ]);
+  assert.throws(() => fixture({ machines: [machine, machine] }), /duplicate machine/);
+  assert.throws(() => fixture({ machines: [{ ...machine, ownerNodeTypeRef: undefined }] }), /needs ownerNodeTypeRef/);
+  assert.throws(() => fixture({ machines: [{ ...machine, ownerNodeTypeRef: "fixture.absent" }] }), /not a compiled node type/);
+  assert.throws(() => fixture({ machines: [{ ...machine, ownerNodeTypeRef: "ui.controller" }] }), /not a compiled node type/);
+  const unused = service({ ...source, id: "fixture.unused" } as const);
+  assert.throws(() => fixture({ nodeTypes: [...baseDeclaration.nodeTypes, unused],
+    machines: [{ ...machine, ownerNodeTypeRef: unused.id }] }), /orphan node type/);
 });
