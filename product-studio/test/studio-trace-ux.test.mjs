@@ -36,6 +36,28 @@ test('machine trace presents the shared graph before the event list', () => {
   assert(html.indexOf('id="graph"') < html.indexOf('Recorded event lanes'));
 });
 
+test('short traces keep paging and filter fields out of the primary view', () => {
+  const html=studio.traceView(project(machine,{...trace,eventCount:6}),
+    {traceCursor:5,traceFrame:frame({facetId:'jump.session',cellId:'exit',from:'READY',to:'FLYING'})},escape);
+  assert.doesNotMatch(html,/data-action="trace-page-prev"/);
+  assert.doesNotMatch(html,/data-action="trace-page-next"/);
+  assert.match(html,/<details class="view-menu"><summary>Filter/);
+  assert.doesNotMatch(html,/<details class="view-menu" open/);
+});
+
+test('long traces retain paging and the optional filter', () => {
+  const html=studio.traceView(project(machine,{...trace,eventCount:202}),
+    {traceCursor:201,traceFrame:frame({facetId:'jump.session',cellId:'exit',from:'READY',to:'FLYING'})},escape);
+  assert.match(html,/data-action="trace-page-prev"/);
+  assert.match(html,/<details class="view-menu"><summary>Filter/);
+});
+
+test('paging starts after the 200-event page boundary', () => {
+  const state={traceCursor:1,traceFrame:frame({facetId:'jump.session',cellId:'exit',from:'READY',to:'FLYING'})};
+  assert.doesNotMatch(studio.traceView(project(machine,{...trace,eventCount:200}),state,escape),/data-action="trace-page-prev"/);
+  assert.match(studio.traceView(project(machine,{...trace,eventCount:201}),state,escape),/data-action="trace-page-prev"/);
+});
+
 test('a port trace without a facet shows its system graph, current owner and declared prior binding', () => {
   const account='node::account', list='node::list-presentation', jump='node::jump-presentation';
   const records='port::account.records', listRecords='port::list-presentation.records', jumpModel='port::jump-presentation.model', jumpInput='port::jump.model';
