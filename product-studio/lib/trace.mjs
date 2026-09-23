@@ -45,7 +45,7 @@ export function createLiveTraceRecorder(view, { id, scope, buildId = null }) {
     truncation:{droppedBefore:0,gaps:[]},events:[] };
   decodeTrace(JSON.stringify(current),view);
   return {
-    append({through,events,gaps=[]}) {
+    append({through,events,gaps=[]},{maxBytes=8_000_000}={}) {
       requireThat(current.capture.ending === 'open', 'trace.ended', 'Capture already ended.');
       requireThat(Number.isSafeInteger(through) && through > current.capture.through,
         'trace.watermark', 'A batch must advance the capture watermark.');
@@ -53,7 +53,9 @@ export function createLiveTraceRecorder(view, { id, scope, buildId = null }) {
         'trace.batch', 'Batch exceeds the observation budget.');
       const proposed={...current,capture:{...current.capture,through},
         events:[...current.events,...events],truncation:{...current.truncation,gaps:[...current.truncation.gaps,...gaps]}};
-      decodeTrace(JSON.stringify(proposed),view);
+      const serialized=JSON.stringify(proposed);
+      requireThat(Buffer.byteLength(serialized)<=maxBytes,'live.overloaded','Receiver retention budget exhausted. Save this capture and start a new Studio session.');
+      decodeTrace(serialized,view);
       current=proposed;
       return through;
     },
@@ -95,15 +97,16 @@ function validateEvent(event, knownEntities, version = 1) {
   assertSerializable(event);
 }
 
-function traceStatePath(events, version = 1) {
+function traceStatePath(events, version = 1, gaps = []) {
   if (version === 2) {
-    const instances = new Set(events.filter(e => e.kind === 'transition' && e.phase === 'applied')
+    const afterLoss = gaps.length ? gaps.at(-1).to : -1;
+    const instances = new Set(events.filter(e => e.sequence > afterLoss && e.kind === 'transition' && e.phase === 'applied')
       .map(e => e.instanceId).filter(Boolean));
     if (instances.size !== 1) return { statePath: [], statePathTruncated: false };
     const instance = [...instances][0];
     const path=[];let truncated=false;
     for(const [eventIndex,event] of events.entries()) {
-      if(event.kind!=='transition'||event.phase!=='applied'||event.instanceId!==instance)continue;
+      if(event.sequence<=afterLoss||event.kind!=='transition'||event.phase!=='applied'||event.instanceId!==instance)continue;
       const {from,to}=event.logic??{};
       if(!short(from)||!short(to))continue;
       if(!path.length)path.push({state:from,eventIndex,sequence:event.sequence});
@@ -212,7 +215,7 @@ export function decodeTrace(text, { productId, modelDigest, artifactSha256 = nul
   if (trace.version === 1) requireThat(gapIndex === trace.truncation.gaps.length, 'trace.gap',
     'A declared gap does not match missing captured sequences. Trailing loss needs a future trace schema.');
   else validateV2Coverage(trace);
-  return { ...trace, ...traceStatePath(trace.events, trace.version), traceDigest: digest(canonicalJson(trace)),
+  return { ...trace, ...traceStatePath(trace.events, trace.version, trace.truncation.gaps), traceDigest: digest(canonicalJson(trace)),
     notice: trace.provenance === 'synthetic' ? 'Synthetic trace. No product runtime was observed.'
       : trace.provenance === 'test-run' ? 'Test run. Events were recorded by an owner-run test, not a live product session.'
       : 'Recorded events supplied by a producer. Identity is checked; the trace is not authenticated and does not prove sensor accuracy.',

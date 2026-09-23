@@ -26,6 +26,13 @@ test('Unknown names missing evidence', () => {
   assert.equal(result.verdict, 'Unknown');
   assert.match(result.gaps.join(' '), /declaration-law report.*trace file/);
 });
+test('a clean but empty live capture adds no behavioral proof even beside passing laws',()=>{
+  const selected=view({laws:[law('passed')]});
+  selected.trace={version:2,events:[],complete:true,artifactSha256:'a'.repeat(64)};
+  const result=convergenceFor(selected,()=>({kind:'unknown'}));
+  assert.equal(result.verdict,'Unknown');
+  assert.match(result.gaps.join(' '),/empty live capture/i);
+});
 test('a skipped law supplies no Converged proof', () => {
   const result = convergenceFor(view({ laws: [law('skipped')] }), () => ({ kind: 'unknown' }));
   assert.equal(result.verdict, 'Unknown');

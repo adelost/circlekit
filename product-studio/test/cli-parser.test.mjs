@@ -19,6 +19,11 @@ test('the documented check command uses the shared contracts path', () => {
   assert.equal(parsed.command,'contracts');
   assert.equal(parsed.values.product,'my-product');
 });
+test('live receiver is an explicit serve-only switch',()=>{
+  assert.equal(parseCli(['serve','--live']).values.live,true);
+  assert.equal(parseCli(['serve']).values.live,undefined);
+  assert.throws(()=>parseCli(['doctor','--live']),error=>error.code==='cli.usage');
+});
 test('plan accepts bounded changed entities and source files',()=>{
   const p=parseCli(['plan','/repo','--changed','node-type::catalog.tags','--changed','src/catalog/tags.ts']);
   assert.deepEqual(p.repeated.changed,['node-type::catalog.tags','src/catalog/tags.ts']);

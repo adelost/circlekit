@@ -123,6 +123,15 @@ test('v2 writer accepts a loss-only final watermark and preserves interruption',
   assert.equal(decodeTrace(JSON.stringify(saved),identity).capture.through,2);
   assert.throws(()=>writer.append({through:2,events:[],gaps:[]}),/sequence|watermark|ended/i);
 });
+test('v2 never joins applied states across an observation loss',()=>{
+  const row=(sequence,from,to)=>({sequence,atMs:sequence,kind:'transition',phase:'applied',instanceId:'one',
+    entityKey:'node::a',logic:{facetId:'recording.session',from,to,input:'Tick'}});
+  const trace={kind:'product-studio-trace',version:2,productId:'test',modelDigest:identity.modelDigest,
+    sessionId:'loss-path',clock:{domain:'monotonic',unit:'ms'},provenance:'recorded',
+    capture:{id:'loss-path',transport:'websocket',scope:{events:['transition'],facets:['recording.session'],appliedTransitions:true},through:2,ending:'interrupted'},
+    truncation:{droppedBefore:0,gaps:[{from:1,to:1,reason:'queue-full'}]},events:[row(0,'A','B'),row(2,'X','Y')]};
+  assert.deepEqual(decodeTrace(JSON.stringify(trace),identity).statePath.map(point=>point.state),['X','Y']);
+});
 
 test('a refused producer event does not consume sequence or create imaginary dropped history',()=>{
   const r=recorder();assert.throws(()=>r.record({...event(),payload:{secret:1}}));

@@ -67,9 +67,11 @@ export function convergenceFor(view, compareLogic) {
     }
     if (counts.trace.unknown) gaps.push(`${counts.trace.unknown} trace steps have unknown or unavailable logic comparisons.`);
     if (trace.version === 2 && !trace.complete) gaps.push('Live capture is open, interrupted or contains loss; the observed window is incomplete.');
+    if (trace.version === 2 && trace.events.length === 0) gaps.push('Empty live capture has no behavioral observations.');
   }
   const evidence = counts.laws.passed + counts.trace.consistent + counts.contracts.validated;
-  const verdict = reasons.length ? 'Diverged' : evidence && !incomplete && !(trace?.version === 2 && !trace.complete) ? 'Converged' : 'Unknown';
+  const liveGap = trace?.version === 2 && (!trace.complete || trace.events.length === 0);
+  const verdict = reasons.length ? 'Diverged' : evidence && !incomplete && !liveGap ? 'Converged' : 'Unknown';
   if (verdict === 'Unknown' && !gaps.length) gaps.push('No comparable declaration law, validated contract or recorded trace is loaded.');
   return { verdict, label: verdict === 'Diverged' ? `Diverged: ${reasons.length}` : verdict,
     count: reasons.length, reasons, gaps, counts, kernel, traceIdentity,
