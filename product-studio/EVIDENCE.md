@@ -19,7 +19,7 @@ Run only the tests selected by the product owner and add the Studio reporter bes
 ```bash
 STUDIO_REPOSITORY=adelost/agentmux \
 STUDIO_REPOSITORY_ROOT=/absolute/path/to/agentmux \
-STUDIO_BDD_REPORT=test-results/bdd-run.json \
+STUDIO_BDD_REPORT=test-results/amux-bdd-run.json \
 node node_modules/vitest/vitest.mjs run path/to/test \
   --reporter default \
   --reporter /absolute/path/to/circlekit/product-studio/reporters/vitest.mjs
@@ -34,7 +34,7 @@ v1d-studio junit \
   --input path/to/TEST-suite.xml \
   --source-root app/src/test \
   --repository adelost/skydive-altimeter \
-  --output test-results/bdd-run.json
+  --output test-results/skyvw-bdd-run.json
 ```
 
 The importer never starts Gradle or JUnit. It requires a real suite timestamp. If XML omits the timezone, pass `--timestamp-zone UTC` only when the original runner actually used UTC. Ambiguous Kotlin source ownership is refused.
@@ -63,7 +63,9 @@ Only literal generated values referenced in a located Kotlin test body are assoc
 ## ProductSpec declaration laws
 
 ```bash
-v1d-studio laws --product PRODUCT_ID --output test-results/declaration-laws.json
+v1d-studio laws --product amux-link \
+  --kernel-root android/audio-inbox/product-spec \
+  --output test-results/amux-link-laws.json
 ```
 
 The report validates ProductSpec node types with `validateProductNodeType` and finite machine/decision-table facets through the shared ProductSpec kernel.
@@ -72,7 +74,7 @@ When the product uses a different ProductSpec version, `--kernel-root` selects t
 
 ## Viewer boundary
 
-Configure reports with `documentation.bddReports`. Missing reports are informational. No evidence adapter runs as part of `v1d-studio` or `v1d-studio check`.
+Studio finds existing convention-named reports as described in [INTEGRATION](INTEGRATION.md#1-start-with-an-existing-checkout); `documentation.bddReports` is an explicit override. Missing reports are informational. No evidence adapter runs as part of `v1d-studio` or `v1d-studio check`.
 
 
 ## Verification policy: NO CI
