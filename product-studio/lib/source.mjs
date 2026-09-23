@@ -16,7 +16,7 @@ const unwrap = node => {
  * are NEVER imported, transpiled-and-executed, evaluated, or given IO globals.
  * All table/machine laws and decisions stay in the installed ProductSpec kernel.
  */
-export function analyzeSource(text, file = 'declaration.ts') {
+export function analyzeSource(text, file = 'declaration.ts', selectedKernel = kernel) {
   requireThat(typeof text === 'string' && Buffer.byteLength(text) <= MAX_SOURCE, 'source.size', 'Source exceeds the 500 KB interactive limit.');
   const source = ts.createSourceFile(file, text, ts.ScriptTarget.Latest, true, /\.m?js$/.test(file) ? ts.ScriptKind.JS : ts.ScriptKind.TS);
   const bindings = new Map(), cache = new Map(), pending = new Set(), approved = new WeakSet();
@@ -82,7 +82,7 @@ export function analyzeSource(text, file = 'declaration.ts') {
     return approve((...args) => {
       if (name === 'defineMachine' || name === 'defineDecisionTable') {
         const kind = name === 'defineMachine' ? 'machine' : 'decision-table';
-        const compiled = compileDeclaration(kind, args[0]);
+        const compiled = compileDeclaration(kind, args[0], selectedKernel);
         const call = ts.isCallExpression(node.parent) ? node.parent : node;
         const original = origins.get(compiled.id);
         if (original) refuse(node, `Duplicate declaration ID '${compiled.id}'.`, 'source.duplicate-id');

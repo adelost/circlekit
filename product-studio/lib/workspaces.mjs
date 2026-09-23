@@ -12,7 +12,8 @@ import { architectureOf, architectureSlice, queryArchitecture, entityKey } from 
 import { locateEntities } from './provenance.mjs';
 import { checkSourceIdentity, compatibilityReport } from './inspection.mjs';
 import { decodeTrace, inspectTrace, traceEventIndex } from './trace.mjs';
-import { TOOL_VERSIONS } from './kernel.mjs';
+import { kernel, KERNEL_VERSION, TOOL_VERSIONS } from './kernel.mjs';
+import { loadProductKernel } from './product-kernel.mjs';
 import { analyzeSource } from './source.mjs';
 import { decodeArtifact, graphOf, attachSnapshot } from './model.mjs';
 import { evaluateFacet, enumerateTable, runScenario, runMockScenario } from './simulation.mjs';
@@ -75,6 +76,9 @@ export class Workbench {
     requireThat(typeof config.id === 'string' && typeof config.label === 'string' && Array.isArray(config.sources ?? []) && (config.sources ?? []).length <= 32, 'workspace.config', 'Invalid workspace declaration.');
     requireThat(config.traceFile === undefined || typeof config.traceFile === 'string' && config.traceFile.endsWith('.json'),
       'workspace.traceFile','Select a repository-relative JSON trace file.');
+    const selected=config.kernelRoot
+      ?await loadProductKernel(config.root,config.kernelRoot)
+      :{kernel,version:KERNEL_VERSION};
     const key = `${config.id}-${digest(config.root).slice(0, 10)}`;
     const sources = [], errors = []; let totalSourceBytes = 0;
     let imported = { product: null, facets: [], identity: {} }, graphDigest = null;
@@ -82,7 +86,8 @@ export class Workbench {
     if (artifactPath) {
       const artifact = await exists(config.root, artifactPath);
       if (artifact) {
-        try { imported = decodeArtifact(artifact.text, artifactPath); }
+        try { imported = decodeArtifact(artifact.text, artifactPath,
+          {evaluator:selected.kernel,evaluatorVersion:selected.version}); }
         catch (e) { errors.push({ rule: e.code ?? 'artifact.read', message: e.message }); }
       } else errors.push({ rule: 'artifact.missing', message: 'Generated inspection is unavailable. Export through the product owner, then reload.' });
     }
@@ -97,7 +102,7 @@ export class Workbench {
         // A compiled bundle is the primary meaning. Source is indexed, never reinterpreted to replace it.
         const parsed = imported.inspection
           ? { facets: [], diagnostics: [], dataExports: {}, digest: digest(file.text), valid: false, mode: 'source-index' }
-          : analyzeSource(file.text, relative);
+          : analyzeSource(file.text, relative, selected.kernel);
         sources.push({ path: relative, text: file.text, parsed });
       } catch (e) {
         sources.push({ path: relative, text: file.text, parsed: { facets: [], diagnostics: [{ rule: e.code ?? 'source.read', message: e.message }], dataExports: {}, digest: digest(file.text), valid: false } });
@@ -120,10 +125,16 @@ export class Workbench {
     }
     const pins = !config.fixture ? await sourceCompilerPin(config.root,sources.filter(s=>!s.documentationOnly)) : {versions:[],files:[]};
     const sourceCompatibility = pins.versions.length === 1 ? compatibilityReport({compiler:{version:pins.versions[0]}},TOOL_VERSIONS.productSpec) : pins.versions.length > 1 ? {inspect:true,simulate:false,reason:'Attached source files use different ProductSpec versions. Export separate inspection bundles for their package boundaries.'} : null;
-    const compilerCompatibility = imported.compatibility ?? sourceCompatibility;
+    const runtimeCompatibility = pins.versions.length === 1 ? compatibilityReport({compiler:{version:pins.versions[0]}},selected.version)
+      : pins.versions.length > 1 ? {inspect:true,simulate:false,reason:'Attached source files use different ProductSpec versions. Export separate inspection bundles for their package boundaries.'} : null;
+    const compilerCompatibility = imported.compatibility?.simulate===false ? imported.compatibility
+      : runtimeCompatibility?.simulate===false ? runtimeCompatibility
+      : imported.compatibility ?? runtimeCompatibility ?? sourceCompatibility;
     for (const item of pins.files) if(!readSet.some(r=>r.file===item.file))readSet.push(item);
     for (const item of documentationInputs.readSet) if(!readSet.some(r=>r.file===item.file))readSet.push(item);
-    const p = { key, config, sources, documentationInputs, imported, graphDigest, errors, revision, readSet, compilerCompatibility, sourceCompatibility, evidence: null, trace: null };
+    const p = { key, config, sources, documentationInputs, imported, graphDigest, errors, revision, readSet,
+      compilerCompatibility, sourceCompatibility, kernel:selected.kernel,
+      toolVersions:{...TOOL_VERSIONS,productSpec:selected.version}, evidence: null, trace: null };
     let view = this.view(p);
     if (config.traceFile) {
       try {
@@ -153,10 +164,11 @@ export class Workbench {
   }
   buildSnapshot(p) {
     this.metrics.snapshotBuilds++;
+    const versions=p.toolVersions??TOOL_VERSIONS;
     const facets = this.facets(p).map(f => ({ ...f, source: f.source ? { ...f.source } : null }));
     const sourceSet = p.sources.filter(s=>!s.documentationOnly).map(s => ({ path: s.path, digest: s.parsed.digest }));
-    const bundleDigest = digest({ versions: TOOL_VERSIONS, key: p.key, sourceSet, productDigest: p.imported.identity.productDigest, readSet: p.readSet, revision: p.revision });
-    const modelDigest = p.imported.identity.modelDigest ?? digest({ product: p.imported.product, facets: facets.map(f => ({ kind:f.kind, compiled:f.compiled })), versions: TOOL_VERSIONS, sourceSet });
+    const bundleDigest = digest({ versions, key: p.key, sourceSet, productDigest: p.imported.identity.productDigest, readSet: p.readSet, revision: p.revision });
+    const modelDigest = p.imported.identity.modelDigest ?? digest({ product: p.imported.product, facets: facets.map(f => ({ kind:f.kind, compiled:f.compiled })), versions, sourceSet });
     const inspection = p.imported.inspection;
     const architecture = architectureOf(p.imported.product, facets, inspection ?? {});
     // Never relink an old compiled model to changed source merely because an ID still matches.
@@ -174,13 +186,13 @@ export class Workbench {
     const modelDiagnostics = [...p.errors, ...(inspection?.diagnostics ?? []), ...p.sources.flatMap(s => s.parsed.diagnostics), ...sourceIndex.diagnostics];
     const gallery = p.imported.product?.showcase?.cases ?? p.sources.flatMap(s => Object.values(s.parsed.dataExports).flat()).filter(v => v.title && v.scenarios);
     return { key: p.key, label: p.config.label, fixture: !!p.config.fixture, originKind: p.config.originKind ?? (p.config.fixture ? 'fixture' : 'workspace'), revision: p.revision,
-      toolVersions: TOOL_VERSIONS, modelDigest, artifactSha256:p.imported.identity.productDigest ?? null,
+      toolVersions: versions, modelDigest, artifactSha256:p.imported.identity.productDigest ?? null,
       productId: inspection?.productId ?? p.imported.product?.id ?? p.config.id, architecture, canvas: withIntentCaptions(architectureSlice(architecture),documentation,architecture), sourceIndex, sourceIdentity, compatibility: p.compilerCompatibility ?? p.imported.compatibility ?? null, trace: null, scenarios: inspection?.scenarios ?? [], provenance: p.config.provenance ?? null, bundleDigest, product: p.imported.product, graph: graphOf(p.imported.product), facets, gallery,
       sources: [...p.sources.map(s => ({ path: s.path, digest: s.parsed.digest, text: s.text, diagnostics: s.parsed.diagnostics, valid: s.parsed.valid })),
         ...(p.documentationInputs?.evidenceSources??[]).filter(s=>!p.sources.some(p=>p.path===s.path)).map(s=>({...s,digest:digest(s.text),diagnostics:[],valid:false}))],
       documentation, diagnostics: modelDiagnostics,
       problems: [...modelDiagnostics,...documentation.diagnostics], evidence: null,
-      capabilities: { gitDrafts: !p.config.fixture && !!p.config.root && this.gitDraftRoots.has(p.config.root), inspect: true, simulate: facets.some(f => f.runnable !== false), sourceDrafts: p.sources.length > 0, architectureQueries: architecture.coverage.owners > 0, recordedTrace: true, nativePreview: false, documentWrites: false, liveExecution: false },
+      capabilities: { gitDrafts: !p.config.fixture && !!p.config.root && this.gitDraftRoots.has(p.config.root), inspect: true, simulate: facets.some(f => f.runnable !== false), sourceDrafts: p.sources.length > 0 && p.sourceCompatibility?.simulate !== false, architectureQueries: architecture.coverage.owners > 0, recordedTrace: true, nativePreview: false, documentWrites: false, liveExecution: false },
       validationNotice: p.imported.product ? 'Imported structure checked. Source freshness, full product compilation and native conformance have not been established by this viewer.' : 'Standalone declarations. This is not a complete application graph.' };
   }
   view(p) {
@@ -266,7 +278,7 @@ export class Workbench {
       if (!f || f.runnable === false) frame.logicCheck = { kind: 'unavailable', message: 'A matching runnable logic facet is not available.' };
       else {
         try {
-          const result = evaluateFacet(f, { state: logic.from, input: logic.input, guards: logic.guards, facts: logic.facts });
+          const result = evaluateFacet(f, { state: logic.from, input: logic.input, guards: logic.guards, facts: logic.facts },p.kernel);
           const hasOutcome = result.kind === 'decision'
             ? Object.hasOwn(logic, 'cellId') && Object.hasOwn(logic, 'values')
             : Object.hasOwn(logic, 'cellId') && Object.hasOwn(logic, 'to');
@@ -279,9 +291,9 @@ export class Workbench {
     }
     return frame;
   }
-  evaluate(request) { const { facet } = this.getFacet(request.project, request.facetId, request.bundleDigest); return evaluateFacet(facet, request); }
-  table(request) { const { facet } = this.getFacet(request.project, request.facetId, request.bundleDigest); return enumerateTable(facet); }
-  scenario(request) { const { facet, view } = this.getFacet(request.project, request.facetId, request.bundleDigest); return runScenario(facet, request.scenario, view.bundleDigest); }
+  evaluate(request) { const { p, facet } = this.getFacet(request.project, request.facetId, request.bundleDigest); return evaluateFacet(facet, request,p.kernel); }
+  table(request) { const { p, facet } = this.getFacet(request.project, request.facetId, request.bundleDigest); return enumerateTable(facet,p.kernel); }
+  scenario(request) { const { p, facet, view } = this.getFacet(request.project, request.facetId, request.bundleDigest); return runScenario(facet, request.scenario, view.bundleDigest,p.kernel); }
   mocks(request) { return runMockScenario(request.scenario); }
   async saveScenario(request) {
     const { view } = this.checkedView(request);

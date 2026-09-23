@@ -34,7 +34,7 @@ export function boundDeclaration(kind, declaration) {
     'machine.budget', 'Interactive machines support at most 128 states, 128 inputs and 64 guards.');
   }
 }
-export function compileDeclaration(kind, declaration) {
+export function compileDeclaration(kind, declaration, selectedKernel = kernel) {
   boundDeclaration(kind, declaration);
-  return kind === 'machine' ? kernel.defineMachine(declaration) : kernel.defineDecisionTable(declaration);
+  return kind === 'machine' ? selectedKernel.defineMachine(declaration) : selectedKernel.defineDecisionTable(declaration);
 }

@@ -1,13 +1,14 @@
 import ts from 'typescript';
-import { readFile, writeFile, mkdtemp, rm, realpath } from 'node:fs/promises';
+import { writeFile, mkdtemp, rm, realpath } from 'node:fs/promises';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import os from 'node:os';
 import path from 'node:path';
-import { pathToFileURL, fileURLToPath } from 'node:url';
+import { pathToFileURL } from 'node:url';
 import { safeFile, requireThat, digest } from './util.mjs';
 import { writeInspectionBundle } from './exporter.mjs';
 import { graphProduct } from './graph-data.mjs';
+import { loadProductKernel } from './product-kernel.mjs';
 
 const exec=promisify(execFile);
 
@@ -22,28 +23,15 @@ export async function exportAuthoring({root,packageRoot='.',files,entry,exportNa
   requireThat(typeof exportName==='string'&&exportName.length>0,'export.export','Select an existing authoring export.');
   requireThat(['graph','machine','decision-table'].includes(kind),'export.kind',
     'Select graph, machine or decision-table authoring output.');
-  const base=await realpath(root),compilerRoot=await realpath(path.resolve(base,packageRoot)),read=[];
-  requireThat(compilerRoot===base||compilerRoot.startsWith(base+path.sep),'export.compiler-root','Compiler owner must be inside the selected product.');
+  const base=await realpath(root),read=[];
   for(const file of files)read.push(await safeFile(base,file,1000000));
-
-  const compilerUrl=(await exec(process.execPath,['--input-type=module','-e',"process.stdout.write(import.meta.resolve('@v1d/product-spec'))"],
-    {cwd:compilerRoot,timeout:5000,maxBuffer:1000000})).stdout.trim();
-  const compilerEntry=fileURLToPath(compilerUrl);
-  let directory=path.dirname(compilerEntry),compilerPackage=null;
-  while(directory!==path.dirname(directory)) {
-    try { const pkg=JSON.parse(await readFile(path.join(directory,'package.json'),'utf8')); if(pkg.name==='@v1d/product-spec'){compilerPackage=pkg;break;} } catch {}
-    directory=path.dirname(directory);
-  }
-  requireThat(compilerPackage,'export.compiler','Resolve the product owner\'s installed public ProductSpec entry.');
-  const lock=JSON.parse((await safeFile(compilerRoot,'package-lock.json',4000000)).text);
-  requireThat(lock.packages?.['node_modules/@v1d/product-spec']?.version===compilerPackage.version,
-    'export.compiler','Installed ProductSpec does not match this product lockfile. Use the product owner\'s normal locked setup.');
+  const {entry:compilerUrl,version:compilerVersion}=await loadProductKernel(base,packageRoot);
 
   const staging=await mkdtemp(path.join(os.tmpdir(),'studio-build-'));
   try {
     const names=new Map(files.map((file,index)=>[file,`${index}.mjs`]));
     const resolveModule=(specifier,from)=>{
-      if(specifier==='@v1d/product-spec')return pathToFileURL(compilerEntry).href;
+      if(specifier==='@v1d/product-spec')return compilerUrl;
       requireThat(specifier.startsWith('.'),'export.import',`Authoring import '${specifier}' is outside the selected source closure.`);
       const candidate=path.posix.normalize(path.posix.join(path.posix.dirname(from),specifier));
       const selected=[candidate,candidate+'.ts',candidate+'.mjs',candidate+'.js',candidate.replace(/\.js$/,'.ts')].find(f=>names.has(f));
@@ -82,6 +70,6 @@ export async function exportAuthoring({root,packageRoot='.',files,entry,exportNa
     } catch {}
     for(const file of read)requireThat(digest((await safeFile(base,file.relative)).text)===digest(file.text),'export.stale','Product source changed during compilation.');
     return writeInspectionBundle({root:base,output,productId,product,facets,sourceFiles:files,sourceSnapshot:read,
-      sourceRevision:revision,evaluateContract,compiler:{name:'@v1d/product-spec',version:compilerPackage.version}});
+      sourceRevision:revision,evaluateContract,compiler:{name:'@v1d/product-spec',version:compilerVersion}});
   } finally { await rm(staging,{recursive:true,force:true}); }
 }
