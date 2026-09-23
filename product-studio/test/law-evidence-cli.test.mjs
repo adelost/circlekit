@@ -36,6 +36,15 @@ test('laws use the workspace product kernel and convention output without flags'
   ] }));
 
   let output = '';
+  const readOnlyCode = await main(['--root', root, '--stdout'],
+    { stdout: { write: value => { output += value; } } });
+  assert.equal(readOnlyCode, 0, output);
+  const readOnlyReport = JSON.parse(output);
+  assert.equal(readOnlyReport.tests[0].status, 'passed');
+  assert.deepEqual(readOnlyReport.summary, { total: 1, passed: 1, failed: 0, skipped: 0, pending: 0 });
+  await assert.rejects(readFile(path.join(root, 'test-results/fixture.app-laws.json')));
+
+  output = '';
   const code = await main(['--root', root, '--output', 'test-results/fixture.app-laws.json'],
     { stdout: { write: value => { output += value; } } });
   assert.equal(code, 0);

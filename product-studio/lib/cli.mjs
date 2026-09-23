@@ -3,6 +3,7 @@ import { open, stat } from 'node:fs/promises';
 import { constants } from 'node:fs';
 import { boundedJson, plain, requireThat, StudioError } from './util.mjs';
 
+export const DEFAULT_STUDIO_PORT = 17317;
 export const SEMANTIC_COMMANDS = new Set(['inspect', 'query', 'source', 'simulate', 'scenario', 'trace', 'plan']);
 const COMMON = ['workspace', 'product', 'examples', 'pretty', 'expect-model', 'amux-root'];
 const SPEC = {
@@ -47,7 +48,7 @@ export const HELP = `Product Studio
   v1d-studio bundle --root repository --product generated/product.json
                    --compiler-version X.Y.Z [--facet compiled-machine.json]...
                    [--source src/app.ts]... [--output generated/product.studio.json]
-  v1d-studio laws [repository] [--product ID] [--kernel-root PACKAGE_DIR] [--output test-results/<project-id>-laws.json]
+  v1d-studio laws [repository] [--product ID] [--kernel-root PACKAGE_DIR] [--output FILE | --stdout]
   v1d-studio junit --input result.xml --source-root TEST_DIR --output test-results/bdd-run.json
 
 Read/debug commands emit one JSON object, except plan and review emit Markdown. None starts HTTP or writes a product.
@@ -67,7 +68,7 @@ Wording validation uses the installed or sibling AMUX grammar. --amux-root
 explicitly selects another trusted checkout. The check command refuses when
 AMUX is unavailable; serve can still show intent without claiming validation.
 
-Serve only: --port 4317 --data-dir DIR --allow-git-drafts EXACT_REPOSITORY --live
+Serve only: --port ${DEFAULT_STUDIO_PORT} --data-dir DIR --allow-git-drafts EXACT_REPOSITORY --live
 --live enables only the local read-only runtime receiver. Ordinary serve has no runtime socket.
 The explicit export command compiles only the selected workspace's authoring
 closure and writes its named bundle. The bundle command writes only its named output. Read/debug

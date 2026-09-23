@@ -10,7 +10,7 @@ from playwright.sync_api import sync_playwright
 
 ROOT = Path(__file__).resolve().parents[1]
 p = argparse.ArgumentParser()
-p.add_argument('--url', default='http://127.0.0.1:4317')
+p.add_argument('--url', default='http://127.0.0.1:17317')
 p.add_argument('--chromium', default=None)
 p.add_argument('--http-bridge', action='store_true')
 p.add_argument('--output', default='test-results')
