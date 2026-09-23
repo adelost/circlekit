@@ -1,24 +1,8 @@
 import { mkdir, readdir, readFile, writeFile } from "node:fs/promises";
 import { dirname, relative, resolve } from "node:path";
 import type { ProductIr } from "./product-model.js";
-
-export interface OutputArtifact {
-  readonly id: string;
-  readonly path: string;
-  readonly mediaType: string;
-  readonly content: string;
-}
-
-export interface ProductEmitterPlugin {
-  readonly id: string;
-  emit(product: ProductIr): readonly OutputArtifact[];
-}
-
-export interface OutputManifest {
-  readonly productId: string;
-  readonly managedRoots: readonly string[];
-  readonly artifacts: readonly OutputArtifact[];
-}
+import type { OutputArtifact, ProductEmitterPlugin, OutputManifest } from './output-types.js';
+export type { OutputArtifact, ProductEmitterPlugin, OutputManifest } from './output-types.js';
 
 export function productJsonEmitter(path: string): ProductEmitterPlugin {
   return {

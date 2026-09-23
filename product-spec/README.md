@@ -160,8 +160,16 @@ HTTPS tarball URL, and verifies the exact resolved URL, version and sha512
 integrity in `package-lock.json`. Local `file:`, `workspace:` and project-path
 dependencies are rejected.
 
+## Browser and Node entries
+
+The ordinary `@v1d/product-spec` root contains only portable declarations, finite evaluators and runtime binding types. Node-only generation and pin tools such as `productJsonEmitter`, `buildOutputManifest`, `writeOutputManifest` and `checkV1dPinsAt` live at `@v1d/product-spec/node`. Browser code can import `bindPortImplementations` from the root without pulling in `node:fs` or `node:path`. An emitted-import-graph test holds this boundary.
+
 ## Test-run observation
 
 `v1d-studio record` selects the `studio-trace` package condition only for its child test process. In that condition, `decide` and `step` record their real cell outcomes. Normal imports use the unchanged pure functions and load no tracing module. A host binding can pass its named functions through `bindPortImplementations`; normal execution receives the same object, while the test condition observes calls by their declared port names. Studio, not the product, attaches model identity and writes the trace file.
 
 `@v1d/product-spec/observation` is the optional transport-free development seam. `createObservationScope({ onObservation })` returns `decide`, `step` and `bindPortImplementations` wrappers. Its events say `evaluated` for logic and `returned` for ports; they never claim that a state was applied or a Promise succeeded. The callback must only enqueue bounded data. Its failure cannot change the application's return value or exception. No network, file writer or viewer is imported by the normal ProductSpec entry.
+
+An explicit `v1d-observe` package condition makes ordinary root imports use those observed wrappers. A process bootstrap installs one callback with `installObservationSink` from the `/observation` entry and disposes it on exit. Without that condition, the normal root remains pure. This is a development capture hook, not an application state owner or transport.
+
+For a local Vite page, add `observationVitePlugin({ bundle: "path/to/product.studio.json" })` from `@v1d/product-spec/vite` to the dev config. The plugin is active only under `vite serve`: it resolves ordinary ProductSpec calls through the browser-safe observed entry, checks the bundle's source hashes, and adds a small explicit pairing button. A synced source tree can set `sourceRoot` and `sourcePrefix` in the same call. The browser connector from `/browser` sends only bounded declared observations after a one-time ticket is supplied in memory. A production Vite build contains no connector or pairing UI. The matching Studio receiver must be started separately with `--live` and approve the exact local page Origin; the plugin never generates a ticket or starts Studio.
