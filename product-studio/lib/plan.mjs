@@ -40,7 +40,9 @@ export function planForChanges(view, project, changes) {
     if (!found) unknown.push(change);
   }
   const roots = new Set([...selected].filter(key => owner(byKey.get(key))));
-  for (const edge of architecture.edges) if (selected.has(edge.from) && edge.kind === 'instance') roots.add(edge.to);
+  const selectedTypes = new Set([...selected].filter(key => byKey.get(key)?.kind === 'node-type'));
+  for (const edge of architecture.edges) if (selected.has(edge.from) && edge.kind === 'owner') selectedTypes.add(edge.to);
+  for (const edge of architecture.edges) if (selectedTypes.has(edge.from) && edge.kind === 'instance') roots.add(edge.to);
   const affected = new Set(roots), edgeIds = new Set(), unavailable = [];
   for (const key of selected) {
     const entity = byKey.get(key);
@@ -56,8 +58,11 @@ export function planForChanges(view, project, changes) {
   architecture.entities.filter(entity => entity.kind === 'port' && roots.has(entity.owner))
     .forEach(entity => ports.add(entity.key));
   bindings.forEach(edge => { ports.add(edge.from); ports.add(edge.to); });
+  const affectedTypes = new Set(selectedTypes);
+  for (const edge of architecture.edges) if (edge.kind === 'instance' && affected.has(edge.to)) affectedTypes.add(edge.from);
   const facets = architecture.entities.filter(entity => entity.kind === 'facet' &&
-    (selected.has(entity.key) || architecture.edges.some(edge => edge.from === entity.key && affected.has(edge.to))));
+    (selected.has(entity.key) || architecture.edges.some(edge => edge.from === entity.key
+      && (edge.kind === 'owner' ? affectedTypes.has(edge.to) : affected.has(edge.to)))));
   const related = new Set([...selected, ...affected, ...ports, ...facets.map(f => f.key)]);
   const tests = documentation.reports.flatMap(report => (report.tests ?? []).filter(test =>
     test.associations?.some(association => related.has(association.entityKey))).map(test =>
@@ -68,7 +73,10 @@ export function planForChanges(view, project, changes) {
     line('Owners', short([...roots])),
     line('Ports', short([...ports])),
     line('Consumers', short([...affected].filter(key => !roots.has(key)))),
-    line('Facets', facets.map(facet => `${facet.key} (owner not declared)`)),
+    line('Facets', facets.map(facet => {
+      const declared = architecture.edges.find(edge => edge.from === facet.key && edge.kind === 'owner');
+      return `${facet.key} (${declared ? `owner ${declared.to}` : 'owner not declared'})`;
+    })),
     line('Known tests', short([...new Set(tests)], 8)),
     ...(sourceCaveats.length ? [line('Source', short(sourceCaveats))] : []),
     ...(unavailable.length || unknown.length ? [line('Unknown', short([...unknown, ...unavailable]))] : []),

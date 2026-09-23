@@ -4,6 +4,7 @@ import { mkdtemp, mkdir, readFile, writeFile, symlink, rm } from 'node:fs/promis
 import os from 'node:os';
 import path from 'node:path';
 import { decodeArtifact, graphOf, attachSnapshot } from '../lib/model.mjs';
+import { createInspectionBundle } from '../lib/inspection.mjs';
 import { Workbench } from '../lib/workspaces.mjs';
 import { createTraceRecorder } from '../lib/trace.mjs';
 import { digest, boundedJson, safeFile, unifiedPatch } from '../lib/util.mjs';
@@ -11,6 +12,20 @@ const machine = await readFile(new URL('../fixtures/workflow.ts', import.meta.ur
 export const product = () => ({ kind: 'product-spec-ir', schemaVersion: 9, id: 'fifth-product', nodes: [{id:'sensor',nodeTypeRef:'sensor-type'}], components: [{id:'view',componentTypeRef:'view-type'}], nodeTypes: [{id:'sensor-type',kind:'service'}], componentTypes: [{id:'view-type'}], artifacts: [], portRegistry: {nodePorts:[{ref:'sensor.out',ownerId:'sensor',contract:'sample'}],componentPorts:[{ref:'view.in',ownerId:'view',contract:'sample'}],bindings:[{from:'sensor.out',to:'view.in',purpose:'data'}]}, showcase: {cases:[{id:'real.case',title:'A case',scenarios:[]}]}});
 async function temporary(t) { const root = await mkdtemp(path.join(os.tmpdir(),'studio-test-')); t.after(()=>rm(root,{recursive:true,force:true})); return root; }
 test('fifth product works without product-specific view logic and preserves extensions',()=>{ const p=product(); const d=decodeArtifact(JSON.stringify(p)); assert.deepEqual(d.product.showcase,p.showcase); const g=graphOf(d.product); assert.equal(g.nodes.length,2); assert.equal(g.edges[0].source,'sensor'); assert.equal(g.edges[0].target,'view'); });
+test('ProductIr machines merge by exact ID with exported facets and refuse conflicting definitions',()=>{
+  const p=product(),machine={id:'fixture.machine',ownerNodeTypeRef:'sensor-type',states:['IDLE'],initial:'IDLE',inputs:['GO'],guards:[],cells:[]};
+  const table={id:'fixture.table',ownerNodeTypeRef:'sensor-type',axes:{ready:['YES']},columns:{action:['GO']},cells:[]};
+  p.machines=[machine];p.decisionTables=[table];p.productSpecVersion='0.3.66';
+  const standalone=decodeArtifact(JSON.stringify(p));
+  assert.equal(standalone.facets.find(f=>f.id===machine.id)?.compiled.ownerNodeTypeRef,'sensor-type');
+  assert.equal(standalone.facets.find(f=>f.id===table.id)?.compiled.ownerNodeTypeRef,'sensor-type');
+  const bundle=createInspectionBundle({productId:p.id,compiler:{name:'@v1d/product-spec',version:'0.3.66'},product:p,
+    facets:[{kind:'machine',id:machine.id,compiled:machine}]});
+  assert.equal(decodeArtifact(JSON.stringify(bundle)).facets.filter(f=>f.id===machine.id).length,1);
+  const conflicting=createInspectionBundle({productId:p.id,compiler:{name:'@v1d/product-spec',version:'0.3.66'},product:p,
+    facets:[{kind:'machine',id:machine.id,compiled:{...machine,ownerNodeTypeRef:'other-type'}}]});
+  assert.throws(()=>decodeArtifact(JSON.stringify(conflicting)),/Conflicting exported definitions/);
+});
 test('unknown schema fails, never partial green',()=>{ const p=product(); p.schemaVersion=42; assert.throws(()=>decodeArtifact(JSON.stringify(p)),/schema 9/); });
 test('duplicate owner and missing port are rejected',()=>{ const p=product(); p.nodes.push({...p.nodes[0]}); assert.throws(()=>decodeArtifact(JSON.stringify(p)),/Duplicate/); const q=product();q.portRegistry.bindings[0].to='absent';assert.throws(()=>decodeArtifact(JSON.stringify(q)),/undeclared port/); });
 test('unsafe JSON keys and excessive nesting are refused',()=>{ assert.throws(()=>boundedJson('{"__proto__":1}'),/Reserved/); assert.throws(()=>boundedJson('['.repeat(60)+'0'+']'.repeat(60)),/deeply/); });
