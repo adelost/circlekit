@@ -119,6 +119,20 @@ export async function main(args = process.argv.slice(2), { cwd = process.cwd(), 
         notice: 'Read-only attachment report, not a full build or runtime health check. Inspect capability details before simulation.' }, v.pretty));
       return ok ? 0 : 1;
     }
+    if (command === 'converge') {
+      const { openHeadlessStudio, selectProject, SemanticStudio } = await import('../lib/semantic.mjs');
+      if (!roots.length) roots.push(cwd);
+      const session = await openHeadlessStudio({ roots, evaluateContract });
+      const chosen = selectProject(session.projects, v.product);
+      const service = new SemanticStudio(session.workbench, chosen.key);
+      const result = session.workbench.convergence(session.workbench.require(chosen.key));
+      if (v.tasks) result.tasks = (await import('../lib/convergence.mjs')).convergenceTasks(result);
+      const ok = result.verdict === 'Converged';
+      stdout.write(formatJson({ ...service.metadata(command), ok, evidenceKind: 'loaded-evidence', result,
+        ...(ok ? {} : { error: { code: result.verdict === 'Diverged' ? 'convergence.diverged' : 'convergence.unknown',
+          message: result.verdict === 'Diverged' ? result.label : 'No comparable evidence is loaded.' } }) }, v.pretty));
+      return result.verdict === 'Converged' ? 0 : result.verdict === 'Diverged' ? 1 : 2;
+    }
     if (!roots.length) {
       try { await readFile(path.resolve(cwd, 'studio.workspace.json')); roots.push(cwd); }
       catch (error) { if (error.code !== 'ENOENT') throw error; }

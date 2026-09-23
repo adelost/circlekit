@@ -8,6 +8,7 @@ const COMMON = ['workspace', 'product', 'examples', 'pretty', 'expect-model', 'a
 const SPEC = {
   serve: ['workspace', 'port', 'data-dir', 'allow-git-drafts', 'amux-root'],
   doctor: ['workspace', 'product', 'examples', 'pretty', 'amux-root'],
+  converge: ['workspace', 'product', 'pretty', 'tasks', 'amux-root'],
   contracts: ['product', 'pretty', 'amux-root'],
   export: ['product', 'pretty', 'amux-root'],
   bundle: ['root', 'product', 'compiler-version', 'product-id', 'source-revision', 'facet', 'source', 'output', 'amux-root'],
@@ -19,7 +20,7 @@ const SPEC = {
   scenario: [...COMMON, 'facet', 'file'],
   trace: [...COMMON, 'file', 'cursor', 'entity', 'operation', 'search', 'max', 'offset'],
 };
-const BOOLEAN = new Set(['examples', 'pretty']);
+const BOOLEAN = new Set(['examples', 'pretty', 'tasks']);
 const REQUIRED = { query: ['kind', 'from'], source: ['entity'], simulate: ['facet', 'input'], scenario: ['file'], trace: ['file'], bundle: ['compiler-version'] };
 
 export const HELP = `Product Studio
@@ -28,6 +29,7 @@ export const HELP = `Product Studio
   v1d-studio check [repository] [--product ID] [--pretty]
   v1d-studio contracts [repository] [--amux-root TRUSTED_AMUX]
   v1d-studio doctor [repository] [--product ID]
+  v1d-studio converge [repository] [--product ID] [--tasks]
   v1d-studio export [repository] [--product ID]
   v1d-studio inspect [repository] [--product ID] [--entity KEY | --search TEXT]
   v1d-studio query [repository] --kind upstream|downstream|consumers|owner|impact|path
@@ -54,6 +56,7 @@ Use --expect-model SHA256 to pin an agent's request to an inspected model.
 No path is ok:true with found:false; unsupported/needs-facts/failed assertions
 are ok:false. A scenario with no assertions is ok:true but unasserted, not proven.
 Exit: 0 successful operation; 1 failed/refused operation; 2 invalid command usage.
+Converge exits 0 for Converged, 1 for Diverged and 2 for Unknown; --tasks adds one JSON task string per contradiction.
 @input and --file paths are relative to the caller's current directory.
 
 Wording validation uses the installed or sibling AMUX grammar. --amux-root

@@ -79,7 +79,7 @@ function render() {
     <header class="topbar"><div class="brand"><div class="brand-mark">P</div><span>PRODUCT STUDIO</span></div>
       <select class="project-select" id="project" aria-label="Select product">${projects.map(p => `<option value="${escape(p.key)}" ${p.key === project.key ? 'selected' : ''}>${escape(p.label)}</option>`).join('')}</select>
       <nav aria-label="Workbench views">${views.map(v => `<button data-view="${v}" class="${v === state.view ? 'active' : ''}" ${v === state.view ? 'aria-current="page"' : ''}>${v}</button>`).join('')}<select id="mobile-view" aria-label="Workbench view">${mobileViews.map(([id,label])=>`<option value="${escape(id)}" ${id===state.view?'selected':''}>${escape(label)}</option>`).join('')}</select></nav>
-      <div class="spacer"></div><span class="badge top-mode ${state.mode === 'Simulation' ? 'simulation' : ''}">${escape(state.mode)}</span>
+      <div class="spacer"></div><button id="convergence-badge" class="badge convergence ${project.convergence?.verdict === 'Converged' ? 'good' : project.convergence?.verdict === 'Diverged' ? 'error' : ''}" aria-label="Convergence details">${escape(project.convergence?.label ?? 'Unknown')}</button><span class="badge top-mode ${state.mode === 'Simulation' ? 'simulation' : ''}">${escape(state.mode)}</span>
       ${action('reload', '↻', 'subtle', !project.key || project.key.startsWith('import-') || project.key.startsWith('source-'))}
     </header>
     <div class="main-grid"><aside class="explorer" aria-label="Program explorer">
@@ -355,6 +355,21 @@ function showInfo(title, text, code = '') {
   const d = $('#dialog'); d.innerHTML = `<h2>${escape(title)}</h2><p class="subtitle">${escape(text)}</p>${code ? `<pre class="notice info">${escape(code)}</pre>` : ''}<button id="close-dialog">Close</button>`;
   d.showModal(); $('#close-dialog').onclick = () => d.close();
 }
+function showConvergence() {
+  const c=project.convergence,d=$('#dialog');
+  d.innerHTML=`<h2>${escape(c.label)}</h2><p class="subtitle">Loaded evidence for ${escape(project.label)}. No tests or product code ran to produce this verdict.</p>
+    <p class="muted">Laws ${c.counts.laws.passed} passed, ${c.counts.laws.failed} failed, ${c.counts.laws.skipped} skipped. Trace ${c.counts.trace.consistent} consistent, ${c.counts.trace.different} different, ${c.counts.trace.unknown} unknown. WHAT/WHY ${c.counts.contracts.validated}/${c.counts.contracts.total} validated, ${c.counts.contracts.external} external or unmapped.</p>
+    <p class="muted">Kernel ${escape(c.kernel.producer ?? 'unknown')} / ${escape(c.kernel.evaluator)}: ${c.kernel.match?'matched':'unknown or different'}. Trace identity: ${c.traceIdentity.loaded?'matched loaded artifact or model':'unavailable'}.</p>
+    <div class="compact-list">${c.reasons.map((r,i)=>`<button data-convergence-reason="${i}">${escape(r.label)}<br><code>${escape(r.entityKey)}</code>${r.file?` · ${escape(r.file)}`:''}${r.sequence!==undefined?` · sequence ${r.sequence}`:''}<p>${escape(r.message)}</p></button>`).join('') || '<p>No contradictions in loaded evidence.</p>'}</div>
+    ${c.gaps.length?`<div class="section-label">Missing or inconclusive</div><ul>${c.gaps.map(g=>`<li>${escape(g)}</li>`).join('')}</ul>`:''}
+    <button id="close-dialog">Close</button>`;
+  d.showModal();$('#close-dialog').onclick=()=>d.close();
+  d.querySelectorAll('[data-convergence-reason]').forEach(button=>button.onclick=async()=>{
+    const reason=c.reasons[Number(button.dataset.convergenceReason)];d.close();
+    if(reason.kind==='trace') {state.view='Trace';state.traceOffset=0;await loadTraceFrame(reason.index);}
+    else {state.view='System';state.selected={kind:'entity',id:reason.entityKey};state.queryFrom=reason.entityKey;render();}
+  });
+}
 function editDialog(f, cell, root = false) {
   if (!cell) return toast('Select a cell first.');
   const fields = root ? ['initial','states','inputs','guards','rests','deadlines','ordering','otherwise'] : f.kind === 'machine' ? ['from', 'on', 'to', 'requires', 'forbids'].filter(k => Object.hasOwn(cell, k)) : ['region', 'values'];
@@ -426,6 +441,7 @@ async function openEntitySource(key) {
   }else if(state.text!==null && state.text!==source().text) toast('This source has a draft. Original model spans are not applied to modified text. Validate and open the candidate to refresh mapping.');
 }
 function bindStudioTools() {
+  listen($('#convergence-badge'),'click',showConvergence);
   const from=$('#query-from'),to=$('#query-to');
   if(from){from.value=state.queryFrom ?? (state.selected?.kind==='entity' ? state.selected.id : project.architecture.entities.find(e=>e.kind==='node')?.key ?? '');from.onchange=()=>{state.queryFrom=from.value;};}
   if(to){to.value=state.queryTo ?? project.architecture.entities.find(e=>e.kind==='component')?.key ?? from?.value;to.onchange=()=>{state.queryTo=to.value;};}
