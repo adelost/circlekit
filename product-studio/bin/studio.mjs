@@ -28,6 +28,11 @@ async function installedAmuxRoot(cwd) {
 export async function main(args = process.argv.slice(2), { cwd = process.cwd(), stdout = process.stdout } = {}) {
   let parsed;
   try {
+    if(args[0]==='live'&&args[1]==='run') {
+      if(args.includes('--help')) {stdout.write('v1d-studio live run --product ID [--port 4317] -- node APP [ARGS]\nRuns one direct Node process against an already running local Studio --live receiver.\n');return 0;}
+      const {runLiveNode}=await import('../lib/live-run.mjs');
+      return await runLiveNode(args.slice(2),{cwd,stdout});
+    }
     if(args[0]==='record') {
       const { recordTestTrace } = await import('../lib/record.mjs');
       const amuxRoot = await installedAmuxRoot(cwd);

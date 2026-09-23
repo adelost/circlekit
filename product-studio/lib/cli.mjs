@@ -36,6 +36,7 @@ export const HELP = `Product Studio
   v1d-studio review [repository] [--product ID] [--changed ENTITY_OR_SOURCE]...
   v1d-studio export [repository] [--product ID]
   v1d-studio record [repository] --product ID [-- TEST_COMMAND [ARGS...]]
+  v1d-studio live run --product ID [--port 4317] -- node APP [ARGS...]
   v1d-studio inspect [repository] [--product ID] [--entity KEY | --search TEXT]
   v1d-studio query [repository] --kind upstream|downstream|consumers|owner|impact|path
                    --from KEY [--to KEY] [--purposes data,demand,context]
