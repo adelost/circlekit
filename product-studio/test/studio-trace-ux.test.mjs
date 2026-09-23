@@ -48,6 +48,14 @@ test('a recorded stay highlights its state without inventing a cell edge', () =>
   assert.equal(marks.currentEdge,null);
 });
 
+test('an older transition outside the displayed page still contributes to the trail', () => {
+  const older={kind:'transition',eventIndex:201,logic:{facetId:'jump.session',cellId:'exit',from:'READY',to:'FLYING'}};
+  const frame={cursor:205,current:{logic:{facetId:'jump.session',from:'FLYING',to:'FLYING'}},events:[]};
+  const marks=studio.traceGraphMarks(machine,frame,[older]);
+  assert.deepEqual([...marks.pastEdges],['exit']);
+  assert.deepEqual([...marks.pastNodes],['READY','FLYING']);
+});
+
 test('unselected inspector summarizes loaded convergence evidence', () => {
   const p={...project(machine,trace),convergence:{verdict:'Converged',label:'Converged',counts:{laws:{passed:3,failed:0,skipped:0},contracts:{validated:2,total:2}}}};
   const html=studio.projectSummary(p,escape);

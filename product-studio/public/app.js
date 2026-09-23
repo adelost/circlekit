@@ -1,7 +1,7 @@
 import { patchHTML } from './dom.js';
 import { createExperience, hasDrafts } from './experience.js';
 import { drawGraph, machineGraph } from './graph.js';
-import { architectureControls, sourceNavigator, entityInspector, decisionReasons, traceView, traceFacet, traceGraphMarks, decisionRegionTable, initialProjectView, projectSummary, installDocumentState } from './studio-tools.js';
+import { architectureControls, sourceNavigator, entityInspector, decisionReasons, traceView, traceFacet, traceGraphMarks, traceEventRows, decisionRegionTable, initialProjectView, projectSummary, installDocumentState } from './studio-tools.js';
 
 const $ = selector => document.querySelector(selector);
 const escape = value => String(value ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -232,7 +232,7 @@ function renderGraph() {
   const compact=state.view==='Trace'&&host.clientWidth<700;
   const cameraKey = project.key + ':' + (state.view === 'System' ? 'System:'+(state.architectureMode ?? 'owners') + ':' + (state.architectureGroup ?? '') + ':' + (state.focusKey ?? 'all') : state.view+':'+(f?.id??'system')+(compact?':compact':''));
   const signature = JSON.stringify({cameraKey, model:project.modelDigest, nodes, edges});
-  const marks=state.view==='Trace'&&f?.kind==='machine'&&state.traceFrame?traceGraphMarks(f,state.traceFrame):null;
+  const marks=state.view==='Trace'&&f?.kind==='machine'&&state.traceFrame?traceGraphMarks(f,state.traceFrame,traceEventRows(project,state)):null;
   const selected=state.view==='Trace'?marks?.currentEdge:state.selected?.id,active=state.view==='Trace'?marks?.currentTo:state.view==='Logic'?state.machineState:null;
   if (host === graphHost && signature === graphSignature && (!selected || graph.has(selected) || !nodes.some(n=>n.id===selected))) { graph.select(selected,active,marks); return; }
   graph?.destroy();graphHost=host;graphSignature=signature;
@@ -486,7 +486,20 @@ async function loadTraceFrame(cursor) {
     state.traceCursor=cursor;state.traceFrame=result;state.mode=project.trace.provenance==='synthetic'?'Simulation'
       :project.trace.provenance==='test-run'?'Test run':'Recorded trace';
     if(result.current)state.selected={kind:'entity',id:result.current.entityKey};render();
+    if(result.totalEvents>result.events.length||state.traceSearch||state.traceOperation)loadTraceHistory();
   }catch(error){if(ticket===generation)toast(error.message);}
+}
+function loadTraceHistory() {
+  const owner=project,view=state,digest=owner.trace?.traceDigest;
+  if(!digest||view.traceHistory?.digest===digest||view.traceHistoryPending||view.traceHistoryError?.digest===digest)return;
+  view.traceHistoryPending=api('trace-export',{project:owner.key,bundleDigest:owner.bundleDigest,traceDigest:digest})
+    .then(trace=>{
+      if(project!==owner||state!==view||project.trace?.traceDigest!==digest)return;
+      view.traceHistory={digest,events:trace.events.map((event,eventIndex)=>({eventIndex,kind:event.kind,logic:event.logic}))};render();
+    }).catch(error=>{
+      if(project!==owner||state!==view||project.trace?.traceDigest!==digest)return;
+      view.traceHistoryError={digest,message:error.message};render();
+    }).finally(()=>{view.traceHistoryPending=null;});
 }
 async function performStudioTool(name) {
   if(name==='clear-query'){state.canvas=null;state.queryResult=null;await refreshArchitecture();return true;}
