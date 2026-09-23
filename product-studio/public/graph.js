@@ -49,7 +49,7 @@ export function machineFlowLayout(nodes,edges,initial,columns=3) {
 }
 
 /** Model layout is a view projection. Selection never reruns layout or resets the camera. */
-export function drawGraph(host, { nodes, edges, key, legacyKey, selected, active, trace, onSelect, initial=null, columns=3, viewWidth=1000, viewHeight=550 }) {
+export function drawGraph(host, { nodes, edges, key, legacyKey, selected, active, trace, focusIds=null, onSelect, initial=null, columns=3, viewWidth=1000, viewHeight=550 }) {
   const storageKey = 'studio-camera-v1:' + key;
   let stored = {};
   try { const read = JSON.parse(localStorage.getItem(storageKey) || '{}'); if (read.version === 1) stored = read; } catch { /* Local state is not authoritative. */ }
@@ -125,8 +125,8 @@ export function drawGraph(host, { nodes, edges, key, legacyKey, selected, active
   svg.onpointerdown=e=>{if(e.target!==svg||e.button!==0)return;pan={point:clientPoint(e,false),base:{...transform}};svg.setPointerCapture(e.pointerId);};
   svg.onpointermove=e=>{if(!pan)return;const p=clientPoint(e,false);transform.x=pan.base.x+p.x-pan.point.x;transform.y=pan.base.y+p.y-pan.point.y;apply();};
   svg.onpointerup=svg.onpointercancel=()=>{pan=null;save();};
-  function fit() {const ps=[...positions.entries()];if(!ps.length)return;const left=Math.min(...ps.map(([,p])=>p.x))-40,top=Math.min(...ps.map(([,p])=>p.y))-60;
-    const width=Math.max(...ps.map(([,p])=>p.x+215))-left+40,height=Math.max(...ps.map(([id,p])=>p.y+heights.get(id)))-top+40,s=scale(Math.min(canvasWidth/width,canvasHeight/height));
+  function fit(ids=null) {const ps=[...positions.entries()].filter(([id])=>!ids||ids.includes(id));if(!ps.length)return;const left=Math.min(...ps.map(([,p])=>p.x))-40,top=Math.min(...ps.map(([,p])=>p.y))-60;
+    const width=Math.max(...ps.map(([,p])=>p.x+215))-left+40,height=Math.max(...ps.map(([id,p])=>p.y+heights.get(id)))-top+40,s=scale(Math.min(ids?1.35:4,canvasWidth/width,canvasHeight/height));
     transform={x:(canvasWidth-width*s)/2-left*s,y:(canvasHeight-height*s)/2-top*s,scale:s};apply();save();}
   function arrange() { // Deterministic view layout only, never an asserted event order.
     if(flow){for(const [id,position] of flow)if(positions.has(id))positions.set(id,{...position});all();fit();return;}
@@ -150,6 +150,7 @@ export function drawGraph(host, { nodes, edges, key, legacyKey, selected, active
     }
   }
   host.replaceChildren(svg);all();apply();select(selected,active,trace);
+  if(focusIds?.length&&!pointOK(stored.viewport))fit(focusIds);
   return {reset:fit,zoom,arrange,select,has:id=>nodeItems.has(id)||links.some(e=>e.id===id),shown:shown.length,total:nodes.length,viewport:()=>({...transform}),
     destroy(){saveNow();destroyed=true;clearTimeout(saveTimer);if(raf!==null)cancelAnimationFrame(raf);}};
 }

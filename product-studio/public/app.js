@@ -1,7 +1,7 @@
 import { patchHTML } from './dom.js';
 import { createExperience, hasDrafts } from './experience.js';
 import { drawGraph, machineGraph } from './graph.js';
-import { architectureControls, sourceNavigator, entityInspector, decisionReasons, traceView, traceFacet, traceGraphMarks, traceEventRows, decisionRegionTable, initialProjectView, projectSummary, installDocumentState } from './studio-tools.js';
+import { architectureControls, sourceNavigator, entityInspector, decisionReasons, traceView, traceFacet, traceGraphMarks, traceArchitectureMarks, traceEventRows, decisionRegionTable, initialProjectView, projectSummary, installDocumentState } from './studio-tools.js';
 
 const $ = selector => document.querySelector(selector);
 const escape = value => String(value ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -221,7 +221,7 @@ function renderGraph() {
   if (['Logic','Trace'].includes(state.view) && f?.kind === 'machine') {
     ({nodes,edges}=machineGraph(f));
   } else {
-    const canvas = state.canvas ?? project.canvas;
+    const canvas = state.view==='Trace'?project.canvas:state.canvas ?? project.canvas;
     if (canvas) { nodes=canvas.nodes; edges=canvas.edges; } else {
     const q = state.search.toLowerCase();
     nodes = project.graph.nodes.filter(n => !q || `${n.id} ${n.kind} ${(n.ports ?? []).map(p => p.ref).join(' ')}`.toLowerCase().includes(q)).map(n => ({ ...n, label: n.id, subtitle: `${n.kind} · ${n.ports?.length ?? 0} ports` }));
@@ -231,14 +231,16 @@ function renderGraph() {
   const compact=state.view==='Trace'&&host.clientWidth<700,flow=f?.kind==='machine'&&['Trace','Logic'].includes(state.view);
   const cameraKey = project.key + ':' + (state.view === 'System' ? 'System:'+(state.architectureMode ?? 'owners') + ':' + (state.architectureGroup ?? '') + ':' + (state.focusKey ?? 'all') : state.view+':'+(f?.id??'system')+(compact?':compact':'')+(flow?':flow-v1':''));
   const signature = JSON.stringify({cameraKey, model:project.modelDigest, nodes, edges});
-  const marks=state.view==='Trace'&&f?.kind==='machine'&&state.traceFrame?traceGraphMarks(f,state.traceFrame,traceEventRows(project,state)):null;
+  const marks=state.view==='Trace'&&state.traceFrame?(f?.kind==='machine'
+    ?traceGraphMarks(f,state.traceFrame,traceEventRows(project,state))
+    :!f?traceArchitectureMarks(project,state.traceFrame,traceEventRows(project,state)):null):null;
   const selected=state.view==='Trace'?marks?.currentEdge:state.selected?.id,active=state.view==='Trace'?marks?.currentTo:state.view==='Logic'?state.machineState:null;
   if (host === graphHost && signature === graphSignature && (!selected || graph.has(selected) || !nodes.some(n=>n.id===selected))) { graph.select(selected,active,marks); return; }
   graph?.destroy();graphHost=host;graphSignature=signature;
   graph = drawGraph(host, { nodes, edges, key: cameraKey, legacyKey:flow?null:project.key+':'+(f?.id??'system')+':'+state.view,
     initial:flow?f.compiled.initial:null,columns:compact?2:flow?Math.min(6,Math.max(4,f.compiled.states.length)):3,viewWidth:compact?650:1000,viewHeight:state.view==='Trace'?350:550,
-    selected, active, trace:marks,
-    onSelect: (kind, id) => { if (state.view === 'System' && state.architectureMode === 'domains') { state.architectureGroup=id; state.architectureMode='owners'; refreshArchitecture(); return; } if(state.view==='Trace'){selectFacet(f.id,false);state.view='Logic';} state.selected = { kind: state.view === 'System' && kind === 'node' ? 'entity' : state.view === 'Logic' && kind === 'edge' ? 'cell' : kind, id }; render(); if (innerWidth < 950) $('.inspector').classList.add('open'); } });
+    selected, active, trace:marks,focusIds:state.view==='Trace'&&!f?marks?.focusIds:null,
+    onSelect: (kind, id) => { if (state.view === 'System' && state.architectureMode === 'domains') { state.architectureGroup=id; state.architectureMode='owners'; refreshArchitecture(); return; } if(state.view==='Trace'){if(f){selectFacet(f.id,false);state.view='Logic';}else state.view='System';} state.selected = { kind: state.view === 'System' && kind === 'node' ? 'entity' : state.view === 'Logic' && kind === 'edge' ? 'cell' : kind, id }; render(); if (innerWidth < 950) $('.inspector').classList.add('open'); } });
 }
 async function loadTable() {
   const ticket = generation, id = state.facetId; state.tableRows = [];
@@ -494,7 +496,7 @@ function loadTraceHistory() {
   view.traceHistoryPending=api('trace-export',{project:owner.key,bundleDigest:owner.bundleDigest,traceDigest:digest})
     .then(trace=>{
       if(project!==owner||state!==view||project.trace?.traceDigest!==digest)return;
-      view.traceHistory={digest,events:trace.events.map((event,eventIndex)=>({eventIndex,kind:event.kind,logic:event.logic}))};render();
+      view.traceHistory={digest,events:trace.events.map((event,eventIndex)=>({eventIndex,kind:event.kind,entityKey:event.entityKey,logic:event.logic}))};render();
     }).catch(error=>{
       if(project!==owner||state!==view||project.trace?.traceDigest!==digest)return;
       view.traceHistoryError={digest,message:error.message};render();
