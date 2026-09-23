@@ -8,6 +8,7 @@ import { Workbench } from './lib/workspaces.mjs';
 import { StudioError, boundedJson, requireThat } from './lib/util.mjs';
 import { KERNEL_VERSION } from './lib/kernel.mjs';
 import { LiveSessionHub } from './lib/live.mjs';
+import { traceMetadata } from './lib/snapshot.mjs';
 import { DEFAULT_STUDIO_PORT } from './lib/cli.mjs';
 
 const publicRoot = fileURLToPath(new URL('./public/', import.meta.url));
@@ -101,6 +102,18 @@ export async function createServer({ roots = [], gitDraftRoots = [], dataDir = p
             value = live.issueTicket(body); break;
           case '/api/live-snapshot': { const trace=selectedCapture();
             value={trace,convergence:app.convergenceForTrace(app.require(body.project),trace)};break; }
+          case '/api/live-current': {
+            requireThat(live,'live.disabled','Start Studio with --live to read a capture.',404);
+            const {p,view}=app.checkedView(body),status=live.status(p.key);
+            if(!status.captureId){value={status,trace:null,convergence:null,frame:null};break;}
+            const trace=live.selectedSnapshot(p.key,status.captureId,view);
+            const last=trace.events.length-1,follow=body.follow===true;
+            const offset=follow?Math.max(0,trace.events.length-200):body.offset??0;
+            const cursor=follow?last:Math.min(body.cursor??last,last);
+            const frame=app.tracePage({...body,traceDigest:trace.traceDigest,offset,limit:200,
+              filter:{cursor,search:body.search??'',operationId:body.operationId??null}},trace);
+            value={status,trace:traceMetadata(trace),convergence:app.convergenceForTrace(p,trace),frame};break;
+          }
           case '/api/live-freeze': { selectedCapture();
             const {p,view}=app.checkedView(body),frozen=live.freeze(p.key,body.captureId,view);
             const trace=live.selectedSnapshot(p.key,frozen.id,view);
