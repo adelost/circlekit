@@ -26,7 +26,8 @@ export const traceEventRows = (project,state) => state.traceHistory?.digest && s
   ? state.traceHistory.events : state.traceFrame?.events??[];
 
 export function decisionRegionTable(facet,escape,selectedCellId=null,trace=false) {
-  return `<div class="table-wrap"><table><thead><tr><th>Cell</th><th>Region (omitted axes cover all values)</th><th>Values</th><th></th></tr></thead><tbody>${facet.compiled.cells.map(c => `<tr data-cell="${escape(c.id)}" tabindex="0" ${trace&&selectedCellId===c.id?'aria-current="step"':''} class="${selectedCellId===c.id?(trace?'trace-current':'selected'):''}"><td><code>${escape(c.id)}</code></td><td>${escape(JSON.stringify(c.region))}</td><td>${escape(JSON.stringify(c.values))}</td><td>Inspect ↗</td></tr>`).join('')}</tbody></table></div>`;
+  const chips=values=>`<div class="trace-facts">${Object.entries(values??{}).map(([key,value])=>`<span class="trace-guard">${escape(key)} <strong>${escape(typeof value==='string'?value:JSON.stringify(value))}</strong></span>`).join('')||'<small>—</small>'}</div>`;
+  return `<div class="table-wrap"><table><thead><tr><th>Cell</th><th>Region (omitted axes cover all values)</th><th>Values</th><th></th></tr></thead><tbody>${facet.compiled.cells.map(c => `<tr data-cell="${escape(c.id)}" tabindex="0" ${trace&&selectedCellId===c.id?'aria-current="step"':''} class="${selectedCellId===c.id?(trace?'trace-current':'selected'):''}"><td><code>${escape(c.id)}</code></td><td>${chips(c.region)}</td><td>${chips(c.values)}</td><td>Inspect ↗</td></tr>`).join('')}</tbody></table></div>`;
 }
 export function projectSummary(project,escape) {
   const c=project.convergence,verdict=c?.verdict??'Unknown',counts=c?.counts;

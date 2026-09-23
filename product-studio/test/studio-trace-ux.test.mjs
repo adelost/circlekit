@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as studio from '../public/studio-tools.js';
+import * as graph from '../public/graph.js';
 
 const escape = value => String(value);
 const machine = {id:'jump.session',kind:'machine',compiled:{states:['READY','FLYING'],initial:'READY',rests:['READY'],cells:[{id:'exit',from:'READY',to:'FLYING',on:'Exit'}]}};
@@ -8,6 +9,19 @@ const table = {id:'jump.policy',kind:'decision-table',compiled:{cells:[{id:'allo
 const project = (facet, trace = null) => ({facets:[facet],trace,product:null,graph:{nodes:[]},catalogAvailable:false,sources:[],architecture:{entities:[]}});
 const trace = {sessionId:'test',eventCount:2,provenance:'test-run',complete:true,notice:'Test run.',truncation:{droppedBefore:0,gaps:[]},clock:{domain:'virtual'}};
 const frame = logic => ({current:{sequence:1,kind:'transition',atMs:1,entityKey:'facet:machine:jump.session',logic},events:[],causalPath:[],nextOffset:null,total:2,logicCheck:{kind:'consistent',message:'Matches'}});
+
+test('SKYVW recording cycle follows the longest simple path from STOPPED', () => {
+  const recording={id:'recording.session',kind:'machine',compiled:{initial:'STOPPED',rests:['STOPPED','ARMED'],states:['STOPPED','ARMED','BUFFERING','RECORDING'],cells:[
+    {id:'start-armed',from:'STOPPED',to:'ARMED',on:'Start'},
+    {id:'start-now',from:'STOPPED',to:'RECORDING',on:'Record'},
+    {id:'gps-height',from:'ARMED',to:'BUFFERING',on:'AltitudeObserved'},
+    {id:'recording-height-buffering',from:'BUFFERING',to:'RECORDING',on:'AltitudeObserved'},
+    {id:'stop-recording',from:'RECORDING',to:'STOPPED',on:'Stop'},
+  ]}};
+  const {nodes,edges}=graph.machineGraph(recording);
+  const positions=graph.machineFlowLayout(nodes,edges,recording.compiled.initial,4);
+  assert.deepEqual(recording.compiled.states.map(state=>positions.get(state).x),[60,340,620,900]);
+});
 
 test('a loaded trace opens at its last step, otherwise the first facet or full graph opens', () => {
   assert.equal(studio.initialProjectView(project(machine,{...trace,eventCount:2})), 'Trace');
@@ -26,6 +40,13 @@ test('decision trace marks its exact saved cell in the existing regions table', 
   const html=studio.traceView(project(table,trace),{traceCursor:1,traceFrame:frame({facetId:'jump.policy',cellId:'hold'})},escape);
   assert.match(html, /data-cell="hold"[^>]*aria-current="step"/);
   assert.doesNotMatch(html, /data-cell="allow"[^>]*aria-current="step"/);
+});
+
+test('decision regions and values read as labelled chips, not raw object JSON', () => {
+  const html=studio.decisionRegionTable({compiled:{cells:[{id:'compact',region:{need:'COMPACT'},values:{action:'HOLD'}}]}},escape);
+  assert.match(html,/need <strong>COMPACT<\/strong>/);
+  assert.match(html,/action <strong>HOLD<\/strong>/);
+  assert.doesNotMatch(html,/\{&quot;action&quot;|\{"action"/);
 });
 
 test('trace marks only recorded earlier states and transition IDs', () => {

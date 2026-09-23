@@ -41,3 +41,7 @@
 .graph-edge.trace-past{color:var(--cyan);opacity:.55}.graph-edge.trace-past path{stroke-width:2.2}.graph-edge.trace-current{color:var(--cyan);opacity:1}.graph-edge.trace-current path{stroke-width:4;filter:drop-shadow(0 0 5px var(--cyan))}.graph-edge.trace-current .edge-label{opacity:1}
 .trace-model tr.trace-current td{background:#153746;border-bottom-color:var(--cyan)}.trace-model tr.trace-current code{color:var(--cyan)}
 @media(max-width:720px){.trace-model .graph-host{min-height:210px}.trace-model .graph-svg{height:210px}.trace-step-cue strong{font-size:16px}}
+.top-actions{display:flex;align-items:center;gap:8px;flex-shrink:0}
+@media(max-width:680px){.top-actions{grid-column:3;grid-row:1;justify-self:end}.top-actions [data-action=reload]{padding:6px 10px}}
+.trace-model .graph-edge:not(.trace-past):not(.trace-current){color:#607489;opacity:.2}.graph-edge.trace-past{opacity:.9}.graph-edge.trace-past path{stroke-width:2.6}.graph-edge.trace-current path{stroke-width:4.5}
+.trace-facts{display:flex;flex-wrap:wrap;gap:5px}.trace-facts .trace-guard{display:inline-flex;gap:5px;color:var(--muted)}.trace-facts .trace-guard strong{color:var(--text);font-weight:650}

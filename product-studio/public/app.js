@@ -79,8 +79,7 @@ function render() {
     <header class="topbar"><div class="brand"><div class="brand-mark">P</div><span>PRODUCT STUDIO</span></div>
       <select class="project-select" id="project" aria-label="Select product">${projects.map(p => `<option value="${escape(p.key)}" ${p.key === project.key ? 'selected' : ''}>${escape(p.label)}</option>`).join('')}</select>
       <nav aria-label="Workbench views">${views.map(v => `<button data-view="${v}" class="${v === state.view ? 'active' : ''}" ${v === state.view ? 'aria-current="page"' : ''}>${v}</button>`).join('')}<select id="mobile-view" aria-label="Workbench view">${mobileViews.map(([id,label])=>`<option value="${escape(id)}" ${id===state.view?'selected':''}>${escape(label)}</option>`).join('')}</select></nav>
-      <div class="spacer"></div><button id="convergence-badge" class="badge convergence ${project.convergence?.verdict === 'Converged' ? 'good' : project.convergence?.verdict === 'Diverged' ? 'error' : ''}" aria-label="Convergence details">${escape(project.convergence?.label ?? 'Unknown')}</button><span class="badge top-mode ${state.mode === 'Simulation' ? 'simulation' : ''}">${escape(state.mode)}</span>
-      ${action('reload', '↻', 'subtle', !project.key || project.key.startsWith('import-') || project.key.startsWith('source-'))}
+      <div class="spacer"></div><div class="top-actions"><button id="convergence-badge" class="badge convergence ${project.convergence?.verdict === 'Converged' ? 'good' : project.convergence?.verdict === 'Diverged' ? 'error' : ''}" aria-label="Convergence details">${escape(project.convergence?.label ?? 'Unknown')}</button>${action('reload', '↻', 'subtle', !project.key || project.key.startsWith('import-') || project.key.startsWith('source-'))}</div><span class="badge top-mode ${state.mode === 'Simulation' ? 'simulation' : ''}">${escape(state.mode)}</span>
     </header>
     <div class="main-grid"><aside class="explorer" aria-label="Program explorer">
       <div class="section-label">Workspace</div><input id="search" aria-label="Search nodes, ports or rules" placeholder="Search nodes, ports or rules" value="${escape(state.search)}">
@@ -229,15 +228,15 @@ function renderGraph() {
     edges = project.graph.edges.map(e => ({ ...e, label: e.purpose ?? e.kind ?? 'binding' }));
     }
   }
-  const compact=state.view==='Trace'&&host.clientWidth<700;
-  const cameraKey = project.key + ':' + (state.view === 'System' ? 'System:'+(state.architectureMode ?? 'owners') + ':' + (state.architectureGroup ?? '') + ':' + (state.focusKey ?? 'all') : state.view+':'+(f?.id??'system')+(compact?':compact':''));
+  const compact=state.view==='Trace'&&host.clientWidth<700,flow=f?.kind==='machine'&&['Trace','Logic'].includes(state.view);
+  const cameraKey = project.key + ':' + (state.view === 'System' ? 'System:'+(state.architectureMode ?? 'owners') + ':' + (state.architectureGroup ?? '') + ':' + (state.focusKey ?? 'all') : state.view+':'+(f?.id??'system')+(compact?':compact':'')+(flow?':flow-v1':''));
   const signature = JSON.stringify({cameraKey, model:project.modelDigest, nodes, edges});
   const marks=state.view==='Trace'&&f?.kind==='machine'&&state.traceFrame?traceGraphMarks(f,state.traceFrame,traceEventRows(project,state)):null;
   const selected=state.view==='Trace'?marks?.currentEdge:state.selected?.id,active=state.view==='Trace'?marks?.currentTo:state.view==='Logic'?state.machineState:null;
   if (host === graphHost && signature === graphSignature && (!selected || graph.has(selected) || !nodes.some(n=>n.id===selected))) { graph.select(selected,active,marks); return; }
   graph?.destroy();graphHost=host;graphSignature=signature;
-  graph = drawGraph(host, { nodes, edges, key: cameraKey, legacyKey:state.view==='Trace'?null:project.key+':'+(f?.id??'system')+':'+state.view,
-    columns:compact?2:3,viewWidth:compact?650:1000,viewHeight:state.view==='Trace'?350:550,
+  graph = drawGraph(host, { nodes, edges, key: cameraKey, legacyKey:flow?null:project.key+':'+(f?.id??'system')+':'+state.view,
+    initial:flow?f.compiled.initial:null,columns:compact?2:flow?Math.min(6,Math.max(4,f.compiled.states.length)):3,viewWidth:compact?650:1000,viewHeight:state.view==='Trace'?350:550,
     selected, active, trace:marks,
     onSelect: (kind, id) => { if (state.view === 'System' && state.architectureMode === 'domains') { state.architectureGroup=id; state.architectureMode='owners'; refreshArchitecture(); return; } if(state.view==='Trace'){selectFacet(f.id,false);state.view='Logic';} state.selected = { kind: state.view === 'System' && kind === 'node' ? 'entity' : state.view === 'Logic' && kind === 'edge' ? 'cell' : kind, id }; render(); if (innerWidth < 950) $('.inspector').classList.add('open'); } });
 }
