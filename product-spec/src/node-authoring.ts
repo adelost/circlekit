@@ -47,6 +47,17 @@ export function componentOutput<
     NodeOutputRef<`${Id}.${Port}`, Extract<Type["outputs"][number], { readonly id: Port }>["contract"]["id"], "data">;
 }
 
+/** Bind every event of one component when a host consumes that exact surface. */
+export function componentOutputs<const Type extends ComponentType, const Id extends string>(
+  producer: { readonly id: Id; readonly type: Type },
+): { readonly [Port in Type["outputs"][number] as Port["id"]]:
+  NodeOutputRef<`${Id}.${Port["id"]}`, Port["contract"]["id"], "data"> } {
+  return Object.fromEntries(producer.type.outputs.map((port) => [port.id, {
+    ref: `${producer.id}.${port.id}`, contract: port.contract.id, purpose: "data",
+  }])) as { readonly [Port in Type["outputs"][number] as Port["id"]]:
+    NodeOutputRef<`${Id}.${Port["id"]}`, Port["contract"]["id"], "data"> };
+}
+
 type DataInput<Type extends ProductNodeType> = Extract<Type["inputs"][number], { readonly purpose: "data" }>;
 type InputAt<Type extends ProductNodeType, Key extends string> =
   Extract<Type["inputs"][number], { readonly id: Key }>;
@@ -71,7 +82,16 @@ type CheckedSources<Id extends string, Type extends ProductNodeType, From> = {
 type NodeConfigs<Type extends ProductNodeType> = {
   readonly [Input in NonNullable<Type["configInputs"]>[number] as Input["id"]]: LegoConfigRef;
 };
-type SourceIds<From> = { readonly [Key in keyof From]: From[Key] extends NodeOutputRef<infer Ref, string, string> ? Ref : never };
+type SourceIds<Type extends ProductNodeType, From> = {
+  readonly [Key in keyof From]: Key extends string
+    ? [InputAt<Type, Key>] extends [never] ? never
+      : InputAt<Type, Key> extends infer Input extends LegoPort
+        ? From[Key] extends NodeOutputRef<infer Ref, Input["contract"]["id"], Input["purpose"]> ? Ref : never
+        : never
+    : never;
+} & {
+  readonly [Input in DataInput<Type> as Input["id"]]: Input["id"] extends keyof From ? unknown : never;
+};
 type ConfigIds<Configs> = { readonly [Key in keyof Configs]: Configs[Key] extends { readonly id: infer Id extends string } ? Id : never };
 type AuthoredNode<Id extends string, Type extends ProductNodeType, From, Configs, Runs> = {
   readonly id: Id;
@@ -80,7 +100,7 @@ type AuthoredNode<Id extends string, Type extends ProductNodeType, From, Configs
   readonly node: {
     readonly id: Id;
     readonly nodeTypeRef: Type["id"];
-    readonly bindings: SourceIds<From>;
+    readonly bindings: SourceIds<Type, From>;
     readonly config: ConfigIds<Configs>;
   } & (Type["kind"] extends "service" ? { readonly activation: Runs } : {});
 };

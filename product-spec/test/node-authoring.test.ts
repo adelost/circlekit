@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { authorNode, field, nodeOutput, port, service } from "../src/index.js";
+import { authorNode, componentOutput, componentOutputs, defineComponentType, field, nodeOutput, port, service } from "../src/index.js";
 
 const pressure = { id: "fixture.pressure", kind: "observation", boundary: "service-internal", fields: [field("hpa", "number")] } as const;
 const position = { id: "fixture.position", kind: "observation", boundary: "service-internal", fields: [field("lat", "number")] } as const;
@@ -46,4 +46,11 @@ test("one authored block emits the existing node instance shape", () => {
     ref: "fixture.source.pressure", contract: pressure.id, purpose: "data",
   });
   assert.deepEqual(nodeOutput(source, "position"), source.out.position);
+});
+
+test("component events expose the same typed output as individual selection", () => {
+  const action = { id: "fixture.action", kind: "event", boundary: "ui-event", fields: [] } as const;
+  const component = defineComponentType({ id: "fixture.component", inputs: {}, outputs: { fire: action } });
+  const producer = { id: "fixture.component", type: component } as const;
+  assert.deepEqual(componentOutputs(producer).fire, componentOutput(producer, "fire"));
 });
