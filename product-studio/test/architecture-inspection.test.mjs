@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { architectureOf, queryArchitecture, architectureSlice, entityKey as key } from '../lib/architecture.mjs';
+import { planForChanges } from '../lib/plan.mjs';
 import { createInspectionBundle, validateInspectionBundle, compatibilityReport, checkSourceIdentity } from '../lib/inspection.mjs';
 import { digest } from '../lib/util.mjs';
 const product = () => ({ id: 'example.system', kind: 'product-spec-ir', schemaVersion: 9,
@@ -69,8 +70,27 @@ test('facet impact needs an explicit relation rather than a same-name guess', ()
   const r=queryArchitecture(architectureOf(product(),[f]),{kind:'impact',from:key('facet','a','machine')});
   assert.equal(r.supported,false);
   assert.match(r.message,/owner not declared/);
+  assert.match(queryArchitecture(architectureOf(product(),[f]),{kind:'owner',from:key('facet','a','machine')}).message,/owner not declared/);
   const a=architectureOf(product(),[f],{relations:[{from:key('facet','a','machine'),to:key('node','a'),kind:'controls'}]});
   assert.equal(queryArchitecture(a,{kind:'impact',from:key('facet','a','machine')}).association,true);
+});
+test('compiled facet owner reaches node-type instances and their consumers in impact and plan', () => {
+  const facet={id:'policy',kind:'machine',compiled:{id:'policy',ownerNodeTypeRef:'service',cells:[]}};
+  const architecture=architectureOf(product(),[facet]);
+  const facetKey=key('facet','policy','machine'), typeKey=key('node-type','service');
+  assert(architecture.edges.some(e=>e.from===facetKey&&e.to===typeKey&&e.kind==='owner'&&e.evidence==='compiler'));
+  const result=queryArchitecture(architecture,{kind:'impact',from:facetKey});
+  assert(result.keys.includes(key('node','a')));
+  assert(result.keys.includes(key('node','c')));
+  assert(result.keys.includes(key('component','view')));
+  assert(queryArchitecture(architecture,{kind:'owner',from:facetKey}).keys.includes(typeKey));
+  const view={productId:'example.system',architecture,documentation:{reports:[]},sourceIndex:{origins:[]}};
+  const plan=planForChanges(view,{sources:[],config:{root:process.cwd()}},[facetKey]).markdown;
+  assert.match(plan,/Owners: .*node::a/);
+  assert.match(plan,/Consumers: .*component::view/);
+  assert.match(plan,/Facets: .*owner node-type::service/);
+  assert.doesNotMatch(plan,/owner not declared/);
+  assert.match(planForChanges(view,{sources:[],config:{root:process.cwd()}},[typeKey]).markdown,/facet:machine:policy \(owner node-type::service\)/);
 });
 test('bundle identities are deterministic and tampered model cannot load', () => {
   const a=bundle(),b=bundle();assert.equal(a.bundleDigest,b.bundleDigest);

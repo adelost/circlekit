@@ -60,6 +60,11 @@ export function architectureOf(product, facets = [], metadata = {}) {
   if (product?.lanes) add('lanes', product.lanes.id ?? 'lanes', product.lanes);
   for (const f of facets) {
     const key = add('facet', f.id, f, f.kind);
+    if (f.compiled?.ownerNodeTypeRef !== undefined && product) {
+      const type = entityKey('node-type', f.compiled.ownerNodeTypeRef);
+      requireThat(byKey.has(type), 'architecture.facet-owner', `Unknown compiled owner of facet '${f.id}'.`);
+      connect(key, type, 'owner', { evidence: 'compiler' });
+    }
     for (const cell of Array.isArray(f.compiled?.cells) ? f.compiled.cells : []) {
       const child = add('cell', cell.id, { facetId: f.id, facetKind: f.kind, cell }, `${f.kind}/${f.id}`);
       connect(key, child, 'contains', { evidence: 'compiler' });
@@ -124,13 +129,22 @@ export function queryArchitecture(architecture, request) {
     const starts = architecture.edges.filter(e => e.from === selected.key && e.kind === 'instance').map(e => e.to);
     return combineQueries(architecture, request, starts, 'Compiled type instances and declared bindings.');
   }
+  if (!start && selected.kind === 'facet' && request.kind === 'owner') {
+    const declared = architecture.edges.find(e => e.from === selected.key && e.kind === 'owner');
+    if (!declared) return { kind: 'owner', keys: [selected.key], edgeIds: [], paths: [], supported: false,
+      message: selected.data.compiled?.ownerNodeTypeRef ? 'Declared owner type is unavailable in this model.' : 'owner not declared.' };
+    const result = queryArchitecture(architecture, { ...request, from: declared.to });
+    return { ...result, kind: 'owner', keys: [selected.key, ...result.keys], association: true };
+  }
   if (!start && request.kind === 'impact') {
-    const starts = architecture.edges.filter(e => e.from === selected.key && ['controls', 'implements', 'associated'].includes(e.kind))
-      .map(e => toOwner(e.to)).filter(Boolean);
+    const associations = architecture.edges.filter(e => e.from === selected.key && ['owner', 'controls', 'implements', 'associated'].includes(e.kind));
+    const starts = associations.map(e => e.kind === 'owner' ? e.to : toOwner(e.to)).filter(Boolean);
     if (!starts.length) return { kind: 'impact', keys: [selected.key], edgeIds: [], paths: [], supported: false,
-      message: selected.kind === 'facet' ? 'owner not declared; impact beyond this facet is unknown.'
+      message: selected.kind === 'facet' ? selected.data.compiled?.ownerNodeTypeRef
+        ? 'Declared owner type is unavailable in this model.' : 'owner not declared; impact beyond this facet is unknown.'
         : 'No explicit association connects this declaration to a runtime owner. Impact beyond the declaration is unknown.' };
-    return combineQueries(architecture, request, starts, 'Explicit adapter association and declared bindings.');
+    return combineQueries(architecture, request, starts, associations.some(e=>e.kind==='owner')
+      ? 'Compiled facet owner and declared bindings.' : 'Explicit adapter association and declared bindings.');
   }
   requireThat(start, 'query.owner', 'This selection has no declared runtime owner. No dependency path is inferred from its name.');
   if (request.kind === 'owner') return { kind: 'owner', keys: [start], edgeIds: [], paths: [], supported: true, message: 'Declared port owner.' };

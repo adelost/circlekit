@@ -8,7 +8,7 @@ export function decodeArtifact(text, name = 'artifact.json', {evaluator=kernel,e
   if (data?.kind === 'product-studio-bundle' && data.version === 2) {
     const inspection = validateInspectionBundle(data), compatibility = compatibilityReport(inspection, evaluatorVersion);
     const product = data.product ? decodeProductLike(data.product) : null;
-    const facets = mergeFacets(data.facets, (product?.decisionTables ?? []).map(compiled => ({ id: compiled.id, kind: 'decision-table', compiled })));
+    const facets = mergeFacets(data.facets, embeddedFacets(product));
     const producerErrors = inspection.diagnostics.some(d => d.severity === 'error');
     const decoded = facets.map(f => decodeFacet(f, compatibility, evaluator, evaluatorVersion));
     return { product, facets: producerErrors ? decoded.map(f => ({ ...f, runnable:false, blockedReason:'The producer reported validation errors. Inspect the model, but resolve them before simulation.' })) : decoded, inspection, compatibility,
@@ -17,7 +17,7 @@ export function decodeArtifact(text, name = 'artifact.json', {evaluator=kernel,e
   if (data?.kind === 'product-studio-bundle' && data.version === 1) {
     requireThat(Array.isArray(data.facets) && data.facets.length <= 100, 'bundle.facets', 'Invalid facet list.');
     const product = data.product ? decodeProductLike(data.product) : null;
-    return { product, facets: mergeFacets(data.facets, (product?.decisionTables ?? []).map(compiled => ({ kind: 'decision-table', compiled }))).map(f => decodeFacet(f,null,evaluator,evaluatorVersion)),
+    return { product, facets: mergeFacets(data.facets, embeddedFacets(product)).map(f => decodeFacet(f,null,evaluator,evaluatorVersion)),
       identity: { source: name, productDigest: null }, raw: text };
   }
   if (data?.kind === 'product-spec-ir') {
@@ -29,7 +29,7 @@ export function decodeArtifact(text, name = 'artifact.json', {evaluator=kernel,e
         'product.compiler','Embedded productSpecVersion must be a semantic version.');
       compatibility=compatibilityReport({compiler:{version:data.productSpecVersion}},evaluatorVersion);
     }
-    return { product, facets: tableFacets(product,evaluator,evaluatorVersion,compatibility), compatibility,
+    return { product, facets: mergeFacets([],embeddedFacets(product)).map(f=>decodeFacet(f,compatibility,evaluator,evaluatorVersion)), compatibility,
       identity: { source: name, productDigest: digest(text) }, raw: text };
   }
   if (data?.states && data.inputs && data.cells) return { product: null, facets: [decodeFacet({ kind: 'machine', compiled: data })], identity: { source: name }, raw: text };
@@ -47,6 +47,12 @@ function mergeFacets(explicit, embedded) {
   }
   return [...result.values()];
 }
+function embeddedFacets(product) {
+  return [
+    ...(product?.decisionTables ?? []).map(compiled => ({ id: compiled.id, kind: 'decision-table', compiled })),
+    ...(product?.machines ?? []).map(compiled => ({ id: compiled.id, kind: 'machine', compiled })),
+  ];
+}
 function decodeFacet(f, compatibility = null, evaluator = kernel, evaluatorVersion = KERNEL_VERSION) {
   requireThat(plain(f) && typeof f.kind === 'string' && plain(f.compiled), 'facet.shape', 'Malformed compiled facet.');
   const raw = f.compiled;
@@ -61,10 +67,6 @@ function decodeFacet(f, compatibility = null, evaluator = kernel, evaluatorVersi
     validation: descriptions.length ? 'structure-only-invariant-code-unavailable' : 'shared-kernel',
     runnable: true, kernelVersion: evaluatorVersion, editable: false, source: null };
 }
-function tableFacets(product,evaluator,version,compatibility=null) {
-  return (product.decisionTables ?? []).map(compiled => decodeFacet({kind:'decision-table',compiled},compatibility,evaluator,version));
-}
-
 function decodeProductLike(product) {
   if (product?.kind === 'product-spec-graph') return validateGraphProduct(product);
   return decodeProduct(product);
@@ -74,6 +76,8 @@ function decodeProductLike(product) {
 export function decodeProduct(product) {
   requireThat(plain(product) && product.kind === 'product-spec-ir' && product.schemaVersion === 9 && typeof product.id === 'string', 'product.schema', 'Only ProductSpec IR schema 9 is supported.');
   for (const key of ['nodes', 'components', 'componentTypes', 'nodeTypes', 'artifacts']) requireThat(Array.isArray(product[key]) && product[key].length <= 10000, 'product.shape', `Product '${key}' must be a bounded array.`);
+  for (const key of ['machines', 'decisionTables']) if (product[key] !== undefined)
+    requireThat(Array.isArray(product[key]) && product[key].length <= 10000, 'product.shape', `Product '${key}' must be a bounded array.`);
   requireThat(plain(product.portRegistry), 'product.ports', 'Product port registry is missing.');
   const owners = new Set();
   for (const node of [...product.nodes, ...product.components]) {
