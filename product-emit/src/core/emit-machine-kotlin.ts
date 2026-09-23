@@ -93,6 +93,13 @@ ${noCell}${options.traceSink ? `        if (${options.traceBuildGuard} && ${opti
             ${guard}.entries.associate { it.name to (it in guards) })
 ` : ""}        return cell
     }
-}
+${options.traceSink ? `
+    /** The state owner calls this AFTER its real in-memory commit. No next state is recomputed here. */
+    fun observeApplied(from: ${state}, inputName: String, to: ${state},
+        guards: Set<${guard}>, instanceId: String) {
+        if (${options.traceBuildGuard} && ${options.traceSink}.enabled) ${options.traceSink}.appliedTransition(${kotlinStringLiteral(machine.id)}, from.name, to.name, inputName,
+            ${guard}.entries.associate { it.name to (it in guards) }, instanceId)
+    }
+` : ""}}
 ${options.traceSink ? `\n${emitStudioTraceSinkKotlin(options.traceSink)}` : ""}`;
 }

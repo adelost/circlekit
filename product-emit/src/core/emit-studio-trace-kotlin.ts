@@ -27,13 +27,16 @@ object ${name} {
     private fun booleans(values: Map<String, Boolean>): String = values.entries.joinToString(",", "{", "}") {
         quoted(it.key) + ":" + it.value
     }
+    private fun observe(row: String, phase: String) {
+        try { observer?.invoke(row.dropLast(1) + ",\\\"phase\\\":" + quoted(phase) + "}") } catch (failure: Exception) {
+            System.err.println("Studio observation unavailable: " + failure.javaClass.simpleName)
+        }
+    }
     private fun append(row: String) {
         try { output?.appendText(row + "\\n") } catch (failure: Exception) {
             System.err.println("Studio test trace unavailable: " + failure.javaClass.simpleName)
         }
-        try { observer?.invoke(row.dropLast(1) + ",\\\"phase\\\":\\\"evaluated\\\"}") } catch (failure: Exception) {
-            System.err.println("Studio observation unavailable: " + failure.javaClass.simpleName)
-        }
+        observe(row, "evaluated")
     }
 
     fun decision(facetId: String, cellId: String, facts: Map<String, String>, valuesJson: String) {
@@ -47,6 +50,13 @@ object ${name} {
             + ",\\\"cellId\\\":" + (cellId?.let(::quoted) ?: "null")
             + ",\\\"from\\\":" + quoted(from) + ",\\\"to\\\":" + quoted(to)
             + ",\\\"input\\\":" + quoted(input) + ",\\\"guards\\\":" + booleans(guards) + "}")
+    }
+    fun appliedTransition(facetId: String, from: String, to: String, input: String,
+        guards: Map<String, Boolean>, instanceId: String) {
+        observe("{\\\"kind\\\":\\\"transition\\\",\\\"facetId\\\":" + quoted(facetId)
+            + ",\\\"cellId\\\":null,\\\"from\\\":" + quoted(from) + ",\\\"to\\\":" + quoted(to)
+            + ",\\\"input\\\":" + quoted(input) + ",\\\"guards\\\":" + booleans(guards)
+            + ",\\\"instanceId\\\":" + quoted(instanceId) + "}", "applied")
     }
 }
 `;
