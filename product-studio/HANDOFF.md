@@ -1,6 +1,6 @@
 # Product Studio 0.4: next-owner handoff
 
-This PR is stacked on Product Studio #274 at `740d3c3a7b33c55f4ebb07de0d05215b73c147fd`. Integrate the base first. All changes are confined to `product-studio/`. Read [README](README.md), [EXPERIENCE](EXPERIENCE.md), [CLI](CLI.md), [INTEGRATION](INTEGRATION.md) and [VERIFICATION](VERIFICATION.md).
+This PR is stacked on Product Studio #274 at `740d3c3a7b33c55f4ebb07de0d05215b73c147fd`. Integrate the base first. All changes are confined to `product-studio/`. Read [README](README.md), [CONTRACTS](CONTRACTS.md), [EXPERIENCE](EXPERIENCE.md), [CLI](CLI.md), [INTEGRATION](INTEGRATION.md) and [VERIFICATION](VERIFICATION.md).
 
 ## Goal and delivered slice
 
