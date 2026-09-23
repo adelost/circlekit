@@ -1,5 +1,6 @@
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
+import path from 'node:path';
 import { intentForEntity } from './documentation.mjs';
 import { requireThat } from './util.mjs';
 
@@ -37,6 +38,21 @@ export async function changedFilesForReview(root) {
     git(root, ['ls-files', '--others', '--exclude-standard', '-z']),
   ]);
   return [...new Set([...paths(tracked), ...paths(untracked)])].sort();
+}
+
+/** Project membership comes from selected source/artifact paths and exact entity keys, not an ID guess. */
+export function changesForProject(view, project, changes) {
+  const files = new Set([
+    ...(project.config.sources ?? []), ...(project.config.authoring?.files ?? []),
+    project.config.bundle, project.config.artifact, project.config.graph,
+    ...project.sources.map(source => source.path),
+    ...(project.documentationInputs?.sources ?? []).map(source => source.path),
+    ...view.sourceIndex.origins.map(origin => origin.file),
+    ...(view.sourceIndex.unresolved ?? []).map(origin => origin.file),
+  ].filter(Boolean));
+  const entities = new Set(view.architecture.entities.map(entity => entity.key));
+  return changes.filter(change => entities.has(change) || files.has(path.isAbsolute(change)
+    ? path.relative(project.config.root, change) : change));
 }
 
 function changedIntents(view, keys) {

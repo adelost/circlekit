@@ -53,6 +53,33 @@ async function invoke(args, cwd) {
   const code = await main(args, { cwd, stdout: { write: text => { stdout += text; } } });
   return { code, body: JSON.parse(stdout), stdout };
 }
+async function invokeReview(args, cwd) {
+  let output = '';
+  const code = await main(args, { cwd, stdout: { write: text => { output += text; } } });
+  return { code, output };
+}
+test('review selects the one project whose model source changed', async t => {
+  const { root } = await fixture(t, { two: true });
+  const file = path.join(root, 'studio.workspace.json');
+  const manifest = JSON.parse(await readFile(file, 'utf8'));
+  manifest.projects[1] = { id: 'second', label: 'Other source', sources: ['other.mjs'] };
+  await writeFile(path.join(root, 'other.mjs'), 'export const other = {id: "other.policy"};\n');
+  await writeFile(file, JSON.stringify(manifest));
+  const result = await invokeReview(['review', root, '--changed', 'logic.mjs'], root);
+  assert.equal(result.code, 0, result.output);
+  assert.match(result.output, /Studio plan: fixture\.app/);
+  assert.doesNotMatch(result.output, /Project: second/);
+  const none = await invokeReview(['review', root, '--changed', 'README.md'], root);
+  assert.equal(none.code, 1);
+  assert.equal(JSON.parse(none.output).error.code, 'project.ambiguous');
+});
+test('review includes every project claiming the same changed source', async t => {
+  const { root } = await fixture(t, { two: true });
+  const result = await invokeReview(['review', root, '--changed', 'logic.mjs'], root);
+  assert.equal(result.code, 0, result.output);
+  assert.match(result.output, /# Project: local[\s\S]*# Project: second/);
+  assert.equal((result.output.match(/## EVIDENCE/g) ?? []).length, 2);
+});
 test('converge keeps the JSON envelope and exits 2 when no evidence exists', async t => {
   const { root } = await fixture(t);
   const response = await invoke(['converge', root], root);
