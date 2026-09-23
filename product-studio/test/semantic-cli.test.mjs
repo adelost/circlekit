@@ -83,6 +83,27 @@ test('record derives trace identity and file from a focused test without product
   assert.equal(empty.body.error.code, 'record.empty');
   assert.equal(await readFile(path.join(root, response.body.file), 'utf8'), before);
 });
+test('record runs only the selected workspace command when explicitly requested without pasted args', async t => {
+  const { root } = await fixture(t);
+  const file=path.join(root,'studio.workspace.json');
+  const manifest=JSON.parse(await readFile(file,'utf8'));
+  manifest.projects[0].recordCommand=[process.execPath,'-e',
+    'require("node:fs").writeFileSync("record-ran.marker","yes");require("node:fs").writeFileSync(require("node:path").join(process.env.V1D_STUDIO_TRACE_DIR,"node-test.jsonl"),JSON.stringify({kind:"port",portRef:"producer.out"})+"\\n")'];
+  await writeFile(file,JSON.stringify(manifest));
+  await openHeadlessStudio({roots:[root]});
+  await assert.rejects(readFile(path.join(root,'record-ran.marker')));
+  const response=await invoke(['record',root,'--product','local'],root);
+  assert.equal(response.code,0,response.stdout);
+  assert.equal(response.body.events,1);
+  assert.equal(response.body.file,'test-results/local-studio-trace.json');
+  assert.equal(await readFile(path.join(root,'record-ran.marker'),'utf8'),'yes');
+});
+test('record without a configured command names the next safe action', async t => {
+  const {root}=await fixture(t);
+  const response=await invoke(['record',root,'--product','local'],root);
+  assert.equal(response.code,1);
+  assert.match(response.body.error.message,/recordCommand.*-- test command/u);
+});
 async function fileSnapshot(root, prefix = '') {
   const files = {};
   for (const item of await readdir(path.join(root, prefix), { withFileTypes: true })) {
@@ -98,7 +119,8 @@ test('headless attachment has one real product, no sample fallback and no storag
   assert.equal(projects.length, 1); assert.equal(projects[0].fixture, false);
   assert.equal(workbench.dataDir, undefined); assert.equal(workbench.gitDraftRoots.size, 0);
   const empty = path.join(root, 'empty'); await mkdir(empty);
-  await assert.rejects(openHeadlessStudio({ roots: [empty] }), e => e.code === 'project.missing');
+  await assert.rejects(openHeadlessStudio({ roots: [empty] }), e => e.code === 'workspace.missing'
+    && e.message.includes('studio.workspace.json'));
 });
 test('plan turns an exact source identity into PR-ready owners, ports and consumers',async t=>{
   const {root,service}=await fixture(t,{source:'export const changed={id:"producer"};'});
