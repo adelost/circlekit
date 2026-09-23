@@ -1,5 +1,6 @@
 import { requireUnique, requireWireId } from "./node-model.js";
 import { frozen } from "./frozen.js";
+import { declarationSite, rememberDeclarationSite } from './source-site.js';
 
 /**
  * A decision table: which values hold at each point of a few finite axes.
@@ -190,8 +191,9 @@ export function defineDecisionTable<const Axes extends DecisionAxes, const Colum
     axes, derived, columns, cells, invariants: invariants.map(({ refuse }) => refuse) } as DecisionTable<Axes, Columns>;
   const problems = decisionTableProblems(table as unknown as DecisionTable, invariants as unknown as readonly DecisionInvariant[]);
   if (problems.length > 0) {
-    throw new Error(`decision table '${id}' is refused:\n- ${problems.join("\n- ")}`);
+    throw new Error(`decision table '${id}' is refused: ${problems.join('; ')} [${declarationSite(defineDecisionTable)}]`);
   }
+  rememberDeclarationSite(table,declarationSite(defineDecisionTable));
   return frozen(table);
 }
 

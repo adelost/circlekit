@@ -1,5 +1,6 @@
 import { requireUnique, requireWireId } from "./node-model.js";
 import { frozen } from "./frozen.js";
+import { declarationSite, rememberDeclarationSite } from './source-site.js';
 
 /**
  * A machine: which input may move which state where, under which named guards.
@@ -113,7 +114,8 @@ export function defineMachine<const State extends string, const Input extends st
     otherwise: declaration.otherwise,
   } as Machine<State, Input, Guard>;
   const problems = machineProblems(machine as unknown as Machine, declaration as unknown as Readonly<Record<string, unknown>>);
-  if (problems.length > 0) throw new Error(`machine '${declaration.id}' is refused:\n- ${problems.join("\n- ")}`);
+  if (problems.length > 0) throw new Error(`machine '${declaration.id}' is refused: ${problems.join('; ')} [${declarationSite(defineMachine)}]`);
+  rememberDeclarationSite(machine,declarationSite(defineMachine));
   return frozen(machine);
 }
 

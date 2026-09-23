@@ -16,4 +16,5 @@ export * from "./port-implementations.js";
 export * from "./node-instance-model.js";
 export * from "./product-model.js";
 export * from "./state-authority-model.js";
+export {declaredSite} from './source-site.js';
 export * from "./visual-model.js";

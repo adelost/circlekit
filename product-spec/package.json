@@ -45,7 +45,7 @@
   "scripts": {
     "clean": "node -e \"require('node:fs').rmSync('dist',{recursive:true,force:true})\"",
     "build": "npm run clean && tsc -p tsconfig.json",
-    "test": "npm run build && node --test dist/test/*.test.js",
+    "test": "npm run build && node --enable-source-maps --test dist/test/*.test.js",
     "check:pins": "npm run build && node dist/src/pin-check-cli.js",
     "pack:release": "npm run test && npm pack"
   },
