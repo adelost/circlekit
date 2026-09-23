@@ -26,10 +26,10 @@ function modelIdentity(bundle) {
 function envelopeIdentity(bundle) { const { bundleDigest, ...contents } = bundle; return digest(canonicalJson(contents)); }
 
 export function createInspectionBundle({ productId, compiler, sourceRevision = null, product = null,
-  facets = [], sources = [], origins = [], groups = [], relations = [], scenarios = [], evidenceFiles = [],
+  facets = [], sources = [], origins = [], contracts = [], testContracts = [], groups = [], relations = [], scenarios = [], evidenceFiles = [],
   artifacts = {}, diagnostics = [] }) {
   const bundle = { kind: 'product-studio-bundle', version: INSPECTION_VERSION, productId, compiler, sourceRevision,
-    product, facets, sources, origins, groups, relations, scenarios, evidenceFiles, artifacts, diagnostics };
+    product, facets, sources, origins, contracts, testContracts, groups, relations, scenarios, evidenceFiles, artifacts, diagnostics };
   assertSerializable(bundle);
   bundle.modelDigest = modelIdentity(bundle);
   bundle.bundleDigest = envelopeIdentity(bundle);
@@ -46,7 +46,7 @@ export function validateInspectionBundle(bundle) {
     'inspection.compiler', 'Record the actual ProductSpec compiler package and version.');
   requireThat(bundle.sourceRevision === null || typeof bundle.sourceRevision === 'string', 'inspection.revision', 'Source revision must be a string or null.');
   requireThat(bundle.product === null || bundle.product?.id === bundle.productId, 'inspection.product', 'Product and inspection identities differ.');
-  for (const field of ['facets','sources','origins','groups','relations','scenarios','evidenceFiles','diagnostics'])
+  for (const field of ['facets','sources','origins','contracts','testContracts','groups','relations','scenarios','evidenceFiles','diagnostics'])
     requireThat(Array.isArray(bundle[field]) && bundle[field].length <= (field === 'origins' ? 20000 : 10000), 'inspection.list', `Expected a bounded '${field}' list.`);
   const facets = new Set();
   for (const facet of bundle.facets) {
@@ -67,6 +67,31 @@ export function validateInspectionBundle(bundle) {
     requireThat(o.span === null || plain(o.span) && Number.isSafeInteger(o.span.start) && Number.isSafeInteger(o.span.end)
       && o.span.start >= 0 && o.span.end > o.span.start, 'inspection.span', 'Invalid source span.');
     requireThat(['editable', 'shared', 'derived', 'external', 'unsupported', 'inspect'].includes(o.editing), 'inspection.editing', 'Unknown source edit capability.');
+  }
+  const contractEntities = new Set();
+  for (const contract of bundle.contracts) {
+    requireThat(plain(contract) && typeof contract.entityKey === 'string' && contract.entityKey.length <= 2000
+      && typeof contract.what === 'string' && contract.what.trim().length > 0 && contract.what.length <= 1200
+      && typeof contract.why === 'string' && contract.why.trim().length > 0 && contract.why.length <= 1200,
+      'inspection.contract', 'WHAT/WHY contracts need one bounded responsibility and one bounded boundary statement.');
+    requireThat(!contractEntities.has(contract.entityKey), 'inspection.contract', 'Only one WHAT/WHY contract may own an entity.');
+    contractEntities.add(contract.entityKey);
+    if (contract.file !== undefined && contract.file !== null) {
+      requireThat(sources.has(contract.file) && contract.sourceDigest === sources.get(contract.file).digest,
+        'inspection.contract', 'Contract source identity must match an exported source file.');
+    }
+  }
+  const testIds = new Set();
+  const testLevels = new Set(['unit','component','host','scene','integration','generated-law']);
+  for (const contract of bundle.testContracts) {
+    requireThat(plain(contract) && typeof contract.id === 'string' && contract.id.length > 0 && contract.id.length <= 400
+      && testLevels.has(contract.level) && Array.isArray(contract.entityKeys) && contract.entityKeys.length > 0 && contract.entityKeys.length <= 32
+      && contract.entityKeys.every(key => typeof key === 'string' && key.length <= 2000) && !testIds.has(contract.id),
+      'inspection.test-contract', 'Test contracts need a unique ID, level and bounded entity identities.');
+    testIds.add(contract.id);
+    const title = typeof contract.title === 'string' && contract.title.trim().length > 0 && contract.title.length <= 1200;
+    const bdd = ['given','when','then'].every(field => typeof contract[field] === 'string' && contract[field].trim().length > 0 && contract[field].length <= 1200);
+    requireThat(title || bdd, 'inspection.test-contract', 'Test contracts need a title or complete Given/When/Then descriptions.');
   }
   requireThat(isDigest(bundle.modelDigest) && bundle.modelDigest === modelIdentity(bundle), 'inspection.digest', 'Compiled model identity does not match the bundle contents.');
   requireThat(isDigest(bundle.bundleDigest) && bundle.bundleDigest === envelopeIdentity(bundle), 'inspection.digest', 'Inspection envelope identity does not match its contents.');
