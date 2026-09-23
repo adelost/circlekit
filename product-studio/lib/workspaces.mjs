@@ -140,7 +140,7 @@ export class Workbench {
     if (config.traceFile) {
       try {
         const traceText=(await safeFile(config.root,config.traceFile,8_000_000)).text;
-        p.trace=freezeData(decodeTrace(traceText,view));
+        p.trace=freezeData(decodeTrace(traceText,view,{fileName:config.traceFile}));
       } catch (error) {
         errors.push({rule:error.code??'trace.unavailable',file:config.traceFile,
           message:error.code==='ENOENT'?'The selected trace has not been produced yet. Run its owning test, then reload.':error.message,
@@ -271,7 +271,7 @@ export class Workbench {
   }
   importTrace(request) {
     const { p, view } = this.checkedView(request);
-    p.trace = freezeData(decodeTrace(request.text, view)); return this.view(p);
+    p.trace = freezeData(decodeTrace(request.text, view,{fileName:request.fileName})); return this.view(p);
   }
   traceFrame(request) {
     const { p, view } = this.checkedView(request);

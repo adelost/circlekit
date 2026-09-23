@@ -195,6 +195,11 @@ test('trace command reuses GUI comparison and keeps incomplete recorded outcomes
   delete capture.events[0].logic.values;
   const partial = await service.execute('trace', { text: JSON.stringify(capture) });
   assert.equal(partial.result.logicCheck.kind, 'unknown');
+  const compact={kind:'product-studio-trace',version:1,modelDigest:service.view.modelDigest,
+    events:[{kind:'decision',entityKey:policyKey,logic:{facetId:'fixture.policy',cellId:'allow',facts:{permission:'YES'},values:{action:'RUN'}}}]};
+  const concise=await service.execute('trace',{text:JSON.stringify(compact),fileName:'test-results/fixture-trace.json'});
+  assert.equal(concise.ok,true);assert.equal(concise.result.logicCheck.kind,'consistent');
+  assert.equal(concise.result.sessionId,'fixture-trace.json');
 });
 test('CLI commands make no source, draft, scenario or Git file changes', async t => {
   const { root, service } = await fixture(t), before = await fileSnapshot(root);

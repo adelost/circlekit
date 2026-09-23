@@ -5,6 +5,37 @@ const identity={productId:'test',modelDigest:'a'.repeat(64),architecture:{entiti
 const recorder = (capacity=20) => createTraceRecorder({...identity,sessionId:'session-1',clock:'monotonic',capacity});
 const event = (atMs=0) => ({atMs,kind:'port',entityKey:'port::a.out',summary:'Value delivered'});
 
+test('compact test trace derives its envelope and event coordinates from the selected file',()=>{
+  const compact={kind:'product-studio-trace',version:1,modelDigest:identity.modelDigest,events:[
+    {kind:'port',entityKey:'port::a.out',summary:'First'},
+    {kind:'port',entityKey:'port::a.out',summary:'Second',causedBy:0},
+  ]};
+  const trace=decodeTrace(JSON.stringify(compact),identity,{fileName:'test-results/studio-trace.json'});
+  assert.deepEqual(trace.events.map(e=>[e.sequence,e.atMs]),[[0,0],[1,1]]);
+  assert.equal(trace.productId,'test');assert.equal(trace.sessionId,'studio-trace.json');
+  assert.equal(trace.provenance,'test-run');assert.equal(trace.clock.domain,'virtual');
+  assert.deepEqual(trace.truncation,{droppedBefore:0,gaps:[]});
+  assert.deepEqual(inspectTrace(trace).causalPath.map(e=>e.sequence),[0,1]);
+});
+test('compact trace refuses mixed or incomplete event coordinates',()=>{
+  const base={kind:'product-studio-trace',version:1,modelDigest:identity.modelDigest};
+  for(const events of [[{...event(),sequence:0},{kind:'port',entityKey:'port::a.out'}],
+    [{...event(),sequence:0},{...event(1),sequence:1,atMs:undefined}]])
+    assert.throws(()=>decodeTrace(JSON.stringify({...base,events}),identity,{fileName:'trace.json'}),/mix|sequence|atMs/i);
+});
+test('compact trace keeps required identity and refuses a foreign product',()=>{
+  const compact={kind:'product-studio-trace',version:1,events:[{kind:'port',entityKey:'port::a.out'}]};
+  assert.throws(()=>decodeTrace(JSON.stringify(compact),identity,{fileName:'trace.json'}),/identity|digest/i);
+  assert.throws(()=>decodeTrace(JSON.stringify({...compact,modelDigest:identity.modelDigest,productId:'foreign'}),identity,{fileName:'trace.json'}),/match/i);
+});
+test('compact recorded origin must be explicit and hybrid envelope is refused',()=>{
+  const compact={kind:'product-studio-trace',version:1,modelDigest:identity.modelDigest,
+    events:[{kind:'port',entityKey:'port::a.out'}]};
+  const recorded=decodeTrace(JSON.stringify({...compact,provenance:'recorded'}),identity,{fileName:'trace.json'});
+  assert.equal(recorded.provenance,'recorded');
+  assert.throws(()=>decodeTrace(JSON.stringify({...compact,clock:{domain:'wall',unit:'ms'}}),identity,{fileName:'trace.json'}),/Mixed envelopes/);
+});
+
 test('passive recorder stores ordered bounded events and exact model identity',()=>{const r=recorder();r.record(event());r.record({...event(2),causedBy:0});const t=decodeTrace(JSON.stringify(r.snapshot()),identity);assert.equal(t.events.length,2);assert.equal(t.complete,true);assert.equal(t.sessionId,'session-1');});
 test('bounded capture reports dropped history',()=>{const r=recorder(2);r.record(event());r.record(event(1));r.record(event(2));const t=decodeTrace(JSON.stringify(r.snapshot()),identity);assert.equal(t.truncation.droppedBefore,1);assert.equal(t.complete,false);assert.equal(t.events.length,2);});
 test('wrong bundle, unknown entity, and duplicate sequence are refused',()=>{const r=recorder();r.record(event());let t=r.snapshot();t.modelDigest='b'.repeat(64);assert.throws(()=>decodeTrace(JSON.stringify(t),identity),/does not match/);t=r.snapshot();t.events[0].entityKey='node::foreign';assert.throws(()=>decodeTrace(JSON.stringify(t),identity),/outside/);t=r.snapshot();t.events.push({...t.events[0]});assert.throws(()=>decodeTrace(JSON.stringify(t),identity),/strictly/);});

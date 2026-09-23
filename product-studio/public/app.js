@@ -490,8 +490,8 @@ async function performStudioTool(name) {
   if(name==='toggle-code'){state.showCode=!state.showCode;render();return true;}
   if(name==='import-trace'){$('#trace-import').click();return true;}
   if(name==='trace-format'){
-    download('trace-header.json',pretty({kind:'product-studio-trace',version:1,productId:project.productId,modelDigest:project.modelDigest,
-      sessionId:'replace-with-actual-session',clock:{domain:'monotonic',unit:'ms'},provenance:'synthetic',truncation:{droppedBefore:0,gaps:[]},events:[]}));return true;
+    download('trace-header.json',pretty({kind:'product-studio-trace',version:1,modelDigest:project.modelDigest,
+      provenance:'synthetic',events:[]}));return true;
   }
   if(name==='export-trace'){const loaded=await api('trace-export',{...requestContext(),traceDigest:project.trace.traceDigest});const {traceDigest,notice,incompleteCausality,complete,...trace}=loaded;download('recorded-trace.json',pretty(trace));return true;}
   if(name.startsWith('trace-') && project.trace){
@@ -524,7 +524,7 @@ function splitRegionDialog() {
 }
 $('#trace-import').onchange=async e=>{const file=e.target.files[0];if(!file)return;const ticket=++generation;try{
   if(file.size>8000000)throw new Error('Trace exceeds the 8 MB import limit.');
-  const p=await api('trace',{...requestContext(),text:await file.text()});if(ticket!==generation)return;
+  const p=await api('trace',{...requestContext(),text:await file.text(),fileName:file.name});if(ticket!==generation)return;
   project=p;installDocumentState(state,p);state.traceOffset=0;state.view='Trace';state.traceFrame=null;await loadTraceFrame(p.trace.eventCount-1);
 }catch(error){if(ticket===generation)toast(error.message);}finally{e.target.value='';}};
 
