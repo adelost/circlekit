@@ -18,7 +18,9 @@ function leadingComment(text,node) {
   if(!ranges.length)return '';
   const last=ranges.at(-1);
   if(text.slice(last.end,node.getStart()).trim())return '';
-  return text.slice(last.pos,last.end);
+  const selected=last.kind===ts.SyntaxKind.SingleLineCommentTrivia
+    ?ranges.slice(ranges.findLastIndex(range=>range.kind!==ts.SyntaxKind.SingleLineCommentTrivia)+1):[last];
+  return selected.map(range=>text.slice(range.pos,range.end)).join('\n');
 }
 function literalText(node) {
   if(ts.isStringLiteralLike(node))return node.text;
