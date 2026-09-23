@@ -1,5 +1,6 @@
 import type { LegoContract, LegoField } from './node-model.js';
 import type { ProductPortRegistry } from './port-graph-model.js';
+import { declaredSite } from './source-site.js';
 
 const numeric = (field:LegoField) => field.value==='number'||field.value==='integer';
 
@@ -39,9 +40,9 @@ export function assertContractPayload(contract:LegoContract,payload:unknown):voi
     if(!valid)throw new Error(`contract '${contract.id}' field '${field.name}' must be ${typeof field.value==='string'?field.value:'declared value'}`);
     if(typeof item!=='number')continue;
     if(field.min!==undefined&&item<field.min||field.max!==undefined&&item>field.max)
-      throw new Error(`contract '${contract.id}' field '${field.name}'=${item} violates ${field.min??'-∞'}..${field.max??'∞'} ${field.unit??''}`.trim());
+      throw new Error(`contract '${contract.id}' field '${field.name}'=${item} violates ${field.min??'-∞'}..${field.max??'∞'} ${field.unit??''} [${declaredSite(field)??'source unknown'}]`.trim());
     if(field.gteField!==undefined&&item<(value[field.gteField] as number))
-      throw new Error(`contract '${contract.id}' field '${field.name}'=${item} must be >= '${field.gteField}'=${value[field.gteField]} ${field.unit??''}`.trim());
+      throw new Error(`contract '${contract.id}' field '${field.name}'=${item} must be >= '${field.gteField}'=${value[field.gteField]} ${field.unit??''} [${declaredSite(field)??'source unknown'}]`.trim());
   }
 }
 

@@ -1,4 +1,5 @@
 import { validateContractLaws } from './contract-law-model.js';
+import { rememberCallsite } from './source-site.js';
 export type LegoPrimitive = "boolean" | "integer" | "number" | "string";
 /** The only executable authoring kinds. Graph position is derived, never declared as a second role. */
 export type ProductNodeKind = "service" | "derive" | "present";
@@ -103,7 +104,7 @@ export function field(
   value: LegoPrimitive | LegoValueRef,
   options: LegoFieldOptions = {},
 ): LegoField {
-  return {
+  return rememberCallsite({
     name,
     value,
     nullable: options.nullable ?? false,
@@ -112,7 +113,7 @@ export function field(
     ...(options.min === undefined ? {} : { min: options.min }),
     ...(options.max === undefined ? {} : { max: options.max }),
     ...(options.gteField === undefined ? {} : { gteField: options.gteField }),
-  };
+  },field);
 }
 
 export interface LegoContract {

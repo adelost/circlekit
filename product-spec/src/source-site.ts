@@ -14,3 +14,7 @@ export function declarationSite(owner:Function):string {
 
 export function rememberDeclarationSite(value:object,site:string):void {declaredSites.set(value,site);}
 export function declaredSite(value:object):string|undefined {return declaredSites.get(value);}
+export function rememberCallsite<T extends object>(value:T,owner:Function):T {
+  rememberDeclarationSite(value,declarationSite(owner));
+  return value;
+}
