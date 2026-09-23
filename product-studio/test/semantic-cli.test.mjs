@@ -190,6 +190,15 @@ test('headless and GUI loader agree on identity and the finite result', async t 
   assert.equal(response.ok, true); assert.deepEqual(response.result, expected);
   assert.equal(response.evidenceKind, 'simulation');
 });
+test('one inspect JSON response joins entity, declared impact, evidence and source', async t => {
+  const {root}=await fixture(t);
+  const response=await invoke(['inspect',root,'--entity',entityKey('node','producer'),'--json'],root);
+  assert.equal(response.code,0,response.stdout);
+  assert.equal(response.body.result.entity.id,'producer');
+  assert.match(response.body.result.plan,/Consumers:.*consumer/u);
+  assert.match(response.body.result.review,/## EVIDENCE/u);
+  assert.ok(Object.hasOwn(response.body.result,'source'));
+});
 test('inspect is paged and field projection never changes the envelope', async t => {
   const { service } = await fixture(t);
   const response = await service.execute('inspect', { max: 1, fields: ['key', 'kind'] });

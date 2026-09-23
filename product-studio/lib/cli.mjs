@@ -14,15 +14,16 @@ const SPEC = {
   contracts: ['product', 'pretty', 'amux-root'],
   export: ['product', 'pretty', 'amux-root'],
   bundle: ['root', 'product', 'compiler-version', 'product-id', 'source-revision', 'facet', 'source', 'output', 'amux-root'],
-  inspect: [...COMMON, 'entity', 'search', 'fields', 'max', 'offset'],
+  inspect: [...COMMON, 'entity', 'search', 'fields', 'max', 'offset', 'json'],
   query: [...COMMON, 'kind', 'from', 'to', 'purposes'],
   plan: [...COMMON, 'changed'],
   source: [...COMMON, 'entity'],
   simulate: [...COMMON, 'facet', 'input'],
   scenario: [...COMMON, 'facet', 'file'],
   trace: [...COMMON, 'file', 'cursor', 'entity', 'operation', 'search', 'max', 'offset'],
+  live: ['json','pretty','data-dir','port','session','max','offset','cut','freeze','output'],
 };
-const BOOLEAN = new Set(['examples', 'pretty', 'tasks', 'live']);
+const BOOLEAN = new Set(['examples', 'pretty', 'tasks', 'live','json','freeze']);
 const REQUIRED = { query: ['kind', 'from'], source: ['entity'], simulate: ['facet', 'input'], scenario: ['file'], trace: ['file'], bundle: ['compiler-version'] };
 
 /** WHAT: Describes the available Studio commands. WHY: Keeps shell help aligned with its strict parser. */
@@ -37,7 +38,7 @@ export const HELP = `Product Studio
   v1d-studio export [repository] [--product ID]
   v1d-studio record [repository] --product ID [-- TEST_COMMAND [ARGS...]]
   v1d-studio live run --product ID [--port 4317] -- node APP [ARGS...]
-  v1d-studio inspect [repository] [--product ID] [--entity KEY | --search TEXT]
+  v1d-studio inspect [repository] [--product ID] [--entity KEY | --search TEXT] [--json]
   v1d-studio query [repository] --kind upstream|downstream|consumers|owner|impact|path
                    --from KEY [--to KEY] [--purposes data,demand,context]
   v1d-studio plan [repository] [--product ID] --changed ENTITY_OR_SOURCE...
@@ -46,6 +47,8 @@ export const HELP = `Product Studio
   v1d-studio simulate [repository] --facet ID --input @step.json
   v1d-studio scenario [repository] --file scenario.json [--facet ID]
   v1d-studio trace [repository] --file trace.json [--cursor N] [--operation ID]
+  v1d-studio live --json [--session CAPTURE] [--max 50] [--offset N] [--cut DIGEST]
+  v1d-studio live --session CAPTURE --freeze --output saved.studio-trace.json
   v1d-studio bundle --root repository --product generated/product.json
                    --compiler-version X.Y.Z [--facet compiled-machine.json]...
                    [--source src/app.ts]... [--output generated/product.studio.json]
@@ -110,6 +113,7 @@ export function parseCli(args) {
     'cli.usage', 'Use --changed 1..32 times with exact entity keys or source files.');
   if (command === 'review') requireThat(repeated.changed.length <= 32,
     'cli.usage', 'Use --changed at most 32 times with exact entity keys or source files.');
+  if (command === 'live') requireThat(positional.length===0,'cli.usage','Live reads the already-running local Studio; do not pass a repository.');
   for (const key of REQUIRED[command] ?? []) requireThat(values[key] !== undefined, 'cli.usage', `Missing --${key} for ${command}.`);
   const integer = (name, min, max) => {
     if (values[name] === undefined) return;
@@ -118,7 +122,9 @@ export function parseCli(args) {
     requireThat(Number.isSafeInteger(n) && n >= min && n <= max, 'cli.usage', `--${name} must be between ${min} and ${max}.`);
     values[name] = n;
   };
-  integer('port', 0, 65535); integer('cursor', -1, 19999); integer('max', 1, 1000); integer('offset', 0, Number.MAX_SAFE_INTEGER);
+  integer('port', 0, 65535); integer('cursor', -1, 19999); integer('max', 1, command==='live'?200:1000); integer('offset', 0, Number.MAX_SAFE_INTEGER);
+  if(command==='live')requireThat(values.freeze?!!values.session&&!!values.output:values.output===undefined,
+    'cli.usage','--freeze requires --session and --output; --output is only for an explicit freeze.');
   if (command === 'query') {
     requireThat(['upstream', 'downstream', 'consumers', 'owner', 'impact', 'path'].includes(values.kind), 'cli.usage', 'Unknown query kind.');
     requireThat(values.kind === 'path' ? !!values.to : values.to === undefined, 'cli.usage', '--to is required only for a path query.');

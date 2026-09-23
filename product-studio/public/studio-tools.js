@@ -56,13 +56,16 @@ function liveStatusLine(trace,state,escape) {
   const selected=state.liveCaptureId??trace.capture.id;
   const sessions=state.liveStatus?.sessions?.length?state.liveStatus.sessions:[{id:trace.capture.id}];
   const selectedSession=sessions.find(session=>session.id===selected);
-  const connected=state.liveStatus?.state==='observing'&&state.liveStatus.captureId===selected;
+  const frozen=selectedSession?.ending==='frozen';
+  const saved=!state.liveStatus?.sessions?.length;
+  const connected=!frozen&&state.liveStatus?.state==='observing'&&state.liveStatus.captureId===selected;
   const matched=selectedSession?.modelMatched??state.liveStatus?.state!=='model-mismatch';
   return `<div class="toolbar trace-live-status"><label>Session<select id="live-session">${sessions.map(session=>
     `<option value="${escape(session.id)}" ${session.id===selected?'selected':''}>${escape(session.id)}</option>`).join('')}</select></label>
-    <span class="badge ${connected?'good':'warning'}">${connected?'Connected':'Disconnected'}</span>
+    <span class="badge ${connected?'good':'warning'}">${frozen?'Frozen cut':saved?'Saved cut':connected?'Connected':'Disconnected'}</span>
     <span class="badge ${matched?'good':'error'}">${matched?'Model matched':'Model mismatch'}</span>
     <span class="badge">${trace.eventCount} events · ${dropped(trace)} dropped</span>
+    <span class="badge">Cut #${trace.capture.through}</span>
     <span class="badge ${trace.capture.ending==='open'?'warning':''}">${trace.capture.ending==='open'?'Tail open':trace.capture.ending==='clean'?'Ended clean':'Tail interrupted'}</span>
     ${state.liveError?`<span class="badge error">${escape(state.liveError)}</span>`:''}</div>`;
 }
@@ -190,7 +193,7 @@ export function traceView(project, state, escape) {
     : frame?.current ? '<div class="notice">No declared port or owner for this step. Its graph position is unavailable.</div>' : '';
   const heading=trace.version===2&&state.liveStatus?.state==='observing'&&state.liveStatus.captureId===(state.liveCaptureId??trace.capture.id)
     ?'Live trace':trace.provenance==='synthetic'?'Synthetic trace':trace.provenance==='test-run'?'Test run trace':'Recorded trace';
-  return `<section class="panel"><header class="panel-head"><h2>${heading} <code>${escape(trace.sessionId)}</code></h2><div class="toolbar"><button data-action="import-trace" class="quiet-link">Import another</button><button data-action="export-trace" class="quiet-link">Export trace</button></div></header>
+  return `<section class="panel"><header class="panel-head"><h2>${heading} <code>${escape(trace.sessionId)}</code></h2><div class="toolbar"><button data-action="import-trace" class="quiet-link">Import another</button>${trace.version===2&&state.liveStatus?.sessions?.some(session=>session.id===trace.capture.id&&session.ending!=='frozen')?'<button data-action="freeze-trace" class="quiet-link">Freeze cut</button>':''}<button data-action="export-trace" class="quiet-link">Export trace</button></div></header>
     <div class="panel-body">${liveStatusLine(trace,state,escape)}<details class="exact-key"><summary>${trace.eventCount} events · ${dropped(trace)} dropped${trace.truncation.gaps.length ? ` · ${trace.truncation.gaps.length} gaps` : ''}</summary><small>${escape(trace.notice)}</small></details>
       ${model}
       ${traceStateBand(trace,cursor,escape)}
