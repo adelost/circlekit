@@ -14,6 +14,8 @@ Original review: 2026-09-22. Local execution: 2026-09-23. Base: PR #274 at `740d
 - Optional evidence adapters consumed actual owner-run outputs: AMUX Vitest 4.1.2 (3 tests) and ai-dsl Vitest 4.0.17 (14 tests), AMUX Link ProductSpec declaration laws (32) and ai-dsl activity laws (1), plus SKYVW native's selected JUnit XML (1 test). The JUnit source locator found the Kotlin test at line 54. Studio did not run those producers.
 - The workspace export source passed 243/243 unit tests. The shared writer now creates a missing generated directory and refuses an escaping symlink parent. From SKYVW web's checkout, this branch's `bin/studio.mjs export --product skyvw-web-logbook` compiled the selected graph with its own ProductSpec 0.3.52 and wrote the named bundle without environment variables. The existing logbook binding test then produced six observed test steps; Studio imported the exact-model trace with source identity matched. The installed `v1d-studio` alias is verified after merge.
 - A clean web checkout export initially changed the committed bundle only because it embedded the current Git HEAD. The authoring export now uses exact source digests without embedding HEAD; rerunning it from the same checkout produced no bundle diff (SHA-256 `89a02284b9e5d7816cd601272731ba4985126e4a82d384f99e57b6283f61a368`).
+- The cleanup source passed 244/244 local tests. Headed Chrome at 1280 and 390 px opened the real native seven-event test trace, stepped its pre-event STOPPED state and first transition without a toast, then opened System with no page/console errors. At 1280 px, AMUX Link displayed 35 owner-reported evidence rows in a compact table with status, name and source. These are selected surface checks, not a full browser matrix.
+- The JUnit importer now uses its locked Node XML reader. With `PYTHON=/does-not-exist`, the selected real SKYVW JUnit XML imported 1/1 from an isolated copy of the XML and Kotlin source. A malformed document and DTD are refused in the focused parser test. Python is not needed for this command.
 - Headed Chrome rendered the AMUX evidence report with 35 tests (3 Vitest and 32 declaration laws), and the compact evidence cards were visually checked. This does not imply product runtime coverage from source associations.
 
 ## Evidence from this pass
@@ -21,8 +23,8 @@ Original review: 2026-09-22. Local execution: 2026-09-23. Base: PR #274 at `740d
 - Read the current PR, relevant source and existing acceptance tests before editing.
 - Matched the mounted 0.3 source archive against the repository's Git tree before modification.
 - Reviewed snapshot/overlay ownership, source identities, lazy API requests, event-listener lifetime, graph camera retention, build adoption, drafts and navigation.
-- Parsed JavaScript syntax with `node --check`, which does not execute module bodies. Parsed Python test-file syntax separately. These are syntax checks, not tests or type checking.
-- Checked relative module paths, unchanged dependency versions and matching package/lock versions.
+- Parsed JavaScript syntax with `node --check`, which does not execute module bodies. Earlier Python browser-test syntax checks are historical; the JUnit reader itself now runs in Node.
+- Checked relative module paths and the pinned product/package versions. The cleanup adds locked `saxes` solely for JUnit XML parsing.
 - Submission verification compares Git blob/tree identities against the intended source and delivery archive. A matching hash proves bytes, not behavior.
 
 **Not run in the original 2026-09-22 review:** npm installation, the application, ProductSpec compilation, unit tests, browser journeys, benchmarks, native products, real devices, agents or providers. The dated local execution above supersedes that status only for the named checks.
@@ -47,20 +49,16 @@ Original review: 2026-09-22. Local execution: 2026-09-23. Base: PR #274 at `740d
 
 These are static-review findings with code changes and targeted acceptance source, not reproduced-and-fixed runtime incidents. Run a symptom case against the previous version before claiming a proven fix.
 
-## Required next-owner checks
+## Repeat selected checks
 
 ```bash
 npm ci
 npm run verify
-npm run profile
-npm start
-# Separate terminal:
-python test/browser.py
-python test/browser_experience.py
-python test/browser_extended.py
+v1d-studio doctor /path/to/product
+v1d-studio trace /path/to/product --file path/to/owner-run-trace.json
 ```
 
-Then attach two actual products and test the negative paths in HANDOFF and EXPERIENCE. Verify actual installed ProductSpec 0.3.65 and TypeScript 5.9.3; no alternative compiler harness is shipped. Keep the PR draft until normal installation and direct-browser evidence exists.
+The named failure cases and deferred product adapters are in [DELIVERY](DELIVERY.md). Visual changes need their own screenshot on the affected surface; a green unit run does not judge pixels.
 
 ## Historical results
 

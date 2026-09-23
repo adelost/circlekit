@@ -136,4 +136,4 @@ This design writes only information that cannot be derived reliably: responsibil
 
 ## Current implementation handoff
 
-For exact branch topology, owner-run smoke commands and the remaining optional-evidence backlog, read [HANDOFF-LIVING-DOCUMENTATION.md](HANDOFF-LIVING-DOCUMENTATION.md).
+For current delivered capabilities and deferred boundaries, read [DELIVERY.md](DELIVERY.md).

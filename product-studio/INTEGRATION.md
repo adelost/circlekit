@@ -207,4 +207,4 @@ First prove one full product bundle and one standalone table bundle through the 
 
 Then attach exact source files and a trace from one owned test path. Leave native previews, real video commands and external execution unavailable until those existing product owners are integrated. There is no benefit in making a graph look runnable by duplicating their state stores, worker manifests, undo engines or schedulers.
 
-See [HANDOFF](HANDOFF.md) for remaining work and [VERIFICATION](VERIFICATION.md) for the material local test limitations.
+See [DELIVERY](DELIVERY.md) for remaining boundaries and [VERIFICATION](VERIFICATION.md) for local proof and its limits.
