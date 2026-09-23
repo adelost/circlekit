@@ -1,0 +1,38 @@
+[
+  {
+    "id": "workflow-example",
+    "label": "Request lifecycle \u00b7 example",
+    "sources": [
+      "workflow.ts"
+    ],
+    "originKind": "example",
+    "provenance": "Synthetic lifecycle example. Real ProductSpec validation and simulation; no production implementation."
+  },
+  {
+    "id": "amux-fixture",
+    "label": "AMUX \u00b7 policies",
+    "sources": [
+      "amux.mjs"
+    ],
+    "revision": "1413687782c83305455efd2e98c0ca36994568be",
+    "provenance": "Policy declarations excerpted from policies/context-cost.mjs. No launch, compact, queue or live process connection."
+  },
+  {
+    "id": "pipeline-example",
+    "label": "Pipeline \u00b7 example",
+    "sources": [
+      "pipeline.mjs"
+    ],
+    "originKind": "example",
+    "provenance": "Synthetic finite policy. Attach the private video repository locally to inspect its actual declarations."
+  },
+  {
+    "id": "showcase-fixture",
+    "label": "Showcase \u00b7 catalog excerpt",
+    "sources": [
+      "showcase.ts"
+    ],
+    "revision": "464f432fab90947c26b0e170c0ed6014504b654d",
+    "provenance": "Three cases excerpted from showcase-product/src/catalog.ts. Catalog descriptions only; native previews are not connected."
+  }
+]
