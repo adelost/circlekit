@@ -41,3 +41,34 @@ test('two retained captures can be selected by the current project, never anothe
   const other=running.app.list().find(item=>item.id==='amux-fixture'),otherView=running.app.view(running.app.require(other.key));
   assert.equal((await post('live-snapshot',{project:other.key,bundleDigest:otherView.bundleDigest,captureId:'viewer-first'})).status,404);
 });
+
+test('an advancing live capture returns one matched cut and frame without a mutable digest round trip',async t=>{
+  const root=await mkdtemp(path.join(os.tmpdir(),'studio-live-atomic-'));
+  const running=await createServer({port:0,dataDir:root,liveEnabled:true});
+  t.after(async()=>{running.server.closeAllConnections();await new Promise(resolve=>running.server.close(resolve));await rm(root,{recursive:true,force:true});});
+  const project=running.app.list().find(item=>item.id==='workflow-example');
+  const view=running.app.view(running.app.require(project.key)),live=running.live;
+  const {ticket}=live.issueTicket({project:project.key,producer:'node'});
+  const session=live.hello({type:'hello',protocol:1,ticket,productId:view.productId,identity:{modelDigest:view.modelDigest},
+    productSpecVersion:view.toolVersions.productSpec,captureId:'moving-current',
+    scope:{events:['transition'],facets:['example.request'],appliedTransitions:true}},{},null).session;
+  const event=(sequence,phase)=>({sequence,atMs:sequence+1,kind:'transition',phase,
+    facetId:'example.request',cellId:'send',from:'IDLE',to:'FAILURE',input:'Send',guards:{},instanceId:'one'});
+  const post=async()=>{
+    const response=await fetch(running.origin+'/api/live-current',{method:'POST',headers:{'x-studio-token':running.token,
+      'content-type':'application/json'},body:JSON.stringify({project:project.key,bundleDigest:view.bundleDigest,follow:true})});
+    return {status:response.status,body:await response.json()};
+  };
+  live.batch(session,{type:'batch',through:0,events:[event(0,'evaluated')],dropped:[]});
+  const first=await post();
+  assert.equal(first.status,200);
+  assert.equal(first.body.status.state,'observing');
+  assert.equal(first.body.trace.traceDigest,first.body.frame.traceDigest);
+  live.batch(session,{type:'batch',through:1,events:[event(1,'applied')],dropped:[]});
+  const second=await post();
+  assert.equal(second.status,200);
+  assert.notEqual(second.body.trace.traceDigest,first.body.trace.traceDigest);
+  assert.equal(second.body.trace.traceDigest,second.body.frame.traceDigest);
+  assert.equal(second.body.frame.current.sequence,1);
+  assert.equal(second.body.status.state,'observing');
+});

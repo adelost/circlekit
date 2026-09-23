@@ -44,11 +44,15 @@ async function loadProject(key) {
   if (ticket !== generation) return;
   const isFirstVisit = !sessions.has(key);
   project = p; state = sessions.get(key) ?? freshState(); sessions.set(key, state); installDocumentState(state,p);
+  state.livePollHalted=false;
   if(p.trace?.version===2){state.liveCaptureId??=p.trace.capture.id;state.liveFollowTail??=true;}
   if (!p.facets.some(f => f.id === state.facetId)) selectFacet(p.facets.find(f=>['machine','decision-table'].includes(f.kind))?.id ?? p.facets[0]?.id ?? null, false);
   if (isFirstVisit) state.view = initialProjectView(p);
   render();
-  if (state.view === 'Trace' && p.trace && !state.traceFrame) await loadTraceFrame(p.trace.eventCount-1);
+  if (state.view === 'Trace' && p.trace && !state.traceFrame) {
+    if(liveReceiverAvailable&&p.trace.version===2)await pollLiveTrace();
+    else await loadTraceFrame(p.trace.eventCount-1);
+  }
 }
 function selectFacet(id, paint = true) {
   ++generation;
@@ -489,6 +493,13 @@ async function loadTraceFrame(cursor) {
   if(!selected)return;
   const ticket=++generation;
   try {
+    if(liveReceiverAvailable&&selected.version===2&&!state.liveTrace
+      &&state.liveStatus?.captureId===state.liveCaptureId){
+      const current=await api('live-current',{...requestContext(),follow:state.liveFollowTail!==false,
+        cursor,offset:state.traceOffset??0,search:state.traceSearch??'',operationId:state.traceOperation??null});
+      if(ticket===generation)acceptLiveCurrent(current,state.liveFollowTail!==false,state.liveCaptureId);
+      return;
+    }
     const result=await api('trace-page',{...requestContext(),traceDigest:selected.traceDigest,
       ...(selected.version===2&&state.liveCaptureId?{captureId:state.liveCaptureId}:{}),offset:state.traceOffset??0,limit:200,
       filter:{cursor,search:state.traceSearch ?? '',operationId:state.traceOperation || null}});
@@ -501,6 +512,7 @@ async function loadTraceFrame(cursor) {
 }
 function loadTraceHistory() {
   const owner=project,view=state,selected=view.liveTrace??owner.trace,digest=selected?.traceDigest;
+  if(view.liveStatus?.state==='observing'&&!view.liveTrace&&view.liveCaptureId===view.liveStatus.captureId)return;
   if(!digest||view.traceHistory?.digest===digest||view.traceHistoryPending||view.traceHistoryError?.digest===digest)return;
   view.traceHistoryPending=api('trace-export',{project:owner.key,bundleDigest:owner.bundleDigest,traceDigest:digest,
     ...(selected.version===2&&state.liveCaptureId?{captureId:state.liveCaptureId}:{})})
@@ -511,6 +523,23 @@ function loadTraceHistory() {
       if(project!==owner||state!==view||(view.liveTrace??project.trace)?.traceDigest!==digest)return;
       view.traceHistoryError={digest,message:error.message};render();
     }).finally(()=>{view.traceHistoryPending=null;});
+}
+
+function acceptLiveCurrent(current,follow,selection) {
+  const previous=project.trace;
+  state.liveStatus=current.status;state.liveError=null;
+  if(!current.trace){render();return;}
+  project={...project,trace:current.trace,convergence:current.convergence};
+  const selectedCurrent=!state.liveTrace&&(selection===current.trace.capture.id
+    ||(!selection&&!previous)||(follow&&selection===previous?.capture?.id));
+  if(!selectedCurrent){render();return;}
+  state.liveCaptureId=current.trace.capture.id;
+  state.liveTrace=null;state.liveConvergence=null;
+  state.traceFrame=current.frame;state.traceOffset=current.frame.offset;
+  state.traceCursor=current.frame.cursor;state.mode='Recorded trace';
+  state.traceHistory=null;state.traceHistoryError=null;
+  if(current.frame.current)state.selected={kind:'entity',id:current.frame.current.entityKey};
+  render();
 }
 async function loadLiveSession(captureId) {
   if(!project.trace||state.liveCaptureId===captureId)return;
@@ -527,36 +556,22 @@ async function loadLiveSession(captureId) {
 }
 
 async function pollLiveTrace() {
-  if(livePollBusy||document.hidden||!project||state.view!=='Trace'||!liveReceiverAvailable&&project.trace?.version!==2)return;
+  if(livePollBusy||document.hidden||!project||state.view!=='Trace'||!liveReceiverAvailable||state.livePollHalted)return;
   livePollBusy=true;
-  const key=project.key,view=state,ticket=generation;
+  const owner=project,key=owner.key,view=state,selection=view.liveCaptureId,cursor=view.traceCursor,offset=view.traceOffset,
+    wasFollow=view.liveFollowTail,
+    follow=view.liveFollowTail!==false&&(!selection||selection===project.trace?.capture?.id);
   try {
-    const status=liveReceiverAvailable?await api('live-status?project='+encodeURIComponent(key)):view.liveStatus;
-    const latest=await api('project?id='+encodeURIComponent(key)+'&mode=summary');
-    if(ticket!==generation||project.key!==key||state!==view||state.view!=='Trace')return;
-    if(latest.modelDigest!==project.modelDigest||latest.bundleDigest!==project.bundleDigest){
-      if(view.liveError!=='Model changed. Reload this project.'){view.liveError='Model changed. Reload this project.';render();}return;
-    }
-    const previous=project.trace,changed=latest.trace?.traceDigest!==previous?.traceDigest;
-    const statusChanged=JSON.stringify(status)!==JSON.stringify(view.liveStatus);
-    if(!changed&&!statusChanged&&!view.liveError)return;
-    const follow=view.liveFollowTail!==false&&(!view.liveCaptureId||view.liveCaptureId===previous?.capture?.id);
-    if(changed&&previous?.capture?.id!==latest.trace?.capture?.id&&!follow&&view.liveCaptureId===previous?.capture?.id&&!view.liveTrace){
-      const retained=await api('live-snapshot',{project:key,bundleDigest:project.bundleDigest,captureId:previous.capture.id});
-      if(ticket!==generation||project.key!==key||state!==view||state.view!=='Trace')return;
-      view.liveTrace={...retained.trace,eventCount:retained.trace.events.length};
-      view.liveConvergence=retained.convergence;
-    }
-    if(changed)project={...project,trace:latest.trace,convergence:latest.convergence};
-    view.liveStatus=status;view.liveError=null;
-    if(latest.trace?.version!==2){if(statusChanged)render();return;}
-    if(follow)view.liveCaptureId=latest.trace.capture.id;
-    if(changed&&view.liveCaptureId===latest.trace.capture.id){
-      view.liveTrace=null;view.liveConvergence=null;view.traceHistory=null;view.traceHistoryError=null;
-      const last=latest.trace.eventCount-1;
-      await loadTraceFrame(follow?last:Math.min(view.traceCursor??last,last));
-    }else if(changed||statusChanged)render();
-  }catch(error){if(project?.key===key&&state===view&&view.liveError!==error.message){view.liveError=error.message;render();}}
+    const current=await api('live-current',{project:key,bundleDigest:project.bundleDigest,follow,
+      cursor:cursor??null,offset:offset??0,search:view.traceSearch??'',operationId:view.traceOperation??null});
+    if(project!==owner||project.key!==key||state!==view||view.view!=='Trace'||view.liveCaptureId!==selection
+      ||view.traceCursor!==cursor||view.traceOffset!==offset||view.liveFollowTail!==wasFollow)return;
+    const changed=current.trace?.traceDigest!==project.trace?.traceDigest;
+    const statusChanged=JSON.stringify(current.status)!==JSON.stringify(view.liveStatus);
+    if(changed||statusChanged||!view.traceFrame||view.liveError)acceptLiveCurrent(current,follow,selection);
+  }catch(error){if(project===owner&&state===view&&view.liveError!==error.message){
+    view.liveError=error.code==='revision.changed'?'Model changed. Reload this project.':error.message;
+    view.livePollHalted=error.code==='revision.changed';render();}}
   finally{livePollBusy=false;}
 }
 async function performStudioTool(name) {
