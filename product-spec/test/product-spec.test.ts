@@ -7,10 +7,10 @@ import { tmpdir } from "node:os";
 import { resolve } from "node:path";
 import test from "node:test";
 import type { ConformanceAxis, ConformanceDirection, NativeBindingManifest } from "../src/conformance-model.js";
+import { buildOutputManifest, checkOutputManifest, logOutputManifest,
+  productJsonEmitter, writeOutputManifest } from '../src/node.js';
 import {
   assertProductArtifactConformance,
-  buildOutputManifest,
-  checkOutputManifest,
   compileProductGraph,
   componentPort,
   contextPort,
@@ -35,7 +35,6 @@ import {
   finiteProduct,
   finiteValueRef,
   finiteValues,
-  logOutputManifest,
   mapFiniteCases,
   navigationActivePageContract,
   navigationGuardContract,
@@ -45,13 +44,11 @@ import {
   port,
   productArtifactConformance,
   productArtifactHostCoverage,
-  productJsonEmitter,
   present,
   service,
   statePresentationField,
   validateProductNodeType,
   validateProductIconRendererBindings,
-  writeOutputManifest,
   type NativeNavigationBindingManifest,
 } from "../src/index.js";
 

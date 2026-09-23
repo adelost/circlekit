@@ -7,6 +7,15 @@ export type RawObservation =
   | {kind:'decision';phase:'evaluated';facetId:string;cellId:string;facts:Record<string,string>;values:Record<string,unknown>}
   | {kind:'transition';phase:'evaluated';facetId:string;cellId:string|null;from:string;to:string;input:string;guards:Record<string,boolean>};
 
+let activeSink:((event:RawObservation)=>void)|null=null;
+
+/** Install once in an explicitly observed development process. No normal package import uses this sink. */
+export function installObservationSink(sink:(event:RawObservation)=>void):()=>void {
+  if(activeSink!==null)throw new Error('ProductSpec observation already has one process sink');
+  activeSink=sink;
+  return ()=>{if(activeSink===sink)activeSink=null;};
+}
+
 /** A transport-free, opt-in observation seam. Its callback must only enqueue; no network work belongs in a product call. */
 export function createObservationScope({onObservation,onFailure}: {
   onObservation:(event:RawObservation)=>void;onFailure?:(error:unknown)=>void;
@@ -51,3 +60,5 @@ export function createObservationScope({onObservation,onFailure}: {
     },
   };
 }
+
+export const observedScope=createObservationScope({onObservation:event=>activeSink?.(event)});
