@@ -174,7 +174,7 @@ test("both projections carry the rests and the deadlines, and only a rest is not
 
 test("a machine that breaks a law is refused before anything is written", () => {
   const overlapping = { ...door, cells: [...door.cells, { id: "closed.open-anyway", from: "CLOSED", on: "Open", to: "OPEN", requires: [], forbids: [] }] } as never;
-  const refusal = /machine 'acme\.door' is refused:\n- cells closed\.open and closed\.open-anyway both take Open in CLOSED/u;
+  const refusal = /machine 'acme\.door' is refused: cells closed\.open and closed\.open-anyway both take Open in CLOSED/u;
   assert.throws(() => emitMachineKotlin(overlapping, options), refusal);
   assert.throws(() => emitMachineMermaid(overlapping), refusal);
 });
