@@ -51,6 +51,27 @@ export async function main(args = process.argv.slice(2), { cwd = process.cwd(), 
       const report = await checkWorkspaceContracts(path.resolve(cwd,positional[0]??'.'), {product:v.product,evaluateContract});
       stdout.write(formatJson(report,v.pretty)); return report.ok ? 0 : 1;
     }
+    if (command === 'export') {
+      requireThat(v['amux-root'],'contract.unavailable',
+        'AMUX contract grammar is unavailable. Install AMUX or pass --amux-root before exporting service intent.');
+      const root=path.resolve(cwd,positional[0]??'.');
+      const manifest=boundedJson((await safeFile(root,'studio.workspace.json',64000)).text);
+      requireThat([1,2].includes(manifest.version)&&Array.isArray(manifest.projects)&&manifest.projects.length>0,
+        'workspace.config','Select a valid studio.workspace.json.');
+      const selected=v.product===undefined
+        ?manifest.projects.length===1?manifest.projects[0]:null
+        :manifest.projects.find(project=>project.id===v.product);
+      requireThat(selected,'workspace.selection','Select exactly one workspace project with --product.');
+      const authoring=selected.authoring;
+      requireThat(authoring&&typeof authoring==='object'&&typeof selected.bundle==='string',
+        'export.config','Declare authoring.entry, authoring.exportName, authoring.files and bundle in studio.workspace.json.');
+      const {exportAuthoring}=await import('../lib/build-export.mjs');
+      const receipt=await exportAuthoring({root,packageRoot:selected.kernelRoot??'.',
+        files:authoring.files,entry:authoring.entry,exportName:authoring.exportName,
+        kind:authoring.kind??'graph',productId:selected.id,output:selected.bundle,evaluateContract});
+      stdout.write(formatJson({schemaVersion:1,ok:true,command,product:selected.id,...receipt},v.pretty));
+      return 0;
+    }
     if (command === 'bundle') {
       const { writeInspectionBundle } = await import('../lib/exporter.mjs');
       const { relativeSourcePath } = await import('../lib/inspection.mjs');

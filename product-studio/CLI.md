@@ -2,7 +2,12 @@
 
 Product Studio 0.3 adds read/debug commands over the same `Workbench` used by the GUI. Agents keep editing normal source with their existing tools. This is not another editor, DSL, runtime or MCP server.
 
-**Implementation status:** code and regression tests are written; this revision has not been executed. See [VERIFICATION](VERIFICATION.md). All commands below require the normal locked dependencies, except `--help` and argument-only diagnostics.
+**Implementation status:** locally executed on 2026-09-23; see [VERIFICATION](VERIFICATION.md). All commands below require the normal locked dependencies, except `--help` and argument-only diagnostics.
+
+`v1d-studio export [repository] [--product ID]` explicitly compiles one workspace
+project with `bundle` and `authoring: { entry, exportName, files, kind? }`.
+Its `kernelRoot` selects the product's installed, lockfile-matching ProductSpec.
+Only the declared bundle is written; opening the viewer never runs this command.
 
 ## Start with the bundled examples
 
