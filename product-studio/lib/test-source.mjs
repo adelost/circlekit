@@ -95,9 +95,15 @@ function nativeLeadingComment(text,index) {
 }
 function kotlinIndex(text,file) {
   const masked=nativeMask(text),tests=[];
-  const re=/\bfun\s+(`[^`\n]+`|[A-Za-z_][A-Za-z0-9_]*)\s*\([^)]*\)\s*\{/g;
+  const re=/\bfun\s+(`[^`\n]+`|[A-Za-z_][A-Za-z0-9_]*)\s*\([^)]*\)\s*(\{|=)/g;
   for(const match of masked.matchAll(re)) {
-    const open=masked.indexOf('{',match.index+match[0].length-1);
+    const after=match.index+match[0].length;
+    const open=match[2]==='{'?after-1:masked.indexOf('{',after);
+    if(open<0)continue;
+    if(match[2]==='=') {
+      const between=masked.slice(after,open);
+      if(between.length>500||/\b(?:fun|class|object)\s+/.test(between))continue;
+    }
     let depth=1,end=open+1;
     for(;end<masked.length&&depth;end++) {
       if(masked[end]==='{')depth++;

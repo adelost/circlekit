@@ -57,6 +57,23 @@ test('unknown @covers target becomes a diagnostic rather than guessed identity',
   assert.match(associated.tests[0].associationDiagnostics[0],/Unknown @covers/);
 });
 
+test('Kotlin expression-body tests keep their JUnit name and source line',()=>{
+  const source=[
+    'class RecordingTest {',
+    '  @Test',
+    '  fun `a recorded jump follows the machine`() =',
+    '    component("real recording") {',
+    '      use("recording.session")',
+    '    }',
+    '}',
+  ].join('\n');
+  const located=testSourceIndex(source,'jumpcore/src/test/RecordingTest.kt');
+  assert.equal(located.length,1);
+  assert.equal(located[0].name,'a recorded jump follows the machine');
+  assert.equal(located[0].line,3);
+  assert.match(located[0].body,/recording.session/);
+});
+
 test('generated declaration law identity changes with the model digest',()=>{
   const a=declarationLawId('a'.repeat(64),'node-type::x','node-type-structural-laws');
   const b=declarationLawId('b'.repeat(64),'node-type::x','node-type-structural-laws');
