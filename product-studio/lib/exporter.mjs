@@ -1,3 +1,4 @@
+import { scanSourceContracts } from './service-contracts.mjs';
 import { writeFile, rename, rm } from 'node:fs/promises';
 import path from 'node:path';
 import { randomBytes } from 'node:crypto';
@@ -7,9 +8,16 @@ import { locateEntities } from './provenance.mjs';
 import { digest, safeFile, requireThat } from './util.mjs';
 
 /** Call from an already trusted product build, passing its actual compiled exports. */
-export async function prepareInspection({ root, sourceFiles = [], origins = [], ...input }) {
+export async function prepareInspection({ root, sourceFiles = [], sourceSnapshot, origins = [], evaluateContract, ...input }) {
   const sources = [];
-  for (const file of sourceFiles) sources.push(await safeFile(root, file, 1000000));
+  if (sourceSnapshot !== undefined) {
+    requireThat(Array.isArray(sourceSnapshot) && sourceSnapshot.length === sourceFiles.length
+      && sourceSnapshot.every((source, index) => source.relative === sourceFiles[index] && typeof source.text === 'string'),
+      'export.snapshot', 'The compile owner must supply the exact selected source snapshot.');
+    sources.push(...sourceSnapshot);
+  } else {
+    for (const file of sourceFiles) sources.push(await safeFile(root, file, 1000000));
+  }
   const refs = sources.map(s => ({ path: s.relative, text: s.text }));
   const architecture = architectureOf(input.product ?? null, input.facets ?? [], input);
   const located = locateEntities(architecture, refs, origins);
@@ -18,7 +26,13 @@ export async function prepareInspection({ root, sourceFiles = [], origins = [], 
     entityKey, file, sourceDigest, span, exportName: exportName ?? null, editing,
     ...(fields ? { fields } : {}),
   }));
-  return createInspectionBundle({ ...input, sources: refs.map(s => ({ file: s.path, digest: digest(s.text) })), origins: mapped });
+  const scan = scanSourceContracts(refs, { evaluateContract });
+  const counts = new Map();
+  for (const c of scan.contracts) if (c.entityKey) counts.set(c.entityKey, (counts.get(c.entityKey) ?? 0) + 1);
+  return createInspectionBundle({ ...input,
+    sources: refs.map(s => ({ file: s.path, digest: digest(s.text) })), origins: mapped,
+    contracts: scan.contracts.filter(c => c.entityKey && counts.get(c.entityKey) === 1),
+    contractDiagnostics: scan.diagnostics });
 }
 
 /** Writes one generated artifact in an existing, owner-selected directory. Never writes source. */

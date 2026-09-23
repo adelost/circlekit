@@ -18,7 +18,7 @@ export class ChangeMonitor {
     const root = project.config.root;
     const expected = new Map((project.readSet ?? []).map(s => [s.file, s.digest]));
     // Watch known absences too, so a new manifest/source invalidates the selection.
-    for (const f of ['studio.workspace.json', project.config.bundle, project.config.artifact, ...(project.config.sources ?? [])].filter(Boolean))
+    for (const f of ['studio.workspace.json', project.config.bundle, project.config.artifact, ...(project.config.sources ?? []), ...(project.config.documentation?.bddReports ?? [])].filter(Boolean))
       if (!expected.has(f)) expected.set(f, null);
     const changed = [], errors = [];
     for (const [file, before] of expected) {

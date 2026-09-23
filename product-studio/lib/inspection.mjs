@@ -1,3 +1,4 @@
+import { entityKey } from './architecture.mjs';
 import { canonicalJson, digest, plain, requireThat, forbiddenKey } from './util.mjs';
 
 export const INSPECTION_VERSION = 2;
@@ -27,9 +28,11 @@ function envelopeIdentity(bundle) { const { bundleDigest, ...contents } = bundle
 
 export function createInspectionBundle({ productId, compiler, sourceRevision = null, product = null,
   facets = [], sources = [], origins = [], groups = [], relations = [], scenarios = [], evidenceFiles = [],
-  artifacts = {}, diagnostics = [] }) {
+  artifacts = {}, diagnostics = [], contracts, contractDiagnostics }) {
   const bundle = { kind: 'product-studio-bundle', version: INSPECTION_VERSION, productId, compiler, sourceRevision,
-    product, facets, sources, origins, groups, relations, scenarios, evidenceFiles, artifacts, diagnostics };
+    product, facets, sources, origins, groups, relations, scenarios, evidenceFiles, artifacts, diagnostics,
+    ...(contracts === undefined ? {} : { contracts }),
+    ...(contractDiagnostics === undefined ? {} : { contractDiagnostics }) };
   assertSerializable(bundle);
   bundle.modelDigest = modelIdentity(bundle);
   bundle.bundleDigest = envelopeIdentity(bundle);
@@ -67,6 +70,32 @@ export function validateInspectionBundle(bundle) {
     requireThat(o.span === null || plain(o.span) && Number.isSafeInteger(o.span.start) && Number.isSafeInteger(o.span.end)
       && o.span.start >= 0 && o.span.end > o.span.start, 'inspection.span', 'Invalid source span.');
     requireThat(['editable', 'shared', 'derived', 'external', 'unsupported', 'inspect'].includes(o.editing), 'inspection.editing', 'Unknown source edit capability.');
+  }
+  if (bundle.contractDiagnostics !== undefined) {
+    requireThat(Array.isArray(bundle.contractDiagnostics) && bundle.contractDiagnostics.length <= 10000
+      && bundle.contractDiagnostics.every(d => plain(d) && typeof d.rule === 'string' && typeof d.message === 'string'
+        && ['error','warning','info'].includes(d.severity)), 'inspection.contract-diagnostics', 'Invalid documentation diagnostics.');
+  }
+  // Documentation is optional inspection metadata, never ProductIr or evaluator input.
+  if (bundle.contracts !== undefined) {
+    requireThat(Array.isArray(bundle.contracts) && bundle.contracts.length <= 10000, 'inspection.contracts', 'Expected a bounded contract list.');
+    const keys = new Set();
+    for (const c of bundle.contracts) {
+      const facet = c?.kind === 'defineMachine' ? 'machine' : c?.kind === 'defineDecisionTable' ? 'decision-table' : '';
+      requireThat(plain(c) && typeof c.id === 'string' && c.id.length > 0 && c.id.length <= 500
+        && ['service','derive','present','defineMachine','defineDecisionTable'].includes(c.kind)
+        && c.entityKey === entityKey(facet ? 'facet' : 'node-type', c.id, facet) && !keys.has(c.entityKey),
+        'inspection.contract', 'Every contract needs one exact type or facet identity.');
+      keys.add(c.entityKey);
+      requireThat(plain(c.source) && sources.has(c.source.file) && c.source.digest === sources.get(c.source.file).digest
+        && Number.isSafeInteger(c.source.line) && c.source.line > 0 && Number.isSafeInteger(c.source.column) && c.source.column > 0
+        && plain(c.source.span) && Number.isSafeInteger(c.source.span.start) && Number.isSafeInteger(c.source.span.end)
+        && c.source.span.start >= 0 && c.source.span.end > c.source.span.start,
+        'inspection.contract-source', 'Contract source must reference an exact source digest and position.');
+      requireThat(plain(c.contract) && ['what','why'].every(k => typeof c.contract[k] === 'string' && c.contract[k].length <= 2000)
+        && ['missing','invalid','present','validated'].includes(c.contract.status),
+        'inspection.contract-status', 'Contract status describes source wording, never execution proof.');
+    }
   }
   requireThat(isDigest(bundle.modelDigest) && bundle.modelDigest === modelIdentity(bundle), 'inspection.digest', 'Compiled model identity does not match the bundle contents.');
   requireThat(isDigest(bundle.bundleDigest) && bundle.bundleDigest === envelopeIdentity(bundle), 'inspection.digest', 'Inspection envelope identity does not match its contents.');

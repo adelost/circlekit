@@ -2,28 +2,35 @@
 
 A local, English architecture and logic workbench over the existing ProductSpec DSL. Inspect declared dependencies, explain decisions, navigate source, simulate finite logic, review candidates and inspect recorded evidence. Ordinary implementation code remains with its product owner.
 
-**Status:** source implementation in a stacked PR above #274. JavaScript syntax was parsed without executing modules. No application, dependency install, compiler, unit test, browser or benchmark was run for this revision. See [VERIFICATION](VERIFICATION.md) before treating it as ready.
+**Status:** the local 0.4 workbench was installed and exercised on 2026-09-23. Its 158 unit tests passed, selected flows ran in a headed direct-HTTP browser, and the 100/1000-owner synthetic profile was measured. The living-documentation and trace extension passed 236 unit tests and selected real-product inspections. [VERIFICATION](VERIFICATION.md) names the exact scope and limits.
 
 ## Start
 
-Requires Node 22 or later. Use this PR's branch or complete source archive, not `main` before integration.
+Requires Node 22 or later and this package's locked dependencies.
 
 ```bash
 cd product-studio
 npm ci
 npm run verify
-npm start
+npm link
 ```
 
-Open the printed loopback address, normally `http://127.0.0.1:4317`. Without an attached repository the clearly labelled examples are available. To inspect your own existing checkouts:
+From a product root containing `studio.workspace.json`:
 
 ```bash
-npm start -- /path/to/product
-# Or several repositories:
-npm start -- --workspace /path/to/circlekit --workspace /path/to/skydive-altimeter
+v1d-studio check
+v1d-studio
 ```
 
-No repository is cloned and no product generator, agent, model, GPU, emulator or native runtime is started. The package remains private/unpublished; `v1d-studio` is not globally installed by this PR.
+Open the printed loopback address, normally `http://127.0.0.1:4317`. Without an attached repository the clearly labelled examples are available. To inspect another checkout explicitly:
+
+```bash
+v1d-studio /path/to/product
+# Or several repositories:
+v1d-studio --workspace /path/to/circlekit --workspace /path/to/skydive-altimeter
+```
+
+No repository is cloned and no product generator, agent, model, GPU, emulator or native runtime is started. The package remains private/unpublished. `npm link` installs the local `v1d-studio` command from this checkout; a missing command requires that one-time setup rather than a fallback to another Studio version.
 
 ## Begin with a question
 
@@ -105,4 +112,4 @@ python test/browser_extended.py
 
 The profile script is a measurement tool, not a benchmark result or release gate. Browser checks now require ordinary direct HTTP, not the old flattened module-injection bridge.
 
-Start the next pass at [HANDOFF.md](HANDOFF.md). Clean installation, browser acceptance and two real product integrations remain required. Full native/media previews, live subscriptions, whole-flow service mocks, full code compilation and arbitrary visual graph rewiring are not delivered by this slice.
+The local installation, selected browser flows and SKYVW, AMUX and ai-dsl inspection paths were exercised on their named source branches. [VERIFICATION](VERIFICATION.md) records what each check proves. Full native/media previews, live subscriptions, whole-flow service mocks, full code compilation and arbitrary visual graph rewiring are not delivered by this slice.

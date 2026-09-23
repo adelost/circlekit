@@ -9,9 +9,9 @@ import { StudioError, boundedJson, requireThat } from './lib/util.mjs';
 import { KERNEL_VERSION } from './lib/kernel.mjs';
 
 const publicRoot = fileURLToPath(new URL('./public/', import.meta.url));
-export async function createServer({ roots = [], gitDraftRoots = [], dataDir = path.join(os.homedir(), '.local/state/product-studio'), port = 4317 } = {}) {
+export async function createServer({ roots = [], gitDraftRoots = [], dataDir = path.join(os.homedir(), '.local/state/product-studio'), port = 4317, evaluateContract } = {}) {
   const authorized = await Promise.all(gitDraftRoots.map(root => realpath(root)));
-  const app = new Workbench({ dataDir, gitDraftRoots: authorized }); await app.initialize(roots, { includeFixtures: roots.length === 0 });
+  const app = new Workbench({ dataDir, gitDraftRoots: authorized, evaluateContract }); await app.initialize(roots, { includeFixtures: roots.length === 0 });
   const token = randomBytes(32).toString('hex');
   let origin = '', inFlight = 0;
   const server = http.createServer(async (req, res) => {
@@ -48,6 +48,7 @@ export async function createServer({ roots = [], gitDraftRoots = [], dataDir = p
         const body = boundedJson(Buffer.concat(chunks).toString('utf8'), 10_000_000);
         let value;
         switch (url.pathname) {
+          case '/api/documentation': value = app.documentation(body); break;
           case '/api/source': value = app.sourceText(body); break;
           case '/api/entity': value = app.entityDetails(body); break;
           case '/api/interface': value = app.interfaceDetails(body); break;
@@ -79,7 +80,7 @@ export async function createServer({ roots = [], gitDraftRoots = [], dataDir = p
         return send(200, value);
       }
       requireThat(req.method === 'GET', 'http.method', 'Method not allowed.', 405);
-      const routes = { '/': ['index.html', 'text/html'], '/app.js': ['app.js', 'text/javascript'], '/graph.js': ['graph.js', 'text/javascript'], '/studio-tools.js': ['studio-tools.js', 'text/javascript'], '/dom.js': ['dom.js', 'text/javascript'], '/experience.js': ['experience.js', 'text/javascript'], '/style.css': ['style.css', 'text/css'] };
+      const routes = { '/': ['index.html', 'text/html'], '/app.js': ['app.js', 'text/javascript'], '/graph.js': ['graph.js', 'text/javascript'], '/studio-tools.js': ['studio-tools.js', 'text/javascript'], '/dom.js': ['dom.js', 'text/javascript'], '/experience.js': ['experience.js', 'text/javascript'], '/documentation.js': ['documentation.js', 'text/javascript'], '/style.css': ['style.css', 'text/css'] };
       requireThat(routes[url.pathname], 'http.route', 'Not found.', 404);
       const [file, mime] = routes[url.pathname];
       res.writeHead(200, { ...headers, 'Content-Type': mime + '; charset=utf-8' }); res.end(await readFile(path.join(publicRoot, file)));

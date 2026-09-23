@@ -1,6 +1,16 @@
+import { documentationView } from './documentation.js';
 /** Navigation, local preferences and passive refresh. No DSL or execution authority. */
-const views = new Set(['System','Logic','Scenarios','Interface','Changes','Trace','Problems','Compare','Welcome']);
+const views = new Set(['System','Logic','Scenarios','Interface','Changes','Trace','Problems','Compare','Welcome','Intent']);
 const text = v => typeof v === 'string' && v.length <= 2000;
+const issueRows = project => (project.problems??project.diagnostics).map((issue,index)=>({issue,index}));
+const isProblem = row => ['error','warning'].includes(row.issue.severity??'error');
+function issueCard({issue,index},project,E) {
+  const file=issue.file??issue.sourceFile;
+  return '<div class="problem '+E(issue.severity??'error')+'"><strong>'+E(issue.rule)+'</strong> <span>'
+    +E(issue.severity??'error')+'</span><p>'+E(issue.message)+'</p><button data-problem="'+index+'"'
+    +(!project.sources.some(source=>source.path===file)?' disabled':'')+'>Open source'
+    +(issue.line?' · line '+issue.line:'')+'</button></div>';
+}
 export function parseRoute(hash) {
   try {
     const params = new URLSearchParams(hash.replace(/^#/,'')), raw = params.get('view');
@@ -59,10 +69,10 @@ export function createExperience(env) {
       if(ticket!==navigationTicket)return;lastRoute=JSON.stringify(r);render();
     }catch(e){if(ticket===navigationTicket)toast(e.message);}finally{if(ticket===navigationTicket)navigating=false;}
   }
-  function toolbar() {const p=P(),s=S();return `<div class="experience-bar" data-key="experience">
+  function toolbar() {const p=P(),s=S(),problems=issueRows(p).filter(isProblem).length;return `<div class="experience-bar" data-key="experience">
     <div class="toolbar"><button data-exp="back" aria-label="Back">←</button><button data-exp="forward" aria-label="Forward">→</button>
-    <button data-exp="palette">Commands <kbd>Ctrl ⇧ P</kbd></button><button data-exp="bookmark">☆ Save view</button><details class="view-menu" data-key="view-menu"><summary>More views</summary><div class="compact-list"><button data-exp="welcome">Overview</button><button data-exp="bookmarks">Saved views</button><button data-exp="copy-link">Copy link</button><button data-exp="compare">Compare builds</button></div></details></div>
-    <div class="toolbar"><button data-exp="problems">Problems (${p.diagnostics.length})</button>
+    <button data-exp="palette">Commands <kbd>Ctrl ⇧ P</kbd></button><button data-exp="bookmark">☆ Save view</button><details class="view-menu" data-key="view-menu"><summary>More views</summary><div class="compact-list"><button data-exp="welcome">Overview</button><button data-exp="bookmarks">Saved views</button><button data-exp="copy-link">Copy link</button><button data-exp="compare">Compare builds</button><button data-exp="intent">Intent &amp; behavior</button></div></details></div>
+    <div class="toolbar"><button data-exp="problems">Problems${problems?' ('+problems+')':''}</button>
     <label class="inline-check"><input id="watch-builds" type="checkbox" ${s.watchEnabled!==false?'checked':''}> Follow builds</label></div></div>`;}
   function notices(){const s=S();return `${s.routeWarning?`<div class="notice">${E(s.routeWarning)} <button data-exp="dismiss-route">Dismiss</button></div>`:''}
     ${s.watchError?`<div class="notice">Build check failed: ${E(s.watchError)}</div>`:''}
@@ -72,20 +82,26 @@ export function createExperience(env) {
     <span>Model <strong>${d?d.diff.changes.length+' changed paths':'Loaded snapshot'}</strong></span>
     <span>Scenarios <strong>${!d && s.scenarioResult?.bundleDigest===P().bundleDigest ? s.scenarioResult.assertionStatus : 'Not evaluated'}</strong></span><span>Runtime <strong>Not evaluated</strong></span></div>`;}
   function page(view) {
-    const p=P(),s=S();
+    const p=P(),s=S(),rows=issueRows(p),blockers=rows.filter(isProblem),notes=rows.filter(row=>!isProblem(row));
+    const noteGroups=[...new Set(notes.map(row=>row.issue.rule))].map(rule=>{
+      const group=notes.filter(row=>row.issue.rule===rule);
+      return '<details><summary>'+group.length+' '+E(rule)+'</summary>'+group.map(row=>issueCard(row,p,E)).join('')+'</details>';
+    }).join('');
+    const notesPanel=notes.length?'<details><summary>'+notes.length+' notes</summary>'+noteGroups+'</details>':'';
+    if(view==='Intent')return documentationView(p,s,E);
     if(view==='Problems')return `<section class="panel"><header class="panel-head"><h2>Problems & missing evidence</h2></header><div class="panel-body">
       <p class="muted">Compiler diagnostics and source mapping gaps are different. No missing runtime delivery is inferred from a disconnected runtime.</p>
-      ${p.diagnostics.length?p.diagnostics.map((d,i)=>`<div class="problem ${E(d.severity??'error')}"><strong>${E(d.rule)}</strong> <span>${E(d.severity??'error')}</span><p>${E(d.message)}</p>
-        <button data-problem="${i}" ${!p.sources.some(s=>s.path===(d.file??d.sourceFile))?'disabled':''}>Open source${d.line?' · line '+d.line:''}</button></div>`).join(''):'<p>No producer diagnostics reported. This is not a full build or runtime proof.</p>'}
+      ${blockers.length?blockers.map(row=>issueCard(row,p,E)).join(''):'<p>No errors or warnings.</p>'}
+      ${notesPanel}
       <details><summary>${p.sourceIndex.unresolved.length} entities without exact source mapping</summary>${p.sourceIndex.unresolved.slice(0,100).map(d=>`<p><code>${E(d.entityKey)}</code> ${E(d.reason)}</p>`).join('')}<small>First 100 shown. Missing provenance is not a code error.</small></details></div></section>`;
     if(view==='Compare'){const c=s.comparison;return `<section class="panel"><header class="panel-head"><h2>Compare declared builds</h2><button data-exp="run-compare">Compare previous load</button></header><div class="panel-body"><p>Reload a newer build to retain one prior snapshot, or import a prior bundle through the existing importer.</p>
       <label>Compare against an already loaded product<select id="compare-before"><option value="">Previous load</option>${env.getProjects().filter(x=>x.key!==p.key).map(x=>`<option value="${E(x.key)}">${E(x.label)}</option>`).join('')}</select></label>
       ${c?`<div class="notice info">${E(c.notice)}<p>${c.counts.added} added · ${c.counts.removed} removed · ${c.counts.changed} changed${c.truncated?' · result limited':''}</p></div><div class="compact-list">${c.changes.map((v,i)=>`<details data-key="${E(v.key)}"><summary>${E(v.status)} · ${E(v.kind)} · ${E(v.key)}</summary><div class="split"><pre>${E(JSON.stringify(v.before,null,2))}</pre><pre>${E(JSON.stringify(v.after,null,2))}</pre></div></details>`).join('')}</div>`:'<p class="muted">No comparison requested. No Git checkout, generator or model call is performed.</p>'}</div></section>`;}
-    return `<section class="panel"><div class="panel-body"><h2>${E(p.label)}</h2><p>Start with a question about your program, not a wall of nodes.</p><div class="onboarding-grid">
+    return `<section class="panel"><div class="panel-body"><h2>${E(p.label)}</h2><div class="onboarding-grid">
       <button data-exp="system"><strong>${p.architecture.coverage.owners} owners</strong><span>Explore architecture</span></button>
       <button data-exp="logic"><strong>${p.facets.length} logic declarations</strong><span>Explain a decision</span></button>
-      <button data-exp="problems"><strong>${p.sourceIndex.origins.length} source locations</strong><span>Review available evidence</span></button></div>
-      <div class="notice info">${E(p.provenance??p.validationNotice)}</div><p>Existing code remains a valid implementation leaf. Studio does not turn unmodelled algorithms into imaginary nodes.</p><button data-exp="palette">Find an object or command</button></div></section>`;
+      <button data-exp="palette"><strong>${p.sourceIndex.origins.length} source locations</strong><span>Find source</span></button></div>
+      <details class="scope-note"><summary>Scope</summary><p>${E(p.provenance??p.validationNotice)}</p></details></div></section>`;
   }
   function bookmarks(){const d=document.querySelector('#dialog'),items=savedBookmarks();d.innerHTML=`<h2>Saved views</h2><p>Links contain identities only, not source text or trace payloads.</p><div class="compact-list">${items.map((b,i)=>`<button data-bookmark="${i}">${E(b.title)}</button>`).join('')||'<p>No saved views.</p>'}</div><button data-close>Close</button>`;d.showModal();d.querySelector('[data-close]').onclick=()=>d.close();d.querySelectorAll('[data-bookmark]').forEach(b=>b.onclick=()=>{d.close();restore(items[Number(b.dataset.bookmark)].route);});}
   function palette(){
@@ -112,7 +128,7 @@ export function createExperience(env) {
       if(name==='copy-link'){const url=new URL(location.href);url.hash='view='+encodeURIComponent(JSON.stringify(route()));
         try{await navigator.clipboard.writeText(url.href);toast('Local view link copied. No source or trace payload is included.');}catch{env.showInfo('View link','Copy this local address.',url.href);}return;}
       if(name==='dismiss-route'){s.routeWarning=null;render();return;}
-      if(['problems','compare','system','logic','source','welcome'].includes(name)){s.view={problems:'Problems',compare:'Compare',system:'System',logic:'Logic',source:'Changes',welcome:'Welcome'}[name];render();return;}
+      if(['problems','compare','system','logic','source','welcome','intent'].includes(name)){s.view={problems:'Problems',compare:'Compare',system:'System',logic:'Logic',source:'Changes',welcome:'Welcome',intent:'Intent'}[name];render();return;}
       if(name==='reload'){await env.reload(false);return;}
       if(name==='run-compare'){const identity=ctx(), before=document.querySelector('#compare-before')?.value;const result=await api('compare',{...identity,beforeProject:before||undefined});if(P().bundleDigest===identity.bundleDigest){s.comparison=result;render();}return;}
       if(name==='focus'){await env.focus();return;}
@@ -124,9 +140,27 @@ export function createExperience(env) {
   function afterRender(){const p=P(),s=S();record();
     document.querySelectorAll('[data-exp]').forEach(b=>b.onclick=()=>{const menu=b.closest('details.view-menu');if(menu)menu.open=false;act(b.dataset.exp);});
     const watch=document.querySelector('#watch-builds');if(watch)watch.onchange=()=>{s.watchEnabled=watch.checked;};
-    document.querySelectorAll('[data-problem]').forEach(b=>b.onclick=()=>{const problem=p.diagnostics[Number(b.dataset.problem)],file=p.sources.find(f=>f.path===(problem.file??problem.sourceFile));if(!file)return;
+    document.querySelectorAll('[data-problem]').forEach(b=>b.onclick=()=>{const problem=(p.problems??p.diagnostics)[Number(b.dataset.problem)],file=p.sources.find(f=>f.path===(problem.file??problem.sourceFile));if(!file)return;
       s.sourcePath=file.path;s.sourceLine=problem.line??1;s.view='Changes';render();});
+    document.querySelectorAll('[data-doc-section]').forEach(b=>b.onclick=()=>{s.documentationSection=b.dataset.docSection;s.documentationOffset=0;render();});
+    document.querySelectorAll('[data-doc-offset]').forEach(b=>b.onclick=()=>{s.documentationOffset=Number(b.dataset.docOffset);render();});
+    document.querySelectorAll('[data-doc-retry]').forEach(b=>b.onclick=()=>{s.documentationError=null;render();});
+    document.querySelectorAll('[data-doc-reports]').forEach(b=>b.onclick=()=>{s.documentationSection='reports';s.documentationOffset=0;act('intent');});
+    document.querySelectorAll('[data-doc-file]').forEach(b=>b.onclick=()=>{
+      const file=p.sources.find(f=>f.path===b.dataset.docFile);if(!file)return;
+      s.sourcePath=file.path;s.sourceLine=Number(b.dataset.docLine)||1;s.sourceSpan=null;s.sourceLoadError=null;s.view='Changes';render();
+    });
     const identity=ctx();
+    if(s.view==='Intent') {
+      const section=s.documentationSection??'contracts',offset=s.documentationOffset??0,ticket=`${p.bundleDigest}:${section}:${offset}`;
+      if(s.documentationPage?.ticket!==ticket&&s.documentationError?.ticket!==ticket)fetchOnce(ticket,async()=>{
+        try{return {value:await api('documentation',{...identity,section,offset,limit:50})};}
+        catch(error){return {error:error.message};}
+      },r=>{
+        if(P().bundleDigest!==p.bundleDigest||(S().documentationSection??'contracts')!==section||(S().documentationOffset??0)!==offset)return;
+        if(r.error)s.documentationError={ticket,message:r.error};else{s.documentationPage={ticket,value:r.value};s.documentationError=null;}render();
+      });
+    }
     if((s.view==='Interface'&&!p.interfaceLoaded)||(s.view==='System'&&p.evidence&&!p.evidence.snapshot))fetchOnce(p.bundleDigest+':interface',()=>api('interface',identity),r=>{if(P().bundleDigest!==p.bundleDigest)return;p.gallery=r.gallery;if(p.product)p.product.artifactScopes=r.artifactScopes;p.interfaceLoaded=true;if(r.evidence)p.evidence=r.evidence;render();});
     if(s.selected?.kind==='entity'){
       const selected=p.architecture.entities.find(e=>e.key===s.selected.id);

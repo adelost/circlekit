@@ -1,12 +1,12 @@
 import { kernel, MAX_POINTS } from './kernel.mjs';
 import { requireThat, digest, plain, StudioError, canonicalJson } from './util.mjs';
 
-export function evaluateFacet(facet, request) {
+export function evaluateFacet(facet, request, selectedKernel = kernel) {
   requireThat(facet.runnable !== false, 'simulation.unavailable', facet.blockedReason ?? 'This facet is inspect-only.');
   const model = facet.compiled;
   if (facet.kind === 'decision-table') {
     requireThat(plain(request.facts), 'table.facts', 'Supply the exact policy facts.');
-    const result = kernel.decide(model, request.facts);
+    const result = selectedKernel.decide(model, request.facts);
     const alternatives = model.cells.map(cell => ({ id: cell.id, mismatch: Object.entries(cell.region).filter(([a, expected]) => !(Array.isArray(expected) ? expected : [expected]).includes(request.facts[a])).map(([axis, expected]) => ({ axis, expected, actual: request.facts[axis] })) }));
     return { kind: 'decision', ...result, alternatives, evidenceKind: 'simulation', effectsExecuted: false };
   }
@@ -17,22 +17,22 @@ export function evaluateFacet(facet, request) {
   const missing = relevant.filter(g => request.guards[g] !== true && request.guards[g] !== false);
   if (missing.length) return { kind: 'needs-facts', guards: missing, message: 'Supply the missing guard facts before stepping.', effectsExecuted: false };
   const held = new Set(Object.entries(request.guards).filter(([, v]) => v === true).map(([k]) => k));
-  const result = kernel.step(model, request.state, request.input, held);
+  const result = selectedKernel.step(model, request.state, request.input, held);
   return { kind: 'transition', from: request.state, input: request.input, ...result, guardFacts: request.guards,
     alternatives: possible.map(c => ({ id: c.id, missing: c.requires.filter(g => !held.has(g)), forbidden: c.forbids.filter(g => held.has(g)) })),
     notice: model.updates.some(u => u.on === request.input) ? 'Stage checked. Native field-update arithmetic was not executed.' : null,
     evidenceKind: 'simulation', effectsExecuted: false };
 }
-export function enumerateTable(facet) {
+export function enumerateTable(facet, selectedKernel = kernel) {
   requireThat(facet.runnable !== false, 'simulation.unavailable', facet.blockedReason ?? 'This facet is inspect-only.');
   requireThat(facet.kind === 'decision-table', 'table.kind', 'Select a decision table.');
   const points = Object.values(facet.compiled.axes).reduce((n, a) => n * a.length, 1);
   requireThat(points <= MAX_POINTS, 'table.budget', 'Table exceeds the interactive budget.');
-  return kernel.decisionPoints(facet.compiled.axes).map(p => kernel.decide(facet.compiled, p));
+  return selectedKernel.decisionPoints(facet.compiled.axes).map(p => selectedKernel.decide(facet.compiled, p));
 }
 
 /** Virtual event order only. No sleeps, IO, clocks, model calls or production adapters. */
-export function runScenario(facet, scenario, bundleDigest) {
+export function runScenario(facet, scenario, bundleDigest, selectedKernel = kernel) {
   requireThat(facet.runnable !== false, 'simulation.unavailable', facet.blockedReason ?? 'This facet is inspect-only.');
   requireThat(['machine', 'decision-table'].includes(facet.kind), 'scenario.kind', 'This facet has no supported scenario runner.');
   requireThat(plain(scenario) && scenario.bundleDigest === bundleDigest && scenario.facetId === facet.id,
@@ -51,7 +51,7 @@ export function runScenario(facet, scenario, bundleDigest) {
     }
     requireThat(Number.isSafeInteger(e.atMs) && e.atMs >= time, 'scenario.time', 'Event times must be nonnegative integer virtual milliseconds in ascending order.');
     time = e.atMs;
-    const result = evaluateFacet(facet, { ...e, state });
+    const result = evaluateFacet(facet, { ...e, state }, selectedKernel);
     if (result.kind === 'needs-facts') return { stopped: true, index, result, events, assertions, effectsExecuted: false };
     if (result.kind === 'transition') state = result.to;
     events.push({ sequence: index, atMs: time, ...result });

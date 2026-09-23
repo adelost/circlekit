@@ -1,10 +1,28 @@
 #!/usr/bin/env node
 import path from 'node:path';
 import os from 'node:os';
-import { readFile } from 'node:fs/promises';
-import { pathToFileURL } from 'node:url';
+import { readFile, realpath, access } from 'node:fs/promises';
+import { pathToFileURL, fileURLToPath } from 'node:url';
 import { parseCli, executeSemanticCli, formatJson, HELP, SEMANTIC_COMMANDS } from '../lib/cli.mjs';
 import { boundedJson, safeFile, requireThat, errorPayload } from '../lib/util.mjs';
+
+async function installedAmuxRoot(cwd) {
+  const candidates=[path.resolve(cwd,'../agentmux')];
+  for(const directory of (process.env.PATH??'').split(path.delimiter)) {
+    if(!directory)continue;
+    try {
+      const binary=await realpath(path.join(directory,'amux'));
+      candidates.push(path.dirname(path.dirname(binary)));
+    } catch {}
+  }
+  for(const candidate of new Set(candidates))try {
+    const manifest=JSON.parse(await readFile(path.join(candidate,'package.json'),'utf8'));
+    if(manifest.name!=='agentmux')continue;
+    await access(path.join(candidate,'core/contract-lint.mjs'));
+    return candidate;
+  } catch {}
+  return null;
+}
 
 /** Import-safe entrypoint. Only serve starts HTTP; read commands emit one JSON result. */
 export async function main(args = process.argv.slice(2), { cwd = process.cwd(), stdout = process.stdout } = {}) {
@@ -13,10 +31,19 @@ export async function main(args = process.argv.slice(2), { cwd = process.cwd(), 
     parsed = parseCli(args);
     if (parsed.help) { stdout.write(HELP); return 0; }
     const { command, values: v, repeated, positional } = parsed;
+    v['amux-root']??=await installedAmuxRoot(cwd);
     if (SEMANTIC_COMMANDS.has(command)) {
       const response = await executeSemanticCli(parsed, { cwd });
       stdout.write(formatJson(response, v.pretty));
       return response.ok ? 0 : 1;
+    }
+    const evaluateContract = v['amux-root'] ? await (await import('../lib/documentation.mjs')).loadContractEvaluator(path.resolve(cwd,v['amux-root'])) : undefined;
+    if (command === 'contracts') {
+      requireThat(v['amux-root'],'contract.unavailable',
+        'AMUX contract grammar is unavailable. Install AMUX or pass --amux-root; no unchecked contract result is returned.');
+      const { checkWorkspaceContracts } = await import('../lib/documentation.mjs');
+      const report = await checkWorkspaceContracts(path.resolve(cwd,positional[0]??'.'), {product:v.product,evaluateContract});
+      stdout.write(formatJson(report,v.pretty)); return report.ok ? 0 : 1;
     }
     if (command === 'bundle') {
       const { writeInspectionBundle } = await import('../lib/exporter.mjs');
@@ -36,7 +63,7 @@ export async function main(args = process.argv.slice(2), { cwd = process.cwd(), 
       requireThat(relativeSourcePath(output) && output.endsWith('.studio.json'), 'cli.output', 'Select a relative .studio.json output path.');
       // Build the envelope once: do not re-read source twice and discard the first identity.
       const receipt = await writeInspectionBundle({ root, output, productId, product, facets,
-        sourceFiles: repeated.source, sourceRevision: v['source-revision'] ?? null,
+        sourceFiles: repeated.source, evaluateContract, sourceRevision: v['source-revision'] ?? null,
         compiler: { name: '@v1d/product-spec', version: v['compiler-version'] } });
       stdout.write(formatJson({ ...receipt, workspaceConfiguration: {
         version: 2, projects: [{ id: productId, label: productId, bundle: output }],
@@ -47,7 +74,7 @@ export async function main(args = process.argv.slice(2), { cwd = process.cwd(), 
     if (command === 'doctor') {
       const { openHeadlessStudio, selectProject } = await import('../lib/semantic.mjs');
       if (!roots.length && !v.examples) roots.push(cwd);
-      const { workbench, projects } = await openHeadlessStudio({ roots, examples: !!v.examples });
+      const { workbench, projects } = await openHeadlessStudio({ roots, examples: !!v.examples, evaluateContract });
       const selected = v.product === undefined ? projects : [selectProject(projects, v.product)];
       const reports = selected.map(p => {
         const view = workbench.view(workbench.require(p.key));
@@ -56,6 +83,7 @@ export async function main(args = process.argv.slice(2), { cwd = process.cwd(), 
           sourceIdentity: view.sourceIdentity?.kind ?? 'not-exported',
           compiler: view.compatibility ?? { evaluator: view.toolVersions.productSpec, producer: null },
           owners: view.architecture.coverage.owners, facets: view.facets.length,
+          contracts: {scope:view.documentation.scope,problems:view.documentation.diagnostics},
           sourceLocations: view.sourceIndex.origins.length, supported: view.capabilities, diagnostics: view.diagnostics };
       });
       const ok = reports.length > 0 && !reports.some(p => p.diagnostics.some(d => d.severity !== 'warning' && d.severity !== 'info')
@@ -69,7 +97,7 @@ export async function main(args = process.argv.slice(2), { cwd = process.cwd(), 
       catch (error) { if (error.code !== 'ENOENT') throw error; }
     }
     const { createServer } = await import('../server.mjs');
-    const { origin } = await createServer({ roots, port: v.port ?? 4317,
+    const { origin } = await createServer({ roots, evaluateContract, port: v.port ?? 4317,
       dataDir: path.resolve(cwd, v['data-dir'] ?? path.join(os.homedir(), '.local/state/product-studio')),
       gitDraftRoots: repeated['allow-git-drafts'].map(r => path.resolve(cwd, r)) });
     stdout.write(`Product Studio: ${origin}\nRead-only product attachment. Scenario execution is synthetic; no generators or providers are started.\n`);
@@ -81,7 +109,7 @@ export async function main(args = process.argv.slice(2), { cwd = process.cwd(), 
     return error.code === 'cli.usage' ? 2 : 1;
   }
 }
-if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+if (process.argv[1] && await realpath(process.argv[1]).catch(() => null) === fileURLToPath(import.meta.url)) {
   process.stdout.on('error', error => {
     if (error.code === 'EPIPE') process.exit(0);
     process.stderr.write(String(error.message) + '\n'); process.exit(1);

@@ -20,6 +20,10 @@ export const pressureContract = {
 } as const;
 
 const transient = { durability: "transient", clockDomain: "none" } as const;
+/**
+ * WHAT: Collects pressure observations for active recording acquisition.
+ * WHY: Keeps platform sensor subscriptions separate from recording persistence.
+ */
 export const pressureRecordingPlatform = service({
   id: "pressure.recording-platform",
   inputs: [],
@@ -30,6 +34,10 @@ export const pressureRecordingPlatform = service({
     contextInputs: ["device.pressure-sensor", "device.location"], effects: ["sensor.recording-subscription"],
   },
 });
+/**
+ * WHAT: Routes pressure observations into the active recording session.
+ * WHY: Keeps recording ingestion separate from platform acquisition and sensor ownership.
+ */
 export const pressureRecordingIngress = service({
   id: "pressure.recording-ingress",
   inputs: [port("pressure", pressureContract)],

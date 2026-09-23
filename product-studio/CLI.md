@@ -20,7 +20,7 @@ node bin/studio.mjs simulate --examples --product amux-fixture \
 
 Expected finite results: `IDLE -> PENDING` through `send`, and AMUX `HOLD` through `unknown-evidence`. These are examples/fixtures, not connected applications. The CLI never silently replaces a missing real workspace with examples.
 
-Use the installed `v1d-studio` executable when available, or the explicit `node /path/to/circlekit/product-studio/bin/studio.mjs` path. This package is not published or globally installed by this change. Avoid `npm run` banners when parsing stdout: call the executable directly, or use `npm --silent run doctor -- /path/to/product`.
+Run `npm link` once in the local `product-studio` checkout, then use `v1d-studio` from a product root. The package is not published. The explicit `node /path/to/circlekit/product-studio/bin/studio.mjs` path also works. Avoid `npm run` banners when parsing stdout: call the executable directly.
 
 ## Attach a real product
 

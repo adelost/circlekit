@@ -21,6 +21,10 @@ export const watchAccountActionContract = {
 } as const;
 
 /** Watch account pairing and token custody; the pairing flow state machine stays native UI. */
+/**
+ * WHAT: Tracks watch pairing and stores account credentials.
+ * WHY: Keeps credential custody outside pairing controls and account presentation.
+ */
 export const watchAccountOwner = service({
   id: "sync.watch-account-owner",
   inputs: [port("action", watchAccountActionContract)],
@@ -39,6 +43,10 @@ export const watchAccountOwner = service({
 });
 
 /** Durable per-account outbox: jump upload, delete tombstones and acks; HTTP transport stays native. */
+/**
+ * WHAT: Dispatches queued jump uploads and deletion requests.
+ * WHY: Keeps durable acknowledgements separate from transport implementation and account presentation.
+ */
 export const syncOutboxOwner = service({
   id: "sync.outbox-owner",
   inputs: [port("jump", flightJumpEventContract)],
@@ -51,6 +59,10 @@ export const syncOutboxOwner = service({
 });
 
 /** Continuous track session upload gated by the user setting; recorder and transport stay native. */
+/**
+ * WHAT: Dispatches session-track uploads while continuous tracking is enabled.
+ * WHY: Keeps remote upload lifecycle separate from recording and settings presentation.
+ */
 export const continuousTrackOwner = service({
   id: "sync.continuous-track-owner",
   inputs: [port("enabled", continuousTrackStateContract)],

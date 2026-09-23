@@ -1,25 +1,26 @@
-import { compileDeclaration, KERNEL_VERSION } from './kernel.mjs';
+import { compileDeclaration, kernel, KERNEL_VERSION } from './kernel.mjs';
 import { boundedJson, digest, plain, requireThat, StudioError, canonicalJson } from './util.mjs';
 import { validateInspectionBundle, compatibilityReport } from './inspection.mjs';
+import { validateGraphProduct } from './graph-data.mjs';
 
-export function decodeArtifact(text, name = 'artifact.json') {
+export function decodeArtifact(text, name = 'artifact.json', {evaluator=kernel,evaluatorVersion=KERNEL_VERSION}={}) {
   const data = boundedJson(text);
   if (data?.kind === 'product-studio-bundle' && data.version === 2) {
-    const inspection = validateInspectionBundle(data), compatibility = compatibilityReport(inspection, KERNEL_VERSION);
-    const product = data.product ? decodeProduct(data.product) : null;
+    const inspection = validateInspectionBundle(data), compatibility = compatibilityReport(inspection, evaluatorVersion);
+    const product = data.product ? decodeProductLike(data.product) : null;
     const facets = mergeFacets(data.facets, (product?.decisionTables ?? []).map(compiled => ({ id: compiled.id, kind: 'decision-table', compiled })));
     const producerErrors = inspection.diagnostics.some(d => d.severity === 'error');
-    const decoded = facets.map(f => decodeFacet(f, compatibility));
+    const decoded = facets.map(f => decodeFacet(f, compatibility, evaluator, evaluatorVersion));
     return { product, facets: producerErrors ? decoded.map(f => ({ ...f, runnable:false, blockedReason:'The producer reported validation errors. Inspect the model, but resolve them before simulation.' })) : decoded, inspection, compatibility,
       identity: { source: name, productDigest: data.artifacts.productSha256 ?? null, modelDigest: data.modelDigest }, raw: text };
   }
   if (data?.kind === 'product-studio-bundle' && data.version === 1) {
     requireThat(Array.isArray(data.facets) && data.facets.length <= 100, 'bundle.facets', 'Invalid facet list.');
-    const product = data.product ? decodeProduct(data.product) : null;
-    return { product, facets: mergeFacets(data.facets, (product?.decisionTables ?? []).map(compiled => ({ kind: 'decision-table', compiled }))).map(f => decodeFacet(f)),
+    const product = data.product ? decodeProductLike(data.product) : null;
+    return { product, facets: mergeFacets(data.facets, (product?.decisionTables ?? []).map(compiled => ({ kind: 'decision-table', compiled }))).map(f => decodeFacet(f,null,evaluator,evaluatorVersion)),
       identity: { source: name, productDigest: null }, raw: text };
   }
-  if (data?.kind === 'product-spec-ir') return { product: decodeProduct(data), facets: tableFacets(data), identity: { source: name, productDigest: digest(text) }, raw: text };
+  if (data?.kind === 'product-spec-ir') return { product: decodeProduct(data), facets: tableFacets(data,evaluator,evaluatorVersion), identity: { source: name, productDigest: digest(text) }, raw: text };
   if (data?.states && data.inputs && data.cells) return { product: null, facets: [decodeFacet({ kind: 'machine', compiled: data })], identity: { source: name }, raw: text };
   if (data?.axes && data.columns && data.cells) return { product: null, facets: [decodeFacet({ kind: 'decision-table', compiled: data })], identity: { source: name }, raw: text };
   throw new StudioError('artifact.schema', 'Expected ProductSpec IR, a machine, a decision table, or a supported Product Studio inspection bundle.');
@@ -35,7 +36,7 @@ function mergeFacets(explicit, embedded) {
   }
   return [...result.values()];
 }
-function decodeFacet(f, compatibility = null) {
+function decodeFacet(f, compatibility = null, evaluator = kernel, evaluatorVersion = KERNEL_VERSION) {
   requireThat(plain(f) && typeof f.kind === 'string' && plain(f.compiled), 'facet.shape', 'Malformed compiled facet.');
   const raw = f.compiled;
   if (!['machine', 'decision-table'].includes(f.kind) || compatibility?.simulate === false) {
@@ -44,12 +45,19 @@ function decodeFacet(f, compatibility = null) {
   }
   const descriptions = (raw.invariants ?? []).filter(v => typeof v === 'string');
   const declaration = descriptions.length ? { ...raw, invariants: [] } : raw;
-  const compiled = compileDeclaration(f.kind, declaration);
+  const compiled = compileDeclaration(f.kind, declaration, evaluator);
   return { id: compiled.id, kind: f.kind, compiled: { ...compiled, ...(descriptions.length ? { invariants: descriptions } : {}) },
     validation: descriptions.length ? 'structure-only-invariant-code-unavailable' : 'shared-kernel',
-    runnable: true, kernelVersion: KERNEL_VERSION, editable: false, source: null };
+    runnable: true, kernelVersion: evaluatorVersion, editable: false, source: null };
 }
-function tableFacets(product) { return (product.decisionTables ?? []).map(compiled => decodeFacet({ kind: 'decision-table', compiled })); }
+function tableFacets(product,evaluator,version) {
+  return (product.decisionTables ?? []).map(compiled => decodeFacet({kind:'decision-table',compiled},null,evaluator,version));
+}
+
+function decodeProductLike(product) {
+  if (product?.kind === 'product-spec-graph') return validateGraphProduct(product);
+  return decodeProduct(product);
+}
 
 /** Viewer integrity checks, not the whole compiler or native-conformance proof. */
 export function decodeProduct(product) {

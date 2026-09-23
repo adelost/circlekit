@@ -13,6 +13,30 @@ test('only explicit causal parent links are followed, not timestamp proximity',(
 test('scrubbing observation history never rewrites captured events',()=>{const r=recorder();r.record(event());r.record(event(1));const t=decodeTrace(JSON.stringify(r.snapshot()),identity),before=JSON.stringify(t);assert.equal(inspectTrace(t,{cursor:0}).activity[0].count,1);assert.equal(inspectTrace(t,{cursor:1}).activity[0].count,2);assert.equal(JSON.stringify(t),before);});
 test('raw payloads and future causal parents refuse',()=>{const r=recorder();assert.throws(()=>r.record({...event(),payload:{secret:1}}),/Unexpected/);assert.throws(()=>r.record({...event(),causedBy:200}),/earlier/);});
 test('synthetic traces never become observed evidence',()=>{const r=createTraceRecorder({...identity,sessionId:'s',clock:'virtual',provenance:'synthetic'});r.record(event());const t=decodeTrace(JSON.stringify(r.snapshot()),identity);assert.equal(t.provenance,'synthetic');assert.match(t.notice,/No product runtime/);});
+test('a recorded test run is labelled as a test, not a live session',()=>{
+  const r=createTraceRecorder({...identity,sessionId:'unit:delivery',clock:'monotonic',provenance:'test-run'});
+  r.record(event());
+  const trace=decodeTrace(JSON.stringify(r.snapshot()),identity);
+  assert.equal(trace.provenance,'test-run');
+  assert.match(trace.notice,/test run/i);
+  assert.equal(inspectTrace(trace,{cursor:0}).current.entityKey,'port::a.out');
+});
+test('a raw artifact hash identifies a trace without reproducing Studio modelDigest',()=>{
+  const r=createTraceRecorder({productId:'test',artifactSha256:'b'.repeat(64),sessionId:'test:artifact',
+    clock:'monotonic',provenance:'test-run'});
+  r.record(event());
+  const source={...identity,artifactSha256:'b'.repeat(64)};
+  assert.equal(decodeTrace(JSON.stringify(r.snapshot()),source).events.length,1);
+  assert.throws(()=>decodeTrace(JSON.stringify(r.snapshot()),{...source,artifactSha256:'c'.repeat(64)}),/match/);
+});
+test('the trace exposes each changed state once with a clickable event index',()=>{
+  const r=recorder();
+  for(const [atMs,from,to] of [[0,'STOPPED','ARMED'],[1,'ARMED','ARMED'],[2,'ARMED','BUFFERING']])
+    r.record({atMs,kind:'transition',entityKey:'node::a',logic:{facetId:'recording.session',from,to,input:'Tick'}});
+  const trace=decodeTrace(JSON.stringify(r.snapshot()),identity);
+  assert.deepEqual(trace.statePath.map(item=>item.state),['STOPPED','ARMED','BUFFERING']);
+  assert.deepEqual(trace.statePath.map(item=>item.eventIndex),[0,0,2]);
+});
 
 test('a refused producer event does not consume sequence or create imaginary dropped history',()=>{
   const r=recorder();assert.throws(()=>r.record({...event(),payload:{secret:1}}));

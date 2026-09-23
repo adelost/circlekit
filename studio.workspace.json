@@ -1,0 +1,40 @@
+{
+  "version": 2,
+  "projects": [
+    {
+      "id": "skydiving-legos",
+      "label": "Shared skydiving service intent",
+      "sources": [],
+      "documentation": {
+        "sourceRoots": [
+          "skydiving-legos/src"
+        ],
+        "repository": "adelost/circlekit"
+      }
+    },
+    {
+      "id": "circlekit-link",
+      "label": "CircleKit Link",
+      "sources": [],
+      "artifact": "link-product/generated/link-product.json",
+      "documentation": {
+        "sourceRoots": [
+          "link-product/src"
+        ],
+        "repository": "adelost/circlekit"
+      }
+    },
+    {
+      "id": "circlekit-showcase",
+      "label": "CircleKit Showcase",
+      "sources": [],
+      "artifact": "showcase-product/generated/showcase-product.json",
+      "documentation": {
+        "sourceRoots": [
+          "showcase-product/src"
+        ],
+        "repository": "adelost/circlekit"
+      }
+    }
+  ]
+}

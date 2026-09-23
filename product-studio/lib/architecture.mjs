@@ -198,7 +198,7 @@ export function architectureSlice(architecture, { mode = 'owners', group = null,
       edges: [...edges.values()].map(e => ({ ...e, label: `${e.count} ${e.purpose} bindings` })), totalOwners: owners.length, shownOwners: selected.length };
   }
   const included = new Set(selected.map(e => e.key));
-  return { nodes: selected.map(e => ({ id: e.key, label: e.id, kind: e.kind === 'component' ? 'component' : e.data.type?.kind ?? 'code', subtitle: e.group ?? 'No declared group' })),
+  return { nodes: selected.map(e => ({ id: e.key, label: e.id, kind: e.kind === 'component' ? 'component' : e.data.type?.kind ?? 'code', subtitle: e.group ?? '' })),
     edges: architecture.edges.filter(e => e.kind === 'binding' && included.has(byKey.get(e.from)?.owner) && included.has(byKey.get(e.to)?.owner)
       && (!result?.edgeIds || result.edgeIds.includes(e.id)))
       .map(e => ({ ...e, source: byKey.get(e.from).owner, target: byKey.get(e.to).owner, label: e.purpose })),
