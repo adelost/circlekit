@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { defineMachine } from "@v1d/product-spec";
-import { emitMachineKotlin, emitMachineMermaid } from "../src/core/index.js";
+import { emitMachineKotlin, emitMachineMermaid, emitStudioTraceSinkKotlin } from "../src/core/index.js";
 
 /** Skyvw row 171: the machine form's two projections, byte for byte, on a door small enough to read whole. */
 
@@ -49,6 +49,14 @@ const options = {
   sourceSha: "test",
   machineName: "Door",
 };
+
+test("a traced generated machine records the real cell and all guards only during a Studio test", () => {
+  const kotlin = emitMachineKotlin(door, { ...options, traceSink: "GeneratedAcmeStudioTrace" });
+  assert.match(kotlin, /if \(GeneratedAcmeStudioTrace\.enabled\) GeneratedAcmeStudioTrace\.transition\("acme\.door"/u);
+  assert.match(kotlin, /GeneratedAcmeDoorGuard\.entries\.associate \{ it\.name to \(it in guards\) \}/u);
+  assert.match(kotlin, /System\.getenv\("V1D_STUDIO_TRACE_DIR"\)/u);
+  assert.match(emitStudioTraceSinkKotlin("FixtureTrace"), /fun transition\(facetId: String, cellId: String\?/u);
+});
 
 test("the Kotlin is the machine's states, guards and cells as data, and declaredNext answers as step() does", () => {
   assert.equal(emitMachineKotlin(door, options), `// GENERATED FILE. DO NOT EDIT.

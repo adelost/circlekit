@@ -16,6 +16,7 @@ export * from "./emit-decision-table-swift.js";
 export * from "./emit-domain-graph.js";
 export * from "./emit-lanes-kotlin.js";
 export * from "./emit-machine-kotlin.js";
+export * from "./emit-studio-trace-kotlin.js";
 export * from "./emit-machine-swift.js";
 export * from "./emit-machine-mermaid.js";
 export * from "./emit-machine-stately.js";

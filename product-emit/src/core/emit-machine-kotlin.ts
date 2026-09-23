@@ -1,10 +1,13 @@
 import { defineMachine, type Machine } from "@v1d/product-spec";
 import type { SourcedKotlinEmissionOptions } from "./emission-options.js";
 import { kotlinStringLiteral } from "./kotlin-syntax.js";
+import { emitStudioTraceSinkKotlin } from "./emit-studio-trace-kotlin.js";
 
 export interface MachineKotlinOptions extends SourcedKotlinEmissionOptions {
   /** The machine in its symbols: `RecordingSession` makes `Generated<Product>RecordingSessionMachine`. */
   readonly machineName: string;
+  /** Test-run recording is opt-in at generation; the normal emitted machine remains unchanged. */
+  readonly traceSink?: string;
 }
 
 /**
@@ -79,8 +82,11 @@ ${cells}
     fun declaredNext(stage: ${state}, inputName: String, guards: Set<${guard}>): ${cell}? {
         require(inputName in inputs) { "machine ${machine.id} has no input $inputName" }
         val cell = cells.firstOrNull { it.from == stage && it.on == inputName && guards.containsAll(it.requires) && it.forbids.none { held -> held in guards } }
-${noCell}        return cell
+${noCell}${options.traceSink ? `        if (${options.traceSink}.enabled) ${options.traceSink}.transition(${kotlinStringLiteral(machine.id)},
+            cell?.id, stage.name, cell?.to?.name ?: stage.name, inputName,
+            ${guard}.entries.associate { it.name to (it in guards) })
+` : ""}        return cell
     }
 }
-`;
+${options.traceSink ? `\n${emitStudioTraceSinkKotlin(options.traceSink)}` : ""}`;
 }

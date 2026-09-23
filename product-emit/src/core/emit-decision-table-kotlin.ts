@@ -71,6 +71,7 @@ export function emitDecisionLookupKotlin(
   names: DecisionTableKotlinNames,
   functionName: string,
   indent = "    ",
+  traceSink?: string,
 ): string {
   requireNames(table, names);
   const axisNames = Object.keys(table.axes);
@@ -88,7 +89,20 @@ export function emitDecisionLookupKotlin(
       .join("\n");
     return `when (${parameter}) {\n${branches}\n${indent + KOTLIN_STEP.repeat(depth)}}`;
   };
-  return `${indent}fun ${functionName}(${parameters}): ${names.cellType} = ${body(0, {})}`;
+  const lookup = body(0, {});
+  if (!traceSink) return `${indent}fun ${functionName}(${parameters}): ${names.cellType} = ${lookup}`;
+  const facts = axisNames.map(axis => `${kotlinStringLiteral(axis)} to ${names.axes[axis]!.parameter}.name`).join(", ");
+  const values = table.cells.map(cell => `${indent}        ${kotlinStringLiteral(cell.id)} -> ${kotlinStringLiteral(JSON.stringify(cell.values))}`)
+    .join("\n");
+  return `${indent}fun ${functionName}(${parameters}): ${names.cellType} {
+${indent}    val answer = ${lookup}
+${indent}    if (${traceSink}.enabled) ${traceSink}.decision(${kotlinStringLiteral(table.id)}, answer.id,
+${indent}        mapOf(${facts}), when (answer.id) {
+${values}
+${indent}            else -> error("Unknown declared cell " + answer.id)
+${indent}        })
+${indent}    return answer
+${indent}}`;
 }
 
 function columnLiteral(column: string, declared: DecisionColumn, kotlin: DecisionColumnKotlin, value: unknown): string {
