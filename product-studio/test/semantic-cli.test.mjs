@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtemp, mkdir, writeFile, readFile, readdir, rm } from 'node:fs/promises';
+import { mkdtemp, mkdir, writeFile, readFile, readdir, rm, symlink } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -61,6 +61,30 @@ test('converge keeps the JSON envelope and exits 2 when no evidence exists', asy
   assert.equal(response.body.result.verdict, 'Unknown');
   assert.equal(response.body.ok, false);
   assert.equal(response.body.error.code, 'convergence.unknown');
+});
+test('record runs a real ProductSpec decision and derives its trace identity and file', async t => {
+  const { root } = await fixture(t);
+  const packageDir = fileURLToPath(new URL('../../product-spec/', import.meta.url));
+  await mkdir(path.join(root, 'node_modules/@v1d'), { recursive: true });
+  await symlink(packageDir, path.join(root, 'node_modules/@v1d/product-spec'));
+  const run = ['record', root, '--product', 'local', '--', process.execPath, '--input-type=module', '-e',
+    'import {defineDecisionTable,decide,choice,on} from "@v1d/product-spec";'
+    + 'const table=defineDecisionTable({id:"fixture.policy",axes:{permission:["YES","NO"]},'
+    + 'columns:{action:choice(["RUN","HOLD"])},cells:['
+    + 'on("allow",{permission:"YES"},{action:"RUN"}),on("deny",{permission:"NO"},{action:"HOLD"})]});'
+    + 'decide(table,{permission:"YES"});'];
+  const response = await invoke(run, root);
+  assert.equal(response.code, 0);
+  assert.equal(response.body.events, 1);
+  assert.equal(response.body.file, 'test-results/local-studio-trace.json');
+  const trace = JSON.parse(await readFile(path.join(root, response.body.file), 'utf8'));
+  assert.deepEqual(Object.keys(trace).sort(), ['events', 'kind', 'modelDigest', 'version']);
+  assert.equal(trace.events[0].entityKey, entityKey('cell', 'allow', 'decision-table/fixture.policy'));
+  const before = await readFile(path.join(root, response.body.file), 'utf8');
+  const empty = await invoke(['record', root, '--product', 'local', '--', process.execPath, '-e', ''], root);
+  assert.equal(empty.code, 1);
+  assert.equal(empty.body.error.code, 'record.empty');
+  assert.equal(await readFile(path.join(root, response.body.file), 'utf8'), before);
 });
 async function fileSnapshot(root, prefix = '') {
   const files = {};

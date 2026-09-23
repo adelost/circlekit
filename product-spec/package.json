@@ -10,6 +10,7 @@
   "exports": {
     ".": {
       "types": "./dist/src/index.d.ts",
+      "studio-trace": "./dist/src/studio-trace.js",
       "import": "./dist/src/index.js"
     },
     "./foundation": {

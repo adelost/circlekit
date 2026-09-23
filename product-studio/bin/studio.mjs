@@ -28,6 +28,12 @@ async function installedAmuxRoot(cwd) {
 export async function main(args = process.argv.slice(2), { cwd = process.cwd(), stdout = process.stdout } = {}) {
   let parsed;
   try {
+    if(args[0]==='record') {
+      const { recordTestTrace } = await import('../lib/record.mjs');
+      const amuxRoot = await installedAmuxRoot(cwd);
+      const evaluateContract = amuxRoot ? await (await import('../lib/documentation.mjs')).loadContractEvaluator(amuxRoot) : undefined;
+      return await recordTestTrace(args.slice(1), { cwd, stdout, evaluateContract });
+    }
     if(args[0]==='laws'||args[0]==='junit') {
       const {main:run}=await import(args[0]==='laws'?'./law-evidence.mjs':'./junit-evidence.mjs');
       const options=args.slice(1);
