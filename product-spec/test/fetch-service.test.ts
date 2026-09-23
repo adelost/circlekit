@@ -42,6 +42,16 @@ test("local pending work has no invented network timeout", () => {
   assert.equal(declared.cadenceMs, 60_000);
 });
 
+test("a stopped operation has no retry clock but a retrying service must declare one", () => {
+  const stop = fetchService({ ...weather, onCrash: "stop", failure: {
+    ...weather.failure, retry: { attemptDelaysMs: [], afterFailureMs: [] },
+  } });
+  assert.deepEqual(stop.failure.retry.afterFailureMs, []);
+  assert.throws(() => fetchService({ ...weather, failure: {
+    ...weather.failure, retry: { attemptDelaysMs: [], afterFailureMs: [] },
+  } } as FetchServiceSpec), /WEATHER.*failure\.retry/u);
+});
+
 function negativeTypes() {
   // @ts-expect-error A network fetch must declare its failure policy.
   fetchService({ id: "bad", flow: weather.flow, freshness: weather.freshness,
