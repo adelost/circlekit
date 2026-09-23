@@ -1,8 +1,8 @@
-# Product Studio 0.4
+# Product Studio 0.5
 
-A local, English architecture and logic workbench over the existing ProductSpec DSL. Inspect declared dependencies, explain decisions, navigate source, simulate finite logic, review candidates and inspect recorded evidence. Ordinary implementation code remains with its product owner.
+A local, English architecture and logic workbench over the existing ProductSpec DSL. Living WHAT/WHY contracts and declared BDD test contracts are inspection metadata, not a second source of product semantics. Inspect declared dependencies, explain decisions, navigate source, simulate finite logic, review candidates and inspect recorded evidence. Ordinary implementation code remains with its product owner.
 
-**Status:** source implementation in a stacked PR above #274. JavaScript syntax was parsed without executing modules. No application, dependency install, compiler, unit test, browser or benchmark was run for this revision. See [VERIFICATION](VERIFICATION.md) before treating it as ready.
+**Status:** source implementation in a stacked PR above #274. JavaScript syntax was parsed without executing modules. No application, dependency install, compiler, unit test, browser or benchmark was run for this revision. See [CONTRACTS](CONTRACTS.md) for the living-documentation model and [VERIFICATION](VERIFICATION.md) before treating it as ready.
 
 ## Start
 
