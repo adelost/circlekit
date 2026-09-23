@@ -2,11 +2,11 @@
 
 A local, English architecture and logic workbench over the existing ProductSpec DSL. Inspect declared dependencies, explain decisions, navigate source, simulate finite logic, review candidates and inspect recorded evidence. Ordinary implementation code remains with its product owner.
 
-**Status:** source implementation in a stacked PR above #274. JavaScript syntax was parsed without executing modules. No application, dependency install, compiler, unit test, browser or benchmark was run for this revision. See [VERIFICATION](VERIFICATION.md) before treating it as ready.
+**Status:** the local 0.4 workbench was installed and exercised on 2026-09-23. Its 158 unit tests passed, selected flows ran in a headed direct-HTTP browser, and the 100/1000-owner synthetic profile was measured. The living-documentation extension passed 232 unit tests and selected real-product inspections. [VERIFICATION](VERIFICATION.md) names the exact scope and limits.
 
 ## Start
 
-Requires Node 22 or later. Use this PR's branch or complete source archive, not `main` before integration.
+Requires Node 22 or later and this package's locked dependencies.
 
 ```bash
 cd product-studio
@@ -105,4 +105,4 @@ python test/browser_extended.py
 
 The profile script is a measurement tool, not a benchmark result or release gate. Browser checks now require ordinary direct HTTP, not the old flattened module-injection bridge.
 
-Start the next pass at [HANDOFF.md](HANDOFF.md). Clean installation, browser acceptance and two real product integrations remain required. Full native/media previews, live subscriptions, whole-flow service mocks, full code compilation and arbitrary visual graph rewiring are not delivered by this slice.
+The local installation, selected browser flows and SKYVW, AMUX and ai-dsl inspection paths were exercised on their named source branches. [VERIFICATION](VERIFICATION.md) records what each check proves. Full native/media previews, live subscriptions, whole-flow service mocks, full code compilation and arbitrary visual graph rewiring are not delivered by this slice.

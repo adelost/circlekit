@@ -1,6 +1,14 @@
 # Product Studio 0.4: verification record
 
-Date: 2026-09-22. Base: PR #274 at `740d3c3a7b33c55f4ebb07de0d05215b73c147fd`.
+Original review: 2026-09-22. Local execution: 2026-09-23. Base: PR #274 at `740d3c3a7b33c55f4ebb07de0d05215b73c147fd`.
+
+## Local execution, 2026-09-23
+
+- Node 22.19.0 and locked `npm ci` succeeded. `npm run verify` passed 146/146 on #274 and 158/158 on the rebased #275 head `f59d325`. The living-documentation #276 source passed 232/232 before this documentation update.
+- The CLI inspected the selected example and simulated `IDLE -> PENDING`. Headed Chrome loaded the real local HTTP server, followed `IDLE -> PENDING -> guarded SUCCESS`, navigated System, validated an edited source through ProductSpec, exported a patch and loaded a separate candidate. Zero page errors were observed in these bounded flows.
+- On the 0.4 source, headed Chrome retained the graph camera while changing input, navigated to source and Problems and back, used Commands and saved views, and fit widths 1600/1024/720/390 without horizontal overflow. The Problems screenshot was inspected. The Python browser scripts below were not run; these are selected direct-browser checks, not a claim that every assertion in those scripts passed.
+- The synthetic profile on this host measured 1000 owners and 4985 bindings at 40.09 ms median model build and 1.41 ms mean query median. It does not measure browser frame rate or real-product latency.
+- CircleKit's selected shared services, SKYVW native's nine local services, SKYVW web's seven local services, AMUX Link's eleven local services and ai-dsl's activity table were checked in their own branches. Web source identity matched its export. Native and AMUX generated artifacts remained inspectable with their stated source/version limits. These local checks are not app-runtime or device proof.
 
 ## Evidence from this pass
 
@@ -11,15 +19,15 @@ Date: 2026-09-22. Base: PR #274 at `740d3c3a7b33c55f4ebb07de0d05215b73c147fd`.
 - Checked relative module paths, unchanged dependency versions and matching package/lock versions.
 - Submission verification compares Git blob/tree identities against the intended source and delivery archive. A matching hash proves bytes, not behavior.
 
-**Not run:** npm installation, the application, ProductSpec compilation, unit tests, browser journeys, benchmarks, native products, real devices, agents or providers. There are no new passing-test counts, frame-rate measurements, screenshots or quality scores to report.
+**Not run in the original 2026-09-22 review:** npm installation, the application, ProductSpec compilation, unit tests, browser journeys, benchmarks, native products, real devices, agents or providers. The dated local execution above supersedes that status only for the named checks.
 
 ## Authored acceptance work
 
 `test/snapshot-experience.test.mjs` adds 12 test declarations for snapshot reuse, frozen data, lazy content, revision checks, trace paging, search, model comparison, stable file observation, invalid-build retention, route decoding and draft protection.
 
-`test/browser_experience.py` covers ordinary direct-browser camera retention, navigation, source access, command search and saved views. Existing browser entrypoints reject the legacy flattened HTTP bridge for this modular UI. They have not been run here.
+`test/browser_experience.py` covers ordinary direct-browser camera retention, navigation, source access, command search and saved views. Existing browser entrypoints reject the legacy flattened HTTP bridge for this modular UI. The Python file itself was not run in the 2026-09-23 pass; the named flows above were exercised in the shared headed browser.
 
-`scripts/profile.mjs` supplies synthetic 100/1000-owner graphs and records three build/query samples plus memory and platform information. It has not been run and is not a release gate.
+`scripts/profile.mjs` supplies synthetic 100/1000-owner graphs and records three build/query samples plus memory and platform information. It ran on 2026-09-23 as noted above and is not a release gate.
 
 ## Code-review findings addressed
 
