@@ -18,12 +18,13 @@ const SPEC = {
   trace: [...COMMON, 'file', 'cursor', 'entity', 'operation', 'search', 'max', 'offset'],
 };
 const BOOLEAN = new Set(['examples', 'pretty']);
-const REQUIRED = { contracts: ['amux-root'], query: ['kind', 'from'], source: ['entity'], simulate: ['facet', 'input'], scenario: ['file'], trace: ['file'], bundle: ['compiler-version'] };
+const REQUIRED = { query: ['kind', 'from'], source: ['entity'], simulate: ['facet', 'input'], scenario: ['file'], trace: ['file'], bundle: ['compiler-version'] };
 
 export const HELP = `Product Studio
 
   v1d-studio [serve] [repository] [--workspace repository]...
-  v1d-studio contracts [repository] --amux-root TRUSTED_AMUX [--product ID] [--pretty]
+  v1d-studio check [repository] [--product ID] [--pretty]
+  v1d-studio contracts [repository] [--amux-root TRUSTED_AMUX]
   v1d-studio doctor [repository] [--product ID]
   v1d-studio inspect [repository] [--product ID] [--entity KEY | --search TEXT]
   v1d-studio query [repository] --kind upstream|downstream|consumers|owner|impact|path
@@ -49,9 +50,9 @@ are ok:false. A scenario with no assertions is ok:true but unasserted, not prove
 Exit: 0 successful operation; 1 failed/refused operation; 2 invalid command usage.
 @input and --file paths are relative to the caller's current directory.
 
-Wording validation: --amux-root explicitly selects a trusted AMUX checkout.
-The contracts command checks source only and requires that evaluator; serve without
-it still shows intent but never labels wording as locally validated.
+Wording validation uses the installed or sibling AMUX grammar. --amux-root
+explicitly selects another trusted checkout. The check command refuses when
+AMUX is unavailable; serve can still show intent without claiming validation.
 
 Serve only: --port 4317 --data-dir DIR --allow-git-drafts EXACT_REPOSITORY
 The existing bundle command writes only its named generated output. Read/debug
@@ -62,6 +63,7 @@ See CLI.md for complete examples, identity rules and error handling.
 /** Strict, command-specific parsing. Never silently discard misspelled flags. */
 export function parseCli(args) {
   const tokens = [...args];
+  if(tokens[0]==='check')tokens[0]='contracts';
   if (tokens.includes('--help') || tokens.includes('-h') || tokens[0] === 'help') return { help: true };
   const command = Object.hasOwn(SPEC, tokens[0]) ? tokens.shift() : 'serve';
   const values = Object.create(null), repeated = { workspace: [], facet: [], source: [], 'allow-git-drafts': [] }, positional = [];

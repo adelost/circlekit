@@ -14,6 +14,11 @@ test('CLI parses only command-owned options and preserves caller argument arrays
   assert.equal(p.values.to, 'node::b'); assert.deepEqual(p.values.purposes, ['data', 'context']);
   assert.equal(p.values.pretty, true);
 });
+test('the documented check command uses the shared contracts path', () => {
+  const parsed=parseCli(['check','--product','skyvw']);
+  assert.equal(parsed.command,'contracts');
+  assert.equal(parsed.values.product,'skyvw');
+});
 test('unknown, duplicate and write flags are refused on every read command', () => {
   for (const args of [
     ['inspect', '--wat', 'x'], ['inspect', '--product', 'a', '--product', 'b'],
