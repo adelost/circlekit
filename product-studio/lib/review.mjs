@@ -1,17 +1,37 @@
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import { intentForEntity } from './documentation.mjs';
+import { requireThat } from './util.mjs';
 
 const exec = promisify(execFile);
-const git = async (root, args) => (await exec('git', args, { cwd: root, timeout: 5000, maxBuffer: 2_000_000 })).stdout;
+const git = async (root, args, timeout = 5000) => (await exec('git', args, { cwd: root, timeout, maxBuffer: 2_000_000 })).stdout;
 const paths = output => output.split('\0').filter(Boolean);
 const oneLine = value => String(value ?? '').replace(/\s+/gu, ' ').trim();
+
+async function defaultBranch(root) {
+  let ref = await git(root, ['symbolic-ref', '--quiet', '--short', 'refs/remotes/origin/HEAD'])
+    .then(output => output.trim(), () => null);
+  if (!ref) {
+    const remote = await git(root, ['remote', 'show', 'origin'], 10000).then(output => output, () => '');
+    const branch = remote.match(/^\s*HEAD branch:\s*(\S+)\s*$/mu)?.[1];
+    if (branch && branch !== '(unknown)') ref = `origin/${branch}`;
+  }
+  requireThat(ref?.startsWith('origin/'), 'review.branch',
+    `Cannot determine origin's default branch in ${root}. Run git fetch origin and git remote set-head origin -a, or use --changed PATH.`);
+  const exists = await git(root, ['rev-parse', '--verify', `refs/remotes/${ref}^{commit}`])
+    .then(output => !!output.trim(), () => false);
+  requireThat(exists, 'review.branch',
+    `No local tracking ref for ${ref}. Run git fetch origin or use --changed PATH.`);
+  return ref;
+}
 
 /** Read Git's exact worktree delta; do not fetch, build or alter its index. */
 export async function changedFilesForReview(root) {
   const head = (await git(root, ['rev-parse', 'HEAD'])).trim();
-  const base = await git(root, ['merge-base', 'HEAD', 'origin/main']).then(s => s.trim(), () => null);
-  const anchor = base && base !== head ? base : 'HEAD';
+  const branch = await defaultBranch(root);
+  const base = await git(root, ['merge-base', 'HEAD', branch]).then(s => s.trim(), () => null);
+  requireThat(base, 'review.branch', `No common history with ${branch}. Check this checkout or use --changed PATH.`);
+  const anchor = base !== head ? base : 'HEAD';
   const [tracked, untracked] = await Promise.all([
     git(root, ['diff', '--name-only', '-z', anchor, '--']),
     git(root, ['ls-files', '--others', '--exclude-standard', '-z']),
