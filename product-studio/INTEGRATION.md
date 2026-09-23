@@ -205,5 +205,3 @@ Selected views use the existing local-session token and project/view identity. `
 ## 8. Cross-product adoption order
 
 The same inspection core accepts full product bundles and standalone table bundles. A new product exports its own compiled model and attaches exact source files or an owner-run trace where those facts exist. Native previews, real video commands and external execution remain unavailable until their product owners provide those adapters. Studio does not copy product state stores, undo engines or schedulers.
-
-See [DELIVERY](DELIVERY.md) for remaining boundaries and [VERIFICATION](VERIFICATION.md) for local proof and its limits.

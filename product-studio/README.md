@@ -1,8 +1,6 @@
-# Product Studio 0.4
+# Product Studio
 
-A local, English architecture and logic workbench over the existing ProductSpec DSL. Inspect declared dependencies, explain decisions, navigate source, simulate finite logic, review candidates and inspect recorded evidence. Ordinary implementation code remains with its product owner.
-
-**Status:** this local workbench has been exercised on attached products. [DELIVERY](DELIVERY.md) lists current capabilities and limits; [VERIFICATION](VERIFICATION.md) records dated checks and their exact scope.
+A local architecture and finite-logic workbench over the existing ProductSpec DSL. It shows declared dependencies, source and recorded evidence. Product owners keep the implementation and compiler.
 
 ## Start
 
@@ -11,7 +9,6 @@ Requires Node 22 or later and this package's locked dependencies.
 ```bash
 cd product-studio
 npm ci
-npm run verify
 npm link
 ```
 
@@ -21,6 +18,8 @@ From a product root containing `studio.workspace.json`:
 v1d-studio check
 v1d-studio
 ```
+
+The workspace selects a compiled bundle. Studio derives the repository from Git `origin`, the nearest unambiguous installed ProductSpec, and optional `test-results/<project-id>-studio-trace.json`, `<project-id>-bdd-run.json` and `<project-id>-laws.json`. [INTEGRATION.md](INTEGRATION.md) covers explicit overrides and export. The normal loop is: specify intent and structure in the product's ProductSpec, run `plan` for declared impact, turn its findings into tasks, implement in ordinary product source, then run `converge` against available evidence. Only `plan` and `converge` are Studio commands in that loop.
 
 When a product declares `authoring` in its workspace file, `v1d-studio export`
 explicitly rebuilds its named inspection bundle with the product's own locked
@@ -35,7 +34,7 @@ v1d-studio /path/to/product
 v1d-studio --workspace /path/to/circlekit --workspace /path/to/skydive-altimeter
 ```
 
-No repository is cloned and no product generator, agent, model, GPU, emulator or native runtime is started. The package remains private/unpublished. `npm link` installs the local `v1d-studio` command from this checkout; a missing command requires that one-time setup rather than a fallback to another Studio version.
+The package remains private/unpublished. `npm link` installs the local `v1d-studio` command from this checkout; a missing command requires that one-time setup rather than a fallback to another Studio version.
 
 ## Begin with a question
 
@@ -50,13 +49,11 @@ The graph preserves its camera across selection and ordinary state changes. **Fi
 | Area | Capability and boundary |
 |---|---|
 | Architecture | ProductSpec schema-9 graph, ownership/port queries, groups, focus, indexed search and source provenance. Unknown relationships stay unknown. |
-| Logic | Existing ProductSpec `decide` and `step`, exact cell identities, explicit unknown guards, scenarios and primitive boundary fixtures. No whole-program or provider execution. |
-| Code and changes | Supported source edits, transitions, region splits, shared per-file drafts, candidate exploration and source/semantic diff. Not a complete TypeScript language service or full-product compiler. |
-| Recorded evidence | Exact-model trace import, causal links, finite-result comparison, paged events and sequence lanes. No live debugging; lanes are not proportional-time plots. |
+| Logic | Existing ProductSpec `decide` and `step`, exact cell identities, explicit unknown guards, scenarios and primitive boundary fixtures. |
+| Code and changes | Supported source edits, transitions, region splits, shared per-file drafts, candidate exploration and source/semantic diff. |
+| Recorded evidence | Exact-model trace import, causal links, finite-result comparison, paged events and sequence lanes. |
 | Daily workflow | Passive build following, previous-build comparison, browser navigation, local bookmarks, command palette, Problems and a scope-aware proof strip. |
-| Performance structure | Frozen snapshot/index reuse, on-demand source/details/catalog/trace data, retained DOM/graph elements and incident-edge redraw. No measured performance claim yet. |
-
-[DELIVERY.md](DELIVERY.md) keeps the 22-item capability checklist and remaining boundaries in one place.
+| Performance structure | Frozen snapshot/index reuse, on-demand source/details/catalog/trace data, retained DOM/graph elements and incident-edge redraw. |
 
 ## Agent edits, Studio follows
 
@@ -76,7 +73,7 @@ Preferred attachment is a generated inspection bundle from the product's already
 
 Save this selection as `studio.workspace.json` at the product root. The bundle contains compiled models and source identity, not executable plugins or a second product definition. [INTEGRATION.md](INTEGRATION.md) documents the exporter, legacy attachments and trace adapter. Built-in path presets are conveniences, not separate evaluators.
 
-The initial transport still includes compiled finite facets and a lightweight entity index. Full source text, selected object details, catalog/scopes and trace event pages are fetched when used. Very large models need focused exports; fully paged model loading and general graph virtualization remain open.
+The initial transport includes compiled finite facets and a lightweight entity index. Full source text, selected object details, catalog/scopes and trace event pages are fetched when used.
 
 ## The same model from a shell
 
@@ -99,13 +96,13 @@ Working-tree source writes are disabled. Changes can be saved separately as loca
 npm start -- --workspace /path/to/repo --allow-git-drafts /path/to/repo
 ```
 
-It creates a new draft ref without checkout, ordinary-index/worktree changes, push or merge. The product's own build and review remain required. Studio does not write video documents, copy an application's undo engine or replace native renderers.
+It creates a new draft ref without checkout, ordinary-index/worktree changes, push or merge. The product's own build and review remain required.
 
 The server remains loopback-only with Host/Origin checks and a per-process token. Do not expose it as a multi-user service. Imported data is bounded; unsupported syntax/versions stay explicit; missing mocks never fall back to network calls. No private SKYVW/video source or media is bundled into this tool.
 
 Treat traces and drafts as potentially sensitive. Trace fields are limited to summaries/facts, but producer text is not automatically redacted. Links and bookmarks store semantic identities only, never source, prompts or event payloads. Default draft/scenario storage is `~/.local/state/product-studio`; camera/bookmark storage is local to the browser.
 
-## Verification and next owner
+## Local checks
 
 ```bash
 npm run verify
@@ -117,6 +114,8 @@ python test/browser_experience.py
 python test/browser_extended.py
 ```
 
-The profile script is a measurement tool, not a benchmark result or release gate. Browser checks now require ordinary direct HTTP, not the old flattened module-injection bridge.
+The profile script is a measurement tool, not a benchmark result or release gate. Browser checks use ordinary direct HTTP.
 
-The local installation, selected browser flows and SKYVW, AMUX and ai-dsl inspection paths were exercised on their named source branches. [VERIFICATION](VERIFICATION.md) records what each check proves. Full native/media previews, live subscriptions, whole-flow service mocks, full code compilation and arbitrary visual graph rewiring are not delivered by this slice.
+## What Studio does not do
+
+Opening Studio does not clone a repository or run a product, generator, test, provider, GPU, emulator or native runtime. It has no live debugger, native/media preview adapter, whole-program compiler, automatic build runner or general graph virtualization; large models need focused exports. Finite simulation does not execute sensors, controllers or effects. Draft patches are not transactional edits against another editor's worktree, and Studio does not replace a product's state store, undo engine or scheduler. Missing runtime evidence and unsupported capabilities remain visible, not inferred from a model or source reference.
