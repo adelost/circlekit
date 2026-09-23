@@ -3,6 +3,18 @@ import assert from 'node:assert/strict';
 import { associateBehaviorReferences, decodeBehaviorReport } from '../lib/behavior-evidence.mjs';
 import { declarationLawId } from '../lib/declaration-evidence.mjs';
 import { testSourceIndex } from '../lib/test-source.mjs';
+import { decodeJUnitXml } from '../bin/junit-evidence.mjs';
+
+test('Node JUnit reader preserves nested suite outcomes and refuses DTDs',()=>{
+  const xml='<testsuites><testsuite name="selected" timestamp="2026-09-23T00:00:00Z" time="1" tests="2">'
+    +'<testcase name="failed" classname="Example" time="0.1"><failure message="bad"/></testcase>'
+    +'<testcase name="skipped" classname="Example"><skipped/></testcase></testsuite></testsuites>';
+  const [suite]=decodeJUnitXml(xml).suites;
+  assert.equal(suite.name,'selected');
+  assert.deepEqual(suite.cases.map(c=>c.status),['failed','skipped']);
+  assert.throws(()=>decodeJUnitXml('<!DOCTYPE testsuite><testsuite/>'),/unsupported entity declarations/i);
+  assert.throws(()=>decodeJUnitXml('<testsuite><testcase></testsuite>'));
+});
 
 function report(file,line,name) {
   return decodeBehaviorReport({

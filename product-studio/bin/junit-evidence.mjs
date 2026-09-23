@@ -1,22 +1,46 @@
 #!/usr/bin/env node
 import path from 'node:path';
-import { execFile } from 'node:child_process';
 import { readdir, realpath } from 'node:fs/promises';
-import { fileURLToPath, pathToFileURL } from 'node:url';
-import { safeFile, boundedJson, requireThat } from '../lib/util.mjs';
+import { pathToFileURL } from 'node:url';
+import { SaxesParser } from 'saxes';
+import { safeFile, requireThat } from '../lib/util.mjs';
 import { scenarioDescriptions, testSourceIndex } from '../lib/test-source.mjs';
 import { behaviorReport, testIdentity, writeBehaviorReport } from '../lib/report-output.mjs';
 
-async function decodeXml(text) {
-  return new Promise((resolve,reject)=>{
-    const child=execFile(process.env.PYTHON??'python3',
-      [fileURLToPath(new URL('../scripts/read-junit.py',import.meta.url))],
-      {maxBuffer:8000000,timeout:10000},(error,stdout,stderr)=>{
-        if(error)reject(new Error(stderr.trim()||error.message));
-        else resolve(boundedJson(stdout,8000000));
-      });
-    child.stdin.end(text);
+export function decodeJUnitXml(text) {
+  requireThat(Buffer.byteLength(text)<=4_000_000&&!/<!DOCTYPE|<!ENTITY/iu.test(text),
+    'evidence.junit-xml','JUnit input is oversized or contains unsupported entity declarations.');
+  const suites=[],stack=[],suiteStack=[];
+  let currentCase=null,caseCount=0;
+  const parser=new SaxesParser();
+  parser.on('doctype',()=>{throw new Error('JUnit DTDs are unsupported.');});
+  parser.on('opentag',({name,attributes:a})=>{
+    const parent=stack.at(-1);
+    if(!stack.length)requireThat(name==='testsuite'||name==='testsuites','evidence.junit-xml','Expected JUnit testsuite or testsuites.');
+    if(name==='testsuite'){
+      const suite={name:a.name??null,timestamp:a.timestamp??null,seconds:a.time??null,
+        tests:a.tests??null,failures:a.failures??null,errors:a.errors??null,cases:[]};
+      suites.push(suite);suiteStack.push(suite);
+    } else if(name==='testcase'){
+      requireThat(parent==='testsuite'&&suiteStack.length>0,'evidence.junit-xml','A JUnit testcase needs a testsuite.');
+      currentCase={name:a.name??null,className:a.classname??null,file:a.file??null,line:a.line??null,
+        seconds:a.time??null,status:'passed'};
+      suiteStack.at(-1).cases.push(currentCase);
+      requireThat(++caseCount<=10_000,
+        'evidence.junit-xml','JUnit input contains more than 10000 cases.');
+    } else if(currentCase&&parent==='testcase'&&(name==='failure'||name==='error'))currentCase.status='failed';
+    else if(currentCase&&parent==='testcase'&&name==='skipped'&&currentCase.status!=='failed')currentCase.status='skipped';
+    stack.push(name);
   });
+  parser.on('closetag',tag=>{
+    const name=typeof tag==='string'?tag:tag.name;
+    requireThat(stack.pop()===name,'evidence.junit-xml','Malformed JUnit XML.');
+    if(name==='testcase')currentCase=null;
+    if(name==='testsuite')suiteStack.pop();
+  });
+  parser.on('error',error=>{throw error;});
+  parser.write(text).close();
+  return {suites};
 }
 async function collectSources(root,roots) {
   const base=await realpath(root),files=[];let visited=0;
@@ -77,7 +101,7 @@ export async function importJUnit({
   requireThat(Array.isArray(sourceRoots)&&sourceRoots.length>0&&sourceRoots.length<=16,
     'evidence.source','Supply 1-16 actual --source-root paths.');
   const xml=(await safeFile(root,input,4000000)).text;
-  const {suites}=await decodeXml(xml);
+  const {suites}=decodeJUnitXml(xml);
   const sources=await collectSources(root,sourceRoots);
   const times=[],tests=[],ordinals=new Map();
   for(const suite of suites) {
