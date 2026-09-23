@@ -136,7 +136,25 @@ The GUI provides source selection, line numbers, graph-to-code navigation and co
 
 Current editing remains limited: supported machine/table construction can be validated through the shared kernel; arbitrary native/application code cannot. A position alone does not authorize an inverse edit or validate a whole product.
 
-## 6. Recorded traces: connect the real owner, not a second runtime
+## 6. Living architecture contracts and BDD metadata
+
+WHAT/WHY is source intent, not ProductSpec runtime semantics. The exporter automatically extracts a complete WHAT/WHY block from an unambiguous ProductSpec service declaration when that source file is included. Explicit `contracts` may be supplied for source-aware adapters, but one entity has one contract.
+
+```ts
+/**
+ * WHAT: Routes recording commands and publishes the active session.
+ * WHY: Keeps recorder effects separate from flight sensing and presentation.
+ */
+export const recordingRuntime = service({ ... });
+```
+
+Do not repeat ports, effects, lifetime or state ownership in prose; Studio already derives those facts. A missing service contract is a visible warning, not invented text.
+
+Existing tests may be attached as `testContracts` with exact entity identities and either a title or complete Given/When/Then descriptions. These are documentation only. Studio never labels them passed unless a future exact-revision test-result adapter supplies real execution evidence.
+
+See [CONTRACTS](CONTRACTS.md) for the rationale and agent workflow.
+
+## 7. Recorded traces: connect the real owner, not a second runtime
 
 The implemented `createTraceRecorder` is a passive bounded collector. It does not open a network connection, wrap every function or run a scheduler. Existing owners explicitly report observations.
 
@@ -182,7 +200,7 @@ Import the capture in the GUI's **Trace** view. It verifies product/model/entity
 
 Record summaries and necessary finite facts, not secrets, source footage or full unbounded transcripts. Synthetic fixtures use `provenance: 'synthetic'`. The SDK is not an authentication system or an automatic redactor; the producer still chooses what is safe to capture. No live-runtime pause, mutation or whole-program replay is implemented.
 
-## 7. Versions, scopes and changed source
+## 8. Versions, scopes and changed source
 
 - Inspection protocol: version 2. Runtime trace protocol: version 1.
 - Product IR reader: schema 9. Unknown schemas fail rather than being reinterpreted.
@@ -193,7 +211,7 @@ Record summaries and necessary finite facts, not secrets, source footage or full
 - Model digest identifies compiled meaning plus declared source inputs and compiler provenance. Workspace-view identity also scopes file/read-set revision and project selection. A Git SHA alone is insufficient.
 - Groups, source maps and canvas positions are not substitutes for native conformance. Hash equality provides integrity/correlation, not an assertion that a sensor, callback or device actually ran.
 
-## 8. Cross-product adoption order
+## 9. Cross-product adoption order
 
 First prove one full product bundle and one standalone table bundle through the same core. Use Showcase or a current SKYVW export for structure; AMUX or the video activity table supplies the smaller independent logic case. No private product code needs to enter CircleKit.
 
