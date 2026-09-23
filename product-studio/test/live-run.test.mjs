@@ -4,8 +4,8 @@ import { parseLiveRunArgs } from '../lib/live-run.mjs';
 import { main } from '../bin/studio.mjs';
 
 test('live run selects one product and a direct Node command, never a shell',()=>{
-  assert.deepEqual(parseLiveRunArgs(['--product','amux','--port','4317','--','node','--input-type=module','-e','42']),
-    {product:'amux',port:4317,command:['node','--input-type=module','-e','42']});
+  assert.deepEqual(parseLiveRunArgs(['--product','amux','--port','18223','--','node','--input-type=module','-e','42']),
+    {product:'amux',port:18223,command:['node','--input-type=module','-e','42']});
   assert.throws(()=>parseLiveRunArgs(['--product','amux','--','npm','test']),error=>error.code==='live.command');
   assert.throws(()=>parseLiveRunArgs(['--product','amux']),error=>error.code==='live.command');
   assert.throws(()=>parseLiveRunArgs(['--','node','app.mjs']),error=>error.code==='live.product');

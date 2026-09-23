@@ -5,11 +5,12 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import { openHeadlessStudio, selectProject } from './semantic.mjs';
 import { storeTicketFile } from './ticket-file.mjs';
 import { StudioError, requireThat } from './util.mjs';
+import { DEFAULT_STUDIO_PORT } from './cli.mjs';
 
 export function parseLiveRunArgs(args) {
   const end=args.indexOf('--');
   requireThat(end>=0&&end<args.length-1,'live.command','Use live run --product ID -- node APP [ARGS].');
-  let product=null,port=4317;
+  let product=null,port=DEFAULT_STUDIO_PORT;
   for(let at=0;at<end;at++) {
     if(args[at]==='--product'&&args[at+1])product=args[++at];
     else if(args[at]==='--port'&&args[at+1]) {

@@ -18,7 +18,7 @@ test('a browser dev session handshakes without a URL secret and batches real eva
   }
   globalThis.WebSocket=Socket as unknown as typeof WebSocket;
   try {
-    const session=connectBrowserObservation({url:'ws://127.0.0.1:4317/runtime/v1',ticket:'A'.repeat(43),
+    const session=connectBrowserObservation({url:'ws://127.0.0.1:17317/runtime/v1',ticket:'A'.repeat(43),
       descriptor:{productId:'door',identity:{modelDigest:'a'.repeat(64)},productSpecVersion:'0.3.68',
         scope:{events:['transition'],facets:['door'],appliedTransitions:false}}});
     const socket=session.socket as unknown as Socket;
