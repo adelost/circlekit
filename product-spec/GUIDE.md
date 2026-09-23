@@ -86,6 +86,12 @@ fetchService({ id: "WEATHER", flow: { mode: "clock", everyMs: 1_800_000, minSpac
   onCrash: "as-failure", effectIds: ["weather.briefing-fetch"] })
 ```
 
+A stored service declares backend, codec identity/version, durability, failure and
+migration in one `storeService` block. File stores require durable atomic replace;
+preferences require commit. A platform binds that guarantee to its own atomic
+file or preferences owner, or refuses an unsupported durability. The codec's
+domain bytes stay native. `storeCatalog` refuses two owners of one effect.
+
 ## 4. The four questions
 
 1. **I want to add or change a fact** (a cell, a hint, a feed, a ride): open the thing's file under the product's `appspec/products/<name>/`, change the fact, run the product's generate. If the build refuses, the message names the law and the fix. Never add a Kotlin branch instead.
