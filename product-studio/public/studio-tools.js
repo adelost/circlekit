@@ -9,18 +9,21 @@ export function initialProjectView(project) {
 
 export const traceFacet = (project,state) => project.facets.find(f => f.id === state.traceFrame?.current?.logic?.facetId) ?? null;
 
-export function traceGraphMarks(facet, frame) {
+export function traceGraphMarks(facet, frame, events=frame.events??[]) {
   const pastNodes=new Set(),pastEdges=new Set(),cells=new Map(facet.compiled.cells.map(c=>[c.id,c]));
   const states=new Set(facet.compiled.states);
   const recorded=logic=>logic?.facetId===facet.id && states.has(logic.from) && states.has(logic.to);
   const edge=logic=>cells.get(logic.cellId)?.from===logic.from && cells.get(logic.cellId)?.to===logic.to?logic.cellId:null;
-  for(const event of frame.events??[]) if(event.eventIndex<frame.cursor && event.kind==='transition' && recorded(event.logic)) {
+  for(const event of events) if(event.eventIndex<frame.cursor && event.kind==='transition' && recorded(event.logic)) {
     pastNodes.add(event.logic.from);pastNodes.add(event.logic.to);
     if(edge(event.logic))pastEdges.add(event.logic.cellId);
   }
   const current=recorded(frame.current?.logic)?frame.current.logic:null;
   return {pastNodes,pastEdges,currentFrom:current?.from??null,currentTo:current?.to??null,currentEdge:current?edge(current):null};
 }
+
+export const traceEventRows = (project,state) => state.traceHistory?.digest && state.traceHistory.digest===project.trace?.traceDigest
+  ? state.traceHistory.events : state.traceFrame?.events??[];
 
 export function decisionRegionTable(facet,escape,selectedCellId=null,trace=false) {
   return `<div class="table-wrap"><table><thead><tr><th>Cell</th><th>Region (omitted axes cover all values)</th><th>Values</th><th></th></tr></thead><tbody>${facet.compiled.cells.map(c => `<tr data-cell="${escape(c.id)}" tabindex="0" ${trace&&selectedCellId===c.id?'aria-current="step"':''} class="${selectedCellId===c.id?(trace?'trace-current':'selected'):''}"><td><code>${escape(c.id)}</code></td><td>${escape(JSON.stringify(c.region))}</td><td>${escape(JSON.stringify(c.values))}</td><td>Inspect ↗</td></tr>`).join('')}</tbody></table></div>`;
@@ -128,9 +131,10 @@ export function traceView(project, state, escape) {
   const frame=state.traceFrame, cursor=state.traceCursor ?? trace.eventCount-1, max=Math.max(0,trace.eventCount-1);
   const rows=frame?.events ?? [];
   const f=traceFacet(project,state);
-  const marks=f?.kind==='machine'&&frame?traceGraphMarks(f,frame):null;
+  const marks=f?.kind==='machine'&&frame?traceGraphMarks(f,frame,traceEventRows(project,state)):null;
   const current=marks?.currentTo ? `<div class="trace-step-cue"><span class="section-label">Current state</span><strong>${escape(marks.currentFrom)} <span aria-hidden="true">→</span> ${escape(marks.currentTo)}</strong>${marks.currentEdge?`<span class="badge">${escape(f.compiled.cells.find(c=>c.id===marks.currentEdge)?.on??marks.currentEdge)}</span>`:''}</div>` : '';
-  const model=f?.kind==='machine' ? `<div class="trace-model"><div class="section-label">${escape(f.id)} · recorded transition</div>${current}<div id="graph" data-managed="graph" class="graph-host"></div><small>Past transitions shown from the loaded trace page. Layout and camera stay in this machine.</small></div>`
+  const trail=(state.traceHistory?.digest && state.traceHistory.digest===trace.traceDigest)||frame?.events.length===trace.eventCount?'All prior recorded transitions shown.':state.traceHistoryPending?'Loading earlier transitions…':state.traceHistoryError?'Earlier transitions unavailable; showing the loaded page.':'Past transitions shown from the loaded trace page.';
+  const model=f?.kind==='machine' ? `<div class="trace-model"><div class="section-label">${escape(f.id)} · recorded transition</div>${current}<div id="graph" data-managed="graph" class="graph-host"></div><small>${trail} Layout and camera stay in this machine.</small></div>`
     : f?.kind==='decision-table' ? `<div class="trace-model"><div class="section-label">${escape(f.id)} · recorded decision</div>${decisionRegionTable(f,escape,frame.current.logic?.cellId,true)}</div>` : '';
   return `<section class="panel"><header class="panel-head"><h2>${trace.provenance === 'synthetic' ? 'Synthetic trace' : trace.provenance === 'test-run' ? 'Test run trace' : 'Recorded trace'} <code>${escape(trace.sessionId)}</code></h2><div class="toolbar"><button data-action="import-trace">Import another</button><button data-action="export-trace">Export trace</button></div></header>
     <div class="panel-body"><div class="notice ${trace.complete ? 'info' : ''}">${escape(trace.notice)}<p>${trace.eventCount} retained events · ${trace.truncation.droppedBefore} dropped before capture${trace.truncation.gaps.length ? ` · ${trace.truncation.gaps.length} recorded gaps` : ''}</p></div>
