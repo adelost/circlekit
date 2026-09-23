@@ -1,6 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { prepareInspection } from '../lib/exporter.mjs';
+import { mkdtemp, readFile, rm, symlink, writeFile } from 'node:fs/promises';
+import os from 'node:os';
+import path from 'node:path';
+import { prepareInspection, writeInspectionBundle } from '../lib/exporter.mjs';
 import { digest } from '../lib/util.mjs';
 
 test('authoring export documents the exact source snapshot that was compiled', async () => {
@@ -26,4 +29,19 @@ test('authoring export refuses a source snapshot that does not match the selecte
     }),
     error=>error.code==='export.snapshot',
   );
+});
+
+test('workspace export creates a missing generated directory but refuses an escaping parent',async t=>{
+  const root=await mkdtemp(path.join(os.tmpdir(),'studio-export-dir-'));
+  const outside=await mkdtemp(path.join(os.tmpdir(),'studio-export-outside-'));
+  t.after(async()=>{await rm(root,{recursive:true,force:true});await rm(outside,{recursive:true,force:true});});
+  await writeFile(path.join(root,'source.mjs'),'export const product = true;\n');
+  const options={root,productId:'export-test',compiler:{name:'@v1d/product-spec',version:'0.3.65'},sourceFiles:['source.mjs']};
+  await writeInspectionBundle({...options,output:'generated/nested/export-test.studio.json'});
+  const saved=JSON.parse(await readFile(path.join(root,'generated/nested/export-test.studio.json'),'utf8'));
+  assert.equal(saved.productId,'export-test');
+  await symlink(outside,path.join(root,'escape'));
+  await assert.rejects(writeInspectionBundle({...options,output:'escape/nested/export-test.studio.json'}),
+    error=>error.code==='export.escape');
+  await assert.rejects(readFile(path.join(outside,'nested/export-test.studio.json')));
 });
