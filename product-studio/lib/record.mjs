@@ -10,8 +10,8 @@ import { boundedJson, requireThat } from './util.mjs';
 /** WHAT: Parses one product test command after `--`. WHY: Keeps test execution separate from Studio's read-only commands. */
 export function parseRecordArgs(args) {
   const end = args.indexOf('--');
-  requireThat(end >= 0 && end < args.length - 1, 'record.command', 'Use record [repository] --product ID -- test command.');
-  const options = args.slice(0, end), command = args.slice(end + 1);
+  requireThat(end < 0 || end < args.length - 1, 'record.command', 'Use -- TEST_COMMAND or omit -- for the workspace recordCommand.');
+  const options = end < 0 ? args : args.slice(0, end), command = end < 0 ? [] : args.slice(end + 1);
   let root = '.', rootSet = false, product = null;
   for (let i = 0; i < options.length; i++) {
     const token = options[i];
@@ -22,7 +22,7 @@ export function parseRecordArgs(args) {
     } else if (!token.startsWith('-') && !rootSet) { root = token; rootSet = true; }
     else requireThat(false, 'record.option', `Unsupported record option: ${token}`);
   }
-  requireThat(product !== null && command[0], 'record.product', 'Choose a workspace product and one test command.');
+  requireThat(product !== null, 'record.product', 'Choose one workspace product with --product ID.');
   return { root, product, command };
 }
 
@@ -43,12 +43,19 @@ async function rawEvents(directory) {
 export async function recordTestTrace(args, { cwd = process.cwd(), evaluateContract, stdout = process.stdout } = {}) {
   const input = parseRecordArgs(args);
   const root = path.resolve(cwd, input.root);
+  let command = input.command;
+  if (!command.length) {
+    const { workbench, projects } = await openHeadlessStudio({ roots: [root], evaluateContract });
+    const selected = selectProject(projects, input.product);
+    command = workbench.require(selected.key).config.recordCommand;
+    requireThat(command, 'record.command', `No recordCommand for ${selected.id}. Add it to studio.workspace.json or pass -- test command.`);
+  }
   const directory = await mkdtemp(path.join(os.tmpdir(), 'v1d-studio-record-'));
   try {
     const existingNodeOptions = process.env.NODE_OPTIONS ?? '';
     const nodeOptions = [existingNodeOptions, '--conditions=studio-trace'].filter(Boolean).join(' ');
     const status = await new Promise((resolve, reject) => {
-      const child = spawn(input.command[0], input.command.slice(1), {
+      const child = spawn(command[0], command.slice(1), {
         cwd: root, stdio: 'inherit', env: { ...process.env, NODE_OPTIONS: nodeOptions, V1D_STUDIO_TRACE_DIR: directory },
       });
       child.once('error', reject);

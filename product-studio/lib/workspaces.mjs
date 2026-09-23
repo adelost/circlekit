@@ -22,12 +22,6 @@ import { safeFile, digest, boundedJson, requireThat, StudioError, semanticDiff, 
 
 const exec = promisify(execFile);
 const fixtureRoot = fileURLToPath(new URL('../fixtures/', import.meta.url));
-const PRESETS = [
-  { id: 'skyvw', label: 'SKYVW', sources: ['appspec/products/skyvw/jumps/recording-machine.ts'], artifact: 'appspec/generated/skyvw/skyvw.product.json', graph: 'appspec/generated/skyvw/skyvw.graph.mmd' },
-  { id: 'amux', label: 'AMUX', sources: ['policies/context-cost.mjs'] },
-  { id: 'video', label: 'Video editor', sources: ['ui/scripts/lib/studio-activity-product.mjs'] },
-  { id: 'showcase', label: 'CircleKit Showcase', sources: ['showcase-product/src/catalog.ts'], artifact: 'showcase-product/generated/showcase-product.json', graph: 'showcase-product/generated/showcase-product.graph.mmd' },
-];
 const exists = async (root, file) => { try { return await safeFile(root, file); } catch (error) { if (error.code === 'ENOENT') return null; throw error; } };
 const presentFile = async (root, file) => {
   try { return (await lstat(path.join(root,file))).isFile(); }
@@ -89,8 +83,14 @@ export async function workspaceConventions(root, project, repository=null) {
   const documentation={...project.documentation};
   if(documentation.repository===undefined&&repository)documentation.repository=repository;
   if(documentation.bddReports===undefined&&slug) {
-    const candidates=[`test-results/${slug}-bdd-run.json`,`test-results/${slug}-laws.json`],found=[];
-    for(const file of candidates)if(await presentFile(root,file))found.push(file);
+    const bddCandidates=[`test-results/${slug}-bdd-run.json`,
+      ...(kernelRoot&&kernelRoot!=='.'&&relativeSourcePath(kernelRoot)?[`${kernelRoot}/test-results/bdd-run.json`]:[])];
+    const bdd=[];
+    for(const file of bddCandidates)if(await presentFile(root,file))bdd.push(file);
+    requireThat(bdd.length<=1,'workspace.evidence',
+      'Several conventional BDD reports are present. Set documentation.bddReports explicitly for this project.');
+    const found=[...bdd];
+    if(await presentFile(root,`test-results/${slug}-laws.json`))found.push(`test-results/${slug}-laws.json`);
     if(found.length)documentation.bddReports=found;
   }
   const traceCandidate=slug?`test-results/${slug}-studio-trace.json`:null;
@@ -125,13 +125,16 @@ export class Workbench {
           ids.add(p.id);
           await this.load({ ...await workspaceConventions(root,p,repository), root, fixture: false });
         }
-      } else for (const p of PRESETS) {
-        if (await exists(root, p.sources[0]) || p.artifact && await exists(root, p.artifact)) await this.load({ ...p, root, fixture: false });
-      }
+      } else requireThat(false,'workspace.missing',
+        `No studio.workspace.json in ${root}. Update this checkout to origin/main or pass --workspace to one that has it.`);
     }
   }
   async load(config, { publish = true } = {}) {
     requireThat(typeof config.id === 'string' && typeof config.label === 'string' && Array.isArray(config.sources ?? []) && (config.sources ?? []).length <= 32, 'workspace.config', 'Invalid workspace declaration.');
+    requireThat(config.recordCommand===undefined || Array.isArray(config.recordCommand)&&config.recordCommand.length>0
+      &&config.recordCommand.length<=64&&config.recordCommand.every(arg=>typeof arg==='string'&&arg.length>0
+        &&arg.length<=1000&&!/[\0\r\n]/u.test(arg)),
+    'workspace.recordCommand','recordCommand must be a nonempty argv list in studio.workspace.json; no shell string is run.');
     requireThat(config.traceFile === undefined || typeof config.traceFile === 'string' && config.traceFile.endsWith('.json'),
       'workspace.traceFile','Select a repository-relative JSON trace file.');
     const selected=config.kernelRoot!==undefined

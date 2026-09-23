@@ -135,10 +135,12 @@ The CLI does not save scenarios or drafts. Use an existing saved/exported file o
 Run one existing focused test through Studio to capture declared execution without hand-writing entity keys, digests or output paths:
 
 ```bash
+v1d-studio record /repo --product my-product
+# Explicit override when needed:
 v1d-studio record /repo --product my-product -- npm test -- path/to/focused.test.mjs
 ```
 
-The command passes a private `V1D_STUDIO_TRACE_DIR` and Node's `studio-trace` package condition to the child. Vitest needs `ssr.resolve.conditions` selected when that variable is present; Vite SSR tests with external ProductSpec imports also need `ssr.resolve.externalConditions`. Generated Kotlin emits only in debug test runs and its release bytecode has no trace call. Studio refuses a failed command, no events, unknown cells or ports, and a model mismatch without replacing the previous trace. A successful run writes the convention-named trace atomically. This test-run evidence does not claim a live device or service session.
+`recordCommand` is a workspace-owned argv list, not a shell string, and never runs when Studio opens. The command passes a private `V1D_STUDIO_TRACE_DIR` and Node's `studio-trace` package condition to the child. Vitest needs `ssr.resolve.conditions` selected when that variable is present; Vite SSR tests with external ProductSpec imports also need `ssr.resolve.externalConditions`. Generated Kotlin emits only in debug test runs and its release bytecode has no trace call. Studio refuses a failed command, no events, unknown cells or ports, and a model mismatch without replacing the previous trace. A successful run writes the convention-named trace atomically. This test-run evidence does not claim a live device or service session.
 
 ```bash
 node bin/studio.mjs trace /repo --file capture.trace.json --cursor 12 --pretty

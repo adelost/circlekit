@@ -7,6 +7,7 @@ import { fileURLToPath } from 'node:url';
 import os from 'node:os';
 import path from 'node:path';
 import { repositoryFromRemote, workspaceConventions } from '../lib/workspaces.mjs';
+import { openHeadlessStudio } from '../lib/semantic.mjs';
 import { main } from '../bin/studio.mjs';
 
 const exec=promisify(execFile);
@@ -51,6 +52,31 @@ test('one nearest package, Git repository and present test-results replace works
     documentation:{repository:'another/repo',sourceRoots:['ui/src'],bddReports:[]}},'example/activity-app');
   assert.equal(explicit.kernelRoot,'.');assert.equal(explicit.traceFile,'own/trace.json');
   assert.equal(explicit.documentation.repository,'another/repo');assert.deepEqual(explicit.documentation.bddReports,[]);
+});
+
+test('a unique nested package report is found beside its installed ProductSpec',async t=>{
+  const root=await temporary(t);
+  await pin(root,'ui','0.3.67');
+  await mkdir(path.join(root,'ui/test-results'),{recursive:true});
+  await mkdir(path.join(root,'test-results'),{recursive:true});
+  await writeFile(path.join(root,'ui/test-results/bdd-run.json'),'{}');
+  await writeFile(path.join(root,'test-results/activity-laws.json'),'{}');
+  const project={id:'activity',label:'Activity',bundle:'ui/generated/activity.studio.json'};
+  const found=await workspaceConventions(root,project);
+  assert.deepEqual(found.documentation.bddReports,['ui/test-results/bdd-run.json','test-results/activity-laws.json']);
+  await writeFile(path.join(root,'test-results/activity-bdd-run.json'),'{}');
+  await assert.rejects(workspaceConventions(root,project),error=>error.code==='workspace.evidence');
+  const explicit=await workspaceConventions(root,{...project,documentation:{bddReports:['ui/test-results/bdd-run.json']}});
+  assert.deepEqual(explicit.documentation.bddReports,['ui/test-results/bdd-run.json']);
+});
+
+test('an old checkout without a workspace file names the safe update path instead of a product preset',async t=>{
+  const root=await temporary(t),source=path.join(root,'appspec/products/skyvw/jumps/recording-machine.ts');
+  await mkdir(path.dirname(source),{recursive:true});
+  await writeFile(source,'export const legacy = {};\n');
+  await assert.rejects(openHeadlessStudio({roots:[root]}),error=>error.code==='workspace.missing'
+    && error.message.includes('studio.workspace.json') && error.message.includes('origin/main')
+    && !error.message.includes('SKYVW'));
 });
 
 test('export uses the same inferred nested ProductSpec kernel as doctor',async t=>{
