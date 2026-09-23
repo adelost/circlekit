@@ -28,7 +28,12 @@ test('the one dev plugin selects an observed entry and refuses stale source iden
     assert.match(code,/fixture/);
     assert.doesNotMatch(code,/A{43}/u);
     assert.match(JSON.stringify(plugin.transformIndexHtml.handler()),/virtual:v1d-observation-bootstrap/);
+    let changed:((file:string)=>void)|null=null;const notices:string[]=[];
+    plugin.configureServer({watcher:{add:()=>{},on:(_name:string,handler:(file:string)=>void)=>{changed=handler;}},
+      moduleGraph:{getModuleById:()=>null,invalidateModule:()=>{}},ws:{send:(notice:{type:string})=>notices.push(notice.type)}});
     await writeFile(path.join(root,'src/app.ts'),'export const active = false;\n');
+    assert.ok(changed);(changed as (file:string)=>void)(path.join(root,'src/app.ts'));
+    assert.deepEqual(notices,['full-reload']);
     assert.throws(()=>plugin.load(id!),/stale|regenerate/i);
   } finally { await rm(root,{recursive:true,force:true}); }
 });

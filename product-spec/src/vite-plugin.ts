@@ -18,11 +18,13 @@ function inside(root:string,relative:string) {
 /** Dev-only Vite entry. It never runs in a production build and never embeds a pairing secret. */
 export function observationVitePlugin(options:Options) {
   let root=process.cwd();
+  const monitored=new Set<string>();
   const port=options.studioPort??4317;
   if(!Number.isInteger(port)||port<1||port>65535)throw new Error('Choose a valid local Studio port.');
   const observed=fileURLToPath(new URL('./observed.js',import.meta.url));
   function descriptor() {
     const file=inside(root,options.bundle);
+    monitored.clear();monitored.add(file);
     let bundle:Record<string,unknown>;
     try{bundle=JSON.parse(readFileSync(file,'utf8'));}
     catch{throw new Error(`Studio observation bundle missing or invalid: ${options.bundle}. Export it before dev.`);}
@@ -37,6 +39,7 @@ export function observationVitePlugin(options:Options) {
     for(const source of sources) {
       if(!source.file.startsWith(prefix))throw new Error(`Studio source mapping cannot place ${source.file}. Check sourcePrefix.`);
       const mapped=inside(sourceRoot,source.file.slice(prefix.length));
+      monitored.add(mapped);
       let text:string;
       try{text=readFileSync(mapped,'utf8');}
       catch{throw new Error(`Studio model source missing: ${source.file}. Sync the product before dev.`);}
@@ -55,6 +58,15 @@ export function observationVitePlugin(options:Options) {
     name:'v1d-runtime-observation',apply:'serve' as const,
     config:()=>({resolve:{alias:[{find:/^@v1d\/product-spec$/u,replacement:observed}]}}),
     configResolved:(config:{root:string})=>{root=path.resolve(config.root);},
+    configureServer:(server:any)=>{
+      descriptor();server.watcher.add([...monitored]);
+      server.watcher.on('change',(file:string)=>{
+        if(!monitored.has(path.resolve(file)))return;
+        const module=server.moduleGraph.getModuleById(resolved);
+        if(module)server.moduleGraph.invalidateModule(module);
+        server.ws.send({type:'full-reload'});
+      });
+    },
     resolveId:(id:string)=>id===virtual?resolved:null,
     load:(id:string)=>{
       if(id!==resolved)return null;
