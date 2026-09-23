@@ -134,6 +134,10 @@ export const flightJumpEventContract = {
 const transient = { durability: "transient", clockDomain: "none" } as const;
 
 /** One native SensorCoordinator owns both high-rate sensor pipelines. */
+/**
+ * WHAT: Collects pressure and attitude sensors into flight instrument state and impact outputs.
+ * WHY: Keeps native sensor subscriptions behind one flight instrumentation boundary.
+ */
 export const instrumentRuntimeOwner = service({
   id: "flight.instrument-runtime",
   inputs: [demandPort("demand", serviceDemandContract)],
@@ -176,6 +180,10 @@ export const instrumentRuntimeOwner = service({
 });
 
 /** Owns calibration/reference state; capture math and persistence stay native. */
+/**
+ * WHAT: Stores active altitude-reference state and publishes calibration status.
+ * WHY: Keeps calibration persistence and recovery separate from flight phase and presentation.
+ */
 export const flightAltitudeReferenceOwner = service({
   id: "flight.altitude-reference-owner",
   inputs: [port("action", altitudeReferenceActionContract)],
@@ -191,6 +199,10 @@ export const flightAltitudeReferenceOwner = service({
 });
 
 /** Phase detection plus alarm/vario policy; the HUD snapshot seam stays native until typed UI wiring lands. */
+/**
+ * WHAT: Calculates flight phase and live spatial state from instrument and position inputs.
+ * WHY: Keeps alarm and vario effects behind the same phase owner instead of UI code.
+ */
 export const flightRuntimeOwner = service({
   id: "flight.runtime-owner",
   inputs: [
@@ -211,6 +223,10 @@ export const flightRuntimeOwner = service({
 });
 
 /** Jump lifecycle owner: logging, grading and sync; detection math stays native. */
+/**
+ * WHAT: Collects flight state into durable jump lifecycle events.
+ * WHY: Keeps jump logging and complication refresh separate from phase detection.
+ */
 export const flightCoordinatorOwner = service({
   id: "flight.coordinator-owner",
   inputs: [
@@ -233,6 +249,10 @@ export const flightCoordinatorOwner = service({
 });
 
 /** Altitude audio cues gated by phase; playback and mixing stay native. */
+/**
+ * WHAT: Routes flight-phase changes into altitude audio and vario cues.
+ * WHY: Keeps playback effects outside phase detection and presentation.
+ */
 export const flightAudioCue = service({
   id: "flight.audio-cue",
   inputs: [port("phase", flightPhaseStateContract)],
