@@ -179,9 +179,9 @@ export class SemanticStudio {
     return this.workbench.scenario({ ...this.context, facetId: selected, scenario });
   }
 
-  trace({ text, cursor, entity, operationId, search = '', max, offset }) {
+  trace({ text, fileName, cursor, entity, operationId, search = '', max, offset }) {
     if (entity !== undefined) this.entity(entity);
-    const loaded = this.workbench.importTrace({ ...this.context, text });
+    const loaded = this.workbench.importTrace({ ...this.context, text, fileName });
     const frame = this.workbench.traceFrame({ ...this.context,
       filter: { cursor, entityKey: entity ?? null, operationId: operationId ?? null, search } });
     const paged = page(frame.events, { max, offset });

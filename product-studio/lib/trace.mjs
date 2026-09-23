@@ -69,8 +69,26 @@ function traceStatePath(events) {
   return {statePath:path,statePathTruncated:truncated};
 }
 
-export function decodeTrace(text, { productId, modelDigest, artifactSha256 = null, architecture }) {
-  const trace = boundedJson(text, 8_000_000);
+export function decodeTrace(text, { productId, modelDigest, artifactSha256 = null, architecture }, { fileName = null } = {}) {
+  const input = boundedJson(text, 8_000_000);
+  const events = input?.events;
+  requireThat(Array.isArray(events), 'trace.size', 'Trace events must be an array.');
+  requireThat(events.every(plain), 'trace.event', 'Every trace event must be a record.');
+  const implicit = events.every(event => !Object.hasOwn(event, 'sequence') && !Object.hasOwn(event, 'atMs'));
+  const explicit = events.every(event => Object.hasOwn(event, 'sequence') && Object.hasOwn(event, 'atMs'));
+  requireThat(implicit || explicit, 'trace.mixed', 'Every event must either omit both sequence and atMs or supply both. Mixed trace files are refused.');
+  const compact = events.length ? implicit : !input.clock && !input.truncation && !input.sessionId;
+  let trace = input;
+  if (compact) {
+    const name = typeof fileName === 'string' ? fileName.split(/[\\/]/).at(-1) : null;
+    requireThat(short(name), 'trace.file', 'A compact trace needs its selected file name for session identity.');
+    requireThat(input.clock === undefined && input.truncation === undefined && input.sessionId === undefined,
+      'trace.mixed', 'A compact trace derives clock, truncation and session from its selected file. Mixed envelopes are refused.');
+    trace = { ...input, productId: input.productId ?? productId, sessionId: name,
+      clock: { domain: 'virtual', unit: 'ms' }, truncation: { droppedBefore: 0, gaps: [] },
+      provenance: input.provenance ?? 'test-run',
+      events: events.map((event, index) => ({ ...event, sequence: index, atMs: index })) };
+  }
   requireThat(plain(trace) && trace.kind === 'product-studio-trace' && trace.version === 1, 'trace.version', 'Unsupported trace format. A count-only port snapshot is not an event trace.');
   const hasModel=Object.hasOwn(trace,'modelDigest'),hasArtifact=Object.hasOwn(trace,'artifactSha256');
   requireThat(hasModel||hasArtifact,'trace.identity','Trace needs a compiled model digest or exact artifact SHA-256.');

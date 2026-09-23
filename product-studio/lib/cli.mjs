@@ -168,7 +168,7 @@ export async function executeSemanticCli(parsed, { cwd = process.cwd() } = {}) {
     requireThat(plain(options.input), 'input.shape', 'Simulation input must be a JSON object.');
   }
   if (command === 'scenario') options.document = await readJsonInputFile(v.file, cwd);
-  if (command === 'trace') options.text = JSON.stringify(await readJsonInputFile(v.file, cwd));
+  if (command === 'trace') { options.text = JSON.stringify(await readJsonInputFile(v.file, cwd)); options.fileName = v.file; }
   return service.execute(command, options);
 }
 

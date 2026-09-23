@@ -38,6 +38,14 @@ test('workspace loads only a matching product-owned test trace from traceFile',a
   const loaded=second.view(second.require(second.list()[0].key));
   assert.equal(loaded.trace?.provenance,'test-run');
   assert.equal(loaded.trace.events[0].entityKey,owner.key);
+  await writeFile(path.join(root,'trace.json'),JSON.stringify({kind:'product-studio-trace',version:1,
+    artifactSha256:digest(artifactText),events:[{kind:'message',entityKey:owner.key,summary:'Owner exercised by test'}]}));
+  const compact=new Workbench({dataDir:path.join(root,'data')});
+  await compact.initialize([root],{includeFixtures:false});
+  const compactTrace=compact.view(compact.require(compact.list()[0].key)).trace;
+  assert.equal(compactTrace.sessionId,'trace.json');
+  assert.equal(compactTrace.events[0].sequence,0);
+  assert.equal(compactTrace.provenance,'test-run');
   const wrong={...recorder.snapshot(),artifactSha256:'b'.repeat(64)};
   await writeFile(path.join(root,'trace.json'),JSON.stringify(wrong));
   const third=new Workbench({dataDir:path.join(root,'data')});
