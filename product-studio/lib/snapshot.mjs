@@ -11,9 +11,10 @@ export function freezeData(value, seen = new WeakSet()) {
 /** Exact tokens plus a bounded substring fallback. Index is private to a snapshot. */
 export function buildSearchIndex(view) {
   const origins = new Map(view.sourceIndex.origins.map(o => [o.entityKey, o]));
+  const contracts = new Map(view.sourceIndex.contracts.map(contract => [contract.entityKey, contract]));
   const rows = view.architecture.entities.map(e => ({ key: e.key, id: e.id, kind: e.kind,
     label: e.label, group: e.group ?? null, file: origins.get(e.key)?.file ?? null,
-    text: `${e.key} ${e.id} ${e.label} ${e.kind} ${e.group ?? ''} ${origins.get(e.key)?.file ?? ''}`.toLowerCase() }));
+    text: `${e.key} ${e.id} ${e.label} ${e.kind} ${e.group ?? ''} ${origins.get(e.key)?.file ?? ''} ${contracts.get(e.key)?.what ?? ''} ${contracts.get(e.key)?.why ?? ''}`.toLowerCase() }));
   const tokens = new Map();
   rows.forEach((row, i) => {
     for (const token of new Set(row.text.split(/[^a-z0-9_-]+/).filter(Boolean))) {
@@ -71,7 +72,9 @@ export function summarizeView(view) {
   return { ...rest, transport: 'summary-v1', product: product ? { kind: product.kind, schemaVersion: product.schemaVersion,
     id: product.id, artifacts: product.artifacts, artifactScopes: [] } : null,
     graph: { nodes: graph.nodes.map(({ id, kind }) => ({ id, kind })), ports: [], edges: [] },
-    architecture: { ...architecture, edges: [], entities: architecture.entities.map(({ data, ...e }) => e) },
+    architecture: { ...architecture, edges: [], entities: architecture.entities.map(({ data, ...e }) => ({
+      ...e, ...(e.kind === 'node' && data?.declaration?.nodeTypeRef ? { nodeTypeRef: data.declaration.nodeTypeRef } : {})
+    })) },
     sources: sources.map(({ text, ...s }) => s), trace: traceMetadata(trace), evidence: evidence ? { kind: evidence.kind, notice: evidence.notice } : null,
     gallery: [], catalogAvailable: gallery.length > 0, interfaceLoaded: false,
     payloadNotice: 'Source text, entity details, catalogs and trace events load on demand.' };
