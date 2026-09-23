@@ -74,6 +74,18 @@ streams: ["stream.pressure"],
 rides: { "stream.pressure": { lane: "pressure", owner: "pressure-hub" } }
 ```
 
+A fetched service declares its whole lifecycle in one block. The platform supplies only the request and parser; its scheduler uses the declared clocks and failure policy.
+
+```ts
+fetchService({ id: "WEATHER", flow: { mode: "clock", everyMs: 1_800_000, minSpacingMs: 10_000 },
+  freshness: { kind: "age", staleAfterMs: 1_800_000 },
+  failure: { transport: "network", timeout: { connectMs: 10_000, readMs: 30_000 },
+    retry: { attemptDelaysMs: [1_000, 4_000], afterFailureMs: [30_000, 120_000, 600_000] },
+    offline: "serve-stale", cache: { kind: "value", maxAgeMs: 1_800_000,
+      homeRadiusM: 50, onFailure: "keep-last-good" } },
+  onCrash: "as-failure", effectIds: ["weather.briefing-fetch"] })
+```
+
 ## 4. The four questions
 
 1. **I want to add or change a fact** (a cell, a hint, a feed, a ride): open the thing's file under the product's `appspec/products/<name>/`, change the fact, run the product's generate. If the build refuses, the message names the law and the fix. Never add a Kotlin branch instead.
