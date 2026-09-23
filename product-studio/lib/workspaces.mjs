@@ -126,7 +126,7 @@ export class Workbench {
           await this.load({ ...await workspaceConventions(root,p,repository), root, fixture: false });
         }
       } else requireThat(false,'workspace.missing',
-        `No studio.workspace.json in ${root}. Update this checkout to origin/main or pass --workspace to one that has it.`);
+        `No studio.workspace.json in ${root}. Update this checkout to its repository's default branch or pass --workspace to one that has it.`);
     }
   }
   async load(config, { publish = true } = {}) {
