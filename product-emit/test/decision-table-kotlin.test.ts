@@ -75,11 +75,12 @@ test("a lookup inside a nested object starts at its indent and steps in by four 
 });
 
 test("a traced lookup records the selected cell with source values and input facts", () => {
-  const kotlin = emitDecisionLookupKotlin(table, names, "ruleFor", "    ", "GeneratedAcmeStudioTrace");
+  const kotlin = emitDecisionLookupKotlin(table, names, "ruleFor", "    ", "GeneratedAcmeStudioTrace", "BuildConfig.DEBUG");
   assert.match(kotlin, /val answer = when \(phase\)/u);
-  assert.match(kotlin, /GeneratedAcmeStudioTrace\.decision\("power\.rules", answer\.id/u);
+  assert.match(kotlin, /BuildConfig\.DEBUG && GeneratedAcmeStudioTrace\.enabled\) GeneratedAcmeStudioTrace\.decision\("power\.rules", answer\.id/u);
   assert.match(kotlin, /"phase" to phase\.name/u);
   assert.match(kotlin, /"ground\.lit" -> "\{\\"brightness\\"/u);
+  assert.throws(() => emitDecisionLookupKotlin(table, names, "ruleFor", "    ", "UnsafeTrace"), /release-false build guard/u);
 });
 
 test("a cell is a constant with its id first, then every column as its argument", () => {

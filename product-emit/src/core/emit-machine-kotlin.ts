@@ -8,6 +8,8 @@ export interface MachineKotlinOptions extends SourcedKotlinEmissionOptions {
   readonly machineName: string;
   /** Test-run recording is opt-in at generation; the normal emitted machine remains unchanged. */
   readonly traceSink?: string;
+  /** A build constant false in release, so tracing has no production execution path. */
+  readonly traceBuildGuard?: string;
 }
 
 /**
@@ -18,6 +20,7 @@ export interface MachineKotlinOptions extends SourcedKotlinEmissionOptions {
  */
 export function emitMachineKotlin(machine: Machine, options: MachineKotlinOptions): string {
   defineMachine({ ...machine } as Parameters<typeof defineMachine>[0]);
+  if (options.traceSink && !options.traceBuildGuard) throw new Error("a traced Kotlin machine needs a release-false build guard");
   const name = `Generated${options.symbolPrefix}${options.machineName}`;
   const state = `${name}State`;
   const guard = `${name}Guard`;
@@ -82,7 +85,7 @@ ${cells}
     fun declaredNext(stage: ${state}, inputName: String, guards: Set<${guard}>): ${cell}? {
         require(inputName in inputs) { "machine ${machine.id} has no input $inputName" }
         val cell = cells.firstOrNull { it.from == stage && it.on == inputName && guards.containsAll(it.requires) && it.forbids.none { held -> held in guards } }
-${noCell}${options.traceSink ? `        if (${options.traceSink}.enabled) ${options.traceSink}.transition(${kotlinStringLiteral(machine.id)},
+${noCell}${options.traceSink ? `        if (${options.traceBuildGuard} && ${options.traceSink}.enabled) ${options.traceSink}.transition(${kotlinStringLiteral(machine.id)},
             cell?.id, stage.name, cell?.to?.name ?: stage.name, inputName,
             ${guard}.entries.associate { it.name to (it in guards) })
 ` : ""}        return cell

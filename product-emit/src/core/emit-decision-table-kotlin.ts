@@ -72,8 +72,10 @@ export function emitDecisionLookupKotlin(
   functionName: string,
   indent = "    ",
   traceSink?: string,
+  traceBuildGuard?: string,
 ): string {
   requireNames(table, names);
+  if (traceSink && !traceBuildGuard) throw new Error("a traced Kotlin decision table needs a release-false build guard");
   const axisNames = Object.keys(table.axes);
   const parameters = axisNames.map((axis) => `${names.axes[axis]!.parameter}: ${names.axes[axis]!.enumType}`).join(", ");
   const points = decisionPoints(table.axes) as readonly Readonly<Record<string, string>>[];
@@ -96,7 +98,7 @@ export function emitDecisionLookupKotlin(
     .join("\n");
   return `${indent}fun ${functionName}(${parameters}): ${names.cellType} {
 ${indent}    val answer = ${lookup}
-${indent}    if (${traceSink}.enabled) ${traceSink}.decision(${kotlinStringLiteral(table.id)}, answer.id,
+${indent}    if (${traceBuildGuard} && ${traceSink}.enabled) ${traceSink}.decision(${kotlinStringLiteral(table.id)}, answer.id,
 ${indent}        mapOf(${facts}), when (answer.id) {
 ${values}
 ${indent}            else -> error("Unknown declared cell " + answer.id)

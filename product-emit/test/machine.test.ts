@@ -51,11 +51,12 @@ const options = {
 };
 
 test("a traced generated machine records the real cell and all guards only during a Studio test", () => {
-  const kotlin = emitMachineKotlin(door, { ...options, traceSink: "GeneratedAcmeStudioTrace" });
-  assert.match(kotlin, /if \(GeneratedAcmeStudioTrace\.enabled\) GeneratedAcmeStudioTrace\.transition\("acme\.door"/u);
+  const kotlin = emitMachineKotlin(door, { ...options, traceSink: "GeneratedAcmeStudioTrace", traceBuildGuard: "BuildConfig.DEBUG" });
+  assert.match(kotlin, /if \(BuildConfig\.DEBUG && GeneratedAcmeStudioTrace\.enabled\) GeneratedAcmeStudioTrace\.transition\("acme\.door"/u);
   assert.match(kotlin, /GeneratedAcmeDoorGuard\.entries\.associate \{ it\.name to \(it in guards\) \}/u);
   assert.match(kotlin, /System\.getenv\("V1D_STUDIO_TRACE_DIR"\)/u);
   assert.match(emitStudioTraceSinkKotlin("FixtureTrace"), /fun transition\(facetId: String, cellId: String\?/u);
+  assert.throws(() => emitMachineKotlin(door, { ...options, traceSink: "UnsafeTrace" }), /release-false build guard/u);
 });
 
 test("the Kotlin is the machine's states, guards and cells as data, and declaredNext answers as step() does", () => {
