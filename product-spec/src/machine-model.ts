@@ -1,4 +1,4 @@
-import { requireWireId } from "./node-model.js";
+import { requireUnique, requireWireId } from "./node-model.js";
 import { frozen } from "./frozen.js";
 
 /**
@@ -50,6 +50,8 @@ export interface MachineUpdate<Input extends string = string> {
 
 export interface MachineDeclaration<State extends string, Input extends string, Guard extends string> {
   readonly id: string;
+  /** Product graph owner. Standalone machines may omit it; a ProductIr machine may not. */
+  readonly ownerNodeTypeRef?: string;
   readonly states: readonly State[];
   readonly initial: NoInfer<State>;
   readonly inputs: readonly Input[];
@@ -68,6 +70,7 @@ export interface MachineDeclaration<State extends string, Input extends string, 
 /** A machine that passed every law: plain data, cells in declared order with their guard lists always present. */
 export interface Machine<State extends string = string, Input extends string = string, Guard extends string = string> {
   readonly id: string;
+  readonly ownerNodeTypeRef?: string;
   readonly states: readonly State[];
   readonly initial: State;
   readonly inputs: readonly Input[];
@@ -93,8 +96,10 @@ export type MachineStep<State extends string = string> =
 export function defineMachine<const State extends string, const Input extends string, const Guard extends string>(
   declaration: MachineDeclaration<State, Input, Guard>,
 ): Machine<State, Input, Guard> {
+  if (declaration.ownerNodeTypeRef !== undefined) requireWireId(declaration.ownerNodeTypeRef, `machine '${declaration.id}' ownerNodeTypeRef`);
   const machine = {
     id: declaration.id,
+    ...(declaration.ownerNodeTypeRef === undefined ? {} : { ownerNodeTypeRef: declaration.ownerNodeTypeRef }),
     states: declaration.states,
     initial: declaration.initial,
     inputs: declaration.inputs,
@@ -110,6 +115,13 @@ export function defineMachine<const State extends string, const Input extends st
   const problems = machineProblems(machine as unknown as Machine, declaration as unknown as Readonly<Record<string, unknown>>);
   if (problems.length > 0) throw new Error(`machine '${declaration.id}' is refused:\n- ${problems.join("\n- ")}`);
   return frozen(machine);
+}
+
+/** Product-owned machines enter the IR by stable ID; standalone machines remain independently usable. */
+export function machinesIr(machines: readonly Machine[]): { readonly machines?: readonly Machine[] } {
+  if (machines.length === 0) return {};
+  requireUnique(machines.map(({ id }) => id), "machine");
+  return { machines };
 }
 
 /**

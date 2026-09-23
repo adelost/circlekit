@@ -5,6 +5,7 @@ import type {
   ScreenComponentFamilyRef,
 } from "./component-tree-model.js";
 import { decisionTablesIr, type DecisionTable } from "./decision-table-model.js";
+import { machinesIr, type Machine } from "./machine-model.js";
 import { lanesIr, type Lanes, type LanesIr } from "./lanes-model.js";
 import {
   compileProductGraph,
@@ -152,6 +153,8 @@ export interface ProductDeclaration<
   readonly navigation: ProductNavigationDeclaration<NoInfer<Families[number]["screen"]>>;
   /** The product's decisions over finite axes, carried into the IR so the product graph can draw them. */
   readonly decisionTables?: readonly DecisionTable[];
+  /** Product-owned lifecycle machines; independent machine declarations remain standalone. */
+  readonly machines?: readonly Machine[];
   /** Where the product's streams and services run, carried into the IR so the product graph can draw each lane. */
   readonly lanes?: Lanes;
 }
@@ -178,6 +181,8 @@ export interface ProductIr {
   readonly navigation: ProductNavigationIr;
   /** Present only when the product declares decision tables, so a product without any emits the IR it always did. */
   readonly decisionTables?: readonly DecisionTable[];
+  /** Present only when the product declares owned machines. */
+  readonly machines?: readonly Machine[];
   /** Present only when the product declares lanes: the lanes as declared and every ride as an edge from rider to lane. */
   readonly lanes?: LanesIr;
 }
@@ -333,6 +338,7 @@ export function defineProduct<
     components: declaration.components,
     mountedScopes,
   });
+  requireFacetOwners(declaration.machines ?? [], declaration.decisionTables ?? [], graph.nodeTypes);
   const stateAuthorities = compileStateAuthorities(
     declaration.stateAuthorities,
     resolvableFiniteValues,
@@ -366,8 +372,27 @@ export function defineProduct<
     iconRefs: declaration.iconRefs,
     navigation,
     ...decisionTablesIr(declaration.decisionTables ?? []),
+    ...machinesIr(declaration.machines ?? []),
     ...lanesIr(declaration.lanes),
   });
+}
+
+/** A facet in ProductIr must name the compiled node type that actually owns its runtime. */
+function requireFacetOwners(
+  machines: readonly Machine[],
+  tables: readonly DecisionTable[],
+  nodeTypes: readonly ProductNodeType[],
+): void {
+  const types = new Set(nodeTypes.map(({ id }) => id));
+  for (const { kind, facet } of [
+    ...machines.map((facet) => ({ kind: "machine", facet })),
+    ...tables.map((facet) => ({ kind: "decision table", facet })),
+  ]) {
+    const owner = facet.ownerNodeTypeRef;
+    if (owner === undefined) throw new Error(`${kind} '${facet.id}' in ProductIr needs ownerNodeTypeRef`);
+    requireWireId(owner, `${kind} '${facet.id}' ownerNodeTypeRef`);
+    if (!types.has(owner)) throw new Error(`${kind} '${facet.id}' ownerNodeTypeRef '${owner}' is not a compiled node type`);
+  }
 }
 
 

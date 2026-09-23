@@ -87,6 +87,13 @@ test("the recording session holds without loss: 4 states, 11 inputs, 8 guards, 1
   assert.ok(Object.isFrozen(recording) && Object.isFrozen(recording.cells[0]!.requires));
 });
 
+test("standalone machines need no owner, but a declared owner is a valid node-type ID", () => {
+  assert.equal("ownerNodeTypeRef" in recording, false);
+  const owned = defineMachine({ ...recording, ownerNodeTypeRef: "recording.runtime" });
+  assert.equal(owned.ownerNodeTypeRef, "recording.runtime");
+  assert.throws(() => defineMachine({ ...recording, ownerNodeTypeRef: "bad_owner" } as never), /invalid wire id/);
+});
+
 test("step answers as RecordingSessionTable does: start, altitude, exit, deadlines, stop and cancel", () => {
   const cases: [State, (typeof inputs)[number], ReadonlySet<Guard>, State, string | null][] = [
     ["STOPPED", "Start", held("AUTOMATIC"), "ARMED", "stopped.start.armed"],

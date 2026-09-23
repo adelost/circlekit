@@ -58,6 +58,14 @@ test("a total table with one cell per point decides every point and names the ce
   assert.equal(decide(table, { phase: "AIR", display: "DARK", arrived: "JUST_NOW" }).cell, "air");
 });
 
+test("standalone tables need no owner, but a declared owner is a valid node-type ID", () => {
+  const table = defineDecisionTable({ id: "fixture.power", axes, columns, cells });
+  assert.equal("ownerNodeTypeRef" in table, false);
+  const owned = defineDecisionTable({ id: "fixture.power", ownerNodeTypeRef: "instrument.runtime", axes, columns, cells });
+  assert.equal(owned.ownerNodeTypeRef, "instrument.runtime");
+  assert.throws(untyped({ ownerNodeTypeRef: "bad_owner" }), /invalid wire id/);
+});
+
 test("total: a point no cell covers is refused by name", () => {
   assert.throws(untyped({ cells: cells.filter(({ id }) => id !== "ground.dark") }),
     /no cell covers phase=GROUND display=DARK arrived=JUST_NOW/);

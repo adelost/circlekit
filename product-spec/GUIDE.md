@@ -51,6 +51,12 @@ A product invariant. Read: "no airborne decision may ask for less than 20 Hz." I
 invariants: [{ refuse: "air must read pressure live", when: (d) => isAirborne(d.at.phase) && d.values.pressure.hz < 20 }]
 ```
 
+A machine or table included in a product names its runtime **node type** with
+`ownerNodeTypeRef: "recording.runtime"`. The product compiler refuses a missing
+or unknown owner and carries the exact reference into ProductIr. It never
+guesses from a similar ID or a node instance name. A standalone machine or
+table with no product graph may omit the owner and remains independently usable.
+
 A lane and a ride (`defineLanes`; Android Kotlin from `product-emit/src/core/emit-lanes-kotlin.ts`). Read: "pressure samples get their own serial lane, because a late sample is a late altitude."
 
 ```ts

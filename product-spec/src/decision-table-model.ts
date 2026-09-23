@@ -133,6 +133,8 @@ export type DerivedAxes<Axes extends DecisionAxes> = { readonly [Axis in keyof A
 
 export interface DecisionTableDeclaration<Axes extends DecisionAxes, Columns extends DecisionColumns> {
   readonly id: string;
+  /** Product graph owner. Standalone tables may omit it; a ProductIr table may not. */
+  readonly ownerNodeTypeRef?: string;
   /** Axis names to their values, in the order every emitter walks them. */
   readonly axes: Axes;
   readonly derived?: DerivedAxes<NoInfer<Axes>>;
@@ -148,6 +150,7 @@ export interface DecisionTableDeclaration<Axes extends DecisionAxes, Columns ext
  */
 export interface DecisionTable<Axes extends DecisionAxes = DecisionAxes, Columns extends DecisionColumns = DecisionColumns> {
   readonly id: string;
+  readonly ownerNodeTypeRef?: string;
   readonly axes: Axes;
   readonly derived: DerivedAxes<Axes>;
   readonly columns: Columns;
@@ -182,7 +185,9 @@ export function defineDecisionTable<const Axes extends DecisionAxes, const Colum
   declaration: DecisionTableDeclaration<Axes, Columns>,
 ): DecisionTable<Axes, Columns> {
   const { id, axes, columns, cells, derived = {}, invariants = [] } = declaration;
-  const table = { id, axes, derived, columns, cells, invariants: invariants.map(({ refuse }) => refuse) } as DecisionTable<Axes, Columns>;
+  if (declaration.ownerNodeTypeRef !== undefined) requireWireId(declaration.ownerNodeTypeRef, `decision table '${id}' ownerNodeTypeRef`);
+  const table = { id, ...(declaration.ownerNodeTypeRef === undefined ? {} : { ownerNodeTypeRef: declaration.ownerNodeTypeRef }),
+    axes, derived, columns, cells, invariants: invariants.map(({ refuse }) => refuse) } as DecisionTable<Axes, Columns>;
   const problems = decisionTableProblems(table as unknown as DecisionTable, invariants as unknown as readonly DecisionInvariant[]);
   if (problems.length > 0) {
     throw new Error(`decision table '${id}' is refused:\n- ${problems.join("\n- ")}`);
