@@ -16,8 +16,16 @@ function titleLines(value) {
 const cardHeight = value => Math.max(78, titleLines(value).length * 16 + 48);
 let serial = 0;
 
+export function machineGraph(facet) {
+  const machine=facet.compiled;
+  return {
+    nodes:machine.states.map(id=>({id,label:id,kind:'state',subtitle:machine.rests.includes(id)?'Rest state · may wait':'Deadline exit required'})),
+    edges:machine.cells.map(cell=>({id:cell.id,source:cell.from,target:cell.to,label:cell.on})),
+  };
+}
+
 /** Model layout is a view projection. Selection never reruns layout or resets the camera. */
-export function drawGraph(host, { nodes, edges, key, legacyKey, selected, active, onSelect }) {
+export function drawGraph(host, { nodes, edges, key, legacyKey, selected, active, trace, onSelect, columns=3, viewWidth=1000, viewHeight=550 }) {
   const storageKey = 'studio-camera-v1:' + key;
   let stored = {};
   try { const read = JSON.parse(localStorage.getItem(storageKey) || '{}'); if (read.version === 1) stored = read; } catch { /* Local state is not authoritative. */ }
@@ -29,11 +37,11 @@ export function drawGraph(host, { nodes, edges, key, legacyKey, selected, active
   const links = edges.filter(e => ids.has(e.source) && ids.has(e.target)).slice(0,600);
   const heights = new Map(shown.map(n => [n.id,cardHeight(n.label??n.id)]));
   const rowHeights=[];
-  shown.forEach((n,i)=>{const row=Math.floor(i/3);rowHeights[row]=Math.max(rowHeights[row]??0,heights.get(n.id));});
+  shown.forEach((n,i)=>{const row=Math.floor(i/columns);rowHeights[row]=Math.max(rowHeights[row]??0,heights.get(n.id));});
   const rowTops=[80];rowHeights.forEach((height,row)=>{rowTops[row+1]=rowTops[row]+height+50;});
-  const positions = new Map(shown.map((n,i) => [n.id, pointOK(stored.positions?.[n.id]) ? stored.positions[n.id] : {x:60+(i%3)*280,y:rowTops[Math.floor(i/3)]}]));
+  const positions = new Map(shown.map((n,i) => [n.id, pointOK(stored.positions?.[n.id]) ? stored.positions[n.id] : {x:60+(i%columns)*280,y:rowTops[Math.floor(i/columns)]}]));
   let transform = pointOK(stored.viewport) && Number.isFinite(stored.viewport.scale) ? {...stored.viewport,scale:scale(stored.viewport.scale)} : {x:0,y:0,scale:1};
-  const svg = node('svg',{class:'graph-svg',viewBox:'0 0 1000 550',role:'group','aria-label':'Declared graph. Arrow keys move a focused node; Enter inspects it.'});
+  const svg = node('svg',{class:'graph-svg',viewBox:`0 0 ${viewWidth} ${viewHeight}`,role:'group','aria-label':'Declared graph. Arrow keys move a focused node; Enter inspects it.'});
   const arrow = 'studio-arrow-'+(++serial), defs=node('defs'), marker=node('marker',{id:arrow,viewBox:'0 0 10 10',refX:9,refY:5,markerWidth:6,markerHeight:6,orient:'auto-start-reverse'});
   marker.append(node('path',{d:'M0 0 L10 5 L0 10 z',fill:'currentColor'})); defs.append(marker); svg.append(defs);
   const viewport=node('g'), edgeLayer=node('g'), nodeLayer=node('g'); viewport.append(edgeLayer,nodeLayer); svg.append(viewport);
@@ -77,22 +85,36 @@ export function drawGraph(host, { nodes, edges, key, legacyKey, selected, active
   function apply() {viewport.setAttribute('transform',`translate(${transform.x} ${transform.y}) scale(${transform.scale})`);}
   function saveNow() {if(destroyed)return;try{localStorage.setItem(storageKey,JSON.stringify({version:1,positions:Object.fromEntries(positions),viewport:transform}));}catch{/* Quota/private mode cannot block navigation. */}}
   function save() {clearTimeout(saveTimer);saveTimer=setTimeout(saveNow,150);}
-  function zoom(by, anchor={x:500,y:275}) {const old=transform.scale,next=scale(old*by);transform={x:anchor.x-(anchor.x-transform.x)*next/old,y:anchor.y-(anchor.y-transform.y)*next/old,scale:next};apply();save();}
+  function zoom(by, anchor={x:viewWidth/2,y:viewHeight/2}) {const old=transform.scale,next=scale(old*by);transform={x:anchor.x-(anchor.x-transform.x)*next/old,y:anchor.y-(anchor.y-transform.y)*next/old,scale:next};apply();save();}
   let pan=null;
   svg.onwheel=e=>{e.preventDefault();zoom(e.deltaY<0?1.1:1/1.1,clientPoint(e,false));};
   svg.onpointerdown=e=>{if(e.target!==svg||e.button!==0)return;pan={point:clientPoint(e,false),base:{...transform}};svg.setPointerCapture(e.pointerId);};
   svg.onpointermove=e=>{if(!pan)return;const p=clientPoint(e,false);transform.x=pan.base.x+p.x-pan.point.x;transform.y=pan.base.y+p.y-pan.point.y;apply();};
   svg.onpointerup=svg.onpointercancel=()=>{pan=null;save();};
   function fit() {const ps=[...positions.entries()];if(!ps.length)return;const left=Math.min(...ps.map(([,p])=>p.x))-40,top=Math.min(...ps.map(([,p])=>p.y))-60;
-    const width=Math.max(...ps.map(([,p])=>p.x+215))-left+40,height=Math.max(...ps.map(([id,p])=>p.y+heights.get(id)))-top+40,s=scale(Math.min(1000/width,550/height));
-    transform={x:(1000-width*s)/2-left*s,y:(550-height*s)/2-top*s,scale:s};apply();save();}
+    const width=Math.max(...ps.map(([,p])=>p.x+215))-left+40,height=Math.max(...ps.map(([id,p])=>p.y+heights.get(id)))-top+40,s=scale(Math.min(viewWidth/width,viewHeight/height));
+    transform={x:(viewWidth-width*s)/2-left*s,y:(viewHeight-height*s)/2-top*s,scale:s};apply();save();}
   function arrange() { // Deterministic view layout only, never an asserted event order.
     const incoming=new Map(shown.map(n=>[n.id,0]));for(const e of links)if(e.source!==e.target)incoming.set(e.target,incoming.get(e.target)+1);
     const rank=new Map(), queue=shown.filter(n=>incoming.get(n.id)===0).map(n=>n.id);if(!queue.length&&shown.length)queue.push(shown[0].id);
     queue.forEach(id=>rank.set(id,0));for(let i=0;i<queue.length;i++)for(const e of links.filter(e=>e.source===queue[i]))if(!rank.has(e.target)){rank.set(e.target,(rank.get(e.source)??0)+1);queue.push(e.target);}
     const rows=new Map();for(const n of shown){const r=rank.get(n.id)??0,y=rows.get(r)??80;rows.set(r,y+heights.get(n.id)+50);positions.set(n.id,{x:60+r*290,y});}all();fit();}
-  function select(next, running) {for(const [id,g]of nodeItems){g.classList.toggle('selected',id===next);g.classList.toggle('active',id===running);}for(const {e,g}of edgeItems)g.classList.toggle('selected',e.id===next);}
-  host.replaceChildren(svg);all();apply();select(selected,active);
+  function select(next, running, trace=null) {
+    for(const [id,g]of nodeItems){
+      g.classList.toggle('selected',id===next);g.classList.toggle('active',id===running);
+      g.classList.toggle('trace-past',!!trace?.pastNodes.has(id));
+      g.classList.toggle('trace-from',id===trace?.currentFrom);
+      g.classList.toggle('trace-to',id===trace?.currentTo);
+      if(id===trace?.currentTo)g.setAttribute('aria-current','step');else g.removeAttribute('aria-current');
+    }
+    for(const {e,g}of edgeItems){
+      g.classList.toggle('selected',e.id===next);
+      g.classList.toggle('trace-past',!!trace?.pastEdges.has(e.id));
+      g.classList.toggle('trace-current',e.id===trace?.currentEdge);
+      if(e.id===trace?.currentEdge)g.setAttribute('aria-current','step');else g.removeAttribute('aria-current');
+    }
+  }
+  host.replaceChildren(svg);all();apply();select(selected,active,trace);
   return {reset:fit,zoom,arrange,select,has:id=>nodeItems.has(id)||links.some(e=>e.id===id),shown:shown.length,total:nodes.length,viewport:()=>({...transform}),
     destroy(){saveNow();destroyed=true;clearTimeout(saveTimer);if(raf!==null)cancelAnimationFrame(raf);}};
 }

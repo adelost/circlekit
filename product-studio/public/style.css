@@ -33,3 +33,11 @@
 @media(max-width:680px){.topbar nav button[data-view]{display:none}.topbar nav #mobile-view{display:block;width:100%;height:38px}}
 .reports-table{table-layout:fixed;width:100%}.reports-table th:first-child{width:84px}.reports-table th:last-child{width:155px}.reports-table td,.reports-table th{white-space:normal}.reports-table td{padding:8px 10px;vertical-align:top;overflow-wrap:anywhere}.reports-table small{display:block;white-space:normal;overflow-wrap:anywhere}.reports-table details{margin-top:4px}.reports-table summary{font-size:11px;color:var(--muted)}
 .convergence{border-color:currentColor}.convergence:hover{filter:brightness(1.18)}
+.project-evidence{margin:14px 0 10px;color:var(--text);font-size:13px;line-height:1.9}
+.trace-model{min-width:0}.trace-model .section-label{margin:4px 0 10px}.trace-model .graph-host{min-height:300px;border:1px solid var(--line);border-radius:8px}.trace-model .graph-svg{height:300px}.trace-model>small{display:block;margin-top:6px}
+.trace-step-cue{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;margin:0 0 12px}.trace-step-cue .section-label{margin:0}.trace-step-cue strong{color:var(--cyan);font-size:18px;letter-spacing:-.3px}.trace-step-cue strong span{color:var(--muted)}
+.graph-node.trace-past rect{stroke:var(--cyan);stroke-width:1.7}.graph-node.trace-past .node-dot{fill:var(--cyan)}
+.graph-node.trace-from rect{stroke:var(--purple);stroke-width:2.6;fill:#25223e;filter:drop-shadow(0 0 5px var(--purple))}.graph-node.trace-to rect{stroke:var(--cyan);stroke-width:3;fill:#133040;filter:drop-shadow(0 0 7px var(--cyan))}.graph-node.trace-to .node-dot{fill:var(--cyan)}
+.graph-edge.trace-past{color:var(--cyan);opacity:.55}.graph-edge.trace-past path{stroke-width:2.2}.graph-edge.trace-current{color:var(--cyan);opacity:1}.graph-edge.trace-current path{stroke-width:4;filter:drop-shadow(0 0 5px var(--cyan))}.graph-edge.trace-current .edge-label{opacity:1}
+.trace-model tr.trace-current td{background:#153746;border-bottom-color:var(--cyan)}.trace-model tr.trace-current code{color:var(--cyan)}
+@media(max-width:720px){.trace-model .graph-host{min-height:210px}.trace-model .graph-svg{height:210px}.trace-step-cue strong{font-size:16px}}
