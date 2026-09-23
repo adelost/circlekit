@@ -2,6 +2,16 @@
 export function convergenceFor(view, compareLogic) {
   const reasons = [], gaps = [], counts = { laws: { passed: 0, failed: 0, skipped: 0 },
     trace: { consistent: 0, different: 0, unknown: 0 }, contracts: { validated: 0, total: 0, matched: 0, external: 0 } };
+  // Optional reports are not prerequisites. Failure to read the model or its
+  // selected intent scope is different: partial positive evidence cannot clear it.
+  const readErrors = [...(view.diagnostics ?? []),
+    ...view.documentation.diagnostics.filter(d => d.rule?.startsWith('contract.'))]
+    .filter(d => d.severity === undefined || d.severity === 'error');
+  const incomplete = view.documentation.scope?.complete === false || readErrors.length > 0;
+  if (view.documentation.scope?.complete === false) gaps.push('Selected contract source discovery is incomplete.');
+  for (const finding of readErrors)
+    gaps.push(`Selected model or intent could not be fully checked: ${finding.rule ?? 'unknown'}${finding.file ? ' (' + finding.file + ')' : ''}: ${finding.message}`);
+
   for (const report of view.documentation.reports.filter(r => r.run?.framework === 'product-spec-laws')) {
     if (report.status !== 'loaded') continue;
     for (const test of report.tests) {
@@ -58,7 +68,7 @@ export function convergenceFor(view, compareLogic) {
     if (counts.trace.unknown) gaps.push(`${counts.trace.unknown} trace steps have unknown or unavailable logic comparisons.`);
   }
   const evidence = counts.laws.passed + counts.trace.consistent + counts.contracts.validated;
-  const verdict = reasons.length ? 'Diverged' : evidence ? 'Converged' : 'Unknown';
+  const verdict = reasons.length ? 'Diverged' : evidence && !incomplete ? 'Converged' : 'Unknown';
   if (verdict === 'Unknown' && !gaps.length) gaps.push('No comparable declaration law, validated contract or recorded trace is loaded.');
   return { verdict, label: verdict === 'Diverged' ? `Diverged: ${reasons.length}` : verdict,
     count: reasons.length, reasons, gaps, counts, kernel, traceIdentity,
