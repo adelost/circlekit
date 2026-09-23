@@ -1,5 +1,10 @@
 # @v1d/product-emit
 
+The consuming product owns the `@v1d/product-spec` version. ProductEmit uses
+one compatible peer (`>=0.3.64 <0.4.0`) and pins 0.3.66 only for its own build
+and tests. Its existing skydiving-legos 0.1.5 dependency is unchanged; that
+legacy package's private 0.3.52 copy is not ProductEmit's public type boundary.
+
 Typed, deterministic ProductSpec emitters. Import only the layer a product
 uses:
 

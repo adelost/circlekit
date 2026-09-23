@@ -1,6 +1,6 @@
 {
   "name": "@v1d/product-emit",
-  "version": "0.1.44",
+  "version": "0.1.45",
   "description": "Typed Kotlin emission for v1d ProductSpec products",
   "type": "module",
   "files": [
@@ -21,16 +21,20 @@
     "clean": "node -e \"require('node:fs').rmSync('dist',{recursive:true,force:true})\"",
     "check:dag": "node scripts/check-import-dag.mjs",
     "build": "npm run clean && npm run check:dag && tsc -p tsconfig.json",
+    "check:pins": "node ../scripts/check-peer-product-spec.mjs .",
     "test": "npm run build && node --test dist/test/*.test.js",
     "verify:acme": "node scripts/verify-packed-acme.mjs",
     "pack:release": "npm run test && npm run verify:acme && npm pack"
   },
   "dependencies": {
     "@v1d/circlekit-assets": "https://circlekit.pages.dev/npm/v1d/circlekit-assets/0.3.43/v1d-circlekit-assets-0.3.43.tgz",
-    "@v1d/product-spec": "https://circlekit.pages.dev/npm/v1d/product-spec/0.3.64/v1d-product-spec-0.3.64.tgz",
     "@v1d/skydiving-legos": "https://circlekit.pages.dev/npm/v1d/skydiving-legos/0.1.5/v1d-skydiving-legos-0.1.5.tgz"
   },
+  "peerDependencies": {
+    "@v1d/product-spec": ">=0.3.64 <0.4.0"
+  },
   "devDependencies": {
+    "@v1d/product-spec": "https://circlekit.pages.dev/npm/v1d/product-spec/0.3.66/v1d-product-spec-0.3.66.tgz",
     "@types/node": "^24.3.0",
     "typescript": "^5.9.3",
     "xstate": "5.33.2"

@@ -14,7 +14,10 @@ if (packed === undefined) throw new Error("npm pack did not return a tarball");
 writeFileSync(join(scratch, "package.json"), JSON.stringify({
   private: true,
   type: "module",
-  dependencies: { "@v1d/product-emit": `file:${join(scratch, packed)}` },
+  dependencies: {
+    "@v1d/product-emit": `file:${join(scratch, packed)}`,
+    "@v1d/product-spec": "https://circlekit.pages.dev/npm/v1d/product-spec/0.3.66/v1d-product-spec-0.3.66.tgz",
+  },
 }, null, 2));
 writeFileSync(join(scratch, "tsconfig.json"), JSON.stringify({
   compilerOptions: {
