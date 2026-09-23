@@ -92,7 +92,8 @@ export class SemanticStudio {
       }
       const facetId = options.facetId ?? options.document?.facetId ?? options.document?.scenario?.facetId ?? null;
       envelope.scope.facet = facetId;
-      envelope.evidenceKind = command === 'trace' ? result.provenance === 'synthetic' ? 'simulation' : 'recorded-trace'
+      envelope.evidenceKind = command === 'trace' ? result.provenance === 'synthetic' ? 'simulation'
+        : result.provenance === 'test-run' ? 'test-run-trace' : 'recorded-trace'
         : ['simulate', 'scenario'].includes(command) ? 'simulation' : 'declared';
       let failure = null;
       if (result.supported === false) failure = { code: 'query.unsupported', message: result.message };

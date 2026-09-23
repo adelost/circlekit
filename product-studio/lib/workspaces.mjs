@@ -73,6 +73,8 @@ export class Workbench {
   }
   async load(config, { publish = true } = {}) {
     requireThat(typeof config.id === 'string' && typeof config.label === 'string' && Array.isArray(config.sources ?? []) && (config.sources ?? []).length <= 32, 'workspace.config', 'Invalid workspace declaration.');
+    requireThat(config.traceFile === undefined || typeof config.traceFile === 'string' && config.traceFile.endsWith('.json'),
+      'workspace.traceFile','Select a repository-relative JSON trace file.');
     const key = `${config.id}-${digest(config.root).slice(0, 10)}`;
     const sources = [], errors = []; let totalSourceBytes = 0;
     let imported = { product: null, facets: [], identity: {} }, graphDigest = null;
@@ -122,7 +124,19 @@ export class Workbench {
     for (const item of pins.files) if(!readSet.some(r=>r.file===item.file))readSet.push(item);
     for (const item of documentationInputs.readSet) if(!readSet.some(r=>r.file===item.file))readSet.push(item);
     const p = { key, config, sources, documentationInputs, imported, graphDigest, errors, revision, readSet, compilerCompatibility, sourceCompatibility, evidence: null, trace: null };
-    const view = this.view(p);
+    let view = this.view(p);
+    if (config.traceFile) {
+      try {
+        const traceText=(await safeFile(config.root,config.traceFile,8_000_000)).text;
+        p.trace=freezeData(decodeTrace(traceText,view));
+      } catch (error) {
+        errors.push({rule:error.code??'trace.unavailable',file:config.traceFile,
+          message:error.code==='ENOENT'?'The selected trace has not been produced yet. Run its owning test, then reload.':error.message,
+          severity:error.code==='ENOENT'?'info':'warning'});
+        this.snapshots.delete(p);
+      }
+      view=this.view(p);
+    }
     if (publish) this.projects.set(key, p);
     return publish ? view : p;
   }
@@ -160,7 +174,8 @@ export class Workbench {
     const modelDiagnostics = [...p.errors, ...(inspection?.diagnostics ?? []), ...p.sources.flatMap(s => s.parsed.diagnostics), ...sourceIndex.diagnostics];
     const gallery = p.imported.product?.showcase?.cases ?? p.sources.flatMap(s => Object.values(s.parsed.dataExports).flat()).filter(v => v.title && v.scenarios);
     return { key: p.key, label: p.config.label, fixture: !!p.config.fixture, originKind: p.config.originKind ?? (p.config.fixture ? 'fixture' : 'workspace'), revision: p.revision,
-      toolVersions: TOOL_VERSIONS, modelDigest, productId: inspection?.productId ?? p.imported.product?.id ?? p.config.id, architecture, canvas: withIntentCaptions(architectureSlice(architecture),documentation,architecture), sourceIndex, sourceIdentity, compatibility: p.compilerCompatibility ?? p.imported.compatibility ?? null, trace: null, scenarios: inspection?.scenarios ?? [], provenance: p.config.provenance ?? null, bundleDigest, product: p.imported.product, graph: graphOf(p.imported.product), facets, gallery,
+      toolVersions: TOOL_VERSIONS, modelDigest, artifactSha256:p.imported.identity.productDigest ?? null,
+      productId: inspection?.productId ?? p.imported.product?.id ?? p.config.id, architecture, canvas: withIntentCaptions(architectureSlice(architecture),documentation,architecture), sourceIndex, sourceIdentity, compatibility: p.compilerCompatibility ?? p.imported.compatibility ?? null, trace: null, scenarios: inspection?.scenarios ?? [], provenance: p.config.provenance ?? null, bundleDigest, product: p.imported.product, graph: graphOf(p.imported.product), facets, gallery,
       sources: [...p.sources.map(s => ({ path: s.path, digest: s.parsed.digest, text: s.text, diagnostics: s.parsed.diagnostics, valid: s.parsed.valid })),
         ...(p.documentationInputs?.evidenceSources??[]).filter(s=>!p.sources.some(p=>p.path===s.path)).map(s=>({...s,digest:digest(s.text),diagnostics:[],valid:false}))],
       documentation, diagnostics: modelDiagnostics,

@@ -443,7 +443,8 @@ async function loadTraceFrame(cursor) {
   try {
     const result=await api('trace-page',{...requestContext(),traceDigest:project.trace.traceDigest,offset:state.traceOffset??0,limit:200,filter:{cursor,search:state.traceSearch ?? '',operationId:state.traceOperation || null}});
     if(ticket!==generation)return;
-    state.traceCursor=cursor;state.traceFrame=result;state.mode=project.trace.provenance==='synthetic'?'Simulation':'Recorded trace';
+    state.traceCursor=cursor;state.traceFrame=result;state.mode=project.trace.provenance==='synthetic'?'Simulation'
+      :project.trace.provenance==='test-run'?'Test run':'Recorded trace';
     if(result.current)state.selected={kind:'entity',id:result.current.entityKey};render();
   }catch(error){if(ticket===generation)toast(error.message);}
 }

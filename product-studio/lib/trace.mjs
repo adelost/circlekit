@@ -6,9 +6,11 @@ const LIMIT = 20000;
 const short = (s, limit = 600) => typeof s === 'string' && s.length > 0 && s.length <= limit;
 
 /** A passive producer API. Owners call record explicitly with their clock; no polling or IO. */
-export function createTraceRecorder({ productId, modelDigest, sessionId, clock, capacity = 2000, provenance = 'recorded' }) {
-  requireThat(short(productId) && isDigest(modelDigest) && short(sessionId), 'trace.identity', 'Trace product, model and session identity are required.');
-  requireThat(['wall', 'monotonic', 'virtual'].includes(clock) && ['recorded', 'synthetic'].includes(provenance), 'trace.clock', 'Choose an explicit clock and evidence origin.');
+export function createTraceRecorder({ productId, modelDigest = null, artifactSha256 = null, sessionId, clock, capacity = 2000, provenance = 'recorded' }) {
+  requireThat(short(productId) && short(sessionId) && (modelDigest !== null || artifactSha256 !== null)
+    && (modelDigest === null || isDigest(modelDigest)) && (artifactSha256 === null || isDigest(artifactSha256)),
+  'trace.identity', 'Trace product, compiled model or artifact hash, and session identity are required.');
+  requireThat(['wall', 'monotonic', 'virtual'].includes(clock) && ['recorded', 'test-run', 'synthetic'].includes(provenance), 'trace.clock', 'Choose an explicit clock and evidence origin.');
   requireThat(Number.isSafeInteger(capacity) && capacity > 0 && capacity <= LIMIT, 'trace.capacity', 'Trace capacity must be between 1 and 20000.');
   let sequence = 0, start = 0, count = 0, lastTime = null; const events = new Array(capacity);
   return {
@@ -23,7 +25,9 @@ export function createTraceRecorder({ productId, modelDigest, sessionId, clock, 
       lastTime = row.atMs; sequence++; return row.sequence;
     },
     snapshot() {
-      return { kind: 'product-studio-trace', version: 1, productId, modelDigest, sessionId,
+      return { kind: 'product-studio-trace', version: 1, productId,
+        ...(modelDigest === null ? {} : {modelDigest}),
+        ...(artifactSha256 === null ? {} : {artifactSha256}), sessionId,
         clock: { domain: clock, unit: 'ms' }, provenance,
         truncation: { droppedBefore: count ? events[start].sequence : 0, gaps: [] },
         events: Array.from({length:count},(_,i)=>structuredClone(events[(start+i)%capacity])) };
@@ -52,11 +56,16 @@ function validateEvent(event, knownEntities) {
   assertSerializable(event);
 }
 
-export function decodeTrace(text, { productId, modelDigest, architecture }) {
+export function decodeTrace(text, { productId, modelDigest, artifactSha256 = null, architecture }) {
   const trace = boundedJson(text, 8_000_000);
   requireThat(plain(trace) && trace.kind === 'product-studio-trace' && trace.version === 1, 'trace.version', 'Unsupported trace format. A count-only port snapshot is not an event trace.');
-  requireThat(trace.productId === productId && trace.modelDigest === modelDigest && isDigest(modelDigest), 'trace.identity', 'Trace does not match this compiled model. Open the matching bundle.');
-  requireThat(short(trace.sessionId) && ['recorded', 'synthetic'].includes(trace.provenance), 'trace.session', 'A trace requires a session and an explicit evidence origin.');
+  const hasModel=Object.hasOwn(trace,'modelDigest'),hasArtifact=Object.hasOwn(trace,'artifactSha256');
+  requireThat(hasModel||hasArtifact,'trace.identity','Trace needs a compiled model digest or exact artifact SHA-256.');
+  requireThat(trace.productId === productId
+    && (!hasModel || isDigest(trace.modelDigest) && trace.modelDigest === modelDigest)
+    && (!hasArtifact || isDigest(trace.artifactSha256) && trace.artifactSha256 === artifactSha256),
+  'trace.identity', 'Trace does not match this compiled model or artifact. Open the matching bundle.');
+  requireThat(short(trace.sessionId) && ['recorded', 'test-run', 'synthetic'].includes(trace.provenance), 'trace.session', 'A trace requires a session and an explicit evidence origin.');
   requireThat(trace.clock?.unit === 'ms' && ['wall','monotonic','virtual'].includes(trace.clock.domain), 'trace.clock', 'Trace clock must have an explicit supported domain.');
   requireThat(Array.isArray(trace.events) && trace.events.length <= LIMIT, 'trace.size', 'Trace exceeds the supported event budget.');
   requireThat(plain(trace.truncation) && Number.isSafeInteger(trace.truncation.droppedBefore) && trace.truncation.droppedBefore >= 0
@@ -86,6 +95,7 @@ export function decodeTrace(text, { productId, modelDigest, architecture }) {
     'A declared gap does not match missing captured sequences. Trailing loss needs a future trace schema.');
   return { ...trace, traceDigest: digest(canonicalJson(trace)),
     notice: trace.provenance === 'synthetic' ? 'Synthetic trace. No product runtime was observed.'
+      : trace.provenance === 'test-run' ? 'Test run. Events were recorded by an owner-run test, not a live product session.'
       : 'Recorded events supplied by a producer. Identity is checked; the trace is not authenticated and does not prove sensor accuracy.',
     incompleteCausality: trace.events.some(e => e.causedBy !== undefined && !observed.has(e.causedBy)),
     complete: trace.truncation.droppedBefore === 0 && trace.truncation.gaps.length === 0 };
