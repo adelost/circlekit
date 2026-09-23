@@ -23,10 +23,18 @@ export function sourceNavigator(project, state, escape) {
 export function entityInspector(project, selection, escape) {
   const e=project.architecture.entities.find(e=>e.key===selection.id); if(!e) return null;
   const origin=project.sourceIndex.origins.find(o=>o.entityKey===e.key), unresolved=project.sourceIndex.unresolved.find(o=>o.entityKey===e.key);
+  const directContract=project.sourceIndex.contracts.find(contract=>contract.entityKey===e.key);
+  const typeContract=e.kind==='node' && e.nodeTypeRef
+    ? project.sourceIndex.contracts.find(contract=>contract.entityKind==='node-type' && contract.entityId===e.nodeTypeRef) : null;
+  const contract=directContract ?? typeContract;
+  const tests=(project.testContracts ?? []).filter(test=>test.entityKeys.includes(e.key)
+    || contract && test.entityKeys.includes(contract.entityKey));
   const touching=project.architecture.edges.filter(edge=>edge.from===e.key || edge.to===e.key);
   return `<div class="section-label">${escape(e.kind)}</div><h2>${escape(e.id)}</h2><code>${escape(e.key)}</code>
     <div class="toolbar inspector-actions"><button data-source-entity="${escape(e.key)}" ${!origin ? 'disabled' : ''}>Open source</button><button data-query-entity="${escape(e.key)}">Potential impact</button></div>
     ${origin ? `<div class="notice info">${escape(origin.file)}<p>${escape(origin.provenance)} · ${escape(origin.editing)}</p></div>` : `<div class="notice">${escape(unresolved?.reason ?? 'Source mapping unavailable.')}</div>`}
+    ${contract ? `<section class="contract-card"><div class="section-label">WHAT</div><p>${escape(contract.what)}</p><div class="section-label">WHY</div><p>${escape(contract.why)}</p><small>${escape(contract.provenance)} · intent, not runtime evidence</small></section>` : (e.kind==='node'||e.kind==='node-type') ? '<div class="notice">No WHAT/WHY contract is available for this architectural boundary.</div>' : ''}
+    ${tests.length ? `<details><summary>Behavior contracts · ${tests.length}</summary><p class="muted">Declared tests associated with this entity. Studio has not run them or claimed they passed.</p>${tests.map(test=>`<div class="test-contract"><span class="badge">${escape(test.level)}</span><strong>${escape(test.title ?? test.id)}</strong>${test.given?`<p><b>Given</b> ${escape(test.given)}</p><p><b>When</b> ${escape(test.when)}</p><p><b>Then</b> ${escape(test.then)}</p>`:''}</div>`).join('')}</details>` : ''}
     <details><summary>Declared properties</summary><pre>${e.data ? escape(JSON.stringify(e.data,null,2)) : 'Loading selected entity details…'}</pre></details>
     <div class="section-label">Direct declared relations</div><div class="compact-list">${touching.slice(0,40).map(edge=>`<button data-entity="${escape(edge.from === e.key ? edge.to : edge.from)}"><small>${escape(edge.kind)} · ${escape(edge.evidence ?? 'compiler')}</small><p>${escape(edge.from === e.key ? edge.to : edge.from)}</p></button>`).join('') || '<small>No explicit relations exported.</small>'}</div>`;
 }
