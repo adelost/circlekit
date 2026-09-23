@@ -84,7 +84,8 @@ export function createExperience(env) {
     return `<section class="panel"><div class="panel-body"><h2>${E(p.label)}</h2><p>Start with a question about your program, not a wall of nodes.</p><div class="onboarding-grid">
       <button data-exp="system"><strong>${p.architecture.coverage.owners} owners</strong><span>Explore architecture</span></button>
       <button data-exp="logic"><strong>${p.facets.length} logic declarations</strong><span>Explain a decision</span></button>
-      <button data-exp="problems"><strong>${p.sourceIndex.origins.length} source locations</strong><span>Review available evidence</span></button></div>
+      <button data-exp="problems"><strong>${p.sourceIndex.origins.length} source locations</strong><span>Review available evidence</span></button>
+      <button data-exp="problems"><strong>${p.sourceIndex.contracts.length} WHAT/WHY contracts</strong><span>Review architecture intent</span></button></div>
       <div class="notice info">${E(p.provenance??p.validationNotice)}</div><p>Existing code remains a valid implementation leaf. Studio does not turn unmodelled algorithms into imaginary nodes.</p><button data-exp="palette">Find an object or command</button></div></section>`;
   }
   function bookmarks(){const d=document.querySelector('#dialog'),items=savedBookmarks();d.innerHTML=`<h2>Saved views</h2><p>Links contain identities only, not source text or trace payloads.</p><div class="compact-list">${items.map((b,i)=>`<button data-bookmark="${i}">${E(b.title)}</button>`).join('')||'<p>No saved views.</p>'}</div><button data-close>Close</button>`;d.showModal();d.querySelector('[data-close]').onclick=()=>d.close();d.querySelectorAll('[data-bookmark]').forEach(b=>b.onclick=()=>{d.close();restore(items[Number(b.dataset.bookmark)].route);});}
