@@ -6,7 +6,7 @@ Status: implemented inspection/export/trace interfaces in this package. They are
 
 Install and start Studio using [README](README.md#start). A product needs no copied launcher; its current directory selects its workspace.
 
-The existing SKYVW, AMUX, video and Showcase path presets remain convenient fallbacks. A new product does not need a preset or a branch in the UI. Put this small file-selection manifest at its root:
+Legacy path presets remain for existing checkouts. A new product does not need a preset or a branch in the UI. Put this small file-selection manifest at its root:
 
 ```json
 {

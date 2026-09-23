@@ -10,7 +10,7 @@ const project = (facet, trace = null) => ({facets:[facet],trace,product:null,gra
 const trace = {sessionId:'test',eventCount:2,provenance:'test-run',complete:true,notice:'Test run.',truncation:{droppedBefore:0,gaps:[]},clock:{domain:'virtual'}};
 const frame = logic => ({current:{sequence:1,kind:'transition',atMs:1,entityKey:'facet:machine:jump.session',logic},events:[],causalPath:[],nextOffset:null,total:2,logicCheck:{kind:'consistent',message:'Matches'}});
 
-test('SKYVW recording cycle follows the longest simple path from STOPPED', () => {
+test('a recording cycle follows the longest simple path from STOPPED', () => {
   const recording={id:'recording.session',kind:'machine',compiled:{initial:'STOPPED',rests:['STOPPED','ARMED'],states:['STOPPED','ARMED','BUFFERING','RECORDING'],cells:[
     {id:'start-armed',from:'STOPPED',to:'ARMED',on:'Start'},
     {id:'start-now',from:'STOPPED',to:'RECORDING',on:'Record'},

@@ -297,7 +297,7 @@ async function perform(name) {
     if (name === 'zoom-in' || name === 'zoom-out') return graph?.zoom(name === 'zoom-in' ? 1.2 : .8);
     if (name === 'import') return $('#file-import').click();
     if (name === 'snapshot') return $('#snapshot-import').click();
-    if (name === 'connect-help') return showInfo('Attach real repositories', 'Stop this server and start it with the repositories you want to inspect. No clone, worktree or product process is started.', 'npm start -- --workspace /path/to/skydive-altimeter --workspace /path/to/agentmux --workspace /path/to/ai-dsl --workspace /path/to/circlekit');
+    if (name === 'connect-help') return showInfo('Attach repositories', 'Stop this server and start it with the products you want to inspect. No clone, worktree or product process is started.', 'v1d-studio --workspace /path/to/first-product --workspace /path/to/second-product');
     if (name === 'reload') { await reloadProject(false); return; }
     if (name === 'use-cell' && cell && f?.kind === 'machine') {
       state.guards = Object.fromEntries(f.compiled.guards.map(g => [g, cell.requires.includes(g)]));

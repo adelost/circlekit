@@ -17,12 +17,12 @@ All adapters emit the existing `bdd.run.v1` report shape. They do not add a Prod
 Run only the tests selected by the product owner and add the Studio reporter beside the normal reporter:
 
 ```bash
-STUDIO_REPOSITORY=adelost/agentmux \
-STUDIO_REPOSITORY_ROOT=/absolute/path/to/agentmux \
-STUDIO_BDD_REPORT=test-results/amux-bdd-run.json \
+STUDIO_REPOSITORY=example/my-product \
+STUDIO_REPOSITORY_ROOT=/absolute/path/to/product \
+STUDIO_BDD_REPORT=test-results/my-product-bdd-run.json \
 node node_modules/vitest/vitest.mjs run path/to/test \
   --reporter default \
-  --reporter /absolute/path/to/circlekit/product-studio/reporters/vitest.mjs
+  --reporter /absolute/path/to/product-studio/reporters/vitest.mjs
 ```
 
 The reporter targets the Vitest 4 public reporter model and refuses an incompatible API instead of scraping internal state. A Git commit is recorded only when the repository is clean before and after the observed run.
@@ -33,8 +33,8 @@ The reporter targets the Vitest 4 public reporter model and refuses an incompati
 v1d-studio junit \
   --input path/to/TEST-suite.xml \
   --source-root app/src/test \
-  --repository adelost/skydive-altimeter \
-  --output test-results/skyvw-bdd-run.json
+  --repository example/my-product \
+  --output test-results/my-product-bdd-run.json
 ```
 
 The importer never starts Gradle or JUnit. It requires a real suite timestamp. If XML omits the timezone, pass `--timestamp-zone UTC` only when the original runner actually used UTC. Ambiguous Kotlin source ownership is refused.
@@ -63,7 +63,7 @@ Only literal generated values referenced in a located Kotlin test body are assoc
 ## ProductSpec declaration laws
 
 ```bash
-v1d-studio laws --product amux-link
+v1d-studio laws --product my-product
 ```
 
 The report validates ProductSpec node types with `validateProductNodeType` and finite machine/decision-table facets through the shared ProductSpec kernel.
@@ -75,8 +75,4 @@ Studio derives the product's installed, lockfile-matching compiler from the work
 Studio finds existing convention-named reports as described in [INTEGRATION](INTEGRATION.md#1-start-with-an-existing-checkout); `documentation.bddReports` is an explicit override. Missing reports are informational. No evidence adapter runs as part of `v1d-studio` or `v1d-studio check`.
 
 
-## Verification policy: NO CI
-
-**Do not add GitHub Actions or other CI for these evidence adapters.**
-
-Vitest, JUnit import, declaration laws and smoke commands are owner-run on the user's own hardware. Product Studio must never turn these commands into remote repository automation or merge gates.
+Evidence adapters run only when the product owner invokes them. Opening Studio never starts a test runner or turns a report into a merge gate.
