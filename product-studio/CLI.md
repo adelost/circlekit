@@ -6,7 +6,7 @@ Product Studio 0.3 adds read/debug commands over the same `Workbench` used by th
 
 `v1d-studio export [repository] [--product ID]` explicitly compiles one workspace
 project with `bundle` and `authoring: { entry, exportName, files, kind? }`.
-Its `kernelRoot` selects the product's installed, lockfile-matching ProductSpec.
+Studio derives the nearest unambiguous installed ProductSpec; an explicit `kernelRoot` selects another product-owned package when needed.
 Only the declared bundle is written; opening the viewer never runs this command.
 
 ## Start with the bundled examples
@@ -69,7 +69,7 @@ v1d-studio converge /repo --product my-product
 v1d-studio converge /repo --product my-product --tasks
 ```
 
-`plan` prints a short Markdown block for a PR. It lists only owners, ports, consumers, facets and tests available in the loaded model, with unknown source or facet ownership marked. `converge` reads existing laws, contracts and traces without running tests or generators. It exits 0 for Converged, 1 for Diverged and 2 for Unknown; `--tasks` includes one task per known contradiction.
+`plan` prints a short Markdown block for a PR. A ProductIr facet must declare `ownerNodeTypeRef`; plan follows that owner through its instances to declared consumers. Standalone facets without an owner show `owner not declared`. Only loaded owners, ports, consumers, facets and tests appear; unknown source mappings stay explicit. `converge` reads existing laws, contracts and traces without running tests or generators. It exits 0 for Converged, 1 for Diverged and 2 for Unknown; `--tasks` includes one task per known contradiction.
 
 ## Bound the output
 

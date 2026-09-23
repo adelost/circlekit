@@ -23,9 +23,7 @@ The existing SKYVW, AMUX, video and Showcase path presets remain convenient fall
 
 The filename is `studio.workspace.json`. With that file present, running `v1d-studio` from the product directory discovers it. The manifest selects already-generated data and the bundle names source files; it contains no shell command, executable plugin, callback, or second definition of product behavior.
 
-For a product with an older locked compiler, set `kernelRoot` on the project to its package directory, for example `"kernelRoot":"appspec"`. Studio resolves that installed ProductSpec and verifies its version against that package's lockfile. A missing or mismatched kernel refuses simulation; Studio never substitutes its own newer version. Source editing may remain unavailable even when inspection and simulation work.
-
-To make an owner-produced trace available on opening the project, add `"traceFile":"test-results/studio-trace.json"`. The path is repository-relative. Studio reads and validates it without running the producer. A missing or mismatched trace is reported and never presented as a current observation.
+Studio derives `repository` from a GitHub `origin` remote and `kernelRoot` from the nearest unambiguous installed, lockfile-matching ProductSpec package of the selected source or artifact. It also finds existing `test-results/<project-id>-studio-trace.json`, `<project-id>-bdd-run.json` and `<project-id>-laws.json` in the repository root. Empty `sources` may be omitted. An explicit `kernelRoot`, `traceFile`, `documentation.repository` or `documentation.bddReports` overrides its convention when the product needs another choice. A missing or mismatched kernel refuses simulation; Studio never substitutes its own newer version. A missing or mismatched trace is never presented as a current observation.
 
 To diagnose attachment without opening a browser:
 
@@ -59,9 +57,9 @@ This packages existing output; it does not prove that output matches current sou
 
 The implemented `adapter.mjs` exports `prepareInspection` and `writeInspectionBundle`. Call them from the product's already-owned build/export path, after its real compiler and invariants have run. Pass the actual objects rather than copying their cells into a Studio registry.
 
-This package is local and unpublished. A build adapter may explicitly load its installed local tool module through an owner-configured path. Keep the product's immutable ProductSpec dependency on its own installed version.
+This package is local and unpublished. A build adapter may explicitly load its installed local tool module through an owner-configured path. Keep the product's immutable ProductSpec dependency on its own installed version. Shared ProductEmit and SkydivingLegos APIs use that consumer-owned ProductSpec peer; their package READMEs own the compatible peer ranges.
 
-The following is the body of that build integration, with `product`, `recordingMachine`, `productRoot`, `sourceRevision`, `producerPackageVersion` and the imported helper supplied by the existing build:
+The following is the body of that build integration, with a separately compiled `recordingMachine` not already in `product.machines`. The existing build supplies `product`, `productRoot`, `sourceRevision`, `producerPackageVersion` and the imported helper:
 
 ```js
 const receipt = await writeInspectionBundle({
@@ -87,19 +85,19 @@ const receipt = await writeInspectionBundle({
 
 This is not a new ProductSpec export or an automatically installed compiler hook. `writeInspectionBundle` writes one generated inspection file. `prepareInspection` returns the same bundle without writing, suitable for incorporation into an existing output-manifest owner. No tool-owned generator is run on every editor keystroke.
 
-A table already carried in `ProductIr.decisionTables` need not be copied into `facets`. Standalone facets are for definitions not present in the full IR. Matching duplicates are merged; conflicting definitions are refused. Unknown facet kinds stay visibly inspect-only.
+A table in `ProductIr.decisionTables` or machine in `ProductIr.machines` need not be copied into `facets`. Standalone facets are for definitions not present in the full IR. Matching duplicates are merged by exact ID; conflicting definitions are refused. Unknown facet kinds stay visibly inspect-only.
 
 ### What is automatic and what still needs a real owner
 
-Automatic: source digests, exact model/envelope digests, indexing unique literal IDs, typed graph extraction, table/machine views and generic queries.
+Automatic: source digests, exact model/envelope digests, indexing unique literal IDs, typed graph extraction, compiled ProductIr facet owners, table/machine views and generic queries.
 
-Explicit when meaningful: semantic groups, facet-to-runtime associations, source maps for computed declarations, opaque payload codecs, actual runtime observation hooks, and native/media preview adapters.
+Explicit when meaningful: semantic groups, source maps for computed declarations, opaque payload codecs, actual runtime observation hooks, and native/media preview adapters.
 
 The helper does not recover arbitrary source from JSON. A TypeScript runtime constructor does not magically know the original source span. Syntax indexing can find unique literal locations; ambiguous/computed identities need an explicit map from a source-aware build adapter. Unresolved fields remain inspectable, not silently writable.
 
 ## 4. Groups and relationships without a second graph
 
-Groups are presentation metadata with explicitly selected owners. Reuse an existing product grouping source where one exists. Do not infer domain membership from the first component of an ID.
+Groups are presentation metadata with explicitly selected owners. Reuse an existing product grouping source where one exists. Do not infer domain membership from the first component of an ID. The adapter relation below is for a standalone facet; a ProductIr facet uses its compiled owner instead.
 
 ```js
 groups: [
@@ -121,7 +119,7 @@ relations: [
 
 `entityKey` is exported by the adapter. Use it rather than constructing colon-delimited keys by hand. Ports use `entityKey('port', actualPortRef)`. Cell keys use kind `cell` and parent `${facetKind}/${facetId}`.
 
-Adapter associations are labelled as adapter-supplied, not native binding proof. Graph queries follow the actual compiled port bindings. Potential impact at owner granularity does not prove that every input affects every output inside native code. A facet with no explicit owner association reports unknown impact beyond itself.
+Adapter associations are labelled as adapter-supplied, not native binding proof. Graph queries follow the actual compiled port bindings. Potential impact at owner granularity does not prove that every input affects every output inside native code. A standalone facet without an explicit owner association reports unknown impact beyond itself.
 
 ## 5. Exact source navigation
 
@@ -172,6 +170,14 @@ trace.record({
 
 const dataOnlyCapture = trace.snapshot();
 ```
+
+For an owner-run test, the shorter version 1 file needs only `kind`, `version`, an exact `artifactSha256` or `modelDigest`, and `events`:
+
+```json
+{"kind":"product-studio-trace","version":1,"modelDigest":"<exact SHA-256>","events":[{"kind":"port","entityKey":"port::capture.out"}]}
+```
+
+Studio fills omitted `productId` from the selected project, `sessionId` from the file name, `clock` with virtual milliseconds, empty `truncation`, and `provenance` with `test-run`. Each omitted event `sequence` and `atMs` independently uses its array index; within one file, each field must be either supplied by every event or omitted by every event. A live producer states `recorded` and its actual clock/time; a synthetic producer states `synthetic`. The identity remains required, and supplied fields must match the loaded model.
 
 These variables denote actual owner observations, not fabricated values. Record `causedBy` only when the producer knows that causal relationship. Reusing an operation ID or having adjacent timestamps does not prove causality. Native/Python owners may produce the same versioned data format through their own hooks; each product owns that integration.
 
