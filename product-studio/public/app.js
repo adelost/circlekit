@@ -1,7 +1,7 @@
 import { patchHTML } from './dom.js';
 import { createExperience, hasDrafts } from './experience.js';
 import { drawGraph } from './graph.js';
-import { architectureControls, sourceNavigator, entityInspector, traceView, installDocumentState } from './studio-tools.js';
+import { architectureControls, sourceNavigator, entityInspector, decisionReasons, traceView, installDocumentState } from './studio-tools.js';
 
 const $ = selector => document.querySelector(selector);
 const escape = value => String(value ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -213,7 +213,7 @@ function inspector() {
       ${f.compiled.guards.map(g => `<label class="guard-row ${String(state.guards[g])}"><code>${relevant.has(g) ? '• ' : ''}${escape(g)}</code><select data-guard="${escape(g)}" aria-label="Scenario guard ${escape(g)}"><option value="unknown" ${state.guards[g] === 'unknown' ? 'selected' : ''}>Unknown</option><option value="true" ${state.guards[g] === true ? 'selected' : ''}>True</option><option value="false" ${state.guards[g] === false ? 'selected' : ''}>False</option></select></label>`).join('')}
       <hr><div class="section-label">Source ${f.source ? `· line ${f.source.line}` : ''}</div><pre class="source-excerpt">${escape(pretty(cell ?? { id: f.id, initial: f.compiled.initial, rests: f.compiled.rests, deadlines: f.compiled.deadlines }))}</pre><hr><small>Guards are supplied facts. No sensor, deadline timer or native field update runs here.</small>`;
   }
-  return `<div class="section-label">Decision region</div><h2>${escape(cell?.id ?? f.id)}</h2>${cell ? `<dl class="properties"><dt>Region</dt><dd><pre>${escape(pretty(cell.region))}</pre></dd><dt>Values</dt><dd><pre>${escape(pretty(cell.values))}</pre></dd></dl>${action('edit-cell', 'Edit region / values', '', !f.editable)} ${action('split-region', 'Split region', '', !f.editable)}` : '<p class="subtitle">Select a named cell or evaluate a point.</p>'}<hr><div class="section-label">Product invariants</div>${(f.compiled.invariants ?? []).length ? f.compiled.invariants.map(v => `<p class="notice info">${escape(v)}</p>`).join('') : '<small>No additional product invariants in this table.</small>'}<hr><div class="section-label">Why / why not</div><pre>${escape(pretty(state.result?.alternatives ?? 'Evaluate a point to inspect mismatches.'))}</pre>${f.validation.includes('structure-only') ? banner('Invariant callback code was not present in the imported artifact. It was not re-executed.') : ''}`;
+  return `<div class="section-label">Decision region</div><h2>${escape(cell?.id ?? f.id)}</h2>${cell ? `<dl class="properties"><dt>Region</dt><dd><pre>${escape(pretty(cell.region))}</pre></dd><dt>Values</dt><dd><pre>${escape(pretty(cell.values))}</pre></dd></dl>${action('edit-cell', 'Edit region / values', '', !f.editable)} ${action('split-region', 'Split region', '', !f.editable)}` : '<p class="subtitle">Select a named cell or evaluate a point.</p>'}<hr><div class="section-label">Product invariants</div>${(f.compiled.invariants ?? []).length ? f.compiled.invariants.map(v => `<p class="notice info">${escape(v)}</p>`).join('') : '<small>No additional product invariants in this table.</small>'}<hr><div class="section-label">Why / why not</div>${decisionReasons(state.result?.alternatives,escape)}${f.validation.includes('structure-only') ? banner('Invariant callback code was not present in the imported artifact. It was not re-executed.') : ''}`;
 }
 
 function renderGraph() {
