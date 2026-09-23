@@ -2,7 +2,7 @@
 
 A local, English architecture and logic workbench over the existing ProductSpec DSL. Inspect declared dependencies, explain decisions, navigate source, simulate finite logic, review candidates and inspect recorded evidence. Ordinary implementation code remains with its product owner.
 
-**Status:** the local 0.4 workbench was installed and exercised on 2026-09-23. Its 158 unit tests passed, selected flows ran in a headed direct-HTTP browser, and the 100/1000-owner synthetic profile was measured. The living-documentation extension passed 232 unit tests and selected real-product inspections. [VERIFICATION](VERIFICATION.md) names the exact scope and limits.
+**Status:** the local 0.4 workbench was installed and exercised on 2026-09-23. Its 158 unit tests passed, selected flows ran in a headed direct-HTTP browser, and the 100/1000-owner synthetic profile was measured. The living-documentation and trace extension passed 236 unit tests and selected real-product inspections. [VERIFICATION](VERIFICATION.md) names the exact scope and limits.
 
 ## Start
 
@@ -12,18 +12,25 @@ Requires Node 22 or later and this package's locked dependencies.
 cd product-studio
 npm ci
 npm run verify
-npm start
+npm link
 ```
 
-Open the printed loopback address, normally `http://127.0.0.1:4317`. Without an attached repository the clearly labelled examples are available. To inspect your own existing checkouts:
+From a product root containing `studio.workspace.json`:
 
 ```bash
-npm start -- /path/to/product
-# Or several repositories:
-npm start -- --workspace /path/to/circlekit --workspace /path/to/skydive-altimeter
+v1d-studio check
+v1d-studio
 ```
 
-No repository is cloned and no product generator, agent, model, GPU, emulator or native runtime is started. The package remains private/unpublished; `v1d-studio` is not globally installed by this PR.
+Open the printed loopback address, normally `http://127.0.0.1:4317`. Without an attached repository the clearly labelled examples are available. To inspect another checkout explicitly:
+
+```bash
+v1d-studio /path/to/product
+# Or several repositories:
+v1d-studio --workspace /path/to/circlekit --workspace /path/to/skydive-altimeter
+```
+
+No repository is cloned and no product generator, agent, model, GPU, emulator or native runtime is started. The package remains private/unpublished. `npm link` installs the local `v1d-studio` command from this checkout; a missing command requires that one-time setup rather than a fallback to another Studio version.
 
 ## Begin with a question
 

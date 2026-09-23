@@ -72,14 +72,13 @@ Missing or invalid service intent is an **authoring check**, not a product start
 Run the explicit source check from a configured repository:
 
 ```bash
-node studio.mjs check
+v1d-studio check
 ```
 
-The command requires the existing AMUX grammar checkout. With sibling checkouts the launcher finds it automatically. For other layouts set:
+The command uses the existing AMUX grammar checkout. It finds a sibling checkout or the installed AMUX command. For other layouts pass the trusted checkout explicitly:
 
 ```bash
-AMUX_ROOT=/path/to/agentmux
-STUDIO_ROOT=/path/to/circlekit/product-studio
+v1d-studio check --amux-root /path/to/agentmux
 ```
 
 Install the Studio's own locked dependencies once:
@@ -87,13 +86,14 @@ Install the Studio's own locked dependencies once:
 ```bash
 cd /path/to/circlekit/product-studio
 npm ci
+npm link
 ```
 
 Then from a product checkout:
 
 ```bash
-node studio.mjs check
-node studio.mjs
+v1d-studio check
+v1d-studio
 ```
 
 The viewer does not install packages on demand.

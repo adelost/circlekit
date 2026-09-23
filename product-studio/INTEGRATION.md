@@ -7,11 +7,13 @@ Status: implemented inspection/export/trace interfaces in this package. They are
 ```bash
 cd /path/to/circlekit/product-studio
 npm ci
-npm run verify
-npm start -- /path/to/product
+npm link
+cd /path/to/product
+v1d-studio check
+v1d-studio
 ```
 
-`bin/studio.mjs` is also exposed as the package's `v1d-studio` executable. It is not globally installed by this PR. Use `node /path/to/circlekit/product-studio/bin/studio.mjs ...` when no executable has been registered.
+`npm link` registers the local `v1d-studio` executable on this development host. The package is not published. A product needs no copied launcher; its current directory selects its workspace. If the command is absent, install/link Studio explicitly rather than using another checkout silently.
 
 The existing SKYVW, AMUX, video and Showcase path presets remain convenient fallbacks. A new product does not need a preset or a branch in the UI. Put this small file-selection manifest at its root:
 
@@ -29,6 +31,10 @@ The existing SKYVW, AMUX, video and Showcase path presets remain convenient fall
 ```
 
 The filename is `studio.workspace.json`. With that file present, running `v1d-studio` from the product directory discovers it. The manifest selects already-generated data and the bundle names source files; it contains no shell command, executable plugin, callback, or second definition of product behavior.
+
+For a product with an older locked compiler, set `kernelRoot` on the project to its package directory, for example `"kernelRoot":"appspec"`. Studio resolves that installed ProductSpec and verifies its version against that package's lockfile. A missing or mismatched kernel refuses simulation; Studio never substitutes its own newer version. Source editing may remain unavailable even when inspection and simulation work.
+
+To make an owner-produced trace available on opening the project, add `"traceFile":"test-results/studio-trace.json"`. The path is repository-relative. Studio reads and validates it without running the producer. A missing or mismatched trace is reported and never presented as a current observation.
 
 To diagnose attachment without opening a browser:
 
@@ -181,6 +187,8 @@ These variables denote actual owner observations, not fabricated values. Record 
 Import the capture in the GUI's **Trace** view. It verifies product/model/entity identities, clock domain, event order, explicit gaps and bounded payloads. Step backward/forward, filter by operation or text, navigate to the observed entity and compare supplied finite logic evidence to the compatible kernel. Contradictory recorded evidence remains visible; the viewer does not overwrite it with what the model expected.
 
 Record summaries and necessary finite facts, not secrets, source footage or full unbounded transcripts. Synthetic fixtures use `provenance: 'synthetic'`. The SDK is not an authentication system or an automatic redactor; the producer still chooses what is safe to capture. No live-runtime pause, mutation or whole-program replay is implemented.
+
+An actual owner-run test uses `provenance: 'test-run'`; the Trace view labels it **Test run**, not a live session. A native producer that only has the generated ProductSpec JSON can put its exact file-byte SHA-256 in `artifactSha256` instead of reproducing Studio's internal `modelDigest`. If it supplies both, both identities must match. Every event still names an entity in that exact loaded model.
 
 ## 7. Versions, scopes and changed source
 

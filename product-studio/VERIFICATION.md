@@ -4,11 +4,13 @@ Original review: 2026-09-22. Local execution: 2026-09-23. Base: PR #274 at `740d
 
 ## Local execution, 2026-09-23
 
-- Node 22.19.0 and locked `npm ci` succeeded. `npm run verify` passed 146/146 on #274 and 158/158 on the rebased #275 head `f59d325`. The living-documentation #276 source passed 232/232 before this documentation update.
+- Node 22.19.0 and locked `npm ci` succeeded. `npm run verify` passed 146/146 on #274, 158/158 on the rebased #275 head `f59d325`, and 236/236 on the #276 source before this documentation update.
 - The CLI inspected the selected example and simulated `IDLE -> PENDING`. Headed Chrome loaded the real local HTTP server, followed `IDLE -> PENDING -> guarded SUCCESS`, navigated System, validated an edited source through ProductSpec, exported a patch and loaded a separate candidate. Zero page errors were observed in these bounded flows.
 - On the 0.4 source, headed Chrome retained the graph camera while changing input, navigated to source and Problems and back, used Commands and saved views, and fit widths 1600/1024/720/390 without horizontal overflow. The Problems screenshot was inspected. The Python browser scripts below were not run; these are selected direct-browser checks, not a claim that every assertion in those scripts passed.
 - The synthetic profile on this host measured 1000 owners and 4985 bindings at 40.09 ms median model build and 1.41 ms mean query median. It does not measure browser frame rate or real-product latency.
 - CircleKit's selected shared services, SKYVW native's nine local services, SKYVW web's seven local services, AMUX Link's eleven local services and ai-dsl's activity table were checked in their own branches. Web source identity matched its export. Native and AMUX generated artifacts remained inspectable with their stated source/version limits. These local checks are not app-runtime or device proof.
+- A selected AMUX policy ran with its own locked ProductSpec 0.3.54 and returned the `compact-once` cell. SKYVW web's inspection used its own locked 0.3.52 without upgrading it. A fresh SKYVW native worktree without installed `appspec/node_modules` refused with `kernel.unavailable` and did not use Studio's kernel. After local `npm link`, `v1d-studio doctor` worked from AMUX and SKYVW web roots without environment variables.
+- Three focused trace cases first failed on the old behavior and now pass: a test-run origin is labelled separately from live observation, an exact raw artifact SHA-256 can identify a saved native trace without Studio's internal digest, and `traceFile` loads only a matching trace from the workspace. A wrong artifact hash remains a visible problem, not a loaded trace.
 
 ## Evidence from this pass
 
