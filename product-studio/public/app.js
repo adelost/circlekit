@@ -97,7 +97,7 @@ function render() {
       ${project.compatibility?.reason ? banner(project.compatibility.reason) : ''}
       ${['Problems','Compare','Welcome','Intent'].includes(state.view) ? experience.page(state.view) : state.view === 'Trace' ? traceView(project,state,escape) : state.view === 'System' ? systemView() : state.view === 'Logic' ? logicView() : state.view === 'Scenarios' ? scenariosView() : state.view === 'Interface' ? interfaceView() : changesView()}
     </main><aside class="inspector" aria-label="Selected object inspector">${inspector()}</aside></div>
-    <footer class="footer"><span class="safe">● No external execution</span><span>${escape(state.mode)}</span><span class="optional">${escape(project.revision?.slice(0, 7) ?? project.bundleDigest.slice(0, 8))}</span><span class="spacer"></span><span id="edit-status">${state.text !== null ? 'Draft changes · source unchanged' : 'Source read-only'}</span><span class="optional">Runtime disconnected</span></footer>
+    <footer class="footer"><span class="safe">● No runtime control</span><span>${escape(state.mode)}</span><span class="optional">${escape(project.revision?.slice(0, 7) ?? project.bundleDigest.slice(0, 8))}</span><span class="spacer"></span><span id="edit-status">${state.text !== null ? 'Draft changes · source unchanged' : 'Source read-only'}</span><span class="optional">${escape(state.liveStatus?.state==='observing'?'Receiver connected':state.liveStatus?.state==='model-mismatch'?'Model mismatch':'Receiver disconnected')}</span></footer>
   </div>`;
   patchHTML($('#app'), html);
   bind(); renderGraph(); experience?.afterRender();
@@ -522,7 +522,7 @@ async function loadLiveSession(captureId) {
     state.liveConvergence=result?.convergence??null;
     state.liveCaptureId=captureId;state.liveFollowTail=true;
     state.traceFrame=null;state.traceHistory=null;state.traceHistoryError=null;state.traceOffset=0;
-    await loadTraceFrame((trace??project.trace).eventCount-1);
+    await loadTraceFrame((state.liveTrace??project.trace).eventCount-1);
   }catch(error){if(ticket===generation){state.liveError=error.message;render();}}
 }
 

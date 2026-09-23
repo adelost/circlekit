@@ -35,6 +35,12 @@ test('an empty open v2 capture opens Trace rather than hiding a connected sessio
   assert.equal(studio.initialProjectView(project(machine,live)),'Trace');
 });
 
+test('a refused live model is visible without pretending it attached a trace', () => {
+  const html=studio.traceView(project(machine),{liveStatus:{state:'model-mismatch'}},escape);
+  assert.match(html,/Model mismatch/);
+  assert.doesNotMatch(html,/id="graph"/);
+});
+
 test('a growing capture shows a selectable session, connection and explicit evaluated phase', () => {
   const live={...trace,version:2,eventCount:2,sessionId:'capture-one',provenance:'recorded',
     capture:{id:'capture-one',through:3,ending:'open'},truncation:{droppedBefore:0,gaps:[{from:1,to:2,reason:'producer-queue-full'}]}};
@@ -43,6 +49,7 @@ test('a growing capture shows a selectable session, connection and explicit eval
   const state={traceCursor:1,traceFrame:{cursor:1,current,events:[],causalPath:[],nextOffset:null,total:2},
     liveStatus:{state:'observing',captureId:'capture-one',sessions:[{id:'capture-one',events:2,drops:2,ending:'open'},{id:'capture-old',events:1,drops:0,ending:'clean'}]}};
   const html=studio.traceView(project(machine,live),state,escape);
+  assert.match(html,/Live trace <code>capture-one<\/code>/);
   assert.match(html,/<select id="live-session"/);
   assert.match(html,/capture-old/);
   assert.match(html,/Connected.*Model matched.*2 events.*2 dropped.*Tail open/s);
