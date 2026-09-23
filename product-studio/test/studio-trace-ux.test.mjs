@@ -38,12 +38,13 @@ test('machine trace presents the shared graph before the event list', () => {
 
 test('a port trace without a facet shows its system graph, current owner and declared prior binding', () => {
   const account='node::account', list='node::list-presentation', jump='node::jump-presentation';
-  const records='port::account.records', listRecords='port::list-presentation.records', jumpModel='port::jump-presentation.model';
-  const binding={id:'records-binding',kind:'binding',from:records,to:listRecords};
+  const records='port::account.records', listRecords='port::list-presentation.records', jumpModel='port::jump-presentation.model', jumpInput='port::jump.model';
+  const binding={id:'records-binding',kind:'binding',from:records,to:listRecords,source:account,target:list};
   const p={...project(machine,trace),facets:[],product:{},graph:{nodes:[{id:'account'},{id:'list-presentation'},{id:'jump-presentation'}]},
     architecture:{entities:[{key:account,kind:'node',id:'account'},{key:list,kind:'node',id:'list-presentation'},
       {key:jump,kind:'node',id:'jump-presentation'},{key:records,kind:'port',owner:account},
-      {key:listRecords,kind:'port',owner:list},{key:jumpModel,kind:'port',owner:jump}],edges:[binding]}};
+      {key:listRecords,kind:'port',owner:list},{key:jumpModel,kind:'port',owner:jump},{key:jumpInput,kind:'port',owner:jump}],edges:[]},
+    canvas:{nodes:[{id:account},{id:list},{id:jump}],edges:[binding,{id:'jump-binding',kind:'binding',from:jumpModel,to:jumpInput,source:jump,target:jump}]}};
   const events=[{eventIndex:0,kind:'port',entityKey:records},{eventIndex:1,kind:'port',entityKey:listRecords},
     {eventIndex:2,kind:'port',entityKey:jumpModel}];
   const current={sequence:3,kind:'port',entityKey:jumpModel,atMs:3,summary:'Presentation'};
@@ -55,6 +56,7 @@ test('a port trace without a facet shows its system graph, current owner and dec
   assert.equal(marks.currentTo,jump);
   assert.deepEqual([...marks.pastNodes],[account,list]);
   assert.deepEqual([...marks.pastEdges],['records-binding']);
+  assert.equal(marks.currentEdge,'jump-binding');
 });
 
 test('an unknown port step names the missing declaration instead of leaving a blank graph', () => {

@@ -29,15 +29,14 @@ export function traceArchitectureMarks(project, frame, events=frame.events??[]) 
   if(!currentTo)return null;
   const prior=events.filter(event=>event.eventIndex<frame.cursor).sort((a,b)=>a.eventIndex-b.eventIndex);
   const pastNodes=new Set(prior.map(event=>owner(event.entityKey)).filter(Boolean));
-  const firstSeen=new Map();
-  for(const event of prior)if(!firstSeen.has(event.entityKey))firstSeen.set(event.entityKey,event.eventIndex);
-  const bindings=project.architecture.edges.filter(edge=>edge.kind==='binding');
-  const pastEdges=new Set(bindings.filter(edge=>firstSeen.has(edge.from)&&firstSeen.has(edge.to)
-    &&firstSeen.get(edge.from)<firstSeen.get(edge.to)).map(edge=>edge.id));
-  const incoming=bindings.find(edge=>edge.to===frame.current.entityKey&&firstSeen.has(edge.from));
+  const seenPorts=new Set(prior.map(event=>event.entityKey).filter(key=>entities.get(key)?.kind==='port'));
+  const bindings=project.canvas.edges.filter(edge=>edge.kind==='binding');
+  const pastEdges=new Set(bindings.filter(edge=>seenPorts.has(edge.from)||seenPorts.has(edge.to)).map(edge=>edge.id));
+  const adjacent=bindings.filter(edge=>edge.from===frame.current.entityKey||edge.to===frame.current.entityKey);
+  const currentEdge=adjacent.length===1?adjacent[0]:null;
   const focusIds=[currentTo,...[...pastNodes].reverse().filter(id=>id!==currentTo).slice(0,3)];
-  return {pastNodes,pastEdges,currentFrom:incoming?owner(incoming.from):null,currentTo,
-    currentEdge:incoming?.id??null,focusIds};
+  return {pastNodes,pastEdges,currentFrom:currentEdge?owner(currentEdge.from===frame.current.entityKey?currentEdge.to:currentEdge.from):null,currentTo,
+    currentEdge:currentEdge?.id??null,focusIds};
 }
 
 export const traceEventRows = (project,state) => state.traceHistory?.digest && state.traceHistory.digest===project.trace?.traceDigest
@@ -152,11 +151,11 @@ export function traceView(project, state, escape) {
   const f=traceFacet(project,state);
   const marks=f?.kind==='machine'&&frame?traceGraphMarks(f,frame,traceEventRows(project,state))
     :!f&&frame?traceArchitectureMarks(project,frame,traceEventRows(project,state)):null;
-  const current=marks?.currentTo ? `<div class="trace-step-cue"><span class="section-label">Current state</span><strong>${escape(marks.currentFrom)} <span aria-hidden="true">→</span> ${escape(marks.currentTo)}</strong>${marks.currentEdge?`<span class="badge">${escape(f.compiled.cells.find(c=>c.id===marks.currentEdge)?.on??marks.currentEdge)}</span>`:''}</div>` : '';
+  const current=f?.kind==='machine'&&marks?.currentTo ? `<div class="trace-step-cue"><span class="section-label">Current state</span><strong>${escape(marks.currentFrom)} <span aria-hidden="true">→</span> ${escape(marks.currentTo)}</strong>${marks.currentEdge?`<span class="badge">${escape(f.compiled.cells.find(c=>c.id===marks.currentEdge)?.on??marks.currentEdge)}</span>`:''}</div>` : '';
   const trail=(state.traceHistory?.digest && state.traceHistory.digest===trace.traceDigest)||frame?.events.length===trace.eventCount?'All prior recorded transitions shown.':state.traceHistoryPending?'Loading earlier transitions…':state.traceHistoryError?'Earlier transitions unavailable; showing the loaded page.':'Past transitions shown from the loaded trace page.';
   const model=f?.kind==='machine' ? `<div class="trace-model"><div class="section-label">${escape(f.id)} · recorded transition</div>${current}<div id="graph" data-managed="graph" class="graph-host"></div><small>${trail} Layout and camera stay in this machine.</small></div>`
     : f?.kind==='decision-table' ? `<div class="trace-model"><div class="section-label">${escape(f.id)} · recorded decision</div>${decisionRegionTable(f,escape,frame.current.logic?.cellId,true)}</div>`
-    : marks ? `<div class="trace-model"><div class="section-label">Declared system · recorded port</div><div class="trace-step-cue"><span class="section-label">Current owner</span><strong>${escape(project.architecture.entities.find(entity=>entity.key===marks.currentTo)?.id??marks.currentTo)}</strong></div><div id="graph" data-managed="graph" class="graph-host"></div><small>${trail} Highlighted bindings have observed endpoints in sequence; this does not prove causality.</small></div>`
+    : marks ? `<div class="trace-model"><div class="section-label">Declared system · recorded port</div><div class="trace-step-cue"><span class="section-label">Current owner</span><strong>${escape(project.architecture.entities.find(entity=>entity.key===marks.currentTo)?.id??marks.currentTo)}</strong></div><div id="graph" data-managed="graph" class="graph-host"></div><small>${trail} Highlighted bindings touch recorded ports; a declared link does not prove runtime causality.</small></div>`
     : frame?.current ? '<div class="notice">No declared port or owner for this step. Its graph position is unavailable.</div>' : '';
   return `<section class="panel"><header class="panel-head"><h2>${trace.provenance === 'synthetic' ? 'Synthetic trace' : trace.provenance === 'test-run' ? 'Test run trace' : 'Recorded trace'} <code>${escape(trace.sessionId)}</code></h2><div class="toolbar"><button data-action="import-trace">Import another</button><button data-action="export-trace">Export trace</button></div></header>
     <div class="panel-body"><div class="notice ${trace.complete ? 'info' : ''}">${escape(trace.notice)}<p>${trace.eventCount} retained events · ${trace.truncation.droppedBefore} dropped before capture${trace.truncation.gaps.length ? ` · ${trace.truncation.gaps.length} recorded gaps` : ''}</p></div>
