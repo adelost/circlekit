@@ -1,14 +1,10 @@
-"""Browser acceptance for the actual workbench, not the earlier storyboard.
+"""Direct-browser acceptance for the actual workbench and its HTTP server.
 
-Start npm start separately. Normal mode navigates to the HTTP server directly.
---http-bridge is for managed browsers that prohibit localhost navigation: the
-same UI module bytes execute in-memory and requests use the actual local server
-through Python's HTTP client. It does not test browser CSP/network integration.
+Start npm start separately. The former flattened HTTP bridge is deliberately
+refused: it cannot verify this modular UI or the browser's real CSP/module path.
 """
 import argparse
 import json
-import urllib.request
-import urllib.error
 from pathlib import Path
 from playwright.sync_api import sync_playwright
 
@@ -19,22 +15,10 @@ p.add_argument('--chromium', default=None)
 p.add_argument('--http-bridge', action='store_true')
 p.add_argument('--output', default='test-results')
 args = p.parse_args()
+if args.http_bridge:
+    p.error('The current modular UI requires direct HTTP verification. The historical bridge is not supported for this revision.')
 out = Path(args.output); out.mkdir(parents=True, exist_ok=True)
-requests = []; failures = []; checks = []
-
-def http_request(url, options=None):
-    options = options or {}
-    if not isinstance(url, str) or not url.startswith('/api/'):
-        raise ValueError('Test bridge accepts only relative Studio API requests.')
-    requests.append(url)
-    data = options.get('body')
-    req = urllib.request.Request(args.url + url, data=data.encode() if isinstance(data,str) else None,
-        headers=options.get('headers', {}), method=options.get('method', 'GET'))
-    try:
-        with urllib.request.urlopen(req, timeout=20) as response:
-            return {'body': response.read().decode(), 'status': response.status}
-    except urllib.error.HTTPError as e:
-        return {'body': e.read().decode(), 'status': e.code}
+failures = []; checks = []
 
 def check(name, condition):
     if not condition:
@@ -49,22 +33,7 @@ with sync_playwright() as pw:
     browser = pw.chromium.launch(**options)
     page = browser.new_page(viewport={'width':1600, 'height':1100}, accept_downloads=True)
     page.on('pageerror', lambda e: failures.append(str(e)))
-    if args.http_bridge:
-        page.expose_function('__studioHttp', http_request)
-        html = (ROOT/'public/index.html').read_text()
-        html = html.replace('<link rel="stylesheet" href="/style.css">', '<style>'+ (ROOT/'public/style.css').read_text()+'</style>')
-        html = html.replace('<script type="module" src="/app.js"></script>','')
-        page.set_content(html)
-        page.evaluate("""() => { window.fetch = async (url, options) => {
-            const r = await window.__studioHttp(url, options || {});
-            return new Response(r.body, {status:r.status,headers:{'content-type':'application/json'}});
-        }; }""")
-        graph = (ROOT/'public/graph.js').read_text().replace('export function drawGraph','function drawGraph')
-        tools = (ROOT/'public/studio-tools.js').read_text().replace('export function ', 'function ')
-        app = (ROOT/'public/app.js').read_text().replace("import { drawGraph } from './graph.js';",'').replace("import { architectureControls, sourceNavigator, entityInspector, traceView, installDocumentState } from './studio-tools.js';",'')
-        page.add_script_tag(type='module',content=graph+'\n'+tools+'\n'+app)
-    else:
-        page.goto(args.url)
+    page.goto(args.url)
     page.wait_for_selector('#machine-state')
     check('English document',page.locator('html').get_attribute('lang')=='en')
     check('Four available sample selections',all(label in page.locator('#project option').all_text_contents() for label in ['Request lifecycle · example','AMUX · policies','Pipeline · example','Showcase · catalog excerpt']))
@@ -161,6 +130,6 @@ with sync_playwright() as pw:
         check('No page overflow at '+str(width),page.evaluate('document.documentElement.scrollWidth <= window.innerWidth + 1'))
     page.set_viewport_size({'width':1600,'height':1100})
     check('No JavaScript runtime errors', not failures)
-    (out/'browser-report.json').write_text(json.dumps({'mode':'in-memory modules + real HTTP API' if args.http_bridge else 'direct HTTP browser','checks':checks,'javascriptErrors':failures,'apiRequests':len(requests)},indent=2))
-    print(json.dumps({'passed':len(checks),'mode':'http-bridge' if args.http_bridge else 'direct-http','errors':failures},indent=2))
+    (out/'browser-report.json').write_text(json.dumps({'mode':'direct HTTP browser','checks':checks,'javascriptErrors':failures},indent=2))
+    print(json.dumps({'passed':len(checks),'mode':'direct-http','errors':failures},indent=2))
     browser.close()

@@ -10,19 +10,23 @@ export function createTraceRecorder({ productId, modelDigest, sessionId, clock, 
   requireThat(short(productId) && isDigest(modelDigest) && short(sessionId), 'trace.identity', 'Trace product, model and session identity are required.');
   requireThat(['wall', 'monotonic', 'virtual'].includes(clock) && ['recorded', 'synthetic'].includes(provenance), 'trace.clock', 'Choose an explicit clock and evidence origin.');
   requireThat(Number.isSafeInteger(capacity) && capacity > 0 && capacity <= LIMIT, 'trace.capacity', 'Trace capacity must be between 1 and 20000.');
-  let sequence = 0; const events = [];
+  let sequence = 0, start = 0, count = 0, lastTime = null; const events = new Array(capacity);
   return {
     record(event) {
       requireThat(plain(event) && !Object.hasOwn(event, 'sequence'), 'trace.sequence', 'The recorder owns sequence numbers.');
       const row = { ...event, sequence };
       validateEvent(row, null);
-      if (events.length && clock !== 'wall') requireThat(row.atMs >= events.at(-1).atMs, 'trace.time', 'Monotonic or virtual trace time moved backwards.');
-      sequence++; events.push(structuredClone(row)); if (events.length > capacity) events.shift(); return row.sequence;
+      if (lastTime !== null && clock !== 'wall') requireThat(row.atMs >= lastTime, 'trace.time', 'Monotonic or virtual trace time moved backwards.');
+      const retained = structuredClone(row); // Clone before changing recorder state.
+      events[(start + count) % capacity] = retained;
+      if (count < capacity) count++; else start = (start + 1) % capacity;
+      lastTime = row.atMs; sequence++; return row.sequence;
     },
     snapshot() {
       return { kind: 'product-studio-trace', version: 1, productId, modelDigest, sessionId,
         clock: { domain: clock, unit: 'ms' }, provenance,
-        truncation: { droppedBefore: events[0]?.sequence ?? 0, gaps: [] }, events: structuredClone(events) };
+        truncation: { droppedBefore: count ? events[start].sequence : 0, gaps: [] },
+        events: Array.from({length:count},(_,i)=>structuredClone(events[(start+i)%capacity])) };
     },
   };
 }
@@ -87,6 +91,18 @@ export function decodeTrace(text, { productId, modelDigest, architecture }) {
     complete: trace.truncation.droppedBefore === 0 && trace.truncation.gaps.length === 0 };
 }
 
+const traceIndexes = new WeakMap();
+function traceIndex(trace) {
+  let index = traceIndexes.get(trace);
+  if (!index) {
+    index = { bySequence: new Map(trace.events.map(e => [e.sequence,e])),
+      positions: new Map(trace.events.map((e,i) => [e.sequence,i])) };
+    if (Object.isFrozen(trace)) traceIndexes.set(trace,index);
+  }
+  return index;
+}
+export const traceEventIndex = (trace, sequence) => traceIndex(trace).positions.get(sequence);
+
 export function inspectTrace(trace, { cursor = trace.events.length - 1, entityKey = null, operationId = null, search = '' } = {}) {
   requireThat(Number.isSafeInteger(cursor) && cursor >= -1 && cursor < trace.events.length, 'trace.cursor', 'Select an existing trace frame.');
   const visible = trace.events.slice(0, cursor + 1), current = trace.events[cursor] ?? null;
@@ -102,7 +118,7 @@ export function inspectTrace(trace, { cursor = trace.events.length - 1, entityKe
   const text = search.toLowerCase();
   const events = trace.events.filter(e => (!entityKey || e.entityKey === entityKey) && (!operationId || e.operationId === operationId)
     && (!text || `${e.entityKey} ${e.summary ?? ''} ${e.kind} ${e.logic?.cellId ?? ''}`.toLowerCase().includes(text)));
-  const path = [], bySequence = new Map(trace.events.map(e => [e.sequence, e]));
+  const path = [], { bySequence } = traceIndex(trace);
   let parent = current, missingParentSequence = null;
   const visited = new Set();
   while (parent) {
