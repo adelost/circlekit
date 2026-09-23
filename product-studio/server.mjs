@@ -8,9 +8,10 @@ import { Workbench } from './lib/workspaces.mjs';
 import { StudioError, boundedJson, requireThat } from './lib/util.mjs';
 import { KERNEL_VERSION } from './lib/kernel.mjs';
 import { LiveSessionHub } from './lib/live.mjs';
+import { DEFAULT_STUDIO_PORT } from './lib/cli.mjs';
 
 const publicRoot = fileURLToPath(new URL('./public/', import.meta.url));
-export async function createServer({ roots = [], gitDraftRoots = [], dataDir = path.join(os.homedir(), '.local/state/product-studio'), port = 4317, evaluateContract, liveEnabled = false, liveNow } = {}) {
+export async function createServer({ roots = [], gitDraftRoots = [], dataDir = path.join(os.homedir(), '.local/state/product-studio'), port = DEFAULT_STUDIO_PORT, evaluateContract, liveEnabled = false, liveNow } = {}) {
   const authorized = await Promise.all(gitDraftRoots.map(root => realpath(root)));
   const app = new Workbench({ dataDir, gitDraftRoots: authorized, evaluateContract }); await app.initialize(roots, { includeFixtures: roots.length === 0 });
   const live = liveEnabled ? new LiveSessionHub(app, { now: liveNow }) : null;
@@ -105,7 +106,7 @@ export async function createServer({ roots = [], gitDraftRoots = [], dataDir = p
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
-  const roots = [], gitDraftRoots = []; let port = 4317, dataDir, liveEnabled = false;
+  const roots = [], gitDraftRoots = []; let port = DEFAULT_STUDIO_PORT, dataDir, liveEnabled = false;
   const args = process.argv.slice(2);
   for (let i = 0; i < args.length; i++) {
     if (args[i] === '--workspace') { requireThat(args[i + 1], 'cli.argument', '--workspace requires a path.'); roots.push(path.resolve(args[++i])); }
@@ -113,7 +114,7 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
     else if (args[i] === '--port') port = Number(args[++i]);
     else if (args[i] === '--data-dir') dataDir = path.resolve(args[++i]);
     else if (args[i] === '--live') liveEnabled = true;
-    else if (args[i] === '--help') { console.log('npm start -- [--workspace /path/to/repo]... [--port 4317] [--data-dir /path] [--allow-git-drafts /exact/repo] [--live]\nLoopback only. Sources are read-only; drafts are stored separately. --live enables the optional observation receiver.'); process.exit(0); }
+    else if (args[i] === '--help') { console.log(`npm start -- [--workspace /path/to/repo]... [--port ${DEFAULT_STUDIO_PORT}] [--data-dir /path] [--allow-git-drafts /exact/repo] [--live]\nLoopback only. Sources are read-only; drafts are stored separately. --live enables the optional observation receiver.`); process.exit(0); }
     else throw new StudioError('cli.argument', `Unknown option: ${args[i]}`);
   }
   requireThat(Number.isInteger(port) && port >= 0 && port <= 65535, 'cli.port', 'Invalid port.');

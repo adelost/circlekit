@@ -34,7 +34,7 @@ explicitly rebuilds its named inspection bundle with the product's own locked
 ProductSpec. Commit that bundle with the source so a fresh checkout opens with
 the single `v1d-studio` command. Opening the viewer never executes authoring code.
 
-Open the printed loopback address, normally `http://127.0.0.1:4317`. To inspect another checkout explicitly:
+Open the printed loopback address, normally `http://127.0.0.1:17317`. To inspect another checkout explicitly:
 
 ```bash
 v1d-studio /path/to/product

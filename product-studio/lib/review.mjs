@@ -79,8 +79,12 @@ function evidenceChecklist(view, project, verdict) {
   const loadedLaw = view.documentation.reports.find(report => report.file === lawFile && report.status === 'loaded');
   const laws = loadedLaw?.modelCorrelation === 'same-model';
   const junit = view.documentation.reports.find(report => report.file === junitFile && report.status === 'loaded');
+  const command = `v1d-studio laws --product ${id}`;
+  const lawStatus = laws ? `✓ laws: ${verdict.counts.laws.passed} passed, ${verdict.counts.laws.failed} failed, ${verdict.counts.laws.skipped} skipped (${lawFile})`
+    : loadedLaw ? `○ laws not for this model (${lawFile}); rerun \`${command}\``
+    : `○ Laws not run: \`${command}\` (or \`${command} --stdout\` to run without writing); report ${lawFile}`;
   return [
-    `${laws ? '✓' : '○'} laws${laws ? `: ${verdict.counts.laws.passed} passed, ${verdict.counts.laws.failed} failed, ${verdict.counts.laws.skipped} skipped` : loadedLaw ? ' not for this model' : ' not present'} (${lawFile})`,
+    lawStatus,
     `${view.trace ? '✓' : '○'} trace${view.trace ? `: ${view.trace.events.length} events` : ' not present'} (${traceFile})`,
     `${junit ? '✓ JUnit report' : '○ JUnit report not present'} (${junitFile})`,
   ].map(line => `- ${line}`).join('\n');

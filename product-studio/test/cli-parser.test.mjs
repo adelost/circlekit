@@ -43,7 +43,7 @@ test('unknown, duplicate and write flags are refused on every read command', () 
   for (const args of [
     ['inspect', '--wat', 'x'], ['inspect', '--product', 'a', '--product', 'b'],
     ['simulate', '--facet', 'a', '--input', '{}', '--allow-git-drafts', '/repo'],
-    ['trace', '--file', 't.json', '--port', '4317'], ['source', '--entity', 'a', '--force'],
+    ['trace', '--file', 't.json', '--port', '17317'], ['source', '--entity', 'a', '--force'],
     ['query', '--kind', 'upstream', '--from', 'a', '--to', 'b'],
     ['query', '--kind', 'path', '--from', 'a'], ['simulate', '--facet', 'a'],
     ['inspect', '--fields', 'constructor'], ['inspect', '--pretty=false'],
@@ -74,6 +74,7 @@ test('help works independently of workspace and package installation', async () 
   let output = '';
   assert.equal(await main(['--help'], { stdout: { write: s => { output += s; } } }), 0);
   assert.match(output, /v1d-studio query/); assert.match(output, /--examples/);
+  assert.match(output, /--port 17317/);
 });
 test('JSON file input is bounded and parsed, not evaluated', async t => {
   const root = await mkdtemp(path.join(os.tmpdir(), 'studio-cli-json-'));

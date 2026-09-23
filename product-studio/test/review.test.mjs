@@ -70,6 +70,13 @@ test('an empty diff is a successful no-change review with the converge result', 
   assert.doesNotMatch(report, /Fix:/);
 });
 
+test('missing laws name a precise read-only command beside the expected report', () => {
+  const report = reviewForChanges({ ...selected(), changes: [] });
+  assert.match(report, /Laws not run: `v1d-studio laws --product demo`/);
+  assert.match(report, /`v1d-studio laws --product demo --stdout` to run without writing/);
+  assert.match(report, /test-results\/demo-laws\.json/);
+});
+
 test('a changed machine uses its declared owner WHAT/WHY and inputs', () => {
   const input = selected();
   const facet = entityKey('facet', 'recording.session', 'machine');

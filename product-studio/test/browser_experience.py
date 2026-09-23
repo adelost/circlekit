@@ -5,7 +5,7 @@ import argparse
 import json
 from playwright.sync_api import sync_playwright, expect
 p=argparse.ArgumentParser()
-p.add_argument('--url',default='http://127.0.0.1:4317')
+p.add_argument('--url',default='http://127.0.0.1:17317')
 args=p.parse_args()
 with sync_playwright() as pw:
     browser=pw.chromium.launch()

@@ -3,7 +3,7 @@ import path from 'node:path';
 import os from 'node:os';
 import { readFile, realpath, access } from 'node:fs/promises';
 import { pathToFileURL, fileURLToPath } from 'node:url';
-import { parseCli, executeSemanticCli, formatJson, HELP, SEMANTIC_COMMANDS } from '../lib/cli.mjs';
+import { parseCli, executeSemanticCli, formatJson, HELP, SEMANTIC_COMMANDS, DEFAULT_STUDIO_PORT } from '../lib/cli.mjs';
 import { boundedJson, safeFile, requireThat, errorPayload } from '../lib/util.mjs';
 
 async function installedAmuxRoot(cwd) {
@@ -160,7 +160,7 @@ export async function main(args = process.argv.slice(2), { cwd = process.cwd(), 
       catch (error) { if (error.code !== 'ENOENT') throw error; }
     }
     const { createServer } = await import('../server.mjs');
-    const { origin } = await createServer({ roots, evaluateContract, port: v.port ?? 4317, liveEnabled: !!v.live,
+    const { origin } = await createServer({ roots, evaluateContract, port: v.port ?? DEFAULT_STUDIO_PORT, liveEnabled: !!v.live,
       dataDir: path.resolve(cwd, v['data-dir'] ?? path.join(os.homedir(), '.local/state/product-studio')),
       gitDraftRoots: repeated['allow-git-drafts'].map(r => path.resolve(cwd, r)) });
     stdout.write(`Product Studio: ${origin}\nRead-only product attachment. Runtime observation: ${v.live ? 'enabled on loopback' : 'off'}. No generators or providers are started.\n`);
