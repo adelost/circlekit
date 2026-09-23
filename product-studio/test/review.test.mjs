@@ -8,16 +8,24 @@ import { changedFilesForReview, reviewForChanges } from '../lib/review.mjs';
 import { planForChanges } from '../lib/plan.mjs';
 import { entityKey } from '../lib/architecture.mjs';
 
-async function repository(t) {
+async function repository(t, { branch = 'main', withRemote = true } = {}) {
   const root = await mkdtemp(path.join(os.tmpdir(), 'studio-review-'));
   t.after(() => rm(root, { recursive: true, force: true }));
   const git = (...args) => execFileSync('git', args, { cwd: root, encoding: 'utf8' }).trim();
-  git('init', '-q', '-b', 'main');
+  git('init', '-q', '-b', branch);
   git('config', 'user.name', 'Studio test');
   git('config', 'user.email', 'studio@example.test');
   await writeFile(path.join(root, 'tracked.ts'), 'before\n');
   git('add', 'tracked.ts');
   git('commit', '-qm', 'base');
+  if (withRemote) {
+    const remote = await mkdtemp(path.join(os.tmpdir(), 'studio-review-origin-'));
+    t.after(() => rm(remote, { recursive: true, force: true }));
+    git('init', '--bare', '-q', '-b', branch, remote);
+    git('remote', 'add', 'origin', remote);
+    git('push', '-q', 'origin', branch);
+    git('remote', 'set-head', 'origin', '-a');
+  }
   return { root, git };
 }
 
@@ -30,12 +38,33 @@ test('review sees tracked work against HEAD and untracked files', async t => {
 
 test('review includes committed branch changes since origin/main merge-base', async t => {
   const { root, git } = await repository(t);
-  git('update-ref', 'refs/remotes/origin/main', 'HEAD');
   await writeFile(path.join(root, 'committed.ts'), 'branch\n');
   git('add', 'committed.ts');
   git('commit', '-qm', 'feature');
   await writeFile(path.join(root, 'tracked.ts'), 'worktree\n');
   assert.deepEqual(await changedFilesForReview(root), ['committed.ts', 'tracked.ts']);
+});
+
+test('review finds a committed delta on a master-based feature branch', async t => {
+  const { root, git } = await repository(t, { branch: 'master' });
+  await writeFile(path.join(root, 'feature.ts'), 'master feature\n');
+  git('add', 'feature.ts'); git('commit', '-qm', 'feature');
+  assert.deepEqual(await changedFilesForReview(root), ['feature.ts']);
+});
+
+test('review resolves the remote default when origin/HEAD is absent', async t => {
+  const { root, git } = await repository(t, { branch: 'master' });
+  git('symbolic-ref', '--delete', 'refs/remotes/origin/HEAD');
+  await writeFile(path.join(root, 'feature.ts'), 'feature\n');
+  git('add', 'feature.ts'); git('commit', '-qm', 'feature');
+  assert.deepEqual(await changedFilesForReview(root), ['feature.ts']);
+});
+
+test('review names a safe next step when the default branch cannot be determined', async t => {
+  const { root } = await repository(t, { withRemote: false });
+  await writeFile(path.join(root, 'tracked.ts'), 'changed\n');
+  await assert.rejects(changedFilesForReview(root), error => error.code === 'review.branch'
+    && error.message.includes('--changed'));
 });
 
 const selected = () => {
