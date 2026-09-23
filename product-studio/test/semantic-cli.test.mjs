@@ -68,18 +68,20 @@ test('record runs a real ProductSpec decision and derives its trace identity and
   await mkdir(path.join(root, 'node_modules/@v1d'), { recursive: true });
   await symlink(packageDir, path.join(root, 'node_modules/@v1d/product-spec'));
   const run = ['record', root, '--product', 'local', '--', process.execPath, '--input-type=module', '-e',
-    'import {defineDecisionTable,decide,choice,on} from "@v1d/product-spec";'
+    'import {defineDecisionTable,decide,choice,on,bindPortImplementations} from "@v1d/product-spec";'
     + 'const table=defineDecisionTable({id:"fixture.policy",axes:{permission:["YES","NO"]},'
     + 'columns:{action:choice(["RUN","HOLD"])},cells:['
     + 'on("allow",{permission:"YES"},{action:"RUN"}),on("deny",{permission:"NO"},{action:"HOLD"})]});'
-    + 'decide(table,{permission:"YES"});'];
+    + 'decide(table,{permission:"YES"});'
+    + 'bindPortImplementations({"producer.out":()=>42})["producer.out"]();'];
   const response = await invoke(run, root);
   assert.equal(response.code, 0);
-  assert.equal(response.body.events, 1);
+  assert.equal(response.body.events, 2);
   assert.equal(response.body.file, 'test-results/local-studio-trace.json');
   const trace = JSON.parse(await readFile(path.join(root, response.body.file), 'utf8'));
   assert.deepEqual(Object.keys(trace).sort(), ['events', 'kind', 'modelDigest', 'version']);
   assert.equal(trace.events[0].entityKey, entityKey('cell', 'allow', 'decision-table/fixture.policy'));
+  assert.equal(trace.events[1].entityKey, entityKey('port', 'producer.out'));
   const before = await readFile(path.join(root, response.body.file), 'utf8');
   const empty = await invoke(['record', root, '--product', 'local', '--', process.execPath, '-e', ''], root);
   assert.equal(empty.code, 1);

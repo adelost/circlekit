@@ -15,6 +15,21 @@ function record(event: Readonly<Record<string, unknown>>): void {
   appendFileSync(traceFile, `${JSON.stringify(event)}\n`);
 }
 
+/** WHAT: Observes calls through declared port names in a focused test. WHY: Keeps port event identities out of binding tests. */
+export function bindPortImplementations<Ports extends object>(ports: Ports): Ports {
+  return new Proxy(ports, {
+    get(target, property, receiver) {
+      const value = Reflect.get(target, property, receiver);
+      if (typeof property !== "string" || typeof value !== "function") return value;
+      return (...args: unknown[]) => {
+        const result = Reflect.apply(value, target, args);
+        record({ kind: "port", portRef: property });
+        return result;
+      };
+    },
+  });
+}
+
 /** WHAT: Records the cell chosen by a real test decision. WHY: Keeps trace identities and files out of product tests. */
 export function decide<Axes extends DecisionAxes, Columns extends DecisionColumns>(
   table: DecisionTable<Axes, Columns>, at: DecisionPoint<Axes>,
