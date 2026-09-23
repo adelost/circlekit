@@ -129,16 +129,26 @@ export async function main(args = process.argv.slice(2), { cwd = process.cwd(), 
     }
     if (command === 'review') {
       const { openHeadlessStudio, selectProject, SemanticStudio } = await import('../lib/semantic.mjs');
-      const { changedFilesForReview, reviewForChanges } = await import('../lib/review.mjs');
+      const { changedFilesForReview, changesForProject, reviewForChanges } = await import('../lib/review.mjs');
       if (!roots.length) roots.push(cwd);
       const session = await openHeadlessStudio({ roots, evaluateContract });
-      const chosen = selectProject(session.projects, v.product);
-      const project = session.workbench.require(chosen.key);
-      const service = new SemanticStudio(session.workbench, chosen.key);
-      const changes = repeated.changed.length ? repeated.changed : await changedFilesForReview(project.config.root);
+      const chosen = v.product !== undefined || session.projects.length === 1
+        ? selectProject(session.projects, v.product) : null;
+      requireThat(chosen || roots.length === 1, 'project.ambiguous',
+        'Select --product when reviewing several repository roots.');
+      const root = chosen ? session.workbench.require(chosen.key).config.root : roots[0];
+      const changes = repeated.changed.length ? repeated.changed : await changedFilesForReview(root);
       requireThat(changes.length <= 32, 'review.limit', 'More than 32 changed files. Select a bounded scope with --changed.');
-      const convergence = session.workbench.convergence(project);
-      stdout.write(reviewForChanges({ service, project, changes, convergence }));
+      const matches = (chosen ? [chosen] : session.projects).map(choice => {
+        const project = session.workbench.require(choice.key);
+        const service = new SemanticStudio(session.workbench, choice.key);
+        return { choice, project, service, changes: chosen ? changes : changesForProject(service.view, project, changes) };
+      }).filter(item => chosen || item.changes.length);
+      if (!matches.length) selectProject(session.projects);
+      const reports = matches.map(item => reviewForChanges({ service: item.service, project: item.project,
+        changes: item.changes, convergence: session.workbench.convergence(item.project) }).trimEnd());
+      stdout.write(matches.length === 1 ? reports[0] + '\n' : matches.map((item, index) =>
+        `# Project: ${item.choice.id}\n\n${reports[index]}`).join('\n\n') + '\n');
       return 0;
     }
     if (command === 'converge') {
