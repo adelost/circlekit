@@ -50,6 +50,11 @@ const options = {
   machineName: "Door",
 };
 
+test('R emitted machine keeps the authored source line for application diagnostics',()=>{
+  const kotlin=emitMachineKotlin(door,{...options,sourceLine:72});
+  assert.match(kotlin,/val sourceRef = "appspec\/products\/acme\/runtime\/door\.ts:72"/u);
+});
+
 test("a traced generated machine records the real cell and all guards only during a Studio test", () => {
   const kotlin = emitMachineKotlin(door, { ...options, traceSink: "GeneratedAcmeStudioTrace", traceBuildGuard: "BuildConfig.DEBUG" });
   assert.match(kotlin, /if \(BuildConfig\.DEBUG && GeneratedAcmeStudioTrace\.enabled\) GeneratedAcmeStudioTrace\.transition\("acme\.door"/u);

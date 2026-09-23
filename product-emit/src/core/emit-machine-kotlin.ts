@@ -7,6 +7,8 @@ import { emitStudioTraceSinkKotlin } from "./emit-studio-trace-kotlin.js";
 export interface MachineKotlinOptions extends SourcedKotlinEmissionOptions {
   /** The machine in its symbols: `RecordingSession` makes `Generated<Product>RecordingSessionMachine`. */
   readonly machineName: string;
+  /** Authored declaration callsite, when the host compiled with source maps. */
+  readonly sourceLine?: number;
   /** Test-run recording is opt-in at generation; the normal emitted machine remains unchanged. */
   readonly traceSink?: string;
   /** A build constant false in release, so tracing has no production execution path. */
@@ -23,6 +25,8 @@ export interface MachineKotlinOptions extends SourcedKotlinEmissionOptions {
  */
 export function emitMachineKotlin(machine: Machine, options: MachineKotlinOptions): string {
   defineMachine({ ...machine } as Parameters<typeof defineMachine>[0]);
+  if(options.sourceLine!==undefined&&(!Number.isSafeInteger(options.sourceLine)||options.sourceLine<1))
+    throw new Error(`machine '${machine.id}' sourceLine must be a positive integer`);
   if (options.traceSink && !options.traceBuildGuard) throw new Error("a traced Kotlin machine needs a release-false build guard");
   const name = `Generated${options.symbolPrefix}${options.machineName}`;
   const state = `${name}State`;
@@ -38,6 +42,8 @@ export function emitMachineKotlin(machine: Machine, options: MachineKotlinOption
     : `        check(cell != null || inputName in updates || inputName in ignored) {\n`
       + `            "machine ${machine.id} refuses $inputName in $stage: no cell matches the guards held"\n`
       + `        }\n`;
+  const sourceRef=options.sourceLine===undefined?'':
+    `    val sourceRef = ${kotlinStringLiteral(`${options.sourceFile}:${options.sourceLine}`)}\n\n`;
   return `// GENERATED FILE. DO NOT EDIT.
 // GENERATED FROM ${options.sourceFile}
 // Generator SHA-256: ${options.sourceSha}
@@ -61,7 +67,7 @@ internal data class ${cell}(
 
 /** Machine ${machine.id}: ordering ${machine.ordering}, otherwise ${machine.otherwise}. */
 internal object ${name}Machine {
-    val initial = ${state}.${machine.initial}
+${sourceRef}    val initial = ${state}.${machine.initial}
 
     val inputs: List<String> = ${strings(machine.inputs)}
 
