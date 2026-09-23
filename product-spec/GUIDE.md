@@ -51,6 +51,15 @@ A product invariant. Read: "no airborne decision may ask for less than 20 Hz." I
 invariants: [{ refuse: "air must read pressure live", when: (d) => isAirborne(d.at.phase) && d.values.pressure.hz < 20 }]
 ```
 
+A port contract may declare numeric field laws with `min`, `max` and `gteField`.
+`gteField` compares numeric siblings in the same unit. A binding still requires the
+exact contract identity: ratio coordinates cannot feed a pixel box directly.
+At an observed port, pass `portContracts(graph.portRegistry)` to
+`bindPortImplementations(implementations, contracts)` so test recording refuses
+a broken result and debug observation reports it without changing the product
+return. `product-spec/src/examples/vision-box.ts` shows the three explicit
+normalizers from xyxy pixels, xywh pixels and YOLO ratios to one pixel box.
+
 A machine or table included in a product names its runtime **node type** with
 `ownerNodeTypeRef: "recording.runtime"`. The product compiler refuses a missing
 or unknown owner and carries the exact reference into ProductIr. It never
