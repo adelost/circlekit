@@ -60,6 +60,8 @@ v1d-studio trace /path/to/product --file path/to/owner-run-trace.json
 
 The named failure cases and deferred product adapters are in [DELIVERY](DELIVERY.md). Visual changes need their own screenshot on the affected surface; a green unit run does not judge pixels.
 
+For future performance work, measure three cold loads and at least 20 warm interactions on a named host. `npm run profile` reports synthetic build/query time and memory; it does not measure browser frame rate or gate a release.
+
 ## Historical results
 
 Earlier verification records remain in Git history on PR #274. Version 0.2 used a temporary source-check harness and an HTTP-driver browser bridge; 0.3 was statically reviewed without execution. Neither establishes runtime correctness of 0.4. Do not copy those historical passing counts into this release's report.

@@ -46,7 +46,7 @@ export const HELP = `Product Studio
   v1d-studio laws --product ID --kernel-root PACKAGE_DIR --output test-results/laws.json
   v1d-studio junit --input result.xml --source-root TEST_DIR --output test-results/bdd-run.json
 
-Read/debug commands emit one JSON object, no HTTP server and no product writes.
+Read/debug commands emit one JSON object, except plan emits Markdown. None starts HTTP or writes a product.
 Repository defaults to the current directory. --examples explicitly loads samples;
 use --product workflow-example or amux-fixture. It is never an implicit fallback.
 Use --product with a manifest ID or an exact workspace key returned by doctor.

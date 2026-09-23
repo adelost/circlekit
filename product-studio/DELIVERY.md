@@ -1,8 +1,10 @@
 # Product Studio delivery and remaining boundaries
 
-This is the status of the [original cross-product plan](https://github.com/adelost/circlekit/pull/273), the 22-item [experience checklist](EXPERIENCE.md), and the older handoffs as of 2026-09-23. "Delivered" means the bounded Studio capability exists. It does not mean the product runtime, a renderer, or a live account was executed. The current proof is 244/244 local Studio tests on the cleanup source, selected headed Chrome flows in SKYVW native and AMUX Link, real owner-run traces in four products, and each product's focused checks recorded in [VERIFICATION](VERIFICATION.md). Final images are a separate delivery artifact.
+This is the current capability and limitation index for the [original cross-product plan](https://github.com/adelost/circlekit/pull/273) and the 22 requested experience improvements. "Delivered" means the bounded Studio capability exists. It does not mean a product runtime, renderer or live account was exercised. [VERIFICATION](VERIFICATION.md) records dated tests and browser checks; final images are separate evidence.
 
 The useful tool today is a local architecture, source, finite-logic and recorded-test workbench. `v1d-studio` opens a product's committed model without starting its generator or runtime. The model and compiler remain product owned; unknown capability stays visible. The larger visual-authoring and native-preview vision in #273 remains a roadmap, not a hidden claim of completion.
+
+`v1d-studio plan` summarizes declared impact for a PR; `converge` reports existing evidence as Converged, Diverged or Unknown. Neither command generates evidence. Facet ownership still needs an explicit ProductSpec owner declaration where the current model lacks one.
 
 ## Experience checklist, items 1–22
 
@@ -19,7 +21,7 @@ The useful tool today is a local architecture, source, finite-logic and recorded
 | 20 | Delivered: supported source/transition/region draft lenses and source navigation. | Automatic invention of policy, deadlines and unsupported source edits is deferred. |
 | 21, 22 | Delivered: scope-aware proof strip and a real-product overview/command entry, inspected on desktop and mobile. | Product-specific runtime proof still belongs to the product owner. |
 
-## Seven failure cases from the former experience handoff
+## Seven failure cases
 
 | Case | Status and evidence |
 |---|---|

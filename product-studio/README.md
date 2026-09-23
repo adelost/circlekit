@@ -2,7 +2,7 @@
 
 A local, English architecture and logic workbench over the existing ProductSpec DSL. Inspect declared dependencies, explain decisions, navigate source, simulate finite logic, review candidates and inspect recorded evidence. Ordinary implementation code remains with its product owner.
 
-**Status:** the local 0.4 workbench was installed and exercised on 2026-09-23. The current Studio source passed 244 unit tests and selected real-product inspections. Selected flows ran in headed Chrome, and the 100/1000-owner synthetic profile was measured. [VERIFICATION](VERIFICATION.md) names the exact scope and limits; [DELIVERY](DELIVERY.md) distinguishes delivered capabilities from the larger deferred vision.
+**Status:** this local workbench has been exercised on attached products. [DELIVERY](DELIVERY.md) lists current capabilities and limits; [VERIFICATION](VERIFICATION.md) records dated checks and their exact scope.
 
 ## Start
 
@@ -56,7 +56,7 @@ The graph preserves its camera across selection and ordinary state changes. **Fi
 | Daily workflow | Passive build following, previous-build comparison, browser navigation, local bookmarks, command palette, Problems and a scope-aware proof strip. |
 | Performance structure | Frozen snapshot/index reuse, on-demand source/details/catalog/trace data, retained DOM/graph elements and incident-edge redraw. No measured performance claim yet. |
 
-[EXPERIENCE.md](EXPERIENCE.md) checks all 22 requested improvements, including partial and intentionally deferred items, examples and acceptance work.
+[DELIVERY.md](DELIVERY.md) keeps the 22-item capability checklist and remaining boundaries in one place.
 
 ## Agent edits, Studio follows
 
@@ -83,11 +83,13 @@ The initial transport still includes compiled finite facets and a lightweight en
 ```bash
 v1d-studio doctor /path/to/product --pretty
 v1d-studio inspect /path/to/product --search recording
+v1d-studio plan /path/to/product --changed src/recording.ts
+v1d-studio converge /path/to/product
 v1d-studio simulate --examples --product workflow-example \
   --facet example.request --input '{"state":"IDLE","input":"Send","guards":{}}'
 ```
 
-The example's expected result is `IDLE -> PENDING` via `send`; it is synthetic. [CLI.md](CLI.md) specifies query/source/scenario/trace commands, identity checks and JSON/exit behavior. Read commands do not start HTTP or create drafts. No agent-write API or MCP was added.
+The example's expected result is `IDLE -> PENDING` via `send`; it is synthetic. `plan` prints Markdown for a PR; `converge` reports loaded evidence and can list contradictions with `--tasks`. [CLI.md](CLI.md) specifies the commands, identity checks and exit behavior. Read commands do not start HTTP or create drafts. No agent-write API or MCP was added.
 
 ## Saving and safety
 

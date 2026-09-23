@@ -4,16 +4,7 @@ Status: implemented inspection/export/trace interfaces in this package. They are
 
 ## 1. Start with an existing checkout
 
-```bash
-cd /path/to/circlekit/product-studio
-npm ci
-npm link
-cd /path/to/product
-v1d-studio check
-v1d-studio
-```
-
-`npm link` registers the local `v1d-studio` executable on this development host. The package is not published. A product needs no copied launcher; its current directory selects its workspace. If the command is absent, install/link Studio explicitly rather than using another checkout silently.
+Install and start Studio using [README](README.md#start). A product needs no copied launcher; its current directory selects its workspace.
 
 The existing SKYVW, AMUX, video and Showcase path presets remain convenient fallbacks. A new product does not need a preset or a branch in the UI. Put this small file-selection manifest at its root:
 
@@ -68,7 +59,7 @@ This packages existing output; it does not prove that output matches current sou
 
 The implemented `adapter.mjs` exports `prepareInspection` and `writeInspectionBundle`. Call them from the product's already-owned build/export path, after its real compiler and invariants have run. Pass the actual objects rather than copying their cells into a Studio registry.
 
-This package is not published to npm by this PR. During tool development, a build adapter may explicitly load its installed local tool module through an owner-configured path. Do not replace a product's immutable ProductSpec dependency with a sibling worktree. Package/distribute the Studio development tool through the existing owner workflow before adopting a bare package import in multiple repositories.
+This package is local and unpublished. A build adapter may explicitly load its installed local tool module through an owner-configured path. Keep the product's immutable ProductSpec dependency on its own installed version.
 
 The following is the body of that build integration, with `product`, `recordingMachine`, `productRoot`, `sourceRevision`, `producerPackageVersion` and the imported helper supplied by the existing build:
 
@@ -182,13 +173,17 @@ trace.record({
 const dataOnlyCapture = trace.snapshot();
 ```
 
-These variables denote actual owner observations, not fabricated values. Record `causedBy` only when the producer knows that causal relationship. Reusing an operation ID or having adjacent timestamps does not prove causality. Native/Python owners may produce the same versioned data format through their own hooks; those integrations have not been implemented in this PR.
+These variables denote actual owner observations, not fabricated values. Record `causedBy` only when the producer knows that causal relationship. Reusing an operation ID or having adjacent timestamps does not prove causality. Native/Python owners may produce the same versioned data format through their own hooks; each product owns that integration.
 
 Import the capture in the GUI's **Trace** view. It verifies product/model/entity identities, clock domain, event order, explicit gaps and bounded payloads. Step backward/forward, filter by operation or text, navigate to the observed entity and compare supplied finite logic evidence to the compatible kernel. Contradictory recorded evidence remains visible; the viewer does not overwrite it with what the model expected.
 
 Record summaries and necessary finite facts, not secrets, source footage or full unbounded transcripts. Synthetic fixtures use `provenance: 'synthetic'`. The SDK is not an authentication system or an automatic redactor; the producer still chooses what is safe to capture. No live-runtime pause, mutation or whole-program replay is implemented.
 
 An actual owner-run test uses `provenance: 'test-run'`; the Trace view labels it **Test run**, not a live session. A native producer that only has the generated ProductSpec JSON can put its exact file-byte SHA-256 in `artifactSha256` instead of reproducing Studio's internal `modelDigest`. If it supplies both, both identities must match. Every event still names an entity in that exact loaded model.
+
+### Local read API
+
+Selected views use the existing local-session token and project/view identity. `GET /api/project?mode=summary` keeps the initial response compact. `POST /api/source`, `/api/entity`, `/api/interface` and `/api/search` load selected content. `/api/changes` observes declared inputs, `/api/compare` compares loaded models, and `/api/trace-page` pages at most 600 events. `/api/trace-export` requires an explicit exact-trace request. These routes do not run a product or read arbitrary source paths.
 
 ## 7. Versions, scopes and changed source
 
@@ -203,8 +198,6 @@ An actual owner-run test uses `provenance: 'test-run'`; the Trace view labels it
 
 ## 8. Cross-product adoption order
 
-First prove one full product bundle and one standalone table bundle through the same core. Use Showcase or a current SKYVW export for structure; AMUX or the video activity table supplies the smaller independent logic case. No private product code needs to enter CircleKit.
-
-Then attach exact source files and a trace from one owned test path. Leave native previews, real video commands and external execution unavailable until those existing product owners are integrated. There is no benefit in making a graph look runnable by duplicating their state stores, worker manifests, undo engines or schedulers.
+The same inspection core accepts full product bundles and standalone table bundles. A new product exports its own compiled model and attaches exact source files or an owner-run trace where those facts exist. Native previews, real video commands and external execution remain unavailable until their product owners provide those adapters. Studio does not copy product state stores, undo engines or schedulers.
 
 See [DELIVERY](DELIVERY.md) for remaining boundaries and [VERIFICATION](VERIFICATION.md) for local proof and its limits.
