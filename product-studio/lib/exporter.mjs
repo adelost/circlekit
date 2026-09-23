@@ -12,13 +12,14 @@ export async function prepareInspection({ root, sourceFiles = [], origins = [], 
   for (const file of sourceFiles) sources.push(await safeFile(root, file, 1000000));
   const refs = sources.map(s => ({ path: s.relative, text: s.text }));
   const architecture = architectureOf(input.product ?? null, input.facets ?? [], input);
-  const located = locateEntities(architecture, refs, origins);
+  const located = locateEntities(architecture, refs, origins, input.contracts ?? []);
   // Automatically located positions are inspect-only; a position is not an inverse source lens.
   const mapped = located.origins.map(({ entityKey, file, sourceDigest, span, exportName, editing, fields }) => ({
     entityKey, file, sourceDigest, span, exportName: exportName ?? null, editing,
     ...(fields ? { fields } : {}),
   }));
-  return createInspectionBundle({ ...input, sources: refs.map(s => ({ file: s.path, digest: digest(s.text) })), origins: mapped });
+  return createInspectionBundle({ ...input, sources: refs.map(s => ({ file: s.path, digest: digest(s.text) })),
+    origins: mapped, contracts: located.contracts });
 }
 
 /** Writes one generated artifact in an existing, owner-selected directory. Never writes source. */
@@ -37,5 +38,6 @@ export async function writeInspectionBundle({ root, output, ...input }) {
     await rename(temporary, target);
   } finally { await rm(temporary, { force: true }); }
   return { output, modelDigest: bundle.modelDigest, bundleDigest: bundle.bundleDigest,
-    origins: bundle.origins.length, facets: bundle.facets.length };
+    origins: bundle.origins.length, contracts: bundle.contracts.length,
+    testContracts: bundle.testContracts.length, facets: bundle.facets.length };
 }
