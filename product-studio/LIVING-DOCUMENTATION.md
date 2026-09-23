@@ -42,7 +42,7 @@ function defineFeature(product: string) {
 
 The source intent is still checked at the real `service()` call. A computed ID is reported as an identity limitation, not a missing contract. Model correlation requires exact exported source provenance; Studio never runs a factory merely to discover an ID.
 
-## Existing SKYVW app-service reason
+## Legacy app-service reason
 
 `AppServiceDeclaration.reason` remains legacy/user-facing copy. `runs` still owns cadence. Do not copy either field into ProductSpec prose mechanically.
 

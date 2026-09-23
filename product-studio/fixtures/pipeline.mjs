@@ -1,4 +1,4 @@
-// Synthetic scheduling policy. This is not the private video editor's code.
+// Synthetic scheduling policy. This is not a product implementation.
 import { choice, defineDecisionTable, on } from '@v1d/product-spec';
 export const pipelinePolicy = defineDecisionTable({
   id: 'example.pipeline',

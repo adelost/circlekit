@@ -32,15 +32,15 @@ test('one nearest package, Git repository and present test-results replace works
   await mkdir(path.join(root,'test-results'));
   const project={id:'activity',label:'Activity',bundle:'ui/generated/activity.studio.json',
     authoring:{entry:'ui/src/activity.ts'},documentation:{sourceRoots:['ui/src']}};
-  const minimal=await workspaceConventions(root,project,'adelost/ai-dsl');
-  assert.equal(minimal.kernelRoot,'ui');assert.equal(minimal.documentation.repository,'adelost/ai-dsl');
+  const minimal=await workspaceConventions(root,project,'example/activity-app');
+  assert.equal(minimal.kernelRoot,'ui');assert.equal(minimal.documentation.repository,'example/activity-app');
   assert.equal(Object.hasOwn(minimal,'sources'),false);
-  const policy=await workspaceConventions(root,{id:'policy',label:'Policy',sources:['policies/context.ts']},'adelost/ai-dsl');
+  const policy=await workspaceConventions(root,{id:'policy',label:'Policy',sources:['policies/context.ts']},'example/activity-app');
   assert.equal(policy.kernelRoot,'.');
   assert.equal(minimal.traceFile,undefined);assert.equal(minimal.documentation.bddReports,undefined);
   for(const file of ['activity-studio-trace.json','activity-bdd-run.json','activity-laws.json'])
     await writeFile(path.join(root,'test-results',file),'{}');
-  const recorded=await workspaceConventions(root,project,'adelost/ai-dsl');
+  const recorded=await workspaceConventions(root,project,'example/activity-app');
   assert.equal(recorded.traceFile,'test-results/activity-studio-trace.json');
   assert.deepEqual(recorded.documentation.bddReports,[
     'test-results/activity-bdd-run.json','test-results/activity-laws.json',
@@ -48,7 +48,7 @@ test('one nearest package, Git repository and present test-results replace works
   await writeFile(path.join(root,'test-results/activity-studio-trace.json'),Buffer.alloc(8_000_001));
   assert.equal((await workspaceConventions(root,project)).traceFile,'test-results/activity-studio-trace.json');
   const explicit=await workspaceConventions(root,{...project,kernelRoot:'.',traceFile:'own/trace.json',
-    documentation:{repository:'another/repo',sourceRoots:['ui/src'],bddReports:[]}},'adelost/ai-dsl');
+    documentation:{repository:'another/repo',sourceRoots:['ui/src'],bddReports:[]}},'example/activity-app');
   assert.equal(explicit.kernelRoot,'.');assert.equal(explicit.traceFile,'own/trace.json');
   assert.equal(explicit.documentation.repository,'another/repo');assert.deepEqual(explicit.documentation.bddReports,[]);
 });
@@ -94,10 +94,10 @@ test('an uninstalled pin stays inspect-only instead of loading Studio as its eva
 test('repository convention accepts GitHub origin without exposing credentials',async t=>{
   const root=await temporary(t);
   await exec('git',['init',root]);
-  await exec('git',['-C',root,'remote','add','origin','git@github.com:adelost/skyvw.git']);
-  assert.equal(await repositoryFromRemote(root),'adelost/skyvw');
-  await exec('git',['-C',root,'remote','set-url','origin','https://token:secret@github.com/adelost/ai-dsl.git']);
-  assert.equal(await repositoryFromRemote(root),'adelost/ai-dsl');
-  await exec('git',['-C',root,'remote','set-url','origin','https://gitlab.com/adelost/other.git']);
+  await exec('git',['-C',root,'remote','add','origin','git@github.com:example/sample-app.git']);
+  assert.equal(await repositoryFromRemote(root),'example/sample-app');
+  await exec('git',['-C',root,'remote','set-url','origin','https://user:example@github.com/example/activity-app.git']);
+  assert.equal(await repositoryFromRemote(root),'example/activity-app');
+  await exec('git',['-C',root,'remote','set-url','origin','https://gitlab.com/example/other.git']);
   assert.equal(await repositoryFromRemote(root),null);
 });

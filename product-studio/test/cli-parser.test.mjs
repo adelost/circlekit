@@ -15,13 +15,13 @@ test('CLI parses only command-owned options and preserves caller argument arrays
   assert.equal(p.values.pretty, true);
 });
 test('the documented check command uses the shared contracts path', () => {
-  const parsed=parseCli(['check','--product','skyvw']);
+  const parsed=parseCli(['check','--product','my-product']);
   assert.equal(parsed.command,'contracts');
-  assert.equal(parsed.values.product,'skyvw');
+  assert.equal(parsed.values.product,'my-product');
 });
 test('plan accepts bounded changed entities and source files',()=>{
-  const p=parseCli(['plan','/repo','--changed','node-type::logbook.tags','--changed','appspec/products/skyvw/jumps/logbook-data.ts']);
-  assert.deepEqual(p.repeated.changed,['node-type::logbook.tags','appspec/products/skyvw/jumps/logbook-data.ts']);
+  const p=parseCli(['plan','/repo','--changed','node-type::catalog.tags','--changed','src/catalog/tags.ts']);
+  assert.deepEqual(p.repeated.changed,['node-type::catalog.tags','src/catalog/tags.ts']);
   assert.throws(()=>parseCli(['plan','/repo']),e=>e.code==='cli.usage');
 });
 test('review accepts an empty implicit Git diff or explicit changed source', () => {
@@ -29,9 +29,9 @@ test('review accepts an empty implicit Git diff or explicit changed source', () 
   assert.deepEqual(parseCli(['review', '--changed', 'src/service.ts']).repeated.changed, ['src/service.ts']);
 });
 test('explicit workspace export is selected as a write command', () => {
-  const parsed=parseCli(['export','--product','skyvw-web-logbook']);
+  const parsed=parseCli(['export','--product','my-product']);
   assert.equal(parsed.command,'export');
-  assert.equal(parsed.values.product,'skyvw-web-logbook');
+  assert.equal(parsed.values.product,'my-product');
   assert.throws(()=>parseCli(['export','--output','other.studio.json']),error=>error.code==='cli.usage');
 });
 test('unknown, duplicate and write flags are refused on every read command', () => {
