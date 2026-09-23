@@ -23,6 +23,7 @@ const SPEC = {
 const BOOLEAN = new Set(['examples', 'pretty', 'tasks']);
 const REQUIRED = { query: ['kind', 'from'], source: ['entity'], simulate: ['facet', 'input'], scenario: ['file'], trace: ['file'], bundle: ['compiler-version'] };
 
+/** WHAT: Describes the available Studio commands. WHY: Keeps shell help aligned with its strict parser. */
 export const HELP = `Product Studio
 
   v1d-studio [serve] [repository] [--workspace repository]...

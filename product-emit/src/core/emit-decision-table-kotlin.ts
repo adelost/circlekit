@@ -63,8 +63,9 @@ export function emitDecisionCellsKotlin(table: DecisionTable, names: DecisionTab
 }
 
 /**
- * `fun <functionName>(<axes>): <cellType> = when (...) { ... }` over every axis in declared order. [indent] is where
- * the `fun` line starts; each nested `when` steps in by four spaces from there.
+ * [indent] is where the `fun` line starts; each nested `when` steps in by four spaces from there.
+ * WHAT: Builds an exhaustive Kotlin lookup over every declared axis.
+ * WHY: Keeps native cell selection from drifting from the ProductSpec table.
  */
 export function emitDecisionLookupKotlin(
   table: DecisionTable,

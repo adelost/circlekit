@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtemp, mkdir, writeFile, readFile, readdir, rm, symlink } from 'node:fs/promises';
+import { mkdtemp, mkdir, writeFile, readFile, readdir, rm } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -62,18 +62,13 @@ test('converge keeps the JSON envelope and exits 2 when no evidence exists', asy
   assert.equal(response.body.ok, false);
   assert.equal(response.body.error.code, 'convergence.unknown');
 });
-test('record runs a real ProductSpec decision and derives its trace identity and file', async t => {
+test('record derives trace identity and file from a focused test without product envelope code', async t => {
   const { root } = await fixture(t);
-  const packageDir = fileURLToPath(new URL('../../product-spec/', import.meta.url));
-  await mkdir(path.join(root, 'node_modules/@v1d'), { recursive: true });
-  await symlink(packageDir, path.join(root, 'node_modules/@v1d/product-spec'));
   const run = ['record', root, '--product', 'local', '--', process.execPath, '--input-type=module', '-e',
-    'import {defineDecisionTable,decide,choice,on,bindPortImplementations} from "@v1d/product-spec";'
-    + 'const table=defineDecisionTable({id:"fixture.policy",axes:{permission:["YES","NO"]},'
-    + 'columns:{action:choice(["RUN","HOLD"])},cells:['
-    + 'on("allow",{permission:"YES"},{action:"RUN"}),on("deny",{permission:"NO"},{action:"HOLD"})]});'
-    + 'decide(table,{permission:"YES"});'
-    + 'bindPortImplementations({"producer.out":()=>42})["producer.out"]();'];
+    'import {writeFileSync} from "node:fs"; import {join} from "node:path";'
+    + 'const rows=[{kind:"decision",facetId:"fixture.policy",cellId:"allow",facts:{permission:"YES"},values:{action:"RUN"}},'
+    + '{kind:"port",portRef:"producer.out"}];'
+    + 'writeFileSync(join(process.env.V1D_STUDIO_TRACE_DIR,`node-${process.pid}.jsonl`),rows.map(row=>JSON.stringify(row)).join("\\n")+"\\n");'];
   const response = await invoke(run, root);
   assert.equal(response.code, 0);
   assert.equal(response.body.events, 2);

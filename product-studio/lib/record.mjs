@@ -63,7 +63,7 @@ async function rawEvents(directory) {
   return result;
 }
 
-/** WHAT: Runs a focused test and writes one model-bound Studio trace. WHY: Keeps envelope, identity and path ownership in Studio. */
+/** WHAT: Builds one model-bound Studio trace from a focused test. WHY: Keeps envelope, identity and path ownership in Studio. */
 export async function recordTestTrace(args, { cwd = process.cwd(), evaluateContract, stdout = process.stdout } = {}) {
   const input = parseRecordArgs(args);
   const root = path.resolve(cwd, input.root);
