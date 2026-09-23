@@ -30,6 +30,50 @@ test('a loaded trace opens at its last step, otherwise the first facet or full g
   assert.notEqual(studio.initialProjectView({...project(machine),facets:[]}), 'System');
 });
 
+test('an empty open v2 capture opens Trace rather than hiding a connected session', () => {
+  const live={...trace,version:2,eventCount:0,capture:{id:'capture-one',through:-1,ending:'open'},truncation:{droppedBefore:0,gaps:[]}};
+  assert.equal(studio.initialProjectView(project(machine,live)),'Trace');
+});
+
+test('a growing capture shows a selectable session, connection and explicit evaluated phase', () => {
+  const live={...trace,version:2,eventCount:2,sessionId:'capture-one',provenance:'recorded',
+    capture:{id:'capture-one',through:3,ending:'open'},truncation:{droppedBefore:0,gaps:[{from:1,to:2,reason:'producer-queue-full'}]}};
+  const current={sequence:3,kind:'transition',phase:'evaluated',atMs:5,entityKey:'facet:machine:jump.session',
+    logic:{facetId:'jump.session',cellId:'exit',from:'READY',to:'FLYING',input:'Exit'},summary:'Exit evaluated'};
+  const state={traceCursor:1,traceFrame:{cursor:1,current,events:[],causalPath:[],nextOffset:null,total:2},
+    liveStatus:{state:'observing',captureId:'capture-one',sessions:[{id:'capture-one',events:2,drops:2,ending:'open'},{id:'capture-old',events:1,drops:0,ending:'clean'}]}};
+  const html=studio.traceView(project(machine,live),state,escape);
+  assert.match(html,/<select id="live-session"/);
+  assert.match(html,/capture-old/);
+  assert.match(html,/Connected.*Model matched.*2 events.*2 dropped.*Tail open/s);
+  assert.match(html,/data-phase="evaluated"/);
+  assert.match(html,/Evaluated/);
+  assert.doesNotMatch(html,/Applied in memory/);
+});
+
+test('a lost v2 span breaks the applied graph trail before the next evaluated step', () => {
+  const live={version:2,truncation:{droppedBefore:0,gaps:[{from:1,to:2,reason:'producer-queue-full'}]}};
+  const prior={eventIndex:0,sequence:0,kind:'transition',phase:'applied',logic:{facetId:'jump.session',cellId:'exit',from:'READY',to:'FLYING'}};
+  const current={eventIndex:1,sequence:3,kind:'transition',phase:'evaluated',logic:{facetId:'jump.session',cellId:'exit',from:'READY',to:'FLYING'}};
+  const marks=studio.traceGraphMarks(machine,{cursor:1,current,events:[prior,current]},[prior,current],live);
+  assert.deepEqual([...marks.pastEdges],[]);
+  assert.equal(marks.currentEdge,'exit');
+  assert.equal(marks.currentPhase,'evaluated');
+  assert.equal(marks.appliedContinuous,false);
+});
+
+test('a lost v2 span is written into the applied state path, not drawn as one arrow', () => {
+  const live={...trace,version:2,eventCount:2,sessionId:'capture-one',capture:{id:'capture-one',ending:'open'},
+    truncation:{droppedBefore:0,gaps:[{from:1,to:2,reason:'producer-queue-full'}]},
+    statePath:[{state:'READY',sequence:0,eventIndex:0},{state:'FLYING',sequence:0,eventIndex:0},
+      {state:'READY',sequence:3,eventIndex:1}]};
+  const current={sequence:3,kind:'transition',phase:'applied',atMs:3,entityKey:'facet:machine:jump.session',
+    logic:{facetId:'jump.session',from:'FLYING',to:'READY'},summary:'Applied'};
+  const html=studio.traceView(project(machine,live),{traceCursor:1,traceFrame:{cursor:1,current,events:[],causalPath:[],nextOffset:null,total:2}},escape);
+  assert.match(html,/Gap · 2 dropped/);
+  assert.match(html,/data-trace-sequence="0"[^>]*>FLYING<\/button><span class="trace-gap"/);
+});
+
 test('machine trace presents the shared graph before the event list', () => {
   const html=studio.traceView(project(machine,trace),{traceCursor:1,traceFrame:frame({facetId:'jump.session',cellId:'exit',from:'READY',to:'FLYING'})},escape);
   assert.match(html, /id="graph"[^>]*data-managed="graph"/);

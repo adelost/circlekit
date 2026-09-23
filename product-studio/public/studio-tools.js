@@ -1,6 +1,6 @@
 import { intentPanel } from './documentation.js';
 export function initialProjectView(project) {
-  if (project.trace?.eventCount > 0) return 'Trace';
+  if (project.trace?.eventCount > 0 || project.trace?.version === 2) return 'Trace';
   if (project.facets.some(f => ['machine','decision-table'].includes(f.kind))) return 'Logic';
   if (project.product && project.graph.nodes.length) return 'System';
   if (project.catalogAvailable) return 'Interface';
@@ -9,17 +9,23 @@ export function initialProjectView(project) {
 
 export const traceFacet = (project,state) => project.facets.find(f => f.id === state.traceFrame?.current?.logic?.facetId) ?? null;
 
-export function traceGraphMarks(facet, frame, events=frame.events??[]) {
+export function traceGraphMarks(facet, frame, events=frame.events??[], trace=null) {
   const pastNodes=new Set(),pastEdges=new Set(),cells=new Map(facet.compiled.cells.map(c=>[c.id,c]));
   const states=new Set(facet.compiled.states);
   const recorded=logic=>logic?.facetId===facet.id && states.has(logic.from) && states.has(logic.to);
   const edge=logic=>cells.get(logic.cellId)?.from===logic.from && cells.get(logic.cellId)?.to===logic.to?logic.cellId:null;
-  for(const event of events) if(event.eventIndex<frame.cursor && event.kind==='transition' && recorded(event.logic)) {
+  const currentEvent=frame.current;
+  const lastGap=trace?.version===2?Math.max(trace.truncation.droppedBefore-1,
+    ...trace.truncation.gaps.filter(gap=>gap.to<(currentEvent?.sequence??Infinity)).map(gap=>gap.to)):-1;
+  for(const event of events) if(event.eventIndex<frame.cursor && event.kind==='transition' && recorded(event.logic)
+    && (trace?.version!==2 || event.phase==='applied' && event.sequence>lastGap)) {
     pastNodes.add(event.logic.from);pastNodes.add(event.logic.to);
     if(edge(event.logic))pastEdges.add(event.logic.cellId);
   }
-  const current=recorded(frame.current?.logic)?frame.current.logic:null;
-  return {pastNodes,pastEdges,currentFrom:current?.from??null,currentTo:current?.to??null,currentEdge:current?edge(current):null};
+  const current=recorded(currentEvent?.logic)?currentEvent.logic:null;
+  return {pastNodes,pastEdges,currentFrom:current?.from??null,currentTo:current?.to??null,currentEdge:current?edge(current):null,
+    currentPhase:trace?.version===2?currentEvent?.phase??null:null,
+    appliedContinuous:trace?.version!==2 || lastGap<0};
 }
 
 export function traceArchitectureMarks(project, frame, events=frame.events??[]) {
@@ -39,8 +45,25 @@ export function traceArchitectureMarks(project, frame, events=frame.events??[]) 
     currentEdge:currentEdge?.id??null,focusIds};
 }
 
-export const traceEventRows = (project,state) => state.traceHistory?.digest && state.traceHistory.digest===project.trace?.traceDigest
+export const traceEventRows = (project,state) => state.traceHistory?.digest && state.traceHistory.digest===(state.liveTrace??project.trace)?.traceDigest
   ? state.traceHistory.events : state.traceFrame?.events??[];
+
+const dropped = trace => trace.truncation.droppedBefore+
+  trace.truncation.gaps.reduce((total,gap)=>total+gap.to-gap.from+1,0);
+
+function liveStatusLine(trace,state,escape) {
+  if(trace.version!==2)return '';
+  const selected=state.liveCaptureId??trace.capture.id;
+  const sessions=state.liveStatus?.sessions?.length?state.liveStatus.sessions:[{id:trace.capture.id}];
+  const connected=state.liveStatus?.state==='observing'&&state.liveStatus.captureId===selected;
+  const matched=state.liveStatus?.state!=='model-mismatch';
+  return `<div class="toolbar trace-live-status"><label>Session<select id="live-session">${sessions.map(session=>
+    `<option value="${escape(session.id)}" ${session.id===selected?'selected':''}>${escape(session.id)}</option>`).join('')}</select></label>
+    <span class="badge ${connected?'good':'warning'}">${connected?'Connected':'Disconnected'}</span>
+    <span class="badge ${matched?'good':'error'}">${matched?'Model matched':'Model mismatch'}</span>
+    <span class="badge">${trace.eventCount} events · ${dropped(trace)} dropped</span>
+    <span class="badge ${trace.capture.ending==='open'?'warning':''}">${trace.capture.ending==='open'?'Tail open':trace.capture.ending==='clean'?'Ended clean':'Tail interrupted'}</span></div>`;
+}
 
 export function decisionRegionTable(facet,escape,selectedCellId=null,trace=false) {
   const chips=values=>`<div class="trace-facts">${Object.entries(values??{}).map(([key,value])=>`<span class="trace-guard">${escape(key)} <strong>${escape(typeof value==='string'?value:JSON.stringify(value))}</strong></span>`).join('')||'<small>—</small>'}</div>`;
@@ -115,9 +138,14 @@ function traceStateBand(trace,cursor,E) {
   if(!path.length)return '';
   let active=0;
   for(const [index,item] of path.entries())if((index===0?-1:item.eventIndex)<=cursor)active=index;
-  const nodes=path.map((item,index)=>
-    '<button data-trace-sequence="'+item.sequence+'" data-trace-index="'+(index===0?-1:item.eventIndex)+'"'+(index===active?' aria-current="step"':'')+'>'+E(item.state)+'</button>'
-    +(index<path.length-1?'<span aria-hidden="true">→</span>':'')).join('');
+  const gapBetween=(a,b)=>trace.version===2?trace.truncation.gaps
+    .filter(gap=>gap.from>a.sequence&&gap.to<b.sequence)
+    .reduce((count,gap)=>count+gap.to-gap.from+1,0):0;
+  const nodes=path.map((item,index)=>{
+    const next=path[index+1],loss=next?gapBetween(item,next):0;
+    return '<button data-trace-sequence="'+item.sequence+'" data-trace-index="'+(index===0?-1:item.eventIndex)+'"'+(index===active?' aria-current="step"':'')+'>'+E(item.state)+'</button>'
+      +(next?(loss?'<span class="trace-gap">Gap · '+loss+' dropped</span>':'<span aria-hidden="true">→</span>'):'');
+  }).join('');
   return '<div class="trace-state-band"><span class="section-label">State path</span><div class="trace-state-path">'+nodes+'</div>'
     +(trace.statePathTruncated?'<small>First 128 state changes shown.</small>':'')+'</div>';
 }
@@ -144,22 +172,22 @@ function traceLogicCard(frame,E) {
 }
 
 export function traceView(project, state, escape) {
-  const trace=project.trace;
+  const trace=state.liveTrace??project.trace;
   if(!trace) return `<section class="panel"><header class="panel-head"><h2>Recorded trace</h2><button data-action="import-trace">Import trace</button></header><div class="panel-body"><div class="notice info">Import ordered events from a product-owned recorder. Count-only snapshots cannot be played as event history.</div><p class="muted">Producer identity for this selection:</p><pre>${escape(JSON.stringify({productId:project.productId,modelDigest:project.modelDigest},null,2))}</pre><button data-action="trace-format">Export recorder example</button><p class="muted">The example records nothing automatically. Connect actual runtime hooks through their existing owner.</p></div></section>`;
   const frame=state.traceFrame, cursor=state.traceCursor ?? trace.eventCount-1, max=Math.max(0,trace.eventCount-1);
   const rows=frame?.events ?? [];
   const f=traceFacet(project,state);
-  const marks=f?.kind==='machine'&&frame?traceGraphMarks(f,frame,traceEventRows(project,state))
+  const marks=f?.kind==='machine'&&frame?traceGraphMarks(f,frame,traceEventRows(project,state),trace)
     :!f&&frame?traceArchitectureMarks(project,frame,traceEventRows(project,state)):null;
-  const phaseLabel=trace.version===1?'Legacy transition · application not specified':frame?.current?.phase==='applied'?'Last observed state':'Last evaluated transition';
-  const current=f?.kind==='machine'&&marks?.currentTo ? `<div class="trace-step-cue"><span class="section-label">${phaseLabel}</span><strong>${escape(marks.currentFrom)} <span aria-hidden="true">→</span> ${escape(marks.currentTo)}</strong>${marks.currentEdge?`<span class="badge">${escape(f.compiled.cells.find(c=>c.id===marks.currentEdge)?.on??marks.currentEdge)}</span>`:''}</div>` : '';
+  const phaseLabel=trace.version===1?'Legacy transition · application not specified':frame?.current?.phase==='applied'?'Applied in memory':'Evaluated, not applied';
+  const current=f?.kind==='machine'&&marks?.currentTo ? `<div class="trace-step-cue" data-phase="${escape(marks.currentPhase??'legacy')}"><span class="section-label">${phaseLabel}</span><strong>${escape(marks.currentFrom)} <span aria-hidden="true">→</span> ${escape(marks.currentTo)}</strong>${marks.currentEdge?`<span class="badge">${escape(f.compiled.cells.find(c=>c.id===marks.currentEdge)?.on??marks.currentEdge)}</span>`:''}</div>` : '';
   const trail=(state.traceHistory?.digest && state.traceHistory.digest===trace.traceDigest)||frame?.events.length===trace.eventCount?'':state.traceHistoryPending?'Loading earlier steps…':state.traceHistoryError?'Earlier steps unavailable; showing loaded page.':'Showing loaded page only.';
   const model=f?.kind==='machine' ? `<div class="trace-model"><div class="section-label">${escape(f.id)} · recorded transition</div>${current}<div id="graph" data-managed="graph" class="graph-host"></div>${trail?`<small>${trail}</small>`:''}</div>`
     : f?.kind==='decision-table' ? `<div class="trace-model"><div class="section-label">${escape(f.id)} · recorded decision</div>${decisionRegionTable(f,escape,frame.current.logic?.cellId,true)}</div>`
     : marks ? `<div class="trace-model"><div class="section-label">Declared system · recorded port</div><div class="trace-step-cue"><span class="section-label">Current owner</span><strong>${escape(project.architecture.entities.find(entity=>entity.key===marks.currentTo)?.id??marks.currentTo)}</strong></div><div id="graph" data-managed="graph" data-graph-kind="system" class="graph-host"></div><small>${trail?trail+' ':''}Declared links, not measured flow.</small></div>`
     : frame?.current ? '<div class="notice">No declared port or owner for this step. Its graph position is unavailable.</div>' : '';
   return `<section class="panel"><header class="panel-head"><h2>${trace.provenance === 'synthetic' ? 'Synthetic trace' : trace.provenance === 'test-run' ? 'Test run trace' : 'Recorded trace'} <code>${escape(trace.sessionId)}</code></h2><div class="toolbar"><button data-action="import-trace" class="quiet-link">Import another</button><button data-action="export-trace" class="quiet-link">Export trace</button></div></header>
-    <div class="panel-body"><details class="exact-key"><summary>${trace.eventCount} events · ${trace.truncation.droppedBefore} dropped${trace.truncation.gaps.length ? ` · ${trace.truncation.gaps.length} gaps` : ''}</summary><small>${escape(trace.notice)}</small></details>
+    <div class="panel-body">${liveStatusLine(trace,state,escape)}<details class="exact-key"><summary>${trace.eventCount} events · ${dropped(trace)} dropped${trace.truncation.gaps.length ? ` · ${trace.truncation.gaps.length} gaps` : ''}</summary><small>${escape(trace.notice)}</small></details>
       ${model}
       ${traceStateBand(trace,cursor,escape)}
       <div class="toolbar"><button data-action="trace-first">⏮ First</button><button data-action="trace-back">◁ Back</button><button data-action="trace-next">Next ▷</button><button data-action="trace-last">Last ⏭</button><label>Frame <input id="trace-cursor" type="range" min="0" max="${max}" value="${Math.max(0,cursor)}" ${trace.eventCount ? '' : 'disabled'}></label><code>${cursor+1} / ${trace.eventCount}</code><span class="badge">${escape(trace.clock.domain)} ms</span></div>
