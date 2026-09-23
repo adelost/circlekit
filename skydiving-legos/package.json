@@ -1,6 +1,6 @@
 {
   "name": "@v1d/skydiving-legos",
-  "version": "0.1.13",
+  "version": "0.1.14",
   "description": "The skydiving domain as a reserved ProductSpec library catalog: contracts, node types and finite spaces",
   "type": "module",
   "files": [
@@ -17,13 +17,14 @@
     "clean": "node -e \"require('node:fs').rmSync('dist',{recursive:true,force:true})\"",
     "build": "npm run clean && tsc -p tsconfig.json",
     "test": "npm run build && node --test dist/test/*.test.js",
-    "check:pins": "node node_modules/@v1d/product-spec/dist/src/pin-check-cli.js",
+    "check:pins": "node ../scripts/check-peer-product-spec.mjs .",
     "pack:release": "npm run test && npm pack"
   },
-  "dependencies": {
-    "@v1d/product-spec": "https://circlekit.pages.dev/npm/v1d/product-spec/0.3.64/v1d-product-spec-0.3.64.tgz"
+  "peerDependencies": {
+    "@v1d/product-spec": ">=0.3.64 <0.4.0"
   },
   "devDependencies": {
+    "@v1d/product-spec": "https://circlekit.pages.dev/npm/v1d/product-spec/0.3.66/v1d-product-spec-0.3.66.tgz",
     "@types/node": "^24.3.0",
     "typescript": "^5.9.3"
   },

@@ -10,6 +10,10 @@ import { skydivingLegoCatalog } from "@v1d/skydiving-legos";
 export const product = defineProduct(declaration, assets, [skydivingLegoCatalog]);
 ```
 
+The consuming product owns the `@v1d/product-spec` version. This library requires
+one compatible peer (`>=0.3.64 <0.4.0`) and pins 0.3.66 only for its own build
+and tests, so its public types resolve through the product's copy.
+
 Passing the catalog does two things at once. Everything in it becomes available
 to the declaration, and every id in it becomes **reserved**: a product that
 re-declares `flight.phase` or `attitude.compass-state` fails to compile even if
