@@ -28,7 +28,7 @@ test('Kotlin generated IDs and optional annotations stay associations, not runti
     '    use(GeneratedProductPortIds.RECORDING_PRESSURE)',
     '  }',
     '}',
-  ].join('\\n');
+  ].join('\n');
   const source={path:'src/test/ExampleTest.kt',text:sourceText};
   const located=testSourceIndex(sourceText,source.path)[0];
   const ids={path:'generated/GeneratedProductPortIds.kt',text:[
@@ -36,7 +36,7 @@ test('Kotlin generated IDs and optional annotations stay associations, not runti
     '  data object RECORDING_PRESSURE_VALUE : PortId { override val value = "recording.service.pressure" }',
     '  val RECORDING_PRESSURE: PortId = RECORDING_PRESSURE_VALUE',
     '}',
-  ].join('\\n')};
+  ].join('\n')};
   const architecture={entities:[
     {key:'node-type::recording.service',id:'recording.service'},
     {key:'port::recording.service.pressure',id:'recording.service.pressure'},
@@ -50,7 +50,7 @@ test('Kotlin generated IDs and optional annotations stay associations, not runti
 
 test('unknown @covers target becomes a diagnostic rather than guessed identity',()=>{
   const name='Given x When y Then z';
-  const sourceText=['/** @covers missing.service */',"test('Given x When y Then z',()=>{assert(true)});"].join('\\n');
+  const sourceText=['/** @covers missing.service */',"test('Given x When y Then z',()=>{assert(true)});"].join('\n');
   const source={path:'test/example.test.js',text:sourceText};
   const located=testSourceIndex(sourceText,source.path)[0];
   const associated=associateBehaviorReferences(report(source.path,located.line,name),[source],{entities:[]},[]);
