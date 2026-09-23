@@ -132,6 +132,10 @@ export const serviceDemandContract = {
 } as const;
 
 /** One native service owns subscription, normalization, policy views and demand. */
+/**
+ * WHAT: Normalizes device location into flight fixes and presentation state.
+ * WHY: Keeps subscription and permission handling behind one position boundary.
+ */
 export const positionService = service({
   id: "position.service",
   inputs: [demandPort("demand", serviceDemandContract)],
@@ -165,6 +169,10 @@ export const positionService = service({
 /**
  * HOME is durable user-owned state, not another view of the physical GPS
  * subscription. Its native runtime owns restore, mutation and persistence.
+ */
+/**
+ * WHAT: Stores the user's HOME reference and publishes its current point.
+ * WHY: Keeps durable HOME ownership separate from the physical GPS subscription and map views.
  */
 export const homeReference = service({
   id: "home.reference",
