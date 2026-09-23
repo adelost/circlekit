@@ -1,7 +1,5 @@
 import ts from 'typescript';
 import { writeFile, mkdtemp, rm, realpath } from 'node:fs/promises';
-import { execFile } from 'node:child_process';
-import { promisify } from 'node:util';
 import os from 'node:os';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
@@ -9,8 +7,6 @@ import { safeFile, requireThat, digest } from './util.mjs';
 import { writeInspectionBundle } from './exporter.mjs';
 import { graphProduct } from './graph-data.mjs';
 import { loadProductKernel } from './product-kernel.mjs';
-
-const exec=promisify(execFile);
 
 /**
  * WHAT: Exports selected product-owned declarations through that product's installed ProductSpec compiler.
@@ -63,13 +59,9 @@ export async function exportAuthoring({root,packageRoot='.',files,entry,exportNa
     const product=kind==='graph'?graphProduct(exported,productId):null;
     const facets=kind==='graph'?[]:[{kind,id:exported?.id,compiled:exported}];
     requireThat(kind==='graph'||typeof exported?.id==='string','export.facet','Finite authoring export needs a stable ID.');
-    let revision=null;
-    try {
-      const status=(await exec('git',['-C',base,'status','--porcelain','--untracked-files=normal'],{timeout:3000})).stdout;
-      if(!status.trim())revision=(await exec('git',['-C',base,'rev-parse','HEAD'],{timeout:3000})).stdout.trim();
-    } catch {}
     for(const file of read)requireThat(digest((await safeFile(base,file.relative)).text)===digest(file.text),'export.stale','Product source changed during compilation.');
+    // The exact source digests identify this build. Git HEAD would make a committed bundle change on every bundle-only commit.
     return writeInspectionBundle({root:base,output,productId,product,facets,sourceFiles:files,sourceSnapshot:read,
-      sourceRevision:revision,evaluateContract,compiler:{name:'@v1d/product-spec',version:compilerVersion}});
+      sourceRevision:null,evaluateContract,compiler:{name:'@v1d/product-spec',version:compilerVersion}});
   } finally { await rm(staging,{recursive:true,force:true}); }
 }
