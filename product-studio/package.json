@@ -18,7 +18,7 @@
     "profile": "node scripts/profile.mjs"
   },
   "dependencies": {
-    "@v1d/product-spec": "https://circlekit.pages.dev/npm/v1d/product-spec/0.3.65/v1d-product-spec-0.3.65.tgz",
+    "@v1d/product-spec": "https://circlekit.pages.dev/npm/v1d/product-spec/0.3.67/v1d-product-spec-0.3.67.tgz",
     "saxes": "6.0.0",
     "typescript": "5.9.3",
     "ws": "8.21.3"

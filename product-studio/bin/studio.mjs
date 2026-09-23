@@ -48,6 +48,18 @@ export async function main(args = process.argv.slice(2), { cwd = process.cwd(), 
     parsed = parseCli(args);
     if (parsed.help) { stdout.write(HELP); return 0; }
     const { command, values: v, repeated, positional } = parsed;
+    if(command==='live') {
+      const { discoverLive,readLive }=await import('../lib/live-client.mjs');
+      const receipt=await discoverLive(path.resolve(cwd,v['data-dir']??path.join(os.homedir(),'.local/state/product-studio')),v.port);
+      if(v.freeze){
+        const trace=await readLive(receipt,{session:v.session,raw:true});
+        const { saveLiveCapture }=await import('../lib/live-export.mjs');
+        const saved=await saveLiveCapture(cwd,v.output,trace);
+        stdout.write(formatJson({schemaVersion:1,ok:true,command:'live',...saved},v.pretty));return 0;
+      }
+      stdout.write(formatJson(await readLive(receipt,{session:v.session,max:v.max,offset:v.offset,cut:v.cut}),v.pretty));
+      return 0;
+    }
     v['amux-root']??=await installedAmuxRoot(cwd);
     if (SEMANTIC_COMMANDS.has(command)) {
       const response = await executeSemanticCli(parsed, { cwd });

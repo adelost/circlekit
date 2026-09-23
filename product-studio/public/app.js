@@ -490,7 +490,7 @@ async function loadTraceFrame(cursor) {
   const ticket=++generation;
   try {
     const result=await api('trace-page',{...requestContext(),traceDigest:selected.traceDigest,
-      ...(selected.version===2?{captureId:selected.capture.id}:{}),offset:state.traceOffset??0,limit:200,
+      ...(selected.version===2&&state.liveCaptureId?{captureId:state.liveCaptureId}:{}),offset:state.traceOffset??0,limit:200,
       filter:{cursor,search:state.traceSearch ?? '',operationId:state.traceOperation || null}});
     if(ticket!==generation)return;
     state.traceCursor=cursor;state.traceFrame=result;state.mode=selected.provenance==='synthetic'?'Simulation'
@@ -503,7 +503,7 @@ function loadTraceHistory() {
   const owner=project,view=state,selected=view.liveTrace??owner.trace,digest=selected?.traceDigest;
   if(!digest||view.traceHistory?.digest===digest||view.traceHistoryPending||view.traceHistoryError?.digest===digest)return;
   view.traceHistoryPending=api('trace-export',{project:owner.key,bundleDigest:owner.bundleDigest,traceDigest:digest,
-    ...(selected.version===2?{captureId:selected.capture.id}:{})})
+    ...(selected.version===2&&state.liveCaptureId?{captureId:state.liveCaptureId}:{})})
     .then(trace=>{
       if(project!==owner||state!==view||(view.liveTrace??project.trace)?.traceDigest!==digest)return;
       view.traceHistory={digest,events:trace.events.map((event,eventIndex)=>({eventIndex,sequence:event.sequence,kind:event.kind,phase:event.phase,entityKey:event.entityKey,logic:event.logic}))};render();
@@ -563,12 +563,22 @@ async function performStudioTool(name) {
   if(name==='clear-query'){state.canvas=null;state.queryResult=null;await refreshArchitecture();return true;}
   if(name==='toggle-code'){state.showCode=!state.showCode;render();return true;}
   if(name==='import-trace'){$('#trace-import').click();return true;}
+  if(name==='freeze-trace'){
+    const selected=state.liveTrace??project.trace;
+    const frozen=await api('live-freeze',{...requestContext(),captureId:state.liveCaptureId??selected.capture.id});
+    state.liveTrace={...frozen.trace,eventCount:frozen.trace.events.length};
+    state.liveConvergence=frozen.convergence;state.liveCaptureId=frozen.id;state.liveFollowTail=false;
+    state.traceFrame=null;state.traceHistory=null;state.traceOffset=0;
+    state.liveStatus=await api('live-status?project='+encodeURIComponent(project.key));
+    await loadTraceFrame(Math.max(0,state.liveTrace.eventCount-1));return true;
+  }
   if(name==='trace-format'){
     download('trace-header.json',pretty({kind:'product-studio-trace',version:1,modelDigest:project.modelDigest,
       provenance:'synthetic',events:[]}));return true;
   }
   if(name==='export-trace'){const selected=state.liveTrace??project.trace;const loaded=await api('trace-export',{...requestContext(),traceDigest:selected.traceDigest,
-    ...(selected.version===2?{captureId:selected.capture.id}:{})});const {traceDigest,notice,incompleteCausality,complete,...trace}=loaded;download('recorded-trace.json',pretty(trace));return true;}
+    ...(selected.version===2?{captureId:state.liveCaptureId??selected.capture.id}:{})});const {traceDigest,notice,incompleteCausality,complete,...trace}=loaded;
+    download(selected.version===2?`${state.liveCaptureId??selected.capture.id}.studio-trace.json`:'recorded-trace.json',pretty(trace));return true;}
   if(name.startsWith('trace-') && (state.liveTrace??project.trace)){
     const last=(state.liveTrace??project.trace).eventCount-1,at=state.traceCursor ?? last;
     if(name==='trace-page-next'||name==='trace-page-prev'){state.traceOffset=Math.max(0,(state.traceOffset??0)+(name==='trace-page-next'?200:-200));await loadTraceFrame(at);return true;}
@@ -603,7 +613,8 @@ function splitRegionDialog() {
 $('#trace-import').onchange=async e=>{const file=e.target.files[0];if(!file)return;const ticket=++generation;try{
   if(file.size>8000000)throw new Error('Trace exceeds the 8 MB import limit.');
   const p=await api('trace',{...requestContext(),text:await file.text(),fileName:file.name});if(ticket!==generation)return;
-  project=p;installDocumentState(state,p);state.traceOffset=0;state.view='Trace';state.traceFrame=null;await loadTraceFrame(p.trace.eventCount-1);
+  project=p;installDocumentState(state,p);state.liveTrace=null;state.liveCaptureId=null;state.liveConvergence=null;state.liveStatus=null;
+  state.traceOffset=0;state.view='Trace';state.traceFrame=null;await loadTraceFrame(p.trace.eventCount-1);
 }catch(error){if(ticket===generation)toast(error.message);}finally{e.target.value='';}};
 
 

@@ -3,6 +3,7 @@ import { Workbench } from './workspaces.mjs';
 import { plain, requireThat, errorPayload } from './util.mjs';
 import { isDigest } from './inspection.mjs';
 import { planForChanges } from './plan.mjs';
+import { reviewForChanges } from './review.mjs';
 
 const COMMANDS = new Set(['inspect', 'query', 'source', 'simulate', 'scenario', 'trace', 'plan']);
 const INDEX_FIELDS = ['key', 'id', 'kind', 'label', 'group', 'parent', 'owner'];
@@ -118,10 +119,14 @@ export class SemanticStudio {
     const { architecture, sourceIndex, facets } = this.view;
     if (key !== undefined) {
       const entity = this.entity(key);
+      const project=this.workbench.require(this.view.key);
+      const plan=planForChanges(this.view,project,[key]);
       return { entity, intent:intentForEntity(this.view.documentation,architecture,key), ports: architecture.entities.filter(e => e.owner === key).map(indexRow),
         relations: architecture.edges.filter(e => e.from === key || e.to === key),
         source: sourceIndex.origins.find(o => o.entityKey === key) ?? null,
-        sourceLimitation: sourceIndex.unresolved.find(o => o.entityKey === key)?.reason ?? null };
+        sourceLimitation: sourceIndex.unresolved.find(o => o.entityKey === key)?.reason ?? null,
+        plan:plan.markdown.trim(),review:reviewForChanges({service:this,project,changes:[key],
+          convergence:this.workbench.convergence(project)}).trim() };
     }
     requireThat(typeof search === 'string' && search.length <= 1000, 'inspect.search', 'Search must be bounded text.');
     requireThat(Array.isArray(fields) && fields.length > 0 && fields.every(f => INDEX_FIELDS.includes(f))

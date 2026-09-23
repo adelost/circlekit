@@ -24,7 +24,7 @@ export class LiveSessionHub {
   constructor(app, { now = Date.now } = {}) {
     this.app = app; this.now = now;
     this.tickets = new Map(); this.reconnects = new Map();
-    this.captures = new Map(); this.statuses = new Map(); this.sockets = new Set();this.retainedBytes=0;
+    this.captures = new Map(); this.frozen = new Map(); this.statuses = new Map(); this.sockets = new Set();this.retainedBytes=0;
     this.pending = new Set(); this.active = new Set(); this.failures = new Map();
     this.ws = new WebSocketServer({ noServer:true, maxPayload:MAX_MESSAGE, perMessageDeflate:false });
     this.ws.on('connection', (socket,request) => this.connected(socket,request));
@@ -216,14 +216,40 @@ export class LiveSessionHub {
     const sessions=[...this.captures.values()].filter(capture=>capture.p.key===project)
       .map(capture=>({id:capture.id,events:capture.count,drops:capture.dropped,ending:capture.ending,
         modelMatched:capture.view.modelDigest===current.modelDigest&&capture.view.bundleDigest===current.bundleDigest}));
+    for(const frozen of this.frozen.values()) if(frozen.project===project) sessions.push({id:frozen.id,
+      events:frozen.trace.events.length,drops:frozen.trace.truncation.gaps.reduce((n,g)=>n+g.to-g.from+1,0),
+      ending:'frozen',modelMatched:frozen.view.modelDigest===current.modelDigest&&frozen.view.bundleDigest===current.bundleDigest});
     return {...(this.statuses.get(project)??{label:'Disconnected',state:'disconnected',events:0}),sessions};
   }
+  freeze(project,captureId,currentView) {
+    this.selectedSnapshot(project,captureId,currentView);
+    requireThat(this.frozen.size<8,'live.overloaded','Eight frozen captures are retained. Export a capture and restart Studio.');
+    const source=this.frozen.get(captureId)?.trace??this.captures.get(captureId)?.writer.snapshot();
+    const id=`freeze-${randomBytes(12).toString('hex')}`;
+    const trace=structuredClone(source);
+    const bytes=Buffer.byteLength(JSON.stringify(trace));
+    requireThat(this.retainedBytes+bytes<=RETAINED_BYTES,'live.overloaded','Receiver retention budget exhausted. Export an existing capture and restart Studio.');
+    this.retainedBytes+=bytes;
+    this.frozen.set(id,{id,project,view:currentView,trace});
+    return {id,trace};
+  }
   selectedSnapshot(project,captureId,currentView) {
+    const frozen=this.frozen.get(captureId);
+    if(frozen) {
+      requireThat(frozen.project===project,'live.capture','Capture does not belong to this project.',404);
+      requireThat(frozen.view.modelDigest===currentView.modelDigest&&frozen.view.bundleDigest===currentView.bundleDigest,
+        'live.model-mismatch','Capture belongs to another compiled build.',409);
+      return decodeTrace(JSON.stringify(frozen.trace),frozen.view);
+    }
     const capture=this.captures.get(captureId);
     requireThat(capture?.p.key===project,'live.capture','Capture does not belong to this project.',404);
     requireThat(capture.view.modelDigest===currentView.modelDigest&&capture.view.bundleDigest===currentView.bundleDigest,
       'live.model-mismatch','Capture belongs to another compiled build.',409);
     return decodeTrace(JSON.stringify(capture.writer.snapshot()),capture.view);
+  }
+  rawSnapshot(project,captureId,currentView) {
+    this.selectedSnapshot(project,captureId,currentView);
+    return structuredClone(this.frozen.get(captureId)?.trace??this.captures.get(captureId).writer.snapshot());
   }
   snapshot(captureId) { return this.captures.get(captureId)?.writer.snapshot()??null; }
   close() { clearInterval(this.liveness);for(const socket of this.sockets)socket.terminate();this.ws.close(); }

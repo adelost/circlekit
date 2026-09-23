@@ -9,6 +9,7 @@ import path from 'node:path';
 import { repositoryFromRemote, workspaceConventions } from '../lib/workspaces.mjs';
 import { openHeadlessStudio } from '../lib/semantic.mjs';
 import { main } from '../bin/studio.mjs';
+import { KERNEL_VERSION } from '../lib/kernel.mjs';
 
 const exec=promisify(execFile);
 async function temporary(t) {
@@ -81,7 +82,7 @@ test('an old checkout without a workspace file names the safe update path instea
 
 test('export uses the same inferred nested ProductSpec kernel as doctor',async t=>{
   const root=await temporary(t),ui=path.join(root,'ui'),amux=path.join(root,'trusted-amux');
-  await pin(root,'ui','0.3.65',{installed:false});
+  await pin(root,'ui',KERNEL_VERSION,{installed:false});
   const installed=fileURLToPath(new URL('../node_modules/@v1d/product-spec/',import.meta.url));
   await mkdir(path.join(ui,'node_modules/@v1d'),{recursive:true});
   await symlink(installed,path.join(ui,'node_modules/@v1d/product-spec'));
@@ -100,7 +101,7 @@ export const policy=defineDecisionTable({id:'fixture.policy',axes:{phase:['READY
   assert.equal(code,0,output);
   assert.equal(JSON.parse(output).ok,true);
   const bundle=JSON.parse(await readFile(path.join(ui,'generated/policy.studio.json'),'utf8'));
-  assert.equal(bundle.compiler.version,'0.3.65');
+  assert.equal(bundle.compiler.version,KERNEL_VERSION);
   assert.equal(bundle.facets[0].id,'fixture.policy');
 });
 

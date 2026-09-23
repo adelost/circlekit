@@ -77,7 +77,7 @@ node bin/studio.mjs inspect /repo --fields key,id,kind --max 50 --offset 0
 node bin/studio.mjs inspect /repo --entity 'node::producer' --pretty
 ```
 
-Discovery supports `--search`, `--fields`, `--max 1..1000`, and `--offset`. The response reports total, returned count, next offset and truncation. `--fields` projects index rows only; it cannot remove identity, errors or limitations from the envelope. Exact `--entity` inspection returns the object, ports, source metadata and direct relationships.
+Discovery supports `--search`, `--fields`, `--max 1..1000`, and `--offset`. The response reports total, returned count, next offset and truncation. `--fields` projects index rows only; it cannot remove identity, errors or limitations from the envelope. Exact `--entity --json` inspection returns the object, ports, source metadata, direct relationships, and the existing plan/review projections with declared owners, consumers and known tests in one response.
 
 Trace event lists also support pagination. Query paths and causal chains are not silently cropped. A result over 8 MB is refused with a request to narrow the query. Paging is over the loaded snapshot; a new process reloads sources. Use `--expect-model <modelDigest>` to ensure a follow-up command targets the same model.
 
@@ -155,7 +155,9 @@ The result includes explicit causal links, missing ancestor sequence, declared g
 
 ## Optional local runtime receiver
 
-`v1d-studio serve /repo --live` enables a separate read-only WebSocket receiver on the same literal-loopback port. Ordinary `v1d-studio` has no runtime route, does not attach a device and starts no product. This receiver slice is protocol-only; product adapters and automatic live Trace refresh have separate delivery steps.
+`v1d-studio serve /repo --live` enables a separate read-only WebSocket receiver on the same literal-loopback port. Ordinary `v1d-studio` has no runtime route, does not attach a device and starts no product. Trace can freeze an immutable cut while the producer continues, export it under a distinct `.studio-trace.json` name, and reopen it with Import trace. The browser download never targets the conventional test report.
+
+`v1d-studio live --json` discovers the already-running local receiver through a private same-user receipt, then uses only its separate read token. With several captures, select `--session ID`; `--max` and `--offset` page events, and `--cut DIGEST` refuses a changed live cut instead of mixing pages. A frozen ID remains stable. `v1d-studio live --session ID --freeze --output saved.studio-trace.json` explicitly saves one cut inside the current directory, atomically and without replacing an existing file, symlink or `test-results` report. No live CLI read starts Studio, pairs a producer or controls an app.
 
 The authenticated HTTP operation `POST /api/live-ticket` selects one loaded workspace and a `node`, `native` or `browser` producer. A browser ticket also names its exact local HTTP Origin. It issues a 256-bit ticket valid for 120 seconds. The browser's normal same-origin Studio token protects this operation. The WebSocket upgrade at `/runtime/v1` checks loopback Host, a local browser Origin or absent Origin for native/Node, no query or cookie, and the `v1d-runtime.v1` subprotocol. The first JSON `hello` must present that ticket within five seconds; a browser Origin must match its ticket exactly. A ticket is consumed once, including when the producer reports the wrong model. The receiver accepts no source read, write, command or application-control messages from it.
 
