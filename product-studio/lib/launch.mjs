@@ -18,6 +18,14 @@ export async function launch({root,amuxRoot,args=process.argv.slice(2),output=pr
     output.write('Set STUDIO_ROOT and AMUX_ROOT only for non-sibling checkouts. Opening Studio never installs, builds, tests or starts a product.\n');
     return 0;
   }
+  if(command==='laws') {
+    const {main}=await import('../bin/law-evidence.mjs');
+    return main(['--root',root,...rest],{stdout:output});
+  }
+  if(command==='junit') {
+    const {main}=await import('../bin/junit-evidence.mjs');
+    return main(['--root',root,...rest],{stdout:output});
+  }
   requireThat(['serve','check','doctor','inspect','query','source','simulate','scenario','trace'].includes(command),
     'cli.usage','Unknown Studio command; run node studio.mjs help.');
   if(command==='check')return studio(['contracts',root,'--amux-root',amuxRoot,'--pretty',...rest],{stdout:output});

@@ -28,6 +28,12 @@ async function installedAmuxRoot(cwd) {
 export async function main(args = process.argv.slice(2), { cwd = process.cwd(), stdout = process.stdout } = {}) {
   let parsed;
   try {
+    if(args[0]==='laws'||args[0]==='junit') {
+      const {main:run}=await import(args[0]==='laws'?'./law-evidence.mjs':'./junit-evidence.mjs');
+      const options=args.slice(1);
+      if(!options.includes('--root'))options.unshift('--root',cwd);
+      return run(options,{stdout});
+    }
     parsed = parseCli(args);
     if (parsed.help) { stdout.write(HELP); return 0; }
     const { command, values: v, repeated, positional } = parsed;

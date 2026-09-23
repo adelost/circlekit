@@ -2,7 +2,7 @@
 
 A local, English architecture and logic workbench over the existing ProductSpec DSL. Inspect declared dependencies, explain decisions, navigate source, simulate finite logic, review candidates and inspect recorded evidence. Ordinary implementation code remains with its product owner.
 
-**Status:** the local 0.4 workbench was installed and exercised on 2026-09-23. Its 158 unit tests passed, selected flows ran in a headed direct-HTTP browser, and the 100/1000-owner synthetic profile was measured. The living-documentation and trace extension passed 236 unit tests and selected real-product inspections. [VERIFICATION](VERIFICATION.md) names the exact scope and limits.
+**Status:** the local 0.4 workbench was installed and exercised on 2026-09-23. The current Studio source passed 241 unit tests and selected real-product inspections. Selected flows ran in headed Chrome, and the 100/1000-owner synthetic profile was measured. [VERIFICATION](VERIFICATION.md) names the exact scope and limits.
 
 ## Start
 
@@ -76,9 +76,9 @@ The initial transport still includes compiled finite facets and a lightweight en
 ## The same model from a shell
 
 ```bash
-node bin/studio.mjs doctor /path/to/product --pretty
-node bin/studio.mjs inspect /path/to/product --search recording
-node bin/studio.mjs simulate --examples --product workflow-example \
+v1d-studio doctor /path/to/product --pretty
+v1d-studio inspect /path/to/product --search recording
+v1d-studio simulate --examples --product workflow-example \
   --facet example.request --input '{"state":"IDLE","input":"Send","guards":{}}'
 ```
 

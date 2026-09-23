@@ -4,6 +4,7 @@ import { pathToFileURL } from 'node:url';
 import { entityKey } from './architecture.mjs';
 import { scanSourceContracts } from './service-contracts.mjs';
 import { decodeBehaviorReport, associateBehaviorReferences } from './behavior-evidence.mjs';
+import { correlateDeclarationLaws } from './declaration-evidence.mjs';
 import { boundedJson, digest, requireThat, safeFile } from './util.mjs';
 
 const ignored=new Set(['node_modules','dist','build','generated','coverage','test','tests','__tests__','fixtures','target','out','vendor']);
@@ -53,7 +54,7 @@ export async function readDocumentationInputs(root, config={}, fallback=[]) {
     let report; try { report=decodeBehaviorReport(input.text); } catch { continue; }
     if (!config.repository || report.run.repository!==config.repository) continue;
     for (const file of new Set(report.tests.map(t=>t.file))) {
-      if(evidencePaths.has(file)||!/[.](?:ts|tsx|js|jsx|mjs|cjs)$/.test(file))continue;
+      if(evidencePaths.has(file)||!/[.](?:ts|tsx|js|jsx|mjs|cjs|kt)$/.test(file))continue;
       if(evidencePaths.size>=256){diagnostics.push(issue('evidence.scope','Only 256 test source files are associated; other references remain unavailable.',input.file,'info'));break;}
       evidencePaths.add(file);
       try {
@@ -63,8 +64,25 @@ export async function readDocumentationInputs(root, config={}, fallback=[]) {
       } catch { /* A collected report can remain useful when its test source is unavailable. */ }
     }
   }
-  return {sources,evidenceSources,reports,diagnostics,roots,repository:config.repository??null,
-    readSet:[...sources.map(s=>({file:s.path,digest:digest(s.text)})),...reports.filter(r=>!r.unavailable).map(r=>({file:r.file,digest:digest(r.text)})),...evidenceSources.map(s=>({file:s.path,digest:digest(s.text)}))]};
+  const idSources=[];
+  const idPaths=config.idSources??[];
+  requireThat(Array.isArray(idPaths)&&idPaths.length<=16&&idPaths.every(file=>typeof file==='string'),
+    'evidence.id-sources','Select at most sixteen generated ID source files.');
+  for(const file of idPaths) {
+    try {
+      const source=await safeFile(root,file,1000000);
+      idSources.push({path:file,text:source.text});
+    } catch(error) {
+      diagnostics.push(issue('evidence.id-source',error.message,file,'info'));
+    }
+  }
+  return {sources,evidenceSources,idSources,reports,diagnostics,roots,repository:config.repository??null,
+    readSet:[
+      ...sources.map(s=>({file:s.path,digest:digest(s.text)})),
+      ...reports.filter(r=>!r.unavailable).map(r=>({file:r.file,digest:digest(r.text)})),
+      ...evidenceSources.map(s=>({file:s.path,digest:digest(s.text)})),
+      ...idSources.map(s=>({file:s.path,digest:digest(s.text)})),
+    ]};
 }
 
 /**
@@ -104,7 +122,7 @@ export async function checkWorkspaceContracts(root, {product,evaluateContract}={
  * WHAT: Correlates source intent and optional test reports with a loaded inspection.
  * WHY: Keeps same-name source candidates separate from exact exported model provenance.
  */
-export function documentationFor(inputs, architecture, {inspection=null,revision=null,evaluateContract}={}) {
+export function documentationFor(inputs, architecture, {inspection=null,revision=null,evaluateContract,modelDigest=null}={}) {
   const scan=scanSourceContracts(inputs.sources,{evaluateContract}),diagnostics=[...inputs.diagnostics,...(inspection?.contractDiagnostics??[]),...scan.diagnostics];
   const origins=new Map((inspection?.origins??[]).map(o=>[o.entityKey,o]));
   const sourceDigests=new Map(inputs.sources.map(s=>[s.path,digest(s.text)]));
@@ -128,7 +146,12 @@ export function documentationFor(inputs, architecture, {inspection=null,revision
     if(input.unavailable){reports.push({file:input.file,status:'unavailable'});continue;}
     try {
       const report=decodeBehaviorReport(input.text,{repository:inputs.repository,revision});
-      reports.push({file:input.file,status:'loaded',...associateBehaviorReferences(report,inputs.evidenceSources??[],architecture)});
+      const associated=report.run.framework==='product-spec-laws'&&modelDigest
+        ?correlateDeclarationLaws(report,architecture,modelDigest)
+        :associateBehaviorReferences(report,inputs.evidenceSources??[],architecture,inputs.idSources??[]);
+      for(const test of associated.tests??[])for(const message of test.associationDiagnostics??[])
+        diagnostics.push(issue('evidence.association',message,test.file,'warning'));
+      reports.push({file:input.file,status:'loaded',...associated});
     } catch(e){reports.push({file:input.file,status:'invalid'});diagnostics.push(issue(e.code??'evidence.report',e.message,input.file,'warning'));}
   }
   for(const legacy of scan.legacy)diagnostics.push(issue('contract.legacy',`${legacy.id} retains Legacy reason. No relation to a ProductSpec type is guessed.`,legacy.source.file,'info'));
@@ -153,7 +176,9 @@ export function intentForEntity(documentation, architecture, key) {
   const related=new Set([key,typeKey,...selectedOwners]);
   for(const e of architecture.entities)if(e.kind==='port'&&selectedOwners.has(e.owner))related.add(e.key);
   const tests=documentation.reports.flatMap(r=>(r.tests??[]).filter(t=>t.associations.some(a=>related.has(a.entityKey)))
-    .map(t=>({id:t.id,name:t.name,level:t.level,status:t.status,file:t.file,line:t.line,correlation:r.correlation,association:'source-reference'})));
+    .map(t=>({id:t.id,name:t.name,level:t.level,proofKind:t.proofKind??t.level??'unspecified',status:t.status,
+      file:t.file,line:t.line,correlation:r.modelCorrelation??r.correlation,
+      association:t.associations.map(a=>a.kind).join(', ')})));
   return {typeKey,contract,declared:type?{kind:type.kind,inputs:type.inputs??[],outputs:type.outputs??[],runtime:type.runtime??null,
     instances:instances.map(e=>({key:e.key,id:e.id})),consumers:[...consumers].map(key=>({key,id:entities.get(key)?.id??key}))}:null,
     tests:tests.slice(0,50),testTotal:tests.length,notice:'Test associations are source references, not demonstrated service coverage. Structural facts are compiler declarations.'};

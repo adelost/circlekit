@@ -112,6 +112,8 @@ Keep evidence labels precise:
 
 A passing test does not mean "runtime proven". A source reference does not mean the referenced service was exercised.
 
+The optional owner-run evidence adapters are documented in [EVIDENCE.md](EVIDENCE.md). They never run as part of viewer startup.
+
 ## Agent workflow
 
 Before changing a service boundary:
