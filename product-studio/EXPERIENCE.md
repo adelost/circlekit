@@ -1,10 +1,6 @@
 # Product Studio 0.4: experience and performance slice
 
-Base: PR #274, commit `740d3c3a7b33c55f4ebb07de0d05215b73c147fd`.
-This is a separate, stacked implementation PR. Merge or integrate the base first.
-All changes remain under `product-studio/`; ProductSpec, product runtimes and dependency versions are unchanged.
-
-**Verification:** source/identity review and JavaScript parse-only checks. No application, package installation, compiler, unit test, browser journey or performance benchmark was run. New tests are acceptance source, not passing results. No 8/10 or 9/10 runtime score is claimed.
+Historical base: PR #274. The current source has passed 244 local tests and selected real-product Chrome flows. This is bounded Studio evidence, not full product-runtime proof. [DELIVERY](DELIVERY.md) records the status and remaining condition for every checklist item; [VERIFICATION](VERIFICATION.md) records exact checks.
 
 ## First useful session
 
@@ -29,7 +25,7 @@ Source-only changes show `waiting for the product owner to regenerate`; changed 
 
 ## Checklist against the requested 22 improvements
 
-“Implemented” below means code exists, not that runtime acceptance has passed.
+“Implemented” below means the bounded Studio behavior exists. The selected checks above exercise it; limits in each row remain explicit. No claim of full product-runtime acceptance follows from a green Studio test.
 
 | # | Requested improvement | Delivered / boundary |
 |---|---|---|
@@ -82,7 +78,7 @@ All read operations require the same existing local-session token and project/vi
 
 The initial finite-facet payload is not fully lazy. Artifact scopes/catalogs and large source/trace content no longer need to accompany every view request. A full transport response over 40 MB is refused; source attachment is bounded to 32 MB per project. These limits are tool resource policy, not DSL semantics.
 
-## Acceptance checks for the next model
+## Optional revalidation
 
 ```bash
 npm run verify
@@ -94,11 +90,11 @@ python test/browser_experience.py
 python test/browser_extended.py
 ```
 
-The historical flattened HTTP-bridge browser harness is rejected for this modular UI. Use ordinary browser loading; do not bypass a browser administration policy or count injected modules as a direct-path pass.
+The historical flattened HTTP-bridge browser harness is rejected for this modular UI. The named direct-browser flows in [VERIFICATION](VERIFICATION.md) were run separately; the Python browser scripts above have not all been run.
 
 New unit contracts cover snapshot reuse/immutability; compact/lazy content; exact revision refusal; indexed search; trace page indices; model comparison; stable build observation; invalid generated output retention; route validation; and protection of saved-but-unapplied drafts. New browser acceptance covers retained graph identity/camera, navigation, lazy source, command search and saved views.
 
-Then test the failure paths deliberately: edit while a reload is in flight; switch products before an entity/source request resolves; replace a bundle with invalid JSON; change the manifest; reopen a link with the wrong trace; import a 20,000-event capture; and visit a foreign inspect-only facet. Check the original model and draft are never silently replaced or relabelled.
+The failure-case status and exact remaining manual gaps are in [DELIVERY](DELIVERY.md). Do not count an unrun browser script as proof.
 
 ### Proposed measurements, not promised performance
 
@@ -108,4 +104,4 @@ On one recorded reference machine and locked package set, record three cold load
 
 No Svelte/Lit/React rewrite, new DSL, package publication, active runtime connection, native/media preview, product build executor, general quick-fix policy engine or authenticated trace transport. Full graph virtualization, general dependency-closure discovery, full IDE language service and automatic source-schema migrations remain separate measured investments. Old exact model/evidence identities are never aliased by guesswork.
 
-External references used for implementation choices: [Node file-watching caveats](https://nodejs.org/download/release/v22.16.0/docs/api/fs.html#caveats), [requestAnimationFrame](https://developer.mozilla.org/en-US/docs/Web/API/Window/requestAnimationFrame), and [History API](https://developer.mozilla.org/en-US/docs/Web/API/History_API). These justify mechanisms, not claims that this implementation has run.
+External references used for implementation choices: [Node file-watching caveats](https://nodejs.org/download/release/v22.16.0/docs/api/fs.html#caveats), [requestAnimationFrame](https://developer.mozilla.org/en-US/docs/Web/API/Window/requestAnimationFrame), and [History API](https://developer.mozilla.org/en-US/docs/Web/API/History_API). Actual execution is recorded separately in [VERIFICATION](VERIFICATION.md).

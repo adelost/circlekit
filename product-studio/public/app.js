@@ -7,6 +7,7 @@ const $ = selector => document.querySelector(selector);
 const escape = value => String(value ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const pretty = value => JSON.stringify(value, null, 2);
 const views = ['System', 'Logic', 'Scenarios', 'Interface', 'Changes', 'Trace'];
+const mobileViews = [['Welcome','Overview'],...views.map(view=>[view,view]),['Intent','Intent & behavior'],['Problems','Problems'],['Compare','Compare']];
 let token, projects = [], project, state, generation = 0, graph, busy = false, toastTimer;
 let experience, graphHost, graphSignature = '', bindingController, sourcePending = new Map();
 function listen(element,type,handler) { element?.addEventListener(type,handler,{signal:bindingController.signal}); }
@@ -70,18 +71,20 @@ function render() {
   const f = facet(), query = state.search.toLowerCase(), title = { System: 'Explore the system', Logic: f?.kind === 'machine' ? 'Lifecycle logic' : 'Policy decisions', Scenarios: 'Explore possible outcomes', Interface: 'Components & surfaces', Changes: 'Code & review', Trace: 'Trace', Problems: 'Problems & evidence', Compare: 'Review model changes', Welcome: 'Overview', Intent: 'Intent, structure and behavior' }[state.view];
   const list = project.facets.filter(item => item.id.toLowerCase().includes(query));
   const sourceLabel = ({ fixture: 'Public source fixture', example: 'Synthetic example', workspace: 'Local workspace', 'source-draft': 'Source draft', 'imported-artifact': 'Imported artifact' })[project.originKind] ?? 'Local data';
-  const topic=state.view==='Trace' ? state.traceFrame?.current?.logic?.facetId ?? project.architecture.entities.find(e=>e.key===state.traceFrame?.current?.entityKey)?.id ?? 'Trace' : state.facetId??state.view;
+  const topic=state.view==='Trace' ? state.traceFrame?.current?.logic?.facetId ?? project.architecture.entities.find(e=>e.key===state.traceFrame?.current?.entityKey)?.id ?? 'Trace'
+    : ['Logic','Scenarios'].includes(state.view) ? state.facetId??state.view
+    : state.view==='System'&&state.selected?.kind==='entity' ? project.architecture.entities.find(e=>e.key===state.selected.id)?.id??'System' : state.view;
   const subtitleText=subtitle();
   const html = `<div class="shell" data-view="${state.view}" data-mode="${state.text !== null ? 'candidate' : state.mode === 'Simulation' ? 'simulation' : (state.mode.startsWith('Recorded') || state.mode==='Test run') ? 'recorded' : 'declared'}">
     <header class="topbar"><div class="brand"><div class="brand-mark">P</div><span>PRODUCT STUDIO</span></div>
       <select class="project-select" id="project" aria-label="Select product">${projects.map(p => `<option value="${escape(p.key)}" ${p.key === project.key ? 'selected' : ''}>${escape(p.label)}</option>`).join('')}</select>
-      <nav aria-label="Workbench views">${views.map(v => `<button data-view="${v}" class="${v === state.view ? 'active' : ''}" ${v === state.view ? 'aria-current="page"' : ''}>${v}</button>`).join('')}</nav>
+      <nav aria-label="Workbench views">${views.map(v => `<button data-view="${v}" class="${v === state.view ? 'active' : ''}" ${v === state.view ? 'aria-current="page"' : ''}>${v}</button>`).join('')}<select id="mobile-view" aria-label="Workbench view">${mobileViews.map(([id,label])=>`<option value="${escape(id)}" ${id===state.view?'selected':''}>${escape(label)}</option>`).join('')}</select></nav>
       <div class="spacer"></div><span class="badge top-mode ${state.mode === 'Simulation' ? 'simulation' : ''}">${escape(state.mode)}</span>
       ${action('reload', '↻', 'subtle', !project.key || project.key.startsWith('import-') || project.key.startsWith('source-'))}
     </header>
     <div class="main-grid"><aside class="explorer" aria-label="Program explorer">
       <div class="section-label">Workspace</div><input id="search" aria-label="Search nodes, ports or rules" placeholder="Search nodes, ports or rules" value="${escape(state.search)}">
-      <div class="section-label">Logic · ${project.facets.length}</div><div class="explorer-list">${list.map(item => `<button class="explorer-item ${item.id === state.facetId ? 'active' : ''}" data-facet="${escape(item.id)}"><span class="kind-dot ${item.kind}"></span><span>${escape(item.id)}</span></button>`).join('') || '<small>No matching declarations</small>'}</div>
+      <div class="section-label">Logic · ${project.facets.length}</div><div class="explorer-list">${list.map(item => `<button class="explorer-item ${['Logic','Scenarios'].includes(state.view)&&item.id === state.facetId ? 'active' : ''}" data-facet="${escape(item.id)}"><span class="kind-dot ${item.kind}"></span><span>${escape(item.id)}</span></button>`).join('') || '<small>No matching declarations</small>'}</div>
       <div class="section-label">Structure · ${project.graph.nodes.length}</div><div class="explorer-list">${project.graph.nodes.filter(n => n.id.toLowerCase().includes(query)).slice(0, 35).map(n => `<button class="explorer-item" data-node="${escape(n.id)}"><span class="kind-dot"></span><span>${escape(n.id)}</span></button>`).join('') || '<small>Load a generated product to explore its full graph.</small>'}</div>
       <div class="explorer-actions">${action('import', '+ Import source / JSON', 'subtle')}${action('new', '+ New declaration', 'subtle')}${action('saved', 'Open saved drafts', 'subtle')}${action('connect-help', 'Attach repositories', 'subtle')}</div>
       <div class="section-label">Evidence boundary</div><small>${escape(project.provenance ?? project.validationNotice)}</small>
@@ -243,11 +246,17 @@ function bind() {
   bindingController?.abort(); bindingController = new AbortController();
   $('#project').onchange = e => loadProject(e.target.value).catch(e => toast(e.message));
   $('#search').oninput = e => { state.search = e.target.value; clearTimeout(state.searchTimer); state.searchTimer=setTimeout(()=>{if(state.view==='System')refreshArchitecture();else render();},120); };
-  document.querySelectorAll('[data-view]').forEach(b => b.onclick = () => {
-    state.view = b.dataset.view; render();
+  const showView=view=>{
+    if(view==='System'&&state.selected?.kind==='entity') {
+      const selected=project.architecture.entities.find(entity=>entity.key===state.selected.id);
+      if(!['node','component','port','facet'].includes(selected?.kind))state.selected=null;
+    }
+    state.view = view; render();
     if(state.view==='Trace' && project.trace && !state.traceFrame)
       loadTraceFrame(project.trace.eventCount-1);
-  });
+  };
+  document.querySelectorAll('.topbar nav button[data-view]').forEach(b => b.onclick = () => showView(b.dataset.view));
+  listen($('#mobile-view'),'change',e=>showView(e.target.value));
   document.querySelectorAll('[data-facet]').forEach(b => b.onclick = () => { selectFacet(b.dataset.facet, false); state.view = 'Logic'; render(); });
   document.querySelectorAll('[data-node]').forEach(b => b.onclick = () => { state.view = 'System'; state.selected = { kind: 'entity', id: project.architecture.entities.find(e=>e.id===b.dataset.node && ['node','component'].includes(e.kind))?.key };  render(); });
   document.querySelectorAll('[data-cell]').forEach(b => { const choose = () => { state.selected = { kind: 'cell', id: b.dataset.cell }; render(); }; b.onclick = choose; b.onkeydown = e => { if (e.key === 'Enter') choose(); }; });

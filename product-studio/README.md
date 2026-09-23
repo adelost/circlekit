@@ -2,7 +2,7 @@
 
 A local, English architecture and logic workbench over the existing ProductSpec DSL. Inspect declared dependencies, explain decisions, navigate source, simulate finite logic, review candidates and inspect recorded evidence. Ordinary implementation code remains with its product owner.
 
-**Status:** the local 0.4 workbench was installed and exercised on 2026-09-23. The current Studio source passed 243 unit tests and selected real-product inspections. Selected flows ran in headed Chrome, and the 100/1000-owner synthetic profile was measured. [VERIFICATION](VERIFICATION.md) names the exact scope and limits.
+**Status:** the local 0.4 workbench was installed and exercised on 2026-09-23. The current Studio source passed 244 unit tests and selected real-product inspections. Selected flows ran in headed Chrome, and the 100/1000-owner synthetic profile was measured. [VERIFICATION](VERIFICATION.md) names the exact scope and limits; [DELIVERY](DELIVERY.md) distinguishes delivered capabilities from the larger deferred vision.
 
 ## Start
 
