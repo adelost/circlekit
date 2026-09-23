@@ -15,7 +15,7 @@ test('two retained captures can be selected by the current project, never anothe
     const {ticket}=live.issueTicket({project:project.key,producer:'node'});
     return live.hello({type:'hello',protocol:1,ticket,productId:view.productId,identity:{modelDigest:view.modelDigest},
       productSpecVersion:view.toolVersions.productSpec,captureId:id,
-      scope:{events:['transition'],facets:['example.request'],appliedTransitions:true}},{}).session;
+      scope:{events:['transition'],facets:['example.request'],appliedTransitions:true}},{},null).session;
   };
   const first=start('viewer-first');
   live.batch(first,{type:'batch',through:0,dropped:[],events:[{sequence:0,atMs:1,kind:'transition',phase:'evaluated',
