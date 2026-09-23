@@ -6,6 +6,7 @@ import { fileURLToPath } from 'node:url';
 type Options={bundle:string;sourceRoot?:string;sourcePrefix?:string;studioPort?:number};
 const virtual='virtual:v1d-observation-bootstrap',resolved='\0'+virtual;
 const digest=(text:string)=>createHash('sha256').update(text).digest('hex');
+export const DEFAULT_OBSERVATION_PORT=17317;
 
 function inside(root:string,relative:string) {
   if(!relative||path.isAbsolute(relative)||relative.split(/[\\/]/u).some(part=>part==='..'))
@@ -19,7 +20,7 @@ function inside(root:string,relative:string) {
 export function observationVitePlugin(options:Options) {
   let root=process.cwd();
   const monitored=new Set<string>();
-  const port=options.studioPort??4317;
+  const port=options.studioPort??DEFAULT_OBSERVATION_PORT;
   if(!Number.isInteger(port)||port<1||port>65535)throw new Error('Choose a valid local Studio port.');
   const observed=fileURLToPath(new URL('./observed.js',import.meta.url));
   function descriptor() {

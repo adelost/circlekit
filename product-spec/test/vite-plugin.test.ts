@@ -25,6 +25,7 @@ test('the one dev plugin selects an observed entry and refuses stale source iden
     const code=plugin.load(id!);
     assert.ok(code);
     assert.match(code,/connectBrowserObservation/);
+    assert.match(code,/ws:\/\/127\.0\.0\.1:17317\/runtime\/v1/u);
     assert.match(code,/fixture/);
     assert.doesNotMatch(code,/A{43}/u);
     assert.match(JSON.stringify(plugin.transformIndexHtml.handler()),/virtual:v1d-observation-bootstrap/);
