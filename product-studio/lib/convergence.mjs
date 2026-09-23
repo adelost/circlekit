@@ -1,7 +1,7 @@
 /** One read-only verdict from the evidence already attached to a Studio snapshot. */
 export function convergenceFor(view, compareLogic) {
   const reasons = [], gaps = [], counts = { laws: { passed: 0, failed: 0, skipped: 0 },
-    trace: { consistent: 0, different: 0, unknown: 0 }, contracts: { validated: 0, total: 0, external: 0 } };
+    trace: { consistent: 0, different: 0, unknown: 0 }, contracts: { validated: 0, total: 0, matched: 0, external: 0 } };
   for (const report of view.documentation.reports.filter(r => r.run?.framework === 'product-spec-laws')) {
     if (report.status !== 'loaded') continue;
     for (const test of report.tests) {
@@ -17,13 +17,24 @@ export function convergenceFor(view, compareLogic) {
 
   for (const contract of view.documentation.contracts) {
     counts.contracts.total++;
-    if (contract.correlation === 'matched-source' && contract.contract.status === 'validated') counts.contracts.validated++;
+    if (contract.correlation === 'matched-source') counts.contracts.matched++;
+    if (contract.contract.status === 'validated' && ['local-amux', 'producer-reported'].includes(contract.validation))
+      counts.contracts.validated++;
+    const finding = view.documentation.diagnostics.find(d => d.file === contract.source.file
+      && d.line === contract.source.line && d.rule?.startsWith('contract.')
+      && ['error', 'warning'].includes(d.severity));
+    if (['invalid', 'missing'].includes(contract.contract.status) || finding)
+      reasons.push({ kind: 'contract', entityKey: contract.entityKey ?? contract.id ?? contract.source.file, file: contract.source.file,
+        line: contract.source.line ?? null, label: `${contract.id ?? contract.entityKey}: WHAT/WHY invalid`,
+        message: finding?.message ?? 'WHAT/WHY is missing or invalid.' });
   }
   counts.contracts.external = view.documentation.unresolved.length;
   if (!counts.contracts.total) gaps.push('No WHAT/WHY contracts in the selected source scope.');
   if (counts.contracts.external) gaps.push(`${counts.contracts.external} service types are external or unmapped.`);
   if (counts.contracts.validated < counts.contracts.total)
-    gaps.push(`${counts.contracts.total - counts.contracts.validated} WHAT/WHY contracts are not validated against this source.`);
+    gaps.push(`${counts.contracts.total - counts.contracts.validated} WHAT/WHY contracts are not validated.`);
+  if (counts.contracts.matched < counts.contracts.total)
+    gaps.push(`${counts.contracts.matched}/${counts.contracts.total} WHAT/WHY contracts match exported source provenance.`);
 
   const kernel = { producer: view.compatibility?.producer ?? null,
     evaluator: view.compatibility?.evaluator ?? view.toolVersions.productSpec };
@@ -57,5 +68,7 @@ export function convergenceFor(view, compareLogic) {
 export function convergenceTasks(result) {
   return result.reasons.map(reason => reason.kind === 'law'
     ? `Fix: ${reason.entityKey}: law failed (${reason.file}${reason.line ? ':' + reason.line : ''})`
+    : reason.kind === 'contract'
+    ? `Fix: ${reason.entityKey}: WHAT/WHY invalid (${reason.file}${reason.line ? ':' + reason.line : ''})`
     : `Fix: ${reason.entityKey}: trace step ${reason.sequence} different (sequence ${reason.sequence})`);
 }

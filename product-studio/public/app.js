@@ -358,7 +358,7 @@ function showInfo(title, text, code = '') {
 function showConvergence() {
   const c=project.convergence,d=$('#dialog');
   d.innerHTML=`<h2>${escape(c.label)}</h2><p class="subtitle">Loaded evidence for ${escape(project.label)}. No tests or product code ran to produce this verdict.</p>
-    <p class="muted">Laws ${c.counts.laws.passed} passed, ${c.counts.laws.failed} failed, ${c.counts.laws.skipped} skipped. Trace ${c.counts.trace.consistent} consistent, ${c.counts.trace.different} different, ${c.counts.trace.unknown} unknown. WHAT/WHY ${c.counts.contracts.validated}/${c.counts.contracts.total} validated, ${c.counts.contracts.external} external or unmapped.</p>
+    <p class="muted">Laws ${c.counts.laws.passed} passed, ${c.counts.laws.failed} failed, ${c.counts.laws.skipped} skipped. Trace ${c.counts.trace.consistent} consistent, ${c.counts.trace.different} different, ${c.counts.trace.unknown} unknown. WHAT/WHY ${c.counts.contracts.validated}/${c.counts.contracts.total} validated, ${c.counts.contracts.matched} matched to exported source provenance, ${c.counts.contracts.external} external or unmapped.</p>
     <p class="muted">Kernel ${escape(c.kernel.producer ?? 'unknown')} / ${escape(c.kernel.evaluator)}: ${c.kernel.match?'matched':'unknown or different'}. Trace identity: ${c.traceIdentity.loaded?'matched loaded artifact or model':'unavailable'}.</p>
     <div class="compact-list">${c.reasons.map((r,i)=>`<button data-convergence-reason="${i}">${escape(r.label)}<br><code>${escape(r.entityKey)}</code>${r.file?` · ${escape(r.file)}`:''}${r.sequence!==undefined?` · sequence ${r.sequence}`:''}<p>${escape(r.message)}</p></button>`).join('') || '<p>No contradictions in loaded evidence.</p>'}</div>
     ${c.gaps.length?`<div class="section-label">Missing or inconclusive</div><ul>${c.gaps.map(g=>`<li>${escape(g)}</li>`).join('')}</ul>`:''}
@@ -367,7 +367,11 @@ function showConvergence() {
   d.querySelectorAll('[data-convergence-reason]').forEach(button=>button.onclick=async()=>{
     const reason=c.reasons[Number(button.dataset.convergenceReason)];d.close();
     if(reason.kind==='trace') {state.view='Trace';state.traceOffset=0;await loadTraceFrame(reason.index);}
-    else {state.view='System';state.selected={kind:'entity',id:reason.entityKey};state.queryFrom=reason.entityKey;render();}
+    else if(project.architecture.entities.some(entity=>entity.key===reason.entityKey)) {
+      state.view='System';state.selected={kind:'entity',id:reason.entityKey};state.queryFrom=reason.entityKey;render();
+    } else if(reason.file && project.sources.some(source=>source.path===reason.file)) {
+      state.view='Changes';state.sourcePath=reason.file;state.selected=null;render();
+    } else toast('This reason has no attached entity or source in the loaded snapshot.');
   });
 }
 function editDialog(f, cell, root = false) {
