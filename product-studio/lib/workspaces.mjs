@@ -1,7 +1,7 @@
 import { readDocumentationInputs, documentationFor, documentationPage, intentForEntity, withIntentCaptions } from './documentation.mjs';
 import { freezeData, buildSearchIndex, summarizeView, compareSnapshots } from './snapshot.mjs';
 import { ChangeMonitor } from './changes.mjs';
-import { readFile, writeFile, mkdir, readdir, realpath, mkdtemp, link, rm } from 'node:fs/promises';
+import { readFile, writeFile, mkdir, readdir, realpath, lstat, mkdtemp, link, rm } from 'node:fs/promises';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import path from 'node:path';
@@ -10,7 +10,7 @@ import { saveScenarioDocument, readScenarioDocument, listScenarioDocuments } fro
 import { saveGitDraft as commitGitDraft } from './git-draft.mjs';
 import { architectureOf, architectureSlice, queryArchitecture, entityKey } from './architecture.mjs';
 import { locateEntities } from './provenance.mjs';
-import { checkSourceIdentity, compatibilityReport } from './inspection.mjs';
+import { checkSourceIdentity, compatibilityReport, relativeSourcePath } from './inspection.mjs';
 import { decodeTrace, inspectTrace, traceEventIndex } from './trace.mjs';
 import { convergenceFor } from './convergence.mjs';
 import { kernel, KERNEL_VERSION, TOOL_VERSIONS } from './kernel.mjs';
@@ -29,20 +29,75 @@ const PRESETS = [
   { id: 'showcase', label: 'CircleKit Showcase', sources: ['showcase-product/src/catalog.ts'], artifact: 'showcase-product/generated/showcase-product.json', graph: 'showcase-product/generated/showcase-product.graph.mmd' },
 ];
 const exists = async (root, file) => { try { return await safeFile(root, file); } catch (error) { if (error.code === 'ENOENT') return null; throw error; } };
+const presentFile = async (root, file) => {
+  try { return (await lstat(path.join(root,file))).isFile(); }
+  catch(error) { if(error.code==='ENOENT')return false;throw error; }
+};
 
-async function sourceCompilerPin(root, sources) {
-  const checked = new Map(), versions = new Set(), files = [];
-  for (const source of sources) {
-    const parts = source.path.split('/').slice(0,-1);
-    for (let depth = parts.length; depth >= 0; depth--) {
-      const file = [...parts.slice(0,depth),'package-lock.json'].join('/');
-      if (!checked.has(file)) checked.set(file, await exists(root,file));
-      const lock = checked.get(file); if (!lock) continue;
-      const version = boundedJson(lock.text).packages?.['node_modules/@v1d/product-spec']?.version;
-      if (version) { versions.add(version); files.push({file,digest:digest(lock.text)}); break; }
+async function nearestProductSpecPackage(root, source, checked) {
+  requireThat(relativeSourcePath(source),'workspace.source','Select repository-relative product source or artifact paths.');
+  const parts=source.split('/').slice(0,-1);
+  for(let depth=parts.length;depth>=0;depth--) {
+    const owner=parts.slice(0,depth).join('/')||'.';
+    const file=owner==='.'?'package-lock.json':owner+'/package-lock.json';
+    if(!checked.has(file))checked.set(file,await exists(root,file));
+    const lock=checked.get(file);if(!lock)continue;
+    const version=boundedJson(lock.text).packages?.['node_modules/@v1d/product-spec']?.version;
+    if(version) {
+      const installed=owner==='.'?'node_modules/@v1d/product-spec/package.json':owner+'/node_modules/@v1d/product-spec/package.json';
+      return {owner,file,version,digest:digest(lock.text),installed:await presentFile(root,installed)};
     }
   }
-  return { versions:[...versions], files:[...new Map(files.map(f=>[f.file,f])).values()] };
+  return null;
+}
+
+async function sourceCompilerPin(root, sources) {
+  const checked=new Map(),versions=new Set(),files=[];
+  for(const source of sources) {
+    const pin=await nearestProductSpecPackage(root,source.path,checked);
+    if(pin){versions.add(pin.version);files.push({file:pin.file,digest:pin.digest});}
+  }
+  return {versions:[...versions],files:[...new Map(files.map(file=>[file.file,file])).values()]};
+}
+
+export async function repositoryFromRemote(root) {
+  try {
+    const {stdout}=await exec('git',['-C',root,'remote','get-url','origin'],{timeout:3000,maxBuffer:10000});
+    const remote=stdout.trim();let host,pathname;
+    const scp=remote.match(/^git@([^:]+):(.+)$/u);
+    if(scp){host=scp[1];pathname=scp[2];}
+    else {const url=new URL(remote);host=url.hostname;pathname=url.pathname;}
+    if(host!=='github.com')return null;
+    const parts=pathname.replace(/^\/+|\.git$/gu,'').split('/');
+    return parts.length===2&&parts.every(part=>/^[A-Za-z0-9_.-]+$/u.test(part))?parts.join('/'):null;
+  } catch {return null;}
+}
+
+/** Derive only unambiguous workspace wiring; explicit product choices always win. */
+export async function workspaceConventions(root, project, repository=null) {
+  requireThat(Array.isArray(project.sources??[])&&(project.documentation===undefined||project.documentation!==null&&typeof project.documentation==='object'&&!Array.isArray(project.documentation)),
+    'workspace.config','sources must be a list and documentation must be an object.');
+  const anchors=[project.bundle??project.artifact,...(project.sources??[]),project.authoring?.entry].filter(Boolean);
+  const checked=new Map(),owners=new Set(),installedOwners=new Set();
+  if(project.kernelRoot===undefined)for(const anchor of anchors) {
+    const pin=await nearestProductSpecPackage(root,anchor,checked);
+    if(pin){owners.add(pin.owner);if(pin.installed)installedOwners.add(pin.owner);}
+  }
+  requireThat(owners.size<=1,'workspace.kernel','Model inputs belong to different ProductSpec packages. Set kernelRoot explicitly.');
+  const kernelRoot=project.kernelRoot===undefined?[...installedOwners][0]:project.kernelRoot;
+  const slug=/^[A-Za-z0-9][A-Za-z0-9_.-]*$/u.test(project.id)?project.id:null;
+  const documentation={...project.documentation};
+  if(documentation.repository===undefined&&repository)documentation.repository=repository;
+  if(documentation.bddReports===undefined&&slug) {
+    const candidates=[`test-results/${slug}-bdd-run.json`,`test-results/${slug}-laws.json`],found=[];
+    for(const file of candidates)if(await presentFile(root,file))found.push(file);
+    if(found.length)documentation.bddReports=found;
+  }
+  const traceCandidate=slug?`test-results/${slug}-studio-trace.json`:null;
+  const traceFile=project.traceFile===undefined
+    ?(traceCandidate&&await presentFile(root,traceCandidate)?traceCandidate:undefined):project.traceFile;
+  return {...project,...(kernelRoot!==undefined?{kernelRoot}:{}),...(traceFile!==undefined?{traceFile}:{}),
+    ...(Object.keys(documentation).length?{documentation}:{})};
 }
 
 export class Workbench {
@@ -62,11 +117,13 @@ export class Workbench {
         const config = boundedJson(custom.text, 64000);
         requireThat([1,2].includes(config.version) && Array.isArray(config.projects) && config.projects.length <= 20, 'workspace.config', 'Unsupported studio.workspace.json.');
         const ids = new Set();
+        const repository=config.projects.some(project=>project.documentation?.repository===undefined)
+          ?await repositoryFromRemote(root):null;
         for (const p of config.projects) {
           requireThat(p && typeof p.id === 'string' && p.id.trim() && !ids.has(p.id),
             'workspace.duplicate', 'Each configured project needs a unique, nonempty ID.');
           ids.add(p.id);
-          await this.load({ ...p, root, fixture: false });
+          await this.load({ ...await workspaceConventions(root,p,repository), root, fixture: false });
         }
       } else for (const p of PRESETS) {
         if (await exists(root, p.sources[0]) || p.artifact && await exists(root, p.artifact)) await this.load({ ...p, root, fixture: false });
@@ -77,7 +134,7 @@ export class Workbench {
     requireThat(typeof config.id === 'string' && typeof config.label === 'string' && Array.isArray(config.sources ?? []) && (config.sources ?? []).length <= 32, 'workspace.config', 'Invalid workspace declaration.');
     requireThat(config.traceFile === undefined || typeof config.traceFile === 'string' && config.traceFile.endsWith('.json'),
       'workspace.traceFile','Select a repository-relative JSON trace file.');
-    const selected=config.kernelRoot
+    const selected=config.kernelRoot!==undefined
       ?await loadProductKernel(config.root,config.kernelRoot)
       :{kernel,version:KERNEL_VERSION};
     const key = `${config.id}-${digest(config.root).slice(0, 10)}`;
@@ -121,7 +178,8 @@ export class Workbench {
     let revision = config.revision ?? null;
     if (!config.fixture) try { revision = (await exec('git', ['-C', config.root, 'rev-parse', 'HEAD'], { timeout: 3000 })).stdout.trim(); } catch { /* A Git checkout is not required to inspect files. */ }
     const readSet = sources.map(s => ({ file: s.path, digest: s.parsed.digest }));
-    for (const file of [...new Set([config.bundle, config.artifact, config.graph, 'studio.workspace.json', 'package-lock.json', 'ui/package-lock.json', 'appspec/package-lock.json', 'showcase-product/package-lock.json'].filter(Boolean))]) {
+    const kernelLock=config.kernelRoot?(config.kernelRoot==='.'?'package-lock.json':config.kernelRoot+'/package-lock.json'):null;
+    for (const file of [...new Set([config.bundle, config.artifact, config.graph, 'studio.workspace.json', kernelLock].filter(Boolean))]) {
       const value = await exists(config.root, file); if (value) readSet.push({ file, digest: digest(value.text) });
     }
     const pins = !config.fixture ? await sourceCompilerPin(config.root,sources.filter(s=>!s.documentationOnly)) : {versions:[],files:[]};
