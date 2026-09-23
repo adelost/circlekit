@@ -54,10 +54,13 @@ const selected = () => {
 };
 
 test('a changed file without a declared entity is named without inventing an owner', () => {
-  const report = reviewForChanges({ ...selected(), changes: ['README.md'] });
-  assert.match(report, /README\.md/);
+  const input = selected();
+  const report = reviewForChanges({ ...input, changes: ['README.md'] });
+  assert.match(report, /Not model source: README\.md/);
+  assert.doesNotMatch(report, /Unknown source\/entity: README\.md/);
   assert.match(report, /No declared entity changed/);
-  assert.match(report, /Unknown/);
+  input.project.sources.push({path:'model.ts',text:'export const unnamed = {};'});
+  assert.match(reviewForChanges({ ...input, changes: ['model.ts'] }), /Unknown: model\.ts/);
 });
 
 test('an empty diff is a successful no-change review with the converge result', () => {
@@ -92,4 +95,23 @@ test('a loaded law file for the previous model is not a checked evidence item', 
   const report = reviewForChanges({ ...input, changes: [] });
   assert.match(report, /○ laws not for this model \(test-results\/demo-laws\.json\)/);
   assert.doesNotMatch(report, /✓ laws/);
+});
+
+test('port-only trace names its recorded events without inventing logic comparisons', () => {
+  const input=selected();
+  input.service.view.trace={events:Array.from({length:6},()=>({kind:'port'}))};
+  const report=reviewForChanges({...input,changes:[]});
+  assert.match(report,/6 port events \(no logic comparison\)/);
+  assert.doesNotMatch(report,/Trace steps: 0 consistent/);
+});
+
+test('owners without WHAT/WHY share one missing-intent line', () => {
+  const input=selected();
+  const ids=['replay.presentation','logbook.replay','logbook.terrain-replay'];
+  const keys=ids.map(id=>entityKey('node-type',id));
+  input.service.view.architecture.entities=ids.map((id,i)=>({key:keys[i],kind:'node-type',id,data:{id}}));
+  input.service.plan=()=>({selected:keys,unknown:[],markdown:'### Studio plan: demo\n- Owners: replay'});
+  const report=reviewForChanges({...input,changes:['replay.ts']});
+  assert.match(report,/No WHAT\/WHY declared for: replay\.presentation, logbook\.replay, logbook\.terrain-replay/);
+  assert.doesNotMatch(report,/WHAT: not declared in this source scope/);
 });

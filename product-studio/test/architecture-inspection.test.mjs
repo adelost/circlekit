@@ -92,6 +92,20 @@ test('compiled facet owner reaches node-type instances and their consumers in im
   assert.doesNotMatch(plan,/owner not declared/);
   assert.match(planForChanges(view,{sources:[],config:{root:process.cwd()}},[typeKey]).markdown,/facet:machine:policy \(owner node-type::service\)/);
 });
+test('plan lists one-hop impact first and counts farther owners without naming them as direct consumers', () => {
+  const p = { id:'chain', nodes:['a','b','c'].map(id=>({id,nodeTypeRef:id})),
+    nodeTypes:['a','b','c'].map(id=>({id,kind:'service'})),
+    portRegistry:{nodePorts:[{ref:'a.out',ownerId:'a'},{ref:'b.in',ownerId:'b'},
+      {ref:'b.out',ownerId:'b'},{ref:'c.in',ownerId:'c'}],componentPorts:[],
+      bindings:[{from:'a.out',to:'b.in'},{from:'b.out',to:'c.in'}]} };
+  const facet={id:'session',kind:'machine',compiled:{id:'session',ownerNodeTypeRef:'a',cells:[]}};
+  const view={productId:'chain',architecture:architectureOf(p,[facet]),documentation:{reports:[]},sourceIndex:{origins:[]}};
+  const plan=planForChanges(view,{sources:[],config:{root:process.cwd()}},[key('facet','session','machine')]).markdown;
+  assert.match(plan, /^- Consumers: node::b$/m);
+  assert.doesNotMatch(plan,/^- Ports:.*port::c\.in/m);
+  assert.match(plan,/Transitive: 1 additional owner/);
+  assert.match(planForChanges(view,{sources:[],config:{root:process.cwd()}},[key('node','c')]).markdown, /^- Consumers: none$/m);
+});
 test('bundle identities are deterministic and tampered model cannot load', () => {
   const a=bundle(),b=bundle();assert.equal(a.bundleDigest,b.bundleDigest);
   a.product.id='changed';assert.throws(()=>validateInspectionBundle(a),/identities differ/);
