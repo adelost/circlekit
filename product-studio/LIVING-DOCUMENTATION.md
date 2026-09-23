@@ -81,22 +81,7 @@ The command uses the existing AMUX grammar checkout. It finds a sibling checkout
 v1d-studio check --amux-root /path/to/agentmux
 ```
 
-Install the Studio's own locked dependencies once:
-
-```bash
-cd /path/to/circlekit/product-studio
-npm ci
-npm link
-```
-
-Then from a product checkout:
-
-```bash
-v1d-studio check
-v1d-studio
-```
-
-The viewer does not install packages on demand.
+Install and run the local command as described in [README](README.md#start). The viewer does not install packages on demand.
 
 ## Evidence
 
@@ -134,6 +119,6 @@ The alternative was more metadata: `purpose`, `owns`, `doesNotOwn`, duplicated d
 This design writes only information that cannot be derived reliably: responsibility and boundary intent. ProductSpec supplies declared structure, test tools supply behavior evidence, and traces supply observations.
 
 
-## Current implementation handoff
+## Capability status
 
 For current delivered capabilities and deferred boundaries, read [DELIVERY.md](DELIVERY.md).

@@ -25,7 +25,7 @@ node bin/studio.mjs simulate --examples --product amux-fixture \
 
 Expected finite results: `IDLE -> PENDING` through `send`, and AMUX `HOLD` through `unknown-evidence`. These are examples/fixtures, not connected applications. The CLI never silently replaces a missing real workspace with examples.
 
-Run `npm link` once in the local `product-studio` checkout, then use `v1d-studio` from a product root. The package is not published. The explicit `node /path/to/circlekit/product-studio/bin/studio.mjs` path also works. Avoid `npm run` banners when parsing stdout: call the executable directly.
+Install the local command as described in [README](README.md#start), then use `v1d-studio` from a product root. The explicit `node /path/to/circlekit/product-studio/bin/studio.mjs` path also works. Avoid `npm run` banners when parsing stdout: call the executable directly.
 
 ## Attach a real product
 
@@ -58,6 +58,18 @@ node bin/studio.mjs source /repo --entity 'facet:machine:recording.session'
 `upstream`, `downstream`, `consumers`, `owner`, `path`, and `impact` reuse existing architecture queries. The default edge purpose is `data`; add `--purposes data,demand,context` explicitly. Exact boundary ports remain exact. Reachability through an owner is potential dependency, not evidence that its implementation used an input on a particular execution.
 
 `source` returns actual provenance and its edit classification, not source writes. A saved model is not relinked to changed code merely because the same ID is still present. Missing/stale mapping is a refusal. A facet with no exported owner association has unknown wider impact, not an invented path.
+
+Impact traversal stops at depth 20 or 1000 owners and marks the result truncated when further consumers may exist.
+
+## Plan and converge
+
+```bash
+v1d-studio plan /repo --changed src/recording.ts --changed 'node-type::recording.session'
+v1d-studio converge /repo --product my-product
+v1d-studio converge /repo --product my-product --tasks
+```
+
+`plan` prints a short Markdown block for a PR. It lists only owners, ports, consumers, facets and tests available in the loaded model, with unknown source or facet ownership marked. `converge` reads existing laws, contracts and traces without running tests or generators. It exits 0 for Converged, 1 for Diverged and 2 for Unknown; `--tasks` includes one task per known contradiction.
 
 ## Bound the output
 
