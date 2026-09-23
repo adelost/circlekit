@@ -1,11 +1,13 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { execFile } from 'node:child_process';
-import { mkdtemp, mkdir, rm, writeFile } from 'node:fs/promises';
+import { mkdtemp, mkdir, readFile, rm, symlink, writeFile } from 'node:fs/promises';
 import { promisify } from 'node:util';
+import { fileURLToPath } from 'node:url';
 import os from 'node:os';
 import path from 'node:path';
 import { repositoryFromRemote, workspaceConventions } from '../lib/workspaces.mjs';
+import { main } from '../bin/studio.mjs';
 
 const exec=promisify(execFile);
 async function temporary(t) {
@@ -49,6 +51,31 @@ test('one nearest package, Git repository and present test-results replace works
     documentation:{repository:'another/repo',sourceRoots:['ui/src'],bddReports:[]}},'adelost/ai-dsl');
   assert.equal(explicit.kernelRoot,'.');assert.equal(explicit.traceFile,'own/trace.json');
   assert.equal(explicit.documentation.repository,'another/repo');assert.deepEqual(explicit.documentation.bddReports,[]);
+});
+
+test('export uses the same inferred nested ProductSpec kernel as doctor',async t=>{
+  const root=await temporary(t),ui=path.join(root,'ui'),amux=path.join(root,'trusted-amux');
+  await pin(root,'ui','0.3.65',{installed:false});
+  const installed=fileURLToPath(new URL('../node_modules/@v1d/product-spec/',import.meta.url));
+  await mkdir(path.join(ui,'node_modules/@v1d'),{recursive:true});
+  await symlink(installed,path.join(ui,'node_modules/@v1d/product-spec'));
+  await mkdir(path.join(ui,'src'),{recursive:true});
+  await writeFile(path.join(ui,'src/policy.mjs'),`import {choice,defineDecisionTable,on} from '@v1d/product-spec';
+export const policy=defineDecisionTable({id:'fixture.policy',axes:{phase:['READY']},columns:{action:choice(['RUN'])},
+  cells:[on('run',{phase:'READY'},{action:'RUN'})]});\n`);
+  await mkdir(path.join(amux,'core'),{recursive:true});
+  await writeFile(path.join(amux,'core/contract-lint.mjs'),'export function evaluateContract(){return {findings:[]}}\n');
+  await writeFile(path.join(root,'studio.workspace.json'),JSON.stringify({version:2,projects:[{
+    id:'nested',label:'Nested',bundle:'ui/generated/policy.studio.json',
+    authoring:{entry:'ui/src/policy.mjs',exportName:'policy',kind:'decision-table',files:['ui/src/policy.mjs']},
+  }]}));
+  let output='';const code=await main(['export','--product','nested','--amux-root',amux],
+    {cwd:root,stdout:{write:text=>{output+=text;}}});
+  assert.equal(code,0,output);
+  assert.equal(JSON.parse(output).ok,true);
+  const bundle=JSON.parse(await readFile(path.join(ui,'generated/policy.studio.json'),'utf8'));
+  assert.equal(bundle.compiler.version,'0.3.65');
+  assert.equal(bundle.facets[0].id,'fixture.policy');
 });
 
 test('mixed package owners refuse an inferred kernel instead of picking one',async t=>{
