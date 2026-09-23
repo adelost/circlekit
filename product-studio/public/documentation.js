@@ -20,7 +20,7 @@ function reportedTest(row,project,E) {
   const correlation=report.modelCorrelation??report.correlation;
   const framework=report.run?.framework;
   const scenarios=(test.scenarios??[]).map(s=>`<dl class="properties">${['given','when','then'].filter(k=>s.phases[k]).map(k=>`<dt>${k.toUpperCase()}</dt><dd>${E(s.phases[k])}</dd>`).join('')}</dl>`).join('');
-  const associations=test.associations?.length?`<p>${test.associations.length} exact ID references: ${test.associations.map(a=>`<code>${E(a.entityKey)}</code>`).join(', ')}</p>`:'';
+  const associations=test.associations?.length?`<p>Associations, not coverage: ${test.associations.map(a=>`<code>${E(a.entityKey)}</code> <small>${E(a.kind??'unknown')}</small>`).join(', ')}</p>`:'';
   return `<tr data-key="${E(report.reportDigest+':'+test.id)}"><td><span class="badge">${E(test.status)}</span></td>
     <td><strong>${E(test.name)}</strong>${framework||scope?`<small>${[framework,scope].filter(Boolean).map(E).join(' · ')}</small>`:''}${test.flaky?' <small>Flaky after retry</small>':''}
       ${scenarios||associations?`<details><summary>Details</summary>${scenarios}${associations}</details>`:''}</td>
@@ -44,13 +44,14 @@ export function documentationView(project,state,E) {
       <div class="toolbar"><button data-doc-offset="${Math.max(0,offset-50)}" ${offset===0?'disabled':''}>Previous 50</button><button data-doc-offset="${page.nextOffset??offset}" ${page.nextOffset===null?'disabled':''}>Next 50</button></div>`}
     </div></section>`;
 }
+/** WHAT: Builds the selected entity's intent and evidence panel. WHY: Keeps declared associations separate from proof of runtime coverage. */
 export function intentPanel(intent,project,E) {
   if(!intent)return '';
   const d=intent.declared;
   const ports=(items)=>items.map(p=>`<li><code>${E(p.id)}</code> · ${E(p.contract?.id??p.contract??'Unknown contract')} · ${E(p.purpose??'data')}</li>`).join('')||'<li>None declared.</li>';
   return `<section aria-label="Type intent"><div class="section-label">Type-owned intent</div><code>${E(intent.typeKey)}</code>${contractBody(intent.contract,project,E)}
     ${d?`<details><summary>Declared reality</summary><dl class="properties">${Object.entries(d.runtime??{}).map(([key,value])=>`<dt>${E(key)}</dt><dd>${E(Array.isArray(value)?value.join(', '):value)}</dd>`).join('')}</dl><h3>Consumes</h3><ul>${ports(d.inputs)}</ul><h3>Publishes</h3><ul>${ports(d.outputs)}</ul><h3>Used by</h3><ul>${d.consumers.map(c=>`<li>${E(c.id)}</li>`).join('')||'<li>No outgoing consumer binding in this model.</li>'}</ul></details>`:''}
-    <div class="section-label">Behavior reports</div>${intent.tests.length?intent.tests.map(t=>`<p>${[t.proofKind??t.level,t.status,t.correlation==='unavailable'?null:t.correlation].filter(Boolean).map(E).join(' · ')}<br>${E(t.name)} ${t.file?sourceButton(t.file,t.line,project,E,'Open test'):''}</p>`).join(''):'<p>No test-body source associations available for this entity.</p>'}
+    <div class="section-label">Behavior reports</div>${intent.tests.length?intent.tests.map(t=>`<p>${[t.proofKind??t.level,t.status,t.correlation==='unavailable'?null:t.correlation].filter(Boolean).map(E).join(' · ')}<br>${E(t.name)} ${t.file?sourceButton(t.file,t.line,project,E,'Open test'):''}${t.association?`<br><small>Association: ${E(t.association)} (not coverage)</small>`:''}</p>`).join(''):'<p>No test-body source associations available for this entity.</p>'}
     <p class="muted">${E(intent.notice)}</p>${intent.testTotal>intent.tests.length?`<p>${intent.testTotal} associated rows total; first ${intent.tests.length} shown.</p>`:''}<button data-exp="intent" data-doc-reports>Browse all reports</button>
     <div class="section-label">Observed reality</div><p>Recorded traces are inspected in Trace. No runtime pass is inferred from these test reports.</p></section>`;
 }

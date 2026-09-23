@@ -18,7 +18,15 @@ function leadingComment(text,node) {
   if(!ranges.length)return '';
   const last=ranges.at(-1);
   if(text.slice(last.end,node.getStart()).trim())return '';
-  return text.slice(last.pos,last.end);
+  let start=ranges.length-1;
+  if(last.kind===ts.SyntaxKind.SingleLineCommentTrivia)while(start>0) {
+    const previous=ranges[start-1],current=ranges[start];
+    if(previous.kind!==ts.SyntaxKind.SingleLineCommentTrivia
+      || !/^[\t ]*\r?\n[\t ]*$/u.test(text.slice(previous.end,current.pos)))break;
+    start--;
+  }
+  const selected=ranges.slice(start);
+  return selected.map(range=>text.slice(range.pos,range.end)).join('\n');
 }
 function literalText(node) {
   if(ts.isStringLiteralLike(node))return node.text;

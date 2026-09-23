@@ -7,29 +7,38 @@ import { safeFile, requireThat } from '../lib/util.mjs';
 import { scenarioDescriptions, testSourceIndex } from '../lib/test-source.mjs';
 import { behaviorReport, testIdentity, writeBehaviorReport } from '../lib/report-output.mjs';
 
+/** WHAT: Decodes bounded JUnit suites and their declared counters. WHY: Prevents contradictory XML from becoming passing evidence. */
 export function decodeJUnitXml(text) {
   requireThat(Buffer.byteLength(text)<=4_000_000&&!/<!DOCTYPE|<!ENTITY/iu.test(text),
     'evidence.junit-xml','JUnit input is oversized or contains unsupported entity declarations.');
-  const suites=[],stack=[],suiteStack=[];
+  const suites=[],stack=[],suiteStack=[],countScopes=[];
+  const failedCases=new WeakSet(),errorCases=new WeakSet();
   let currentCase=null,caseCount=0;
   const parser=new SaxesParser();
   parser.on('doctype',()=>{throw new Error('JUnit DTDs are unsupported.');});
   parser.on('opentag',({name,attributes:a})=>{
     const parent=stack.at(-1);
     if(!stack.length)requireThat(name==='testsuite'||name==='testsuites','evidence.junit-xml','Expected JUnit testsuite or testsuites.');
+    if(name==='testsuite'||name==='testsuites') {
+      requireThat(countScopes.length<64,'evidence.junit-xml','JUnit suite nesting exceeds 64 levels.');
+      countScopes.push({name,attributes:a,cases:[]});
+    }
     if(name==='testsuite'){
       const suite={name:a.name??null,timestamp:a.timestamp??null,seconds:a.time??null,
-        tests:a.tests??null,failures:a.failures??null,errors:a.errors??null,cases:[]};
+        tests:a.tests??null,failures:a.failures??null,errors:a.errors??null,skipped:a.skipped??null,cases:[]};
       suites.push(suite);suiteStack.push(suite);
     } else if(name==='testcase'){
       requireThat(parent==='testsuite'&&suiteStack.length>0,'evidence.junit-xml','A JUnit testcase needs a testsuite.');
       currentCase={name:a.name??null,className:a.classname??null,file:a.file??null,line:a.line??null,
         seconds:a.time??null,status:'passed'};
       suiteStack.at(-1).cases.push(currentCase);
+      for(const scope of countScopes)scope.cases.push(currentCase);
       requireThat(++caseCount<=10_000,
         'evidence.junit-xml','JUnit input contains more than 10000 cases.');
-    } else if(currentCase&&parent==='testcase'&&(name==='failure'||name==='error'))currentCase.status='failed';
-    else if(currentCase&&parent==='testcase'&&name==='skipped'&&currentCase.status!=='failed')currentCase.status='skipped';
+    } else if(currentCase&&parent==='testcase'&&(name==='failure'||name==='error')) {
+      currentCase.status='failed';
+      (name==='failure'?failedCases:errorCases).add(currentCase);
+    } else if(currentCase&&parent==='testcase'&&name==='skipped'&&currentCase.status!=='failed')currentCase.status='skipped';
     stack.push(name);
   });
   parser.on('closetag',tag=>{
@@ -37,6 +46,19 @@ export function decodeJUnitXml(text) {
     requireThat(stack.pop()===name,'evidence.junit-xml','Malformed JUnit XML.');
     if(name==='testcase')currentCase=null;
     if(name==='testsuite')suiteStack.pop();
+    if(name==='testsuite'||name==='testsuites') {
+      const scope=countScopes.pop();
+      const counts={tests:scope.cases.length,
+        failures:scope.cases.filter(test=>failedCases.has(test)).length,
+        errors:scope.cases.filter(test=>errorCases.has(test)).length,
+        skipped:scope.cases.filter(test=>test.status==='skipped').length};
+      for(const [field,count] of Object.entries(counts)) {
+        const declared=scope.attributes[field];
+        if(declared===undefined)continue;
+        requireThat(/^\d+$/.test(declared)&&Number.isSafeInteger(Number(declared))&&Number(declared)===count,
+          'evidence.count','JUnit '+scope.name+' '+field+' count does not match its cases.');
+      }
+    }
   });
   parser.on('error',error=>{throw error;});
   parser.write(text).close();
@@ -94,6 +116,11 @@ function timestamp(value,zone) {
   requireThat(Number.isFinite(ms),'evidence.timestamp','Invalid JUnit timestamp.');
   return ms;
 }
+function seconds(value,code,message) {
+  const duration=typeof value==='string'&&value.trim()!==''?Number(value):NaN;
+  requireThat(Number.isFinite(duration)&&duration>=0,code,message);
+  return duration;
+}
 
 export async function importJUnit({
   root,input,sourceRoots,repository=null,commitSha=null,branch=null,project=null,timestampZone=null,
@@ -106,10 +133,8 @@ export async function importJUnit({
   const times=[],tests=[],ordinals=new Map();
   for(const suite of suites) {
     const start=timestamp(suite.timestamp,timestampZone);
-    const duration=Number(suite.seconds);
-    requireThat(Number.isFinite(duration)&&duration>=0,'evidence.timestamp','JUnit suite duration is missing or invalid.');
+    const duration=seconds(suite.seconds,'evidence.timestamp','JUnit suite duration is missing or invalid.');
     times.push([start,start+duration*1000]);
-    if(suite.tests!==null)requireThat(Number(suite.tests)===suite.cases.length,'evidence.count','JUnit suite count does not match its cases.');
     for(const test of suite.cases) {
       requireThat(typeof test.name==='string'&&test.name.length>0&&typeof test.className==='string'&&test.className.length>0,
         'evidence.junit','JUnit testcase identity is missing.');
@@ -120,11 +145,9 @@ export async function importJUnit({
         ?candidates.filter(candidate=>candidate.line===requestedLine):[];
       const located=exact.length===1?exact[0]:candidates.length===1?candidates[0]:null;
       const scenarios=scenarioDescriptions(test.name,located);
-      const durationMs=test.seconds===null
-        ?(test.status==='skipped'?0:NaN)
-        :Number(test.seconds)*1000;
-      requireThat(Number.isFinite(durationMs)&&durationMs>=0,'evidence.junit-duration',
-        'Executed JUnit testcase is missing a valid duration.');
+      const durationMs=test.seconds===null&&test.status==='skipped'?0:
+        seconds(test.seconds,'evidence.junit-duration','Executed JUnit testcase is missing a valid duration.')*1000;
+      requireThat(Number.isFinite(durationMs),'evidence.junit-duration','JUnit testcase duration exceeds the supported range.');
       const fullName=test.className+'.'+test.name;
       const ordinal=ordinals.get(source.file+'\0'+fullName)??0;
       ordinals.set(source.file+'\0'+fullName,ordinal+1);
