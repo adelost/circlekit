@@ -26,6 +26,10 @@
       "types": "./dist/src/observation.d.ts",
       "import": "./dist/src/observation.js"
     },
+    "./examples/vision-box": {
+      "types": "./dist/src/examples/vision-box.d.ts",
+      "import": "./dist/src/examples/vision-box.js"
+    },
     "./browser": {
       "types": "./dist/src/browser-observation.d.ts",
       "import": "./dist/src/browser-observation.js"

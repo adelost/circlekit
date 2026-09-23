@@ -1,6 +1,8 @@
 import { decide as baseDecide, type Decision, type DecisionAxes, type DecisionColumns,
   type DecisionPoint, type DecisionTable } from './decision-table-model.js';
 import { step as baseStep, type Machine, type MachineStep } from './machine-model.js';
+import { assertPortPayload } from './contract-law-model.js';
+import type { LegoContract } from './node-model.js';
 
 export type RawObservation =
   | {kind:'port';phase:'returned';portRef:string}
@@ -24,6 +26,10 @@ export function createObservationScope({onObservation,onFailure}: {
     try { onObservation(event); }
     catch(error) { try { onFailure?.(error); } catch { /* Even diagnostic failure cannot change application behavior. */ } }
   };
+  const validate=(ref:string,value:unknown,contracts?:ReadonlyMap<string,LegoContract>)=>{
+    try {assertPortPayload(ref,value,contracts);}
+    catch(error) {try {onFailure?.(error);} catch { /* Diagnostics cannot change a product call. */ }}
+  };
   return {
     decide<Axes extends DecisionAxes,Columns extends DecisionColumns>(table:DecisionTable<Axes,Columns>,at:DecisionPoint<Axes>):Decision<Axes,Columns> {
       const result=baseDecide(table,at);
@@ -39,7 +45,7 @@ export function createObservationScope({onObservation,onFailure}: {
         from:state,to:result.to,input,guards:Object.fromEntries(machine.guards.map(guard=>[guard,guardsHeld.has(guard)]))});
       return result;
     },
-    bindPortImplementations<Ports extends object>(ports:Ports):Ports {
+    bindPortImplementations<Ports extends object>(ports:Ports,contracts?:ReadonlyMap<string,LegoContract>):Ports {
       const methods=new Map<string,{source:Function;wrapped:Function}>();
       let proxy:Ports;
       const wrap=(property:string,value:Function):Function=>{
@@ -47,6 +53,8 @@ export function createObservationScope({onObservation,onFailure}: {
           if(cached?.source===value)return cached.wrapped;
           const wrapped=function(this:unknown,...args:unknown[]) {
             const result=Reflect.apply(value,this===proxy?ports:this,args);
+            if(result instanceof Promise)void result.then(resolved=>validate(property,resolved,contracts),()=>{});
+            else validate(property,result,contracts);
             emit({kind:'port',phase:'returned',portRef:property});
             return result;
           };
@@ -80,4 +88,7 @@ export function createObservationScope({onObservation,onFailure}: {
   };
 }
 
-export const observedScope=createObservationScope({onObservation:event=>activeSink?.(event)});
+export const observedScope=createObservationScope({
+  onObservation:event=>activeSink?.(event),
+  onFailure:error=>console.error(`ProductSpec contract law: ${error instanceof Error?error.message:String(error)}`),
+});

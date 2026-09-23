@@ -1,3 +1,4 @@
+import { validateContractLaws } from './contract-law-model.js';
 export type LegoPrimitive = "boolean" | "integer" | "number" | "string";
 /** The only executable authoring kinds. Graph position is derived, never declared as a second role. */
 export type ProductNodeKind = "service" | "derive" | "present";
@@ -25,6 +26,9 @@ export interface LegoFieldOptions {
   readonly unit?: string;
   readonly nullable?: boolean;
   readonly clockDomain?: LegoClockDomain;
+  readonly min?: number;
+  readonly max?: number;
+  readonly gteField?: string;
 }
 
 export interface LegoField {
@@ -33,6 +37,9 @@ export interface LegoField {
   readonly unit?: string;
   readonly nullable: boolean;
   readonly clockDomain: LegoClockDomain;
+  readonly min?: number;
+  readonly max?: number;
+  readonly gteField?: string;
 }
 
 export type LegoNavigationContract =
@@ -102,6 +109,9 @@ export function field(
     nullable: options.nullable ?? false,
     clockDomain: options.clockDomain ?? "none",
     ...(options.unit === undefined ? {} : { unit: options.unit }),
+    ...(options.min === undefined ? {} : { min: options.min }),
+    ...(options.max === undefined ? {} : { max: options.max }),
+    ...(options.gteField === undefined ? {} : { gteField: options.gteField }),
   };
 }
 
@@ -343,6 +353,7 @@ export function contractFingerprint(contract: LegoContract): string {
       unit: item.unit ?? null,
       nullable: item.nullable,
       clockDomain: item.clockDomain,
+      min: item.min ?? null, max: item.max ?? null, gteField: item.gteField ?? null,
     })),
     navigation: contract.navigation ?? null,
   });
@@ -418,6 +429,7 @@ function validateConfigValues(
 
 export function validateContract(contract: LegoContract): void {
   requireWireId(contract.id, "contract");
+  validateContractLaws(contract);
   if (!["presentation", "ui-event", "service-internal"].includes(contract.boundary)) {
     throw new Error(`contract '${contract.id}' has invalid boundary '${String(contract.boundary)}'`);
   }
