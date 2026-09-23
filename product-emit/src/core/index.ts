@@ -25,6 +25,7 @@ export * from "./emit-navigation-kotlin.js";
 export * from "./emit-profile-table-js.js";
 export * from "./emit-service-glances-kotlin.js";
 export * from "./emit-state-presentations-kotlin.js";
+export * from './emit-store-services-kotlin.js';
 export * from "./emit-theme.js";
 export * from "./kotlin-syntax.js";
 export * from "./swift-syntax.js";
