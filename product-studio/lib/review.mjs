@@ -54,7 +54,9 @@ function changedIntents(view, keys) {
 function intentSection(view, selected) {
   const owners = changedIntents(view, selected);
   if (!owners.length) return 'No type-owned WHAT/WHY is associated with the changed declarations.';
-  return owners.map(owner => {
+  const declared = owners.filter(owner => owner.contract);
+  const missing = owners.filter(owner => !owner.contract);
+  return [...declared.map(owner => {
     const contract = owner.contract?.contract;
     const inputs = owner.inputs.map(input => typeof input === 'string' ? input : input.id ?? input.ref ?? input.name ?? 'unnamed');
     return [`### ${owner.id} (${owner.key})`,
@@ -65,7 +67,7 @@ function intentSection(view, selected) {
       `- Machine/table: ${owner.facets.length ? owner.facets.join(', ') : 'none declared'}`,
       `- Intent source: ${owner.contract ? `${owner.contract.source.file}:${owner.contract.source.line ?? '?'}` : 'unknown'}`,
     ].join('\n');
-  }).join('\n\n');
+  }), ...(missing.length ? [`No WHAT/WHY declared for: ${missing.map(owner => owner.id).join(', ')}`] : [])].join('\n\n');
 }
 
 function evidenceChecklist(view, project, verdict) {
@@ -86,10 +88,14 @@ function evidenceChecklist(view, project, verdict) {
 
 function evidenceSection(view, project, verdict) {
   const { laws, trace, contracts } = verdict.counts;
+  const portEvents = view.trace?.events.filter(event => event.kind === 'port').length ?? 0;
+  const comparisons = trace.consistent + trace.different + trace.unknown;
+  const traceLine = portEvents && !comparisons ? `${portEvents} port events (no logic comparison)`
+    : `${trace.consistent} consistent, ${trace.different} different, ${trace.unknown} Unknown${portEvents ? `; ${portEvents} port events` : ''}`;
   return [
     `- Verdict: ${verdict.label}`,
     `- Laws: ${laws.passed} passed, ${laws.failed} failed, ${laws.skipped} skipped`,
-    `- Trace steps: ${trace.consistent} consistent, ${trace.different} different, ${trace.unknown} Unknown`,
+    `- Trace: ${traceLine}`,
     `- WHAT/WHY: ${contracts.validated}/${contracts.total} validated`,
     ...(verdict.reasons.length ? verdict.reasons.map(reason => `- Contradiction: ${oneLine(reason.entityKey)}: ${oneLine(reason.message)}`) : []),
     ...(verdict.gaps.length ? verdict.gaps.map(gap => `- Unknown: ${oneLine(gap)}`) : []),
@@ -110,7 +116,11 @@ function sourceSection(metadata, verdict) {
 export function reviewForChanges({ service, project, changes, convergence }) {
   const plan = changes.length ? service.plan({ changed: changes }) : null;
   const metadata = service.metadata('review');
-  const impact = plan?.selected.length ? plan.markdown.trim() : 'No declared entity changed.';
+  const impact = plan?.selected.length ? plan.markdown.trim() : [
+    'No declared entity changed.',
+    ...(plan?.unknown.length ? [`- Unknown: ${plan.unknown.map(oneLine).join(', ')}`] : []),
+    ...(plan?.notModelSource?.length ? [`- Not model source: ${plan.notModelSource.map(oneLine).join(', ')}`] : []),
+  ].join('\n');
   const result = convergence.verdict === 'Diverged' ? `${convergence.label}. See contradictions above. Runtime/device behavior has not been proven.`
     : convergence.verdict === 'Unknown' ? 'Unknown evidence. Runtime/device behavior has not been proven.'
     : 'No known contradiction. Runtime/device behavior has not been proven.';
@@ -118,7 +128,6 @@ export function reviewForChanges({ service, project, changes, convergence }) {
     '## CHANGE', changes.length ? changes.map(file => `- ${oneLine(file)}`).join('\n') : 'No changed files.',
     '## INTENT', plan?.selected.length ? intentSection(service.view, plan.selected) : 'No changed owner to describe.',
     '## DECLARED IMPACT', impact,
-    ...(plan?.unknown.length ? [`Unknown source/entity: ${plan.unknown.map(oneLine).join(', ')}`] : []),
     '## EVIDENCE', evidenceSection(service.view, project, convergence),
     '## SOURCE IDENTITY', sourceSection(metadata, convergence),
     '## RESULT', result, '',

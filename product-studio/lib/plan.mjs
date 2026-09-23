@@ -4,7 +4,7 @@ import { queryArchitecture } from './architecture.mjs';
 import { requireThat } from './util.mjs';
 
 const owner = entity => ['node', 'component'].includes(entity?.kind);
-const line = (label, values) => `- ${label}: ${values.length ? values.join(', ') : 'unknown'}`;
+const line = (label, values, empty = 'unknown') => `- ${label}: ${values.length ? values.join(', ') : empty}`;
 const short = (values, limit = 12) => values.length > limit
   ? [...values.slice(0, limit), `+${values.length - limit} more`] : values;
 
@@ -16,7 +16,7 @@ export function planForChanges(view, project, changes) {
   const { architecture, documentation, sourceIndex } = view;
   const byKey = new Map(architecture.entities.map(entity => [entity.key, entity]));
   const sources = new Map([...project.sources, ...(project.documentationInputs?.sources ?? [])].map(source => [source.path, source]));
-  const selected = new Set(), unknown = [], sourceCaveats = [];
+  const selected = new Set(), unknown = [], notModelSource = [], sourceCaveats = [];
   for (const change of changes) {
     if (byKey.has(change)) { selected.add(change); continue; }
     const root = project.config.root;
@@ -37,21 +37,29 @@ export function planForChanges(view, project, changes) {
       if (keys.some(key => !matched.includes(key)))
         sourceCaveats.push(`${relative}: source ID match; compiled source provenance not exported`);
     }
-    if (!found) unknown.push(change);
+    if (!found) {
+      if (source || sourceIndex.unresolved?.some(item => item.file === relative) || /^[a-z-]+:/u.test(change)) unknown.push(change);
+      else notModelSource.push(change);
+    }
   }
   const roots = new Set([...selected].filter(key => owner(byKey.get(key))));
   const selectedTypes = new Set([...selected].filter(key => byKey.get(key)?.kind === 'node-type'));
   for (const edge of architecture.edges) if (selected.has(edge.from) && edge.kind === 'owner') selectedTypes.add(edge.to);
   for (const edge of architecture.edges) if (selectedTypes.has(edge.from) && edge.kind === 'instance') roots.add(edge.to);
-  const affected = new Set(roots), edgeIds = new Set(), unavailable = [];
+  const affected = new Set(roots), transitive = new Set(roots), edgeIds = new Set(), unavailable = [];
+  let supported = 0;
   for (const key of selected) {
     const entity = byKey.get(key);
     if (!['node-type', 'component-type', 'node', 'component', 'port', 'facet'].includes(entity.kind)) continue;
-    const result = queryArchitecture(architecture, { kind: 'impact', from: key, purposes: ['data', 'demand', 'context'] });
-    if (!result.supported) { unavailable.push(`${key}: ${result.message}`); continue; }
-    result.keys.filter(candidate => owner(byKey.get(candidate))).forEach(candidate => affected.add(candidate));
-    result.edgeIds.forEach(id => edgeIds.add(id));
-    if (result.truncated) unavailable.push(`${key}: query limit reached`);
+    const query = { kind: 'impact', from: key, purposes: ['data', 'demand', 'context'] };
+    const direct = queryArchitecture(architecture, { ...query, maxDepth: 1 });
+    if (!direct.supported) { unavailable.push(`${key}: ${direct.message}`); continue; }
+    supported++;
+    direct.keys.filter(candidate => owner(byKey.get(candidate))).forEach(candidate => affected.add(candidate));
+    direct.edgeIds.forEach(id => edgeIds.add(id));
+    const wider = queryArchitecture(architecture, query);
+    wider.keys.filter(candidate => owner(byKey.get(candidate))).forEach(candidate => transitive.add(candidate));
+    if (wider.truncated) unavailable.push(`${key}: query limit reached`);
   }
   const bindings = architecture.edges.filter(edge => edgeIds.has(edge.id) && edge.kind === 'binding');
   const ports = new Set([...selected].filter(key => byKey.get(key)?.kind === 'port'));
@@ -67,12 +75,14 @@ export function planForChanges(view, project, changes) {
   const tests = documentation.reports.flatMap(report => (report.tests ?? []).filter(test =>
     test.associations?.some(association => related.has(association.entityKey))).map(test =>
     `${test.name} (${test.status}, ${test.file})`));
+  const farther = [...transitive].filter(key => !affected.has(key)).length;
   const markdown = [
     `### Studio plan: ${view.productId}`,
     line('Changed', changes),
     line('Owners', short([...roots])),
-    line('Ports', short([...ports])),
-    line('Consumers', short([...affected].filter(key => !roots.has(key)))),
+    line('Ports', short([...ports]), supported ? 'none' : 'unknown'),
+    line('Consumers', short([...affected].filter(key => !roots.has(key))), supported ? 'none' : 'unknown'),
+    line('Transitive', supported ? [`${farther} additional owner${farther === 1 ? '' : 's'} beyond one hop`] : ['unknown; no declared owner']),
     line('Facets', facets.map(facet => {
       const declared = architecture.edges.find(edge => edge.from === facet.key && edge.kind === 'owner');
       return `${facet.key} (${declared ? `owner ${declared.to}` : 'owner not declared'})`;
@@ -80,7 +90,8 @@ export function planForChanges(view, project, changes) {
     line('Known tests', short([...new Set(tests)], 8)),
     ...(sourceCaveats.length ? [line('Source', short(sourceCaveats))] : []),
     ...(unavailable.length || unknown.length ? [line('Unknown', short([...unknown, ...unavailable]))] : []),
+    ...(notModelSource.length ? [line('Not model source', short(notModelSource))] : []),
     '',
   ].join('\n');
-  return { markdown, selected: [...selected], unknown, truncated: unavailable.some(text => text.includes('limit reached')) };
+  return { markdown, selected: [...selected], unknown, notModelSource, truncated: unavailable.some(text => text.includes('limit reached')) };
 }
