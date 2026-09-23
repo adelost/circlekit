@@ -17,8 +17,8 @@ function parse(args) {
     requireThat(options[key]===undefined,'cli.usage','Repeated option '+key+'.');
     options[key]=value;
   }
-  requireThat(options['--root']&&options['--output'],'cli.usage',
-    'Use --root ROOT [--product ID] [--kernel-root PACKAGE_ROOT] --output test-results/declaration-laws.json.');
+  requireThat(options['--root'],'cli.usage',
+    'Use --root ROOT [--product ID] [--kernel-root PACKAGE_ROOT] [--output test-results/<project-id>-laws.json].');
   return options;
 }
 export async function main(args=process.argv.slice(2),{stdout=process.stdout}={}) {
@@ -27,15 +27,17 @@ export async function main(args=process.argv.slice(2),{stdout=process.stdout}={}
     const session=await openHeadlessStudio({roots:[root]});
     const selected=selectProject(session.projects,options['--product']);
     const owner=session.workbench.require(selected.key),view=session.workbench.view(owner);
-    const selectedKernel=options['--kernel-root']
-      ?await loadProductSpecKernel(root,options['--kernel-root'])
+    const kernelRoot=options['--kernel-root']??owner.config.kernelRoot;
+    const selectedKernel=kernelRoot!==undefined
+      ?await loadProductSpecKernel(root,kernelRoot)
       :null;
     const report=generateDeclarationEvidence(view,{
       artifactFile:owner.config.bundle??owner.config.artifact??owner.config.sources?.[0]??null,
       repository:options['--repository']??owner.config.documentation?.repository??null,
       ...(selectedKernel?{evaluator:selectedKernel.kernel,evaluatorVersion:selectedKernel.version}:{}),
     });
-    const receipt=await writeBehaviorReport(root,options['--output'],report);
+    const output=options['--output']??`test-results/${owner.config.id}-laws.json`;
+    const receipt=await writeBehaviorReport(root,output,report);
     stdout.write(JSON.stringify({...receipt,summary:report.summary,modelDigest:view.modelDigest,
       producer:view.compatibility?.producer??null,evaluator:report.run.frameworkVersion})+'\n');
     return report.summary.failed||report.summary.passed===0?1:0;
