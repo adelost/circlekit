@@ -40,6 +40,17 @@ test('impact lists actual mounted consumers and admits potential causality', () 
   const r = queryArchitecture(graph(), { kind:'impact', from:key('node','a') });
   assert.equal(r.affectedMounts[0].artifactRef,'phone'); assert.match(r.message,/does not prove/);
 });
+test('compiled type instance reaches declared consumers through two bindings', () => {
+  const a=graph(), type=key('node-type','service');
+  assert(a.edges.some(e=>e.from===type&&e.to===key('node','a')));
+  const impact=queryArchitecture(a,{kind:'impact',from:type});
+  assert(impact.keys.includes(key('node','a')));
+  assert(impact.keys.includes(key('node','c')));
+  assert(impact.keys.includes(key('component','view')));
+  const component=queryArchitecture(a,{kind:'downstream',from:key('component-type','screen')});
+  assert(component.keys.includes(key('component','view')));
+  assert.equal(queryArchitecture(a,{kind:'downstream',from:key('node','a'),maxDepth:1}).truncated,true);
+});
 test('ungrouped is honest; no domain is guessed from an ID prefix', () => {
   const a=graph(); assert.equal(a.groups.length,0);
   const s=architectureSlice(a,{mode:'domains'}); assert.equal(s.nodes[0].label,'Ungrouped'); assert.equal(s.nodes[0].count,5);
@@ -57,6 +68,7 @@ test('facet impact needs an explicit relation rather than a same-name guess', ()
   const f={id:'a',kind:'machine',compiled:{id:'a',cells:[]}};
   const r=queryArchitecture(architectureOf(product(),[f]),{kind:'impact',from:key('facet','a','machine')});
   assert.equal(r.supported,false);
+  assert.match(r.message,/owner not declared/);
   const a=architectureOf(product(),[f],{relations:[{from:key('facet','a','machine'),to:key('node','a'),kind:'controls'}]});
   assert.equal(queryArchitecture(a,{kind:'impact',from:key('facet','a','machine')}).association,true);
 });

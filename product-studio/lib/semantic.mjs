@@ -2,8 +2,9 @@ import { intentForEntity } from './documentation.mjs';
 import { Workbench } from './workspaces.mjs';
 import { plain, requireThat, errorPayload } from './util.mjs';
 import { isDigest } from './inspection.mjs';
+import { planForChanges } from './plan.mjs';
 
-const COMMANDS = new Set(['inspect', 'query', 'source', 'simulate', 'scenario', 'trace']);
+const COMMANDS = new Set(['inspect', 'query', 'source', 'simulate', 'scenario', 'trace', 'plan']);
 const INDEX_FIELDS = ['key', 'id', 'kind', 'label', 'group', 'parent', 'owner'];
 
 /** Same loader as the GUI, without HTTP, persistent storage or implicit examples. */
@@ -89,6 +90,7 @@ export class SemanticStudio {
         case 'simulate': result = this.simulate(options); break;
         case 'scenario': result = this.scenario(options); break;
         case 'trace': result = this.trace(options); break;
+        case 'plan': result = this.plan(options); break;
       }
       const facetId = options.facetId ?? options.document?.facetId ?? options.document?.scenario?.facetId ?? null;
       envelope.scope.facet = facetId;
@@ -137,6 +139,10 @@ export class SemanticStudio {
     this.entity(from);
     if (kind === 'path') this.entity(to);
     return this.workbench.query({ ...this.context, query: { kind, from, to, purposes } }).result;
+  }
+
+  plan({ changed }) {
+    return planForChanges(this.view, this.workbench.require(this.view.key), changed);
   }
 
   source({ entity: key }) {

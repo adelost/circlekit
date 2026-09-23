@@ -48,6 +48,14 @@ export function architectureOf(product, facets = [], metadata = {}) {
     ['authority', product?.stateAuthorities], ['config', product?.configs], ['finite-value', product?.finiteValues],
     ['component-type', product?.componentTypes], ['node-type', product?.nodeTypes],
   ]) for (const item of items ?? []) add(kind, item.id, item);
+  for (const [instances, kind, typeKind, reference] of [
+    [product?.nodes, 'node', 'node-type', 'nodeTypeRef'],
+    [product?.components, 'component', 'component-type', 'componentTypeRef'],
+  ]) for (const instance of instances ?? []) {
+    const type = entityKey(typeKind, instance[reference]);
+    requireThat(byKey.has(type), 'architecture.type', `Unknown compiled type of '${instance.id}'.`);
+    connect(type, entityKey(kind, instance.id), 'instance', { evidence: 'compiler' });
+  }
   if (product?.navigation) add('navigation', product.navigation.id ?? 'navigation', product.navigation);
   if (product?.lanes) add('lanes', product.lanes.id ?? 'lanes', product.lanes);
   for (const f of facets) {
@@ -111,12 +119,18 @@ export function queryArchitecture(architecture, request) {
   const selected = entities.get(request.from);
   requireThat(selected, 'query.selection', 'Select a known entity.');
   let start = toOwner(request.from), association = false;
+  if (!start && ['node-type', 'component-type'].includes(selected.kind)) {
+    requireThat(request.kind !== 'path', 'query.owner', 'Select an instance for a path query.');
+    const starts = architecture.edges.filter(e => e.from === selected.key && e.kind === 'instance').map(e => e.to);
+    return combineQueries(architecture, request, starts, 'Compiled type instances and declared bindings.');
+  }
   if (!start && request.kind === 'impact') {
     const starts = architecture.edges.filter(e => e.from === selected.key && ['controls', 'implements', 'associated'].includes(e.kind))
       .map(e => toOwner(e.to)).filter(Boolean);
     if (!starts.length) return { kind: 'impact', keys: [selected.key], edgeIds: [], paths: [], supported: false,
-      message: 'No explicit association connects this declaration to a runtime owner. Impact beyond the declaration is unknown.' };
-    return combineImpact(architecture, request, starts);
+      message: selected.kind === 'facet' ? 'owner not declared; impact beyond this facet is unknown.'
+        : 'No explicit association connects this declaration to a runtime owner. Impact beyond the declaration is unknown.' };
+    return combineQueries(architecture, request, starts, 'Explicit adapter association and declared bindings.');
   }
   requireThat(start, 'query.owner', 'This selection has no declared runtime owner. No dependency path is inferred from its name.');
   if (request.kind === 'owner') return { kind: 'owner', keys: [start], edgeIds: [], paths: [], supported: true, message: 'Declared port owner.' };
@@ -125,21 +139,26 @@ export function queryArchitecture(architecture, request) {
     const from = backwards ? c.to : c.from, to = backwards ? c.from : c.to;
     const list = adjacent.get(from) ?? []; list.push({ to, c }); adjacent.set(from, list);
   }
-  const maxDepth = request.maxDepth ?? Infinity;
-  requireThat(maxDepth === Infinity || Number.isInteger(maxDepth) && maxDepth >= 0 && maxDepth <= 20, 'query.depth', 'Focus depth must be 0..20.');
+  const maxDepth = request.maxDepth ?? 20, maxOwners = 1000;
+  requireThat(Number.isInteger(maxDepth) && maxDepth >= 0 && maxDepth <= 20, 'query.depth', 'Focus depth must be 0..20.');
   const depths = new Map([[start,0]]);
   const reached = new Set([start]), previous = new Map(), queue = [start], selectedEdges = new Map();
   const targetEntity = request.kind === 'path' ? entities.get(request.to) : null;
   const goal = request.kind === 'path' ? toOwner(request.to) : null;
   if (goal === start && targetEntity?.kind === 'port' && selected.key !== targetEntity.key) return { kind:'path', keys:[start], edgeIds:[], paths:[], supported:true, found:false, message:'No internal port-to-port route is declared by this owner-level graph. Inspect the implementation.' };
   if (request.kind === 'path') requireThat(goal, 'query.target', 'Choose a target owner or port for the path query.');
+  let truncated = false;
   for (let cursor = 0; cursor < queue.length; cursor++) {
     const owner = queue[cursor];
-    if (depths.get(owner) >= maxDepth) continue;
+    if (depths.get(owner) >= maxDepth) {
+      if ((adjacent.get(owner) ?? []).some(({to})=>!reached.has(to))) truncated = true;
+      continue;
+    }
     for (const { to, c } of adjacent.get(owner) ?? []) {
       if (request.kind === 'path' && to === goal && targetEntity?.kind === 'port' && c.edge.to !== targetEntity.key) continue;
       // A selected port seeds only its own edges. Later owners remain potential dependencies.
       if (owner === start && selected.kind === 'port' && (backwards ? c.edge.to : c.edge.from) !== selected.key) continue;
+      if (!reached.has(to) && reached.size >= maxOwners) { truncated = true; continue; }
       selectedEdges.set(c.edge.id, c.edge);
       if (!reached.has(to)) {
         reached.add(to); depths.set(to, depths.get(owner) + 1); previous.set(to, { owner, edge: c.edge });
@@ -156,16 +175,19 @@ export function queryArchitecture(architecture, request) {
     keys = nodes.reverse(); edgeIds = links.reverse(); paths = [{ keys, edgeIds }];
   }
   const mounts = architecture.entities.filter(e => e.kind === 'mount' && architecture.edges.some(edge => edge.from === e.key && edge.kind === 'mounts' && reached.has(edge.to)));
-  return { kind: request.kind, keys, edgeIds, paths, supported: true, found: true, association,
+  return { kind: request.kind, keys, edgeIds, paths, supported: true, found: true, association, truncated,
     affectedMounts: request.kind === 'impact' ? mounts.map(m => ({ key: m.key, ...m.data })) : [],
-    message: 'Possible impact through declared owner dependencies. This does not prove event order or internal algorithm causality.' };
+    message: `Possible impact through declared owner dependencies. This does not prove event order or internal algorithm causality.${truncated ? ' Query limit reached; more consumers may exist.' : ''}` };
 }
-function combineImpact(architecture, request, starts) {
+function combineQueries(architecture, request, starts, basis) {
+  if (!starts.length) return { kind: request.kind, keys: [request.from], edgeIds: [], paths: [], supported: true,
+    found: true, truncated: false, message: 'No compiled instances are declared.' };
   const results = starts.map(from => queryArchitecture(architecture, { ...request, from }));
-  return { kind: 'impact', keys: [...new Set([request.from, ...results.flatMap(r => r.keys)])],
+  return { kind: request.kind, keys: [...new Set([request.from, ...results.flatMap(r => r.keys)])],
     edgeIds: [...new Set(results.flatMap(r => r.edgeIds))], paths: [], supported: true, association: true,
-    affectedMounts: [...new Map(results.flatMap(r => r.affectedMounts).map(m => [m.key, m])).values()],
-    message: 'Potential impact through an explicit adapter association and declared bindings, not observed execution.' };
+    found: true, truncated: results.some(r=>r.truncated),
+    affectedMounts: [...new Map(results.flatMap(r => r.affectedMounts ?? []).map(m => [m.key, m])).values()],
+    message: `Potential impact through ${basis} This does not prove observed execution.${results.some(r=>r.truncated) ? ' Query limit reached; more consumers may exist.' : ''}` };
 }
 
 export function architectureSlice(architecture, { mode = 'owners', group = null, query = '', result = null } = {}) {

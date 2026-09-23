@@ -70,6 +70,17 @@ test('headless attachment has one real product, no sample fallback and no storag
   const empty = path.join(root, 'empty'); await mkdir(empty);
   await assert.rejects(openHeadlessStudio({ roots: [empty] }), e => e.code === 'project.missing');
 });
+test('plan turns an exact source identity into PR-ready owners, ports and consumers',async t=>{
+  const {root,service}=await fixture(t,{source:'export const changed={id:"producer"};'});
+  const result=await service.execute('plan',{changed:['logic.mjs']});
+  assert.equal(result.ok,true);
+  assert.match(result.result.markdown,/node::producer/);
+  assert.match(result.result.markdown,/port::producer.out/);
+  assert.match(result.result.markdown,/node::consumer/);
+  assert.match(result.result.markdown,/owner not declared|unknown/);
+  const cli=await main(['plan',root,'--changed','logic.mjs'],{cwd:root,stdout:{write:s=>{assert.match(s,/node::consumer/);}}});
+  assert.equal(cli,0);
+});
 test('headless product selection refuses ambiguity and accepts an exact workspace key', async t => {
   const { projects } = await fixture(t, { two: true });
   assert.throws(() => selectProject(projects), e => e.code === 'project.ambiguous');

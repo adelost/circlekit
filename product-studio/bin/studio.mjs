@@ -40,7 +40,7 @@ export async function main(args = process.argv.slice(2), { cwd = process.cwd(), 
     v['amux-root']??=await installedAmuxRoot(cwd);
     if (SEMANTIC_COMMANDS.has(command)) {
       const response = await executeSemanticCli(parsed, { cwd });
-      stdout.write(formatJson(response, v.pretty));
+      stdout.write(command === 'plan' && response.ok ? response.result.markdown : formatJson(response, v.pretty));
       return response.ok ? 0 : 1;
     }
     const evaluateContract = v['amux-root'] ? await (await import('../lib/documentation.mjs')).loadContractEvaluator(path.resolve(cwd,v['amux-root'])) : undefined;

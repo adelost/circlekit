@@ -19,6 +19,11 @@ test('the documented check command uses the shared contracts path', () => {
   assert.equal(parsed.command,'contracts');
   assert.equal(parsed.values.product,'skyvw');
 });
+test('plan accepts bounded changed entities and source files',()=>{
+  const p=parseCli(['plan','/repo','--changed','node-type::logbook.tags','--changed','appspec/products/skyvw/jumps/logbook-data.ts']);
+  assert.deepEqual(p.repeated.changed,['node-type::logbook.tags','appspec/products/skyvw/jumps/logbook-data.ts']);
+  assert.throws(()=>parseCli(['plan','/repo']),e=>e.code==='cli.usage');
+});
 test('explicit workspace export is selected as a write command', () => {
   const parsed=parseCli(['export','--product','skyvw-web-logbook']);
   assert.equal(parsed.command,'export');

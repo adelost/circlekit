@@ -3,7 +3,7 @@ import { open, stat } from 'node:fs/promises';
 import { constants } from 'node:fs';
 import { boundedJson, plain, requireThat, StudioError } from './util.mjs';
 
-export const SEMANTIC_COMMANDS = new Set(['inspect', 'query', 'source', 'simulate', 'scenario', 'trace']);
+export const SEMANTIC_COMMANDS = new Set(['inspect', 'query', 'source', 'simulate', 'scenario', 'trace', 'plan']);
 const COMMON = ['workspace', 'product', 'examples', 'pretty', 'expect-model', 'amux-root'];
 const SPEC = {
   serve: ['workspace', 'port', 'data-dir', 'allow-git-drafts', 'amux-root'],
@@ -13,6 +13,7 @@ const SPEC = {
   bundle: ['root', 'product', 'compiler-version', 'product-id', 'source-revision', 'facet', 'source', 'output', 'amux-root'],
   inspect: [...COMMON, 'entity', 'search', 'fields', 'max', 'offset'],
   query: [...COMMON, 'kind', 'from', 'to', 'purposes'],
+  plan: [...COMMON, 'changed'],
   source: [...COMMON, 'entity'],
   simulate: [...COMMON, 'facet', 'input'],
   scenario: [...COMMON, 'facet', 'file'],
@@ -31,6 +32,7 @@ export const HELP = `Product Studio
   v1d-studio inspect [repository] [--product ID] [--entity KEY | --search TEXT]
   v1d-studio query [repository] --kind upstream|downstream|consumers|owner|impact|path
                    --from KEY [--to KEY] [--purposes data,demand,context]
+  v1d-studio plan [repository] [--product ID] --changed ENTITY_OR_SOURCE...
   v1d-studio source [repository] --entity KEY
   v1d-studio simulate [repository] --facet ID --input '{"facts":{...}}'
   v1d-studio simulate [repository] --facet ID --input @step.json
@@ -71,8 +73,8 @@ export function parseCli(args) {
   if(tokens[0]==='check')tokens[0]='contracts';
   if (tokens.includes('--help') || tokens.includes('-h') || tokens[0] === 'help') return { help: true };
   const command = Object.hasOwn(SPEC, tokens[0]) ? tokens.shift() : 'serve';
-  const values = Object.create(null), repeated = { workspace: [], facet: [], source: [], 'allow-git-drafts': [] }, positional = [];
-  const repeatable = new Set(['workspace', ...(command === 'bundle' ? ['facet', 'source'] : []), ...(command === 'serve' ? ['allow-git-drafts'] : [])]);
+  const values = Object.create(null), repeated = { workspace: [], facet: [], source: [], changed: [], 'allow-git-drafts': [] }, positional = [];
+  const repeatable = new Set(['workspace', ...(command === 'bundle' ? ['facet', 'source'] : []), ...(command === 'plan' ? ['changed'] : []), ...(command === 'serve' ? ['allow-git-drafts'] : [])]);
   let optionsEnded = false;
   for (let i = 0; i < tokens.length; i++) {
     const token = tokens[i];
@@ -94,6 +96,8 @@ export function parseCli(args) {
   requireThat(positional.length <= 1, 'cli.usage', 'Use one positional repository and --workspace for additional roots.');
   requireThat(repeated.workspace.length <= 15 && repeated.facet.length <= 100 && repeated.source.length <= 256,
     'cli.usage', 'Too many repeated inputs.');
+  if (command === 'plan') requireThat(repeated.changed.length >= 1 && repeated.changed.length <= 32,
+    'cli.usage', 'Use --changed 1..32 times with exact entity keys or source files.');
   for (const key of REQUIRED[command] ?? []) requireThat(values[key] !== undefined, 'cli.usage', `Missing --${key} for ${command}.`);
   const integer = (name, min, max) => {
     if (values[name] === undefined) return;
@@ -155,7 +159,7 @@ export async function executeSemanticCli(parsed, { cwd = process.cwd() } = {}) {
   const service = new SemanticStudio(session.workbench, chosen.key, { expectModel: v['expect-model'] });
   const options = { entity: v.entity, search: v.search, fields: v.fields, max: v.max, offset: v.offset,
     kind: v.kind, from: v.from, to: v.to, purposes: v.purposes, facetId: v.facet,
-    cursor: v.cursor, operationId: v.operation };
+    cursor: v.cursor, operationId: v.operation, changed: repeated.changed };
   if (command === 'simulate') {
     options.input = v.input.startsWith('@') ? await readJsonInputFile(v.input.slice(1), cwd) : boundedJson(v.input);
     requireThat(plain(options.input), 'input.shape', 'Simulation input must be a JSON object.');
