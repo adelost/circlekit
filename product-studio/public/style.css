@@ -30,3 +30,4 @@
 #mobile-view{display:none}
 @media(max-width:680px){.topbar nav button[data-view]{display:none}.topbar nav #mobile-view{display:block;width:100%;height:38px}}
 .reports-table{table-layout:fixed;width:100%}.reports-table th:first-child{width:84px}.reports-table th:last-child{width:155px}.reports-table td,.reports-table th{white-space:normal}.reports-table td{padding:8px 10px;vertical-align:top;overflow-wrap:anywhere}.reports-table small{display:block;white-space:normal;overflow-wrap:anywhere}.reports-table details{margin-top:4px}.reports-table summary{font-size:11px;color:var(--muted)}
+.convergence{border-color:currentColor}.convergence:hover{filter:brightness(1.18)}

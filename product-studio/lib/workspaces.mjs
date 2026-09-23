@@ -12,6 +12,7 @@ import { architectureOf, architectureSlice, queryArchitecture, entityKey } from 
 import { locateEntities } from './provenance.mjs';
 import { checkSourceIdentity, compatibilityReport } from './inspection.mjs';
 import { decodeTrace, inspectTrace, traceEventIndex } from './trace.mjs';
+import { convergenceFor } from './convergence.mjs';
 import { kernel, KERNEL_VERSION, TOOL_VERSIONS } from './kernel.mjs';
 import { loadProductKernel } from './product-kernel.mjs';
 import { analyzeSource } from './source.mjs';
@@ -205,7 +206,11 @@ export class Workbench {
     // Captures are overlays; they must never invalidate model/provenance indexes.
     return p.trace || p.evidence ? Object.freeze({ ...snapshot, trace: p.trace, evidence: p.evidence }) : snapshot;
   }
-  summary(p) { return summarizeView(this.view(p)); }
+  summary(p) { return { ...summarizeView(this.view(p)), convergence: this.convergence(p) }; }
+  convergence(p) {
+    const view = this.view(p);
+    return convergenceFor(view, logic => this.compareTraceLogic(p, view, logic));
+  }
   sourceText(request) {
     const { view } = this.checkedView(request);
     const source = view.sources.find(s => s.path === request.file);
@@ -272,24 +277,22 @@ export class Workbench {
     const { p, view } = this.checkedView(request);
     requireThat(p.trace, 'trace.missing', 'Import a compatible trace first.');
     const frame = inspectTrace(p.trace, request.filter);
-    const logic = frame.current?.logic;
-    if (logic) {
-      const f = view.facets.find(f => f.id === logic.facetId);
-      if (!f || f.runnable === false) frame.logicCheck = { kind: 'unavailable', message: 'A matching runnable logic facet is not available.' };
-      else {
-        try {
-          const result = evaluateFacet(f, { state: logic.from, input: logic.input, guards: logic.guards, facts: logic.facts },p.kernel);
-          const hasOutcome = result.kind === 'decision'
-            ? Object.hasOwn(logic, 'cellId') && Object.hasOwn(logic, 'values')
-            : Object.hasOwn(logic, 'cellId') && Object.hasOwn(logic, 'to');
-          const same = result.kind === 'decision' ? result.cell === logic.cellId && canonicalJson(result.values) === canonicalJson(logic.values)
-            : result.kind === 'transition' && result.cellId === logic.cellId && result.to === logic.to;
-          frame.logicCheck = { kind: result.kind === 'needs-facts' || !hasOutcome ? 'unknown' : same ? 'consistent' : 'different', result,
-            message: hasOutcome ? 'Comparison to this model, not authentication of the recorded event.' : 'Recorded outcome is incomplete; no agreement or contradiction is asserted.' };
-        } catch (error) { frame.logicCheck = { kind: 'unavailable', message: error.message }; }
-      }
-    }
+    if (frame.current?.logic) frame.logicCheck = this.compareTraceLogic(p, view, frame.current.logic);
     return frame;
+  }
+  compareTraceLogic(p, view, logic) {
+    const f = view.facets.find(f => f.id === logic.facetId);
+    if (!f || f.runnable === false) return { kind: 'unavailable', message: 'A matching runnable logic facet is not available.' };
+    try {
+      const result = evaluateFacet(f, { state: logic.from, input: logic.input, guards: logic.guards, facts: logic.facts },p.kernel);
+      const hasOutcome = result.kind === 'decision'
+        ? Object.hasOwn(logic, 'cellId') && Object.hasOwn(logic, 'values')
+        : Object.hasOwn(logic, 'cellId') && Object.hasOwn(logic, 'to');
+      const same = result.kind === 'decision' ? result.cell === logic.cellId && canonicalJson(result.values) === canonicalJson(logic.values)
+        : result.kind === 'transition' && result.cellId === logic.cellId && result.to === logic.to;
+      return { kind: result.kind === 'needs-facts' || !hasOutcome ? 'unknown' : same ? 'consistent' : 'different', result,
+        message: hasOutcome ? 'Comparison to this model, not authentication of the recorded event.' : 'Recorded outcome is incomplete; no agreement or contradiction is asserted.' };
+    } catch (error) { return { kind: 'unavailable', message: error.message }; }
   }
   evaluate(request) { const { p, facet } = this.getFacet(request.project, request.facetId, request.bundleDigest); return evaluateFacet(facet, request,p.kernel); }
   table(request) { const { p, facet } = this.getFacet(request.project, request.facetId, request.bundleDigest); return enumerateTable(facet,p.kernel); }

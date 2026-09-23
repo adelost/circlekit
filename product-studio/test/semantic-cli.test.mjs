@@ -53,6 +53,15 @@ async function invoke(args, cwd) {
   const code = await main(args, { cwd, stdout: { write: text => { stdout += text; } } });
   return { code, body: JSON.parse(stdout), stdout };
 }
+test('converge keeps the JSON envelope and exits 2 when no evidence exists', async t => {
+  const { root } = await fixture(t);
+  const response = await invoke(['converge', root], root);
+  assert.equal(response.code, 2);
+  assert.equal(response.body.command, 'converge');
+  assert.equal(response.body.result.verdict, 'Unknown');
+  assert.equal(response.body.ok, false);
+  assert.equal(response.body.error.code, 'convergence.unknown');
+});
 async function fileSnapshot(root, prefix = '') {
   const files = {};
   for (const item of await readdir(path.join(root, prefix), { withFileTypes: true })) {
