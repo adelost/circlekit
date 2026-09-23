@@ -2,7 +2,7 @@
 
 Product Studio makes software architecture executable and inspectable. It connects declared intent, compiled structure, test evidence and observed runtime behavior without treating them as the same thing.
 
-## Start with a bundled example
+## Start
 
 Requires Node 22 or later and this package's locked dependencies.
 
