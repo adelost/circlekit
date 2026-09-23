@@ -25,6 +25,14 @@
     "./observation": {
       "types": "./dist/src/observation.d.ts",
       "import": "./dist/src/observation.js"
+    },
+    "./browser": {
+      "types": "./dist/src/browser-observation.d.ts",
+      "import": "./dist/src/browser-observation.js"
+    },
+    "./vite": {
+      "types": "./dist/src/vite-plugin.d.ts",
+      "import": "./dist/src/vite-plugin.js"
     }
   },
   "bin": {

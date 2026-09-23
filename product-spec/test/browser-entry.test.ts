@@ -17,5 +17,6 @@ test('the ProductSpec root does not reach a Node builtin',async()=>{
   }
   await walk(new URL('../src/index.js',import.meta.url));
   await walk(new URL('../src/observed.js',import.meta.url));
+  await walk(new URL('../src/browser-observation.js',import.meta.url));
   assert.ok(visited.size>10,'the check must traverse the actual root graph');
 });

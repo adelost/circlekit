@@ -10,6 +10,12 @@ const MAX_EVENT = 8_192;
 const TICKET_MS = 120_000;
 const RECONNECT_MS = 8 * 60 * 60_000;
 const RETAINED_BYTES = 32_000_000;
+const localBrowserOrigin = value => {
+  if(typeof value!=='string')return false;
+  try { const url=new URL(value);return url.origin===value && url.protocol==='http:'
+    && ['127.0.0.1','localhost'].includes(url.hostname) && url.port!==''; }
+  catch{return false;}
+};
 const onlyKeys = (value, keys, code) => requireThat(plain(value)
   && Object.keys(value).every(key => keys.includes(key)), code, 'Unexpected runtime protocol field.');
 
@@ -31,14 +37,16 @@ export class LiveSessionHub {
   }
 
   issueTicket(request) {
-    onlyKeys(request,['project','producer'],'live.ticket');
-    const {project,producer}=request;
-    requireThat(['native','node'].includes(producer), 'live.producer', 'Choose native or node for this local capture.');
+    onlyKeys(request,['project','producer','origin'],'live.ticket');
+    const {project,producer,origin}=request;
+    requireThat(['native','node','browser'].includes(producer), 'live.producer', 'Choose native, node or browser for this local capture.');
+    requireThat(producer==='browser'?localBrowserOrigin(origin):origin===undefined,
+      'live.origin','Browser pairing needs one exact local http Origin; native and Node omit it.');
     this.app.require(project);
     for(const [key,claim] of this.tickets) if(claim.expires <= this.now())this.tickets.delete(key);
     requireThat(this.tickets.size < 32, 'live.overloaded', 'Too many pending tickets. Wait for expiry or restart Studio.');
     const ticket = randomBytes(32).toString('base64url');
-    this.tickets.set(digest(ticket), { project, producer, expires:this.now()+TICKET_MS });
+    this.tickets.set(digest(ticket), { project, producer, origin:origin??null, expires:this.now()+TICKET_MS });
     return { ticket, expiresInMs:TICKET_MS };
   }
 
@@ -49,7 +57,8 @@ export class LiveSessionHub {
     let route = null;
     try { route = new URL(request.url,'http://127.0.0.1'); } catch {}
     if (!local || request.headers.host !== `127.0.0.1:${request.socket.localPort}`
-      || request.headers.origin || request.headers.cookie || route?.pathname !== '/runtime/v1' || route.search
+      || (request.headers.origin && !localBrowserOrigin(request.headers.origin))
+      || request.headers.cookie || route?.pathname !== '/runtime/v1' || route.search
       || request.headers['sec-websocket-protocol'] !== PROTOCOL
       || this.pending.size >= 4 || this.active.size >= 4 || limited) {
       socket.write(`HTTP/1.1 ${limited?'429 Too Many Requests':'403 Forbidden'}\r\nConnection: close\r\n\r\n`);socket.destroy();return;
@@ -57,7 +66,7 @@ export class LiveSessionHub {
     this.ws.handleUpgrade(request,socket,head,client=>this.ws.emit('connection',client,request));
   }
 
-  credential(message) {
+  credential(message, origin) {
     const hasTicket = typeof message.ticket === 'string';
     const hasReconnect = typeof message.reconnectCredential === 'string';
     requireThat(hasTicket !== hasReconnect, 'live.pairing-required', 'Provide one current pairing ticket.');
@@ -66,15 +75,17 @@ export class LiveSessionHub {
     const claim = source.get(key);
     requireThat(claim, 'live.pairing-required', 'Pair this producer from the local Studio session.');
     requireThat(claim.expires > this.now(), 'live.ticket-expired', 'Pairing expired. Create a new one.');
+    requireThat(claim.producer==='browser'?origin===claim.origin:origin===null,
+      'live.origin','This ticket belongs to a different local page or producer. Pair that exact Origin.');
     source.delete(key); // One use, including a producer with the wrong model.
     return claim;
   }
 
-  hello(message, socket) {
+  hello(message, socket, origin) {
     onlyKeys(message,['type','protocol','ticket','reconnectCredential','productId','identity',
       'productSpecVersion','captureId','buildId','scope'],'live.hello');
     requireThat(message.type === 'hello' && message.protocol === 1, 'live.protocol-version', 'Use runtime protocol v1.');
-    const claim = this.credential(message);
+    const claim = this.credential(message,origin);
     const p = this.app.require(claim.project), view = this.app.view(p);
     onlyKeys(message.identity,['modelDigest','artifactSha256'],'live.identity');
     const keys = Object.keys(message.identity);
@@ -105,7 +116,7 @@ export class LiveSessionHub {
     const writer = createLiveTraceRecorder(view,{id:message.captureId,scope:message.scope,buildId:message.buildId});
     const reconnectCredential = randomBytes(32).toString('base64url');
     this.reconnects.set(digest(reconnectCredential),{
-      project:p.key,producer:claim.producer,expires:this.now()+RECONNECT_MS,
+      project:p.key,producer:claim.producer,origin:claim.origin,expires:this.now()+RECONNECT_MS,
     });
     const session={ socket,p,view,writer,id:message.captureId,scope:message.scope,through:-1,ended:false };
     session.bytes=Buffer.byteLength(JSON.stringify(writer.snapshot()));
@@ -167,7 +178,7 @@ export class LiveSessionHub {
       try {
         const message=boundedJson(bytes.toString(),MAX_MESSAGE);
         if (!session) {
-          const accepted=this.hello(message,socket);session=accepted.session;
+          const accepted=this.hello(message,socket,request.headers.origin??null);session=accepted.session;
           this.pending.delete(socket);clearTimeout(deadline);send(accepted.welcome);return;
         }
         requireThat(message.type==='batch'||message.type==='end','live.operation','Only batch or end is supported.');
