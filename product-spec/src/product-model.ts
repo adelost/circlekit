@@ -51,7 +51,7 @@ import {
 } from "./visual-model.js";
 import { refuseDuplication } from "./duplication-model.js";
 import { frozen } from "./frozen.js";
-import { compileScenes, type CompiledScene, type Scene } from "./scene-model.js";
+import { compileScenes, requireSceneLayerSourcesReachInputs, type CompiledScene, type Scene } from "./scene-model.js";
 
 export const PRODUCT_SPEC_SCHEMA_VERSION = 9 as const;
 
@@ -351,6 +351,7 @@ export function defineProduct<
     components: declaration.components,
     mountedScopes,
   });
+  requireSceneLayerSourcesReachInputs(declaration.scenes ?? [], graph.components, graph.nodes, graph.nodeTypes);
   requireFacetOwners(declaration.machines ?? [], declaration.decisionTables ?? [], graph.nodeTypes);
   // D1 of the duplication law: two declarations that already say the same thing never reach the IR.
   // D2, the merge candidates, is a warning and is read from the compiled product, not thrown here.
