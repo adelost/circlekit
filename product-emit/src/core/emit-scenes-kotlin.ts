@@ -1,5 +1,6 @@
 import {
   RENDERER_STYLES,
+  SCENE_PASSES,
   type CompiledScene,
   type ProductEmitterPlugin,
   type ProductIr,
@@ -23,6 +24,7 @@ export function emitScenesKotlin(
   const prefix = kotlinIdentifier(options.symbolPrefix);
   const sceneName = `Generated${prefix}Scenes`;
   const layerIdEnum = `Generated${prefix}SceneLayerId`;
+  const passEnum = `Generated${prefix}ScenePass`;
   const layers = scenes.flatMap((scene) => scene.layers);
   const renderers = unique(layers.map(({ renderer }) => renderer));
   const sources = uniqueBy(layers.map(({ source }) => source), ({ kind, id }) => `${kind}:${id}`);
@@ -56,6 +58,7 @@ export function emitScenesKotlin(
   const sourceTokens = enumRows(sourceEnumRows.map(({ tokenKey }) => tokenKey), `source in ${sceneName}`);
   const cameraTokens = enumRows(cameras, `camera in ${sceneName}`);
   const actionTokens = enumRows(actions, `action in ${sceneName}`);
+  const passTokens = enumRows(SCENE_PASSES, `pass in ${sceneName}`);
   const layerIdTokens = enumRows(layerIdRows.map(({ tokenKey }) => tokenKey), `layer id in ${sceneName}`);
   const styleTokens = new Map<RendererKind, ReadonlyMap<string, string>>();
   for (const [renderer, values] of styleValues) {
@@ -75,6 +78,7 @@ import ${options.nativeScenePackage}.GeneratedSceneAction
 import ${options.nativeScenePackage}.GeneratedSceneCamera
 import ${options.nativeScenePackage}.GeneratedSceneLayer
 import ${options.nativeScenePackage}.GeneratedSceneRenderer
+import ${options.nativeScenePackage}.GeneratedScenePass
 import ${options.nativeScenePackage}.GeneratedSceneSource
 import ${options.nativeScenePackage}.GeneratedSceneStyle
 import ${sceneLayerIdPackage}.GeneratedSceneLayerId
@@ -84,10 +88,11 @@ ${emitIdEnum(`${sceneName}Renderer`, "GeneratedSceneRenderer", renderers, render
 ${emitIdEnum(`${sceneName}Source`, "GeneratedSceneSource", sourceEnumRows, sourceTokens)}
 ${emitIdEnum(`${sceneName}Camera`, "GeneratedSceneCamera", cameras, cameraTokens)}
 ${actions.length === 0 ? "" : emitIdEnum(`${sceneName}Action`, "GeneratedSceneAction", actions, actionTokens)}
+${emitIdEnum(passEnum, "GeneratedScenePass", SCENE_PASSES, passTokens)}
 ${[...styleValues].map(([renderer, values]) => emitStyleEnum(sceneName, renderer, values, styleTokens.get(renderer)!)).join("\n\n")}
 ${emitIdEnum(layerIdEnum, "GeneratedSceneLayerId", layerIdRows, layerIdTokens)}
 object ${sceneName} {
-${scenes.map((scene) => emitScene(scene, sceneName, layerIdEnum, sceneTokens, rendererTokens, sourceTokenByRef, layerIdTokenByRef, cameraTokens, actionTokens, styleTokens)).join("\n\n")}
+${scenes.map((scene) => emitScene(scene, sceneName, layerIdEnum, passEnum, sceneTokens, rendererTokens, sourceTokenByRef, layerIdTokenByRef, cameraTokens, actionTokens, passTokens, styleTokens)).join("\n\n")}
 
     val all: List<GeneratedScene> = listOf(${scenes.map(({ id }) => `${sceneName}.${sceneTokens.get(id)}`).join(", ")})
 }
@@ -139,12 +144,14 @@ function emitScene(
   scene: CompiledScene,
   sceneName: string,
   layerIdEnum: string,
+  passEnum: string,
   sceneTokens: ReadonlyMap<string, string>,
   rendererTokens: ReadonlyMap<string, string>,
   sourceTokens: ReadonlyMap<string, string>,
   layerIdTokens: ReadonlyMap<string, string>,
   cameraTokens: ReadonlyMap<string, string>,
   actionTokens: ReadonlyMap<string, string>,
+  passTokens: ReadonlyMap<string, string>,
   styleTokens: ReadonlyMap<RendererKind, ReadonlyMap<string, string>>,
 ): string {
   const layers = scene.layers.map((layer) => {
@@ -155,7 +162,9 @@ function emitScene(
     if (!layerId || !renderer || !style || !source) throw new Error(`scene '${scene.id}' layer '${layer.id}' has an incomplete generated enum mapping`);
     const cameras = layer.cameras === undefined ? "" : `, cameras = listOf(${layer.cameras.map((camera) => `${sceneName}Camera.${cameraTokens.get(camera)}`).join(", ")})`;
     const toggle = layer.toggle === undefined ? "" : `, toggle = GeneratedSceneLayerToggle(${layer.toggle.group === undefined ? "" : `group = ${kotlinStringLiteral(layer.toggle.group)}, `}default = ${layer.toggle.default})`;
-    return `GeneratedSceneLayer(id = ${layerIdEnum}.${layerId}, renderer = ${sceneName}Renderer.${renderer}, style = ${sceneName}${kotlinIdentifier(layer.renderer)}Style.${style}, source = ${sceneName}Source.${source}${cameras}${toggle})`;
+    const pass = passTokens.get(layer.pass);
+    if (!pass) throw new Error(`scene '${scene.id}' layer '${layer.id}' has unknown pass '${layer.pass}'`);
+    return `GeneratedSceneLayer(id = ${layerIdEnum}.${layerId}, renderer = ${sceneName}Renderer.${renderer}, style = ${sceneName}${kotlinIdentifier(layer.renderer)}Style.${style}, source = ${sceneName}Source.${source}${cameras}${toggle}, pass = ${passEnum}.${pass})`;
   });
   const actions = scene.actions.map((action) => `${sceneName}Action.${actionTokens.get(action)}`);
   const cameras = scene.cameras.map((camera) => `${sceneName}Camera.${cameraTokens.get(camera)}`);
