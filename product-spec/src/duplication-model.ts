@@ -74,6 +74,8 @@ export function patternFor(kinds: readonly EffectKind[]): string {
 }
 
 const sortedUnique = (values: Iterable<string>): string[] => [...new Set(values)].sort();
+/** A declaration that says why it keeps its own shape has answered the law and is never refused. */
+const answered = (nodeType: ProductNodeType): boolean => nodeType.distinct === undefined;
 const at = (site: string | undefined): string => site ?? "source unknown";
 
 function group<T>(items: Iterable<T>, keyOf: (item: T) => string | null): Map<string, T[]> {
@@ -93,10 +95,16 @@ function finding<Case extends string>(
   ids: readonly string[],
   site: string,
   sentence: string,
+  resolution?: string,
 ): DuplicationFinding<Case> {
   const named = sortedUnique(ids);
-  return { key: `${kind}:${named.join(",")}`, case: kind, ids: named, site, message: `${sentence} [${site}]` };
+  const how = resolution === undefined ? "" : ` ${resolution}`;
+  return { key: `${kind}:${named.join(",")}`, case: kind, ids: named, site, message: `${sentence}.${how} [${site}]` };
 }
+
+/** What the author does next, written into the message so nobody has to read the kit to find out. */
+const mergeOrDeclare = (what: string, others: readonly string[]): string =>
+  `Merge this ${what} with ${others.join(" or ")}, or write distinct: "<why>" on its declaration`;
 
 /** Every contract the node types and component types name, by id, so a contract is compared once. */
 function contractsOf(
@@ -120,13 +128,14 @@ function contractsOf(
 
 /** D1: two node types that do the same thing to the world, under the same context. */
 function sameEffectsAndContext(nodeTypes: readonly ProductNodeType[]): DuplicationFinding<IdenticalCase>[] {
-  const groups = group(nodeTypes, (nodeType) => nodeType.runtime.effects.length === 0 ? null
+  const groups = group(nodeTypes.filter(answered), (nodeType) => nodeType.runtime.effects.length === 0 ? null
     : JSON.stringify([sortedUnique(nodeType.runtime.effects), sortedUnique(nodeType.runtime.contextInputs)]));
   return [...groups.values()].filter((members) => members.length > 1).map((members) => {
     const ids = sortedUnique(members.map(({ id }) => id));
     const effects = sortedUnique(members[0]!.runtime.effects).join(", ");
     return finding("same-effects-and-context", ids, at(declaredSite(members[0]!)),
-      `${members.length} node types declare the effects ${effects} under the same context: ${ids.join(", ")}`);
+      `${members.length} node types declare the effects ${effects} under the same context: ${ids.join(", ")}`,
+      mergeOrDeclare("node type", ids.slice(1)));
   });
 }
 
@@ -144,13 +153,14 @@ function identicalContracts(
   componentTypes: readonly ComponentType[],
 ): DuplicationFinding<IdenticalCase>[] {
   const groups = group(contractsOf(nodeTypes, componentTypes).values(), ({ contract }) =>
-    contract.fields.length === 0 || isCompilerBuilt(contract) ? null
+    contract.fields.length === 0 || isCompilerBuilt(contract) || contract.distinct !== undefined ? null
       : JSON.stringify([contract.kind, contract.boundary, fieldShape(contract)]));
   return [...groups.values()].filter((members) => members.length > 1).map((members) => {
     const ids = sortedUnique(members.map(({ contract }) => contract.id));
     const names = members[0]!.contract.fields.map(({ name }) => name);
     return finding("identical-contracts", ids, members[0]!.site,
-      `${members.length} contracts declare the fields ${names.join(", ")}: ${ids.join(", ")}`);
+      `${members.length} contracts declare the fields ${names.join(", ")}: ${ids.join(", ")}`,
+      mergeOrDeclare("contract", ids.slice(1)));
   });
 }
 
@@ -169,10 +179,12 @@ const mirrors = (nodeType: ProductNodeType): boolean =>
  */
 function passThrough(nodeTypes: readonly ProductNodeType[]): DuplicationFinding<IdenticalCase>[] {
   return nodeTypes
-    .filter((nodeType) => nodeType.kind === "derive" && mirrors(nodeType))
+    .filter((nodeType) => answered(nodeType) && nodeType.kind === "derive" && mirrors(nodeType))
     .map((nodeType) => finding("pass-through", [nodeType.id], at(declaredSite(nodeType)),
       `derive '${nodeType.id}' answers with the contract it was given, '${nodeType.outputs[0]!.contract.id}', `
-      + "so it computes nothing the binding could not carry"));
+      + "so it computes nothing the binding could not carry",
+      `Bind '${nodeType.inputs[0]!.contract.id}' straight to the consumer and delete this derive, `
+      + 'or write distinct: "<why>" on its declaration'));
 }
 
 /**
@@ -182,19 +194,21 @@ function passThrough(nodeTypes: readonly ProductNodeType[]): DuplicationFinding<
  */
 function relay(nodeTypes: readonly ProductNodeType[], passed: ReadonlySet<string>): DuplicationFinding<IdenticalCase>[] {
   return nodeTypes
-    .filter((nodeType) => nodeType.kind !== "present"
+    .filter((nodeType) => answered(nodeType) && nodeType.kind !== "present"
       && !passed.has(nodeType.id) && nodeType.inputs.length > 0 && nodeType.outputs.length > 0
       && nodeType.outputs.every((output) => nodeType.inputs.some((input) => input.contract.id === output.contract.id)))
     .map((nodeType) => finding("relay", [nodeType.id], at(declaredSite(nodeType)),
       `${nodeType.kind} '${nodeType.id}' forwards every output contract straight from its inputs `
-      + `(${sortedUnique(nodeType.outputs.map((output) => output.contract.id)).join(", ")})`));
+      + `(${sortedUnique(nodeType.outputs.map((output) => output.contract.id)).join(", ")})`,
+      "Bind its source straight to the consumer and delete this node, "
+      + 'or write distinct: "<why>" on its declaration'));
 }
 
 /** D1: durable state with two writers has no single owner, whatever each writer is called. */
 function manyWriters(nodeTypes: readonly ProductNodeType[]): DuplicationFinding<IdenticalCase>[] {
   const writers = new Map<string, ProductNodeType[]>();
   for (const nodeType of nodeTypes) {
-    if (nodeType.runtime.durability !== "durable") continue;
+    if (!answered(nodeType) || nodeType.runtime.durability !== "durable") continue;
     for (const effect of nodeType.runtime.effects) {
       const bucket = writers.get(effect);
       if (bucket) bucket.push(nodeType);
@@ -206,7 +220,9 @@ function manyWriters(nodeTypes: readonly ProductNodeType[]): DuplicationFinding<
     .map(([effect, owners]) => {
       const ids = sortedUnique(owners.map(({ id }) => id));
       return finding("many-writers", [effect, ...ids], at(declaredSite(owners[0]!)),
-        `durable effect '${effect}' has ${ids.length} writers: ${ids.join(", ")}`);
+        `durable effect '${effect}' has ${ids.length} writers: ${ids.join(", ")}`,
+        `Give '${effect}' one owner and let the others ask it, `
+        + 'or write distinct: "<why>" on the declarations that keep it');
     });
 }
 
