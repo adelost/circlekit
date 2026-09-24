@@ -45,18 +45,6 @@ registers with the handle its lane hands out, and `require()` throws off the
 lane only when the product's debug expression is true. `fulfilment()` lists, per
 lane, its isolation and ordering, what Android built and how fully.
 
-`sceneKotlinEmitter` writes each product's declared ordered scene layers as
-`Generated<Product>Scenes.kt`. Renderer, style, source and layer-id enums
-implement the platform's shared scene ABI. A layer enum value is emitted per
-declared layer so several layers can share one source while having separate
-provider keys. Camera alternatives and layer filters remain ordered data, and
-visibility toggle defaults/grouping are emitted unchanged. The generated file
-contains data only, not drawing or provider code. Each layer carries its
-declared `raster`, `world` or `upright` pass. Set `sceneRuntimePackage` to the
-shared package for `GeneratedScenePass`, `GeneratedSceneLayerId` and
-`GeneratedSceneLayerToggle`; it is required when the product declares scenes
-and unused by scene-free products.
-
 ## Reading the product as a graph
 
 `core` can draw any compiled product as two Mermaid files, generated from the
