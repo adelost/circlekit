@@ -18,9 +18,9 @@ export const RENDERER_STYLES = {
   tiles: ["raster", "vector", "dimmed"],
   volume: ["contour", "base", "veil"],
   windMark: ["arrow", "gauge", "station", "altitude"],
-  path: ["live", "saved", "drift", "aircraft"],
+  path: ["live", "saved", "drift", "cutaway-drift", "aircraft"],
   marker: ["home", "aircraft", "station", "pile", "you", "cutaway", "point"],
-  ring: ["distance", "accuracy", "coverage", "cache"],
+  ring: ["distance", "landing", "accuracy", "coverage", "cache"],
   tag: ["place", "height", "wind", "station", "altitude", "distance", "aircraft", "status"],
 } as const;
 
