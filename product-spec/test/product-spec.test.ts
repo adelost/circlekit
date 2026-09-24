@@ -2374,13 +2374,62 @@ function sceneFixture(scenes: readonly Scene[], overrides: Record<string, unknow
   return fixture({ ...overrides, scenes });
 }
 
+test("E13 camera lists are non-empty and unique", () => {
+  const spec = (cameras: readonly string[]) => ({ frame: "standard", inputs: [], outputs: [], cameras, actions: [], layers: [] });
+  assert.throws(() => scene("scene.empty-cameras", spec([]) as never), /scene 'scene\.empty-cameras' cameras must be a non-empty list/u);
+  assert.throws(() => scene("scene.duplicate-cameras", spec(["geo", "geo"]) as never), /duplicate camera in scene 'scene\.duplicate-cameras'/u);
+});
+
+test("E13 multiple cameras require the camera action", () => {
+  assert.throws(() => scene("scene.multiple-cameras", {
+    frame: "standard", inputs: [], outputs: [], cameras: ["iso", "geo"], actions: [], layers: [],
+  } as never), /scene 'scene\.multiple-cameras' with multiple cameras requires action 'camera'/u);
+});
+
+test("E13 camera action requires multiple cameras", () => {
+  assert.throws(() => scene("scene.one-camera-action", {
+    frame: "standard", inputs: [], outputs: [], cameras: ["geo"], actions: ["camera"], layers: [],
+  } as never), /scene 'scene\.one-camera-action' action 'camera' requires multiple cameras/u);
+});
+
+test("E13 layer cameras must be a subset of scene cameras", () => {
+  assert.throws(() => scene("scene.camera-subset", {
+    frame: "standard", inputs: [], outputs: [], cameras: ["iso"], actions: [], layers: [
+      layer("scene.outside-camera", { source: sceneFetch, renderer: "tiles", style: "raster", cameras: ["geo"] } as never),
+    ],
+  } as never), /layer 'scene\.outside-camera' names camera 'geo' outside scene 'scene\.camera-subset'/u);
+});
+
+test("E14 visibility toggle groups need two layers and exactly one default", () => {
+  const row = (id: string, isDefault: boolean) => layer(id, {
+    source: sceneFetch, renderer: "tiles", style: "raster", toggle: { group: "ground", default: isDefault },
+  } as never);
+  assert.throws(() => scene("scene.small-toggle-group", {
+    frame: "standard", inputs: [], outputs: [], cameras: ["geo"], actions: ["layers"], layers: [row("scene.only-ground", true)],
+  } as never), /scene 'scene\.small-toggle-group' toggle group 'ground' needs at least two layers/u);
+  assert.throws(() => scene("scene.no-toggle-default", {
+    frame: "standard", inputs: [], outputs: [], cameras: ["geo"], actions: ["layers"], layers: [row("scene.ground-a", false), row("scene.ground-b", false)],
+  } as never), /scene 'scene\.no-toggle-default' toggle group 'ground' needs exactly one default layer/u);
+  assert.throws(() => scene("scene.two-toggle-defaults", {
+    frame: "standard", inputs: [], outputs: [], cameras: ["geo"], actions: ["layers"], layers: [row("scene.ground-a", true), row("scene.ground-b", true)],
+  } as never), /scene 'scene\.two-toggle-defaults' toggle group 'ground' needs exactly one default layer/u);
+});
+
+test("E14 any visibility toggle requires the layers action", () => {
+  assert.throws(() => scene("scene.toggle-without-action", {
+    frame: "standard", inputs: [], outputs: [], cameras: ["geo"], actions: [], layers: [
+      layer("scene.toggle", { source: sceneFetch, renderer: "tiles", style: "raster", toggle: { default: true } } as never),
+    ],
+  } as never), /scene 'scene\.toggle-without-action' has a layer visibility toggle and requires action 'layers'/u);
+});
+
 test("E7 refuses a fetch service whose owner is not upstream of any scene input", () => {
   const unrelatedFetch = fetchService({ ...sceneFetch, id: "fixture.unrelated-feed",
     service: "fixture.unreachable-service", effectIds: ["fixture.navigation"] });
   const declared = scene(basePageHostType.id, {
     frame: "standard", requiredCapabilities: basePageHostType.requiredCapabilities,
     inputs: basePageHostType.inputs, outputs: basePageHostType.outputs,
-    camera: "geo", actions: [], layers: [
+    cameras: ["geo"], actions: [], layers: [
       layer("scene.unrelated-feed", { source: unrelatedFetch, renderer: "tiles", style: "raster" }),
     ],
   });
@@ -2391,7 +2440,7 @@ test("E7 refuses a fetch service whose owner is not upstream of any scene input"
 
 test("scene law 1 refuses a scene-local chrome component type", () => {
   const declared = scene("scene.fixture.scene", {
-    frame: "standard", inputs: [], outputs: [], camera: "geo", actions: [], layers: [],
+    frame: "standard", inputs: [], outputs: [], cameras: ["geo"], actions: [], layers: [],
   });
   for (const child of ["header", "phone-controls", "title"]) {
     const type = defineComponentType({ id: `scene.fixture.${child}`, inputs: [], outputs: [] });
@@ -2420,7 +2469,7 @@ test("scene law 3 refuses network node outputs and names unresolved node outputs
     ...baseDeclaration.nodes[0], id: producer.id, nodeTypeRef: networkSource.id,
     config: {}, bindings: {}, activation: { kind: "lifetime", lifecycleSources: [] },
   };
-  const networkScene = scene("scene.network", { frame: "standard", inputs: [], outputs: [], camera: "geo", actions: [], layers: [
+  const networkScene = scene("scene.network", { frame: "standard", inputs: [], outputs: [], cameras: ["geo"], actions: [], layers: [
     layer("scene.network.layer", { source: reference, renderer: "tag", style: "status" }),
   ] });
   assert.throws(() => sceneFixture([networkScene], {
@@ -2428,7 +2477,7 @@ test("scene law 3 refuses network node outputs and names unresolved node outputs
   }), /layer 'scene\.network\.layer' reads network output 'network\.scene-source\.status' directly; declare a fetchService and use it as the source.*product-spec\.test\.ts:\d+/u);
 
   const unresolved = { ref: "missing.scene-node.output", contract: internalContract.id, purpose: "data" };
-  const unresolvedScene = scene("scene.unresolved", { frame: "standard", inputs: [], outputs: [], camera: "geo", actions: [], layers: [
+  const unresolvedScene = scene("scene.unresolved", { frame: "standard", inputs: [], outputs: [], cameras: ["geo"], actions: [], layers: [
     layer("scene.unresolved.layer", { source: unresolved as never, renderer: "tag", style: "status" }),
   ] });
   assert.throws(() => sceneFixture([unresolvedScene]), /scene\.unresolved\.layer.*unresolved node output 'missing\.scene-node\.output'/u);
@@ -2442,7 +2491,7 @@ test("scene law 4 allows one source to feed the same renderer in different style
   const distinctStyles = scene(basePageHostType.id, {
     frame: "standard", requiredCapabilities: basePageHostType.requiredCapabilities,
     inputs: basePageHostType.inputs, outputs: basePageHostType.outputs,
-    camera: "geo", actions: [], layers: [
+    cameras: ["geo"], actions: [], layers: [
     layer("scene.multiple-styles.status", { source: reference, derive: sceneDerive, renderer: "tag", style: "status" }),
     layer("scene.multiple-styles.aircraft", { source: reference, derive: sceneDerive, renderer: "tag", style: "aircraft" }),
   ] });
@@ -2453,7 +2502,7 @@ test("scene law 4 allows one source to feed the same renderer in different style
 
 test("scene law 4 refuses identical source, derive, renderer and style", () => {
   const reference = nodeOutput({ id: "navigation.service", type: baseNavigationService }, "activePage");
-  const repeated = scene("scene.duplicate", { frame: "standard", inputs: [], outputs: [], camera: "geo", actions: [], layers: [
+  const repeated = scene("scene.duplicate", { frame: "standard", inputs: [], outputs: [], cameras: ["geo"], actions: [], layers: [
     layer("scene.duplicate.first", { source: reference, derive: sceneDerive, renderer: "tag", style: "status" }),
     layer("scene.duplicate.second", { source: reference, derive: sceneDerive, renderer: "tag", style: "status" }),
   ] });
@@ -2468,24 +2517,25 @@ test("scene law 5 keeps component behavior and adds only scene metadata to Produ
     requiredCapabilities: basePageHostType.requiredCapabilities,
     inputs: basePageHostType.inputs,
     outputs: basePageHostType.outputs,
-    camera: "iso", actions: ["layers", "home"], layers: [
+    cameras: ["iso", "geo"], actions: ["layers", "home", "camera"], layers: [
       layer("scene.home.network", { source: sceneFetch, renderer: "tiles", style: "raster" }),
-      layer("scene.home.saved", { source: sceneStore, renderer: "path", style: "saved" }),
-      layer("scene.home.output", { source: reference, derive: sceneDerive, renderer: "tag", style: "status" }),
+      layer("scene.home.saved", { source: sceneStore, renderer: "path", style: "saved", cameras: ["iso"], toggle: { group: "ground", default: true } }),
+      layer("scene.home.output", { source: reference, derive: sceneDerive, renderer: "tag", style: "status", cameras: ["geo"], toggle: { group: "ground", default: false } }),
     ],
   });
   const product = sceneFixture([declared], {
     componentTypes: baseDeclaration.componentTypes.map((type) => type.id === basePageHostType.id ? declared : type),
   });
   const json = JSON.parse(productJsonEmitter("out/product.json").emit(product)[0]!.content) as {
-    scenes: { id: string; camera: string; actions: string[]; layers: {
+    scenes: { id: string; cameras: string[]; actions: string[]; layers: {
       id: string; renderer: string; style: string; source: { kind: string; id: string }; derive?: string;
+      cameras?: string[]; toggle?: { group?: string; default: boolean };
     }[] }[];
   };
-  assert.deepEqual(json.scenes, [{ id: basePageHostType.id, camera: "iso", actions: ["layers", "home"], layers: [
+  assert.deepEqual(json.scenes, [{ id: basePageHostType.id, cameras: ["iso", "geo"], actions: ["layers", "home", "camera"], layers: [
     { id: "scene.home.network", renderer: "tiles", style: "raster", source: { kind: "fetch", id: "fixture.scene-fetch" } },
-    { id: "scene.home.saved", renderer: "path", style: "saved", source: { kind: "store", id: "fixture.scene-store" } },
-    { id: "scene.home.output", renderer: "tag", style: "status", source: { kind: "node", id: "navigation.service.activePage" }, derive: "fixture.scene-derive" },
+    { id: "scene.home.saved", renderer: "path", style: "saved", source: { kind: "store", id: "fixture.scene-store" }, cameras: ["iso"], toggle: { group: "ground", default: true } },
+    { id: "scene.home.output", renderer: "tag", style: "status", source: { kind: "node", id: "navigation.service.activePage" }, derive: "fixture.scene-derive", cameras: ["geo"], toggle: { group: "ground", default: false } },
   ] }]);
   const sceneComponentType = product.componentTypes.find(({ id }) => id === declared.id);
   assert.ok(sceneComponentType);
@@ -2493,7 +2543,7 @@ test("scene law 5 keeps component behavior and adds only scene metadata to Produ
   assert.deepEqual(sceneComponentType.outputs, basePageHostType.outputs);
   const outputScene = scene("scene.output-port", {
     frame: "standard", inputs: [], outputs: [componentPort("action", actionContract, { required: false })],
-    camera: "geo", actions: [], layers: [],
+    cameras: ["geo"], actions: [], layers: [],
   });
   assert.deepEqual(outputScene.outputs.map(({ id, required }) => [id, required]), [["action", false]]);
 });

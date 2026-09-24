@@ -27,6 +27,10 @@ export const RENDERER_STYLES = {
 export type RendererKind = keyof typeof RENDERER_STYLES;
 export type SceneCamera = "iso" | "replay" | "geo";
 export type SceneAction = "time" | "layers" | "refresh" | "home" | "camera";
+export interface SceneLayerToggle {
+  readonly group?: string;
+  readonly default: boolean;
+}
 export type SceneSource = FetchService | StoreService | NodeOutputRef<string, string, string>;
 export type RendererStyle<K extends RendererKind> = (typeof RENDERER_STYLES)[K][number];
 export type SceneDerive = ProductNodeType & { readonly kind: "derive" };
@@ -36,6 +40,9 @@ export interface LayerSpec<K extends RendererKind = RendererKind> {
   readonly derive?: SceneDerive;
   readonly renderer: K;
   readonly style: (typeof RENDERER_STYLES)[K][number];
+  /** Draw only in these scene cameras; absent means all cameras. */
+  readonly cameras?: readonly SceneCamera[];
+  readonly toggle?: SceneLayerToggle;
 }
 
 export interface Layer<Id extends string = string, K extends RendererKind = RendererKind> {
@@ -44,11 +51,14 @@ export interface Layer<Id extends string = string, K extends RendererKind = Rend
   readonly derive?: SceneDerive;
   readonly renderer: K;
   readonly style: RendererStyle<K>;
+  readonly cameras?: readonly SceneCamera[];
+  readonly toggle?: SceneLayerToggle;
 }
 
 export interface SceneSpec extends Omit<ComponentTypeDeclaration, "id"> {
   readonly frame: "standard";
-  readonly camera: SceneCamera;
+  /** Ordered projections. The first camera is the default. */
+  readonly cameras: readonly SceneCamera[];
   readonly layers: readonly Layer[];
   readonly actions: readonly SceneAction[];
 }
@@ -67,7 +77,7 @@ type AnySceneComponentDeclaration = Omit<ComponentTypeDeclaration, "requiredCapa
 
 export type Scene<Declaration extends ComponentTypeDeclaration = AnySceneComponentDeclaration> =
   NormalizedComponentType<Declaration> & {
-    readonly camera: SceneCamera;
+    readonly cameras: readonly SceneCamera[];
     readonly layers: readonly Layer[];
     readonly actions: readonly SceneAction[];
   };
@@ -78,11 +88,13 @@ export interface CompiledSceneLayer {
   readonly style: string;
   readonly source: { readonly kind: "fetch" | "store" | "node"; readonly id: string };
   readonly derive?: string;
+  readonly cameras?: readonly SceneCamera[];
+  readonly toggle?: SceneLayerToggle;
 }
 
 export interface CompiledScene {
   readonly id: string;
-  readonly camera: SceneCamera;
+  readonly cameras: readonly SceneCamera[];
   readonly actions: readonly SceneAction[];
   readonly layers: readonly CompiledSceneLayer[];
 }
@@ -107,12 +119,21 @@ export function layer<const Id extends string, const K extends RendererKind>(
       typeof spec.derive.id !== "string")) {
     throw new Error(`layer '${id}' derive must be a ProductNodeType with kind 'derive' [${site}]`);
   }
+  if (spec.cameras !== undefined && (!Array.isArray(spec.cameras) || spec.cameras.some((camera) => !isSceneCamera(camera)))) {
+    throw new Error(`layer '${id}' cameras must list known scene cameras [${site}]`);
+  }
+  if (spec.toggle !== undefined && (!isRecord(spec.toggle) || typeof spec.toggle.default !== "boolean" ||
+      (spec.toggle.group !== undefined && typeof spec.toggle.group !== "string"))) {
+    throw new Error(`layer '${id}' toggle must have a boolean default and an optional group [${site}]`);
+  }
   const result: Layer<Id, K> = {
     id,
     source: spec.source,
     ...(spec.derive === undefined ? {} : { derive: spec.derive }),
     renderer: spec.renderer,
     style: spec.style,
+    ...(spec.cameras === undefined ? {} : { cameras: spec.cameras }),
+    ...(spec.toggle === undefined ? {} : { toggle: spec.toggle }),
   };
   rememberDeclarationSite(result, site);
   return frozen(result);
@@ -125,12 +146,48 @@ export function scene<const Id extends string, const Spec extends SceneSpec>(
   requireWireId(id, "scene");
   const site = declarationSite(scene);
   if (spec?.frame !== "standard") throw new Error(`scene '${id}' needs frame: "standard" [${site}]`);
-  if (!isSceneCamera(spec.camera)) throw new Error(`scene '${id}' has unknown camera '${String(spec.camera)}' [${site}]`);
+  if (!Array.isArray(spec.cameras) || spec.cameras.length === 0) {
+    throw new Error(`scene '${id}' cameras must be a non-empty list [${site}]`);
+  }
+  for (const camera of spec.cameras) {
+    if (!isSceneCamera(camera)) throw new Error(`scene '${id}' has unknown camera '${String(camera)}' [${site}]`);
+  }
+  requireUnique(spec.cameras, `camera in scene '${id}'`);
   if (!Array.isArray(spec.layers)) throw new Error(`scene '${id}' needs layers [${site}]`);
   if (!Array.isArray(spec.actions) || spec.actions.some((action) => !isSceneAction(action))) {
     throw new Error(`scene '${id}' has an unknown action [${site}]`);
   }
   requireUnique(spec.actions, `action in scene '${id}'`);
+  if (spec.cameras.length > 1 && !spec.actions.includes("camera")) {
+    throw new Error(`scene '${id}' with multiple cameras requires action 'camera' [${site}]`);
+  }
+  if (spec.actions.includes("camera") && spec.cameras.length < 2) {
+    throw new Error(`scene '${id}' action 'camera' requires multiple cameras [${site}]`);
+  }
+  const sceneCameras = new Set(spec.cameras);
+  const toggleGroups = new Map<string, Layer[]>();
+  for (const item of spec.layers) {
+    for (const camera of item.cameras ?? []) {
+      if (!sceneCameras.has(camera)) {
+        throw new Error(`layer '${item.id}' names camera '${camera}' outside scene '${id}' [${declaredSite(item) ?? site}]`);
+      }
+    }
+    if (item.toggle === undefined) continue;
+    if (!spec.actions.includes("layers")) {
+      throw new Error(`scene '${id}' has a layer visibility toggle and requires action 'layers' [${declaredSite(item) ?? site}]`);
+    }
+    if (item.toggle.group !== undefined) {
+      const group = toggleGroups.get(item.toggle.group) ?? [];
+      group.push(item);
+      toggleGroups.set(item.toggle.group, group);
+    }
+  }
+  for (const [group, items] of toggleGroups) {
+    if (items.length < 2) throw new Error(`scene '${id}' toggle group '${group}' needs at least two layers [${site}]`);
+    if (items.filter(({ toggle }) => toggle?.default === true).length !== 1) {
+      throw new Error(`scene '${id}' toggle group '${group}' needs exactly one default layer [${site}]`);
+    }
+  }
   const componentType = defineComponentType({
     id,
     inputs: spec.inputs,
@@ -139,7 +196,7 @@ export function scene<const Id extends string, const Spec extends SceneSpec>(
   } as const);
   const result = {
     ...componentType,
-    camera: spec.camera,
+    cameras: spec.cameras,
     layers: spec.layers,
     actions: spec.actions,
   } as unknown as Scene<SceneComponentDeclaration<Id, Spec>>;
@@ -193,9 +250,11 @@ export function compileScenes(
         style: item.style,
         source: { kind, id: sourceId },
         ...(item.derive === undefined ? {} : { derive: item.derive.id }),
+        ...(item.cameras === undefined ? {} : { cameras: item.cameras }),
+        ...(item.toggle === undefined ? {} : { toggle: item.toggle }),
       };
     });
-    return { id: declared.id, camera: declared.camera, actions: declared.actions, layers };
+    return { id: declared.id, cameras: declared.cameras, actions: declared.actions, layers };
   });
   return { scenes: compiled };
 }
