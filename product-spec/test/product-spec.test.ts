@@ -1514,6 +1514,34 @@ test("navigation mutation rejects a guard absent from the typed navigation-servi
   }), /guard 'fixture.missing-guard' must bind exactly one navigation service input/);
 });
 
+test("a guard may be derived from what a reader already reported", () => {
+  // The duplication law refuses two readers of one channel, so a guard that is a fact ABOUT a read is
+  // a derive from it. Effect-free truth is still typed truth, so navigation takes it. A present cannot
+  // reach here at all: its outputs must be presentation contracts and a guard is service-internal.
+  const derivedGuard = derive({
+    id: "fixture.derived-guard",
+    inputs: [port("source", internalContract)],
+    outputs: [port("allowed", sessionGuardContract)],
+    runtime: {
+      stateOwner: "none", lifetime: "call", durability: "transient",
+      clockDomain: "none", contextInputs: [], effects: [],
+    },
+  } as const);
+  const withDerivedGuard = navigationFixture({
+    nodeTypes: navigationProductDeclaration.nodeTypes
+      .filter((nodeType) => nodeType.id !== guardService.id)
+      .concat([derivedGuard] as never),
+    nodes: navigationProductDeclaration.nodes
+      .filter((node) => node.id !== "guard.service")
+      .concat([{
+        id: "guard.service", nodeTypeRef: derivedGuard.id, config: {},
+        bindings: { source: "domain.source.status" },
+      }] as never),
+  });
+  assert.equal(withDerivedGuard.nodes.find(({ id }) => id === "guard.service")?.nodeTypeRef,
+    "fixture.derived-guard");
+});
+
 test("schema5 native navigation registration conforms exactly", () => {
   assert.deepEqual(navigationConformance(
     navigationFixture().navigation,
