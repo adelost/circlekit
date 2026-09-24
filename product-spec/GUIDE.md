@@ -92,6 +92,12 @@ preferences require commit. A platform binds that guarantee to its own atomic
 file or preferences owner, or refuses an unsupported durability. The codec's
 domain bytes stay native. `storeCatalog` refuses two owners of one effect.
 
+`defineEffect({ id, input, receipt })` describes one outside-world write. Its
+service-internal input and receipt both carry nonnullable `operationId` and
+`inputSha256`; the kit fixes the outcomes to CONFIRMED, FAILED and UNKNOWN,
+retry to the same identity, and UNKNOWN to remain visible. Runtime owners freeze
+the bytes before sending and use their existing outbox; the kit executes nothing.
+
 ## 4. The four questions
 
 1. **I want to add or change a fact** (a cell, a hint, a feed, a ride): open the thing's file under the product's `appspec/products/<name>/`, change the fact, run the product's generate. If the build refuses, the message names the law and the fix. Never add a Kotlin branch instead.
