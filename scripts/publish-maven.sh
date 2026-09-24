@@ -18,7 +18,7 @@ MIRROR="${CIRCLEKIT_PAGES_MIRROR:-$HOME/.circlekit/pages-mirror}"
 FULL_FETCH=false
 if [[ "$MODE" == --full ]]; then FULL_FETCH=true; MODE=""; fi
 if [[ "${3:-}" == --full ]]; then FULL_FETCH=true; fi
-MODULES=(bddkit designkit renderkit ringkit releasekit releasekit-ui servicekit)
+MODULES=(bddkit designkit renderkit ringkit releasekit releasekit-ui servicekit studio-debug-android)
 EXTENSIONS=(aar pom module)
 CHECKSUM_SUFFIXES=("" .md5 .sha1 .sha256 .sha512)
 NPM_PACKAGES=(
@@ -262,7 +262,8 @@ if [[ "$AXIS" == maven ]]; then
     :ringkit:publishReleasePublicationToCirclekitRepository \
     :releasekit:publishReleasePublicationToCirclekitRepository \
     :releasekit-ui:publishReleasePublicationToCirclekitRepository \
-    :servicekit:publishReleasePublicationToCirclekitRepository
+    :servicekit:publishReleasePublicationToCirclekitRepository \
+    :studio-debug-android:publishReleasePublicationToCirclekitRepository
 else
   echo "$PUBLISHER: ProductSpec axis; Gradle/AAR publication skipped"
 fi

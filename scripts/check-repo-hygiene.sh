@@ -44,7 +44,7 @@ DAY = 86400
 CHECKS = ["merged-branch", "unreferenced-plan", "unreferenced-root-md", "missing-doc-path", "closed-ledger-row", "stale-worktree"]
 NAMED_BY_CONVENTION = {"README.md", "AGENTS.md", "CLAUDE.md"}
 # Skyvw's docs name CircleKit's modules and CircleKit's docs name Skyvw's; a root this repo does not have is the other's to check.
-SIBLING_ROOTS = {"product-spec", "product-emit", "designkit", "ringkit", "renderkit", "servicekit", "releasekit", "releasekit-ui",
+SIBLING_ROOTS = {"product-spec", "product-emit", "designkit", "ringkit", "renderkit", "servicekit", "studio-debug-android", "releasekit", "releasekit-ui",
                  "bddkit", "circlekit-assets", "skydiving-legos", "appspec", "app", "jumpcore", "skyvwui"}
 CLOSED_STATE = re.compile(r"\b(?:CLOSED|RELEASED|SUPERSEDED|DROPPED|STRUKEN|DONE|MERGED)\b")
 ISO_DATE = re.compile(r"\b(20\d\d-\d\d-\d\d)\b")

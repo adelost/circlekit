@@ -29,6 +29,7 @@ include(
     ":releasekit",
     ":releasekit-ui",
     ":servicekit",
+    ":studio-debug-android",
     ":showcase-catalog",
     ":showcase-phone",
     ":showcase-wear",
