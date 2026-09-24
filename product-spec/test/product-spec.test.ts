@@ -2456,6 +2456,12 @@ test("scene law 2 names the renderer's supported styles and requires catalogued 
   } as never), /layer 'fixture\.bad-style' style 'not-a-tag-style' is not a tag style; use one of place, height, wind, station, altitude, distance, aircraft, status, or add it to RENDERER_STYLES\.tag.*product-spec\.test\.ts:\d+/u);
 });
 
+test("E17 refuses an unknown layer drawing pass at declaration", () => {
+  assert.throws(() => layer("scene.unknown-pass", {
+    source: sceneStore, renderer: "path", style: "drift", pass: "screen" as never,
+  } as never), /layer 'scene\.unknown-pass' has unknown pass 'screen'; use one of raster, world, upright/u);
+});
+
 test("scene law 3 refuses network node outputs and names unresolved node outputs", () => {
   const networkSource = service({
     ...source,
@@ -2518,8 +2524,8 @@ test("scene law 5 keeps component behavior and adds only scene metadata to Produ
     inputs: basePageHostType.inputs,
     outputs: basePageHostType.outputs,
     cameras: ["iso", "geo"], actions: ["layers", "home", "camera"], layers: [
-      layer("scene.home.network", { source: sceneFetch, renderer: "tiles", style: "raster" }),
-      layer("scene.home.saved", { source: sceneStore, renderer: "path", style: "saved", cameras: ["iso"], toggle: { group: "ground", default: true } }),
+      layer("scene.home.network", { source: sceneFetch, renderer: "tiles", style: "raster", pass: "raster" } as never),
+      layer("scene.home.saved", { source: sceneStore, renderer: "path", style: "saved", pass: "world", cameras: ["iso"], toggle: { group: "ground", default: true } } as never),
       layer("scene.home.output", { source: reference, derive: sceneDerive, renderer: "tag", style: "status", cameras: ["geo"], toggle: { group: "ground", default: false } }),
     ],
   });
@@ -2528,14 +2534,14 @@ test("scene law 5 keeps component behavior and adds only scene metadata to Produ
   });
   const json = JSON.parse(productJsonEmitter("out/product.json").emit(product)[0]!.content) as {
     scenes: { id: string; cameras: string[]; actions: string[]; layers: {
-      id: string; renderer: string; style: string; source: { kind: string; id: string }; derive?: string;
+      id: string; renderer: string; style: string; source: { kind: string; id: string }; derive?: string; pass: string;
       cameras?: string[]; toggle?: { group?: string; default: boolean };
     }[] }[];
   };
   assert.deepEqual(json.scenes, [{ id: basePageHostType.id, cameras: ["iso", "geo"], actions: ["layers", "home", "camera"], layers: [
-    { id: "scene.home.network", renderer: "tiles", style: "raster", source: { kind: "fetch", id: "fixture.scene-fetch" } },
-    { id: "scene.home.saved", renderer: "path", style: "saved", source: { kind: "store", id: "fixture.scene-store" }, cameras: ["iso"], toggle: { group: "ground", default: true } },
-    { id: "scene.home.output", renderer: "tag", style: "status", source: { kind: "node", id: "navigation.service.activePage" }, derive: "fixture.scene-derive", cameras: ["geo"], toggle: { group: "ground", default: false } },
+    { id: "scene.home.network", renderer: "tiles", style: "raster", source: { kind: "fetch", id: "fixture.scene-fetch" }, pass: "raster" },
+    { id: "scene.home.saved", renderer: "path", style: "saved", source: { kind: "store", id: "fixture.scene-store" }, cameras: ["iso"], toggle: { group: "ground", default: true }, pass: "world" },
+    { id: "scene.home.output", renderer: "tag", style: "status", source: { kind: "node", id: "navigation.service.activePage" }, derive: "fixture.scene-derive", cameras: ["geo"], toggle: { group: "ground", default: false }, pass: "world" },
   ] }]);
   const sceneComponentType = product.componentTypes.find(({ id }) => id === declared.id);
   assert.ok(sceneComponentType);

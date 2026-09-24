@@ -27,6 +27,8 @@ export const RENDERER_STYLES = {
 export type RendererKind = keyof typeof RENDERER_STYLES;
 export type SceneCamera = "iso" | "replay" | "geo";
 export type SceneAction = "time" | "layers" | "refresh" | "home" | "camera";
+export const SCENE_PASSES = ["raster", "world", "upright"] as const;
+export type ScenePass = (typeof SCENE_PASSES)[number];
 export interface SceneLayerToggle {
   readonly group?: string;
   readonly default: boolean;
@@ -43,6 +45,7 @@ export interface LayerSpec<K extends RendererKind = RendererKind> {
   /** Draw only in these scene cameras; absent means all cameras. */
   readonly cameras?: readonly SceneCamera[];
   readonly toggle?: SceneLayerToggle;
+  readonly pass?: ScenePass;
 }
 
 export interface Layer<Id extends string = string, K extends RendererKind = RendererKind> {
@@ -53,6 +56,7 @@ export interface Layer<Id extends string = string, K extends RendererKind = Rend
   readonly style: RendererStyle<K>;
   readonly cameras?: readonly SceneCamera[];
   readonly toggle?: SceneLayerToggle;
+  readonly pass: ScenePass;
 }
 
 export interface SceneSpec extends Omit<ComponentTypeDeclaration, "id"> {
@@ -90,6 +94,7 @@ export interface CompiledSceneLayer {
   readonly derive?: string;
   readonly cameras?: readonly SceneCamera[];
   readonly toggle?: SceneLayerToggle;
+  readonly pass: ScenePass;
 }
 
 export interface CompiledScene {
@@ -126,6 +131,10 @@ export function layer<const Id extends string, const K extends RendererKind>(
       (spec.toggle.group !== undefined && typeof spec.toggle.group !== "string"))) {
     throw new Error(`layer '${id}' toggle must have a boolean default and an optional group [${site}]`);
   }
+  const pass = spec.pass === undefined ? "world" : spec.pass;
+  if (!(SCENE_PASSES as readonly string[]).includes(pass as string)) {
+    throw new Error(`layer '${id}' has unknown pass '${String(pass)}'; use one of ${SCENE_PASSES.join(", ")} [${site}]`);
+  }
   const result: Layer<Id, K> = {
     id,
     source: spec.source,
@@ -134,6 +143,7 @@ export function layer<const Id extends string, const K extends RendererKind>(
     style: spec.style,
     ...(spec.cameras === undefined ? {} : { cameras: spec.cameras }),
     ...(spec.toggle === undefined ? {} : { toggle: spec.toggle }),
+    pass,
   };
   rememberDeclarationSite(result, site);
   return frozen(result);
@@ -252,6 +262,7 @@ export function compileScenes(
         ...(item.derive === undefined ? {} : { derive: item.derive.id }),
         ...(item.cameras === undefined ? {} : { cameras: item.cameras }),
         ...(item.toggle === undefined ? {} : { toggle: item.toggle }),
+        pass: item.pass,
       };
     });
     return { id: declared.id, cameras: declared.cameras, actions: declared.actions, layers };
