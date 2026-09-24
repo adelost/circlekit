@@ -9,6 +9,7 @@ Shared Android foundations used by Skyvw and Agentmux Link.
 - `releasekit`: update state, download, APK verification and install flow.
 - `releasekit-ui`: canonical ReleaseKit rows and a shared app-update screen/typed port for Phone and round Wear.
 - `servicekit`: bounded telemetry used by the shared modules.
+- `studio-debug-android`: bounded, permission-gated local Studio observation transport for debug apps only.
 - `product-spec`: product-neutral TypeScript authoring, validation and output
   manifests, published as the versioned `@v1d/product-spec` npm tarball.
   Start with `product-spec/GUIDE.md`: the model in one page, for agents and people.
@@ -51,7 +52,7 @@ implementation("io.v1d.circlekit:ringkit:X.Y.Z")
 
 The kits are the modules `scripts/publish-maven.sh` publishes: `bddkit/`,
 `designkit/`, `renderkit/`, `ringkit/`, `releasekit/`, `releasekit-ui/` and
-`servicekit/`, group `io.v1d.circlekit`. `ringkit` brings `designkit` and
+`servicekit/` and `studio-debug-android/`, group `io.v1d.circlekit`. `ringkit` brings `designkit` and
 `servicekit` with it.
 
 TypeScript, in the product's own package.json:

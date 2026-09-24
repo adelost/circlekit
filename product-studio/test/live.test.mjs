@@ -43,6 +43,13 @@ const hello=(secret,id,overrides={})=>({type:'hello',protocol:1,ticket:secret,pr
   identity:{modelDigest:view.modelDigest},productSpecVersion:view.toolVersions.productSpec,captureId:id,
   buildId:'focused-test',scope:{events:['transition','port'],facets:['example.request'],appliedTransitions:true},...overrides});
 
+test('a returned live port keeps its phase when mapped into the trace',()=>{
+  const raw={kind:'port',phase:'returned',portRef:'account.open',sequence:0,atMs:1};
+  const model={...view,architecture:{...view.architecture,
+    entities:[...view.architecture.entities,{key:'port::account.open'}]}};
+  assert.equal(eventFor(raw,model,{live:true}).phase,'returned');
+});
+
 test('A01 ordinary Studio has no live receiver or device action',async()=>{
   assert.equal(ordinary.live,null);
   assert.equal((await fetch(ordinary.origin+'/api/bootstrap').then(r=>r.json())).liveEnabled,false);
