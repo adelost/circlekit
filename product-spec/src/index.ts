@@ -2,6 +2,7 @@ export * from "./conformance-model.js";
 export * from "./contract-law-model.js";
 export * from "./component-tree-model.js";
 export * from "./decision-table-model.js";
+export * from "./effect-model.js";
 export * from "./family-model.js";
 export * from "./fetch-service-model.js";
 export * from "./invariant-model.js";
