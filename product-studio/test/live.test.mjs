@@ -7,6 +7,7 @@ import { WebSocket as NodeWebSocket } from 'ws';
 import { createServer } from '../server.mjs';
 import { decodeTrace } from '../lib/trace.mjs';
 import { eventFor } from '../lib/observation.mjs';
+import { entityKey } from '../lib/architecture.mjs';
 
 const root=await mkdtemp(path.join(os.tmpdir(),'studio-live-'));
 let now=10_000;
@@ -113,6 +114,12 @@ test('A23 an accepted empty capture is not positive behavioral evidence',async()
   const trace=running.live.snapshot('empty-capture');
   assert.equal(trace.events.length,0);assert.equal(trace.capture.through,-1);
   assert.equal(running.app.convergence(running.app.require(item.key)).verdict,'Unknown');socket.close();
+});
+test('a declared live port keeps its returned phase through the trace',async()=>{
+  const portRef='account.open', key=entityKey('port',portRef);
+  const event=eventFor({sequence:0,atMs:1,kind:'port',phase:'returned',portRef},
+    {architecture:{entities:[{key}]}},{live:true});
+  assert.equal(event.phase,'returned');
 });
 test('A24/A27 inconsistent coverage and unexpected raw fields are refused without advancing the capture',async()=>{
   const socket=await open();assert.equal((await reply(socket,hello(await ticket(),'invalid-batch'))).type,'welcome');
