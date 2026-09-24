@@ -169,6 +169,29 @@ The live boundary permits declared IDs, finite decision facts/results and boolea
 
 For one direct Node process, start Studio with `--live`, then run `v1d-studio live run --product ID -- node APP.mjs` from that product's root. The launcher compiles the selected identity from the product checkout using its installed kernel, compares it with the receiver, requests a one-time ticket, and starts the child only after those checks. The `v1d-observe` package condition captures existing `decide`, `step` and named port calls without editing their call sites. The ticket is never an environment value; the environment contains only a private file path. A completed short-lived Node process normally leaves an interrupted capture with its received prefix and unknown tail, not a false clean completion. `live run` refuses npm/shell wrappers so another process cannot consume the one-time ticket first.
 
+### Measured local overhead, incomplete A42
+
+These 2026-09-24 numbers are from this WSL host, not from a physical device. Each p95 is the elapsed time of one declared decision or bound port call, sampled in small batches. CPU is process CPU for Node, renderer task time for Chromium, and the measured test thread for Android, each as a percentage of one core over the entire paced run. The CPU columns are therefore not directly comparable. No backend request, UI navigation or physical sensor operation is included.
+
+| Platform and measured operation | Mode | Calls and pace | p95 ms/call | CPU, one core | Allocation evidence | Studio receipt |
+| --- | --- | ---: | ---: | ---: | --- | --- |
+| Node 22 on this WSL host, AMUX `contextCostDecision` | disabled | 2,000 at 100/s | 0.00387 | 0.202% | heap delta +450,216 B | no capture |
+| Node 22 on this WSL host, same decision | enabled, unpaired | 2,000 at 100/s | 0.00609 | 0.256% | heap delta +556,264 B | no capture |
+| Node 22 on this WSL host, same decision | connected | 2,000 at 100/s | 0.01064 | 0.656% | heap delta +388,048 B | 2,020 retained, 0 declared drops; interrupted tail |
+| Node 22 on this WSL host, same decision | receiver stopped before calls | 2,000 at 100/s | 0.00538 | 0.137% | heap delta +512,992 B | disconnected; no new receipt |
+| Chromium 144 in an isolated WSL profile, Trackbook dev `account.open` port | disabled bundle | 2,000 at 100/s | 0.00500* | 0.112% | heap delta +129,116 B | no capture |
+| Chromium 144 in an isolated WSL profile, same bound port | enabled, unpaired | 2,000 at 100/s | 0.00500* | 0.089% | heap delta +233,316 B | no capture |
+| Chromium 144 in an isolated WSL profile, same bound port | connected | 2,000 at 100/s | 0.00500* | 0.228% | heap delta +20,220 B | 2,020 retained, 0 declared drops |
+| Chromium 144 in an isolated WSL profile, same bound port | receiver stopped before calls | 2,000 at 100/s | 0.00500* | 0.092% | heap delta −603,960 B | `Disconnected: capture tail is unknown` |
+| Android Wear emulator on this host, SKYVW `power.window` decision | debug observer off | 2,000 at about 750/s | 0.00754 | 0.380% | thread allocated 816 B total | no capture |
+| Android Wear emulator on this host, same decision | debug bridge present, unpaired | 2,000 at about 750/s | 0.00396 | 0.355% | thread allocated 816 B total | no capture |
+| Android Wear emulator on this host, same decision | connected | 2,000 at about 700/s | 0.26897 | 6.515% | thread allocated 8,343,072 B total | 1,467 retained, 0 declared drops; interrupted tail, remainder unknown |
+| Android Wear emulator on this host, same decision | receiver stopped | not measured | unknown | unknown | unknown | second attached emulator triggered `live.device-count` |
+
+*Chromium rounded the 20-call batch to 0.1 ms; its 0.005 ms/call p95 cannot resolve a 5% difference. Node's connected p95 was about 175% above disabled for this tiny decision, exceeding the plan's 5% target. Android's off row is a debug build with no active observer, not a release build; its connected figure is an approximately 700/s synthetic upper-load probe, not normal physical usage, and also exceeds the target. `Debug.getThreadAllocSize` measures the test thread; Node and Chromium heap deltas are net retained changes, **not total allocation**, and can be negative after GC. Complete allocation accounting for those platforms and Android's stopped mode remain unverified. No zero-overhead or physical-device claim follows from this table.
+
+The declared producer limits are 2,047 queued events and 1 MB for Node and browser, with batches of at most 128 and 60 KB; Android permits 2,048 events and 1 MiB with batches of 32 and 32 KiB. These are source limits, not measured maxima. A separate browser stress run at about 2,000 calls/s produced 3,466 declared drops. A short capture's interrupted tail can hide unacknowledged events even when declared drops are zero.
+
 ## Exit and error contract
 
 | Situation | `ok` | Exit |
