@@ -51,7 +51,6 @@ import {
 } from "./visual-model.js";
 import { refuseDuplication } from "./duplication-model.js";
 import { frozen } from "./frozen.js";
-import { compileScenes, requireSceneLayerSourcesReachInputs, type CompiledScene, type Scene } from "./scene-model.js";
 import { compileProductActions, type CompiledProductActionDeclaration, type ProductAction } from "./action-model.js";
 
 export const PRODUCT_SPEC_SCHEMA_VERSION = 9 as const;
@@ -160,8 +159,6 @@ export interface ProductDeclaration<
   readonly machines?: readonly Machine[];
   /** Where the product's streams and services run, carried into the IR so the product graph can draw each lane. */
   readonly lanes?: Lanes;
-  /** Standard-frame visual compositions and their declared data layers. */
-  readonly scenes?: readonly Scene[];
   /** Direct, unit component-event to service-input declarations. */
   readonly actions?: readonly ProductAction[];
 }
@@ -192,8 +189,6 @@ export interface ProductIr {
   readonly machines?: readonly Machine[];
   /** Present only when the product declares lanes: the lanes as declared and every ride as an edge from rider to lane. */
   readonly lanes?: LanesIr;
-  /** Present only when the product declares scenes. */
-  readonly scenes?: readonly CompiledScene[];
   /** Present only when the product declares direct actions. */
   readonly actions?: readonly CompiledProductActionDeclaration[];
 }
@@ -239,14 +234,6 @@ export function defineProduct<
     declaration.navigation.routeIntentContract,
   ], libraryFiniteValues);
   validateVisuals(declaration, assetCatalog);
-  const scenes = compileScenes(declaration.scenes ?? [], declaration.nodes, declaration.nodeTypes, declaration.componentTypes);
-  for (const declaredScene of declaration.scenes ?? []) {
-    const registered = declaration.componentTypes.find(({ id }) => id === declaredScene.id);
-    if (registered !== declaredScene) {
-      throw new Error(`scene '${declaredScene.id}' must appear as its component type in componentTypes`);
-    }
-  }
-
   const renderers = new Map(declaration.rendererBindings.map((item) => [item.id, item]));
   for (const renderer of declaration.rendererBindings) {
     requireWireId(renderer.id, "renderer binding");
@@ -362,7 +349,6 @@ export function defineProduct<
     components: actionWiring.components,
     mountedScopes,
   });
-  requireSceneLayerSourcesReachInputs(declaration.scenes ?? [], graph.components, graph.nodes, graph.nodeTypes);
   requireFacetOwners(declaration.machines ?? [], declaration.decisionTables ?? [], graph.nodeTypes);
   // D1 of the duplication law: two declarations that already say the same thing never reach the IR.
   // D2, the merge candidates, is a warning and is read from the compiled product, not thrown here.
@@ -390,7 +376,7 @@ export function defineProduct<
     configs: graph.configs,
     finiteValues,
     stateAuthorities,
-    componentTypes: componentTypesWithoutSceneFields(graph.componentTypes, declaration.scenes ?? []),
+    componentTypes: graph.componentTypes,
     components: graph.components,
     componentFamilies: declaration.componentFamilies,
     artifactScopes,
@@ -402,21 +388,7 @@ export function defineProduct<
     ...decisionTablesIr(declaration.decisionTables ?? []),
     ...machinesIr(declaration.machines ?? []),
     ...lanesIr(declaration.lanes),
-    ...scenes,
     ...(actionWiring.actions.length === 0 ? {} : { actions: actionWiring.actions }),
-  });
-}
-
-function componentTypesWithoutSceneFields(
-  componentTypes: readonly ComponentType[],
-  scenes: readonly Scene[],
-): readonly ComponentType[] {
-  if (scenes.length === 0) return componentTypes;
-  const sceneIds = new Set(scenes.map(({ id }) => id));
-  return componentTypes.map((componentType) => {
-    if (!sceneIds.has(componentType.id)) return componentType;
-    const { id, requiredCapabilities, inputs, outputs } = componentType;
-    return { id, requiredCapabilities, inputs, outputs };
   });
 }
 
