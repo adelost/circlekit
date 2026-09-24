@@ -2558,6 +2558,10 @@ test("scene form and renderer styles are exported from the ProductSpec root", ()
   assert.equal(typeof layer, "function");
   assert.equal(typeof scene, "function");
   assert.deepEqual(RENDERER_STYLES.marker, ["home", "aircraft", "station", "pile", "you", "cutaway", "point"]);
+  assert.doesNotThrow(() => layer("scene.cutaway-drift", { source: sceneStore, renderer: "path", style: "cutaway-drift" } as never));
+  assert.doesNotThrow(() => layer("scene.landing-ring", { source: sceneStore, renderer: "ring", style: "landing" } as never));
+  assert.ok((RENDERER_STYLES.path as readonly string[]).includes("cutaway-drift"));
+  assert.ok((RENDERER_STYLES.ring as readonly string[]).includes("landing"));
   assert.deepEqual(RENDERER_STYLES.tag,
     ["place", "height", "wind", "station", "altitude", "distance", "aircraft", "status"]);
 });
