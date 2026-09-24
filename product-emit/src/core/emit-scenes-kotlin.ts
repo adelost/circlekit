@@ -26,7 +26,7 @@ export function emitScenesKotlin(
   const layers = scenes.flatMap((scene) => scene.layers);
   const renderers = unique(layers.map(({ renderer }) => renderer));
   const sources = uniqueBy(layers.map(({ source }) => source), ({ kind, id }) => `${kind}:${id}`);
-  const cameras = unique(scenes.map(({ camera }) => camera));
+  const cameras = unique(scenes.flatMap(({ cameras: sceneCameras }) => sceneCameras));
   const actions = unique(scenes.flatMap(({ actions }) => actions));
   const layerIdRows = scenes.flatMap((scene) => {
     const ids = new Set<string>();
@@ -78,6 +78,7 @@ import ${options.nativeScenePackage}.GeneratedSceneRenderer
 import ${options.nativeScenePackage}.GeneratedSceneSource
 import ${options.nativeScenePackage}.GeneratedSceneStyle
 import ${sceneLayerIdPackage}.GeneratedSceneLayerId
+import ${sceneLayerIdPackage}.GeneratedSceneLayerToggle
 
 ${emitIdEnum(`${sceneName}Renderer`, "GeneratedSceneRenderer", renderers, rendererTokens)}
 ${emitIdEnum(`${sceneName}Source`, "GeneratedSceneSource", sourceEnumRows, sourceTokens)}
@@ -152,12 +153,15 @@ function emitScene(
     const style = styleTokens.get(layer.renderer)?.get(layer.style);
     const source = sourceTokens.get(`${layer.source.kind}:${layer.source.id}`);
     if (!layerId || !renderer || !style || !source) throw new Error(`scene '${scene.id}' layer '${layer.id}' has an incomplete generated enum mapping`);
-    return `GeneratedSceneLayer(id = ${layerIdEnum}.${layerId}, renderer = ${sceneName}Renderer.${renderer}, style = ${sceneName}${kotlinIdentifier(layer.renderer)}Style.${style}, source = ${sceneName}Source.${source})`;
+    const cameras = layer.cameras === undefined ? "" : `, cameras = listOf(${layer.cameras.map((camera) => `${sceneName}Camera.${cameraTokens.get(camera)}`).join(", ")})`;
+    const toggle = layer.toggle === undefined ? "" : `, toggle = GeneratedSceneLayerToggle(${layer.toggle.group === undefined ? "" : `group = ${kotlinStringLiteral(layer.toggle.group)}, `}default = ${layer.toggle.default})`;
+    return `GeneratedSceneLayer(id = ${layerIdEnum}.${layerId}, renderer = ${sceneName}Renderer.${renderer}, style = ${sceneName}${kotlinIdentifier(layer.renderer)}Style.${style}, source = ${sceneName}Source.${source}${cameras}${toggle})`;
   });
   const actions = scene.actions.map((action) => `${sceneName}Action.${actionTokens.get(action)}`);
+  const cameras = scene.cameras.map((camera) => `${sceneName}Camera.${cameraTokens.get(camera)}`);
   return `    val ${sceneTokens.get(scene.id)}: GeneratedScene = GeneratedScene(
         id = ${kotlinStringLiteral(scene.id)},
-        camera = ${sceneName}Camera.${cameraTokens.get(scene.camera)},
+        cameras = listOf(${cameras.join(", ")}),
         actions = ${actions.length === 0 ? "emptyList()" : `listOf(${actions.join(", ")})`},
         layers = ${layers.length === 0 ? "emptyList()" : `listOf(\n${layers.map((row) => `            ${row},`).join("\n")}\n        )`},
     )`;

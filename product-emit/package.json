@@ -1,6 +1,6 @@
 {
   "name": "@v1d/product-emit",
-  "version": "0.1.52",
+  "version": "0.1.53",
   "description": "Typed Kotlin emission for v1d ProductSpec products",
   "type": "module",
   "files": [
@@ -35,7 +35,7 @@
   },
   "devDependencies": {
     "@types/node": "^24.3.0",
-    "@v1d/product-spec": "https://circlekit.pages.dev/npm/v1d/product-spec/0.3.83/v1d-product-spec-0.3.83.tgz",
+    "@v1d/product-spec": "https://circlekit.pages.dev/npm/v1d/product-spec/0.3.84/v1d-product-spec-0.3.84.tgz",
     "typescript": "^5.9.3",
     "xstate": "5.33.2"
   },
