@@ -51,6 +51,7 @@ import {
 } from "./visual-model.js";
 import { refuseDuplication } from "./duplication-model.js";
 import { frozen } from "./frozen.js";
+import { compileScenes, type CompiledScene, type Scene } from "./scene-model.js";
 
 export const PRODUCT_SPEC_SCHEMA_VERSION = 9 as const;
 
@@ -158,6 +159,8 @@ export interface ProductDeclaration<
   readonly machines?: readonly Machine[];
   /** Where the product's streams and services run, carried into the IR so the product graph can draw each lane. */
   readonly lanes?: Lanes;
+  /** Standard-frame visual compositions and their declared data layers. */
+  readonly scenes?: readonly Scene[];
 }
 
 export interface ProductIr {
@@ -186,6 +189,8 @@ export interface ProductIr {
   readonly machines?: readonly Machine[];
   /** Present only when the product declares lanes: the lanes as declared and every ride as an edge from rider to lane. */
   readonly lanes?: LanesIr;
+  /** Present only when the product declares scenes. */
+  readonly scenes?: readonly CompiledScene[];
 }
 
 export function defineProduct<
@@ -229,6 +234,7 @@ export function defineProduct<
     declaration.navigation.routeIntentContract,
   ], libraryFiniteValues);
   validateVisuals(declaration, assetCatalog);
+  const scenes = compileScenes(declaration.scenes ?? [], declaration.nodes, declaration.nodeTypes, declaration.componentTypes);
 
   const renderers = new Map(declaration.rendererBindings.map((item) => [item.id, item]));
   for (const renderer of declaration.rendererBindings) {
@@ -378,6 +384,7 @@ export function defineProduct<
     ...decisionTablesIr(declaration.decisionTables ?? []),
     ...machinesIr(declaration.machines ?? []),
     ...lanesIr(declaration.lanes),
+    ...scenes,
   });
 }
 

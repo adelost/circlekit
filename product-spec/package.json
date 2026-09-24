@@ -1,6 +1,6 @@
 {
   "name": "@v1d/product-spec",
-  "version": "0.3.80",
+  "version": "0.3.81",
   "description": "Product-neutral typed authoring and compiler core for v1d applications",
   "type": "module",
   "files": [
