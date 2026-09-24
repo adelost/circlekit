@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.pm.ApplicationInfo
 import android.os.SystemClock
 import android.system.Os
+import android.util.Log
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
@@ -204,6 +205,7 @@ internal class StudioObservationTransport(
 
     private fun fail(failure: Throwable) = fail(failure.javaClass.simpleName)
     private fun fail(reason: String) {
+        Log.w("StudioObservation", "Observation stopped: ${reason.take(80)}")
         detachObservers()
         accepted = false
         status(reason.take(80))
