@@ -9,7 +9,7 @@ const skydivingRoot = join(sourceRoot, "skydiving");
 
 const expectedCore = new Set([
   "capability-model", "compile-theme", "component-body-model", "component-copy-model", "declaration-ids", "decode-theme-registry",
-  "diagnostics", "emission-options", "emit-component-body-kotlin", "emit-component-copy-kotlin", "emit-decision-table-kotlin",
+  "diagnostics", "emission-options", "emit-actions-kotlin", "emit-component-body-kotlin", "emit-component-copy-kotlin", "emit-decision-table-kotlin",
   "emit-component-family-registry-kotlin", "emit-component-trees-kotlin",
   "emit-config-values-kotlin", "emit-domain-graph", "emit-lanes-kotlin", "emit-machine-kotlin", "emit-machine-mermaid", "emit-machine-stately", "emit-scenes-kotlin", "emit-studio-trace-kotlin",
   "emit-decision-table-swift", "emit-machine-swift", "swift-syntax",

@@ -9,6 +9,7 @@ export * from "./emission-options.js";
 export * from "./emit-component-body-kotlin.js";
 export * from "./emit-component-copy-kotlin.js";
 export * from "./emit-component-family-registry-kotlin.js";
+export * from "./emit-actions-kotlin.js";
 export * from "./emit-component-trees-kotlin.js";
 export * from "./emit-config-values-kotlin.js";
 export * from "./emit-decision-table-kotlin.js";
