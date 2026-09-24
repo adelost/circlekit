@@ -305,6 +305,27 @@ function fixture(overrides: Record<string, unknown> = {}) {
   return defineProduct(declaration as never, assetCatalog);
 }
 
+test("defineProduct refuses a component event bound to multiple node inputs", () => {
+  const eventSinkType = service({
+    id: "fixture.second-event-sink",
+    inputs: [port("event", actionContract)],
+    outputs: [],
+    runtime: {
+      stateOwner: "instance", lifetime: "instance", durability: "transient",
+      clockDomain: "none", contextInputs: [], effects: ["fixture.second-event-sink"],
+    },
+  } as const);
+  const eventSink = {
+    id: "event.sink", nodeTypeRef: eventSinkType.id, config: {},
+    bindings: { event: "control.main.activate" },
+    activation: { kind: "lifetime", lifecycleSources: [] },
+  } as const;
+  assert.throws(() => fixture({
+    nodeTypes: [...baseDeclaration.nodeTypes, eventSinkType],
+    nodes: [...baseDeclaration.nodes, eventSink],
+  }), /component event 'control\.main\.activate' is bound to more than one node input: 'ui\.controller\.trigger', 'event\.sink\.event'/u);
+});
+
 test("a product cannot copy a library contract id even with the identical schema", () => {
   const libraryContract = {
     ...internalContract,
