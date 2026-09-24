@@ -32,6 +32,10 @@ per axis in declared order. A branch that one cell covers returns that cell, so
 a region over several values is one line. The product names every axis enum and
 column argument, and writes record values itself; nothing is guessed.
 
+`actionKotlinEmitter` writes `Generated<Product>Actions.kt` for each declared
+ProductSpec action. It emits the Unit component-event and service-input objects
+from their declared port refs, plus the matching navigation registration.
+
 `emitLanesKotlin` writes a product-spec `defineLanes` declaration as one Android
 object. A dedicated lane is a HandlerThread named with the product's prefix and
 the lane, a shared lane a single-thread executor on a thread with that name,
