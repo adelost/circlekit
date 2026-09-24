@@ -1,15 +1,51 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {mkdtemp,rm} from 'node:fs/promises';
+import {mkdtemp,rm,writeFile} from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
-import { parseLiveConnectArgs, stageLiveAndroid } from '../lib/live-connect.mjs';
+import { parseLiveConnectArgs, resolveNativeProject, stageLiveAndroid } from '../lib/live-connect.mjs';
 import { createServer } from '../server.mjs';
 
 const serial='emulator-5554';
 const devices=`List of devices attached\n${serial} device product:wear\n`;
 const input={device:serial,port:17317,product:'skyvw'};
 const ticket='A'.repeat(43);
+const skyvwNative={product:'skyvw',packageName:'com.adelost.skydivealtimeter',
+  action:'com.adelost.skydivealtimeter.STUDIO_OBSERVE',install:['./gradlew',':app:installDebug']};
+const stage=(input,options)=>stageLiveAndroid(input,{resolveProject:async()=>skyvwNative,...options});
+
+test('live connect selects an explicit Link project instead of SKYVW',()=>{
+  assert.equal(parseLiveConnectArgs(['--device',serial,'--product','amux-link']).product,'amux-link');
+});
+
+test('native target comes from the workspace row and missing config fails by name',async t=>{
+  const root=await mkdtemp(path.join(os.tmpdir(),'studio-native-project-'));
+  t.after(()=>rm(root,{recursive:true,force:true}));
+  await writeFile(path.join(root,'studio.workspace.json'),JSON.stringify({version:2,projects:[
+    {id:'amux',label:'AMUX policies'},
+    {id:'amux-link',nativeLive:{package:'io.agentmux.audioinbox',
+      action:'io.agentmux.audioinbox.STUDIO_OBSERVE',install:['./gradlew',':wear:installDebug']}},
+  ]}));
+  const link=await resolveNativeProject(root,'amux-link');
+  assert.deepEqual(link,{product:'amux-link',packageName:'io.agentmux.audioinbox',
+    action:'io.agentmux.audioinbox.STUDIO_OBSERVE',install:['./gradlew',':wear:installDebug']});
+  assert.equal((await resolveNativeProject(root,null)).product,'amux-link');
+  await assert.rejects(resolveNativeProject(root,'amux'),error=>error.code==='live.native-config');
+});
+
+test('Link ticket and broadcast use only its selected package and action',async()=>{
+  const link={product:'amux-link',packageName:'io.agentmux.audioinbox',
+    action:'io.agentmux.audioinbox.STUDIO_OBSERVE',install:['./gradlew',':wear:installDebug']};
+  const fixture=fakeAdb();
+  const receipt=await stageLiveAndroid({device:serial,port:17317,product:'amux-link'}, {
+    adb:fixture.adb,cwd:'/repo',resolveProject:async()=>link,
+    issueTicket:async({product})=>{assert.equal(product,'amux-link');return ticket;},
+  });
+  assert.equal(receipt.package,link.packageName);
+  assert.ok(fixture.calls.some(call=>call.args.includes('run-as')&&call.args.includes(link.packageName)));
+  assert.ok(fixture.calls.some(call=>call.args.includes(link.action)));
+  assert.ok(fixture.calls.every(call=>!call.args.includes('com.adelost.skydivealtimeter')));
+});
 
 function fakeAdb({deviceList=devices,reverseList='',debug=true,failTicket=false,failStart=false,rebindOnFailure=false}={}) {
   const calls=[];let mapping=reverseList;
@@ -31,14 +67,14 @@ test('A34 requires an exact serial and never picks among multiple devices',async
   assert.throws(()=>parseLiveConnectArgs([]),error=>error.code==='live.device');
   assert.throws(()=>parseLiveConnectArgs(['--device','bad serial']),error=>error.code==='live.device');
   const fixture=fakeAdb({deviceList:devices+'USB-2 device product:phone\n'});
-  await assert.rejects(stageLiveAndroid(input,{adb:fixture.adb,issueTicket:async()=> 'secret',cwd:'/repo'}),
+  await assert.rejects(stage(input,{adb:fixture.adb,issueTicket:async()=> 'secret',cwd:'/repo'}),
     error=>error.code==='live.device-count');
   assert.equal(fixture.calls.length,1);
 });
 
 test('A34 refuses a pre-existing reverse mapping without obtaining a ticket',async()=>{
   const fixture=fakeAdb({reverseList:`${serial} tcp:17317 tcp:9999\n`});let tickets=0;
-  await assert.rejects(stageLiveAndroid(input,{adb:fixture.adb,issueTicket:async()=>{tickets++;return 'secret';},cwd:'/repo'}),
+  await assert.rejects(stage(input,{adb:fixture.adb,issueTicket:async()=>{tickets++;return 'secret';},cwd:'/repo'}),
     error=>error.code==='live.reverse-owned');
   assert.equal(tickets,0);
   assert.equal(fixture.calls.filter(call=>call.args.includes('--remove')).length,0);
@@ -46,15 +82,15 @@ test('A34 refuses a pre-existing reverse mapping without obtaining a ticket',asy
 
 test('non-debug app refuses before reverse or ticket and names the install command',async()=>{
   const fixture=fakeAdb({debug:false});let tickets=0;
-  await assert.rejects(stageLiveAndroid(input,{adb:fixture.adb,issueTicket:async()=>{tickets++;return 'secret';},cwd:'/repo'}),
-    error=>error.code==='live.debug-app'&&error.message.includes('ANDROID_SERIAL=emulator-5554 ./gradlew :app:installDebug'));
+  await assert.rejects(stage(input,{adb:fixture.adb,issueTicket:async()=>{tickets++;return 'secret';},cwd:'/repo'}),
+    error=>error.code==='live.debug-app'&&error.message.includes('com.adelost.skydivealtimeter')&&error.message.includes(':app:installDebug'));
   assert.equal(tickets,0);
   assert.equal(fixture.calls.filter(call=>call.args.includes('reverse')&&!call.args.includes('--list')).length,0);
 });
 
 test('ticket travels only via run-as stdin; a failed write removes only our new mapping',async()=>{
   const fixture=fakeAdb();
-  const receipt=await stageLiveAndroid(input,{adb:fixture.adb,issueTicket:async()=> ticket,cwd:'/repo'});
+  const receipt=await stage(input,{adb:fixture.adb,issueTicket:async()=> ticket,cwd:'/repo'});
   assert.equal(receipt.device,serial);
   const written=fixture.calls.find(call=>call.stdin);
   assert.ok(written.stdin.includes(ticket));
@@ -65,14 +101,14 @@ test('ticket travels only via run-as stdin; a failed write removes only our new 
   assert.ok(fixture.calls.some(call=>call.args.includes('com.adelost.skydivealtimeter.STUDIO_OBSERVE')));
   assert.ok(fixture.calls.every(call=>!call.args.some(arg=>arg.includes(ticket))));
   const broken=fakeAdb({failTicket:true});
-  await assert.rejects(stageLiveAndroid(input,{adb:broken.adb,issueTicket:async()=> ticket,cwd:'/repo'}),error=>error.code==='live.ticket-write');
+  await assert.rejects(stage(input,{adb:broken.adb,issueTicket:async()=> ticket,cwd:'/repo'}),error=>error.code==='live.ticket-write');
   assert.equal(broken.calls.filter(call=>call.args.includes('--remove')).length,1);
   const noReceiver=fakeAdb({failStart:true});
-  await assert.rejects(stageLiveAndroid(input,{adb:noReceiver.adb,issueTicket:async()=> ticket,cwd:'/repo'}),error=>error.code==='live.start');
+  await assert.rejects(stage(input,{adb:noReceiver.adb,issueTicket:async()=> ticket,cwd:'/repo'}),error=>error.code==='live.start');
   assert.ok(noReceiver.calls.some(call=>call.args.includes('rm')&&call.args.includes('files/studio-observation/ticket')));
   assert.equal(noReceiver.calls.filter(call=>call.args.includes('--remove')).length,1);
   const changed=fakeAdb({failStart:true,rebindOnFailure:true});
-  await assert.rejects(stageLiveAndroid(input,{adb:changed.adb,issueTicket:async()=> ticket,cwd:'/repo'}),error=>error.code==='live.cleanup');
+  await assert.rejects(stage(input,{adb:changed.adb,issueTicket:async()=> ticket,cwd:'/repo'}),error=>error.code==='live.cleanup');
   assert.equal(changed.calls.filter(call=>call.args.includes('--remove')).length,0,'never remove a rebound mapping');
 });
 
@@ -81,7 +117,7 @@ test('explicit connect stages a real Studio native ticket without exposing it in
   const running=await createServer({port:0,dataDir:root,liveEnabled:true});
   t.after(async()=>{running.server.closeAllConnections();await new Promise(resolve=>running.server.close(resolve));await rm(root,{recursive:true,force:true});});
   const fixture=fakeAdb(),port=Number(new URL(running.origin).port);
-  const receipt=await stageLiveAndroid({device:serial,port,product:'skyvw'}, {adb:fixture.adb,cwd:'/repo'}).catch(error=>{
+  const receipt=await stage({device:serial,port,product:'skyvw'}, {adb:fixture.adb,cwd:'/repo'}).catch(error=>{
     if(error.code==='live.product')return error;throw error;
   });
   assert.equal(receipt.code,'live.product','the example receiver is not SKYVW and cannot be paired as one');

@@ -1,32 +1,55 @@
 import { spawn } from 'node:child_process';
-import { access } from 'node:fs/promises';
+import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { DEFAULT_STUDIO_PORT } from './cli.mjs';
 import { requireThat, StudioError } from './util.mjs';
 
-const PACKAGE='com.adelost.skydivealtimeter';
-const ACTION='com.adelost.skydivealtimeter.STUDIO_OBSERVE';
 const PRIVATE_TICKET='files/studio-observation/ticket';
 const serialShape=/^[A-Za-z0-9._:-]+$/u;
 const quote=value=>`'${value.replaceAll("'","'\\''")}'`;
 
-async function installCommand(root,device) {
-  const ready=await Promise.all(['gradlew','app/build.gradle.kts'].map(file=>access(path.join(root,file)).then(()=>true,()=>false)));
-  const command=`ANDROID_SERIAL=${device} ./gradlew :app:installDebug`;
-  return ready.every(Boolean)?`cd ${quote(root)} && ${command}`:`From the SKYVW checkout: ${command}`;
+/** Select one explicitly declared Android target, never a package guessed from a connected device. */
+export async function resolveNativeProject(root,requested) {
+  let workspace;
+  try { workspace=JSON.parse(await readFile(path.join(root,'studio.workspace.json'),'utf8')); }
+  catch { throw new StudioError('live.workspace',`No readable studio.workspace.json in ${root}. Use a checkout with its project manifest.`); }
+  requireThat(Array.isArray(workspace.projects),'live.workspace','studio.workspace.json must declare projects.');
+  const eligible=workspace.projects.filter(project=>project.nativeLive);
+  const selected=requested===null?eligible.length===1?eligible[0]:null
+    :workspace.projects.find(project=>project.id===requested);
+  requireThat(selected,'live.product',requested===null
+    ?'Select one native project with --product ID from studio.workspace.json.'
+    :`Project ${requested} is not in studio.workspace.json. Select one of: ${workspace.projects.map(project=>project.id).join(', ')}.`);
+  const native=selected.nativeLive;
+  requireThat(native&&typeof native==='object','live.native-config',
+    `Project ${selected.id} has no nativeLive package/action. Declare them in studio.workspace.json.`);
+  const packageName=native.package,action=native.action;
+  requireThat(typeof packageName==='string'&&/^[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)+$/u.test(packageName)
+    &&action===`${packageName}.STUDIO_OBSERVE`,'live.native-config',
+    `Project ${selected.id} needs a valid nativeLive.package and its own <package>.STUDIO_OBSERVE action.`);
+  const install=native.install??[];
+  requireThat(Array.isArray(install)&&install.every(value=>typeof value==='string'&&/^[A-Za-z0-9_./:-]+$/u.test(value)),
+    'live.native-config',`Project ${selected.id} has an invalid nativeLive.install command list.`);
+  return {product:selected.id,packageName,action,install};
+}
+
+function installCommand(root,device,native) {
+  if(native.install.length===0)return `Install a debuggable ${native.packageName} APK explicitly on ${device}, then retry.`;
+  return `cd ${quote(root)} && ANDROID_SERIAL=${quote(device)} ${native.install.map(quote).join(' ')}`;
 }
 
 export function parseLiveConnectArgs(args) {
-  let device=null,port=DEFAULT_STUDIO_PORT;
+  let device=null,port=DEFAULT_STUDIO_PORT,product=null;
   for(let i=0;i<args.length;i++){
     if(args[i]==='--device'&&args[i+1])device=args[++i];
+    else if(args[i]==='--product'&&args[i+1])product=args[++i];
     else if(args[i]==='--port'&&args[i+1]){
       const value=args[++i];requireThat(/^\d+$/u.test(value),'live.port','Choose an integer local Studio port.');port=Number(value);
     }else requireThat(false,'live.option',`Unsupported live connect option: ${args[i]}`);
   }
   requireThat(serialShape.test(device??''),'live.device','Select exactly one device with --device SERIAL from adb devices -l.');
   requireThat(Number.isInteger(port)&&port>0&&port<=65535,'live.port','Choose a valid local Studio port.');
-  return {device,port,product:'skyvw'};
+  return {device,port,product};
 }
 
 /** No shell: arguments and the private stdin channel remain separate. */
@@ -58,14 +81,15 @@ async function issueNativeTicket({port,product}) {
   const origin=`http://127.0.0.1:${port}`,bootstrap=await jsonResponse(origin+'/api/bootstrap');
   requireThat(bootstrap.liveEnabled===true,'live.disabled','Start the matching local Studio with --live.');
   const candidates=bootstrap.projects.filter(project=>project.id===product);
-  requireThat(candidates.length===1,'live.product','Studio must have exactly one loaded SKYVW project.');
+  requireThat(candidates.length===1,'live.product',`Studio must have exactly one loaded ${product} project.`);
   const result=await jsonResponse(origin+'/api/live-ticket',{method:'POST',headers:{'x-studio-token':bootstrap.token,
     'content-type':'application/json'},body:JSON.stringify({project:candidates[0].key,producer:'native'})});
   return result.ticket;
 }
 
 /** Stage one explicit debug connection; never install, select or replace on the user's behalf. */
-export async function stageLiveAndroid(input,{adb=executeAdb,issueTicket=issueNativeTicket,cwd=process.cwd()}={}) {
+export async function stageLiveAndroid(input,{adb=executeAdb,issueTicket=issueNativeTicket,
+  resolveProject=resolveNativeProject,cwd=process.cwd()}={}) {
   const {device,port}=input,run=(args,stdin)=>adb(['-s',device,...args],stdin);
   requireThat(serialShape.test(device??''),'live.device','Use an exact --device SERIAL.');
   const attached=await adb(['devices','-l']);
@@ -77,27 +101,28 @@ export async function stageLiveAndroid(input,{adb=executeAdb,issueTicket=issueNa
   requireThat(reverse.code===0,'live.reverse','Cannot inspect existing adb reverse mappings. No mapping was changed.');
   requireThat(!reverse.stdout.split(/\r?\n/u).some(line=>line.split(/\s+/u).includes(`tcp:${port}`)),
     'live.reverse-owned',`tcp:${port} already has an adb reverse mapping. Do not overwrite it; remove it with its owner first.`);
-  const debug=await run(['shell','run-as',PACKAGE,'id']);
-  const install=debug.code===0?'':await installCommand(cwd,device);
+  const native=await resolveProject(cwd,input.product??null);
+  const debug=await run(['shell','run-as',native.packageName,'id']);
+  const install=debug.code===0?'':installCommand(cwd,device,native);
   requireThat(debug.code===0&&/\buid=/u.test(debug.stdout),'live.debug-app',
-    `A debuggable ${PACKAGE} is not installed on ${device}. Install it explicitly: ${install||await installCommand(cwd,device)}`);
+    `A debuggable ${native.packageName} is not installed on ${device}. Install it explicitly: ${install}`);
   const added=await run(['reverse','--no-rebind',`tcp:${port}`,`tcp:${port}`]);
   requireThat(added.code===0,'live.reverse','adb could not create the selected reverse mapping.');
   let ticketWritten=false;
   try{
-    const ticket=await issueTicket({port,product:input.product??'skyvw'});
+    const ticket=await issueTicket({port,product:native.product});
     requireThat(typeof ticket==='string'&&/^[A-Za-z0-9_-]{43}$/u.test(ticket),'live.ticket','Studio returned an invalid one-time ticket.');
     const script=`umask 077\nmkdir -p files/studio-observation || exit 1\ntest ! -e ${PRIVATE_TICKET} || exit 1\nprintf '%s' '${ticket}' > ${PRIVATE_TICKET} || exit 1\nchmod 600 ${PRIVATE_TICKET}\n`;
-    const staged=await run(['shell','-T','run-as',PACKAGE,'sh'],script);
+    const staged=await run(['shell','-T','run-as',native.packageName,'sh'],script);
     requireThat(staged.code===0,'live.ticket-write','Could not write the one-time ticket to app-private storage through run-as stdin.');
     ticketWritten=true;
-    const started=await run(['shell','am','broadcast','-p',PACKAGE,'-a',ACTION,'--es','cmd','start','--ei','port',String(port)]);
+    const started=await run(['shell','am','broadcast','-p',native.packageName,'-a',native.action,'--es','cmd','start','--ei','port',String(port)]);
     requireThat(started.code===0,'live.start','The debug start action was not accepted; no live connection is claimed.');
-    return {device,port,package:PACKAGE,privateTicket:PRIVATE_TICKET,reverse:`tcp:${port}`,
+    return {device,port,package:native.packageName,product:native.product,privateTicket:PRIVATE_TICKET,reverse:`tcp:${port}`,
       ticketStaged:true,startActionSent:true,connected:false,
       notice:'Ticket staged and debug start action sent. Confirm the live receiver before claiming observations.'};
   }catch(error){
-    const cleaned=ticketWritten?await run(['shell','run-as',PACKAGE,'rm','-f',PRIVATE_TICKET]).catch(()=>({code:1})):null;
+    const cleaned=ticketWritten?await run(['shell','run-as',native.packageName,'rm','-f',PRIVATE_TICKET]).catch(()=>({code:1})):null;
     const current=await run(['reverse','--list']).catch(()=>({code:1,stdout:''}));
     const matching=current.stdout.split(/\r?\n/u).map(line=>line.trim().split(/\s+/u))
       .filter(parts=>parts[1]===`tcp:${port}`);
