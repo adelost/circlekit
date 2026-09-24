@@ -45,6 +45,13 @@ import {
   productArtifactConformance,
   productArtifactHostCoverage,
   present,
+  fetchService,
+  storeService,
+  nodeOutput,
+  layer,
+  scene,
+  RENDERER_STYLES,
+  type Scene,
   service,
   statePresentationField,
   validateProductNodeType,
@@ -2343,3 +2350,122 @@ test("product-owned machines carry their real node type into IR; standalone mach
   assert.throws(() => fixture({ nodeTypes: [...baseDeclaration.nodeTypes, unused],
     machines: [{ ...machine, ownerNodeTypeRef: unused.id }] }), /orphan node type/);
 });
+
+const sceneFetch = fetchService({
+  id: "fixture.scene-fetch",
+  flow: { mode: "pending", everyMs: 1_000, minSpacingMs: 100 },
+  freshness: { kind: "pending" },
+  failure: { transport: "local", retry: { attemptDelaysMs: [], afterFailureMs: [1_000] }, cache: { kind: "none" } },
+  onCrash: "as-failure", effectIds: ["network.scene-request"],
+});
+const sceneStore = storeService({
+  id: "fixture.scene-store", backend: "file", codec: { id: "scene-source", version: 1 },
+  identity: "sceneId", durability: "fsync-atomic-replace", failure: "reject", migration: "none",
+  effectIds: ["storage.scene-read"],
+});
+const sceneDerive = derive({
+  id: "fixture.scene-derive", inputs: [], outputs: [],
+  runtime: { stateOwner: "none", lifetime: "call", durability: "transient", clockDomain: "none",
+    contextInputs: [], effects: [] },
+});
+
+function sceneFixture(scenes: readonly Scene[], overrides: Record<string, unknown> = {}) {
+  return fixture({ ...overrides, scenes });
+}
+
+test("scene law 1 refuses a scene-local chrome component type", () => {
+  const header = defineComponentType({ id: "fixture.scene.header", inputs: [], outputs: [] });
+  const declared = scene("fixture.scene", { frame: "standard", camera: "geo", actions: [], layers: [] });
+  assert.throws(() => sceneFixture([declared], { componentTypes: [...baseDeclaration.componentTypes, header] }),
+    /scene 'fixture\.scene' declares its own chrome component 'fixture\.scene\.header'; use frame: "standard".*product-spec\.test\.ts:\d+/u);
+});
+
+test("scene law 2 names the renderer's supported styles and requires catalogued data", () => {
+  assert.throws(() => layer("fixture.bad-style", {
+    source: sceneStore, renderer: "tag", style: "not-a-tag-style",
+  } as never), /layer 'fixture\.bad-style' style 'not-a-tag-style' is not a tag style; use one of place, height, wind, station, altitude, distance, aircraft, status, or add it to RENDERER_STYLES\.tag.*product-spec\.test\.ts:\d+/u);
+});
+
+test("scene law 3 refuses network node outputs and names unresolved node outputs", () => {
+  const networkSource = service({
+    ...source,
+    id: "fixture.network-scene-source",
+    distinct: "network scene source test",
+    runtime: { ...source.runtime, effects: ["network.scene-test"] },
+  } as const);
+  const producer = { id: "network.scene-source", type: networkSource };
+  const reference = nodeOutput(producer, "status");
+  const fromNetworkNode = {
+    ...baseDeclaration.nodes[0], id: producer.id, nodeTypeRef: networkSource.id,
+    config: {}, bindings: {}, activation: { kind: "lifetime", lifecycleSources: [] },
+  };
+  const networkScene = scene("scene.network", { frame: "standard", camera: "geo", actions: [], layers: [
+    layer("scene.network.layer", { source: reference, renderer: "tag", style: "status" }),
+  ] });
+  assert.throws(() => sceneFixture([networkScene], {
+    nodeTypes: [...baseDeclaration.nodeTypes, networkSource], nodes: [...baseDeclaration.nodes, fromNetworkNode],
+  }), /layer 'scene\.network\.layer' reads network output 'network\.scene-source\.status' directly; declare a fetchService and use it as the source.*product-spec\.test\.ts:\d+/u);
+
+  const unresolved = { ref: "missing.scene-node.output", contract: internalContract.id, purpose: "data" };
+  const unresolvedScene = scene("scene.unresolved", { frame: "standard", camera: "geo", actions: [], layers: [
+    layer("scene.unresolved.layer", { source: unresolved as never, renderer: "tag", style: "status" }),
+  ] });
+  assert.throws(() => sceneFixture([unresolvedScene]), /scene\.unresolved\.layer.*unresolved node output 'missing\.scene-node\.output'/u);
+  assert.throws(() => layer("scene.invalid-source", {
+    source: { id: "untyped-source" }, renderer: "tag", style: "status",
+  } as never), /layer 'scene\.invalid-source' source must be a fetchService, storeService or nodeOutput\(\.\.\.\)/u);
+});
+
+test("scene law 4 rejects layers that repeat source, derive and renderer", () => {
+  const reference = nodeOutput({ id: "domain.source", type: source }, "status");
+  const repeated = scene("scene.duplicate", { frame: "standard", camera: "geo", actions: [], layers: [
+    layer("scene.duplicate.first", { source: reference, derive: sceneDerive, renderer: "tag", style: "status" }),
+    layer("scene.duplicate.second", { source: reference, derive: sceneDerive, renderer: "tag", style: "status" }),
+  ] });
+  assert.throws(() => sceneFixture([repeated]), /scene 'scene\.duplicate' has two layers with the same source, derive and renderer: 'scene\.duplicate\.first', 'scene\.duplicate\.second'.*product-spec\.test\.ts:\d+/u);
+});
+
+test("scene law 5 compiles service and node sources, derive ids and scene lists", () => {
+  assert.equal("scenes" in fixture(), false);
+  const reference = nodeOutput({ id: "domain.source", type: source }, "status");
+  const declared = scene("scene.home", { frame: "standard", camera: "iso", actions: ["layers", "home"], layers: [
+    layer("scene.home.network", { source: sceneFetch, renderer: "tiles", style: "raster" }),
+    layer("scene.home.saved", { source: sceneStore, renderer: "path", style: "saved" }),
+    layer("scene.home.output", { source: reference, derive: sceneDerive, renderer: "tag", style: "status" }),
+  ] });
+  const product = sceneFixture([declared]);
+  const json = JSON.parse(productJsonEmitter("out/product.json").emit(product)[0]!.content) as {
+    scenes: { id: string; camera: string; actions: string[]; layers: {
+      id: string; renderer: string; style: string; source: { kind: string; id: string }; derive?: string;
+    }[] }[];
+  };
+  assert.deepEqual(json.scenes, [{ id: "scene.home", camera: "iso", actions: ["layers", "home"], layers: [
+    { id: "scene.home.network", renderer: "tiles", style: "raster", source: { kind: "fetch", id: "fixture.scene-fetch" } },
+    { id: "scene.home.saved", renderer: "path", style: "saved", source: { kind: "store", id: "fixture.scene-store" } },
+    { id: "scene.home.output", renderer: "tag", style: "status", source: { kind: "node", id: "domain.source.status" }, derive: "fixture.scene-derive" },
+  ] }]);
+});
+
+test("scene layer derive accepts ProductNodeType kind derive only", () => {
+  assert.throws(() => layer("scene.bad-derive", {
+    source: sceneStore, derive: source, renderer: "tag", style: "status",
+  } as never), /layer 'scene\.bad-derive' derive must be a ProductNodeType with kind 'derive'/u);
+});
+
+test("scene form and renderer styles are exported from the ProductSpec root", () => {
+  assert.equal(typeof layer, "function");
+  assert.equal(typeof scene, "function");
+  assert.deepEqual(RENDERER_STYLES.marker, ["home", "aircraft", "station", "pile", "you", "cutaway"]);
+  assert.deepEqual(RENDERER_STYLES.tag,
+    ["place", "height", "wind", "station", "altitude", "distance", "aircraft", "status"]);
+});
+
+function sceneNegativeTypes() {
+  // @ts-expect-error Layers take the actual declared source value, not an untyped id.
+  layer("scene.untyped-source", { source: "source.id", renderer: "tag", style: "status" });
+  // @ts-expect-error Renderer styles are closed data lists.
+  layer("scene.unlisted-style", { source: sceneStore, renderer: "tag", style: "custom" });
+  // @ts-expect-error Layer derives must be ProductNodeTypes with kind "derive".
+  layer("scene.service-derive", { source: sceneStore, derive: source, renderer: "tag", style: "status" });
+}
+void sceneNegativeTypes;
