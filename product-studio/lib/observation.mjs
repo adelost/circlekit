@@ -53,7 +53,8 @@ export function eventFor(raw, view, { live = false } = {}) {
     const key = entityKey('port', raw.portRef);
     requireThat(view.architecture.entities.some(entity => entity.key === key),
       'observation.port', `Port '${raw.portRef}' is absent from the compiled product.`);
-    return { kind: 'port', entityKey: key, summary: `Port ${raw.portRef}` };
+    return { kind: 'port', entityKey: key, summary: `Port ${raw.portRef}`,
+      ...(raw.phase ? { phase: raw.phase } : {}) };
   }
   const kind = raw.kind === 'decision' ? 'decision-table' : 'machine';
   const facet = view.facets.find(item => item.kind === kind && item.id === raw.facetId);
