@@ -49,6 +49,7 @@ import {
   type ProductIconRef,
   type ProductPalette,
 } from "./visual-model.js";
+import { refuseDuplication } from "./duplication-model.js";
 import { frozen } from "./frozen.js";
 
 export const PRODUCT_SPEC_SCHEMA_VERSION = 9 as const;
@@ -339,6 +340,9 @@ export function defineProduct<
     mountedScopes,
   });
   requireFacetOwners(declaration.machines ?? [], declaration.decisionTables ?? [], graph.nodeTypes);
+  // D1 of the duplication law: two declarations that already say the same thing never reach the IR.
+  // D2, the merge candidates, is a warning and is read from the compiled product, not thrown here.
+  refuseDuplication(graph.nodeTypes, graph.componentTypes);
   const stateAuthorities = compileStateAuthorities(
     declaration.stateAuthorities,
     resolvableFiniteValues,

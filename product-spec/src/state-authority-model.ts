@@ -1,3 +1,4 @@
+import { markCompilerBuilt } from './source-site.js';
 import type { ProductNodeInstance } from "./node-instance-model.js";
 import {
   contractFingerprint,
@@ -97,6 +98,7 @@ export function defineStatePresentation<
       typeof item.value === "string" ? item.value : finiteValueRef(item.value.id),
     )),
   } as const;
+  markCompilerBuilt(contract);
   const result: StatePresentation<Id, States["id"], Fields> = {
     id: declaration.id,
     stateRef: states.id,

@@ -231,6 +231,23 @@ export interface ProductNodeType {
   readonly outputs: readonly LegoPort[];
   readonly configInputs?: readonly LegoConfigInput[];
   readonly runtime: ProductNodeRuntime;
+  /**
+   * Why this node type is named domain logic and meant to exist once. The duplication law reads a
+   * single instance as a one-off unless this says otherwise; a Lego several instances share never
+   * needs it.
+   */
+  readonly domain?: string;
+  /**
+   * Why this declaration keeps its own shape instead of joining the pattern the duplication law
+   * suggests. The reason lives where the declaration is, and Studio shows it, so there is no
+   * baseline file to read the answer out of.
+   */
+  readonly distinct?: string;
+  /**
+   * The pattern that carries this node type, set by that pattern and never written by hand. A node
+   * type a pattern already carries is not a merge candidate, because the merge has happened.
+   */
+  readonly pattern?: "fetch" | "store";
 }
 
 type ProductNodeDefinition = Omit<ProductNodeType, "kind">;
@@ -249,21 +266,21 @@ type EffectFreeUiStateRuntime<Runtime extends ProductNodeRuntime> = EffectFreeRu
 export function service<const T extends ProductNodeDefinition>(
   spec: T & { readonly runtime: EffectfulRuntime<T["runtime"]> | EffectFreeUiStateRuntime<T["runtime"]> },
 ): T & { readonly kind: "service" } {
-  return validateProductNodeType({ ...spec, kind: "service" }) as T & { readonly kind: "service" };
+  return rememberCallsite(validateProductNodeType({ ...spec, kind: "service" }), service) as T & { readonly kind: "service" };
 }
 
 /** Effect-free domain computation. It may retain deterministic stream state. */
 export function derive<const T extends ProductNodeDefinition>(
   spec: T & { readonly runtime: EffectFreeRuntime<T["runtime"]> },
 ): T & { readonly kind: "derive" } {
-  return validateProductNodeType({ ...spec, kind: "derive" }) as T & { readonly kind: "derive" };
+  return rememberCallsite(validateProductNodeType({ ...spec, kind: "derive" }), derive) as T & { readonly kind: "derive" };
 }
 
 /** Final effect-free immutable model feeding one or more components. */
 export function present<const T extends ProductNodeDefinition>(
   spec: T & { readonly runtime: EffectFreeRuntime<T["runtime"]> },
 ): T & { readonly kind: "present" } {
-  return validateProductNodeType({ ...spec, kind: "present" }) as T & { readonly kind: "present" };
+  return rememberCallsite(validateProductNodeType({ ...spec, kind: "present" }), present) as T & { readonly kind: "present" };
 }
 
 /** Compiler-side validation for already-authored node types. */
