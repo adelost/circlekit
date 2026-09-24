@@ -123,6 +123,11 @@ export interface LegoContract {
   readonly fields: readonly LegoField[];
   /** Optional compiler-owned navigation meaning; it is part of contract identity. */
   readonly navigation?: LegoNavigationContract;
+  /**
+   * Why this contract keeps its own name although another declares the same fields. Written on the
+   * declaration, so the reason is read beside the code and the duplication law stops refusing it.
+   */
+  readonly distinct?: string;
 }
 
 export type LegoConfigValue = boolean | number | string;

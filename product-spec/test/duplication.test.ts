@@ -13,8 +13,13 @@ import {
   patternFor,
 } from "../src/index.js";
 
-const contract = (id: string, fields: ReturnType<typeof field>[] = [], kind = "state", boundary = "presentation") =>
-  ({ id, kind, boundary, fields } as const) as never;
+const contract = (
+  id: string,
+  fields: ReturnType<typeof field>[] = [],
+  kind = "state",
+  boundary = "presentation",
+  distinct?: string,
+) => ({ id, kind, boundary, fields, ...(distinct === undefined ? {} : { distinct }) } as const) as never;
 
 const reading = contract("fixture.reading", [field("value", "number")]);
 const sameShape = contract("fixture.same-shape", [field("value", "number")]);
@@ -87,6 +92,33 @@ test("D1 refuses durable state with more than one writer, naming the effect and 
   const two = service({ id: "fixture.writer-b", inputs: [], outputs: [port("out", model)], runtime: { ...durable, contextInputs: ["b"] } } as const);
   assert.throws(() => refuseDuplication([one, two]),
     /durable effect 'storage\.journal-write' has 2 writers: fixture\.writer-a, fixture\.writer-b/);
+});
+
+test("every D1 refusal says how to resolve it, and distinct answers it", () => {
+  const shared = { ...serviceRuntime, contextInputs: ["build.distribution"], effects: ["build.read"] } as const;
+  const first = service({ id: "fixture.capabilities", inputs: [], outputs: [port("out", reading)], runtime: shared } as const);
+  const second = service({ id: "fixture.guard", inputs: [], outputs: [port("out", model)], runtime: shared } as const);
+  assert.throws(() => refuseDuplication([first, second]),
+    /Merge this node type with fixture\.guard, or write distinct: "<why>" on its declaration \[/);
+  // The reader answers where the declaration is, and the build stops refusing it.
+  const kept = { ...second, distinct: "the guard reads the channel on a different lane" } as const;
+  assert.deepEqual(findIdenticalDuplication([first, kept]), []);
+
+  const twin = contract("fixture.twin-shape", [field("value", "number")]);
+  const twinService = service({
+    id: "fixture.twin-service", inputs: [], outputs: [port("out", twin)],
+    runtime: { ...serviceRuntime, effects: ["storage.twin-write"] },
+  } as const);
+  const producer = service({ id: "fixture.producer", inputs: [], outputs: [port("out", reading)], runtime: serviceRuntime } as const);
+  assert.throws(() => refuseDuplication([producer, twinService]),
+    /Merge this contract with fixture\.twin-shape, or write distinct: "<why>" on its declaration \[/);
+  const keptContract = contract("fixture.twin-shape", [field("value", "number")], "state", "presentation",
+    "the twin is a wire format, not the reading");
+  const keptService = service({
+    id: "fixture.twin-service", inputs: [], outputs: [port("out", keptContract)],
+    runtime: { ...serviceRuntime, effects: ["storage.twin-write"] },
+  } as const);
+  assert.deepEqual(only(findIdenticalDuplication([producer, keptService]), "identical-contracts"), []);
 });
 
 test("every D1 refusal names the file and line the declaration was written on", () => {
