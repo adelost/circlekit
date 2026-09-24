@@ -39,6 +39,7 @@ export function emitScenesKotlin(
       return { id, tokenKey: `${scene.id}.${id}`, refKey: layerRefKey(scene.id, id) };
     });
   });
+  const sceneNames = sceneTypeNames(scenes, prefix);
 
   const styleValues = new Map<RendererKind, string[]>();
   for (const scene of scenes) {
@@ -61,6 +62,10 @@ export function emitScenesKotlin(
   const actionTokens = enumRows(actions, `action in ${sceneName}`);
   const passTokens = enumRows(SCENE_PASSES, `pass in ${sceneName}`);
   const layerIdTokens = enumRows(layerIdRows.map(({ tokenKey }) => tokenKey), `layer id in ${sceneName}`);
+  const scopedLayerTokens = new Map(scenes.map((scene) => [
+    scene.id,
+    enumRows(scene.layers.map(({ id }) => id), `layer id in ${sceneNames.get(scene.id)}`),
+  ] as const));
   const styleTokens = new Map<RendererKind, ReadonlyMap<string, string>>();
   for (const [renderer, values] of styleValues) {
     styleTokens.set(renderer, enumRows(values, `${renderer} style in ${sceneName}`));
@@ -90,10 +95,11 @@ ${actions.length === 0 ? "" : emitIdEnum(`${sceneName}Action`, "GeneratedSceneAc
 ${emitIdEnum(passEnum, "GeneratedScenePass", SCENE_PASSES, passTokens)}
 ${[...styleValues].map(([renderer, values]) => emitStyleEnum(sceneName, renderer, values, styleTokens.get(renderer)!)).join("\n\n")}
 ${emitIdEnum(layerIdEnum, "GeneratedSceneLayerId", layerIdRows, layerIdTokens)}
+${scenes.map((scene) => emitScopedScene(scene, sceneName, sceneNames.get(scene.id)!, layerIdEnum, passEnum, rendererTokens, sourceTokenByRef, layerIdTokenByRef, cameraTokens, passTokens, styleTokens, scopedLayerTokens.get(scene.id)!)).join("\n\n")}
 object ${sceneName} {
-${scenes.map((scene) => emitScene(scene, sceneName, layerIdEnum, passEnum, sceneTokens, rendererTokens, sourceTokenByRef, layerIdTokenByRef, cameraTokens, actionTokens, passTokens, styleTokens)).join("\n\n")}
+${scenes.map((scene) => `    val ${sceneTokens.get(scene.id)}: ${sceneNames.get(scene.id)} = ${emitScene(scene, sceneName, sceneNames.get(scene.id)!, cameraTokens, actionTokens, scopedLayerTokens.get(scene.id)!)}`).join("\n\n")}
 
-    val all: List<GeneratedScene> = listOf(${scenes.map(({ id }) => `${sceneName}.${sceneTokens.get(id)}`).join(", ")})
+    val all: List<GeneratedScene> = listOf(${scenes.map(({ id }) => `${sceneName}.${sceneTokens.get(id)}.runtime`).join(", ")})
 }
 `;
 }
@@ -147,19 +153,19 @@ ${values.map((id) => `    ${tokens.get(id)}(${kotlinStringLiteral(id)}),`).join(
 }`;
 }
 
-function emitScene(
+function emitScopedScene(
   scene: CompiledScene,
   sceneName: string,
+  sceneType: string,
   layerIdEnum: string,
   passEnum: string,
-  sceneTokens: ReadonlyMap<string, string>,
   rendererTokens: ReadonlyMap<string, string>,
   sourceTokens: ReadonlyMap<string, string>,
   layerIdTokens: ReadonlyMap<string, string>,
   cameraTokens: ReadonlyMap<string, string>,
-  actionTokens: ReadonlyMap<string, string>,
   passTokens: ReadonlyMap<string, string>,
   styleTokens: ReadonlyMap<RendererKind, ReadonlyMap<string, string>>,
+  scopedLayerTokens: ReadonlyMap<string, string>,
 ): string {
   const layers = scene.layers.map((layer) => {
     const layerId = layerIdTokens.get(layerRefKey(scene.id, layer.id));
@@ -171,16 +177,61 @@ function emitScene(
     const toggle = layer.toggle === undefined ? "" : `, toggle = GeneratedSceneLayerToggle(${layer.toggle.group === undefined ? "" : `group = ${kotlinStringLiteral(layer.toggle.group)}, `}default = ${layer.toggle.default})`;
     const pass = passTokens.get(layer.pass);
     if (!pass) throw new Error(`scene '${scene.id}' layer '${layer.id}' has unknown pass '${layer.pass}'`);
-    return `GeneratedSceneLayer(id = ${layerIdEnum}.${layerId}, renderer = ${sceneName}Renderer.${renderer}, style = ${sceneName}${kotlinIdentifier(layer.renderer)}Style.${style}, source = ${sceneName}Source.${source}${cameras}${toggle}, pass = ${passEnum}.${pass})`;
+    return `    ${scopedLayerTokens.get(layer.id)}(${kotlinStringLiteral(layer.id)}, GeneratedSceneLayer(id = ${layerIdEnum}.${layerId}, renderer = ${sceneName}Renderer.${renderer}, style = ${sceneName}${kotlinIdentifier(layer.renderer)}Style.${style}, source = ${sceneName}Source.${source}${cameras}${toggle}, pass = ${passEnum}.${pass})),`;
   });
+  const sceneLayerName = `${sceneType}Layer`;
+  return `enum class ${sceneLayerName}(override val id: String, val value: GeneratedSceneLayer) : GeneratedSceneLayerId {
+${layers.join("\n")}
+}
+
+data class ${sceneType}(
+    val id: String,
+    val cameras: List<GeneratedSceneCamera>,
+    val actions: List<GeneratedSceneAction>,
+    val layers: List<${sceneLayerName}>,
+) {
+    val runtime: GeneratedScene = GeneratedScene(
+        id = id,
+        cameras = cameras,
+        actions = actions,
+        layers = layers.map { it.value },
+    )
+}`;
+}
+
+function emitScene(
+  scene: CompiledScene,
+  sceneName: string,
+  sceneType: string,
+  cameraTokens: ReadonlyMap<string, string>,
+  actionTokens: ReadonlyMap<string, string>,
+  scopedLayerTokens: ReadonlyMap<string, string>,
+): string {
   const actions = scene.actions.map((action) => `${sceneName}Action.${actionTokens.get(action)}`);
   const cameras = scene.cameras.map((camera) => `${sceneName}Camera.${cameraTokens.get(camera)}`);
-  return `    val ${sceneTokens.get(scene.id)}: GeneratedScene = GeneratedScene(
+  const layers = scene.layers.map(({ id }) => `${sceneType}Layer.${scopedLayerTokens.get(id)}`);
+  return `${sceneType}(
         id = ${kotlinStringLiteral(scene.id)},
         cameras = listOf(${cameras.join(", ")}),
         actions = ${actions.length === 0 ? "emptyList()" : `listOf(${actions.join(", ")})`},
-        layers = ${layers.length === 0 ? "emptyList()" : `listOf(\n${layers.map((row) => `            ${row},`).join("\n")}\n        )`},
+        layers = ${layers.length === 0 ? "emptyList()" : `listOf(${layers.join(", ")})`},
     )`;
+}
+
+function sceneTypeNames(scenes: readonly CompiledScene[], prefix: string): ReadonlyMap<string, string> {
+  const nameById = new Map<string, string>();
+  const idByName = new Map<string, string>();
+  for (const scene of scenes) {
+    const segments = scene.id.split(/[./]/u);
+    const scopedSegments = segments[0]?.toLowerCase() === prefix.toLowerCase() ? segments.slice(1) : segments;
+    const scenePart = kotlinIdentifier(scopedSegments.join("."));
+    const name = `Generated${prefix}${scenePart.endsWith("Scene") ? scenePart : `${scenePart}Scene`}`;
+    const prior = idByName.get(name);
+    if (prior !== undefined) throw new Error(`scenes '${prior}' and '${scene.id}' both emit Kotlin scene type '${name}'`);
+    nameById.set(scene.id, name);
+    idByName.set(name, scene.id);
+  }
+  return nameById;
 }
 
 function layerRefKey(sceneId: string, layerId: string): string {
