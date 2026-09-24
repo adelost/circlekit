@@ -17,7 +17,7 @@ export const RENDERER_STYLES = {
   volume: ["contour", "base", "veil"],
   windMark: ["arrow", "gauge", "station", "altitude"],
   path: ["live", "saved", "drift", "aircraft"],
-  marker: ["home", "aircraft", "station", "pile", "you", "cutaway"],
+  marker: ["home", "aircraft", "station", "pile", "you", "cutaway", "point"],
   ring: ["distance", "accuracy", "coverage", "cache"],
   tag: ["place", "height", "wind", "station", "altitude", "distance", "aircraft", "status"],
 } as const;

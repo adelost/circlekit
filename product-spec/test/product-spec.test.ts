@@ -2477,7 +2477,7 @@ test("scene layer derive accepts ProductNodeType kind derive only", () => {
 test("scene form and renderer styles are exported from the ProductSpec root", () => {
   assert.equal(typeof layer, "function");
   assert.equal(typeof scene, "function");
-  assert.deepEqual(RENDERER_STYLES.marker, ["home", "aircraft", "station", "pile", "you", "cutaway"]);
+  assert.deepEqual(RENDERER_STYLES.marker, ["home", "aircraft", "station", "pile", "you", "cutaway", "point"]);
   assert.deepEqual(RENDERER_STYLES.tag,
     ["place", "height", "wind", "station", "altitude", "distance", "aircraft", "status"]);
 });
