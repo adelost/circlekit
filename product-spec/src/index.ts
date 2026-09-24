@@ -9,6 +9,7 @@ export * from "./interaction-timing-model.js";
 export * from "./lanes-model.js";
 export * from "./machine-model.js";
 export * from "./node-model.js";
+export * from "./node-authoring.js";
 export * from "./navigation-model.js";
 export * from "./navigation-conformance-model.js";
 export type { OutputArtifact, ProductEmitterPlugin, OutputManifest } from "./output-types.js";
