@@ -235,6 +235,12 @@ export function defineProduct<
   ], libraryFiniteValues);
   validateVisuals(declaration, assetCatalog);
   const scenes = compileScenes(declaration.scenes ?? [], declaration.nodes, declaration.nodeTypes, declaration.componentTypes);
+  for (const declaredScene of declaration.scenes ?? []) {
+    const registered = declaration.componentTypes.find(({ id }) => id === declaredScene.id);
+    if (registered !== declaredScene) {
+      throw new Error(`scene '${declaredScene.id}' must appear as its component type in componentTypes`);
+    }
+  }
 
   const renderers = new Map(declaration.rendererBindings.map((item) => [item.id, item]));
   for (const renderer of declaration.rendererBindings) {
@@ -372,7 +378,7 @@ export function defineProduct<
     configs: graph.configs,
     finiteValues,
     stateAuthorities,
-    componentTypes: graph.componentTypes,
+    componentTypes: componentTypesWithoutSceneFields(graph.componentTypes, declaration.scenes ?? []),
     components: graph.components,
     componentFamilies: declaration.componentFamilies,
     artifactScopes,
@@ -385,6 +391,19 @@ export function defineProduct<
     ...machinesIr(declaration.machines ?? []),
     ...lanesIr(declaration.lanes),
     ...scenes,
+  });
+}
+
+function componentTypesWithoutSceneFields(
+  componentTypes: readonly ComponentType[],
+  scenes: readonly Scene[],
+): readonly ComponentType[] {
+  if (scenes.length === 0) return componentTypes;
+  const sceneIds = new Set(scenes.map(({ id }) => id));
+  return componentTypes.map((componentType) => {
+    if (!sceneIds.has(componentType.id)) return componentType;
+    const { id, requiredCapabilities, inputs, outputs } = componentType;
+    return { id, requiredCapabilities, inputs, outputs };
   });
 }
 

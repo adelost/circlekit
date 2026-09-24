@@ -1,4 +1,8 @@
-import type { ComponentPortDeclaration } from "./component-tree-model.js";
+import {
+  defineComponentType,
+  type ComponentTypeDeclaration,
+  type NormalizedComponentType,
+} from "./component-tree-model.js";
 import type { FetchService } from "./fetch-service-model.js";
 import type { NodeOutputRef } from "./node-authoring.js";
 import type { ProductNodeType } from "./node-model.js";
@@ -40,17 +44,31 @@ export interface Layer<Id extends string = string, K extends RendererKind = Rend
   readonly style: RendererStyle<K>;
 }
 
-export interface SceneSpec {
+export interface SceneSpec extends Omit<ComponentTypeDeclaration, "id"> {
   readonly frame: "standard";
   readonly camera: SceneCamera;
   readonly layers: readonly Layer[];
   readonly actions: readonly SceneAction[];
-  readonly domainActions?: readonly ComponentPortDeclaration[];
 }
 
-export interface Scene<Id extends string = string> extends SceneSpec {
-  readonly id: Id;
-}
+type SceneComponentDeclaration<Id extends string, Spec extends SceneSpec> =
+  Omit<ComponentTypeDeclaration<Id>, "inputs" | "outputs" | "requiredCapabilities"> & {
+    readonly inputs: Spec["inputs"];
+    readonly outputs: Spec["outputs"];
+  } & (Spec extends { readonly requiredCapabilities: infer Capabilities extends readonly string[] }
+    ? { readonly requiredCapabilities: Capabilities }
+    : {});
+
+type AnySceneComponentDeclaration = Omit<ComponentTypeDeclaration, "requiredCapabilities"> & {
+  readonly requiredCapabilities: readonly string[];
+};
+
+export type Scene<Declaration extends ComponentTypeDeclaration = AnySceneComponentDeclaration> =
+  NormalizedComponentType<Declaration> & {
+    readonly camera: SceneCamera;
+    readonly layers: readonly Layer[];
+    readonly actions: readonly SceneAction[];
+  };
 
 export interface CompiledSceneLayer {
   readonly id: string;
@@ -98,7 +116,10 @@ export function layer<const Id extends string, const K extends RendererKind>(
   return frozen(result);
 }
 
-export function scene<const Id extends string>(id: Id, spec: SceneSpec): Scene<Id> {
+export function scene<const Id extends string, const Spec extends SceneSpec>(
+  id: Id,
+  spec: Spec,
+): Scene<SceneComponentDeclaration<Id, Spec>> {
   requireWireId(id, "scene");
   const site = declarationSite(scene);
   if (spec?.frame !== "standard") throw new Error(`scene '${id}' needs frame: "standard" [${site}]`);
@@ -108,14 +129,18 @@ export function scene<const Id extends string>(id: Id, spec: SceneSpec): Scene<I
     throw new Error(`scene '${id}' has an unknown action [${site}]`);
   }
   requireUnique(spec.actions, `action in scene '${id}'`);
-  const result: Scene<Id> = {
+  const componentType = defineComponentType({
     id,
-    frame: spec.frame,
+    inputs: spec.inputs,
+    outputs: spec.outputs,
+    ...(spec.requiredCapabilities === undefined ? {} : { requiredCapabilities: spec.requiredCapabilities }),
+  } as const);
+  const result = {
+    ...componentType,
     camera: spec.camera,
     layers: spec.layers,
     actions: spec.actions,
-    ...(spec.domainActions === undefined ? {} : { domainActions: spec.domainActions }),
-  };
+  } as unknown as Scene<SceneComponentDeclaration<Id, Spec>>;
   rememberDeclarationSite(result, site);
   return frozen(result);
 }
@@ -132,8 +157,9 @@ export function compileScenes(
   const componentTypeIds = componentTypes.map(({ id }) => id);
   const compiled = scenes.map((declared) => {
     const site = declaredSite(declared) ?? "source unknown";
+    const namespace = declared.id.endsWith(".scene") ? declared.id.slice(0, -".scene".length) : declared.id;
     const chrome = componentTypeIds.find((componentTypeId) =>
-      componentTypeId.startsWith(declared.id) && isChromeType(componentTypeId.slice(declared.id.length)));
+      componentTypeId.startsWith(namespace) && isChromeType(componentTypeId.slice(namespace.length)));
     if (chrome !== undefined) {
       throw new Error(`scene '${declared.id}' declares its own chrome component '${chrome}'; use frame: "standard" [${site}]`);
     }

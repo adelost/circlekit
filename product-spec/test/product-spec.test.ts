@@ -2374,10 +2374,12 @@ function sceneFixture(scenes: readonly Scene[], overrides: Record<string, unknow
 }
 
 test("scene law 1 refuses a scene-local chrome component type", () => {
-  const header = defineComponentType({ id: "fixture.scene.header", inputs: [], outputs: [] });
-  const declared = scene("fixture.scene", { frame: "standard", camera: "geo", actions: [], layers: [] });
+  const header = defineComponentType({ id: "scene.fixture.header", inputs: [], outputs: [] });
+  const declared = scene("scene.fixture.scene", {
+    frame: "standard", inputs: [], outputs: [], camera: "geo", actions: [], layers: [],
+  });
   assert.throws(() => sceneFixture([declared], { componentTypes: [...baseDeclaration.componentTypes, header] }),
-    /scene 'fixture\.scene' declares its own chrome component 'fixture\.scene\.header'; use frame: "standard".*product-spec\.test\.ts:\d+/u);
+    /scene 'scene\.fixture\.scene' declares its own chrome component 'scene\.fixture\.header'; use frame: "standard".*product-spec\.test\.ts:\d+/u);
 });
 
 test("scene law 2 names the renderer's supported styles and requires catalogued data", () => {
@@ -2399,7 +2401,7 @@ test("scene law 3 refuses network node outputs and names unresolved node outputs
     ...baseDeclaration.nodes[0], id: producer.id, nodeTypeRef: networkSource.id,
     config: {}, bindings: {}, activation: { kind: "lifetime", lifecycleSources: [] },
   };
-  const networkScene = scene("scene.network", { frame: "standard", camera: "geo", actions: [], layers: [
+  const networkScene = scene("scene.network", { frame: "standard", inputs: [], outputs: [], camera: "geo", actions: [], layers: [
     layer("scene.network.layer", { source: reference, renderer: "tag", style: "status" }),
   ] });
   assert.throws(() => sceneFixture([networkScene], {
@@ -2407,7 +2409,7 @@ test("scene law 3 refuses network node outputs and names unresolved node outputs
   }), /layer 'scene\.network\.layer' reads network output 'network\.scene-source\.status' directly; declare a fetchService and use it as the source.*product-spec\.test\.ts:\d+/u);
 
   const unresolved = { ref: "missing.scene-node.output", contract: internalContract.id, purpose: "data" };
-  const unresolvedScene = scene("scene.unresolved", { frame: "standard", camera: "geo", actions: [], layers: [
+  const unresolvedScene = scene("scene.unresolved", { frame: "standard", inputs: [], outputs: [], camera: "geo", actions: [], layers: [
     layer("scene.unresolved.layer", { source: unresolved as never, renderer: "tag", style: "status" }),
   ] });
   assert.throws(() => sceneFixture([unresolvedScene]), /scene\.unresolved\.layer.*unresolved node output 'missing\.scene-node\.output'/u);
@@ -2418,32 +2420,49 @@ test("scene law 3 refuses network node outputs and names unresolved node outputs
 
 test("scene law 4 rejects layers that repeat source, derive and renderer", () => {
   const reference = nodeOutput({ id: "domain.source", type: source }, "status");
-  const repeated = scene("scene.duplicate", { frame: "standard", camera: "geo", actions: [], layers: [
+  const repeated = scene("scene.duplicate", { frame: "standard", inputs: [], outputs: [], camera: "geo", actions: [], layers: [
     layer("scene.duplicate.first", { source: reference, derive: sceneDerive, renderer: "tag", style: "status" }),
     layer("scene.duplicate.second", { source: reference, derive: sceneDerive, renderer: "tag", style: "status" }),
   ] });
   assert.throws(() => sceneFixture([repeated]), /scene 'scene\.duplicate' has two layers with the same source, derive and renderer: 'scene\.duplicate\.first', 'scene\.duplicate\.second'.*product-spec\.test\.ts:\d+/u);
 });
 
-test("scene law 5 compiles service and node sources, derive ids and scene lists", () => {
+test("scene law 5 keeps component behavior and adds only scene metadata to ProductIr", () => {
   assert.equal("scenes" in fixture(), false);
   const reference = nodeOutput({ id: "domain.source", type: source }, "status");
-  const declared = scene("scene.home", { frame: "standard", camera: "iso", actions: ["layers", "home"], layers: [
-    layer("scene.home.network", { source: sceneFetch, renderer: "tiles", style: "raster" }),
-    layer("scene.home.saved", { source: sceneStore, renderer: "path", style: "saved" }),
-    layer("scene.home.output", { source: reference, derive: sceneDerive, renderer: "tag", style: "status" }),
-  ] });
-  const product = sceneFixture([declared]);
+  const declared = scene(basePageHostType.id, {
+    frame: "standard",
+    requiredCapabilities: basePageHostType.requiredCapabilities,
+    inputs: basePageHostType.inputs,
+    outputs: basePageHostType.outputs,
+    camera: "iso", actions: ["layers", "home"], layers: [
+      layer("scene.home.network", { source: sceneFetch, renderer: "tiles", style: "raster" }),
+      layer("scene.home.saved", { source: sceneStore, renderer: "path", style: "saved" }),
+      layer("scene.home.output", { source: reference, derive: sceneDerive, renderer: "tag", style: "status" }),
+    ],
+  });
+  const product = sceneFixture([declared], {
+    componentTypes: baseDeclaration.componentTypes.map((type) => type.id === basePageHostType.id ? declared : type),
+  });
   const json = JSON.parse(productJsonEmitter("out/product.json").emit(product)[0]!.content) as {
     scenes: { id: string; camera: string; actions: string[]; layers: {
       id: string; renderer: string; style: string; source: { kind: string; id: string }; derive?: string;
     }[] }[];
   };
-  assert.deepEqual(json.scenes, [{ id: "scene.home", camera: "iso", actions: ["layers", "home"], layers: [
+  assert.deepEqual(json.scenes, [{ id: basePageHostType.id, camera: "iso", actions: ["layers", "home"], layers: [
     { id: "scene.home.network", renderer: "tiles", style: "raster", source: { kind: "fetch", id: "fixture.scene-fetch" } },
     { id: "scene.home.saved", renderer: "path", style: "saved", source: { kind: "store", id: "fixture.scene-store" } },
     { id: "scene.home.output", renderer: "tag", style: "status", source: { kind: "node", id: "domain.source.status" }, derive: "fixture.scene-derive" },
   ] }]);
+  const sceneComponentType = product.componentTypes.find(({ id }) => id === declared.id);
+  assert.ok(sceneComponentType);
+  assert.equal("camera" in sceneComponentType, false);
+  assert.deepEqual(sceneComponentType.outputs, basePageHostType.outputs);
+  const outputScene = scene("scene.output-port", {
+    frame: "standard", inputs: [], outputs: [componentPort("action", actionContract, { required: false })],
+    camera: "geo", actions: [], layers: [],
+  });
+  assert.deepEqual(outputScene.outputs.map(({ id, required }) => [id, required]), [["action", false]]);
 });
 
 test("scene layer derive accepts ProductNodeType kind derive only", () => {
