@@ -171,10 +171,10 @@ export function compileScenes(
       const kind = sceneSourceKind(item.source);
       if (kind === undefined) throw new Error(`layer '${item.id}' source must be a fetchService, storeService or nodeOutput(...) [${layerSite}]`);
       const sourceId = sourceIdFor(item.source, kind);
-      const duplicateKey = JSON.stringify([kind, sourceId, item.derive?.id ?? null, item.renderer]);
+      const duplicateKey = JSON.stringify([kind, sourceId, item.derive?.id ?? null, item.renderer, item.style]);
       const previous = seen.get(duplicateKey);
       if (previous !== undefined) {
-        throw new Error(`scene '${declared.id}' has two layers with the same source, derive and renderer: '${previous.id}', '${item.id}' [${layerSite}]`);
+        throw new Error(`scene '${declared.id}' has two layers with the same source, derive, renderer and style: '${previous.id}', '${item.id}' [${layerSite}]`);
       }
       seen.set(duplicateKey, item);
       if (kind === "node") {

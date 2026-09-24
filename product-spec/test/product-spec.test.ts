@@ -2437,13 +2437,27 @@ test("scene law 3 refuses network node outputs and names unresolved node outputs
   } as never), /layer 'scene\.invalid-source' source must be a fetchService, storeService or nodeOutput\(\.\.\.\)/u);
 });
 
-test("scene law 4 rejects layers that repeat source, derive and renderer", () => {
+test("scene law 4 allows one source to feed the same renderer in different styles", () => {
+  const reference = nodeOutput({ id: "navigation.service", type: baseNavigationService }, "activePage");
+  const distinctStyles = scene(basePageHostType.id, {
+    frame: "standard", requiredCapabilities: basePageHostType.requiredCapabilities,
+    inputs: basePageHostType.inputs, outputs: basePageHostType.outputs,
+    camera: "geo", actions: [], layers: [
+    layer("scene.multiple-styles.status", { source: reference, derive: sceneDerive, renderer: "tag", style: "status" }),
+    layer("scene.multiple-styles.aircraft", { source: reference, derive: sceneDerive, renderer: "tag", style: "aircraft" }),
+  ] });
+  assert.doesNotThrow(() => sceneFixture([distinctStyles], {
+    componentTypes: baseDeclaration.componentTypes.map((type) => type.id === basePageHostType.id ? distinctStyles : type),
+  }));
+});
+
+test("scene law 4 refuses identical source, derive, renderer and style", () => {
   const reference = nodeOutput({ id: "navigation.service", type: baseNavigationService }, "activePage");
   const repeated = scene("scene.duplicate", { frame: "standard", inputs: [], outputs: [], camera: "geo", actions: [], layers: [
     layer("scene.duplicate.first", { source: reference, derive: sceneDerive, renderer: "tag", style: "status" }),
     layer("scene.duplicate.second", { source: reference, derive: sceneDerive, renderer: "tag", style: "status" }),
   ] });
-  assert.throws(() => sceneFixture([repeated]), /scene 'scene\.duplicate' has two layers with the same source, derive and renderer: 'scene\.duplicate\.first', 'scene\.duplicate\.second'.*product-spec\.test\.ts:\d+/u);
+  assert.throws(() => sceneFixture([repeated]), /scene 'scene\.duplicate' has two layers with the same source, derive, renderer and style: 'scene\.duplicate\.first', 'scene\.duplicate\.second'/u);
 });
 
 test("scene law 5 keeps component behavior and adds only scene metadata to ProductIr", () => {
