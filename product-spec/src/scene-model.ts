@@ -244,7 +244,7 @@ function isSceneAction(value: unknown): value is SceneAction {
 
 function isChromeType(suffix: string): boolean {
   const kebab = suffix.replace(/([a-z])([A-Z])/gu, "$1-$2").toLowerCase();
-  return /^(?:[._-])?(?:header|controls?|title)(?:$|[._-])/u.test(kebab);
+  return /(?:^|[._-])(?:header|controls?|title)(?:$|[._-])/u.test(kebab);
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {

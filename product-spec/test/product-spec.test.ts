@@ -2374,12 +2374,15 @@ function sceneFixture(scenes: readonly Scene[], overrides: Record<string, unknow
 }
 
 test("scene law 1 refuses a scene-local chrome component type", () => {
-  const header = defineComponentType({ id: "scene.fixture.header", inputs: [], outputs: [] });
   const declared = scene("scene.fixture.scene", {
     frame: "standard", inputs: [], outputs: [], camera: "geo", actions: [], layers: [],
   });
-  assert.throws(() => sceneFixture([declared], { componentTypes: [...baseDeclaration.componentTypes, header] }),
-    /scene 'scene\.fixture\.scene' declares its own chrome component 'scene\.fixture\.header'; use frame: "standard".*product-spec\.test\.ts:\d+/u);
+  for (const child of ["header", "phone-controls", "title"]) {
+    const type = defineComponentType({ id: `scene.fixture.${child}`, inputs: [], outputs: [] });
+    assert.throws(() => sceneFixture([declared], {
+      componentTypes: [...baseDeclaration.componentTypes, type],
+    }), new RegExp(`scene 'scene\\.fixture\\.scene' declares its own chrome component 'scene\\.fixture\\.${child}'; use frame: "standard".*product-spec\\.test\\.ts:\\d+`, "u"));
+  }
 });
 
 test("scene law 2 names the renderer's supported styles and requires catalogued data", () => {
