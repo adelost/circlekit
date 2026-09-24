@@ -240,10 +240,14 @@ type EffectfulRuntime<Runtime extends ProductNodeRuntime> = Runtime & {
 type EffectFreeRuntime<Runtime extends ProductNodeRuntime> = Runtime & {
   readonly effects: readonly [];
 };
+type EffectFreeUiStateRuntime<Runtime extends ProductNodeRuntime> = EffectFreeRuntime<Runtime> & {
+  readonly stateOwner: "instance";
+  readonly durability: "transient";
+};
 
-/** Owns external IO, a resource, persistence or platform lifecycle. */
+/** Owns an effect, or a transient UI event reducer with instance state. */
 export function service<const T extends ProductNodeDefinition>(
-  spec: T & { readonly runtime: EffectfulRuntime<T["runtime"]> },
+  spec: T & { readonly runtime: EffectfulRuntime<T["runtime"]> | EffectFreeUiStateRuntime<T["runtime"]> },
 ): T & { readonly kind: "service" } {
   return validateProductNodeType({ ...spec, kind: "service" }) as T & { readonly kind: "service" };
 }
@@ -279,7 +283,16 @@ export function validateProductNodeType<const T extends ProductNodeType>(spec: T
   spec.runtime.contextInputs.forEach((id) => requireWireId(id, `${spec.id} context input`));
   spec.runtime.effects.forEach((id) => requireWireId(id, `${spec.id} effect`));
   if (spec.kind === "service" && spec.runtime.effects.length === 0) {
-    throw new Error(`service '${spec.id}' must declare at least one runtime effect`);
+    if (spec.runtime.stateOwner !== "instance" || spec.runtime.durability !== "transient" ||
+        spec.runtime.contextInputs.length !== 0) {
+      throw new Error(`service '${spec.id}' must declare at least one runtime effect unless it owns transient UI state`);
+    }
+    if (!spec.inputs.some(({ contract }) => contract.kind === "event" && contract.boundary === "ui-event")) {
+      throw new Error(`effect-free UI state service '${spec.id}' requires a ui-event input`);
+    }
+    if (!spec.outputs.some(({ contract }) => contract.kind === "state" && contract.boundary === "presentation")) {
+      throw new Error(`effect-free UI state service '${spec.id}' requires a presentation state output`);
+    }
   }
   if (spec.kind !== "service" && spec.runtime.effects.length !== 0) {
     throw new Error(`${spec.kind} '${spec.id}' cannot declare runtime effects`);

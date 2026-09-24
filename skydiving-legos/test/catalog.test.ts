@@ -21,7 +21,8 @@ import {
 } from "../src/catalog.js";
 import { skydivingFiniteValues } from "../src/finite-values.js";
 import { recordingStages } from "../src/finite-values.js";
-import { instrumentRuntimeOwner } from "../src/legos/flight.js";
+import { flightRuntimeOwner, instrumentRuntimeOwner } from "../src/legos/flight.js";
+import { batteryRuntimeOwner } from "../src/legos/runtime-services.js";
 import { mapRenderScaleContract } from "../src/legos/map-data.js";
 import { settingsRuntimeOwner } from "../src/legos/settings.js";
 
@@ -99,6 +100,11 @@ test("the catalog declares the skydiving domain and validates on its own", () =>
   assert.ok(skydivingContracts.length > 70, `only ${skydivingContracts.length} contracts`);
   assert.ok(skydivingNodeTypes.length > 30, `only ${skydivingNodeTypes.length} node types`);
   assert.deepEqual(skydivingLegoCatalog.finiteValues, skydivingFiniteValues);
+});
+
+test("published snapshots are outputs, not host effects", () => {
+  assert.deepEqual(flightRuntimeOwner.runtime.effects, ["alarm.altitude-ladder", "cue.vario-policy"]);
+  assert.deepEqual(batteryRuntimeOwner.runtime.effects, ["storage.battery-history-write"]);
 });
 
 test("recording stage distinguishes unconfirmed buffering from confirmed recording", () => {

@@ -131,7 +131,7 @@ export const batteryRuntimeOwner = service({
   runtime: {
     stateOwner: "instance", lifetime: "process", durability: "durable", clockDomain: "wall",
     contextInputs: ["device.battery-manager", "storage.battery-history"],
-    effects: ["presentation.battery-state", "storage.battery-history-write"],
+    effects: ["storage.battery-history-write"],
   },
 });
 
