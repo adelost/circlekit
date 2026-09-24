@@ -69,6 +69,10 @@ class StudioDebugBridge(
         this.activity = null
     }
 
+    fun stop() {
+        transport?.stop()
+    }
+
     private fun showStatus(next: String) {
         label = next
         if (next !in setOf("CONNECTING", "STOPPING", "LIVE · STOP")) transport = null
