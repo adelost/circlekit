@@ -222,6 +222,7 @@ export function compileProductGraph(input: {
   const bindings: PortBindingIr[] = [];
   const boundInputs = new Set<string>();
   const usedOutputs = new Set<string>();
+  const componentEventTargets = new Map<string, string>();
 
   for (const instance of input.nodes) {
     const spec = nodeTypes.get(instance.nodeTypeRef)!;
@@ -324,6 +325,13 @@ export function compileProductGraph(input: {
     }
     if (source.ownerKind === "component" && targetNode?.kind !== "service") {
       throw new Error(`component event '${from}' must target a service input, not ${targetNode?.kind ?? target.ownerKind}`);
+    }
+    if (kind === "component-event") {
+      const previous = componentEventTargets.get(from);
+      if (previous !== undefined) {
+        throw new Error(`component event '${from}' is bound to more than one node input: '${previous}', '${to}'`);
+      }
+      componentEventTargets.set(from, to);
     }
     if (boundInputs.has(to)) throw new Error(`input port '${to}' is bound twice`);
     boundInputs.add(to);
