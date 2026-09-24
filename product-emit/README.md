@@ -48,9 +48,10 @@ declared layer so several layers can share one source while having separate
 provider keys. Camera alternatives and layer filters remain ordered data, and
 visibility toggle defaults/grouping are emitted unchanged. The generated file
 contains data only, not drawing or provider code. Each layer carries its
-declared `raster`, `world` or `upright` pass. Set `sceneLayerIdPackage`
-when the shared `GeneratedSceneLayerId` interface and `GeneratedSceneLayerToggle`
-type live outside the native scene package.
+declared `raster`, `world` or `upright` pass. Set `sceneRuntimePackage` to the
+shared package for `GeneratedScenePass`, `GeneratedSceneLayerId` and
+`GeneratedSceneLayerToggle`; it is required when the product declares scenes
+and unused by scene-free products.
 
 ## Reading the product as a graph
 

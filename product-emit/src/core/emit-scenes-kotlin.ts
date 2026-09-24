@@ -11,7 +11,7 @@ import type { SourcedKotlinEmissionOptions } from "./emission-options.js";
 
 export interface SceneKotlinEmissionOptions extends SourcedKotlinEmissionOptions {
   readonly nativeScenePackage: string;
-  readonly sceneLayerIdPackage?: string;
+  readonly sceneRuntimePackage?: string;
   readonly outputDirectory: string;
 }
 
@@ -21,6 +21,7 @@ export function emitScenesKotlin(
   options: SceneKotlinEmissionOptions,
 ): string {
   if (scenes.length === 0) throw new Error("scene Kotlin emission has no scenes");
+  const runtimePackage = requireSceneRuntimePackage(options.sceneRuntimePackage);
   const prefix = kotlinIdentifier(options.symbolPrefix);
   const sceneName = `Generated${prefix}Scenes`;
   const layerIdEnum = `Generated${prefix}SceneLayerId`;
@@ -66,8 +67,6 @@ export function emitScenesKotlin(
   }
   const sourceTokenByRef = new Map(sources.map(({ kind, id }) => [`${kind}:${id}`, sourceTokens.get(`${kind}_${id}`)!] as const));
   const layerIdTokenByRef = new Map(layerIdRows.map(({ tokenKey, refKey }) => [refKey, layerIdTokens.get(tokenKey)!] as const));
-  const sceneLayerIdPackage = options.sceneLayerIdPackage ?? options.nativeScenePackage;
-
   return `// GENERATED FILE. DO NOT EDIT.
 // GENERATED FROM ${options.sourceFile}
 // Product declaration SHA-256: ${options.sourceSha}
@@ -78,11 +77,11 @@ import ${options.nativeScenePackage}.GeneratedSceneAction
 import ${options.nativeScenePackage}.GeneratedSceneCamera
 import ${options.nativeScenePackage}.GeneratedSceneLayer
 import ${options.nativeScenePackage}.GeneratedSceneRenderer
-import ${options.nativeScenePackage}.GeneratedScenePass
+import ${runtimePackage}.GeneratedScenePass
 import ${options.nativeScenePackage}.GeneratedSceneSource
 import ${options.nativeScenePackage}.GeneratedSceneStyle
-import ${sceneLayerIdPackage}.GeneratedSceneLayerId
-import ${sceneLayerIdPackage}.GeneratedSceneLayerToggle
+import ${runtimePackage}.GeneratedSceneLayerId
+import ${runtimePackage}.GeneratedSceneLayerToggle
 
 ${emitIdEnum(`${sceneName}Renderer`, "GeneratedSceneRenderer", renderers, rendererTokens)}
 ${emitIdEnum(`${sceneName}Source`, "GeneratedSceneSource", sourceEnumRows, sourceTokens)}
@@ -108,6 +107,7 @@ export function sceneKotlinEmitter(options: SceneKotlinEmissionOptions): Product
     id: "scene-kotlin",
     emit(product: ProductIr) {
       if (!product.scenes || product.scenes.length === 0) return [];
+      requireSceneRuntimePackage(options.sceneRuntimePackage, product.id);
       return [{
         id: `scene-kotlin:${product.id}`,
         path,
@@ -116,6 +116,13 @@ export function sceneKotlinEmitter(options: SceneKotlinEmissionOptions): Product
       }];
     },
   };
+}
+
+function requireSceneRuntimePackage(value: string | undefined, productId = "<unknown>"): string {
+  if (typeof value !== "string" || value.trim().length === 0) {
+    throw new Error(`product '${productId}' declares scenes but sceneRuntimePackage is missing; set sceneRuntimePackage in the product's emit configuration`);
+  }
+  return value;
 }
 
 function emitIdEnum(name: string, implemented: string, values: readonly string[] | readonly { readonly id: string; readonly tokenKey?: string }[], tokens: ReadonlyMap<string, string>): string {

@@ -29,13 +29,13 @@ const options = {
   sourceSha: "test-sha",
   outputDirectory: "appspec/generated/acme",
   nativeScenePackage: "com.acme.ui.scene",
-  sceneLayerIdPackage: "com.acme.skyvwui.scene",
+  sceneRuntimePackage: "com.acme.skyvwui.scene",
 };
 
 test("a generic scene emitter generates the ordered declared values against the shared scene ABI", () => {
   const kotlin = emitScenesKotlin(scenes, options);
   assert.match(kotlin, /enum class GeneratedAcmeScenesRenderer\(override val id: String\) : GeneratedSceneRenderer/u);
-  assert.match(kotlin, /import com\.acme\.ui\.scene\.GeneratedScenePass/u);
+  assert.match(kotlin, /import com\.acme\.skyvwui\.scene\.GeneratedScenePass/u);
   assert.match(kotlin, /enum class GeneratedAcmeScenePass\(override val id: String\) : GeneratedScenePass \{\n    RASTER\("raster"\),\n    WORLD\("world"\),\n    UPRIGHT\("upright"\),/u);
   assert.match(kotlin, /import com\.acme\.skyvwui\.scene\.GeneratedSceneLayerId/u);
   assert.match(kotlin, /import com\.acme\.skyvwui\.scene\.GeneratedSceneLayerToggle/u);
@@ -67,5 +67,13 @@ test("the ProductEmitterPlugin writes the per-product Generated<Product>Scenes f
   assert.equal(artifact?.path, "appspec/generated/acme/GeneratedAcmeScenes.kt");
   assert.equal(artifact?.mediaType, "text/x-kotlin");
   assert.match(artifact?.content ?? "", /object GeneratedAcmeScenes/u);
+  assert.deepEqual(emitter.emit({ id: "acme" } as ProductIr), []);
+});
+
+test("a product with scenes needs sceneRuntimePackage, while a scene-free product does not", () => {
+  const { sceneRuntimePackage: _configuredPackage, ...withoutRuntimePackage } = options;
+  const emitter = sceneKotlinEmitter(withoutRuntimePackage);
+  assert.throws(() => emitter.emit({ id: "acme", scenes } as unknown as ProductIr),
+    /product 'acme' declares scenes but sceneRuntimePackage is missing; set sceneRuntimePackage in the product's emit configuration/u);
   assert.deepEqual(emitter.emit({ id: "acme" } as ProductIr), []);
 });
