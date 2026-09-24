@@ -35,7 +35,7 @@
   },
   "devDependencies": {
     "@types/node": "^24.3.0",
-    "@v1d/product-spec": "https://circlekit.pages.dev/npm/v1d/product-spec/0.3.75/v1d-product-spec-0.3.75.tgz",
+    "@v1d/product-spec": "https://circlekit.pages.dev/npm/v1d/product-spec/0.3.78/v1d-product-spec-0.3.78.tgz",
     "typescript": "^5.9.3",
     "xstate": "5.33.2"
   },
