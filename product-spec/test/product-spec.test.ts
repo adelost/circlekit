@@ -2353,15 +2353,16 @@ test("product-owned machines carry their real node type into IR; standalone mach
 
 const sceneFetch = fetchService({
   id: "fixture.scene-fetch",
+  service: "navigation.service",
   flow: { mode: "pending", everyMs: 1_000, minSpacingMs: 100 },
   freshness: { kind: "pending" },
   failure: { transport: "local", retry: { attemptDelaysMs: [], afterFailureMs: [1_000] }, cache: { kind: "none" } },
-  onCrash: "as-failure", effectIds: ["network.scene-request"],
+  onCrash: "as-failure", effectIds: ["fixture.unrelated"],
 });
 const sceneStore = storeService({
   id: "fixture.scene-store", backend: "file", codec: { id: "scene-source", version: 1 },
   identity: "sceneId", durability: "fsync-atomic-replace", failure: "reject", migration: "none",
-  effectIds: ["storage.scene-read"],
+  effectIds: ["fixture.navigation"],
 });
 const sceneDerive = derive({
   id: "fixture.scene-derive", inputs: [], outputs: [],
@@ -2372,6 +2373,21 @@ const sceneDerive = derive({
 function sceneFixture(scenes: readonly Scene[], overrides: Record<string, unknown> = {}) {
   return fixture({ ...overrides, scenes });
 }
+
+test("E7 refuses a fetch service whose owner is not upstream of any scene input", () => {
+  const unrelatedFetch = fetchService({ ...sceneFetch, id: "fixture.unrelated-feed",
+    service: "fixture.unreachable-service", effectIds: ["fixture.navigation"] });
+  const declared = scene(basePageHostType.id, {
+    frame: "standard", requiredCapabilities: basePageHostType.requiredCapabilities,
+    inputs: basePageHostType.inputs, outputs: basePageHostType.outputs,
+    camera: "geo", actions: [], layers: [
+      layer("scene.unrelated-feed", { source: unrelatedFetch, renderer: "tiles", style: "raster" }),
+    ],
+  });
+  assert.throws(() => sceneFixture([declared], {
+    componentTypes: baseDeclaration.componentTypes.map((type) => type.id === basePageHostType.id ? declared : type),
+  }), /layer 'scene\.unrelated-feed' source 'fixture\.unrelated-feed' never reaches scene 'fixture\.page-host' inputs; bind the source into the scene's projection or name the source it really reads.*product-spec\.test\.ts:\d+/u);
+});
 
 test("scene law 1 refuses a scene-local chrome component type", () => {
   const declared = scene("scene.fixture.scene", {
@@ -2422,7 +2438,7 @@ test("scene law 3 refuses network node outputs and names unresolved node outputs
 });
 
 test("scene law 4 rejects layers that repeat source, derive and renderer", () => {
-  const reference = nodeOutput({ id: "domain.source", type: source }, "status");
+  const reference = nodeOutput({ id: "navigation.service", type: baseNavigationService }, "activePage");
   const repeated = scene("scene.duplicate", { frame: "standard", inputs: [], outputs: [], camera: "geo", actions: [], layers: [
     layer("scene.duplicate.first", { source: reference, derive: sceneDerive, renderer: "tag", style: "status" }),
     layer("scene.duplicate.second", { source: reference, derive: sceneDerive, renderer: "tag", style: "status" }),
@@ -2432,7 +2448,7 @@ test("scene law 4 rejects layers that repeat source, derive and renderer", () =>
 
 test("scene law 5 keeps component behavior and adds only scene metadata to ProductIr", () => {
   assert.equal("scenes" in fixture(), false);
-  const reference = nodeOutput({ id: "domain.source", type: source }, "status");
+  const reference = nodeOutput({ id: "navigation.service", type: baseNavigationService }, "activePage");
   const declared = scene(basePageHostType.id, {
     frame: "standard",
     requiredCapabilities: basePageHostType.requiredCapabilities,
@@ -2455,7 +2471,7 @@ test("scene law 5 keeps component behavior and adds only scene metadata to Produ
   assert.deepEqual(json.scenes, [{ id: basePageHostType.id, camera: "iso", actions: ["layers", "home"], layers: [
     { id: "scene.home.network", renderer: "tiles", style: "raster", source: { kind: "fetch", id: "fixture.scene-fetch" } },
     { id: "scene.home.saved", renderer: "path", style: "saved", source: { kind: "store", id: "fixture.scene-store" } },
-    { id: "scene.home.output", renderer: "tag", style: "status", source: { kind: "node", id: "domain.source.status" }, derive: "fixture.scene-derive" },
+    { id: "scene.home.output", renderer: "tag", style: "status", source: { kind: "node", id: "navigation.service.activePage" }, derive: "fixture.scene-derive" },
   ] }]);
   const sceneComponentType = product.componentTypes.find(({ id }) => id === declared.id);
   assert.ok(sceneComponentType);

@@ -4,6 +4,8 @@ import {
   type NormalizedComponentType,
 } from "./component-tree-model.js";
 import type { FetchService } from "./fetch-service-model.js";
+import type { ProductComponentInstance } from "./component-tree-model.js";
+import type { ProductNodeInstance } from "./node-instance-model.js";
 import type { NodeOutputRef } from "./node-authoring.js";
 import type { ProductNodeType } from "./node-model.js";
 import type { StoreService } from "./store-service-model.js";
@@ -196,6 +198,79 @@ export function compileScenes(
     return { id: declared.id, camera: declared.camera, actions: declared.actions, layers };
   });
   return { scenes: compiled };
+}
+
+/** Every declared layer source must occur in the data path feeding an instance of its scene. */
+export function requireSceneLayerSourcesReachInputs(
+  scenes: readonly Scene[],
+  components: readonly ProductComponentInstance[],
+  nodes: readonly ProductNodeInstance[],
+  nodeTypes: readonly ProductNodeType[],
+): void {
+  const nodeTypeById = new Map(nodeTypes.map((type) => [type.id, type]));
+  const nodeById = new Map(nodes.map((node) => [node.id, node]));
+  const nodeIdsByLength = [...nodeById.keys()].sort((left, right) => right.length - left.length);
+  for (const declaredScene of scenes) {
+    const instances = components.filter(({ componentTypeRef }) => componentTypeRef === declaredScene.id);
+    const inputSources = instances.flatMap(({ bindings }) => Object.values(bindings.inputs));
+    for (const item of declaredScene.layers) {
+      if (sceneSourceReachesInputs(item.source, inputSources, nodeIdsByLength, nodeById, nodeTypeById)) continue;
+      const kind = sceneSourceKind(item.source)!;
+      const sourceId = sourceIdFor(item.source, kind);
+      throw new Error(`layer '${item.id}' source '${sourceId}' never reaches scene '${declaredScene.id}' inputs; bind the source into the scene's projection or name the source it really reads [${declaredSite(item) ?? "source unknown"}]`);
+    }
+  }
+}
+
+function sceneSourceReachesInputs(
+  source: SceneSource,
+  inputSources: readonly string[],
+  nodeIdsByLength: readonly string[],
+  nodeById: ReadonlyMap<string, ProductNodeInstance>,
+  nodeTypeById: ReadonlyMap<string, ProductNodeType>,
+): boolean {
+  const kind = sceneSourceKind(source);
+  if (kind === undefined || inputSources.length === 0) return false;
+  const sourceId = sourceIdFor(source, kind);
+  const pending = [...inputSources];
+  const visitedPorts = new Set<string>();
+  const visitedNodes = new Set<string>();
+  while (pending.length > 0) {
+    const ref = pending.pop()!;
+    if (visitedPorts.has(ref)) continue;
+    visitedPorts.add(ref);
+    if (kind === "node" && ref === sourceId) return true;
+    const producerId = nodeIdsByLength.find((id) => ref.startsWith(`${id}.`));
+    if (producerId === undefined) continue;
+    const node = nodeById.get(producerId)!;
+    const nodeType = nodeTypeById.get(node.nodeTypeRef);
+    if (nodeType === undefined) continue;
+    if (kind !== "node" && serviceSourceMatchesNode(source as FetchService | StoreService, node, nodeType)) return true;
+    if (visitedNodes.has(node.id)) continue;
+    visitedNodes.add(node.id);
+    for (const input of nodeType.inputs) {
+      if (input.purpose !== "data") continue;
+      const upstream = node.bindings[input.id];
+      if (upstream !== undefined) pending.push(upstream);
+    }
+  }
+  return false;
+}
+
+function serviceSourceMatchesNode(
+  source: FetchService | StoreService,
+  node: ProductNodeInstance,
+  nodeType: ProductNodeType,
+): boolean {
+  if (source.id === node.id || source.id === node.nodeTypeRef) return true;
+  if ("flow" in source) {
+    const declaredService = (source as FetchService & { readonly service?: unknown }).service;
+    if (declaredService !== undefined) {
+      return declaredService === node.id || declaredService === node.nodeTypeRef;
+    }
+  }
+  const nodeEffects = new Set(nodeType.runtime.effects);
+  return source.effectIds.every((effect) => nodeEffects.has(effect));
 }
 
 function resolveNodeOutput(
