@@ -338,8 +338,13 @@ function validateGuardInputs(
     const binding = graph.portRegistry.bindings.find(({ to }) => to === inputs[0]!.ref);
     const source = graph.portRegistry.nodePorts.find(({ ref }) => ref === binding?.from);
     const sourceKind = nodeTypeById.get(nodeById.get(source?.ownerId ?? "")?.nodeTypeRef ?? "")?.kind;
-    if (source === undefined || source.direction !== "output" || sourceKind !== "service") {
-      throw new Error(`navigation guard '${guard.id}' must be sourced by a typed service output`);
+    // A guard is truth about the graph, so it comes from a node in it. A derive qualifies: it is
+    // effect-free, so a guard derived from what one reader already reported is the merge the
+    // duplication law asks for, not a second read of the same channel. A present does not: it is the
+    // last hop before a component and never feeds a service.
+    if (source === undefined || source.direction !== "output"
+        || (sourceKind !== "service" && sourceKind !== "derive")) {
+      throw new Error(`navigation guard '${guard.id}' must be sourced by a typed service or derive output`);
     }
     const sourceContract = graph.portRegistry.contracts.find(({ id }) => id === source.contractRef);
     if (!sameNavigationContract(sourceContract, guard)) throw new Error(`navigation guard '${guard.id}' contract drift`);
