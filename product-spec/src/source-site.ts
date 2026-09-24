@@ -18,3 +18,12 @@ export function rememberCallsite<T extends object>(value:T,owner:Function):T {
   rememberDeclarationSite(value,declarationSite(owner));
   return value;
 }
+
+/**
+ * Contracts and shapes the compiler builds itself. Two state presentations always carry the same
+ * payload fields, because the kit fixes that shape, so their sameness says nothing about the product.
+ * The duplication law reads authored declarations only.
+ */
+const compilerBuilt = new WeakSet<object>();
+export function markCompilerBuilt<T extends object>(value: T): T { compilerBuilt.add(value); return value; }
+export function isCompilerBuilt(value: object): boolean { return compilerBuilt.has(value); }
