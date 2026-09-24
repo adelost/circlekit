@@ -1,7 +1,7 @@
 # @v1d/product-emit
 
 The consuming product owns the `@v1d/product-spec` version. ProductEmit uses
-one compatible peer (`>=0.3.64 <0.4.0`) and pins 0.3.82 only for its own build
+one compatible peer (`>=0.3.64 <0.4.0`) and pins 0.3.83 only for its own build
 and tests. Its existing skydiving-legos 0.1.5 dependency is unchanged; that
 legacy package's private 0.3.52 copy is not ProductEmit's public type boundary.
 
@@ -42,9 +42,12 @@ lane only when the product's debug expression is true. `fulfilment()` lists, per
 lane, its isolation and ordering, what Android built and how fully.
 
 `sceneKotlinEmitter` writes each product's declared ordered scene layers as
-`Generated<Product>Scenes.kt`. Renderer, style and source enums implement the
-platform's shared scene ABI; the generated file contains data only, not drawing
-or source-provider code.
+`Generated<Product>Scenes.kt`. Renderer, style, source and layer-id enums
+implement the platform's shared scene ABI. A layer enum value is emitted per
+declared layer so several layers can share one source while having separate
+provider keys. The generated file contains data only, not drawing or provider
+code. Set `sceneLayerIdPackage` when the shared `GeneratedSceneLayerId`
+interface lives outside the native scene package.
 
 ## Reading the product as a graph
 
