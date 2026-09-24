@@ -14,6 +14,17 @@ type OutputOf<Type extends ProductNodeType, Id extends string, Port extends Type
     ? NodeOutputRef<`${Id}.${Port}`, Output["contract"]["id"], Output["purpose"]>
     : never;
 
+type InputOf<Type extends ProductNodeType, Id extends string, Port extends Type["inputs"][number]["id"]> =
+  Extract<Type["inputs"][number], { readonly id: Port }> extends infer Input extends LegoPort
+    ? NodeInputRef<`${Id}.${Port}`, Input["contract"]["id"], Input["purpose"]>
+    : never;
+
+export interface NodeInputRef<Ref extends string = string, Contract extends string = string, Purpose extends string = string> {
+  readonly ref: Ref;
+  readonly contract: Contract;
+  readonly purpose: Purpose;
+}
+
 type OutputRefs<Type extends ProductNodeType, Id extends string> = {
   readonly [Port in Type["outputs"][number] as Port["id"]]:
     NodeOutputRef<`${Id}.${Port["id"]}`, Port["contract"]["id"], Port["purpose"]>;
@@ -32,6 +43,21 @@ export function nodeOutput<
     contract: output.contract.id,
     purpose: output.purpose,
   } as OutputOf<Type, Id, Port>;
+}
+
+/** Refer to one existing node input when an authored action owns its event edge. */
+export function nodeInput<
+  const Type extends ProductNodeType,
+  const Id extends string,
+  const Port extends Type["inputs"][number]["id"],
+>(consumer: { readonly id: Id; readonly type: Type }, portId: Port): InputOf<Type, Id, Port> {
+  const input = consumer.type.inputs.find((candidate) => candidate.id === portId);
+  if (input === undefined) throw new Error(`node type '${consumer.type.id}' has no input '${portId}'`);
+  return {
+    ref: `${consumer.id}.${portId}`,
+    contract: input.contract.id,
+    purpose: input.purpose,
+  } as InputOf<Type, Id, Port>;
 }
 
 /** Component events can feed node inputs without becoming an untyped string. */

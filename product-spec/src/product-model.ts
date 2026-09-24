@@ -52,6 +52,7 @@ import {
 import { refuseDuplication } from "./duplication-model.js";
 import { frozen } from "./frozen.js";
 import { compileScenes, requireSceneLayerSourcesReachInputs, type CompiledScene, type Scene } from "./scene-model.js";
+import { compileProductActions, type CompiledProductActionDeclaration, type ProductAction } from "./action-model.js";
 
 export const PRODUCT_SPEC_SCHEMA_VERSION = 9 as const;
 
@@ -161,6 +162,8 @@ export interface ProductDeclaration<
   readonly lanes?: Lanes;
   /** Standard-frame visual compositions and their declared data layers. */
   readonly scenes?: readonly Scene[];
+  /** Direct, unit component-event to service-input declarations. */
+  readonly actions?: readonly ProductAction[];
 }
 
 export interface ProductIr {
@@ -191,6 +194,8 @@ export interface ProductIr {
   readonly lanes?: LanesIr;
   /** Present only when the product declares scenes. */
   readonly scenes?: readonly CompiledScene[];
+  /** Present only when the product declares direct actions. */
+  readonly actions?: readonly CompiledProductActionDeclaration[];
 }
 
 export function defineProduct<
@@ -343,12 +348,18 @@ export function defineProduct<
       if (!artifacts.has(artifactRef)) throw new Error(`product icon '${icon.id}' uses missing artifact '${artifactRef}'`);
     }
   }
+  const actionWiring = compileProductActions(declaration.actions ?? [], {
+    components: declaration.components,
+    componentTypes: declaration.componentTypes,
+    nodes: declaration.nodes,
+    nodeTypes: declaration.nodeTypes,
+  });
   const graph = compileProductGraph({
     nodeTypes: declaration.nodeTypes,
-    nodes: declaration.nodes,
+    nodes: actionWiring.nodes,
     configs: declaration.configs,
     componentTypes: declaration.componentTypes,
-    components: declaration.components,
+    components: actionWiring.components,
     mountedScopes,
   });
   requireSceneLayerSourcesReachInputs(declaration.scenes ?? [], graph.components, graph.nodes, graph.nodeTypes);
@@ -392,6 +403,7 @@ export function defineProduct<
     ...machinesIr(declaration.machines ?? []),
     ...lanesIr(declaration.lanes),
     ...scenes,
+    ...(actionWiring.actions.length === 0 ? {} : { actions: actionWiring.actions }),
   });
 }
 

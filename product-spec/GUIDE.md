@@ -104,6 +104,18 @@ cannot receive a component event. Keep an event relay explicit when the same
 input must update local state and reach an action handler; neither route is a
 pretend host effect.
 
+A Unit UI action can instead bind a component event straight to a service
+input. `componentOutput` and `nodeInput` select the declared endpoints;
+`action` adds their direct edge to the product graph and navigation registration.
+
+```ts
+const deleteAction = action("flight-detail.delete", {
+  from: componentOutput(jumpDetailsContent, "delete"),
+  to: nodeInput(surfaceInteractionNode, "flightDetailDelete"),
+});
+// Add `actions: [deleteAction]` to the ProductDeclaration.
+```
+
 ## 4. The four questions
 
 1. **I want to add or change a fact** (a cell, a hint, a feed, a ride): open the thing's file under the product's `appspec/products/<name>/`, change the fact, run the product's generate. If the build refuses, the message names the law and the fix. Never add a Kotlin branch instead.

@@ -1,4 +1,5 @@
 export * from "./conformance-model.js";
+export * from "./action-model.js";
 export * from "./contract-law-model.js";
 export * from "./component-tree-model.js";
 export * from "./decision-table-model.js";
