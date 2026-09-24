@@ -746,6 +746,22 @@ test("service, derive and present are structurally distinct authoring kinds", ()
   }), /make 'ui.first' derive - only the final node before a component may be present/);
 });
 
+test("a transient instance-owned UI event reducer needs no invented effect", () => {
+  const uiState = {
+    id: "fixture.ui-state",
+    inputs: [port("action", actionContract)],
+    outputs: [port("state", statusContract)],
+    runtime: {
+      stateOwner: "instance", lifetime: "process", durability: "transient",
+      clockDomain: "monotonic", contextInputs: [], effects: [],
+    },
+  } as const;
+  assert.equal(service(uiState).kind, "service");
+  assert.throws(() => validateProductNodeType({
+    ...uiState, kind: "service", outputs: [port("status", internalContract)],
+  }), /effect-free UI state service 'fixture.ui-state' requires a presentation state output/);
+});
+
 test("closed state authority rejects incomplete, invented and overlapping presentation truths", () => {
   const operations = finiteValues("fixture.operation", ["idle", "fetching"]);
   const dataStates = finiteValues("fixture.data", ["missing", "available"]);

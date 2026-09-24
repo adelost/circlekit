@@ -200,7 +200,7 @@ export const flightAltitudeReferenceOwner = service({
 
 /** Phase detection plus alarm/vario policy; the HUD snapshot seam stays native until typed UI wiring lands. */
 /**
- * WHAT: Tracks flight phase and dispatches alarm and presentation effects.
+ * WHAT: Tracks flight phase, publishes state and dispatches alarm effects.
  * WHY: Keeps safety interpretation separate from sensor acquisition and UI controls.
  */
 export const flightRuntimeOwner = service({
@@ -218,7 +218,7 @@ export const flightRuntimeOwner = service({
   runtime: {
     stateOwner: "instance", lifetime: "process", durability: "transient", clockDomain: "wall",
     contextInputs: ["simulation.flight-feed"],
-    effects: ["alarm.altitude-ladder", "cue.vario-policy", "presentation.flight-snapshot"],
+    effects: ["alarm.altitude-ladder", "cue.vario-policy"],
   },
 });
 

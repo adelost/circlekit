@@ -98,6 +98,12 @@ service-internal input and receipt both carry nonnullable `operationId` and
 retry to the same identity, and UNKNOWN to remain visible. Runtime owners freeze
 the bytes before sending and use their existing outbox; the kit executes nothing.
 
+An instance-owned transient UI event reducer is also a `service`, with
+`effects: []`, a UI-event input and a presentation-state output. A `derive`
+cannot receive a component event. Keep an event relay explicit when the same
+input must update local state and reach an action handler; neither route is a
+pretend host effect.
+
 ## 4. The four questions
 
 1. **I want to add or change a fact** (a cell, a hint, a feed, a ride): open the thing's file under the product's `appspec/products/<name>/`, change the fact, run the product's generate. If the build refuses, the message names the law and the fix. Never add a Kotlin branch instead.
