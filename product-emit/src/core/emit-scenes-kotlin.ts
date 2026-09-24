@@ -10,6 +10,7 @@ import type { SourcedKotlinEmissionOptions } from "./emission-options.js";
 
 export interface SceneKotlinEmissionOptions extends SourcedKotlinEmissionOptions {
   readonly nativeScenePackage: string;
+  readonly sceneLayerIdPackage?: string;
   readonly outputDirectory: string;
 }
 
@@ -21,11 +22,20 @@ export function emitScenesKotlin(
   if (scenes.length === 0) throw new Error("scene Kotlin emission has no scenes");
   const prefix = kotlinIdentifier(options.symbolPrefix);
   const sceneName = `Generated${prefix}Scenes`;
+  const layerIdEnum = `Generated${prefix}SceneLayerId`;
   const layers = scenes.flatMap((scene) => scene.layers);
   const renderers = unique(layers.map(({ renderer }) => renderer));
   const sources = uniqueBy(layers.map(({ source }) => source), ({ kind, id }) => `${kind}:${id}`);
   const cameras = unique(scenes.map(({ camera }) => camera));
   const actions = unique(scenes.flatMap(({ actions }) => actions));
+  const layerIdRows = scenes.flatMap((scene) => {
+    const ids = new Set<string>();
+    return scene.layers.map(({ id }) => {
+      if (ids.has(id)) throw new Error(`scene '${scene.id}' repeats layer id '${id}', use a unique layer id for each provider`);
+      ids.add(id);
+      return { id, tokenKey: `${scene.id}.${id}`, refKey: layerRefKey(scene.id, id) };
+    });
+  });
 
   const styleValues = new Map<RendererKind, string[]>();
   for (const scene of scenes) {
@@ -46,11 +56,14 @@ export function emitScenesKotlin(
   const sourceTokens = enumRows(sourceEnumRows.map(({ tokenKey }) => tokenKey), `source in ${sceneName}`);
   const cameraTokens = enumRows(cameras, `camera in ${sceneName}`);
   const actionTokens = enumRows(actions, `action in ${sceneName}`);
+  const layerIdTokens = enumRows(layerIdRows.map(({ tokenKey }) => tokenKey), `layer id in ${sceneName}`);
   const styleTokens = new Map<RendererKind, ReadonlyMap<string, string>>();
   for (const [renderer, values] of styleValues) {
     styleTokens.set(renderer, enumRows(values, `${renderer} style in ${sceneName}`));
   }
   const sourceTokenByRef = new Map(sources.map(({ kind, id }) => [`${kind}:${id}`, sourceTokens.get(`${kind}_${id}`)!] as const));
+  const layerIdTokenByRef = new Map(layerIdRows.map(({ tokenKey, refKey }) => [refKey, layerIdTokens.get(tokenKey)!] as const));
+  const sceneLayerIdPackage = options.sceneLayerIdPackage ?? options.nativeScenePackage;
 
   return `// GENERATED FILE. DO NOT EDIT.
 // GENERATED FROM ${options.sourceFile}
@@ -64,14 +77,16 @@ import ${options.nativeScenePackage}.GeneratedSceneLayer
 import ${options.nativeScenePackage}.GeneratedSceneRenderer
 import ${options.nativeScenePackage}.GeneratedSceneSource
 import ${options.nativeScenePackage}.GeneratedSceneStyle
+import ${sceneLayerIdPackage}.GeneratedSceneLayerId
 
 ${emitIdEnum(`${sceneName}Renderer`, "GeneratedSceneRenderer", renderers, rendererTokens)}
 ${emitIdEnum(`${sceneName}Source`, "GeneratedSceneSource", sourceEnumRows, sourceTokens)}
 ${emitIdEnum(`${sceneName}Camera`, "GeneratedSceneCamera", cameras, cameraTokens)}
 ${actions.length === 0 ? "" : emitIdEnum(`${sceneName}Action`, "GeneratedSceneAction", actions, actionTokens)}
 ${[...styleValues].map(([renderer, values]) => emitStyleEnum(sceneName, renderer, values, styleTokens.get(renderer)!)).join("\n\n")}
+${emitIdEnum(layerIdEnum, "GeneratedSceneLayerId", layerIdRows, layerIdTokens)}
 object ${sceneName} {
-${scenes.map((scene) => emitScene(scene, sceneName, sceneTokens, rendererTokens, sourceTokenByRef, cameraTokens, actionTokens, styleTokens)).join("\n\n")}
+${scenes.map((scene) => emitScene(scene, sceneName, layerIdEnum, sceneTokens, rendererTokens, sourceTokenByRef, layerIdTokenByRef, cameraTokens, actionTokens, styleTokens)).join("\n\n")}
 
     val all: List<GeneratedScene> = listOf(${scenes.map(({ id }) => `${sceneName}.${sceneTokens.get(id)}`).join(", ")})
 }
@@ -122,19 +137,22 @@ ${values.map((id) => `    ${tokens.get(id)}(${kotlinStringLiteral(id)}),`).join(
 function emitScene(
   scene: CompiledScene,
   sceneName: string,
+  layerIdEnum: string,
   sceneTokens: ReadonlyMap<string, string>,
   rendererTokens: ReadonlyMap<string, string>,
   sourceTokens: ReadonlyMap<string, string>,
+  layerIdTokens: ReadonlyMap<string, string>,
   cameraTokens: ReadonlyMap<string, string>,
   actionTokens: ReadonlyMap<string, string>,
   styleTokens: ReadonlyMap<RendererKind, ReadonlyMap<string, string>>,
 ): string {
   const layers = scene.layers.map((layer) => {
+    const layerId = layerIdTokens.get(layerRefKey(scene.id, layer.id));
     const renderer = rendererTokens.get(layer.renderer);
     const style = styleTokens.get(layer.renderer)?.get(layer.style);
     const source = sourceTokens.get(`${layer.source.kind}:${layer.source.id}`);
-    if (!renderer || !style || !source) throw new Error(`scene '${scene.id}' layer '${layer.id}' has an incomplete generated enum mapping`);
-    return `GeneratedSceneLayer(id = ${kotlinStringLiteral(layer.id)}, renderer = ${sceneName}Renderer.${renderer}, style = ${sceneName}${kotlinIdentifier(layer.renderer)}Style.${style}, source = ${sceneName}Source.${source})`;
+    if (!layerId || !renderer || !style || !source) throw new Error(`scene '${scene.id}' layer '${layer.id}' has an incomplete generated enum mapping`);
+    return `GeneratedSceneLayer(id = ${layerIdEnum}.${layerId}, renderer = ${sceneName}Renderer.${renderer}, style = ${sceneName}${kotlinIdentifier(layer.renderer)}Style.${style}, source = ${sceneName}Source.${source})`;
   });
   const actions = scene.actions.map((action) => `${sceneName}Action.${actionTokens.get(action)}`);
   return `    val ${sceneTokens.get(scene.id)}: GeneratedScene = GeneratedScene(
@@ -143,6 +161,10 @@ function emitScene(
         actions = ${actions.length === 0 ? "emptyList()" : `listOf(${actions.join(", ")})`},
         layers = ${layers.length === 0 ? "emptyList()" : `listOf(\n${layers.map((row) => `            ${row},`).join("\n")}\n        )`},
     )`;
+}
+
+function layerRefKey(sceneId: string, layerId: string): string {
+  return JSON.stringify([sceneId, layerId]);
 }
 
 function enumRows(values: readonly string[], owner: string): ReadonlyMap<string, string> {
