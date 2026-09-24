@@ -9,16 +9,16 @@ const scenes: readonly CompiledScene[] = [
     cameras: ["geo", "iso"],
     actions: ["layers", "home", "camera"],
     layers: [
-      { id: "map-base", renderer: "tiles", style: "raster", source: { kind: "fetch", id: "MAP_TILES" }, cameras: ["geo"], toggle: { group: "ground", default: true } },
-      { id: "map-points", renderer: "marker", style: "point", source: { kind: "node", id: "map.glyphs.points" }, toggle: { default: true } },
-      { id: "map-base-copy", renderer: "tiles", style: "vector", source: { kind: "fetch", id: "MAP_TILES" }, cameras: ["iso"], toggle: { group: "ground", default: false } },
+      { id: "map-base", renderer: "tiles", style: "raster", source: { kind: "fetch", id: "MAP_TILES" }, cameras: ["geo"], toggle: { group: "ground", default: true }, pass: "raster" },
+      { id: "map-points", renderer: "marker", style: "point", source: { kind: "node", id: "map.glyphs.points" }, toggle: { default: true }, pass: "upright" },
+      { id: "map-base-copy", renderer: "tiles", style: "vector", source: { kind: "fetch", id: "MAP_TILES" }, cameras: ["iso"], toggle: { group: "ground", default: false }, pass: "world" },
     ],
   },
   {
     id: "acme.replay-scene",
     cameras: ["replay"],
     actions: ["time"],
-    layers: [{ id: "recorded-path", renderer: "path", style: "saved", source: { kind: "store", id: "jump-recordings" }, cameras: ["replay"] }],
+    layers: [{ id: "recorded-path", renderer: "path", style: "saved", source: { kind: "store", id: "jump-recordings" }, cameras: ["replay"], pass: "world" }],
   },
 ];
 
@@ -35,6 +35,8 @@ const options = {
 test("a generic scene emitter generates the ordered declared values against the shared scene ABI", () => {
   const kotlin = emitScenesKotlin(scenes, options);
   assert.match(kotlin, /enum class GeneratedAcmeScenesRenderer\(override val id: String\) : GeneratedSceneRenderer/u);
+  assert.match(kotlin, /import com\.acme\.ui\.scene\.GeneratedScenePass/u);
+  assert.match(kotlin, /enum class GeneratedAcmeScenePass\(override val id: String\) : GeneratedScenePass \{\n    RASTER\("raster"\),\n    WORLD\("world"\),\n    UPRIGHT\("upright"\),/u);
   assert.match(kotlin, /import com\.acme\.skyvwui\.scene\.GeneratedSceneLayerId/u);
   assert.match(kotlin, /import com\.acme\.skyvwui\.scene\.GeneratedSceneLayerToggle/u);
   assert.match(kotlin, /enum class GeneratedAcmeSceneLayerId\(override val id: String\) : GeneratedSceneLayerId/u);
@@ -52,11 +54,9 @@ test("a generic scene emitter generates the ordered declared values against the 
   const replayLayer = kotlin.indexOf('GeneratedSceneLayer(id = GeneratedAcmeSceneLayerId.ACME_REPLAY_SCENE_RECORDED_PATH');
   assert.ok(firstLayer < pointLayer && pointLayer < repeatedLayer && repeatedLayer < replayLayer,
     "scene and layer declaration order is the draw order");
-  assert.match(kotlin, /GeneratedSceneLayer\(id = GeneratedAcmeSceneLayerId\.ACME_MAP_SCENE_MAP_BASE, renderer = GeneratedAcmeScenesRenderer\.TILES, style = GeneratedAcmeScenesTilesStyle\.RASTER, source = GeneratedAcmeScenesSource\.FETCH_MAP_TILES, cameras = listOf\(GeneratedAcmeScenesCamera\.GEO\), toggle = GeneratedSceneLayerToggle\(group = "ground", default = true\)\)/u);
-  assert.match(kotlin, /GeneratedSceneLayer\(id = GeneratedAcmeSceneLayerId\.ACME_MAP_SCENE_MAP_BASE_COPY, renderer = GeneratedAcmeScenesRenderer\.TILES, style = GeneratedAcmeScenesTilesStyle\.VECTOR, source = GeneratedAcmeScenesSource\.FETCH_MAP_TILES, cameras = listOf\(GeneratedAcmeScenesCamera\.ISO\), toggle = GeneratedSceneLayerToggle\(group = "ground", default = false\)\)/u);
   assert.match(kotlin, /cameras = listOf\(GeneratedAcmeScenesCamera\.GEO, GeneratedAcmeScenesCamera\.ISO\)/u);
-  assert.match(kotlin, /GeneratedSceneLayer\(id = GeneratedAcmeSceneLayerId\.ACME_MAP_SCENE_MAP_BASE, renderer = GeneratedAcmeScenesRenderer\.TILES, style = GeneratedAcmeScenesTilesStyle\.RASTER, source = GeneratedAcmeScenesSource\.FETCH_MAP_TILES, cameras = listOf\(GeneratedAcmeScenesCamera\.GEO\), toggle = GeneratedSceneLayerToggle\(group = "ground", default = true\)\)/u);
-  assert.match(kotlin, /GeneratedSceneLayer\(id = GeneratedAcmeSceneLayerId\.ACME_MAP_SCENE_MAP_POINTS, renderer = GeneratedAcmeScenesRenderer\.MARKER, style = GeneratedAcmeScenesMarkerStyle\.POINT, source = GeneratedAcmeScenesSource\.NODE_MAP_GLYPHS_POINTS, toggle = GeneratedSceneLayerToggle\(default = true\)\)/u);
+  assert.match(kotlin, /GeneratedSceneLayer\(id = GeneratedAcmeSceneLayerId\.ACME_MAP_SCENE_MAP_BASE, renderer = GeneratedAcmeScenesRenderer\.TILES, style = GeneratedAcmeScenesTilesStyle\.RASTER, source = GeneratedAcmeScenesSource\.FETCH_MAP_TILES, cameras = listOf\(GeneratedAcmeScenesCamera\.GEO\), toggle = GeneratedSceneLayerToggle\(group = "ground", default = true\), pass = GeneratedAcmeScenePass\.RASTER\)/u);
+  assert.match(kotlin, /GeneratedSceneLayer\(id = GeneratedAcmeSceneLayerId\.ACME_MAP_SCENE_MAP_POINTS, renderer = GeneratedAcmeScenesRenderer\.MARKER, style = GeneratedAcmeScenesMarkerStyle\.POINT, source = GeneratedAcmeScenesSource\.NODE_MAP_GLYPHS_POINTS, toggle = GeneratedSceneLayerToggle\(default = true\), pass = GeneratedAcmeScenePass\.UPRIGHT\)/u);
   assert.match(kotlin, /val all: List<GeneratedScene> = listOf\(GeneratedAcmeScenes\.ACME_MAP_SCENE, GeneratedAcmeScenes\.ACME_REPLAY_SCENE\)/u);
 });
 
