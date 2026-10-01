@@ -1,15 +1,16 @@
 # @v1d/product-emit
 
 The consuming product owns the `@v1d/product-spec` version. ProductEmit declares
-the peer `>=0.3.91 <0.4.0`, whose floor is the product-spec its own build and tests
+the peer `>=0.3.92 <0.4.0`, whose floor is the product-spec its own build and tests
 run against: devDependencies pin that tarball, and `npm run check:pins` refuses an
 installed version outside the peer. Its skydiving-legos 0.1.5 dependency keeps a
 private 0.3.52 copy, which is not ProductEmit's public type boundary.
 
-Bump the two packages together. product-emit 0.1.50 to 0.1.57 cannot load with
-product-spec 0.3.91: `/core` fails with "does not provide an export named
-'EFFECT_OUTCOMES'". Use product-spec 0.3.91 with product-emit 0.1.58;
-product-emit 0.1.39 and 0.1.49 still load with 0.3.91.
+Bump the packages together. product-emit 0.1.59 peers on product-spec 0.3.92,
+whose `listOf`, `contractRef` and `optional` its wire emitter writes; 0.1.58 still
+loads with 0.3.92. product-emit 0.1.50 to 0.1.57 cannot load with product-spec
+0.3.91 or later: `/core` fails with "does not provide an export named
+'EFFECT_OUTCOMES'"; product-emit 0.1.39 and 0.1.49 still load with 0.3.91.
 
 Typed, deterministic ProductSpec emitters. Import only the layer a product
 uses:
@@ -46,6 +47,32 @@ lane is an `open<Lane>()` its owner calls and closes with `close()`. A rider
 registers with the handle its lane hands out, and `require()` throws off the
 lane only when the product's debug expression is true. `fulfilment()` lists, per
 lane, its isolation and ordering, what Android built and how fully.
+
+## Wire contracts in Kotlin
+
+`emitWireContractsKotlin(contracts, finiteValues, options)` writes standalone
+wire contracts (product-spec `boundary: "wire"`) as Kotlin over org.json, so an
+app reads and writes the HTTP bodies a TypeScript server reads with
+`readContractPayload`, from the one declaration. Per contract it writes a data
+class with `toJson()`, which writes every key (JSONObject.NULL for a null
+nullable key, nothing for a null optional key), and `parse(json)`, which
+refuses what the TypeScript read refuses in the order it reads: an unknown key
+unless the contract ignores it, then each declared key (missing, mistyped, out
+of range, undeclared, repeated in a distinct list), then the sibling laws. The
+first fault throws `Generated<Prefix>WireException` with `contractId` (the
+contract read) and `field` (the dotted path, such as `lines[1].cents`), as
+`ContractPayloadError` does. An absent optional key reads as null. Finite
+fields are enums carrying their wire value,
+`listOf` is `List<T>` (`Set<T>` when distinct), a nested contract its own data
+class, an integer `Long` within ±(2^53−1) and a number a finite `Double`. A field
+both optional and nullable is refused, because Kotlin has one null for both.
+`test/wire-contracts-kotlin.test.ts` pins the output for `test/wire-acme.ts`
+and runs the TypeScript read on `test/fixtures/wire-acme.json`. With
+`V1D_KOTLIN_CLASSPATH` (kotlin-compiler-embeddable and its dependencies) and
+`V1D_ORG_JSON` (org.json classpaths separated by `;`) set, it also compiles the
+emitted Kotlin and runs every fixture on each org.json, and the decision, the
+written value, the contract, the field path and the message must equal the
+TypeScript read's; without them that test is skipped by name.
 
 ## Reading the product as a graph
 

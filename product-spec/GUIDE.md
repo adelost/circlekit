@@ -67,12 +67,29 @@ const ports = bindPortImplementations(implementations, contracts);
 A finite field whose declaration is not passed (a library's, say) is refused by
 `portContracts`, not reported on every call.
 
-For TypeScript HTTP inputs, use a standalone contract with boundary `wire` and
-call `assertContractPayload(contract, input)` on `unknown`. Its assertion and
-`ContractPayload<typeof contract>` use the literal fields, with no second type
-or TS emitter. Finite fields require their value declarations as argument three
-and are checked against those values. Opaque `valueRef` fields remain `unknown`
-internally and are refused on `wire`. See `product-spec/test/contract-payload.test.ts`.
+An HTTP body is a standalone contract with boundary `wire`, declared once. The
+server reads it with `readContractPayload(contract, input, finiteValues)` and gets
+`ContractPayload<typeof contract>`, with no second type or TS emitter; a Kotlin
+client gets a data class with `toJson()` and `parse()` from
+`product-emit/src/core/emit-wire-contracts-kotlin.ts`. A missing,
+mistyped, out-of-range or undeclared value is refused. A request refuses an
+unknown key (the default); a response says `unknownFields: "ignore"` so the server
+can add fields. `optional: true` lets a key be absent and a read keeps it absent,
+so absent (leave as is) and null (clear) stay two facts. `listOf(element, { distinct })`
+holds primitives, finite members or nested records, `contractRef` a nested wire
+record checked by its own contract. A finite value is a letter, then letters,
+digits, `.`, `_`, `:` or `-`.
+`assertContractPayload` runs the same check and narrows in place. A bad payload
+throws `ContractPayloadError` (`contractId`, dotted `field`), so an HTTP route
+answers 400; a fault in the declaration or the call stays a plain `Error`. See
+`product-spec/test/wire-contracts.test.ts`.
+
+```ts
+const start = { id: "pairing.start", kind: "event", boundary: "wire", fields: [
+  field("platform", finiteValueRef("device.platform")),
+  field("scopes", listOf(finiteValueRef("device.scope"), { distinct: true }), { optional: true })] } as const;
+const request = readContractPayload(start, body, [platforms, scopes]);
+```
 
 A machine or table included in a product names its runtime **node type** with
 `ownerNodeTypeRef: "recording.runtime"`. The product compiler refuses a missing

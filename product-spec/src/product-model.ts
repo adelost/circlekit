@@ -20,12 +20,12 @@ import type {
 import {
   requireUnique,
   requireWireId,
+  requireWireValue,
   validateContract,
   validateProductNodeType,
   type LegoConfigRef,
   type LegoContract,
   type LegoFiniteValueDeclaration,
-  type LegoFiniteValueRef,
   type ProductNodeType,
 } from "./node-model.js";
 import {
@@ -50,6 +50,7 @@ import {
   type ProductPalette,
 } from "./visual-model.js";
 import { refuseDuplication } from "./duplication-model.js";
+import { finiteRefsOf } from "./field-kinds.js";
 import { frozen } from "./frozen.js";
 import type { FetchService } from "./fetch-service-model.js";
 import { requireRuntimeOwners } from "./runtime-owners-model.js";
@@ -161,10 +162,10 @@ export interface ProductDeclaration<
   readonly machines?: readonly Machine[];
   /** Where the product's streams and services run, carried into the IR so the product graph can draw each lane. */
   readonly lanes?: Lanes;
-  /** Declaration-only, never in the IR: each store effect needs exactly one compiled runtime owner. */
-  readonly stores?: readonly StoreService[];
+  /** Declaration-only, never in the IR: each store effect needs exactly one compiled runtime owner. Required; none is []. */
+  readonly stores: readonly StoreService[];
   /** Declaration-only, never in the IR: each fetch effect needs a compiled owner; an owned fetch is demanded on its screens. */
-  readonly fetches?: readonly FetchService[];
+  readonly fetches: readonly FetchService[];
 }
 
 export interface ProductIr {
@@ -406,7 +407,6 @@ function requireFacetOwners(
   }
 }
 
-
 function validateVisuals(
   declaration: Pick<ProductDeclaration, "palette" | "assetCatalogRef" | "iconRefs">,
   assetCatalog: PortableAssetCatalog,
@@ -490,12 +490,9 @@ function validateFiniteValues(
     ...additionalContracts,
   ];
   for (const contract of contracts) {
-    for (const item of contract.fields) {
-      if (!isFiniteValueRef(item.value)) continue;
-      if (!catalog.has(item.value.ref)) {
-        throw new Error(`contract '${contract.id}' uses unknown finite value '${item.value.ref}'`);
-      }
-      used.add(item.value.ref);
+    for (const { ref } of finiteRefsOf(contract)) {
+      if (!catalog.has(ref)) throw new Error(`contract '${contract.id}' uses unknown finite value '${ref}'`);
+      used.add(ref);
     }
   }
   const orphan = [...ownDeclarations].filter((id) => !used.has(id));
@@ -545,12 +542,9 @@ function validateProductLibraryCatalog(catalog: ProductLibraryCatalog): void {
     }
   }
   for (const contract of catalog.contracts) {
-    for (const item of contract.fields) {
-      if (!isFiniteValueRef(item.value)) continue;
-      if (!finiteValues.has(item.value.ref)) {
-        throw new Error(
-          `library '${catalog.id}' contract '${contract.id}' uses undeclared finite value '${item.value.ref}'`,
-        );
+    for (const { ref } of finiteRefsOf(contract)) {
+      if (!finiteValues.has(ref)) {
+        throw new Error(`library '${catalog.id}' contract '${contract.id}' uses undeclared finite value '${ref}'`);
       }
     }
   }
@@ -636,9 +630,5 @@ function validateFiniteDeclaration(declaration: LegoFiniteValueDeclaration, owne
     throw new Error(`finite value declaration '${declaration.id}' in ${owner} has no values`);
   }
   requireUnique(declaration.values, `value in finite declaration '${declaration.id}'`);
-  declaration.values.forEach((value) => requireWireId(value, `value in finite declaration '${declaration.id}'`));
-}
-
-function isFiniteValueRef(value: LegoContract["fields"][number]["value"]): value is LegoFiniteValueRef {
-  return typeof value !== "string" && "finite" in value && value.finite === true;
+  declaration.values.forEach((value) => requireWireValue(value, `value in finite declaration '${declaration.id}'`));
 }

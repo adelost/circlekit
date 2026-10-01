@@ -45,9 +45,32 @@ test("a fetch owner is a compiled node", () => {
     /fetch 'WEATHER' ownerNodeRef 'weather\.missing' is not a compiled node/u);
 });
 
+test("a fetch that no screen shows lists none, and the product loads", () => {
+  assert.doesNotThrow(() => compile({ fetches: [fetchService({ ...weather, screenRefs: [] })] }));
+});
+
 test("a fetch screen is a component-family screen that demands its owner", () => {
   assert.throws(() => compile({ fetches: [fetchService({ ...weather, screenRefs: ["RECORDS"] })] }),
     /fetch 'WEATHER' screen 'RECORDS' is not a component-family screen/u);
   assert.throws(() => compile({ fetches: [fetchService({ ...weather, ownerNodeRef: "log.store" })] }),
     /fetch 'WEATHER' owner 'log\.store' is not demanded on screen 'MAIN'/u);
 });
+
+test("a declaration without stores or fetches is refused by name at run time too", () => {
+  const { stores: _stores, ...withoutStores } = product;
+  const { fetches: _fetches, ...withoutFetches } = product;
+  assert.throws(() => defineProduct(withoutStores as never, assetCatalog),
+    { message: "product 'fixture' needs stores; a product with none writes stores: []" });
+  assert.throws(() => defineProduct(withoutFetches as never, assetCatalog),
+    { message: "product 'fixture' needs fetches; a product with none writes fetches: []" });
+});
+
+// Compiled, never run: a declaration that leaves out stores or fetches does not compile, so deleting the line cannot
+// switch requireRuntimeOwners off. A product with none writes [].
+function requiredOwnersProof(withoutStores: Omit<typeof product, "stores">, withoutFetches: Omit<typeof product, "fetches">) {
+  // @ts-expect-error stores is required
+  defineProduct(withoutStores, assetCatalog);
+  // @ts-expect-error fetches is required
+  defineProduct(withoutFetches, assetCatalog);
+}
+void requiredOwnersProof;

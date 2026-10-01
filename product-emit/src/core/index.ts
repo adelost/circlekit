@@ -27,6 +27,7 @@ export * from "./emit-service-glances-kotlin.js";
 export * from "./emit-state-presentations-kotlin.js";
 export * from './emit-store-services-kotlin.js';
 export * from "./emit-theme.js";
+export * from "./emit-wire-contracts-kotlin.js";
 export * from "./kotlin-syntax.js";
 export * from "./swift-syntax.js";
 export * from "./model.js";

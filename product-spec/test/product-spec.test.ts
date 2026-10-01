@@ -265,7 +265,7 @@ const baseDeclaration = {
   ],
   configs: [],
   finiteValues: [fixturePhases],
-  stateAuthorities: [phaseAuthority],
+  stateAuthorities: [phaseAuthority], stores: [], fetches: [],
   componentTypes: [controlType, basePageHostType],
   components: [control, basePageHost],
   componentFamilies,

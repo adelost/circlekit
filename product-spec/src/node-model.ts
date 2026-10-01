@@ -1,7 +1,8 @@
 import { validateContractLaws } from './contract-law-model.js';
 import { rememberCallsite } from './source-site.js';
+export { contractFingerprint } from './contract-law-model.js';
 import type { LegoField, LegoFieldOptions } from './field-model.js';
-export { field, type LegoField, type LegoFieldOptions } from './field-model.js';
+export { field, type DeclaredField, type LegoField, type LegoFieldOptions } from './field-model.js';
 export type LegoPrimitive = "boolean" | "integer" | "number" | "string";
 /** The only executable authoring kinds. Graph position is derived, never declared as a second role. */
 export type ProductNodeKind = "service" | "derive" | "present";
@@ -47,7 +48,7 @@ export function finiteValues<const Id extends string, const Value extends string
   requireWireId(id, "finite value declaration");
   if (values.length === 0) throw new Error(`finite value declaration '${id}' has no values`);
   requireUnique(values, `value in finite declaration '${id}'`);
-  values.forEach((value) => requireWireId(value, `value in finite declaration '${id}'`));
+  values.forEach((value) => requireWireValue(value, `value in finite declaration '${id}'`));
   return { id, values };
 }
 
@@ -86,6 +87,8 @@ export interface LegoContract {
   readonly kind: "observation" | "state" | "snapshot" | "event";
   readonly boundary: LegoBoundaryKind;
   readonly fields: readonly LegoField[];
+  /** What a read does with an undeclared key: "refuse" (the default), or "ignore" on a wire contract read by clients. */
+  readonly unknownFields?: "refuse" | "ignore";
   /** Optional compiler-owned navigation meaning; it is part of contract identity. */
   readonly navigation?: LegoNavigationContract;
   /**
@@ -341,25 +344,6 @@ export function validateConfigCatalog(configs: readonly LegoConfigRef[]): Readon
   return result;
 }
 
-export function contractFingerprint(contract: LegoContract): string {
-  return JSON.stringify({
-    kind: contract.kind,
-    boundary: contract.boundary,
-    fields: contract.fields.map((item) => ({
-      name: item.name,
-      value: typeof item.value === "string" ? item.value : {
-        ref: item.value.ref,
-        finite: "finite" in item.value && item.value.finite === true,
-      },
-      unit: item.unit ?? null,
-      nullable: item.nullable,
-      clockDomain: item.clockDomain,
-      min: item.min ?? null, max: item.max ?? null, gteField: item.gteField ?? null,
-    })),
-    navigation: contract.navigation ?? null,
-  });
-}
-
 function validateConfigInputs(inputs: readonly LegoConfigInput[], owner: string): void {
   requireUnique(inputs.map(({ id }) => id), `${owner} config input`);
   for (const input of inputs) {
@@ -484,6 +468,13 @@ export function requireIdentifier(value: string, owner: string): void {
 
 export function requireWireId(value: string, owner: string): void {
   if (!/^[a-z][a-z0-9.-]*$/u.test(value)) throw new Error(`${owner} has invalid wire id '${value}'`);
+}
+
+/** A finite value is a letter, then letters, digits, '.', '_', ':' or '-': "jumps:read" and "ON" travel as written. */
+export function requireWireValue(value: string, owner: string): void {
+  if (!/^[A-Za-z][A-Za-z0-9._:-]*$/u.test(value)) {
+    throw new Error(`${owner} has invalid wire value ${JSON.stringify(value)}; use a letter, then letters, digits, '.', '_', ':' or '-'`);
+  }
 }
 
 export function requireUnique(values: readonly string[], owner: string): void {

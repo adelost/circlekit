@@ -94,7 +94,11 @@ export function fetchService<const Spec extends FetchServiceSpec>(spec: Spec): F
   }
   if (spec.screenRefs !== undefined) {
     if (spec.ownerNodeRef === undefined) fail("ownerNodeRef for screenRefs");
-    if (!Array.isArray(spec.screenRefs) || new Set(spec.screenRefs).size !== spec.screenRefs.length) fail("screenRefs");
+    if (!Array.isArray(spec.screenRefs)) fail("screenRefs");
+    const twice = spec.screenRefs.find((screen, index) => spec.screenRefs!.indexOf(screen) !== index);
+    if (twice !== undefined) {
+      throw new Error(`fetchService '${name}' lists screen '${twice}' twice in screenRefs; list each screen once`);
+    }
   }
   return Object.freeze({ ...spec, pattern: "fetch" as const,
     cadenceMs: spec.flow.everyMs, requestSpacingMs: spec.flow.minSpacingMs });

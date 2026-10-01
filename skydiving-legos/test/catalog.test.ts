@@ -70,6 +70,8 @@ const base = {
   configs: [],
   finiteValues: [],
   stateAuthorities: [],
+  stores: [],
+  fetches: [],
   componentTypes: [componentType],
   components: [component],
   componentFamilies: [{
@@ -143,7 +145,7 @@ test("map render event carries the complete measured viewport", () => {
     mapRenderScaleContract.fields.map(({ name }) => name),
     ["pxPerM", "centerEastM", "centerNorthM", "viewportWidthPx", "viewportHeightPx"],
   );
-  assert.ok(!mapRenderScaleContract.fields.some(({ name }) => name === "event"));
+  assert.ok(!mapRenderScaleContract.fields.some(({ name }) => (name as string) === "event"));
 });
 
 test("one settings owner exposes flight and power without duplicating persistence", () => {

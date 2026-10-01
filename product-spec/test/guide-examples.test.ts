@@ -1,8 +1,8 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import {
-  bindPortImplementations, bool, choice, decide, defineDecisionTable, defineLanes, defineProduct, fetchService, integer,
-  laneRiders, on, portContracts, record,
+  bindPortImplementations, bool, choice, decide, defineDecisionTable, defineLanes, defineProduct, fetchService, field,
+  finiteValueRef, finiteValues, integer, laneRiders, listOf, on, portContracts, readContractPayload, record,
 } from "../src/index.js";
 import { assetCatalog, product as minimalProduct } from "./minimal-product.js";
 
@@ -61,6 +61,17 @@ test("the fetch example is a fetch policy", () => {
         homeRadiusM: 50, onFailure: "keep-last-good" } },
     onCrash: "as-failure", effectIds: ["weather.briefing-fetch"] });
   assert.equal(weather.cadenceMs, 1_800_000);
+});
+
+test("the wire example reads a released request whose optional key is absent, and keeps it absent", () => {
+  const platforms = finiteValues("device.platform", ["wear-os", "apple-watch", "garmin"]);
+  const scopes = finiteValues("device.scope", ["jumps:read", "jumps:write"]);
+  const body: unknown = { platform: "wear-os" };
+  const start = { id: "pairing.start", kind: "event", boundary: "wire", fields: [
+    field("platform", finiteValueRef("device.platform")),
+    field("scopes", listOf(finiteValueRef("device.scope"), { distinct: true }), { optional: true })] } as const;
+  const request = readContractPayload(start, body, [platforms, scopes]);
+  assert.deepEqual(request, { platform: "wear-os" });
 });
 
 test("the observed-port example binds a compiled product's contracts", () => {

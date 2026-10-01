@@ -17,6 +17,37 @@ helpers off the root entry. product-emit 0.1.50 to 0.1.57 cannot load with it:
 'EFFECT_OUTCOMES'". Bump both together, to product-spec 0.3.91 and product-emit
 0.1.58. product-emit 0.1.39 and 0.1.49 still load with 0.3.91.
 
+0.3.92 pairs with product-emit 0.1.59 and skydiving-legos 0.1.16, which peer on
+`>=0.3.92 <0.4.0`: the Kotlin wire emitter and the trackbook wire contracts use
+`listOf`, `contractRef` and `optional`. Bump the three together. product-emit
+0.1.58 and skydiving-legos 0.1.15 still load with 0.3.92; skydiving-legos
+0.1.16's `/wire` entry does not load with 0.3.91 ("does not provide an export
+named 'contractRef'").
+
+What a caller of 0.3.91 sees change on the bump to 0.3.92:
+
+- `stores` and `fetches` are required in the declaration `defineProduct` takes.
+  Leaving the line out used to switch the runtime-owner law off without a word;
+  now it is a TypeScript error ("Property 'stores' is missing"), and an untyped
+  call is refused by name. A product with none adds two lines,
+  `stores: [],` and `fetches: [],`. They go in link-product's
+  `linkProductDeclaration` (`link-product/src/product.ts`, which its test
+  spreads), in showcase-product's `defineProduct({ id: "circlekit-showcase", ... })`
+  (`showcase-product/src/product.ts`, line 50) and in barometer's
+  `barometerProductDeclaration` (its product/src/product.ts, line 173). Skyvw
+  already passes both.
+- A payload fault throws `ContractPayloadError`. `error.name` and `String(error)`
+  now begin with `ContractPayloadError` where they began with `Error`; the message
+  and `instanceof Error` are unchanged.
+- A finite declaration left out of the call is refused before the payload is
+  read: "finite 'x' needs exactly one nonempty value declaration" now comes
+  before "requires a record payload" or "is missing field".
+- `gteField` skips a null sibling: `{ low: null, high: -1 }` was refused,
+  because JavaScript compared -1 with null as with 0, and is accepted.
+- `fetchService` names a screen listed twice ("lists screen 'MAIN' twice in
+  screenRefs; list each screen once") where it said "needs screenRefs".
+- A finite value may hold capitals and ':', which the id rule refused.
+
 The authoring vocabulary has four executable building blocks:
 
 - `service(...)` owns external IO, persistence, a resource or platform
@@ -69,15 +100,29 @@ operation-by-data case ids by hand.
 
 ## TypeScript at a wire boundary
 
-`field` preserves its literal name, primitive and nullability. `ContractPayload<typeof contract>` derives the
-payload type; `assertContractPayload(contract, input)` checks an unknown value and narrows it to that type.
-No product graph or generated TypeScript is required. Use boundary `wire` for an HTTP body, not a UI event.
-All wire fields must be runtime-checkable: primitives or `finiteValueRef`, never an opaque `valueRef`.
-Pass finite declarations as the assertion's third argument; a finite field without its declaration is refused,
-and a string outside its values is refused. The same declarations derive its literal union in the payload type.
-Opaque internal fields remain `unknown`: only their presence and nullability are checked. A widened contract
-also remains `unknown`; an assertion cannot recover type information an author erased.
-The executable wire example and type checks are in `test/contract-payload.test.ts`.
+An HTTP body is a standalone contract with boundary `wire`, declared once. `field` preserves its literal name,
+primitive and nullability, and `ContractPayload<typeof contract>` derives the payload type; no product graph,
+second type or generated TypeScript is involved. `readContractPayload(contract, input, finiteValues)` reads an
+`unknown` body and returns the checked copy. A missing, mistyped, out-of-range or undeclared value is refused.
+An undeclared key is refused unless the contract says `unknownFields: "ignore"`, which only a wire contract may
+say: a request read by the server refuses (the default), a response read by clients ignores, so the server can
+add response fields without breaking old clients. A wire field with `optional: true` may be absent and a read keeps
+it absent: a read never invents a key, so absent (leave as is) and null (clear) stay two facts, and `nullable` is
+independent. Like a list or a nested contract, `optional` is refused on any other boundary. `assertContractPayload(contract, input)` runs the same check and narrows the value in place.
+Every payload fault throws `ContractPayloadError` with `contractId` (the contract read), `field` (the dotted path
+from its root, such as `history[2].role`, and '' for the payload itself) and the message. A fault in the
+declaration or the call, such as a finite declaration left out, stays a plain `Error`: an HTTP adapter answers
+400 for the first and fails loudly for the second.
+
+Wire fields are runtime-checkable: primitives, `finiteValueRef`, `contractRef` (a nested wire record checked by its
+own contract and policy; a contract that nests itself is refused) and `listOf(element, { distinct })`, a list of one
+primitive, finite or record element kind, checked element by element; a distinct list refuses an element twice.
+The payload type of a list is `readonly T[]`. An opaque `valueRef` is refused on `wire`. Pass the finite
+declarations as argument three: a missing one is refused before any value is read, and the same declarations
+derive the literal unions of the payload type. A finite value is a letter, then letters, digits, `.`, `_`, `:` or
+`-` ("jumps:read", "ON"); ids keep the id rule. String length and pattern checks stay hand-written beside the
+read. A widened contract remains `unknown`; a read cannot recover type information an author erased. The
+executable examples and type checks are in `test/wire-contracts.test.ts` and `test/contract-payload.test.ts`.
 
 ## Decisions and runtime owners
 

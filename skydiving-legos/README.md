@@ -11,8 +11,9 @@ export const product = defineProduct(declaration, assets, [skydivingLegoCatalog]
 ```
 
 The consuming product owns the `@v1d/product-spec` version. This library requires
-one compatible peer (`>=0.3.64 <0.4.0`) and pins 0.3.66 only for its own build
-and tests, so its public types resolve through the product's copy.
+one compatible peer (`>=0.3.92 <0.4.0`, for the `/wire` contracts) and pins 0.3.92
+only for its own build and tests, so its public types resolve through the
+product's copy.
 
 Passing the catalog does two things at once. Everything in it becomes available
 to the declaration, and every id in it becomes **reserved**: a product that
@@ -30,6 +31,40 @@ Membership is derived from the modules rather than hand-listed, because a
 written list is a second place to forget a file and the failure is silent: the
 lego still compiles, the catalog just stops reserving its ids, and the collision
 this package exists to cause never happens.
+
+## Wire contracts: `@v1d/skydiving-legos/wire`
+
+The trackbook HTTP bodies a watch exchanges, declared once in `src/wire/trackbook.ts`
+and kept out of the catalog, because a wire contract is read at an HTTP boundary,
+not wired into a product graph: pairing start (request and receipt) and live
+position (the PUT point, its receipt with the echoed point and the grant, and the
+DELETE receipt). The server reads a body with `readContractPayload(contract,
+body, trackbookWireValues)`; the app's Kotlin comes from product-emit's
+`emitWireContractsKotlin(trackbookWireContracts, trackbookWireValues, options)`.
+Importing the module checks every contract's laws.
+
+A request refuses an unknown key; a receipt ignores one, so trackbook can add
+fields. `operationId`, `pollSecret` and `scopes` may be absent from a pairing
+request (releases v0.5.330 to v0.5.1580 leave them out) but are never null; the
+server reads an absent key as null itself. `test/fixtures/trackbook/` holds what
+every release sends and what trackbook returns, and each one reads as itself.
+
+Only field laws live in the contracts. These rules stay hand-written with their
+owners:
+
+- Trackbook: `scopes`, when present, is `jumps:write` or both scopes; an absent
+  `scopes` means write-only. `operationId` and `pollSecret` come both or neither,
+  as `^op_[A-Za-z0-9_-]{32,96}$` and `^poll_[A-Za-z0-9_-]{32,128}$`. The label is
+  trimmed, at most 80 characters, and a blank one becomes the default.
+- Trackbook: `sampleTime` is an ISO-8601 UTC instant (no fraction or three
+  digits), stored and echoed as `.SSSZ`; a sample from the future is refused;
+  `phase` is at most 64 characters with no control characters; the DELETE fence is
+  the query `?sequence=`, not a body.
+- The watch: the receipt's `accountKey` is the session's, the grant's `deviceId`
+  has the safe id shape, the echoed position is the point it sent (compare
+  instants, not strings: trackbook writes `...:10.000Z` for `...:10Z`), and for
+  read access `requestedScopes` holds both scopes. From v0.5.1581, the receipt's
+  `id` is the operationId and `pollSecret` comes back unchanged.
 
 ## Account read actions
 
