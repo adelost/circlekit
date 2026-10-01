@@ -1,5 +1,6 @@
 import { validateContractLaws } from './contract-law-model.js';
 import { rememberCallsite } from './source-site.js';
+export { contractFingerprint } from './contract-law-model.js';
 import type { LegoField, LegoFieldOptions } from './field-model.js';
 export { field, type LegoField, type LegoFieldOptions } from './field-model.js';
 export type LegoPrimitive = "boolean" | "integer" | "number" | "string";
@@ -339,25 +340,6 @@ export function validateConfigCatalog(configs: readonly LegoConfigRef[]): Readon
     result.set(config.id, config);
   }
   return result;
-}
-
-export function contractFingerprint(contract: LegoContract): string {
-  return JSON.stringify({
-    kind: contract.kind,
-    boundary: contract.boundary,
-    fields: contract.fields.map((item) => ({
-      name: item.name,
-      value: typeof item.value === "string" ? item.value : {
-        ref: item.value.ref,
-        finite: "finite" in item.value && item.value.finite === true,
-      },
-      unit: item.unit ?? null,
-      nullable: item.nullable,
-      clockDomain: item.clockDomain,
-      min: item.min ?? null, max: item.max ?? null, gteField: item.gteField ?? null,
-    })),
-    navigation: contract.navigation ?? null,
-  });
 }
 
 function validateConfigInputs(inputs: readonly LegoConfigInput[], owner: string): void {

@@ -8,8 +8,9 @@ type FinitePayload<Id, Values extends readonly LegoFiniteValueDeclaration[]> =
 
 type FieldValue<Value, Values extends readonly LegoFiniteValueDeclaration[]> =
   Value extends 'number' | 'integer' ? number : Value extends 'boolean' ? boolean
-    : Value extends 'string' ? string : Value extends { readonly finite: true; readonly ref: infer Id }
-      ? FinitePayload<Id, Values> : unknown;
+    : Value extends 'string' ? string
+      : Value extends { readonly finiteSet: true; readonly ref: infer Id } ? readonly FinitePayload<Id, Values>[]
+        : Value extends { readonly finite: true; readonly ref: infer Id } ? FinitePayload<Id, Values> : unknown;
 
 type FieldPayload<Field extends LegoField, Values extends readonly LegoFiniteValueDeclaration[]> =
   FieldValue<Field['value'], Values> | (true extends Field['nullable'] ? null : never);
