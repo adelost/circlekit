@@ -47,6 +47,25 @@ registers with the handle its lane hands out, and `require()` throws off the
 lane only when the product's debug expression is true. `fulfilment()` lists, per
 lane, its isolation and ordering, what Android built and how fully.
 
+## Wire contracts in Kotlin
+
+`emitWireContractsKotlin(contracts, finiteValues, options)` writes standalone
+wire contracts (product-spec `boundary: "wire"`) as Kotlin over org.json, so an
+app reads and writes the HTTP bodies a TypeScript server reads with
+`readContractPayload`, from the one declaration. Per contract it writes a data
+class whose init refuses a value outside a declared bound, `toJson()` that
+writes every key (JSONObject.NULL for a null nullable key, nothing for a null
+optional key) and `parse(json)` that refuses what the TypeScript read refuses:
+a missing, mistyped, out-of-range or undeclared value, an element a distinct
+list repeats, and an unknown key unless the contract ignores it. An absent
+optional key reads as null. Finite fields are enums carrying their wire value,
+`listOf` is `List<T>` (`Set<T>` when distinct), a nested contract its own data
+class, an integer `Long` within ±(2^53−1) and a number a finite `Double`. A field
+both optional and nullable is refused, because Kotlin has one null for both.
+`test/wire-contracts-kotlin.test.ts` pins the output for `test/wire-acme.ts`
+and runs the TypeScript read on `test/fixtures/wire-acme.json`, the cases the
+generated parse is specified against.
+
 ## Reading the product as a graph
 
 `core` can draw any compiled product as two Mermaid files, generated from the

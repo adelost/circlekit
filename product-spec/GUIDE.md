@@ -69,7 +69,9 @@ A finite field whose declaration is not passed (a library's, say) is refused by
 
 An HTTP body is a standalone contract with boundary `wire`, declared once. The
 server reads it with `readContractPayload(contract, input, finiteValues)` and gets
-`ContractPayload<typeof contract>`, with no second type or TS emitter. A missing,
+`ContractPayload<typeof contract>`, with no second type or TS emitter; a Kotlin
+client gets a data class with `toJson()` and `parse()` from
+`product-emit/src/core/emit-wire-contracts-kotlin.ts`. A missing,
 mistyped, out-of-range or undeclared value is refused. A request refuses an
 unknown key (the default); a response says `unknownFields: "ignore"` so the server
 can add fields. `optional: true` lets a key be absent and a read keeps it absent,
