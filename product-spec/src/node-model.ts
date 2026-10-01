@@ -2,7 +2,7 @@ import { validateContractLaws } from './contract-law-model.js';
 import { rememberCallsite } from './source-site.js';
 export { contractFingerprint } from './contract-law-model.js';
 import type { LegoField, LegoFieldOptions } from './field-model.js';
-export { field, type LegoField, type LegoFieldOptions } from './field-model.js';
+export { field, type DeclaredField, type LegoField, type LegoFieldOptions } from './field-model.js';
 export type LegoPrimitive = "boolean" | "integer" | "number" | "string";
 /** The only executable authoring kinds. Graph position is derived, never declared as a second role. */
 export type ProductNodeKind = "service" | "derive" | "present";
