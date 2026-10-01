@@ -20,6 +20,7 @@ import type {
 import {
   requireUnique,
   requireWireId,
+  requireWireValue,
   validateContract,
   validateProductNodeType,
   type LegoConfigRef,
@@ -406,7 +407,6 @@ function requireFacetOwners(
   }
 }
 
-
 function validateVisuals(
   declaration: Pick<ProductDeclaration, "palette" | "assetCatalogRef" | "iconRefs">,
   assetCatalog: PortableAssetCatalog,
@@ -636,7 +636,7 @@ function validateFiniteDeclaration(declaration: LegoFiniteValueDeclaration, owne
     throw new Error(`finite value declaration '${declaration.id}' in ${owner} has no values`);
   }
   requireUnique(declaration.values, `value in finite declaration '${declaration.id}'`);
-  declaration.values.forEach((value) => requireWireId(value, `value in finite declaration '${declaration.id}'`));
+  declaration.values.forEach((value) => requireWireValue(value, `value in finite declaration '${declaration.id}'`));
 }
 
 function isFiniteValueRef(value: LegoContract["fields"][number]["value"]): value is LegoFiniteValueRef {

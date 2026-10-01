@@ -47,7 +47,7 @@ export function finiteValues<const Id extends string, const Value extends string
   requireWireId(id, "finite value declaration");
   if (values.length === 0) throw new Error(`finite value declaration '${id}' has no values`);
   requireUnique(values, `value in finite declaration '${id}'`);
-  values.forEach((value) => requireWireId(value, `value in finite declaration '${id}'`));
+  values.forEach((value) => requireWireValue(value, `value in finite declaration '${id}'`));
   return { id, values };
 }
 
@@ -484,6 +484,13 @@ export function requireIdentifier(value: string, owner: string): void {
 
 export function requireWireId(value: string, owner: string): void {
   if (!/^[a-z][a-z0-9.-]*$/u.test(value)) throw new Error(`${owner} has invalid wire id '${value}'`);
+}
+
+/** A finite value is a letter, then letters, digits, '.', '_', ':' or '-': "jumps:read" and "ON" travel as written. */
+export function requireWireValue(value: string, owner: string): void {
+  if (!/^[A-Za-z][A-Za-z0-9._:-]*$/u.test(value)) {
+    throw new Error(`${owner} has invalid wire value ${JSON.stringify(value)}; use a letter, then letters, digits, '.', '_', ':' or '-'`);
+  }
 }
 
 export function requireUnique(values: readonly string[], owner: string): void {
