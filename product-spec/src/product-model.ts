@@ -51,7 +51,6 @@ import {
 } from "./visual-model.js";
 import { refuseDuplication } from "./duplication-model.js";
 import { frozen } from "./frozen.js";
-import { compileProductActions, type CompiledProductActionDeclaration, type ProductAction } from "./action-model.js";
 import type { FetchService } from "./fetch-service-model.js";
 import { requireRuntimeOwners } from "./runtime-owners-model.js";
 import type { StoreService } from "./store-service-model.js";
@@ -162,8 +161,6 @@ export interface ProductDeclaration<
   readonly machines?: readonly Machine[];
   /** Where the product's streams and services run, carried into the IR so the product graph can draw each lane. */
   readonly lanes?: Lanes;
-  /** Direct, unit component-event to service-input declarations. */
-  readonly actions?: readonly ProductAction[];
   /** Declaration-only, never in the IR: each store effect needs exactly one compiled runtime owner. */
   readonly stores?: readonly StoreService[];
   /** Declaration-only, never in the IR: each fetch effect needs a compiled owner; an owned fetch is demanded on its screens. */
@@ -196,8 +193,6 @@ export interface ProductIr {
   readonly machines?: readonly Machine[];
   /** Present only when the product declares lanes: the lanes as declared and every ride as an edge from rider to lane. */
   readonly lanes?: LanesIr;
-  /** Present only when the product declares direct actions. */
-  readonly actions?: readonly CompiledProductActionDeclaration[];
 }
 
 export function defineProduct<
@@ -342,18 +337,12 @@ export function defineProduct<
       if (!artifacts.has(artifactRef)) throw new Error(`product icon '${icon.id}' uses missing artifact '${artifactRef}'`);
     }
   }
-  const actionWiring = compileProductActions(declaration.actions ?? [], {
-    components: declaration.components,
-    componentTypes: declaration.componentTypes,
-    nodes: declaration.nodes,
-    nodeTypes: declaration.nodeTypes,
-  });
   const graph = compileProductGraph({
     nodeTypes: declaration.nodeTypes,
-    nodes: actionWiring.nodes,
+    nodes: declaration.nodes,
     configs: declaration.configs,
     componentTypes: declaration.componentTypes,
-    components: actionWiring.components,
+    components: declaration.components,
     mountedScopes,
   });
   requireFacetOwners(declaration.machines ?? [], declaration.decisionTables ?? [], graph.nodeTypes);
@@ -396,7 +385,6 @@ export function defineProduct<
     ...decisionTablesIr(declaration.decisionTables ?? []),
     ...machinesIr(declaration.machines ?? []),
     ...lanesIr(declaration.lanes),
-    ...(actionWiring.actions.length === 0 ? {} : { actions: actionWiring.actions }),
   });
 }
 

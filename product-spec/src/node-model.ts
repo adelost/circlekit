@@ -478,14 +478,6 @@ function addPort(
   target.set(`${mountId}.${item.id}`, item.contract.id);
 }
 
-export function registerContract(target: Map<string, LegoContract>, contract: LegoContract): void {
-  const existing = target.get(contract.id);
-  if (existing !== undefined && contractFingerprint(existing) !== contractFingerprint(contract)) {
-    throw new Error(`contract '${contract.id}' has conflicting schemas`);
-  }
-  if (existing === undefined) target.set(contract.id, contract);
-}
-
 export function requireIdentifier(value: string, owner: string): void {
   if (!/^[A-Za-z_][A-Za-z0-9_]*$/u.test(value)) throw new Error(`${owner} has invalid identifier '${value}'`);
 }

@@ -6,7 +6,6 @@ export * from "./emit-interaction-kotlin.js";
 export * from "./emit-iso-options-kotlin.js";
 export * from "./emit-jump-tags-kotlin.js";
 export * from "./emit-kotlin.js";
-export * from "./emit-map-object-presets-kotlin.js";
 export * from "./emit-map-product-kotlin.js";
 export * from "./emit-product-icons-kotlin.js";
 export * from "./emit-preflight-briefing-kotlin.js";

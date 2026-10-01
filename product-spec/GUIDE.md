@@ -104,29 +104,11 @@ the IR, but the product refuses a store effect without exactly one compiled owne
 a fetch effect without any, and a fetch whose `ownerNodeRef` is not demanded on each
 of its `screenRefs`.
 
-`defineEffect({ id, input, receipt })` describes one outside-world write. Its
-service-internal input and receipt both carry nonnullable `operationId` and
-`inputSha256`; the kit fixes the outcomes to CONFIRMED, FAILED and UNKNOWN,
-retry to the same identity, and UNKNOWN to remain visible. Runtime owners freeze
-the bytes before sending and use their existing outbox; the kit executes nothing.
-
 An instance-owned transient UI event reducer is also a `service`, with
 `effects: []`, a UI-event input and a presentation-state output. A `derive`
 cannot receive a component event. Keep an event relay explicit when the same
 input must update local state and reach an action handler; neither route is a
 pretend host effect.
-
-A Unit UI action can instead bind a component event straight to a service
-input. `componentOutput` and `nodeInput` select the declared endpoints;
-`action` adds their direct edge to the product graph and navigation registration.
-
-```ts
-const deleteAction = action("flight-detail.delete", {
-  from: componentOutput(jumpDetailsContent, "delete"),
-  to: nodeInput(surfaceInteractionNode, "flightDetailDelete"),
-});
-// Add `actions: [deleteAction]` to the ProductDeclaration.
-```
 
 ## 4. The four questions
 

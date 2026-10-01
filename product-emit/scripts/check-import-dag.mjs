@@ -9,12 +9,12 @@ const skydivingRoot = join(sourceRoot, "skydiving");
 
 const expectedCore = new Set([
   "capability-model", "compile-theme", "component-body-model", "component-copy-model", "declaration-ids", "decode-theme-registry",
-  "diagnostics", "emission-options", "emit-actions-kotlin", "emit-component-body-kotlin", "emit-component-copy-kotlin", "emit-decision-table-kotlin",
+  "diagnostics", "emission-options", "emit-component-body-kotlin", "emit-component-copy-kotlin", "emit-decision-table-kotlin",
   "emit-component-family-registry-kotlin", "emit-component-trees-kotlin",
   "emit-config-values-kotlin", "emit-domain-graph", "emit-lanes-kotlin", "emit-machine-kotlin", "emit-machine-mermaid", "emit-machine-stately", "emit-studio-trace-kotlin",
   "emit-decision-table-swift", "emit-machine-swift", "swift-syntax",
   "emit-native-lego-kotlin", "emit-navigation-kotlin",
-  "emit-profile-table-js", "emit-service-glances-kotlin", "emit-state-presentations-kotlin", "emit-store-services-kotlin", "emit-effect-policies-kotlin", "emit-theme", "index",
+  "emit-profile-table-js", "emit-service-glances-kotlin", "emit-state-presentations-kotlin", "emit-store-services-kotlin", "emit-theme", "index",
   "kotlin-syntax", "model", "profile-table-model", "service-glance-model", "theme-model", "validate-capabilities",
   "validate-invariants",
   "validate-native-legos", "validate-profile-table",
@@ -22,7 +22,7 @@ const expectedCore = new Set([
 const expectedSkydiving = new Set([
   "action-family", "compile-interactions", "compile-settings", "emit-home-actions-kotlin",
   "emit-interaction-kotlin", "emit-iso-options-kotlin", "emit-jump-sequence", "emit-jump-tags-kotlin", "emit-kotlin",
-  "emit-map-object-presets-kotlin", "emit-map-product-kotlin", "emit-product-icons-kotlin",
+  "emit-map-product-kotlin", "emit-product-icons-kotlin",
   "emit-product-menus-kotlin", "emit-settings-components-kotlin",
   "emit-preflight-briefing-kotlin", "emit-status-indicators-kotlin",
   "emit-surface-components-kotlin", "emit-watch-chrome-slots-kotlin", "home-action-model",
