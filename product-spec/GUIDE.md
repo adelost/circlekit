@@ -99,6 +99,11 @@ preferences require commit. A platform binds that guarantee to its own atomic
 file or preferences owner, or refuses an unsupported durability. The codec's
 domain bytes stay native. `storeCatalog` refuses two owners of one effect.
 
+A product passes both to `defineProduct` as `stores` and `fetches`. They never reach
+the IR, but the product refuses a store effect without exactly one compiled owner,
+a fetch effect without any, and a fetch whose `ownerNodeRef` is not demanded on each
+of its `screenRefs`.
+
 `defineEffect({ id, input, receipt })` describes one outside-world write. Its
 service-internal input and receipt both carry nonnullable `operationId` and
 `inputSha256`; the kit fixes the outcomes to CONFIRMED, FAILED and UNKNOWN,

@@ -52,6 +52,9 @@ import {
 import { refuseDuplication } from "./duplication-model.js";
 import { frozen } from "./frozen.js";
 import { compileProductActions, type CompiledProductActionDeclaration, type ProductAction } from "./action-model.js";
+import type { FetchService } from "./fetch-service-model.js";
+import { requireRuntimeOwners } from "./runtime-owners-model.js";
+import type { StoreService } from "./store-service-model.js";
 
 export const PRODUCT_SPEC_SCHEMA_VERSION = 9 as const;
 
@@ -161,6 +164,10 @@ export interface ProductDeclaration<
   readonly lanes?: Lanes;
   /** Direct, unit component-event to service-input declarations. */
   readonly actions?: readonly ProductAction[];
+  /** Declaration-only, never in the IR: each store effect needs exactly one compiled runtime owner. */
+  readonly stores?: readonly StoreService[];
+  /** Declaration-only, never in the IR: each fetch effect needs a compiled owner; an owned fetch is demanded on its screens. */
+  readonly fetches?: readonly FetchService[];
 }
 
 export interface ProductIr {
@@ -350,6 +357,7 @@ export function defineProduct<
     mountedScopes,
   });
   requireFacetOwners(declaration.machines ?? [], declaration.decisionTables ?? [], graph.nodeTypes);
+  requireRuntimeOwners(declaration, graph);
   // D1 of the duplication law: two declarations that already say the same thing never reach the IR.
   // D2, the merge candidates, is a warning and is read from the compiled product, not thrown here.
   refuseDuplication(graph.nodeTypes, graph.componentTypes);

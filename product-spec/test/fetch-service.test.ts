@@ -54,6 +54,15 @@ test("coverage cache is spatial while a value cache needs a real age", () => {
   } as unknown as FetchServiceSpec), /failure\.cache\.maxAgeMs/u);
 });
 
+test("a fetch owner is a wire id and its screens are unique and need that owner", () => {
+  assert.equal(fetchService({ ...weather, ownerNodeRef: "weather.service", screenRefs: ["MAIN"] }).ownerNodeRef,
+    "weather.service");
+  assert.throws(() => fetchService({ ...weather, ownerNodeRef: "Weather_Service" }), /WEATHER.*needs ownerNodeRef$/u);
+  assert.throws(() => fetchService({ ...weather, ownerNodeRef: "weather.service", screenRefs: ["MAIN", "MAIN"] }),
+    /WEATHER.*needs screenRefs$/u);
+  assert.throws(() => fetchService({ ...weather, screenRefs: ["MAIN"] }), /WEATHER.*needs ownerNodeRef for screenRefs$/u);
+});
+
 function negativeTypes() {
   // @ts-expect-error A network fetch must declare its failure policy.
   fetchService({ id: "bad", flow: weather.flow, freshness: weather.freshness,
