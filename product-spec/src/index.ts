@@ -1,6 +1,7 @@
 export * from "./conformance-model.js";
 export * from "./action-model.js";
 export * from "./contract-law-model.js";
+export type { ContractPayload } from './contract-payload.js';
 export * from "./component-tree-model.js";
 export * from "./decision-table-model.js";
 export * from "./duplication-model.js";

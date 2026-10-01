@@ -1,13 +1,17 @@
-import type { LegoContract, LegoField } from './node-model.js';
+import { validateContract, type LegoContract, type LegoField, type LegoFiniteValueDeclaration } from './node-model.js';
+import type { ContractPayload } from './contract-payload.js';
 import type { ProductPortRegistry } from './port-graph-model.js';
 import { declaredSite } from './source-site.js';
 
 const numeric = (field:LegoField) => field.value==='number'||field.value==='integer';
 
-/** A portable field law is closed over the contract's own numeric fields. */
+/** WHAT: Checks portable field laws. WHY: Keeps each bound inside its contract and opaque values off the wire. */
 export function validateContractLaws(contract:LegoContract):void {
   const fields=new Map(contract.fields.map(field=>[field.name,field]));
   for(const field of contract.fields){
+    if(contract.boundary==='wire'&&typeof field.value!=='string'
+      && (!('finite' in field.value)||field.value.finite!==true))
+      throw new Error(`wire contract '${contract.id}' field '${field.name}' has opaque value ref '${field.value.ref}'`);
     const bounded=field.min!==undefined||field.max!==undefined||field.gteField!==undefined;
     if(bounded&&!numeric(field))throw new Error(`contract '${contract.id}' law on nonnumeric field '${field.name}'`);
     if(field.min!==undefined&&!Number.isFinite(field.min)||field.max!==undefined&&!Number.isFinite(field.max)
@@ -21,9 +25,12 @@ export function validateContractLaws(contract:LegoContract):void {
   }
 }
 
-/** Checks a value where a declared port returns it, never by guessing from the value's shape. */
-export function assertContractPayload(contract:LegoContract,payload:unknown):void {
-  validateContractLaws(contract);
+/** WHAT: Checks and narrows a declared payload. WHY: Keeps TypeScript promises aligned with runtime checks. */
+export function assertContractPayload<const Contract extends LegoContract,
+  const Values extends readonly LegoFiniteValueDeclaration[] = readonly []>(
+  contract:Contract,payload:unknown,finiteDeclarations:Values=[] as unknown as Values,
+):asserts payload is ContractPayload<Contract,Values> {
+  validateContract(contract);
   if(contract.kind==='event'&&contract.fields.length===0&&payload===undefined)return;
   if(!payload||typeof payload!=='object'||Array.isArray(payload))
     throw new Error(`contract '${contract.id}' requires a record payload`);
@@ -31,7 +38,22 @@ export function assertContractPayload(contract:LegoContract,payload:unknown):voi
   for(const name of Object.keys(value))if(!declared.has(name))
     throw new Error(`contract '${contract.id}' has undeclared field '${name}'`);
   for(const field of contract.fields){
+    if(!Object.hasOwn(value,field.name))throw new Error(`contract '${contract.id}' is missing field '${field.name}'`);
     const item=value[field.name];
+    if(typeof field.value!=='string'){
+      if('finite' in field.value&&field.value.finite===true){
+        const ref=field.value.ref;
+        const declarations=finiteDeclarations.filter(declaration=>declaration.id===ref);
+        if(declarations.length!==1||declarations[0]!.values.length===0)
+          throw new Error(`finite '${field.value.ref}' needs exactly one nonempty value declaration`);
+        if(item===null&&field.nullable)continue;
+        if(typeof item!=='string'||!declarations[0]!.values.includes(item))
+          throw new Error(`contract '${contract.id}' field '${field.name}' must belong to finite '${field.value.ref}'`);
+      }else if(item===null&&!field.nullable){
+        throw new Error(`contract '${contract.id}' field '${field.name}' must be nonnullable`);
+      }
+      continue;
+    }
     if(item===null&&field.nullable)continue;
     const valid=field.value==='number'?typeof item==='number'&&Number.isFinite(item)
       :field.value==='integer'?typeof item==='number'&&Number.isSafeInteger(item)

@@ -1,5 +1,7 @@
 import { validateContractLaws } from './contract-law-model.js';
 import { rememberCallsite } from './source-site.js';
+import type { LegoField, LegoFieldOptions } from './field-model.js';
+export { field, type LegoField, type LegoFieldOptions } from './field-model.js';
 export type LegoPrimitive = "boolean" | "integer" | "number" | "string";
 /** The only executable authoring kinds. Graph position is derived, never declared as a second role. */
 export type ProductNodeKind = "service" | "derive" | "present";
@@ -7,7 +9,7 @@ export type LegoStateOwner = "none" | "instance" | "external";
 export type LegoLifetime = "call" | "operation" | "instance" | "process";
 export type LegoDurability = "transient" | "durable";
 export type LegoClockDomain = "none" | "monotonic" | "wall";
-export type LegoBoundaryKind = "presentation" | "ui-event" | "service-internal";
+export type LegoBoundaryKind = "presentation" | "ui-event" | "service-internal" | "wire";
 
 export interface LegoValueRef { readonly ref: string }
 export interface LegoFiniteValueRef<Id extends string = string> extends LegoValueRef {
@@ -23,26 +25,6 @@ export interface LegoFiniteValueDeclaration<
 }
 export type FiniteValueOf<Declaration extends LegoFiniteValueDeclaration> =
   Declaration["values"][number];
-export interface LegoFieldOptions {
-  readonly unit?: string;
-  readonly nullable?: boolean;
-  readonly clockDomain?: LegoClockDomain;
-  readonly min?: number;
-  readonly max?: number;
-  readonly gteField?: string;
-}
-
-export interface LegoField {
-  readonly name: string;
-  readonly value: LegoPrimitive | LegoValueRef;
-  readonly unit?: string;
-  readonly nullable: boolean;
-  readonly clockDomain: LegoClockDomain;
-  readonly min?: number;
-  readonly max?: number;
-  readonly gteField?: string;
-}
-
 export type LegoNavigationContract =
   | { readonly kind: "active-page" }
   | { readonly kind: "guard" }
@@ -97,23 +79,6 @@ export function mapFiniteCases<
   Readonly<{ [Value in Declaration["values"][number]]: Payload }> {
   return Object.fromEntries(declaration.values.map((value) => [value, map(value)])) as
     Readonly<{ [Value in Declaration["values"][number]]: Payload }>;
-}
-
-export function field(
-  name: string,
-  value: LegoPrimitive | LegoValueRef,
-  options: LegoFieldOptions = {},
-): LegoField {
-  return rememberCallsite({
-    name,
-    value,
-    nullable: options.nullable ?? false,
-    clockDomain: options.clockDomain ?? "none",
-    ...(options.unit === undefined ? {} : { unit: options.unit }),
-    ...(options.min === undefined ? {} : { min: options.min }),
-    ...(options.max === undefined ? {} : { max: options.max }),
-    ...(options.gteField === undefined ? {} : { gteField: options.gteField }),
-  },field);
 }
 
 export interface LegoContract {
@@ -463,10 +428,11 @@ function validateConfigValues(
   }
 }
 
+/** WHAT: Checks a contract declaration. WHY: Keeps malformed schemas out of graphs and runtime boundaries. */
 export function validateContract(contract: LegoContract): void {
   requireWireId(contract.id, "contract");
   validateContractLaws(contract);
-  if (!["presentation", "ui-event", "service-internal"].includes(contract.boundary)) {
+  if (!["presentation", "ui-event", "service-internal", "wire"].includes(contract.boundary)) {
     throw new Error(`contract '${contract.id}' has invalid boundary '${String(contract.boundary)}'`);
   }
   if (contract.fields.length === 0 && contract.kind !== "event") {

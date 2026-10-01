@@ -1,4 +1,4 @@
-import { assertContractPayload, derive, field, port } from '../index.js';
+import { assertContractPayload, derive, field, port, type ContractPayload } from '../index.js';
 
 /** Four distinct formats: shared numbers do not make their units or field meanings interchangeable. */
 export const boxPx = {
@@ -32,10 +32,10 @@ export const visionNormalizers=[
     outputs:[port('box',boxPx)],runtime}),
 ] as const;
 
-export type BoxPx={left:number;top:number;right:number;bottom:number};
-export type XywhPx={x:number;y:number;width:number;height:number};
-export type YoloRatio={cx:number;cy:number;w:number;h:number};
-export type ImageSizePx={width:number;height:number};
+export type BoxPx=ContractPayload<typeof boxPx>;
+export type XywhPx=ContractPayload<typeof xywhPx>;
+export type YoloRatio=ContractPayload<typeof yoloRatio>;
+export type ImageSizePx=ContractPayload<typeof imageSizePx>;
 
 export function normalizeXyxy(value:BoxPx):BoxPx {
   assertContractPayload(xyxyPx,value);
