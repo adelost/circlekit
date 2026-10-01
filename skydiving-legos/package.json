@@ -28,8 +28,8 @@
     "@v1d/product-spec": ">=0.3.92 <0.4.0"
   },
   "devDependencies": {
-    "@v1d/product-spec": "https://circlekit.pages.dev/npm/v1d/product-spec/0.3.66/v1d-product-spec-0.3.66.tgz",
     "@types/node": "^24.3.0",
+    "@v1d/product-spec": "https://circlekit.pages.dev/npm/v1d/product-spec/0.3.92/v1d-product-spec-0.3.92.tgz",
     "typescript": "^5.9.3"
   },
   "engines": {
