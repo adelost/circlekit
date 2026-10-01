@@ -100,44 +100,70 @@ function refuseNesting(contract:LegoContract,path:readonly string[]):void {
   for(const field of contract.fields)if(isContractRef(field.value))refuseNesting(field.value.contract,[...path,contract.id]);
 }
 
-/** WHAT: Checks and narrows a declared payload. WHY: Keeps TypeScript promises aligned with runtime checks. */
+/**
+ * WHAT: Checks that a value IS the payload: every declared key present, optional ones too, and no other key, whatever
+ * the contract's unknownFields. WHY: Narrows an in-process value without a copy, by the same check a read runs.
+ */
 export function assertContractPayload<const Contract extends LegoContract,
   const Values extends readonly LegoFiniteValueDeclaration[] = readonly []>(
   contract:Contract,payload:unknown,finiteDeclarations:Values=[] as unknown as Values,
 ):asserts payload is ContractPayload<Contract,Values> {
   validateContract(contract);
-  payloadOf(contract,payload,finiteDeclarations);
+  payloadOf(contract,payload,{members:finiteMembers(contract,finiteDeclarations),exact:true});
+}
+
+/**
+ * WHAT: Reads a wire value as its contract allows and returns the checked copy: an absent optional key reads as null,
+ * an undeclared key is dropped under unknownFields "ignore" and refused otherwise, nested records by their own contract.
+ * WHY: A server reads a request and a client a response by one rule, and only declared keys travel on.
+ */
+export function readContractPayload<const Contract extends LegoContract,
+  const Values extends readonly LegoFiniteValueDeclaration[] = readonly []>(
+  contract:Contract,payload:unknown,finiteDeclarations:Values=[] as unknown as Values,
+):ContractPayload<Contract,Values> {
+  validateContract(contract);
+  return payloadOf(contract,payload,{members:finiteMembers(contract,finiteDeclarations),exact:false}) as
+    ContractPayload<Contract,Values>;
+}
+
+interface PayloadRead {
+  /** Members of every finite declaration the contract names, nested contracts included. */
+  readonly members:ReadonlyMap<string,readonly string[]>;
+  /** Exact: the value must already be the payload. Otherwise the contract's optional keys and policy apply. */
+  readonly exact:boolean;
 }
 
 /** The one payload check: every declared field read in order, then the sibling laws on the checked values. */
-function payloadOf(contract:LegoContract,payload:unknown,finite:readonly LegoFiniteValueDeclaration[]):unknown {
+function payloadOf(contract:LegoContract,payload:unknown,read:PayloadRead):unknown {
   if(contract.kind==='event'&&contract.fields.length===0&&payload===undefined)return undefined;
   if(!isRecord(payload))throw new Error(`contract '${contract.id}' requires a record payload`);
-  const value=payload,declared=new Set(contract.fields.map(field=>field.name));
-  for(const name of Object.keys(value))if(!declared.has(name))
+  const declared=new Set(contract.fields.map(field=>field.name));
+  if(read.exact||contract.unknownFields!=='ignore')for(const name of Object.keys(payload))if(!declared.has(name))
     throw new Error(`contract '${contract.id}' has undeclared field '${name}'`);
-  const read=Object.fromEntries(contract.fields.map(field=>[field.name,fieldOf(contract,field,value,finite)]));
+  const copy=Object.fromEntries(contract.fields.map(field=>[field.name,fieldOf(contract,field,payload,read)]));
   for(const field of contract.fields){
-    const item=read[field.name],other=field.gteField===undefined?null:read[field.gteField];
+    const item=copy[field.name],other=field.gteField===undefined?null:copy[field.gteField];
     if(typeof item==='number'&&typeof other==='number'&&item<other)
       throw new Error(`contract '${contract.id}' field '${field.name}'=${item} must be >= '${field.gteField}'=${other} ${field.unit??''} [${declaredSite(field)??'source unknown'}]`.trim());
   }
-  return read;
+  return copy;
 }
 
-function fieldOf(contract:LegoContract,field:LegoField,value:Record<string,unknown>,
-  finite:readonly LegoFiniteValueDeclaration[]):unknown {
-  if(!Object.hasOwn(value,field.name))throw new Error(`contract '${contract.id}' is missing field '${field.name}'`);
+function fieldOf(contract:LegoContract,field:LegoField,value:Record<string,unknown>,read:PayloadRead):unknown {
+  if(!Object.hasOwn(value,field.name)){
+    if(!read.exact&&field.optional===true)return null;
+    throw new Error(`contract '${contract.id}' is missing field '${field.name}'`);
+  }
   const item=value[field.name],kind=field.value;
-  const members=isFiniteRef(kind)||isFiniteSetRef(kind)?finiteMembers(kind.ref,finite):undefined;
   if(item===null&&field.nullable)return null;
   if(typeof kind==='string')return primitiveOf(contract,field,kind,item);
   const where=`contract '${contract.id}' field '${field.name}'`;
   if(isContractRef(kind)){
     if(!isRecord(item))throw new Error(`${where} must be a '${kind.contract.id}' record`);
-    return payloadOf(kind.contract,item,finite);
+    return payloadOf(kind.contract,item,read);
   }
-  if(members===undefined){
+  const members=read.members.get(kind.ref);
+  if(members===undefined||!(isFiniteRef(kind)||isFiniteSetRef(kind))){
     if(item===null)throw new Error(`${where} must be nonnullable`);
     return item;
   }
@@ -155,11 +181,18 @@ function fieldOf(contract:LegoContract,field:LegoField,value:Record<string,unkno
   return [...item];
 }
 
-function finiteMembers(ref:string,finite:readonly LegoFiniteValueDeclaration[]):readonly string[] {
-  const declarations=finite.filter(declaration=>declaration.id===ref);
-  if(declarations.length!==1||declarations[0]!.values.length===0)
-    throw new Error(`finite '${ref}' needs exactly one nonempty value declaration`);
-  return declarations[0]!.values;
+/** Every finite declaration the contract names needs exactly one nonempty declaration, before any value is read. */
+function finiteMembers(contract:LegoContract,finite:readonly LegoFiniteValueDeclaration[],
+  members=new Map<string,readonly string[]>()):ReadonlyMap<string,readonly string[]> {
+  for(const {value} of contract.fields){
+    if(isContractRef(value))finiteMembers(value.contract,finite,members);
+    if(!isFiniteRef(value)&&!isFiniteSetRef(value)||members.has(value.ref))continue;
+    const declarations=finite.filter(declaration=>declaration.id===value.ref);
+    if(declarations.length!==1||declarations[0]!.values.length===0)
+      throw new Error(`finite '${value.ref}' needs exactly one nonempty value declaration`);
+    members.set(value.ref,declarations[0]!.values);
+  }
+  return members;
 }
 
 function primitiveOf(contract:LegoContract,field:LegoField,kind:LegoPrimitive,item:unknown):unknown {

@@ -1,7 +1,8 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { assertContractPayload, contractFingerprint, contractRef, defineProductLibraryCatalog, field, finiteSetRef,
-  finiteValues, validateContract, valueRef, type ContractPayload, type LegoContract, type LegoField } from '../src/index.js';
+  finiteValueRef, finiteValues, readContractPayload, validateContract, valueRef, type ContractPayload, type LegoContract,
+  type LegoField } from '../src/index.js';
 
 // The wire laws of the C1 plan: what a finite value may be, set and nested fields, the unknown-field policy, optional
 // keys, and one read that applies them all.
@@ -156,3 +157,86 @@ test('the unknown-field policy and an optional key are part of the contract iden
   const optional = { ...access, fields: [field('scopes', finiteSetRef(scopes.id), { nullable: true, optional: true })] } as const;
   assert.notEqual(contractFingerprint(nullable), contractFingerprint(optional));
 });
+
+// A request the server reads (refuse) and a response clients read (ignore), shaped like the C1 pairing start.
+const platforms = finiteValues('device.platform', ['wear-os', 'apple-watch', 'garmin']);
+const pairing = { id: 'pairing.start', kind: 'event', boundary: 'wire', fields: [
+  field('platform', finiteValueRef(platforms.id)), field('label', 'string'),
+  field('operationId', 'string', { nullable: true, optional: true }),
+  field('scopes', finiteSetRef(scopes.id), { nullable: true, optional: true })] } as const;
+const echo = { ...point, id: 'live.echo', unknownFields: 'ignore' } as const;
+const started = { id: 'pairing.started', kind: 'snapshot', boundary: 'wire', unknownFields: 'ignore', fields: [
+  field('id', 'string'), field('requestedScopes', finiteSetRef(scopes.id)), field('position', contractRef(point)),
+  field('echo', contractRef(echo), { nullable: true })] } as const;
+const values = [platforms, scopes] as const;
+const startedOf = (extra: Record<string, unknown> = {}) => ({ id: 'op_1', requestedScopes: ['jumps:write'],
+  position: { latitude: 1, phase: null }, echo: null, ...extra });
+
+test('a read fills an absent optional key with null and returns a copy of the declared keys', () => {
+  const released = { platform: 'wear-os', label: 'Skydive Altimeter' };
+  const read = readContractPayload(pairing, released, values);
+  assert.deepEqual(read, { platform: 'wear-os', label: 'Skydive Altimeter', operationId: null, scopes: null });
+  assert.notEqual(read, released);
+  const scoped = { ...released, operationId: 'op_1', scopes: ['jumps:read', 'jumps:write'] };
+  assert.deepEqual(readContractPayload(pairing, scoped, values), scoped);
+});
+
+test('a request with an unknown field is refused', () => {
+  assert.throws(() => readContractPayload(pairing, { platform: 'wear-os', label: 'x', surprise: true }, values),
+    /contract 'pairing\.start' has undeclared field 'surprise'/u);
+});
+
+test('a response with an unknown field parses, and the copy leaves it out', () => {
+  const read = readContractPayload(started, startedOf({ addedLater: 1, echo: { latitude: 2, phase: null, heading: 9 } }), values);
+  assert.deepEqual(read, startedOf({ echo: { latitude: 2, phase: null } }));
+});
+
+test('a nested record keeps its own policy inside a response', () => {
+  assert.throws(() => readContractPayload(started, startedOf({ position: { latitude: 1, phase: null, heading: 9 } }), values),
+    /contract 'live\.point' has undeclared field 'heading'/u);
+});
+
+test('a missing non-optional field is refused in both directions', () => {
+  assert.throws(() => readContractPayload(pairing, { label: 'x' }, values), /contract 'pairing\.start' is missing field 'platform'/u);
+  const { id: _, ...withoutId } = startedOf();
+  assert.throws(() => readContractPayload(started, withoutId, values), /contract 'pairing\.started' is missing field 'id'/u);
+  assert.throws(() => readContractPayload(started, startedOf({ position: { latitude: 1 } }), values),
+    /contract 'live\.point' is missing field 'phase'/u);
+});
+
+test('an undeclared finite member and a repeated set member are refused', () => {
+  assert.throws(() => readContractPayload(pairing, { platform: 'pebble', label: 'x' }, values),
+    /contract 'pairing\.start' field 'platform' must belong to finite 'device\.platform'/u);
+  assert.throws(() => readContractPayload(pairing, { platform: 'wear-os', label: 'x', scopes: ['jumps:admin'] }, values),
+    /contract 'pairing\.start' field 'scopes' must belong to finite 'device\.scope'/u);
+  assert.throws(() => readContractPayload(started, startedOf({ requestedScopes: ['jumps:write', 'jumps:write'] }), values),
+    /contract 'pairing\.started' field 'requestedScopes' repeats 'jumps:write'/u);
+});
+
+test('every finite declaration the contract names is needed before a value is read, nested ones included', () => {
+  assert.throws(() => readContractPayload(pairing, { platform: 'wear-os', label: 'x' }, [platforms]),
+    /finite 'device\.scope' needs exactly one nonempty value declaration/u);
+  const nested = { id: 'pairing.holder', kind: 'snapshot', boundary: 'wire', fields: [field('start', contractRef(pairing))] } as const;
+  assert.throws(() => readContractPayload(nested, { start: { platform: 'wear-os', label: 'x' } }, [scopes]),
+    /finite 'device\.platform' needs exactly one nonempty value declaration/u);
+});
+
+test('assert stays exact: an absent optional key or an unknown key is refused whatever the policy', () => {
+  assert.throws(() => assertContractPayload(pairing, { platform: 'wear-os', label: 'x' }, values),
+    /contract 'pairing\.start' is missing field 'operationId'/u);
+  assert.throws(() => assertContractPayload(started, startedOf({ addedLater: 1 }), values),
+    /contract 'pairing\.started' has undeclared field 'addedLater'/u);
+  assert.doesNotThrow(() => assertContractPayload(started, readContractPayload(started, startedOf({ addedLater: 1 }), values), values));
+});
+
+// Compiled with the public API: the read returns the payload type, an optional key as a nullable value.
+function readTypeProof(input: unknown) {
+  const read = readContractPayload(pairing, input, values);
+  const platform: 'wear-os' | 'apple-watch' | 'garmin' = read.platform;
+  const operationId: string | null = read.operationId;
+  // @ts-expect-error an optional key reads as null when absent
+  const always: string = read.operationId;
+  const requested: readonly ('jumps:read' | 'jumps:write')[] = readContractPayload(started, input, values).requestedScopes;
+  return { platform, operationId, always, requested };
+}
+void readTypeProof;

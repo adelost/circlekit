@@ -69,15 +69,25 @@ operation-by-data case ids by hand.
 
 ## TypeScript at a wire boundary
 
-`field` preserves its literal name, primitive and nullability. `ContractPayload<typeof contract>` derives the
-payload type; `assertContractPayload(contract, input)` checks an unknown value and narrows it to that type.
-No product graph or generated TypeScript is required. Use boundary `wire` for an HTTP body, not a UI event.
-All wire fields must be runtime-checkable: primitives or `finiteValueRef`, never an opaque `valueRef`.
-Pass finite declarations as the assertion's third argument; a finite field without its declaration is refused,
-and a string outside its values is refused. The same declarations derive its literal union in the payload type.
-Opaque internal fields remain `unknown`: only their presence and nullability are checked. A widened contract
-also remains `unknown`; an assertion cannot recover type information an author erased.
-The executable wire example and type checks are in `test/contract-payload.test.ts`.
+An HTTP body is a standalone contract with boundary `wire`, declared once. `field` preserves its literal name,
+primitive and nullability, and `ContractPayload<typeof contract>` derives the payload type; no product graph,
+second type or generated TypeScript is involved. `readContractPayload(contract, input, finiteValues)` reads an
+`unknown` body and returns the checked copy. A missing, mistyped, out-of-range or undeclared value is refused.
+An undeclared key is refused unless the contract says `unknownFields: "ignore"`, which only a wire contract may
+say: a request read by the server refuses (the default), a response read by clients ignores, so the server can
+add response fields without breaking old clients. A field with `optional: true` reads an absent key as null; it
+requires `nullable` and is for request keys that released clients leave out. Encoders write every key.
+`assertContractPayload(contract, input)` runs the same check on a value that already is the exact payload:
+every declared key present, no other, and narrows it in place.
+
+Wire fields are runtime-checkable: primitives, `finiteValueRef`, `finiteSetRef` (distinct members of one finite
+declaration, in any order, possibly none) and `contractRef` (a nested wire record checked by its own contract and
+policy; a contract that nests itself is refused). An opaque `valueRef` is refused on `wire`. Pass the finite
+declarations as argument three: a missing one is refused before any value is read, and the same declarations
+derive the literal unions of the payload type. A finite value is a letter, then letters, digits, `.`, `_`, `:` or
+`-` ("jumps:read", "ON"); ids keep the id rule. String length and pattern checks stay hand-written beside the
+read. A widened contract remains `unknown`; a read cannot recover type information an author erased. The
+executable examples and type checks are in `test/wire-contracts.test.ts` and `test/contract-payload.test.ts`.
 
 ## Decisions and runtime owners
 

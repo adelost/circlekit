@@ -67,12 +67,24 @@ const ports = bindPortImplementations(implementations, contracts);
 A finite field whose declaration is not passed (a library's, say) is refused by
 `portContracts`, not reported on every call.
 
-For TypeScript HTTP inputs, use a standalone contract with boundary `wire` and
-call `assertContractPayload(contract, input)` on `unknown`. Its assertion and
-`ContractPayload<typeof contract>` use the literal fields, with no second type
-or TS emitter. Finite fields require their value declarations as argument three
-and are checked against those values. Opaque `valueRef` fields remain `unknown`
-internally and are refused on `wire`. See `product-spec/test/contract-payload.test.ts`.
+An HTTP body is a standalone contract with boundary `wire`, declared once. The
+server reads it with `readContractPayload(contract, input, finiteValues)` and gets
+`ContractPayload<typeof contract>`, with no second type or TS emitter. A missing,
+mistyped, out-of-range or undeclared value is refused. A request refuses an
+unknown key (the default); a response says `unknownFields: "ignore"` so the server
+can add fields. `optional: true` (with `nullable`) reads an absent key as null, for
+keys released clients leave out. `finiteSetRef` holds distinct members of one
+finite declaration, `contractRef` a nested wire record checked by its own
+contract. A finite value is a letter, then letters, digits, `.`, `_`, `:` or `-`.
+`assertContractPayload` checks a value that already is the exact payload. See
+`product-spec/test/wire-contracts.test.ts`.
+
+```ts
+const start = { id: "pairing.start", kind: "event", boundary: "wire", fields: [
+  field("platform", finiteValueRef("device.platform")),
+  field("scopes", finiteSetRef("device.scope"), { nullable: true, optional: true })] } as const;
+const request = readContractPayload(start, body, [platforms, scopes]);
+```
 
 A machine or table included in a product names its runtime **node type** with
 `ownerNodeTypeRef: "recording.runtime"`. The product compiler refuses a missing
