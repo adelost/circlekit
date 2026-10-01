@@ -45,6 +45,10 @@ test("a fetch owner is a compiled node", () => {
     /fetch 'WEATHER' ownerNodeRef 'weather\.missing' is not a compiled node/u);
 });
 
+test("a fetch that no screen shows lists none, and the product loads", () => {
+  assert.doesNotThrow(() => compile({ fetches: [fetchService({ ...weather, screenRefs: [] })] }));
+});
+
 test("a fetch screen is a component-family screen that demands its owner", () => {
   assert.throws(() => compile({ fetches: [fetchService({ ...weather, screenRefs: ["RECORDS"] })] }),
     /fetch 'WEATHER' screen 'RECORDS' is not a component-family screen/u);

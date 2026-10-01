@@ -63,12 +63,11 @@ test("a fetch owner is a wire id and its screens are unique and need that owner"
     { message: "fetchService 'WEATHER' needs ownerNodeRef for screenRefs" });
 });
 
-test("a screen listed twice is named, and an empty screen list has its own message", () => {
+test("a screen listed twice is named, and an empty screen list means no screen shows the fetch", () => {
   const owned = { ...weather, ownerNodeRef: "weather.service" } as const;
   assert.throws(() => fetchService({ ...owned, screenRefs: ["MAIN", "LOG", "MAIN"] }),
     { message: "fetchService 'WEATHER' lists screen 'MAIN' twice in screenRefs; list each screen once" });
-  assert.throws(() => fetchService({ ...owned, screenRefs: [] }),
-    { message: "fetchService 'WEATHER' lists no screen in screenRefs; name one or leave screenRefs out" });
+  assert.deepEqual(fetchService({ ...owned, screenRefs: [] }).screenRefs, []);
 });
 
 function negativeTypes() {
