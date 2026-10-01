@@ -39,5 +39,10 @@ export const acmeReceipt = { id: "shop.receipt", kind: "snapshot", boundary: "wi
 export const acmeScale = { id: "shop.scale", kind: "observation", boundary: "wire", fields: [
   field("readings", listOf("number", { distinct: true })), field("tare", "number")] } as const;
 
-export const acmeWireContracts = [acmeOrder, acmeReceipt, acmeScale] as const;
+/** Fields named like the generated code's own words, which must still read and write their own values. */
+export const acmeBlob = { id: "shop.blob", kind: "snapshot", boundary: "wire", fields: [
+  field("json", "string"), field("read", "string"), field("place", "string"), field("it", "string", { nullable: true }),
+  field("out", "string", { optional: true })] } as const;
+
+export const acmeWireContracts = [acmeOrder, acmeReceipt, acmeScale, acmeBlob] as const;
 export const acmeWireValues = [acmeSizes, acmeToppings] as const;

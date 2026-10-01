@@ -5,7 +5,7 @@ import { fileURLToPath } from "node:url";
 import { ContractPayloadError, field, finiteValueRef, finiteValues, readContractPayload, type LegoContract } from "@v1d/product-spec";
 import { emitWireContractsKotlin, kotlinIdentifier } from "../src/core/index.js";
 import { kotlinSkip, runKotlin } from "./kotlin-toolchain.js";
-import { acmeOrder, acmeReceipt, acmeScale, acmeWireContracts, acmeWireValues } from "./wire-acme.js";
+import { acmeBlob, acmeOrder, acmeReceipt, acmeScale, acmeWireContracts, acmeWireValues } from "./wire-acme.js";
 
 const options = { packageName: "dev.acme.wire", symbolPrefix: "Acme", sourceFile: "test/wire-acme.ts", sourceSha: "fixture" };
 const fromTest = (path: string) => readFileSync(new URL(`../../test/${path}`, import.meta.url), "utf8");
@@ -23,7 +23,7 @@ interface WireFixture {
 // 20240303): it accepts and refuses exactly these cases, and writes back exactly the value TypeScript reads.
 const fixtures = JSON.parse(fromTest("fixtures/wire-acme.json")) as readonly WireFixture[];
 const contracts: Readonly<Record<string, LegoContract>> = { "shop.order": acmeOrder, "shop.receipt": acmeReceipt,
-  "shop.scale": acmeScale };
+  "shop.scale": acmeScale, "shop.blob": acmeBlob };
 
 for (const fixture of fixtures) {
   test(`TypeScript reads the wire fixture '${fixture.name}' as the Kotlin parse does`, () => {

@@ -192,7 +192,7 @@ ${properties.join("\n")}
 ) {
     fun toJson(): JSONObject {
         val json = JSONObject()
-${fields.map(({ field, kind, name: prop }) => `        ${writeKey(field, kind, prop)}`).join("\n")}
+${fields.map(({ field, kind, name: prop }) => `        ${writeKey(field, kind, `this.${prop}`)}`).join("\n")}
         return json
     }
 
@@ -254,7 +254,10 @@ function writeValue(kind: FieldKind, value: string): string {
   }
 }
 
-/** A null optional key is left out; a null nullable key is written as JSONObject.NULL; every other key is written. */
+/**
+ * A null optional key is left out; a null nullable key is written as JSONObject.NULL; every other key is written. The
+ * value is read through `this.`, so a field named `json` or `it` is never the local of the same name.
+ */
 function writeKey(field: LegoField, kind: FieldKind, prop: string): string {
   if (field.optional === true) return `if (${prop} != null) json.put("${field.name}", ${writeValue(kind, prop)})`;
   if (!field.nullable) return `json.put("${field.name}", ${writeValue(kind, prop)})`;

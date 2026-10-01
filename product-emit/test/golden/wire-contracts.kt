@@ -146,14 +146,14 @@ data class GeneratedAcmeShopOrder(
 ) {
     fun toJson(): JSONObject {
         val json = JSONObject()
-        json.put("size", size.wire)
-        json.put("toppings", JSONArray(toppings.map { it.wire }))
-        if (notes != null) json.put("notes", JSONArray(notes))
-        json.put("deliverTo", deliverTo.toJson())
-        json.put("tipPercent", tipPercent ?: JSONObject.NULL)
-        json.put("sequence", sequence)
-        json.put("express", express)
-        if (coupon != null) json.put("coupon", coupon)
+        json.put("size", this.size.wire)
+        json.put("toppings", JSONArray(this.toppings.map { it.wire }))
+        if (this.notes != null) json.put("notes", JSONArray(this.notes))
+        json.put("deliverTo", this.deliverTo.toJson())
+        json.put("tipPercent", this.tipPercent ?: JSONObject.NULL)
+        json.put("sequence", this.sequence)
+        json.put("express", this.express)
+        if (this.coupon != null) json.put("coupon", this.coupon)
         return json
     }
 
@@ -186,8 +186,8 @@ data class GeneratedAcmeShopAddress(
 ) {
     fun toJson(): JSONObject {
         val json = JSONObject()
-        json.put("street", street)
-        json.put("floor", floor ?: JSONObject.NULL)
+        json.put("street", this.street)
+        json.put("floor", this.floor ?: JSONObject.NULL)
         return json
     }
 
@@ -219,13 +219,13 @@ data class GeneratedAcmeShopReceipt(
 ) {
     fun toJson(): JSONObject {
         val json = JSONObject()
-        json.put("schemaVersion", schemaVersion)
-        json.put("orderId", orderId)
-        json.put("lines", JSONArray(lines.map { it.toJson() }))
-        json.put("totalCents", totalCents)
-        json.put("paidCents", paidCents)
-        json.put("deliverTo", deliverTo?.toJson() ?: JSONObject.NULL)
-        json.put("size", size.wire)
+        json.put("schemaVersion", this.schemaVersion)
+        json.put("orderId", this.orderId)
+        json.put("lines", JSONArray(this.lines.map { it.toJson() }))
+        json.put("totalCents", this.totalCents)
+        json.put("paidCents", this.paidCents)
+        json.put("deliverTo", this.deliverTo?.toJson() ?: JSONObject.NULL)
+        json.put("size", this.size.wire)
         return json
     }
 
@@ -259,8 +259,8 @@ data class GeneratedAcmeShopReceiptLine(
 ) {
     fun toJson(): JSONObject {
         val json = JSONObject()
-        json.put("name", name)
-        json.put("cents", cents)
+        json.put("name", this.name)
+        json.put("cents", this.cents)
         return json
     }
 
@@ -287,8 +287,8 @@ data class GeneratedAcmeShopScale(
 ) {
     fun toJson(): JSONObject {
         val json = JSONObject()
-        json.put("readings", JSONArray(readings))
-        json.put("tare", tare)
+        json.put("readings", JSONArray(this.readings))
+        json.put("tare", this.tare)
         return json
     }
 
@@ -303,6 +303,43 @@ data class GeneratedAcmeShopScale(
             return GeneratedAcmeShopScale(
                 readings = read.required("readings", GeneratedAcmeWire.set(GeneratedAcmeWire.number)),
                 tare = read.required("tare", GeneratedAcmeWire.number),
+            )
+        }
+    }
+}
+
+/** Wire contract `shop.blob`; an unknown key is refused. */
+data class GeneratedAcmeShopBlob(
+    val json: String,
+    val read: String,
+    val place: String,
+    val it: String?,
+    val out: String? = null,
+) {
+    fun toJson(): JSONObject {
+        val json = JSONObject()
+        json.put("json", this.json)
+        json.put("read", this.read)
+        json.put("place", this.place)
+        json.put("it", this.it ?: JSONObject.NULL)
+        if (this.out != null) json.put("out", this.out)
+        return json
+    }
+
+    companion object {
+        const val CONTRACT = "shop.blob"
+        private val FIELDS = setOf("json", "read", "place", "it", "out")
+
+        fun parse(json: JSONObject): GeneratedAcmeShopBlob = parse(json, GeneratedAcmeWirePlace(CONTRACT, ""))
+
+        internal fun parse(json: JSONObject, place: GeneratedAcmeWirePlace): GeneratedAcmeShopBlob {
+            val read = GeneratedAcmeWireReader(json, CONTRACT, FIELDS, ignoreUnknown = false, place)
+            return GeneratedAcmeShopBlob(
+                json = read.required("json", GeneratedAcmeWire.string),
+                read = read.required("read", GeneratedAcmeWire.string),
+                place = read.required("place", GeneratedAcmeWire.string),
+                it = read.nullable("it", GeneratedAcmeWire.string),
+                out = read.optional("out", GeneratedAcmeWire.string),
             )
         }
     }

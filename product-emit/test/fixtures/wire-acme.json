@@ -565,5 +565,26 @@
     },
     "refuse": "contract 'shop.scale' field 'readings' repeats 1",
     "field": "readings"
+  },
+  {
+    "name": "blob whose fields are named json, read, place, it and out",
+    "contract": "shop.blob",
+    "body": {
+      "json": "{\"a\":1}",
+      "read": "r",
+      "place": "p",
+      "it": null,
+      "out": "o"
+    }
+  },
+  {
+    "name": "blob without its optional out",
+    "contract": "shop.blob",
+    "body": {
+      "json": "j",
+      "read": "r",
+      "place": "p",
+      "it": "i"
+    }
   }
 ]
