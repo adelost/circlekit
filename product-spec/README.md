@@ -17,10 +17,19 @@ helpers off the root entry. product-emit 0.1.50 to 0.1.57 cannot load with it:
 'EFFECT_OUTCOMES'". Bump both together, to product-spec 0.3.91 and product-emit
 0.1.58. product-emit 0.1.39 and 0.1.49 still load with 0.3.91.
 
+0.3.92 pairs with product-emit 0.1.59 and skydiving-legos 0.1.16, which peer on
+`>=0.3.92 <0.4.0`: the Kotlin wire emitter and the trackbook wire contracts use
+`listOf`, `contractRef` and `optional`. Bump the three together. product-emit
+0.1.58 and skydiving-legos 0.1.15 still load with 0.3.92; skydiving-legos
+0.1.16's `/wire` entry does not load with 0.3.91 ("does not provide an export
+named 'contractRef'").
+
 0.3.92 makes `stores` and `fetches` required in the declaration `defineProduct`
 takes. Leaving the line out used to switch the runtime-owner law off without a
 word; now it is a TypeScript error on the bump ("Property 'stores' is missing"),
-and a product with none writes `stores: [], fetches: []`.
+and a product with none writes `stores: [], fetches: []`. A payload fault is now
+a `ContractPayloadError`, a subclass of `Error` with the same message, so code
+that catches `Error` behaves as on 0.3.91.
 
 The authoring vocabulary has four executable building blocks:
 

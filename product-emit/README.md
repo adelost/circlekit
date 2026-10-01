@@ -1,15 +1,16 @@
 # @v1d/product-emit
 
 The consuming product owns the `@v1d/product-spec` version. ProductEmit declares
-the peer `>=0.3.91 <0.4.0`, whose floor is the product-spec its own build and tests
+the peer `>=0.3.92 <0.4.0`, whose floor is the product-spec its own build and tests
 run against: devDependencies pin that tarball, and `npm run check:pins` refuses an
 installed version outside the peer. Its skydiving-legos 0.1.5 dependency keeps a
 private 0.3.52 copy, which is not ProductEmit's public type boundary.
 
-Bump the two packages together. product-emit 0.1.50 to 0.1.57 cannot load with
-product-spec 0.3.91: `/core` fails with "does not provide an export named
-'EFFECT_OUTCOMES'". Use product-spec 0.3.91 with product-emit 0.1.58;
-product-emit 0.1.39 and 0.1.49 still load with 0.3.91.
+Bump the packages together. product-emit 0.1.59 peers on product-spec 0.3.92,
+whose `listOf`, `contractRef` and `optional` its wire emitter writes; 0.1.58 still
+loads with 0.3.92. product-emit 0.1.50 to 0.1.57 cannot load with product-spec
+0.3.91 or later: `/core` fails with "does not provide an export named
+'EFFECT_OUTCOMES'"; product-emit 0.1.39 and 0.1.49 still load with 0.3.91.
 
 Typed, deterministic ProductSpec emitters. Import only the layer a product
 uses:
