@@ -42,6 +42,7 @@ export function contractFingerprint(contract:LegoContract):string {
   return JSON.stringify({
     kind:contract.kind,
     boundary:contract.boundary,
+    unknownFields:contract.unknownFields??'refuse',
     fields:contract.fields.map(item=>({
       name:item.name,
       value:typeof item.value==='string'?item.value
@@ -49,6 +50,7 @@ export function contractFingerprint(contract:LegoContract):string {
           contract:isContractRef(item.value)?contractFingerprint(item.value.contract):null},
       unit:item.unit??null,
       nullable:item.nullable,
+      optional:item.optional===true,
       clockDomain:item.clockDomain,
       min:item.min??null,max:item.max??null,gteField:item.gteField??null,
     })),
@@ -59,9 +61,15 @@ export function contractFingerprint(contract:LegoContract):string {
 /** WHAT: Checks portable field laws. WHY: Keeps each bound inside its contract and opaque values off the wire. */
 export function validateContractLaws(contract:LegoContract):void {
   const fields=new Map(contract.fields.map(field=>[field.name,field]));
+  const policy:unknown=contract.unknownFields;
+  if(policy!==undefined&&policy!=='refuse'&&policy!=='ignore')
+    throw new Error(`contract '${contract.id}' unknownFields must be 'refuse' or 'ignore'`);
+  if(policy==='ignore'&&contract.boundary!=='wire')
+    throw new Error(`contract '${contract.id}' unknownFields 'ignore' is for a wire contract only: remove it or use boundary 'wire'`);
   refuseNesting(contract,[]);
   for(const field of contract.fields){
     const where=`contract '${contract.id}' field '${field.name}'`,value=field.value;
+    if(field.optional===true&&!field.nullable)throw new Error(`${where} is optional, so it must be nullable: add nullable: true`);
     if(isFiniteSetRef(value)&&contract.boundary!=='wire')
       throw new Error(`${where} is a finite set, which only a wire contract carries: use boundary 'wire'`);
     if(isContractRef(value)&&contract.boundary!=='wire')

@@ -129,3 +129,30 @@ function nestedTypeProof(input: unknown) {
   return { latitude, previous, always, heading };
 }
 void nestedTypeProof;
+
+test('only a wire contract may ignore unknown fields, and the policy is refuse or ignore', () => {
+  assert.doesNotThrow(() => validateContract({ ...receipt, unknownFields: 'ignore' }));
+  assert.doesNotThrow(() => validateContract({ ...receipt, unknownFields: 'refuse' }));
+  assert.throws(() => validateContract({ id: 'live.card', kind: 'state', boundary: 'presentation', unknownFields: 'ignore',
+    fields: [field('accepted', 'boolean')] }),
+  /contract 'live\.card' unknownFields 'ignore' is for a wire contract only: remove it or use boundary 'wire'/u);
+  assert.throws(() => validateContract({ ...receipt, unknownFields: 'drop' } as never),
+    /contract 'live\.receipt' unknownFields must be 'refuse' or 'ignore'/u);
+});
+
+test('an optional field must be nullable, refused where it is declared', () => {
+  assert.throws(() => field('scopes', finiteSetRef(scopes.id), { optional: true }),
+    /field 'scopes' is optional, so it must be nullable: add nullable: true/u);
+  const optional = field('scopes', finiteSetRef(scopes.id), { nullable: true, optional: true });
+  assert.doesNotThrow(() => validateContract({ ...access, fields: [optional] }));
+  assert.throws(() => validateContract({ ...access, fields: [{ ...optional, nullable: false }] }),
+    /contract 'device\.access' field 'scopes' is optional, so it must be nullable: add nullable: true/u);
+});
+
+test('the unknown-field policy and an optional key are part of the contract identity', () => {
+  assert.notEqual(contractFingerprint(receipt), contractFingerprint({ ...receipt, unknownFields: 'ignore' }));
+  assert.equal(contractFingerprint(receipt), contractFingerprint({ ...receipt, unknownFields: 'refuse' }));
+  const nullable = { ...access, fields: [field('scopes', finiteSetRef(scopes.id), { nullable: true })] } as const;
+  const optional = { ...access, fields: [field('scopes', finiteSetRef(scopes.id), { nullable: true, optional: true })] } as const;
+  assert.notEqual(contractFingerprint(nullable), contractFingerprint(optional));
+});

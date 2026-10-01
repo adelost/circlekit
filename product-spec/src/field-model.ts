@@ -5,6 +5,8 @@ import { rememberCallsite } from './source-site.js';
 export interface LegoFieldOptions {
   readonly unit?: string;
   readonly nullable?: boolean;
+  /** An absent key reads as null. Requires nullable; for request keys that released clients leave out. */
+  readonly optional?: boolean;
   readonly clockDomain?: LegoClockDomain;
   readonly min?: number;
   readonly max?: number;
@@ -17,6 +19,7 @@ export interface LegoField {
   readonly value: LegoPrimitive | LegoValueRef;
   readonly unit?: string;
   readonly nullable: boolean;
+  readonly optional?: boolean;
   readonly clockDomain: LegoClockDomain;
   readonly min?: number;
   readonly max?: number;
@@ -43,11 +46,15 @@ export function field<const Name extends string, const Value extends LegoPrimiti
 ): DeclaredField<Name, Value, Options>;
 /** WHAT: Builds the existing field record. WHY: Keeps inference changes out of emitted runtime data. */
 export function field(name: string, value: LegoPrimitive | LegoValueRef, options: LegoFieldOptions = {}): LegoField {
+  if (options.optional === true && options.nullable !== true) {
+    throw new Error(`field '${name}' is optional, so it must be nullable: add nullable: true`);
+  }
   return rememberCallsite({
     name, value,
     nullable: options.nullable ?? false,
     clockDomain: options.clockDomain ?? 'none',
     ...(options.unit === undefined ? {} : { unit: options.unit }),
+    ...(options.optional === undefined ? {} : { optional: options.optional }),
     ...(options.min === undefined ? {} : { min: options.min }),
     ...(options.max === undefined ? {} : { max: options.max }),
     ...(options.gteField === undefined ? {} : { gteField: options.gteField }),

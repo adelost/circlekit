@@ -87,6 +87,8 @@ export interface LegoContract {
   readonly kind: "observation" | "state" | "snapshot" | "event";
   readonly boundary: LegoBoundaryKind;
   readonly fields: readonly LegoField[];
+  /** What a read does with an undeclared key: "refuse" (the default), or "ignore" on a wire contract read by clients. */
+  readonly unknownFields?: "refuse" | "ignore";
   /** Optional compiler-owned navigation meaning; it is part of contract identity. */
   readonly navigation?: LegoNavigationContract;
   /**
