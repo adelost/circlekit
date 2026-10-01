@@ -83,6 +83,10 @@ say: a request read by the server refuses (the default), a response read by clie
 add response fields without breaking old clients. A field with `optional: true` may be absent and a read keeps it
 absent: a read never invents a key, so absent (leave as is) and null (clear) stay two facts, and `nullable` is
 independent. `assertContractPayload(contract, input)` runs the same check and narrows the value in place.
+Every payload fault throws `ContractPayloadError` with `contractId` (the contract read), `field` (the dotted path
+from its root, such as `history[2].role`, and '' for the payload itself) and the message. A fault in the
+declaration or the call, such as a finite declaration left out, stays a plain `Error`: an HTTP adapter answers
+400 for the first and fails loudly for the second.
 
 Wire fields are runtime-checkable: primitives, `finiteValueRef`, `contractRef` (a nested wire record checked by its
 own contract and policy; a contract that nests itself is refused) and `listOf(element, { distinct })`, a list of one

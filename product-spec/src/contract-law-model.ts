@@ -119,6 +119,16 @@ function refuseNesting(contract:LegoContract,path:readonly string[]):void {
   }
 }
 
+/**
+ * A payload that breaks its contract: a bad request or response, never a programming error. `contractId` is the
+ * contract that was read and `field` the dotted path from its root (`history[2].role`; '' for the payload itself).
+ * A fault in the declaration or the call, such as a finite declaration left out, stays a plain Error.
+ */
+export class ContractPayloadError extends Error {
+  override readonly name='ContractPayloadError';
+  constructor(readonly contractId:string,readonly field:string,message:string){super(message);}
+}
+
 /** WHAT: Checks and narrows a declared payload in place. WHY: The same check as a read, for a value already in hand. */
 export function assertContractPayload<const Contract extends LegoContract,
   const Values extends readonly LegoFiniteValueDeclaration[] = readonly []>(
@@ -137,64 +147,76 @@ export function readContractPayload<const Contract extends LegoContract,
   contract:Contract,payload:unknown,finiteDeclarations:Values=[] as unknown as Values,
 ):ContractPayload<Contract,Values> {
   validateContract(contract);
-  return payloadOf(contract,payload,{members:finiteMembers(contract,finiteDeclarations)}) as ContractPayload<Contract,Values>;
+  const read={members:finiteMembers(contract,finiteDeclarations),root:contract.id};
+  return payloadOf(contract,payload,read,'') as ContractPayload<Contract,Values>;
 }
 
 interface PayloadRead {
   /** Members of every finite declaration the contract names, nested contracts included. */
   readonly members:ReadonlyMap<string,readonly string[]>;
+  /** The contract the read started from, which every ContractPayloadError names. */
+  readonly root:string;
 }
 
+/** Where a value sits: `local` as its own contract's messages name it, `path` from the root of the read. */
+interface Place {readonly local:string;readonly path:string}
+const below = (path:string,name:string) => path===''?name:`${path}.${name}`;
+
 /** The one payload check: every declared key read in order, then the sibling laws on the checked values. */
-function payloadOf(contract:LegoContract,payload:unknown,read:PayloadRead):unknown {
+function payloadOf(contract:LegoContract,payload:unknown,read:PayloadRead,path:string):unknown {
+  const fail=(at:string,message:string)=>new ContractPayloadError(read.root,at,message);
   if(contract.kind==='event'&&contract.fields.length===0&&payload===undefined)return undefined;
-  if(!isRecord(payload))throw new Error(`contract '${contract.id}' requires a record payload`);
+  if(!isRecord(payload))throw fail(path,`contract '${contract.id}' requires a record payload`);
   const declared=new Set(contract.fields.map(field=>field.name));
   if(contract.unknownFields!=='ignore')for(const name of Object.keys(payload))if(!declared.has(name))
-    throw new Error(`contract '${contract.id}' has undeclared field '${name}'`);
+    throw fail(below(path,name),`contract '${contract.id}' has undeclared field '${name}'`);
   const present=contract.fields.filter(field=>field.optional!==true||Object.hasOwn(payload,field.name));
-  const copy=Object.fromEntries(present.map(field=>[field.name,fieldOf(contract,field,payload,read)]));
+  const copy=Object.fromEntries(present.map(field=>{
+    const at=below(path,field.name);
+    if(!Object.hasOwn(payload,field.name))throw fail(at,`contract '${contract.id}' is missing field '${field.name}'`);
+    const item=payload[field.name];
+    return [field.name,item===null&&field.nullable?null:valueOf(contract,field,field.value,item,{local:field.name,path:at},read)];
+  }));
   for(const field of contract.fields){
     const item=copy[field.name],other=field.gteField===undefined?null:copy[field.gteField];
     if(typeof item==='number'&&typeof other==='number'&&item<other)
-      throw new Error(`contract '${contract.id}' field '${field.name}'=${item} must be >= '${field.gteField}'=${other} ${field.unit??''} [${declaredSite(field)??'source unknown'}]`.trim());
+      throw fail(below(path,field.name),`contract '${contract.id}' field '${field.name}'=${item} must be >= '${field.gteField}'=${other} ${field.unit??''} [${declaredSite(field)??'source unknown'}]`.trim());
   }
   return copy;
 }
 
-function fieldOf(contract:LegoContract,field:LegoField,value:Record<string,unknown>,read:PayloadRead):unknown {
-  if(!Object.hasOwn(value,field.name))throw new Error(`contract '${contract.id}' is missing field '${field.name}'`);
-  const item=value[field.name];
-  if(item===null&&field.nullable)return null;
-  return valueOf(contract,field,field.value,item,field.name,read);
-}
-
 /** One value of one kind: a primitive, a finite member, a nested record, or a list of one of those. */
-function valueOf(contract:LegoContract,field:LegoField,kind:FieldValue,item:unknown,path:string,read:PayloadRead):unknown {
-  const where=`contract '${contract.id}' field '${path}'`;
-  if(typeof kind==='string')return primitiveOf(where,field,kind,item);
+function valueOf(contract:LegoContract,field:LegoField,kind:FieldValue,item:unknown,place:Place,read:PayloadRead):unknown {
+  const where=`contract '${contract.id}' field '${place.local}'`;
+  const fail=(message:string)=>new ContractPayloadError(read.root,place.path,message);
+  if(typeof kind==='string'){
+    const problem=primitiveProblem(field,kind,item);
+    if(problem!==undefined)throw fail(`${where}${problem}`);
+    return item;
+  }
   if(isContractRef(kind)){
-    if(!isRecord(item))throw new Error(`${where} must be a '${kind.contract.id}' record`);
-    return payloadOf(kind.contract,item,read);
+    if(!isRecord(item))throw fail(`${where} must be a '${kind.contract.id}' record`);
+    return payloadOf(kind.contract,item,read,place.path);
   }
   if(isListRef(kind)){
-    if(!Array.isArray(item))throw new Error(`${where} must be a list`);
+    if(!Array.isArray(item))throw fail(`${where} must be a list`);
     const seen=new Set<unknown>();
     return Array.from(item,(element,index)=>{
-      const checked=valueOf(contract,field,kind.list,element,`${path}[${index}]`,read);
+      const at={local:`${place.local}[${index}]`,path:`${place.path}[${index}]`};
+      const checked=valueOf(contract,field,kind.list,element,at,read);
       const key=isRecord(checked)?JSON.stringify(checked):checked;
       if(kind.distinct&&seen.has(key))
-        throw new Error(`${where} repeats ${typeof checked==='string'?`'${checked}'`:JSON.stringify(checked)}`);
+        throw fail(`${where} repeats ${typeof checked==='string'?`'${checked}'`:JSON.stringify(checked)}`);
       seen.add(key);
       return checked;
     });
   }
   const members=isFiniteRef(kind)?read.members.get(kind.ref):undefined;
   if(members===undefined){
-    if(item===null)throw new Error(`${where} must be nonnullable`);
+    if(item===null)throw fail(`${where} must be nonnullable`);
     return item;
   }
-  if(typeof item!=='string'||!members.includes(item))throw new Error(`${where} must belong to finite '${kind.ref}'`);
+  if(typeof item!=='string'||!members.includes(item))throw fail(`${where} must belong to finite '${kind.ref}'`);
   return item;
 }
 
@@ -213,15 +235,16 @@ function finiteMembers(contract:LegoContract,finite:readonly LegoFiniteValueDecl
   return members;
 }
 
-function primitiveOf(where:string,field:LegoField,kind:LegoPrimitive,item:unknown):unknown {
+/** What is wrong with a primitive value, as the tail of its message, or undefined when nothing is. */
+function primitiveProblem(field:LegoField,kind:LegoPrimitive,item:unknown):string|undefined {
   const valid=kind==='number'?typeof item==='number'&&Number.isFinite(item)
     :kind==='integer'?typeof item==='number'&&Number.isSafeInteger(item)
     :kind==='boolean'?typeof item==='boolean'
     :typeof item==='string';
-  if(!valid)throw new Error(`${where} must be ${kind}`);
+  if(!valid)return ` must be ${kind}`;
   if(typeof item==='number'&&(field.min!==undefined&&item<field.min||field.max!==undefined&&item>field.max))
-    throw new Error(`${where}=${item} violates ${field.min??'-∞'}..${field.max??'∞'} ${field.unit??''} [${declaredSite(field)??'source unknown'}]`.trim());
-  return item;
+    return `=${item} violates ${field.min??'-∞'}..${field.max??'∞'} ${field.unit??''} [${declaredSite(field)??'source unknown'}]`.trim();
+  return undefined;
 }
 
 /** What an observed port is checked against: its compiled contract and the finite declarations it names. */

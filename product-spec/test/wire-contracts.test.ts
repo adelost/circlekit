@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { assertContractPayload, contractFingerprint, contractRef, defineProductLibraryCatalog, field, finiteValueRef,
+import { assertContractPayload, contractFingerprint, ContractPayloadError, contractRef, defineProductLibraryCatalog, field, finiteValueRef,
   finiteValues, listOf, readContractPayload, validateContract, valueRef, type ContractPayload, type LegoContract,
   type LegoField } from '../src/index.js';
 
@@ -291,3 +291,42 @@ function readTypeProof(input: unknown) {
   return { platform, operationId, always, cleared, day, unchanged, clear, requested };
 }
 void readTypeProof;
+
+// An HTTP adapter answers 400 for a ContractPayloadError and fails loudly (500) on anything else.
+type Caught = Error & { readonly contractId?: string; readonly field?: string };
+const caught = (run: () => unknown): Caught => {
+  try { run(); } catch (error) { return error as Caught; }
+  throw new Error('expected a refusal');
+};
+const payloadFault = (run: () => unknown, contractId: string, field: string, message: string) => {
+  const error = caught(run);
+  assert.equal(error.name, 'ContractPayloadError');
+  assert.ok(error instanceof ContractPayloadError);
+  assert.deepEqual({ contractId: error.contractId, field: error.field }, { contractId, field });
+  assert.ok(error.message.startsWith(message), `${error.message} starts with ${message}`);
+};
+
+test('a payload fault is a ContractPayloadError with the contract, the dotted field path and the message', () => {
+  const history = [{ role: 'user', content: 'x' }, { role: 'user', content: 'y' }, { role: 'system', content: 'z' }];
+  payloadFault(askOf({ history }), 'chat.ask', 'history[2].role',
+    "contract 'chat.turn' field 'role' must belong to finite 'chat.role'");
+  payloadFault(askOf({ helpers: ['u1', 7] }), 'chat.ask', 'helpers[1]', "contract 'chat.ask' field 'helpers[1]' must be string");
+  payloadFault(() => readContractPayload(ask, { history: [] }, [roles]), 'chat.ask', 'message',
+    "contract 'chat.ask' is missing field 'message'");
+  payloadFault(() => readContractPayload(started, startedOf({ position: { latitude: 1, phase: null, heading: 9 } }), values),
+    'pairing.started', 'position.heading', "contract 'live.point' has undeclared field 'heading'");
+  payloadFault(scopesOf(['jumps:write', 'jumps:write']), 'device.access', 'scopes',
+    "contract 'device.access' field 'scopes' repeats 'jumps:write'");
+  payloadFault(() => readContractPayload(pairing, 'x', values), 'pairing.start', '', "contract 'pairing.start' requires a record payload");
+  payloadFault(() => assertContractPayload(receipt, { accepted: true, position: { latitude: 91, phase: null }, previous: null }),
+    'live.receipt', 'position.latitude', "contract 'live.point' field 'latitude'=91 violates -90..90");
+});
+
+test('a declaration fault stays a plain Error, such as finite declarations left out of the call', () => {
+  for (const run of [() => readContractPayload(pairing, { platform: 'wear-os', label: 'x' }, [platforms]),
+    () => readContractPayload({ ...pairing, boundary: 'service-internal' }, { platform: 'wear-os', label: 'x' }, values)]) {
+    const error = caught(run);
+    assert.equal(error instanceof ContractPayloadError, false);
+    assert.equal(error.name, 'Error');
+  }
+});

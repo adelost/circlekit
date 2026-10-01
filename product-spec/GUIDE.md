@@ -77,7 +77,9 @@ so absent (leave as is) and null (clear) stay two facts. `listOf(element, { dist
 holds primitives, finite members or nested records, `contractRef` a nested wire
 record checked by its own contract. A finite value is a letter, then letters,
 digits, `.`, `_`, `:` or `-`.
-`assertContractPayload` runs the same check and narrows in place. See
+`assertContractPayload` runs the same check and narrows in place. A bad payload
+throws `ContractPayloadError` (`contractId`, dotted `field`), so an HTTP route
+answers 400; a fault in the declaration or the call stays a plain `Error`. See
 `product-spec/test/wire-contracts.test.ts`.
 
 ```ts
