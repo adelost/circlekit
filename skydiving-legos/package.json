@@ -11,6 +11,10 @@
     ".": {
       "types": "./dist/src/index.d.ts",
       "import": "./dist/src/index.js"
+    },
+    "./wire": {
+      "types": "./dist/src/wire/index.d.ts",
+      "import": "./dist/src/wire/index.js"
     }
   },
   "scripts": {
