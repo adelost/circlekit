@@ -6,11 +6,13 @@ type FinitePayload<Id, Values extends readonly LegoFiniteValueDeclaration[]> =
       : Declaration extends LegoFiniteValueDeclaration ? Declaration['values'][number] : unknown
     : unknown;
 
+type ElementValue<Element, Values extends readonly LegoFiniteValueDeclaration[]> =
+  Element extends 'number' | 'integer' ? number : Element extends 'boolean' ? boolean : Element extends 'string' ? string
+    : Element extends { readonly contract: infer Nested extends LegoContract } ? ContractPayload<Nested, Values>
+      : Element extends { readonly finite: true; readonly ref: infer Id } ? FinitePayload<Id, Values> : unknown;
+
 type FieldValue<Value, Values extends readonly LegoFiniteValueDeclaration[]> =
-  Value extends 'number' | 'integer' ? number : Value extends 'boolean' ? boolean : Value extends 'string' ? string
-    : Value extends { readonly finiteSet: true; readonly ref: infer Id } ? readonly FinitePayload<Id, Values>[]
-      : Value extends { readonly contract: infer Nested extends LegoContract } ? ContractPayload<Nested, Values>
-        : Value extends { readonly finite: true; readonly ref: infer Id } ? FinitePayload<Id, Values> : unknown;
+  Value extends { readonly list: infer Element } ? readonly ElementValue<Element, Values>[] : ElementValue<Value, Values>;
 
 type FieldPayload<Field extends LegoField, Values extends readonly LegoFiniteValueDeclaration[]> =
   FieldValue<Field['value'], Values> | (true extends Field['nullable'] ? null : never);

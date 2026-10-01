@@ -4,18 +4,6 @@ import type { ContractPayload } from './contract-payload.js';
 import type { ProductPortRegistry } from './port-graph-model.js';
 import { declaredSite } from './source-site.js';
 
-/** A field holding distinct members of one finite declaration, in no order. Only a wire contract carries one. */
-export interface LegoFiniteSetRef<Id extends string = string> extends LegoValueRef {
-  readonly ref: Id;
-  readonly finiteSet: true;
-}
-
-/** WHAT: Declares a finite set field. WHY: Scopes are checked member by member, never as a free string array. */
-export function finiteSetRef<const Id extends string>(ref:Id):LegoFiniteSetRef<Id> {
-  requireWireId(ref,'finite set ref');
-  return {ref,finiteSet:true};
-}
-
 /** A field holding one record of another wire contract, checked by that contract. Only a wire contract carries one. */
 export interface LegoContractRef<Contract extends LegoContract = LegoContract> extends LegoValueRef {
   readonly contract: Contract;
@@ -26,16 +14,40 @@ export function contractRef<const Contract extends LegoContract>(contract:Contra
   return {ref:contract.id,contract};
 }
 
+/** What a list holds: a primitive, a member of one finite declaration, or a record of one wire contract. */
+export type LegoListElement = LegoPrimitive | LegoFiniteValueRef | LegoContractRef;
+
+/** A field holding a list of one element kind; a distinct list holds no element twice. Only a wire contract carries one. */
+export interface LegoListRef<Element extends LegoListElement = LegoListElement> extends LegoValueRef {
+  readonly list: Element;
+  readonly distinct: boolean;
+}
+
+/** WHAT: Declares a list field. WHY: Ids, scopes and chat turns are checked element by element, never as a free array. */
+export function listOf<const Element extends LegoListElement>(element:Element,
+  options:{readonly distinct?:boolean}={}):LegoListRef<Element> {
+  if(!isListElement(element))throw new Error(`listOf needs a primitive, a finiteValueRef or a contractRef, not ${refName(element)}`);
+  const ref=`list.${typeof element==='string'?element:element.ref}`;
+  requireWireId(ref,'list ref');
+  return {ref,list:element,distinct:options.distinct===true};
+}
+
 type FieldValue = LegoField['value'];
-const isFiniteRef = (value:FieldValue):value is LegoFiniteValueRef =>
-  typeof value!=='string'&&'finite' in value&&value.finite===true;
-const isFiniteSetRef = (value:FieldValue):value is LegoFiniteSetRef =>
-  typeof value!=='string'&&'finiteSet' in value&&value.finiteSet===true;
-const isContractRef = (value:FieldValue):value is LegoContractRef =>
-  typeof value!=='string'&&'contract' in value&&isRecord(value.contract);
+const PRIMITIVES:readonly unknown[]=['boolean','integer','number','string'];
 const isRecord = (value:unknown):value is Record<string,unknown> =>
   typeof value==='object'&&value!==null&&!Array.isArray(value);
+const isFiniteRef = (value:FieldValue):value is LegoFiniteValueRef =>
+  typeof value!=='string'&&'finite' in value&&value.finite===true;
+const isContractRef = (value:FieldValue):value is LegoContractRef =>
+  typeof value!=='string'&&'contract' in value&&isRecord(value.contract);
+const isListRef = (value:FieldValue):value is LegoListRef => typeof value!=='string'&&'list' in value;
+const isListElement = (value:unknown):value is LegoListElement => typeof value==='string'?PRIMITIVES.includes(value)
+  :isRecord(value)&&(isFiniteRef(value as unknown as LegoValueRef)||isContractRef(value as unknown as LegoValueRef));
+const refName = (value:unknown):string => typeof value==='string'?`'${value}'`:`'${(value as LegoValueRef)?.ref}'`;
 const numeric = (field:LegoField) => field.value==='number'||field.value==='integer';
+/** The record a field nests, directly or as the element of its list. */
+const nestedOf = (value:FieldValue):LegoContract|undefined => isContractRef(value)?value.contract
+  :isListRef(value)&&isContractRef(value.list)?value.list.contract:undefined;
 
 /** WHAT: A contract's identity. WHY: One id names one schema, so every field fact takes part in the comparison. */
 export function contractFingerprint(contract:LegoContract):string {
@@ -45,9 +57,7 @@ export function contractFingerprint(contract:LegoContract):string {
     unknownFields:contract.unknownFields??'refuse',
     fields:contract.fields.map(item=>({
       name:item.name,
-      value:typeof item.value==='string'?item.value
-        :{ref:item.value.ref,finite:isFiniteRef(item.value),finiteSet:isFiniteSetRef(item.value),
-          contract:isContractRef(item.value)?contractFingerprint(item.value.contract):null},
+      value:valueFingerprint(item.value),
       unit:item.unit??null,
       nullable:item.nullable,
       optional:item.optional===true,
@@ -57,6 +67,10 @@ export function contractFingerprint(contract:LegoContract):string {
     navigation:contract.navigation??null,
   });
 }
+
+const valueFingerprint = (value:FieldValue):unknown => typeof value==='string'?value
+  :isListRef(value)?{list:valueFingerprint(value.list),distinct:value.distinct}
+    :isContractRef(value)?{contract:contractFingerprint(value.contract)}:{ref:value.ref,finite:isFiniteRef(value)};
 
 /** WHAT: Checks portable field laws. WHY: Keeps each bound inside its contract and opaque values off the wire. */
 export function validateContractLaws(contract:LegoContract):void {
@@ -69,15 +83,18 @@ export function validateContractLaws(contract:LegoContract):void {
   refuseNesting(contract,[]);
   for(const field of contract.fields){
     const where=`contract '${contract.id}' field '${field.name}'`,value=field.value;
-    if(isFiniteSetRef(value)&&contract.boundary!=='wire')
-      throw new Error(`${where} is a finite set, which only a wire contract carries: use boundary 'wire'`);
+    if(isListRef(value)&&contract.boundary!=='wire')
+      throw new Error(`${where} is a list, which only a wire contract carries: use boundary 'wire'`);
     if(isContractRef(value)&&contract.boundary!=='wire')
       throw new Error(`${where} nests contract '${value.contract.id}', which only a wire contract carries: use boundary 'wire'`);
-    if(contract.boundary==='wire'&&typeof value!=='string'&&!isFiniteRef(value)&&!isFiniteSetRef(value)&&!isContractRef(value))
+    if(isListRef(value)&&!isListElement(value.list))
+      throw new Error(`${where} lists ${refName(value.list)}, which is not a primitive, a finite value or a wire contract`);
+    if(contract.boundary==='wire'&&typeof value!=='string'&&!isFiniteRef(value)&&!isContractRef(value)&&!isListRef(value))
       throw new Error(`wire contract '${contract.id}' field '${field.name}' has opaque value ref '${value.ref}'`);
-    if(isContractRef(value)){
-      if(value.contract.boundary!=='wire')throw new Error(`${where} nests '${value.contract.id}', which is not a wire contract`);
-      validateContract(value.contract);
+    const nested=nestedOf(value);
+    if(nested!==undefined){
+      if(nested.boundary!=='wire')throw new Error(`${where} nests '${nested.id}', which is not a wire contract`);
+      validateContract(nested);
     }
     const bounded=field.min!==undefined||field.max!==undefined||field.gteField!==undefined;
     if(bounded&&!numeric(field))throw new Error(`contract '${contract.id}' law on nonnumeric field '${field.name}'`);
@@ -96,7 +113,10 @@ export function validateContractLaws(contract:LegoContract):void {
 function refuseNesting(contract:LegoContract,path:readonly string[]):void {
   const start=path.indexOf(contract.id);
   if(start>=0)throw new Error(`contract '${contract.id}' nests itself: ${[...path.slice(start),contract.id].join(' -> ')}`);
-  for(const field of contract.fields)if(isContractRef(field.value))refuseNesting(field.value.contract,[...path,contract.id]);
+  for(const field of contract.fields){
+    const nested=nestedOf(field.value);
+    if(nested!==undefined)refuseNesting(nested,[...path,contract.id]);
+  }
 }
 
 /** WHAT: Checks and narrows a declared payload in place. WHY: The same check as a read, for a value already in hand. */
@@ -144,55 +164,63 @@ function payloadOf(contract:LegoContract,payload:unknown,read:PayloadRead):unkno
 
 function fieldOf(contract:LegoContract,field:LegoField,value:Record<string,unknown>,read:PayloadRead):unknown {
   if(!Object.hasOwn(value,field.name))throw new Error(`contract '${contract.id}' is missing field '${field.name}'`);
-  const item=value[field.name],kind=field.value;
+  const item=value[field.name];
   if(item===null&&field.nullable)return null;
-  if(typeof kind==='string')return primitiveOf(contract,field,kind,item);
-  const where=`contract '${contract.id}' field '${field.name}'`;
+  return valueOf(contract,field,field.value,item,field.name,read);
+}
+
+/** One value of one kind: a primitive, a finite member, a nested record, or a list of one of those. */
+function valueOf(contract:LegoContract,field:LegoField,kind:FieldValue,item:unknown,path:string,read:PayloadRead):unknown {
+  const where=`contract '${contract.id}' field '${path}'`;
+  if(typeof kind==='string')return primitiveOf(where,field,kind,item);
   if(isContractRef(kind)){
     if(!isRecord(item))throw new Error(`${where} must be a '${kind.contract.id}' record`);
     return payloadOf(kind.contract,item,read);
   }
-  const members=read.members.get(kind.ref);
-  if(members===undefined||!(isFiniteRef(kind)||isFiniteSetRef(kind))){
+  if(isListRef(kind)){
+    if(!Array.isArray(item))throw new Error(`${where} must be a list`);
+    const seen=new Set<unknown>();
+    return Array.from(item,(element,index)=>{
+      const checked=valueOf(contract,field,kind.list,element,`${path}[${index}]`,read);
+      const key=isRecord(checked)?JSON.stringify(checked):checked;
+      if(kind.distinct&&seen.has(key))
+        throw new Error(`${where} repeats ${typeof checked==='string'?`'${checked}'`:JSON.stringify(checked)}`);
+      seen.add(key);
+      return checked;
+    });
+  }
+  const members=isFiniteRef(kind)?read.members.get(kind.ref):undefined;
+  if(members===undefined){
     if(item===null)throw new Error(`${where} must be nonnullable`);
     return item;
   }
-  const member=(candidate:unknown):string=>{
-    if(typeof candidate!=='string'||!members.includes(candidate))throw new Error(`${where} must belong to finite '${kind.ref}'`);
-    return candidate;
-  };
-  if(!isFiniteSetRef(kind))return member(item);
-  if(!Array.isArray(item))throw new Error(`${where} must be a set of finite '${kind.ref}'`);
-  const seen=new Set<string>();
-  for(const candidate of item){
-    if(seen.has(member(candidate)))throw new Error(`${where} repeats '${candidate}'`);
-    seen.add(candidate);
-  }
-  return [...item];
+  if(typeof item!=='string'||!members.includes(item))throw new Error(`${where} must belong to finite '${kind.ref}'`);
+  return item;
 }
 
 /** Every finite declaration the contract names needs exactly one nonempty declaration, before any value is read. */
 function finiteMembers(contract:LegoContract,finite:readonly LegoFiniteValueDeclaration[],
   members=new Map<string,readonly string[]>()):ReadonlyMap<string,readonly string[]> {
   for(const {value} of contract.fields){
-    if(isContractRef(value))finiteMembers(value.contract,finite,members);
-    if(!isFiniteRef(value)&&!isFiniteSetRef(value)||members.has(value.ref))continue;
-    const declarations=finite.filter(declaration=>declaration.id===value.ref);
+    const element=isListRef(value)?value.list:value,nested=nestedOf(value);
+    if(nested!==undefined)finiteMembers(nested,finite,members);
+    if(!isFiniteRef(element)||members.has(element.ref))continue;
+    const declarations=finite.filter(declaration=>declaration.id===element.ref);
     if(declarations.length!==1||declarations[0]!.values.length===0)
-      throw new Error(`finite '${value.ref}' needs exactly one nonempty value declaration`);
-    members.set(value.ref,declarations[0]!.values);
+      throw new Error(`finite '${element.ref}' needs exactly one nonempty value declaration`);
+    members.set(element.ref,declarations[0]!.values);
   }
   return members;
 }
 
-function primitiveOf(contract:LegoContract,field:LegoField,kind:LegoPrimitive,item:unknown):unknown {
+function primitiveOf(where:string,field:LegoField,kind:LegoPrimitive,item:unknown):unknown {
   const valid=kind==='number'?typeof item==='number'&&Number.isFinite(item)
     :kind==='integer'?typeof item==='number'&&Number.isSafeInteger(item)
     :kind==='boolean'?typeof item==='boolean'
     :typeof item==='string';
-  if(!valid)throw new Error(`contract '${contract.id}' field '${field.name}' must be ${kind}`);
+  if(!valid)throw new Error(`${where} must be ${kind}`);
   if(typeof item==='number'&&(field.min!==undefined&&item<field.min||field.max!==undefined&&item>field.max))
-    throw new Error(`contract '${contract.id}' field '${field.name}'=${item} violates ${field.min??'-∞'}..${field.max??'∞'} ${field.unit??''} [${declaredSite(field)??'source unknown'}]`.trim());
+    throw new Error(`${where}=${item} violates ${field.min??'-∞'}..${field.max??'∞'} ${field.unit??''} [${declaredSite(field)??'source unknown'}]`.trim());
   return item;
 }
 

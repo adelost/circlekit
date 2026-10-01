@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { assertContractPayload, contractFingerprint, contractRef, defineProductLibraryCatalog, field, finiteSetRef,
-  finiteValueRef, finiteValues, readContractPayload, validateContract, valueRef, type ContractPayload, type LegoContract,
+import { assertContractPayload, contractFingerprint, contractRef, defineProductLibraryCatalog, field, finiteValueRef,
+  finiteValues, listOf, readContractPayload, validateContract, valueRef, type ContractPayload, type LegoContract,
   type LegoField } from '../src/index.js';
 
 // The wire laws of the C1 plan: what a finite value may be, set and nested fields, the unknown-field policy, optional
@@ -32,46 +32,77 @@ test('a library catalog reads its finite values by the same value rule', () => {
 
 const scopes = finiteValues('device.scope', ['jumps:read', 'jumps:write']);
 const access = { id: 'device.access', kind: 'event', boundary: 'wire',
-  fields: [field('scopes', finiteSetRef(scopes.id))] } as const;
+  fields: [field('scopes', listOf(finiteValueRef(scopes.id), { distinct: true }))] } as const;
 const scopesOf = (value: unknown) => () => assertContractPayload(access, { scopes: value }, [scopes]);
 
-test('a finite set accepts distinct declared members in any order, and the empty set', () => {
+test('a distinct finite list accepts distinct declared members in any order, and the empty list', () => {
   for (const value of [['jumps:write'], ['jumps:write', 'jumps:read'], []]) assert.doesNotThrow(scopesOf(value));
 });
 
-test('a finite set refuses a repeated member', () => {
+test('a distinct list refuses a repeated element', () => {
   assert.throws(scopesOf(['jumps:write', 'jumps:write']), /contract 'device\.access' field 'scopes' repeats 'jumps:write'/u);
 });
 
-test('a finite set refuses an undeclared or non-string member and a value that is not an array', () => {
-  for (const value of [['jumps:admin'], [null], [1], ['jumps:write', 'JUMPS:READ']]) {
-    assert.throws(scopesOf(value), /contract 'device\.access' field 'scopes' must belong to finite 'device\.scope'/u);
+test('a list checks every element and refuses a value that is not an array', () => {
+  assert.throws(scopesOf(['jumps:admin']), /contract 'device\.access' field 'scopes\[0\]' must belong to finite 'device\.scope'/u);
+  for (const value of [[null], [1], ['jumps:write', 'JUMPS:READ']]) {
+    assert.throws(scopesOf(value), /contract 'device\.access' field 'scopes\[\d\]' must belong to finite 'device\.scope'/u);
   }
   for (const value of ['jumps:write', { 0: 'jumps:write' }, null]) {
-    assert.throws(scopesOf(value), /contract 'device\.access' field 'scopes' must be a set of finite 'device\.scope'/u);
+    assert.throws(scopesOf(value), /contract 'device\.access' field 'scopes' must be a list/u);
   }
   assert.throws(() => assertContractPayload(access, { scopes: [] }), /finite 'device\.scope' needs exactly one nonempty value declaration/u);
 });
 
-test('a finite set is a wire field, and a set field is part of the contract identity', () => {
+test('a list holds a primitive, a finite member or a wire record, and only a wire contract carries one', () => {
   assert.throws(() => validateContract({ ...access, boundary: 'service-internal' }),
-    /contract 'device\.access' field 'scopes' is a finite set, which only a wire contract carries: use boundary 'wire'/u);
-  const opaque = { ...access, boundary: 'service-internal', fields: [field('scopes', valueRef(scopes.id))] } as const;
-  assert.notEqual(contractFingerprint(access), contractFingerprint({ ...opaque, boundary: 'wire' }));
+    /contract 'device\.access' field 'scopes' is a list, which only a wire contract carries: use boundary 'wire'/u);
+  assert.throws(() => listOf(valueRef('native.handle') as never),
+    /listOf needs a primitive, a finiteValueRef or a contractRef, not 'native\.handle'/u);
+  assert.throws(() => listOf(listOf('string') as never), /listOf needs a primitive, a finiteValueRef or a contractRef, not 'list\.string'/u);
+  const handBuilt = { ref: 'list.native.handle', list: valueRef('native.handle'), distinct: false };
+  assert.throws(() => validateContract({ ...access, fields: [field('scopes', handBuilt)] }),
+    /contract 'device\.access' field 'scopes' lists 'native\.handle', which is not a primitive, a finite value or a wire contract/u);
 });
 
-// Compiled with the public API: a set field reads as a readonly array of its declared members.
-function setTypeProof(input: unknown) {
+test('the element kind and distinct are part of the contract identity', () => {
+  const plain = { ...access, fields: [field('scopes', listOf(finiteValueRef(scopes.id)))] } as const;
+  const strings = { ...access, fields: [field('scopes', listOf('string', { distinct: true }))] } as const;
+  assert.notEqual(contractFingerprint(access), contractFingerprint(plain));
+  assert.notEqual(contractFingerprint(access), contractFingerprint(strings));
+});
+
+// pl4n's shapes: a list of ids that may repeat, and a chat history whose turns carry a finite role.
+const roles = finiteValues('chat.role', ['user', 'assistant']);
+const turn = { id: 'chat.turn', kind: 'snapshot', boundary: 'wire',
+  fields: [field('role', finiteValueRef(roles.id)), field('content', 'string')] } as const;
+const ask = { id: 'chat.ask', kind: 'event', boundary: 'wire', fields: [field('message', 'string'),
+  field('history', listOf(contractRef(turn))), field('helpers', listOf('string'), { optional: true })] } as const;
+const askOf = (extra: Record<string, unknown>) => () => readContractPayload(ask, { message: 'hi', history: [], ...extra }, [roles]);
+
+test('a list of strings or of records is read element by element', () => {
+  const history = [{ role: 'user', content: 'Who brings tea?' }, { role: 'assistant', content: 'Anna.' }];
+  assert.deepEqual(askOf({ history, helpers: ['u1', 'u2', 'u1'] })(), { message: 'hi', history, helpers: ['u1', 'u2', 'u1'] });
+  assert.throws(askOf({ helpers: ['u1', 7] }), /contract 'chat\.ask' field 'helpers\[1\]' must be string/u);
+  assert.throws(askOf({ history: [history[0], 'Anna.'] }), /contract 'chat\.ask' field 'history\[1\]' must be a 'chat\.turn' record/u);
+  assert.throws(askOf({ history: [{ role: 'system', content: 'x' }] }), /contract 'chat\.turn' field 'role' must belong to finite 'chat\.role'/u);
+});
+
+// Compiled with the public API: a list field reads as a readonly array of its element's payload.
+function listTypeProof(input: unknown) {
   assertContractPayload(access, input, [scopes]);
   const members: readonly ('jumps:read' | 'jumps:write')[] = input.scopes;
-  // @ts-expect-error a set is not one member
+  // @ts-expect-error a list is not one member
   const one: 'jumps:read' | 'jumps:write' = input.scopes;
   const payload: ContractPayload<typeof access, [typeof scopes]> = { scopes: ['jumps:read'] };
-  // @ts-expect-error an undeclared member is not a set member
+  // @ts-expect-error an undeclared member is not a list element
   const wrong: ContractPayload<typeof access, [typeof scopes]> = { scopes: ['jumps:admin'] };
-  return { members, one, payload, wrong };
+  const asked = readContractPayload(ask, input, [roles]);
+  const role: 'user' | 'assistant' | undefined = asked.history[0]?.role;
+  const helpers: readonly string[] | undefined = asked.helpers;
+  return { members, one, payload, wrong, role, helpers };
 }
-void setTypeProof;
+void listTypeProof;
 
 const point = { id: 'live.point', kind: 'observation', boundary: 'wire',
   fields: [field('latitude', 'number', { min: -90, max: 90 }), field('phase', 'string', { nullable: true })] } as const;
@@ -110,6 +141,9 @@ test('a contract that nests itself is refused, directly or through another', () 
   const self = { id: 'loop.self', kind: 'snapshot', boundary: 'wire', fields: [] as LegoField[] } satisfies LegoContract;
   self.fields.push(field('self', contractRef(self), { nullable: true }));
   assert.throws(() => validateContract(self), /contract 'loop\.self' nests itself: loop\.self -> loop\.self/u);
+  const thread = { id: 'loop.thread', kind: 'snapshot', boundary: 'wire', fields: [] as LegoField[] } satisfies LegoContract;
+  thread.fields.push(field('replies', listOf(contractRef(thread))));
+  assert.throws(() => validateContract(thread), /contract 'loop\.thread' nests itself: loop\.thread -> loop\.thread/u);
 });
 
 test('a nested contract is part of the identity of the contract that holds it', () => {
@@ -143,15 +177,15 @@ test('only a wire contract may ignore unknown fields, and the policy is refuse o
 
 test('optional and nullable are independent: a key may be absent, null, or both', () => {
   for (const options of [{ optional: true }, { optional: true, nullable: true }] as const) {
-    assert.doesNotThrow(() => validateContract({ ...access, fields: [field('scopes', finiteSetRef(scopes.id), options)] }));
+    assert.doesNotThrow(() => validateContract({ ...access, fields: [field('scopes', listOf(finiteValueRef(scopes.id)), options)] }));
   }
 });
 
 test('the unknown-field policy and an optional key are part of the contract identity', () => {
   assert.notEqual(contractFingerprint(receipt), contractFingerprint({ ...receipt, unknownFields: 'ignore' }));
   assert.equal(contractFingerprint(receipt), contractFingerprint({ ...receipt, unknownFields: 'refuse' }));
-  const nullable = { ...access, fields: [field('scopes', finiteSetRef(scopes.id), { nullable: true })] } as const;
-  const optional = { ...access, fields: [field('scopes', finiteSetRef(scopes.id), { nullable: true, optional: true })] } as const;
+  const nullable = { ...access, fields: [field('scopes', listOf(finiteValueRef(scopes.id)), { nullable: true })] } as const;
+  const optional = { ...access, fields: [field('scopes', listOf(finiteValueRef(scopes.id)), { nullable: true, optional: true })] } as const;
   assert.notEqual(contractFingerprint(nullable), contractFingerprint(optional));
 });
 
@@ -160,10 +194,11 @@ const platforms = finiteValues('device.platform', ['wear-os', 'apple-watch', 'ga
 const pairing = { id: 'pairing.start', kind: 'event', boundary: 'wire', fields: [
   field('platform', finiteValueRef(platforms.id)), field('label', 'string'),
   field('operationId', 'string', { optional: true }),
-  field('scopes', finiteSetRef(scopes.id), { optional: true })] } as const;
+  field('scopes', listOf(finiteValueRef(scopes.id), { distinct: true }), { optional: true })] } as const;
 const echo = { ...point, id: 'live.echo', unknownFields: 'ignore' } as const;
 const started = { id: 'pairing.started', kind: 'snapshot', boundary: 'wire', unknownFields: 'ignore', fields: [
-  field('id', 'string'), field('requestedScopes', finiteSetRef(scopes.id)), field('position', contractRef(point)),
+  field('id', 'string'), field('requestedScopes', listOf(finiteValueRef(scopes.id), { distinct: true })),
+  field('position', contractRef(point)),
   field('echo', contractRef(echo), { nullable: true })] } as const;
 const values = [platforms, scopes] as const;
 const startedOf = (extra: Record<string, unknown> = {}) => ({ id: 'op_1', requestedScopes: ['jumps:write'],
@@ -215,11 +250,11 @@ test('a missing non-optional field is refused in both directions', () => {
     /contract 'live\.point' is missing field 'phase'/u);
 });
 
-test('an undeclared finite member and a repeated set member are refused', () => {
+test('an undeclared finite member and a repeated member of a distinct list are refused', () => {
   assert.throws(() => readContractPayload(pairing, { platform: 'pebble', label: 'x' }, values),
     /contract 'pairing\.start' field 'platform' must belong to finite 'device\.platform'/u);
   assert.throws(() => readContractPayload(pairing, { platform: 'wear-os', label: 'x', scopes: ['jumps:admin'] }, values),
-    /contract 'pairing\.start' field 'scopes' must belong to finite 'device\.scope'/u);
+    /contract 'pairing\.start' field 'scopes\[0\]' must belong to finite 'device\.scope'/u);
   assert.throws(() => readContractPayload(started, startedOf({ requestedScopes: ['jumps:write', 'jumps:write'] }), values),
     /contract 'pairing\.started' field 'requestedScopes' repeats 'jumps:write'/u);
 });

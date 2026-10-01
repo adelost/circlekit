@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import {
   bindPortImplementations, bool, choice, decide, defineDecisionTable, defineLanes, defineProduct, fetchService, field,
-  finiteSetRef, finiteValueRef, finiteValues, integer, laneRiders, on, portContracts, readContractPayload, record,
+  finiteValueRef, finiteValues, integer, laneRiders, listOf, on, portContracts, readContractPayload, record,
 } from "../src/index.js";
 import { assetCatalog, product as minimalProduct } from "./minimal-product.js";
 
@@ -69,7 +69,7 @@ test("the wire example reads a released request whose optional key is absent, an
   const body: unknown = { platform: "wear-os" };
   const start = { id: "pairing.start", kind: "event", boundary: "wire", fields: [
     field("platform", finiteValueRef("device.platform")),
-    field("scopes", finiteSetRef("device.scope"), { optional: true })] } as const;
+    field("scopes", listOf(finiteValueRef("device.scope"), { distinct: true }), { optional: true })] } as const;
   const request = readContractPayload(start, body, [platforms, scopes]);
   assert.deepEqual(request, { platform: "wear-os" });
 });

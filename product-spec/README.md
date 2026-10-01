@@ -84,9 +84,10 @@ add response fields without breaking old clients. A field with `optional: true` 
 absent: a read never invents a key, so absent (leave as is) and null (clear) stay two facts, and `nullable` is
 independent. `assertContractPayload(contract, input)` runs the same check and narrows the value in place.
 
-Wire fields are runtime-checkable: primitives, `finiteValueRef`, `finiteSetRef` (distinct members of one finite
-declaration, in any order, possibly none) and `contractRef` (a nested wire record checked by its own contract and
-policy; a contract that nests itself is refused). An opaque `valueRef` is refused on `wire`. Pass the finite
+Wire fields are runtime-checkable: primitives, `finiteValueRef`, `contractRef` (a nested wire record checked by its
+own contract and policy; a contract that nests itself is refused) and `listOf(element, { distinct })`, a list of one
+primitive, finite or record element kind, checked element by element; a distinct list refuses an element twice.
+The payload type of a list is `readonly T[]`. An opaque `valueRef` is refused on `wire`. Pass the finite
 declarations as argument three: a missing one is refused before any value is read, and the same declarations
 derive the literal unions of the payload type. A finite value is a letter, then letters, digits, `.`, `_`, `:` or
 `-` ("jumps:read", "ON"); ids keep the id rule. String length and pattern checks stay hand-written beside the
