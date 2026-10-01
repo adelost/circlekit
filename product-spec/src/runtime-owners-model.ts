@@ -11,18 +11,23 @@ import type { StoreService } from "./store-service-model.js";
  */
 export function requireRuntimeOwners(
   declaration: {
-    readonly stores?: readonly StoreService[];
-    readonly fetches?: readonly FetchService[];
+    readonly id: string;
+    readonly stores: readonly StoreService[];
+    readonly fetches: readonly FetchService[];
     readonly componentFamilies: readonly ScreenComponentFamilyRef[];
   },
   graph: CompiledProductGraph,
 ): void {
+  // Required by the type; an untyped caller that leaves one out is refused by name, never read as none.
+  for (const key of ["stores", "fetches"] as const) {
+    if (!Array.isArray(declaration[key])) throw new Error(`product '${declaration.id}' needs ${key}; a product with none writes ${key}: []`);
+  }
   const effectsOfType = new Map(graph.nodeTypes.map((type) => [type.id, type.runtime.effects]));
   const owners = new Map<string, string[]>();
   for (const node of graph.nodes) {
     for (const effect of effectsOfType.get(node.nodeTypeRef) ?? []) owners.set(effect, [...owners.get(effect) ?? [], node.id]);
   }
-  for (const store of declaration.stores ?? []) {
+  for (const store of declaration.stores) {
     for (const effect of store.effectIds) {
       const found = owners.get(effect) ?? [];
       if (found.length !== 1) {
@@ -35,7 +40,7 @@ export function requireRuntimeOwners(
   const screens = new Set(declaration.componentFamilies.map(({ screen }) => screen));
   const demanded = new Set(graph.portRegistry.demandEdges.flatMap((edge) =>
     edge.kind === "component-mount" ? [`${edge.screenRef} ${edge.nodeInstanceRef}`] : []));
-  for (const fetch of declaration.fetches ?? []) {
+  for (const fetch of declaration.fetches) {
     for (const effect of fetch.effectIds) {
       if (!owners.has(effect)) throw new Error(`fetch '${fetch.id}' effect '${effect}' has no compiled owner`);
     }

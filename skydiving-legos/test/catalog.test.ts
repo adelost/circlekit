@@ -70,6 +70,8 @@ const base = {
   configs: [],
   finiteValues: [],
   stateAuthorities: [],
+  stores: [],
+  fetches: [],
   componentTypes: [componentType],
   components: [component],
   componentFamilies: [{

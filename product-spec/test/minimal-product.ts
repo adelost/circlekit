@@ -48,7 +48,7 @@ export const product = {
       activation: lifetime },
     { id: "navigation.service", nodeTypeRef: navigationService.id, config: {}, bindings: {}, activation: lifetime },
   ],
-  configs: [], finiteValues: [], stateAuthorities: [],
+  configs: [], finiteValues: [], stateAuthorities: [], stores: [], fetches: [],
   componentTypes: [weatherCardType, pageHostType],
   components: [weatherCard, pageHost],
   componentFamilies,

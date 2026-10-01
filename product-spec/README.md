@@ -17,6 +17,11 @@ helpers off the root entry. product-emit 0.1.50 to 0.1.57 cannot load with it:
 'EFFECT_OUTCOMES'". Bump both together, to product-spec 0.3.91 and product-emit
 0.1.58. product-emit 0.1.39 and 0.1.49 still load with 0.3.91.
 
+0.3.92 makes `stores` and `fetches` required in the declaration `defineProduct`
+takes. Leaving the line out used to switch the runtime-owner law off without a
+word; now it is a TypeScript error on the bump ("Property 'stores' is missing"),
+and a product with none writes `stores: [], fetches: []`.
+
 The authoring vocabulary has four executable building blocks:
 
 - `service(...)` owns external IO, persistence, a resource or platform

@@ -162,10 +162,10 @@ export interface ProductDeclaration<
   readonly machines?: readonly Machine[];
   /** Where the product's streams and services run, carried into the IR so the product graph can draw each lane. */
   readonly lanes?: Lanes;
-  /** Declaration-only, never in the IR: each store effect needs exactly one compiled runtime owner. */
-  readonly stores?: readonly StoreService[];
+  /** Declaration-only, never in the IR: each store effect needs exactly one compiled runtime owner. Required; none is []. */
+  readonly stores: readonly StoreService[];
   /** Declaration-only, never in the IR: each fetch effect needs a compiled owner; an owned fetch is demanded on its screens. */
-  readonly fetches?: readonly FetchService[];
+  readonly fetches: readonly FetchService[];
 }
 
 export interface ProductIr {
