@@ -56,15 +56,3 @@ export interface DesignHeldInvariant {
   /** Why no machine holds this yet, and what would have to exist for one to. */
   readonly unenforcedReason: string;
 }
-
-/** The repo-relative artifact whose presence backs the claim, if any. */
-export function enforcingArtifact(invariant: InvariantSpec): string | undefined {
-  switch (invariant.enforcement) {
-    case "constraint":
-      return invariant.site;
-    case "native-test":
-      return invariant.test;
-    case "design":
-      return undefined;
-  }
-}

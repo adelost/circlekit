@@ -3,7 +3,7 @@ import { mkdtemp, rm } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
-import { assertContractPayload, compileProductGraph, field,
+import { assertContractPayload, compileProductGraph, field, finiteValueRef, finiteValues,
   port, portContracts, service, type LegoContract } from '../src/index.js';
 import { createObservationScope } from '../src/observation.js';
 import { boxPx, imageSizePx, normalizeXywh, normalizeYolo, visionContracts, xyxyPx,
@@ -83,4 +83,37 @@ test('U6 test recording refuses a broken payload; debug-live reports it without 
   assert.equal(live['vision.source.value'](),broken);
   assert.match(failures[0]!.message,/vision.yolo.cxcywh.ratio.*w.*0.*1/u);
   assert.equal(events.length,1);
+});
+
+const phase=finiteValues('fixture.phase',['day','night']);
+const phaseState={id:'fixture.phase-state',kind:'state',boundary:'service-internal',
+  fields:[field('phase',finiteValueRef('fixture.phase'))]} as const;
+function observedPhaseFailures(value:string):string[] {
+  const failures:string[]=[];
+  const scope=createObservationScope({onObservation:()=>{},onFailure:error=>failures.push((error as Error).message)});
+  const ports=scope.bindPortImplementations({'vision.source.value':()=>({phase:value})},
+    portContracts(graphFor(phaseState,phaseState).portRegistry,[phase]));
+  ports['vision.source.value']();
+  return failures;
+}
+
+test('an observed finite field with a declared value reports no failure',()=>{
+  assert.deepEqual(observedPhaseFailures('night'),[]);
+});
+
+test('an observed finite field outside its declaration reports one failure',()=>{
+  assert.deepEqual(observedPhaseFailures('dusk'),
+    ["contract 'fixture.phase-state' field 'phase' must belong to finite 'fixture.phase'"]);
+});
+
+test('port contracts refuse a finite field whose declaration was not passed',()=>{
+  assert.throws(()=>portContracts(graphFor(phaseState,phaseState).portRegistry),
+    /port contract 'fixture\.phase-state' field 'phase' names finite 'fixture\.phase' without its declaration/u);
+});
+
+test('port contracts keep one declaration passed twice and refuse two declarations of one finite',()=>{
+  const registry=graphFor(phaseState,phaseState).portRegistry;
+  assert.deepEqual(portContracts(registry,[phase,phase]).finiteValues,[phase]);
+  assert.throws(()=>portContracts(registry,[phase,finiteValues('fixture.phase',['day'])]),
+    /finite 'fixture\.phase' is passed to portContracts twice/u);
 });

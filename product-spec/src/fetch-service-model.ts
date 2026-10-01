@@ -1,3 +1,5 @@
+import { requireWireId } from "./node-model.js";
+
 /** Product-neutral policy for a scheduled read. A platform supplies request and parse. */
 export type FetchFlow = {
   readonly mode: "clock" | "spatial" | "pending";
@@ -42,6 +44,10 @@ export interface FetchServiceSpec {
   /** A thrown source attempt becomes scheduler failure, or ends the lease. */
   readonly onCrash: "as-failure" | "stop";
   readonly effectIds: readonly string[];
+  /** The compiled node instance that runs this fetch. */
+  readonly ownerNodeRef?: string;
+  /** Screens whose mounted components demand the owner; each is checked against the compiled demand edges. */
+  readonly screenRefs?: readonly string[];
 }
 
 export type FetchService<Spec extends FetchServiceSpec = FetchServiceSpec> = Spec & {
@@ -83,6 +89,13 @@ export function fetchService<const Spec extends FetchServiceSpec>(spec: Spec): F
   if (!["as-failure", "stop"].includes(spec.onCrash)) fail("onCrash");
   if (!Array.isArray(spec.effectIds) || new Set(spec.effectIds).size !== spec.effectIds.length
       || spec.effectIds.some((id) => typeof id !== "string" || id.length === 0)) fail("effectIds");
+  if (spec.ownerNodeRef !== undefined) {
+    try { requireWireId(spec.ownerNodeRef, "fetch owner"); } catch { fail("ownerNodeRef"); }
+  }
+  if (spec.screenRefs !== undefined) {
+    if (spec.ownerNodeRef === undefined) fail("ownerNodeRef for screenRefs");
+    if (!Array.isArray(spec.screenRefs) || new Set(spec.screenRefs).size !== spec.screenRefs.length) fail("screenRefs");
+  }
   return Object.freeze({ ...spec, pattern: "fetch" as const,
     cadenceMs: spec.flow.everyMs, requestSpacingMs: spec.flow.minSpacingMs });
 }

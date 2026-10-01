@@ -1,8 +1,7 @@
 import { decide as baseDecide, type Decision, type DecisionAxes, type DecisionColumns,
   type DecisionPoint, type DecisionTable } from './decision-table-model.js';
 import { step as baseStep, type Machine, type MachineStep } from './machine-model.js';
-import { assertPortPayload } from './contract-law-model.js';
-import type { LegoContract } from './node-model.js';
+import { assertPortPayload, type PortContracts } from './contract-law-model.js';
 
 export type RawObservation =
   | {kind:'port';phase:'returned';portRef:string}
@@ -26,7 +25,7 @@ export function createObservationScope({onObservation,onFailure}: {
     try { onObservation(event); }
     catch(error) { try { onFailure?.(error); } catch { /* Even diagnostic failure cannot change application behavior. */ } }
   };
-  const validate=(ref:string,value:unknown,contracts?:ReadonlyMap<string,LegoContract>)=>{
+  const validate=(ref:string,value:unknown,contracts?:PortContracts)=>{
     try {assertPortPayload(ref,value,contracts);}
     catch(error) {try {onFailure?.(error);} catch { /* Diagnostics cannot change a product call. */ }}
   };
@@ -45,7 +44,7 @@ export function createObservationScope({onObservation,onFailure}: {
         from:state,to:result.to,input,guards:Object.fromEntries(machine.guards.map(guard=>[guard,guardsHeld.has(guard)]))});
       return result;
     },
-    bindPortImplementations<Ports extends object>(ports:Ports,contracts?:ReadonlyMap<string,LegoContract>):Ports {
+    bindPortImplementations<Ports extends object>(ports:Ports,contracts?:PortContracts):Ports {
       const methods=new Map<string,{source:Function;wrapped:Function}>();
       let proxy:Ports;
       const wrap=(property:string,value:Function):Function=>{

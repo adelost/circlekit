@@ -7,11 +7,12 @@ import { tmpdir } from "node:os";
 import { resolve } from "node:path";
 import test from "node:test";
 import type { ConformanceAxis, ConformanceDirection, NativeBindingManifest } from "../src/conformance-model.js";
+import { navigationConformance, type NativeNavigationBindingManifest } from "../src/navigation-conformance-model.js";
+import { definePortableAssetCatalog } from "../src/visual-model.js";
 import { buildOutputManifest, checkOutputManifest, logOutputManifest,
   productJsonEmitter, writeOutputManifest } from '../src/node.js';
 import {
   assertProductArtifactConformance,
-  action,
   compileProductGraph,
   componentOutput,
   componentPort,
@@ -28,7 +29,6 @@ import {
   defineStatePresentation,
   derive,
   definePalette,
-  definePortableAssetCatalog,
   defineLanes,
   defineProduct,
   defineProductNavigation,
@@ -40,7 +40,6 @@ import {
   mapFiniteCases,
   navigationActivePageContract,
   navigationGuardContract,
-  navigationConformance,
   navigationRouteContract,
   PORTABLE_SURFACE_CLASSES,
   port,
@@ -50,12 +49,10 @@ import {
   fetchService,
   storeService,
   nodeOutput,
-  nodeInput,
   service,
   statePresentationField,
   validateProductNodeType,
   validateProductIconRendererBindings,
-  type NativeNavigationBindingManifest,
 } from "../src/index.js";
 
 const statusContract = {
@@ -578,52 +575,6 @@ const navigationProductDeclaration = {
 function navigationFixture(overrides: Record<string, unknown> = {}) {
   return defineProduct({ ...navigationProductDeclaration, ...overrides }, assetCatalog);
 }
-
-test("one action authors its component event, service input, direct edge and navigation registration", () => {
-  const from = componentOutput({ id: "weather.card", type: navigationMenuType }, "activate");
-  const to = nodeInput({ id: "weather.event-sink", type: menuEventSink }, "activate");
-  const declaredAction = action("weather.activate", { from, to });
-  const nodes = navigationProductDeclaration.nodes.map((node) => node.id === "weather.event-sink"
-    ? { ...node, bindings: {} }
-    : node);
-  const components = navigationProductDeclaration.components.map((component) => component.id === "weather.card"
-    ? { ...component, bindings: { inputs: {}, events: { route: "navigation.service.route" } } }
-    : component);
-  const product = navigationFixture({ nodes, components, actions: [declaredAction] } as never);
-
-  assert.deepEqual(product.actions, [{
-    id: "weather.activate", from: "weather.card.activate", to: "weather.event-sink.activate",
-    contractRef: menuActivateContract.id,
-  }]);
-  assert.ok(product.portRegistry.bindings.some(({ kind, from: source, to: target }) =>
-    kind === "component-event" && source === "weather.card.activate" && target === "weather.event-sink.activate"));
-  assert.ok(product.navigation.actionGroups.some(({ actions }) =>
-    actions.some(({ sourcePortRef, targetPortRef }) => sourcePortRef === "weather.card.activate"
-      && targetPortRef === "weather.event-sink.activate")));
-});
-
-test("an action refuses a component instance outside the product", () => {
-  const declaredAction = action("weather.activate", {
-    from: componentOutput({ id: "unknown.card", type: navigationMenuType }, "activate"),
-    to: nodeInput({ id: "weather.event-sink", type: menuEventSink }, "activate"),
-  });
-  assert.throws(() => navigationFixture({ actions: [declaredAction] }),
-    /action 'weather\.activate' references unknown component 'unknown\.card'/u);
-});
-
-test("an action refuses an undeclared service input", () => {
-  assert.throws(() => nodeInput({ id: "weather.event-sink", type: menuEventSink }, "missing" as never),
-    /node type 'fixture\.menu-event-sink' has no input 'missing'/u);
-});
-
-test("a product refuses duplicate action ids", () => {
-  const declaredAction = action("weather.activate", {
-    from: componentOutput({ id: "weather.card", type: navigationMenuType }, "activate"),
-    to: nodeInput({ id: "weather.event-sink", type: menuEventSink }, "activate"),
-  });
-  assert.throws(() => navigationFixture({ actions: [declaredAction, declaredAction] }),
-    /duplicate action id 'weather\.activate'/u);
-});
 
 const nativeClosedNavigation: NativeNavigationBindingManifest = {
   artifacts: [

@@ -1,5 +1,5 @@
+import { registerContract } from "./contract-internals.js";
 import {
-  registerContract,
   requireIdentifier,
   requireUnique,
   requireWireId,
@@ -194,7 +194,7 @@ export interface ScreenComponentFamilyRef<ScreenRef extends string = string, Fam
   readonly family: Family;
 }
 
-export function defineSurfaceFamily<const Instances extends readonly ProductComponentInstance[]>(
+function defineSurfaceFamily<const Instances extends readonly ProductComponentInstance[]>(
   instances: Instances,
   family: SurfaceFamilyDeclaration<Instances[number]["id"]>,
 ): SurfaceFamily<Instances[number]["id"]> {

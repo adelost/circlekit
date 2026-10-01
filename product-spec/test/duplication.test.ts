@@ -9,9 +9,8 @@ import {
   present,
   refuseDuplication,
   service,
-  effectKind,
-  patternFor,
 } from "../src/index.js";
+import { effectKind, patternFor } from "../src/duplication-model.js";
 
 const contract = (
   id: string,

@@ -51,7 +51,9 @@ import {
 } from "./visual-model.js";
 import { refuseDuplication } from "./duplication-model.js";
 import { frozen } from "./frozen.js";
-import { compileProductActions, type CompiledProductActionDeclaration, type ProductAction } from "./action-model.js";
+import type { FetchService } from "./fetch-service-model.js";
+import { requireRuntimeOwners } from "./runtime-owners-model.js";
+import type { StoreService } from "./store-service-model.js";
 
 export const PRODUCT_SPEC_SCHEMA_VERSION = 9 as const;
 
@@ -159,8 +161,10 @@ export interface ProductDeclaration<
   readonly machines?: readonly Machine[];
   /** Where the product's streams and services run, carried into the IR so the product graph can draw each lane. */
   readonly lanes?: Lanes;
-  /** Direct, unit component-event to service-input declarations. */
-  readonly actions?: readonly ProductAction[];
+  /** Declaration-only, never in the IR: each store effect needs exactly one compiled runtime owner. */
+  readonly stores?: readonly StoreService[];
+  /** Declaration-only, never in the IR: each fetch effect needs a compiled owner; an owned fetch is demanded on its screens. */
+  readonly fetches?: readonly FetchService[];
 }
 
 export interface ProductIr {
@@ -189,8 +193,6 @@ export interface ProductIr {
   readonly machines?: readonly Machine[];
   /** Present only when the product declares lanes: the lanes as declared and every ride as an edge from rider to lane. */
   readonly lanes?: LanesIr;
-  /** Present only when the product declares direct actions. */
-  readonly actions?: readonly CompiledProductActionDeclaration[];
 }
 
 export function defineProduct<
@@ -335,21 +337,16 @@ export function defineProduct<
       if (!artifacts.has(artifactRef)) throw new Error(`product icon '${icon.id}' uses missing artifact '${artifactRef}'`);
     }
   }
-  const actionWiring = compileProductActions(declaration.actions ?? [], {
-    components: declaration.components,
-    componentTypes: declaration.componentTypes,
-    nodes: declaration.nodes,
-    nodeTypes: declaration.nodeTypes,
-  });
   const graph = compileProductGraph({
     nodeTypes: declaration.nodeTypes,
-    nodes: actionWiring.nodes,
+    nodes: declaration.nodes,
     configs: declaration.configs,
     componentTypes: declaration.componentTypes,
-    components: actionWiring.components,
+    components: declaration.components,
     mountedScopes,
   });
   requireFacetOwners(declaration.machines ?? [], declaration.decisionTables ?? [], graph.nodeTypes);
+  requireRuntimeOwners(declaration, graph);
   // D1 of the duplication law: two declarations that already say the same thing never reach the IR.
   // D2, the merge candidates, is a warning and is read from the compiled product, not thrown here.
   refuseDuplication(graph.nodeTypes, graph.componentTypes);
@@ -388,7 +385,6 @@ export function defineProduct<
     ...decisionTablesIr(declaration.decisionTables ?? []),
     ...machinesIr(declaration.machines ?? []),
     ...lanesIr(declaration.lanes),
-    ...(actionWiring.actions.length === 0 ? {} : { actions: actionWiring.actions }),
   });
 }
 

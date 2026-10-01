@@ -8,11 +8,23 @@ manifest mechanics.
 The package contains no product names or native Kotlin/Swift/Monkey C symbols.
 Native emitters and bindings remain in their platform repositories.
 
+## Pair it with product-emit
+
+0.3.91 removes the effect model (`defineEffect`, `effectCatalog`, `EFFECT_OUTCOMES`
+and their types), `action`, `nodeInput` and `enforcingArtifact`, and takes kit-internal
+helpers off the root entry. product-emit 0.1.50 to 0.1.57 cannot load with it:
+`@v1d/product-emit/core` fails with "does not provide an export named
+'EFFECT_OUTCOMES'". Bump both together, to product-spec 0.3.91 and product-emit
+0.1.58. product-emit 0.1.39 and 0.1.49 still load with 0.3.91.
+
 The authoring vocabulary has four executable building blocks:
 
 - `service(...)` owns external IO, persistence, a resource or platform
-  lifecycle. Its non-empty `runtime.effects` tuple is structural proof; an
-  effect-free service does not type-check.
+  lifecycle. Its non-empty `runtime.effects` tuple is structural proof. The one
+  effect-free service is an instance-owned transient UI reducer: the type admits
+  `effects: []` only with `stateOwner: "instance"` and `durability: "transient"`,
+  and its definition also requires a ui-event input, a presentation state output
+  and no context inputs.
 - `derive(...)` performs effect-free domain computation and may feed services
   or presentations. It cannot feed a component directly.
 - `present(...)` is the final effect-free immutable model before one or more

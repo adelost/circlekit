@@ -7,11 +7,22 @@ import { pathToFileURL } from 'node:url';
 const root=path.resolve(process.argv[2]??'.');
 const [manifest,lock]=await Promise.all(['package.json','package-lock.json'].map(async file=>
   JSON.parse(await readFile(path.join(root,file),'utf8'))));
-const peer='>=0.3.64 <0.4.0',name='@v1d/product-spec';
+// Each package names its own range at the call site; product-emit's floor is the version it is tested against.
+const peer=process.argv[3]??'>=0.3.64 <0.4.0',name='@v1d/product-spec';
 const errors=[];
 if(manifest.dependencies?.[name]!==undefined)errors.push(`${name} must be a peer, not a direct dependency`);
 if(manifest.peerDependencies?.[name]!==peer)errors.push(`${name} peer must be ${peer}`);
 if(lock.packages?.['']?.peerDependencies?.[name]!==peer)errors.push('package-lock must carry the same ProductSpec peer');
+// npm ls lets a root devDependency stand in for the root's own peer, so the range is compared here.
+const installed=JSON.parse(await readFile(path.join(root,'node_modules',name,'package.json'),'utf8')).version;
+const numbers=version=>version.split('.').map(Number);
+const compare=(left,right)=>numbers(left).map((part,index)=>part-numbers(right)[index]).find(diff=>diff!==0)??0;
+const inRange=peer.split(' ').every(comparator=>{
+  const match=/^(>=|<)(\d+\.\d+\.\d+)$/.exec(comparator);
+  if(!match)throw new Error(`unsupported peer comparator '${comparator}' in '${peer}'`);
+  return match[1]==='>='?compare(installed,match[2])>=0:compare(installed,match[2])<0;
+});
+if(!inRange)errors.push(`${name} ${installed} at the package root is outside the peer ${peer}; pin the tested tarball`);
 
 // The existing shared checker still validates every immutable direct and dev tarball pin.
 const module=await import(pathToFileURL(path.join(root,'node_modules/@v1d/product-spec/dist/src/pin-check.js')).href);

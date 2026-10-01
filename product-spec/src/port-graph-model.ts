@@ -7,9 +7,9 @@ import {
   type ProductLifecycleDemandSource,
   type ProductNodeInstance,
 } from "./node-instance-model.js";
+import { registerContract } from "./contract-internals.js";
 import {
   validateProductNodeType,
-  registerContract,
   requireIdentifier,
   requireUnique,
   requireWireId,
