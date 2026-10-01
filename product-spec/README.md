@@ -11,8 +11,11 @@ Native emitters and bindings remain in their platform repositories.
 The authoring vocabulary has four executable building blocks:
 
 - `service(...)` owns external IO, persistence, a resource or platform
-  lifecycle. Its non-empty `runtime.effects` tuple is structural proof; an
-  effect-free service does not type-check.
+  lifecycle. Its non-empty `runtime.effects` tuple is structural proof. The one
+  effect-free service is an instance-owned transient UI reducer: the type admits
+  `effects: []` only with `stateOwner: "instance"` and `durability: "transient"`,
+  and its definition also requires a ui-event input, a presentation state output
+  and no context inputs.
 - `derive(...)` performs effect-free domain computation and may feed services
   or presentations. It cannot feed a component directly.
 - `present(...)` is the final effect-free immutable model before one or more

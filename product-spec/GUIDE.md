@@ -1,6 +1,6 @@
 # The product DSL in one page
 
-For agents and for people. Every path and command in this file is checked by `scripts/check-guide-paths.sh`, so a stale line turns red instead of lying.
+For agents and for people. Every path, command and ts example in this file is checked by `scripts/check-guide-paths.sh`, so a stale line turns red instead of lying.
 
 ## 1. Five words
 
@@ -41,7 +41,7 @@ A derived axis, declared beside the cells so the window has an owner. Read: "arr
 
 ```ts
 derived: { arrived: { inside: "JUST_NOW", outside: "SETTLED", windowMs: 30_000,
-                      startsOn: ["FACE_LIT", "TOUCH"], restartsOn: ["TOUCH"], endsOn: ["FACE_DARK"],
+                      startsOn: ["face-lit", "touch"], restartsOn: ["touch"], endsOn: ["face-dark"],
                       source: "docs/architecture/barometer-rate.md" } }
 ```
 
@@ -54,11 +54,18 @@ invariants: [{ refuse: "air must read pressure live", when: (d) => isAirborne(d.
 A port contract may declare numeric field laws with `min`, `max` and `gteField`.
 `gteField` compares numeric siblings in the same unit. A binding still requires the
 exact contract identity: ratio coordinates cannot feed a pixel box directly.
-At an observed port, pass `portContracts(product.portRegistry, product.finiteValues)` to
-`bindPortImplementations(implementations, contracts)` so test recording refuses
-a broken result and debug observation reports it without changing the product
-return. A finite field whose declaration is not passed is refused there, not reported per call. `product-spec/src/examples/vision-box.ts` shows the three explicit
-normalizers from xyxy pixels, xywh pixels and YOLO ratios to one pixel box.
+`product-spec/src/examples/vision-box.ts` shows the three explicit normalizers from
+xyxy pixels, xywh pixels and YOLO ratios to one pixel box. At an observed port, pass
+the compiled contracts so test recording refuses a broken result and debug
+observation reports it without changing the product return:
+
+```ts
+const contracts = portContracts(product.portRegistry, product.finiteValues);
+const ports = bindPortImplementations(implementations, contracts);
+```
+
+A finite field whose declaration is not passed (a library's, say) is refused by
+`portContracts`, not reported on every call.
 
 For TypeScript HTTP inputs, use a standalone contract with boundary `wire` and
 call `assertContractPayload(contract, input)` on `unknown`. Its assertion and
@@ -152,7 +159,7 @@ In this repo, the kit:
 ```
 cd product-spec && npm test        # the shapes and their laws, one red case per law
 cd product-emit && npm test        # the emitters against the shapes
-scripts/check-guide-paths.sh       # this file's paths and commands still exist
+scripts/check-guide-paths.sh       # this file's paths, commands and ts examples still hold
 ```
 
 In a product (Skyvw), two loops, not one. After a cell or copy change, the short loop: regenerate, then the one test or page the change touches. The wide loop, the declaration's own tests and the stale-projection check, is for a change to a shape or a wiring file, not after every cell. Each of `npm test`, `npm run generate` and `npm run check-generated` starts with a clean TypeScript build, so running all three is three builds; a single `verify` script that builds once is a proposed improvement, measured before it is claimed.
@@ -162,4 +169,4 @@ In a product (Skyvw), two loops, not one. After a cell or copy change, the short
 (cd appspec && npm test && npm run check-generated)    # wide loop, for shape or wiring changes
 ```
 
-An example in this guide is a claim; the type-checked copy of it lives in the kit's tests, and a change to the shape that breaks the example turns that test red before the guide can go stale.
+An example in this guide is a claim. `scripts/check-guide-paths.sh` refuses a ts block absent from `product-spec/test/guide-examples.test.ts`, which builds each one inside its real declaration, so a shape change that breaks an example turns that test red before the guide can go stale.
