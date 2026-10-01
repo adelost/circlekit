@@ -35,5 +35,9 @@ export const acmeReceipt = { id: "shop.receipt", kind: "snapshot", boundary: "wi
   field("size", finiteValueRef(acmeSizes.id)),
 ] } as const;
 
-export const acmeWireContracts = [acmeOrder, acmeReceipt] as const;
+/** A distinct list of numbers, where 0 and -0.0 are one value, as JavaScript reads them. */
+export const acmeScale = { id: "shop.scale", kind: "observation", boundary: "wire", fields: [
+  field("readings", listOf("number", { distinct: true })), field("tare", "number")] } as const;
+
+export const acmeWireContracts = [acmeOrder, acmeReceipt, acmeScale] as const;
 export const acmeWireValues = [acmeSizes, acmeToppings] as const;

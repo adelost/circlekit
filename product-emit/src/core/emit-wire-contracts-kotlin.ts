@@ -318,7 +318,8 @@ object ${names.wire} {
 
     val string = ${names.kind}("be string") { value, _ -> value as? String }
     val boolean = ${names.kind}("be boolean") { value, _ -> value as? Boolean }
-    val number = ${names.kind}("be number") { value, _ -> (value as? Number)?.toDouble()?.takeIf { it.isFinite() } }
+    /** A finite double; -0.0 reads as 0.0, one value as in JavaScript, so a distinct list holds it once. */
+    val number = ${names.kind}("be number") { value, _ -> (value as? Number)?.toDouble()?.takeIf { it.isFinite() }?.plus(0.0) }
     val integer = ${names.kind}("be integer") { value, _ -> whole(value)?.takeIf { it in -MAX_SAFE_INTEGER..MAX_SAFE_INTEGER } }
 
     fun <E : ${names.value}> finite(id: String, entries: List<E>) =

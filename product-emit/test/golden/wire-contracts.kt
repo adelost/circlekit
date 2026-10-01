@@ -44,7 +44,8 @@ object GeneratedAcmeWire {
 
     val string = GeneratedAcmeWireKind("be string") { value, _ -> value as? String }
     val boolean = GeneratedAcmeWireKind("be boolean") { value, _ -> value as? Boolean }
-    val number = GeneratedAcmeWireKind("be number") { value, _ -> (value as? Number)?.toDouble()?.takeIf { it.isFinite() } }
+    /** A finite double; -0.0 reads as 0.0, one value as in JavaScript, so a distinct list holds it once. */
+    val number = GeneratedAcmeWireKind("be number") { value, _ -> (value as? Number)?.toDouble()?.takeIf { it.isFinite() }?.plus(0.0) }
     val integer = GeneratedAcmeWireKind("be integer") { value, _ -> whole(value)?.takeIf { it in -MAX_SAFE_INTEGER..MAX_SAFE_INTEGER } }
 
     fun <E : GeneratedAcmeWireValue> finite(id: String, entries: List<E>) =
@@ -274,6 +275,34 @@ data class GeneratedAcmeShopReceiptLine(
             return GeneratedAcmeShopReceiptLine(
                 name = read.required("name", GeneratedAcmeWire.string),
                 cents = read.required("cents", GeneratedAcmeWire.integer.within(0.0, null, "0..∞")),
+            )
+        }
+    }
+}
+
+/** Wire contract `shop.scale`; an unknown key is refused. */
+data class GeneratedAcmeShopScale(
+    val readings: Set<Double>,
+    val tare: Double,
+) {
+    fun toJson(): JSONObject {
+        val json = JSONObject()
+        json.put("readings", JSONArray(readings))
+        json.put("tare", tare)
+        return json
+    }
+
+    companion object {
+        const val CONTRACT = "shop.scale"
+        private val FIELDS = setOf("readings", "tare")
+
+        fun parse(json: JSONObject): GeneratedAcmeShopScale = parse(json, GeneratedAcmeWirePlace(CONTRACT, ""))
+
+        internal fun parse(json: JSONObject, place: GeneratedAcmeWirePlace): GeneratedAcmeShopScale {
+            val read = GeneratedAcmeWireReader(json, CONTRACT, FIELDS, ignoreUnknown = false, place)
+            return GeneratedAcmeShopScale(
+                readings = read.required("readings", GeneratedAcmeWire.set(GeneratedAcmeWire.number)),
+                tare = read.required("tare", GeneratedAcmeWire.number),
             )
         }
     }

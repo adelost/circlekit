@@ -5,7 +5,7 @@ import { fileURLToPath } from "node:url";
 import { ContractPayloadError, field, finiteValueRef, finiteValues, readContractPayload, type LegoContract } from "@v1d/product-spec";
 import { emitWireContractsKotlin, kotlinIdentifier } from "../src/core/index.js";
 import { kotlinSkip, runKotlin } from "./kotlin-toolchain.js";
-import { acmeOrder, acmeReceipt, acmeWireContracts, acmeWireValues } from "./wire-acme.js";
+import { acmeOrder, acmeReceipt, acmeScale, acmeWireContracts, acmeWireValues } from "./wire-acme.js";
 
 const options = { packageName: "dev.acme.wire", symbolPrefix: "Acme", sourceFile: "test/wire-acme.ts", sourceSha: "fixture" };
 const fromTest = (path: string) => readFileSync(new URL(`../../test/${path}`, import.meta.url), "utf8");
@@ -22,7 +22,8 @@ interface WireFixture {
 // The same file the generated Kotlin is run against (golden/wire-contracts.kt, with Android's org.json and Maven's
 // 20240303): it accepts and refuses exactly these cases, and writes back exactly the value TypeScript reads.
 const fixtures = JSON.parse(fromTest("fixtures/wire-acme.json")) as readonly WireFixture[];
-const contracts: Readonly<Record<string, LegoContract>> = { "shop.order": acmeOrder, "shop.receipt": acmeReceipt };
+const contracts: Readonly<Record<string, LegoContract>> = { "shop.order": acmeOrder, "shop.receipt": acmeReceipt,
+  "shop.scale": acmeScale };
 
 for (const fixture of fixtures) {
   test(`TypeScript reads the wire fixture '${fixture.name}' as the Kotlin parse does`, () => {
@@ -62,7 +63,7 @@ ${Object.keys(contracts).map((id) => `        "${id}" to { json -> Generated${op
         val fixture = fixtures.getJSONObject(index)
         val line = JSONObject()
         try {
-            line.put("value", JSONObject(parsers.getValue(fixture.getString("contract"))(fixture.getJSONObject("body")).toString()))
+            line.put("written", parsers.getValue(fixture.getString("contract"))(fixture.getJSONObject("body")).toString())
         } catch (error: Throwable) {
             line.put("contractId", property(error, "getContractId") ?: JSONObject.NULL)
                 .put("field", property(error, "getField") ?: JSONObject.NULL)
@@ -80,9 +81,12 @@ test("the emitted Kotlin decides every fixture as readContractPayload does: the 
   const sources = { "AcmeWire.kt": emitWireContractsKotlin(acmeWireContracts, acmeWireValues, options), "Harness.kt": harness };
   const fixturePath = fileURLToPath(new URL("../../test/fixtures/wire-acme.json", import.meta.url));
   for (const output of runKotlin(sources, "dev.acme.wire.HarnessKt", [fixturePath])) {
-    const lines = output.trim().split("\n").map((line) => JSON.parse(line) as unknown);
+    const lines = output.trim().split("\n").map((line) => JSON.parse(line) as { written?: string });
     assert.equal(lines.length, fixtures.length);
-    fixtures.forEach((fixture, index) => assert.deepEqual(lines[index], tsOutcome(fixture), fixture.name));
+    fixtures.forEach((fixture, index) => {
+      const { written, ...fault } = lines[index]!;
+      assert.deepEqual(written === undefined ? fault : { value: JSON.parse(written) }, tsOutcome(fixture), fixture.name);
+    });
   }
 });
 

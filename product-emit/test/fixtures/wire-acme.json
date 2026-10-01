@@ -528,5 +528,42 @@
     },
     "refuse": "contract 'shop.receipt' field 'schemaVersion'=2 violates 1..1",
     "field": "schemaVersion"
+  },
+  {
+    "name": "scale with a tare of -0.0, read and written as 0",
+    "contract": "shop.scale",
+    "body": {
+      "readings": [
+        0.5,
+        1
+      ],
+      "tare": -0.0
+    }
+  },
+  {
+    "name": "scale reading 0 twice, once written -0.0",
+    "contract": "shop.scale",
+    "body": {
+      "readings": [
+        0,
+        -0.0
+      ],
+      "tare": 0
+    },
+    "refuse": "contract 'shop.scale' field 'readings' repeats 0",
+    "field": "readings"
+  },
+  {
+    "name": "scale reading 1 twice, once written 1.0",
+    "contract": "shop.scale",
+    "body": {
+      "readings": [
+        1,
+        1.0
+      ],
+      "tare": 0
+    },
+    "refuse": "contract 'shop.scale' field 'readings' repeats 1",
+    "field": "readings"
   }
 ]
