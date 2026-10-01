@@ -3,8 +3,7 @@ export * from "./index.js";
 
 import { appendFileSync } from "node:fs";
 import { join } from "node:path";
-import { assertPortPayload } from './contract-law-model.js';
-import type { LegoContract } from './node-model.js';
+import { assertPortPayload, type PortContracts } from './contract-law-model.js';
 import { decide as baseDecide, type Decision, type DecisionAxes, type DecisionColumns,
   type DecisionPoint, type DecisionTable } from "./decision-table-model.js";
 import { step as baseStep, type Machine, type MachineStep } from "./machine-model.js";
@@ -18,7 +17,7 @@ function record(event: Readonly<Record<string, unknown>>): void {
 }
 
 /** WHAT: Tracks calls through declared port names in a focused test. WHY: Keeps port event identities out of binding tests. */
-export function bindPortImplementations<Ports extends object>(ports: Ports, contracts?:ReadonlyMap<string,LegoContract>): Ports {
+export function bindPortImplementations<Ports extends object>(ports: Ports, contracts?: PortContracts): Ports {
   return new Proxy(ports, {
     get(target, property, receiver) {
       const value = Reflect.get(target, property, receiver);

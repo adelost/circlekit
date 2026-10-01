@@ -68,19 +68,44 @@ export function assertContractPayload<const Contract extends LegoContract,
   }
 }
 
-/** The compiled graph, not a second handwritten map, names each port's contract. */
-export function portContracts(registry:ProductPortRegistry):ReadonlyMap<string,LegoContract> {
-  const contracts=new Map(registry.contracts.map(contract=>[contract.id,contract]));
-  return new Map([...registry.nodePorts,...registry.componentPorts].map(entry=>{
-    const contract=contracts.get(entry.contractRef);
-    if(!contract)throw new Error(`port '${entry.ref}' has no compiled contract '${entry.contractRef}'`);
-    return [entry.ref,contract];
-  }));
+/** What an observed port is checked against: its compiled contract and the finite declarations it names. */
+export interface PortContracts {
+  readonly contracts:ReadonlyMap<string,LegoContract>;
+  readonly finiteValues:readonly LegoFiniteValueDeclaration[];
 }
 
-export function assertPortPayload(ref:string,value:unknown,contracts?:ReadonlyMap<string,LegoContract>):void {
-  if(!contracts)return;
-  const contract=contracts.get(ref);
+/**
+ * The compiled graph, not a second handwritten map, names each port's contract. Pass the finite
+ * declarations its fields name (a product's `finiteValues`, plus its libraries'); a missing one is
+ * refused here, never reported later as a broken payload.
+ */
+export function portContracts(registry:ProductPortRegistry,
+  finiteValues:readonly LegoFiniteValueDeclaration[]=[]):PortContracts {
+  const declarations=new Map<string,LegoFiniteValueDeclaration>();
+  for(const declaration of finiteValues){
+    const known=declarations.get(declaration.id);
+    if(known!==undefined&&known!==declaration)throw new Error(`finite '${declaration.id}' is passed to portContracts twice`);
+    declarations.set(declaration.id,declaration);
+  }
+  const contracts=new Map(registry.contracts.map(contract=>[contract.id,contract]));
+  for(const contract of contracts.values())for(const field of contract.fields){
+    if(typeof field.value==='string'||!('finite' in field.value)||field.value.finite!==true)continue;
+    if(!declarations.has(field.value.ref))throw new Error(`port contract '${contract.id}' field '${field.name}' `
+      +`names finite '${field.value.ref}' without its declaration; pass it to portContracts`);
+  }
+  return {
+    contracts:new Map([...registry.nodePorts,...registry.componentPorts].map(entry=>{
+      const contract=contracts.get(entry.contractRef);
+      if(!contract)throw new Error(`port '${entry.ref}' has no compiled contract '${entry.contractRef}'`);
+      return [entry.ref,contract];
+    })),
+    finiteValues:[...declarations.values()],
+  };
+}
+
+export function assertPortPayload(ref:string,value:unknown,ports?:PortContracts):void {
+  if(!ports)return;
+  const contract=ports.contracts.get(ref);
   if(!contract)throw new Error(`port '${ref}' has no declared contract in this observation`);
-  assertContractPayload(contract,value);
+  assertContractPayload(contract,value,ports.finiteValues);
 }

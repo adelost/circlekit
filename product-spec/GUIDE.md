@@ -54,10 +54,10 @@ invariants: [{ refuse: "air must read pressure live", when: (d) => isAirborne(d.
 A port contract may declare numeric field laws with `min`, `max` and `gteField`.
 `gteField` compares numeric siblings in the same unit. A binding still requires the
 exact contract identity: ratio coordinates cannot feed a pixel box directly.
-At an observed port, pass `portContracts(graph.portRegistry)` to
+At an observed port, pass `portContracts(product.portRegistry, product.finiteValues)` to
 `bindPortImplementations(implementations, contracts)` so test recording refuses
 a broken result and debug observation reports it without changing the product
-return. `product-spec/src/examples/vision-box.ts` shows the three explicit
+return. A finite field whose declaration is not passed is refused there, not reported per call. `product-spec/src/examples/vision-box.ts` shows the three explicit
 normalizers from xyxy pixels, xywh pixels and YOLO ratios to one pixel box.
 
 For TypeScript HTTP inputs, use a standalone contract with boundary `wire` and
