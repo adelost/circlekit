@@ -181,6 +181,14 @@ test('optional and nullable are independent: a key may be absent, null, or both'
   }
 });
 
+test('an optional key is a wire fact, refused on any other contract', () => {
+  const reading = { id: 'baro.reading', kind: 'state', boundary: 'service-internal',
+    fields: [field('hpa', 'number'), field('note', 'string', { optional: true })] } as const;
+  assert.throws(() => validateContract(reading),
+    /contract 'baro\.reading' field 'note' is optional, which only a wire contract carries: use boundary 'wire'/u);
+  assert.doesNotThrow(() => validateContract({ ...reading, boundary: 'wire' }));
+});
+
 test('the unknown-field policy and an optional key are part of the contract identity', () => {
   assert.notEqual(contractFingerprint(receipt), contractFingerprint({ ...receipt, unknownFields: 'ignore' }));
   assert.equal(contractFingerprint(receipt), contractFingerprint({ ...receipt, unknownFields: 'refuse' }));

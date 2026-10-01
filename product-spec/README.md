@@ -106,9 +106,9 @@ second type or generated TypeScript is involved. `readContractPayload(contract, 
 `unknown` body and returns the checked copy. A missing, mistyped, out-of-range or undeclared value is refused.
 An undeclared key is refused unless the contract says `unknownFields: "ignore"`, which only a wire contract may
 say: a request read by the server refuses (the default), a response read by clients ignores, so the server can
-add response fields without breaking old clients. A field with `optional: true` may be absent and a read keeps it
-absent: a read never invents a key, so absent (leave as is) and null (clear) stay two facts, and `nullable` is
-independent. `assertContractPayload(contract, input)` runs the same check and narrows the value in place.
+add response fields without breaking old clients. A wire field with `optional: true` may be absent and a read keeps
+it absent: a read never invents a key, so absent (leave as is) and null (clear) stay two facts, and `nullable` is
+independent. Like a list or a nested contract, `optional` is refused on any other boundary. `assertContractPayload(contract, input)` runs the same check and narrows the value in place.
 Every payload fault throws `ContractPayloadError` with `contractId` (the contract read), `field` (the dotted path
 from its root, such as `history[2].role`, and '' for the payload itself) and the message. A fault in the
 declaration or the call, such as a finite declaration left out, stays a plain `Error`: an HTTP adapter answers

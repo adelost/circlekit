@@ -83,6 +83,8 @@ export function validateContractLaws(contract:LegoContract):void {
   refuseNesting(contract,[]);
   for(const field of contract.fields){
     const where=`contract '${contract.id}' field '${field.name}'`,value=field.value;
+    if(field.optional===true&&contract.boundary!=='wire')
+      throw new Error(`${where} is optional, which only a wire contract carries: use boundary 'wire'`);
     if(isListRef(value)&&contract.boundary!=='wire')
       throw new Error(`${where} is a list, which only a wire contract carries: use boundary 'wire'`);
     if(isContractRef(value)&&contract.boundary!=='wire')
