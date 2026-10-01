@@ -2,8 +2,8 @@
 # Guide-paths gate (Mattias 2026-09-17: "dokumentation blir ju gammal om vi
 # spårar ur"). Every backticked repo path in product-spec/GUIDE.md must exist,
 # every command line in its Commands block must name a script or package
-# that exists, and every ```ts example must be in the test that compiles and
-# runs it. A guide line that points at nothing fails by line, so the guide
+# that exists, and every ```ts or ```typescript example must be in the test
+# that compiles and runs it. A guide line that points at nothing fails by line, so the guide
 # cannot go stale silently. Placeholders in angle brackets (<name>) and paths
 # that belong to a consuming product (appspec/..., app/src/...) are the
 # product's to check, not this repo's, and are skipped by name.
@@ -61,8 +61,9 @@ while IFS= read -r line; do
   fi
 done < "$GUIDE"
 
-# Examples: every ```ts block must appear, whitespace aside, in the test that builds it inside its real
-# declaration. An example no compiler reads is a claim nobody checks.
+# Examples: every ```ts or ```typescript block must appear, whitespace aside, in the
+# test that builds it inside its real declaration. An example no compiler reads is a
+# claim nobody checks.
 EXAMPLES="product-spec/test/guide-examples.test.ts"
 [ -f "$EXAMPLES" ] || { echo "check-guide-paths: FAIL: examples test missing: $EXAMPLES" >&2; exit 2; }
 squeeze() { tr -s '[:space:]' ' ' | sed -E 's/^ //; s/ $//'; }
@@ -72,7 +73,7 @@ line_no=0
 while IFS= read -r line; do
   line_no=$((line_no + 1))
   if [ "$in_ts" -eq 0 ]; then
-    if [[ "$line" == '```ts' ]]; then in_ts=1; block=""; block_line=$((line_no + 1)); fi
+    if [[ "$line" == '```ts' || "$line" == '```typescript' ]]; then in_ts=1; block=""; block_line=$((line_no + 1)); fi
     continue
   fi
   if [[ "$line" == '```' ]]; then
