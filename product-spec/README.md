@@ -24,12 +24,29 @@ helpers off the root entry. product-emit 0.1.50 to 0.1.57 cannot load with it:
 0.1.16's `/wire` entry does not load with 0.3.91 ("does not provide an export
 named 'contractRef'").
 
-0.3.92 makes `stores` and `fetches` required in the declaration `defineProduct`
-takes. Leaving the line out used to switch the runtime-owner law off without a
-word; now it is a TypeScript error on the bump ("Property 'stores' is missing"),
-and a product with none writes `stores: [], fetches: []`. A payload fault is now
-a `ContractPayloadError`, a subclass of `Error` with the same message, so code
-that catches `Error` behaves as on 0.3.91.
+What a caller of 0.3.91 sees change on the bump to 0.3.92:
+
+- `stores` and `fetches` are required in the declaration `defineProduct` takes.
+  Leaving the line out used to switch the runtime-owner law off without a word;
+  now it is a TypeScript error ("Property 'stores' is missing"), and an untyped
+  call is refused by name. A product with none adds two lines,
+  `stores: [],` and `fetches: [],`. They go in link-product's
+  `linkProductDeclaration` (`link-product/src/product.ts`, which its test
+  spreads), in showcase-product's `defineProduct({ id: "circlekit-showcase", ... })`
+  (`showcase-product/src/product.ts`, line 50) and in barometer's
+  `barometerProductDeclaration` (its product/src/product.ts, line 173). Skyvw
+  already passes both.
+- A payload fault throws `ContractPayloadError`. `error.name` and `String(error)`
+  now begin with `ContractPayloadError` where they began with `Error`; the message
+  and `instanceof Error` are unchanged.
+- A finite declaration left out of the call is refused before the payload is
+  read: "finite 'x' needs exactly one nonempty value declaration" now comes
+  before "requires a record payload" or "is missing field".
+- `gteField` skips a null sibling: `{ low: null, high: -1 }` was refused,
+  because JavaScript compared -1 with null as with 0, and is accepted.
+- `fetchService` names a screen listed twice ("lists screen 'MAIN' twice in
+  screenRefs; list each screen once") where it said "needs screenRefs".
+- A finite value may hold capitals and ':', which the id rule refused.
 
 The authoring vocabulary has four executable building blocks:
 
