@@ -1,8 +1,9 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { assertContractPayload, contractFingerprint, ContractPayloadError, contractRef, defineProductLibraryCatalog, field, finiteValueRef,
-  finiteValues, listOf, readContractPayload, validateContract, valueRef, type ContractPayload, type LegoContract,
-  type LegoField } from '../src/index.js';
+import { assertContractPayload, contractFingerprint, ContractPayloadError, contractRef, defineProduct,
+  defineProductLibraryCatalog, field, finiteValueRef, finiteValues, listOf, port, portContracts, readContractPayload,
+  service, validateContract, valueRef, type ContractPayload, type LegoContract, type LegoField } from '../src/index.js';
+import { assetCatalog, lifetime, product } from './minimal-product.js';
 
 // The wire laws of the C1 plan: what a finite value may be, set and nested fields, the unknown-field policy, optional
 // keys, and one read that applies them all.
@@ -337,4 +338,47 @@ test('a declaration fault stays a plain Error, such as finite declarations left 
     assert.equal(error instanceof ContractPayloadError, false);
     assert.equal(error.name, 'Error');
   }
+});
+
+// A finite value named inside a list or a nested record is as needed as one named by a field directly: every check
+// that finite declarations are complete (and not orphaned) reads through lists and records.
+const grantScopes = finiteValues('grant.scope', ['read', 'write']);
+const grant = { id: 'grant.record', kind: 'snapshot', boundary: 'wire', fields: [field('scope', finiteValueRef('grant.scope'))] } as const;
+const grants = { id: 'grant.list', kind: 'snapshot', boundary: 'wire', fields: [
+  field('scopes', listOf(finiteValueRef('grant.scope'))), field('latest', contractRef(grant), { nullable: true })] } as const;
+const processLife = { stateOwner: 'none', lifetime: 'process', durability: 'transient', clockDomain: 'none', contextInputs: [] } as const;
+const grantSource = service({ id: 'grant.source', inputs: [], outputs: [port('grants', grants)],
+  runtime: { ...processLife, effects: ['grant.read'] } } as const);
+const grantSink = service({ id: 'grant.sink', inputs: [port('grants', grants)], outputs: [],
+  runtime: { ...processLife, effects: ['grant.write'] } } as const);
+const withGrants = (finite: readonly ReturnType<typeof finiteValues>[]) => () => defineProduct({ ...product,
+  finiteValues: finite, nodeTypes: [...product.nodeTypes, grantSource, grantSink],
+  nodes: [...product.nodes, { id: 'grant.source', nodeTypeRef: grantSource.id, config: {}, bindings: {}, activation: lifetime },
+    { id: 'grant.sink', nodeTypeRef: grantSink.id, config: {}, bindings: { grants: 'grant.source.grants' }, activation: lifetime }],
+} as never, assetCatalog);
+
+test('a product refuses a finite value named only inside a list or a record when it is not declared', () => {
+  assert.throws(withGrants([]), /contract 'grant\.list' uses unknown finite value 'grant\.scope'/u);
+});
+
+test('a finite value used only inside a list or a record is no orphan', () => {
+  assert.doesNotThrow(withGrants([grantScopes]));
+});
+
+test('a library refuses a list or record that names an undeclared finite value', () => {
+  const library = (finite: readonly ReturnType<typeof finiteValues>[]) => () => defineProductLibraryCatalog({
+    id: 'grant-library', contracts: [grants], nodeTypes: [], finiteValues: finite });
+  assert.throws(library([]), /library 'grant-library' contract 'grant\.list' uses undeclared finite value 'grant\.scope'/u);
+  assert.doesNotThrow(library([grantScopes]));
+});
+
+test('port contracts refuse a list or record whose finite declaration was not passed', () => {
+  const registry = (contract: LegoContract) => ({ contracts: [contract], nodePorts: [{ ref: 'grant.out', contractRef: contract.id }],
+    componentPorts: [] }) as unknown as Parameters<typeof portContracts>[0];
+  assert.throws(() => portContracts(registry(grants)),
+    /port contract 'grant\.list' field 'scopes' names finite 'grant\.scope' without its declaration; pass it to portContracts/u);
+  const nestedOnly = { ...grants, id: 'grant.nested', fields: [grants.fields[1]] } as const;
+  assert.throws(() => portContracts(registry(nestedOnly)),
+    /port contract 'grant\.nested' field 'latest\.scope' names finite 'grant\.scope' without its declaration/u);
+  assert.doesNotThrow(() => portContracts(registry(grants), [grantScopes]));
 });

@@ -1,6 +1,7 @@
 import { requireWireId, validateContract, type LegoContract, type LegoField, type LegoFiniteValueDeclaration,
   type LegoFiniteValueRef, type LegoPrimitive, type LegoValueRef } from './node-model.js';
 import type { ContractPayload } from './contract-payload.js';
+import { finiteRefsOf, isContractRef, isFiniteRef, isListRef, isRecord, nestedOf } from './field-kinds.js';
 import type { ProductPortRegistry } from './port-graph-model.js';
 import { declaredSite } from './source-site.js';
 
@@ -34,20 +35,10 @@ export function listOf<const Element extends LegoListElement>(element:Element,
 
 type FieldValue = LegoField['value'];
 const PRIMITIVES:readonly unknown[]=['boolean','integer','number','string'];
-const isRecord = (value:unknown):value is Record<string,unknown> =>
-  typeof value==='object'&&value!==null&&!Array.isArray(value);
-const isFiniteRef = (value:FieldValue):value is LegoFiniteValueRef =>
-  typeof value!=='string'&&'finite' in value&&value.finite===true;
-const isContractRef = (value:FieldValue):value is LegoContractRef =>
-  typeof value!=='string'&&'contract' in value&&isRecord(value.contract);
-const isListRef = (value:FieldValue):value is LegoListRef => typeof value!=='string'&&'list' in value;
 const isListElement = (value:unknown):value is LegoListElement => typeof value==='string'?PRIMITIVES.includes(value)
   :isRecord(value)&&(isFiniteRef(value as unknown as LegoValueRef)||isContractRef(value as unknown as LegoValueRef));
 const refName = (value:unknown):string => typeof value==='string'?`'${value}'`:`'${(value as LegoValueRef)?.ref}'`;
 const numeric = (field:LegoField) => field.value==='number'||field.value==='integer';
-/** The record a field nests, directly or as the element of its list. */
-const nestedOf = (value:FieldValue):LegoContract|undefined => isContractRef(value)?value.contract
-  :isListRef(value)&&isContractRef(value.list)?value.list.contract:undefined;
 
 /** WHAT: A contract's identity. WHY: One id names one schema, so every field fact takes part in the comparison. */
 export function contractFingerprint(contract:LegoContract):string {
@@ -223,16 +214,14 @@ function valueOf(contract:LegoContract,field:LegoField,kind:FieldValue,item:unkn
 }
 
 /** Every finite declaration the contract names needs exactly one nonempty declaration, before any value is read. */
-function finiteMembers(contract:LegoContract,finite:readonly LegoFiniteValueDeclaration[],
-  members=new Map<string,readonly string[]>()):ReadonlyMap<string,readonly string[]> {
-  for(const {value} of contract.fields){
-    const element=isListRef(value)?value.list:value,nested=nestedOf(value);
-    if(nested!==undefined)finiteMembers(nested,finite,members);
-    if(!isFiniteRef(element)||members.has(element.ref))continue;
-    const declarations=finite.filter(declaration=>declaration.id===element.ref);
+function finiteMembers(contract:LegoContract,finite:readonly LegoFiniteValueDeclaration[]):ReadonlyMap<string,readonly string[]> {
+  const members=new Map<string,readonly string[]>();
+  for(const {ref} of finiteRefsOf(contract)){
+    if(members.has(ref))continue;
+    const declarations=finite.filter(declaration=>declaration.id===ref);
     if(declarations.length!==1||declarations[0]!.values.length===0)
-      throw new Error(`finite '${element.ref}' needs exactly one nonempty value declaration`);
-    members.set(element.ref,declarations[0]!.values);
+      throw new Error(`finite '${ref}' needs exactly one nonempty value declaration`);
+    members.set(ref,declarations[0]!.values);
   }
   return members;
 }
@@ -269,10 +258,9 @@ export function portContracts(registry:ProductPortRegistry,
     declarations.set(declaration.id,declaration);
   }
   const contracts=new Map(registry.contracts.map(contract=>[contract.id,contract]));
-  for(const contract of contracts.values())for(const field of contract.fields){
-    if(typeof field.value==='string'||!('finite' in field.value)||field.value.finite!==true)continue;
-    if(!declarations.has(field.value.ref))throw new Error(`port contract '${contract.id}' field '${field.name}' `
-      +`names finite '${field.value.ref}' without its declaration; pass it to portContracts`);
+  for(const contract of contracts.values())for(const {path,ref} of finiteRefsOf(contract)){
+    if(!declarations.has(ref))throw new Error(`port contract '${contract.id}' field '${path}' `
+      +`names finite '${ref}' without its declaration; pass it to portContracts`);
   }
   return {
     contracts:new Map([...registry.nodePorts,...registry.componentPorts].map(entry=>{
