@@ -63,15 +63,15 @@ test("the fetch example is a fetch policy", () => {
   assert.equal(weather.cadenceMs, 1_800_000);
 });
 
-test("the wire example reads a released request whose optional keys are absent", () => {
+test("the wire example reads a released request whose optional key is absent, and keeps it absent", () => {
   const platforms = finiteValues("device.platform", ["wear-os", "apple-watch", "garmin"]);
   const scopes = finiteValues("device.scope", ["jumps:read", "jumps:write"]);
   const body: unknown = { platform: "wear-os" };
   const start = { id: "pairing.start", kind: "event", boundary: "wire", fields: [
     field("platform", finiteValueRef("device.platform")),
-    field("scopes", finiteSetRef("device.scope"), { nullable: true, optional: true })] } as const;
+    field("scopes", finiteSetRef("device.scope"), { optional: true })] } as const;
   const request = readContractPayload(start, body, [platforms, scopes]);
-  assert.deepEqual(request, { platform: "wear-os", scopes: null });
+  assert.deepEqual(request, { platform: "wear-os" });
 });
 
 test("the observed-port example binds a compiled product's contracts", () => {

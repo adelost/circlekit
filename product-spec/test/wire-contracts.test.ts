@@ -141,13 +141,10 @@ test('only a wire contract may ignore unknown fields, and the policy is refuse o
     /contract 'live\.receipt' unknownFields must be 'refuse' or 'ignore'/u);
 });
 
-test('an optional field must be nullable, refused where it is declared', () => {
-  assert.throws(() => field('scopes', finiteSetRef(scopes.id), { optional: true }),
-    /field 'scopes' is optional, so it must be nullable: add nullable: true/u);
-  const optional = field('scopes', finiteSetRef(scopes.id), { nullable: true, optional: true });
-  assert.doesNotThrow(() => validateContract({ ...access, fields: [optional] }));
-  assert.throws(() => validateContract({ ...access, fields: [{ ...optional, nullable: false }] }),
-    /contract 'device\.access' field 'scopes' is optional, so it must be nullable: add nullable: true/u);
+test('optional and nullable are independent: a key may be absent, null, or both', () => {
+  for (const options of [{ optional: true }, { optional: true, nullable: true }] as const) {
+    assert.doesNotThrow(() => validateContract({ ...access, fields: [field('scopes', finiteSetRef(scopes.id), options)] }));
+  }
 });
 
 test('the unknown-field policy and an optional key are part of the contract identity', () => {
@@ -162,8 +159,8 @@ test('the unknown-field policy and an optional key are part of the contract iden
 const platforms = finiteValues('device.platform', ['wear-os', 'apple-watch', 'garmin']);
 const pairing = { id: 'pairing.start', kind: 'event', boundary: 'wire', fields: [
   field('platform', finiteValueRef(platforms.id)), field('label', 'string'),
-  field('operationId', 'string', { nullable: true, optional: true }),
-  field('scopes', finiteSetRef(scopes.id), { nullable: true, optional: true })] } as const;
+  field('operationId', 'string', { optional: true }),
+  field('scopes', finiteSetRef(scopes.id), { optional: true })] } as const;
 const echo = { ...point, id: 'live.echo', unknownFields: 'ignore' } as const;
 const started = { id: 'pairing.started', kind: 'snapshot', boundary: 'wire', unknownFields: 'ignore', fields: [
   field('id', 'string'), field('requestedScopes', finiteSetRef(scopes.id)), field('position', contractRef(point)),
@@ -172,13 +169,27 @@ const values = [platforms, scopes] as const;
 const startedOf = (extra: Record<string, unknown> = {}) => ({ id: 'op_1', requestedScopes: ['jumps:write'],
   position: { latitude: 1, phase: null }, echo: null, ...extra });
 
-test('a read fills an absent optional key with null and returns a copy of the declared keys', () => {
+// A pl4n-shaped PATCH body: an absent key leaves the task's field unchanged, null clears it.
+const taskPatch = { id: 'tasks.patch', kind: 'event', boundary: 'wire', fields: [
+  field('title', 'string', { optional: true }), field('day', 'string', { optional: true, nullable: true }),
+  field('done', 'boolean', { optional: true })] } as const;
+
+test('a read never invents a key: an absent optional key stays absent and null stays null', () => {
   const released = { platform: 'wear-os', label: 'Skydive Altimeter' };
   const read = readContractPayload(pairing, released, values);
-  assert.deepEqual(read, { platform: 'wear-os', label: 'Skydive Altimeter', operationId: null, scopes: null });
+  assert.deepEqual(read, released);
   assert.notEqual(read, released);
   const scoped = { ...released, operationId: 'op_1', scopes: ['jumps:read', 'jumps:write'] };
   assert.deepEqual(readContractPayload(pairing, scoped, values), scoped);
+  assert.deepEqual(readContractPayload(taskPatch, {}), {});
+  assert.deepEqual(readContractPayload(taskPatch, { day: null }), { day: null });
+  assert.equal('day' in readContractPayload(taskPatch, { title: 'Bring tea' }), false);
+});
+
+test('an optional key that is not nullable refuses null', () => {
+  assert.throws(() => readContractPayload(taskPatch, { title: null }), /contract 'tasks\.patch' field 'title' must be string/u);
+  assert.throws(() => readContractPayload(pairing, { platform: 'wear-os', label: 'x', operationId: null }, values),
+    /contract 'pairing\.start' field 'operationId' must be string/u);
 });
 
 test('a request with an unknown field is refused', () => {
@@ -221,22 +232,27 @@ test('every finite declaration the contract names is needed before a value is re
     /finite 'device\.platform' needs exactly one nonempty value declaration/u);
 });
 
-test('assert stays exact: an absent optional key or an unknown key is refused whatever the policy', () => {
-  assert.throws(() => assertContractPayload(pairing, { platform: 'wear-os', label: 'x' }, values),
-    /contract 'pairing\.start' is missing field 'operationId'/u);
-  assert.throws(() => assertContractPayload(started, startedOf({ addedLater: 1 }), values),
-    /contract 'pairing\.started' has undeclared field 'addedLater'/u);
-  assert.doesNotThrow(() => assertContractPayload(started, readContractPayload(started, startedOf({ addedLater: 1 }), values), values));
+test('assert runs the same check as a read and narrows in place', () => {
+  assert.doesNotThrow(() => assertContractPayload(pairing, { platform: 'wear-os', label: 'x' }, values));
+  assert.doesNotThrow(() => assertContractPayload(started, startedOf({ addedLater: 1 }), values));
+  assert.throws(() => assertContractPayload(pairing, { platform: 'wear-os', label: 'x', surprise: 1 }, values),
+    /contract 'pairing\.start' has undeclared field 'surprise'/u);
 });
 
-// Compiled with the public API: the read returns the payload type, an optional key as a nullable value.
+// Compiled with the public API: an optional key is an optional property, nullable adds null, both give both.
 function readTypeProof(input: unknown) {
   const read = readContractPayload(pairing, input, values);
   const platform: 'wear-os' | 'apple-watch' | 'garmin' = read.platform;
-  const operationId: string | null = read.operationId;
-  // @ts-expect-error an optional key reads as null when absent
+  const operationId: string | undefined = read.operationId;
+  // @ts-expect-error an optional key may be absent
   const always: string = read.operationId;
+  // @ts-expect-error an optional key that is not nullable is never null
+  const cleared: typeof read.operationId = null;
+  const patch = readContractPayload(taskPatch, input);
+  const day: string | null | undefined = patch.day;
+  const unchanged: typeof patch = {};
+  const clear: typeof patch = { day: null };
   const requested: readonly ('jumps:read' | 'jumps:write')[] = readContractPayload(started, input, values).requestedScopes;
-  return { platform, operationId, always, requested };
+  return { platform, operationId, always, cleared, day, unchanged, clear, requested };
 }
 void readTypeProof;

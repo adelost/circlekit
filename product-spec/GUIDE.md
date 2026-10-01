@@ -72,17 +72,17 @@ server reads it with `readContractPayload(contract, input, finiteValues)` and ge
 `ContractPayload<typeof contract>`, with no second type or TS emitter. A missing,
 mistyped, out-of-range or undeclared value is refused. A request refuses an
 unknown key (the default); a response says `unknownFields: "ignore"` so the server
-can add fields. `optional: true` (with `nullable`) reads an absent key as null, for
-keys released clients leave out. `finiteSetRef` holds distinct members of one
+can add fields. `optional: true` lets a key be absent and a read keeps it absent,
+so absent (leave as is) and null (clear) stay two facts. `finiteSetRef` holds distinct members of one
 finite declaration, `contractRef` a nested wire record checked by its own
 contract. A finite value is a letter, then letters, digits, `.`, `_`, `:` or `-`.
-`assertContractPayload` checks a value that already is the exact payload. See
+`assertContractPayload` runs the same check and narrows in place. See
 `product-spec/test/wire-contracts.test.ts`.
 
 ```ts
 const start = { id: "pairing.start", kind: "event", boundary: "wire", fields: [
   field("platform", finiteValueRef("device.platform")),
-  field("scopes", finiteSetRef("device.scope"), { nullable: true, optional: true })] } as const;
+  field("scopes", finiteSetRef("device.scope"), { optional: true })] } as const;
 const request = readContractPayload(start, body, [platforms, scopes]);
 ```
 

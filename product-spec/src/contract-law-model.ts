@@ -69,7 +69,6 @@ export function validateContractLaws(contract:LegoContract):void {
   refuseNesting(contract,[]);
   for(const field of contract.fields){
     const where=`contract '${contract.id}' field '${field.name}'`,value=field.value;
-    if(field.optional===true&&!field.nullable)throw new Error(`${where} is optional, so it must be nullable: add nullable: true`);
     if(isFiniteSetRef(value)&&contract.boundary!=='wire')
       throw new Error(`${where} is a finite set, which only a wire contract carries: use boundary 'wire'`);
     if(isContractRef(value)&&contract.boundary!=='wire')
@@ -100,47 +99,41 @@ function refuseNesting(contract:LegoContract,path:readonly string[]):void {
   for(const field of contract.fields)if(isContractRef(field.value))refuseNesting(field.value.contract,[...path,contract.id]);
 }
 
-/**
- * WHAT: Checks that a value IS the payload: every declared key present, optional ones too, and no other key, whatever
- * the contract's unknownFields. WHY: Narrows an in-process value without a copy, by the same check a read runs.
- */
+/** WHAT: Checks and narrows a declared payload in place. WHY: The same check as a read, for a value already in hand. */
 export function assertContractPayload<const Contract extends LegoContract,
   const Values extends readonly LegoFiniteValueDeclaration[] = readonly []>(
   contract:Contract,payload:unknown,finiteDeclarations:Values=[] as unknown as Values,
 ):asserts payload is ContractPayload<Contract,Values> {
-  validateContract(contract);
-  payloadOf(contract,payload,{members:finiteMembers(contract,finiteDeclarations),exact:true});
+  readContractPayload(contract,payload,finiteDeclarations);
 }
 
 /**
- * WHAT: Reads a wire value as its contract allows and returns the checked copy: an absent optional key reads as null,
- * an undeclared key is dropped under unknownFields "ignore" and refused otherwise, nested records by their own contract.
- * WHY: A server reads a request and a client a response by one rule, and only declared keys travel on.
+ * WHAT: Reads a wire value as its contract allows and returns the checked copy. A read never invents a key: an absent
+ * optional key stays absent, an undeclared key is dropped under unknownFields "ignore" and refused otherwise, and a
+ * nested record is read by its own contract. WHY: A server reads a request and a client a response by one rule.
  */
 export function readContractPayload<const Contract extends LegoContract,
   const Values extends readonly LegoFiniteValueDeclaration[] = readonly []>(
   contract:Contract,payload:unknown,finiteDeclarations:Values=[] as unknown as Values,
 ):ContractPayload<Contract,Values> {
   validateContract(contract);
-  return payloadOf(contract,payload,{members:finiteMembers(contract,finiteDeclarations),exact:false}) as
-    ContractPayload<Contract,Values>;
+  return payloadOf(contract,payload,{members:finiteMembers(contract,finiteDeclarations)}) as ContractPayload<Contract,Values>;
 }
 
 interface PayloadRead {
   /** Members of every finite declaration the contract names, nested contracts included. */
   readonly members:ReadonlyMap<string,readonly string[]>;
-  /** Exact: the value must already be the payload. Otherwise the contract's optional keys and policy apply. */
-  readonly exact:boolean;
 }
 
-/** The one payload check: every declared field read in order, then the sibling laws on the checked values. */
+/** The one payload check: every declared key read in order, then the sibling laws on the checked values. */
 function payloadOf(contract:LegoContract,payload:unknown,read:PayloadRead):unknown {
   if(contract.kind==='event'&&contract.fields.length===0&&payload===undefined)return undefined;
   if(!isRecord(payload))throw new Error(`contract '${contract.id}' requires a record payload`);
   const declared=new Set(contract.fields.map(field=>field.name));
-  if(read.exact||contract.unknownFields!=='ignore')for(const name of Object.keys(payload))if(!declared.has(name))
+  if(contract.unknownFields!=='ignore')for(const name of Object.keys(payload))if(!declared.has(name))
     throw new Error(`contract '${contract.id}' has undeclared field '${name}'`);
-  const copy=Object.fromEntries(contract.fields.map(field=>[field.name,fieldOf(contract,field,payload,read)]));
+  const present=contract.fields.filter(field=>field.optional!==true||Object.hasOwn(payload,field.name));
+  const copy=Object.fromEntries(present.map(field=>[field.name,fieldOf(contract,field,payload,read)]));
   for(const field of contract.fields){
     const item=copy[field.name],other=field.gteField===undefined?null:copy[field.gteField];
     if(typeof item==='number'&&typeof other==='number'&&item<other)
@@ -150,10 +143,7 @@ function payloadOf(contract:LegoContract,payload:unknown,read:PayloadRead):unkno
 }
 
 function fieldOf(contract:LegoContract,field:LegoField,value:Record<string,unknown>,read:PayloadRead):unknown {
-  if(!Object.hasOwn(value,field.name)){
-    if(!read.exact&&field.optional===true)return null;
-    throw new Error(`contract '${contract.id}' is missing field '${field.name}'`);
-  }
+  if(!Object.hasOwn(value,field.name))throw new Error(`contract '${contract.id}' is missing field '${field.name}'`);
   const item=value[field.name],kind=field.value;
   if(item===null&&field.nullable)return null;
   if(typeof kind==='string')return primitiveOf(contract,field,kind,item);
