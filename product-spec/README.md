@@ -55,6 +55,20 @@ builds a typed cartesian state space from literal axes, and `mapFiniteCases`
 generates an exhaustive case object from it; products do not copy dozens of
 operation-by-data case ids by hand.
 
+## TypeScript at a wire boundary
+
+`field` preserves its literal name, primitive and nullability. `ContractPayload<typeof contract>` derives the
+payload type; `assertContractPayload(contract, input)` checks an unknown value and narrows it to that type.
+No product graph or generated TypeScript is required. Use boundary `wire` for an HTTP body, not a UI event.
+All wire fields must be runtime-checkable: primitives or `finiteValueRef`, never an opaque `valueRef`.
+Pass finite declarations as the assertion's third argument; a finite field without its declaration is refused,
+and a string outside its values is refused. The same declarations derive its literal union in the payload type.
+Opaque internal fields remain `unknown`: only their presence and nullability are checked. A widened contract
+also remains `unknown`; an assertion cannot recover type information an author erased.
+The executable wire example and type checks are in `test/contract-payload.test.ts`.
+
+## Decisions and runtime owners
+
 A decision over a few finite axes (which values hold in this phase and this
 display state) is one `defineDecisionTable(...)`: `axes` list every value,
 `columns` type the answers (`choice`, `bool`, `integer`, `record`,

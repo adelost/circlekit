@@ -44,7 +44,7 @@ test('U6 a broken ratio law names its authored contract field',()=>{
 });
 
 // One generated law proof per authored contract. Cases come from the fields, not a copied registry.
-for(const contract of visionContracts) test(`${contract.id} generates a positive and every negative field-law case`,()=>{
+for(const contract of visionContracts as readonly LegoContract[]) test(`${contract.id} generates a positive and every negative field-law case`,()=>{
   const valid:Record<string,string|number|boolean>=Object.fromEntries(contract.fields.map(item=>[item.name,
     item.value==='boolean'?false:item.value==='string'?'ok':item.min??0.5]));
   for(const item of contract.fields)if(item.gteField)valid[item.name]=valid[item.gteField]!;

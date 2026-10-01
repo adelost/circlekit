@@ -60,6 +60,13 @@ a broken result and debug observation reports it without changing the product
 return. `product-spec/src/examples/vision-box.ts` shows the three explicit
 normalizers from xyxy pixels, xywh pixels and YOLO ratios to one pixel box.
 
+For TypeScript HTTP inputs, use a standalone contract with boundary `wire` and
+call `assertContractPayload(contract, input)` on `unknown`. Its assertion and
+`ContractPayload<typeof contract>` use the literal fields, with no second type
+or TS emitter. Finite fields require their value declarations as argument three
+and are checked against those values. Opaque `valueRef` fields remain `unknown`
+internally and are refused on `wire`. See `product-spec/test/contract-payload.test.ts`.
+
 A machine or table included in a product names its runtime **node type** with
 `ownerNodeTypeRef: "recording.runtime"`. The product compiler refuses a missing
 or unknown owner and carries the exact reference into ProductIr. It never
