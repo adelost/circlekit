@@ -25,7 +25,14 @@ test("a store effect needs exactly one compiled owner", () => {
     nodeTypes: [...product.nodeTypes, logWriter("fixture.log-mirror")],
     nodes: [...product.nodes, { id: "log.mirror", nodeTypeRef: "fixture.log-mirror", config: {},
       bindings: { forecast: "weather.fetch.forecast" }, activation: lifetime }] }),
-  /store 'log\.store' effect 'storage\.log-write' needs exactly one compiled owner, has 2 \(fixture\.log-store, fixture\.log-mirror\)$/u);
+  /store 'log\.store' effect 'storage\.log-write' needs exactly one compiled owner, has 2 \(log\.store, log\.mirror\)$/u);
+});
+
+test("a store effect needs one running instance, not one node type", () => {
+  assert.throws(() => compile({ stores: [logStore],
+    nodes: [...product.nodes, { id: "log.copy", nodeTypeRef: "fixture.log-store", config: {},
+      bindings: { forecast: "weather.fetch.forecast" }, activation: lifetime }] }),
+  /store 'log\.store' effect 'storage\.log-write' needs exactly one compiled owner, has 2 \(log\.store, log\.copy\)$/u);
 });
 
 test("a fetch effect needs a compiled owner", () => {

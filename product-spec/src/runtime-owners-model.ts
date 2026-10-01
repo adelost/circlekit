@@ -4,9 +4,10 @@ import type { CompiledProductGraph } from "./port-graph-model.js";
 import type { StoreService } from "./store-service-model.js";
 
 /**
- * Stores and fetches stay out of the IR, but every effect they declare must be run by a compiled
- * node type, so a policy cannot describe work no runtime does. A store effect has exactly one owner;
- * a fetch effect may be shared, and a fetch that names its owner node is demanded on each screen it names.
+ * Stores and fetches stay out of the IR, but every effect they declare must be run by a compiled node
+ * instance, so a policy cannot describe work no runtime does. A store effect has exactly one running
+ * owner, since two instances of one type would both write; a fetch effect may be shared, and a fetch
+ * that names its owner node is demanded on each screen it names.
  */
 export function requireRuntimeOwners(
   declaration: {
@@ -16,9 +17,10 @@ export function requireRuntimeOwners(
   },
   graph: CompiledProductGraph,
 ): void {
+  const effectsOfType = new Map(graph.nodeTypes.map((type) => [type.id, type.runtime.effects]));
   const owners = new Map<string, string[]>();
-  for (const type of graph.nodeTypes) {
-    for (const effect of type.runtime.effects) owners.set(effect, [...owners.get(effect) ?? [], type.id]);
+  for (const node of graph.nodes) {
+    for (const effect of effectsOfType.get(node.nodeTypeRef) ?? []) owners.set(effect, [...owners.get(effect) ?? [], node.id]);
   }
   for (const store of declaration.stores ?? []) {
     for (const effect of store.effectIds) {
