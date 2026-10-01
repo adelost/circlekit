@@ -57,10 +57,18 @@ test("coverage cache is spatial while a value cache needs a real age", () => {
 test("a fetch owner is a wire id and its screens are unique and need that owner", () => {
   assert.equal(fetchService({ ...weather, ownerNodeRef: "weather.service", screenRefs: ["MAIN"] }).ownerNodeRef,
     "weather.service");
-  assert.throws(() => fetchService({ ...weather, ownerNodeRef: "Weather_Service" }), /WEATHER.*needs ownerNodeRef$/u);
-  assert.throws(() => fetchService({ ...weather, ownerNodeRef: "weather.service", screenRefs: ["MAIN", "MAIN"] }),
-    /WEATHER.*needs screenRefs$/u);
-  assert.throws(() => fetchService({ ...weather, screenRefs: ["MAIN"] }), /WEATHER.*needs ownerNodeRef for screenRefs$/u);
+  assert.throws(() => fetchService({ ...weather, ownerNodeRef: "Weather_Service" }),
+    { message: "fetchService 'WEATHER' needs ownerNodeRef" });
+  assert.throws(() => fetchService({ ...weather, screenRefs: ["MAIN"] }),
+    { message: "fetchService 'WEATHER' needs ownerNodeRef for screenRefs" });
+});
+
+test("a screen listed twice is named, and an empty screen list has its own message", () => {
+  const owned = { ...weather, ownerNodeRef: "weather.service" } as const;
+  assert.throws(() => fetchService({ ...owned, screenRefs: ["MAIN", "LOG", "MAIN"] }),
+    { message: "fetchService 'WEATHER' lists screen 'MAIN' twice in screenRefs; list each screen once" });
+  assert.throws(() => fetchService({ ...owned, screenRefs: [] }),
+    { message: "fetchService 'WEATHER' lists no screen in screenRefs; name one or leave screenRefs out" });
 });
 
 function negativeTypes() {
