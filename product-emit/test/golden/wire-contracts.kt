@@ -11,41 +11,65 @@ interface GeneratedAcmeWireValue {
     val wire: String
 }
 
-/** One declared kind of wire value read from what org.json parsed; a refusal names the contract and the field. */
-class GeneratedAcmeWireKind<T : Any>(private val problem: String, private val convert: (Any, String, String) -> T?) {
-    fun read(value: Any, contract: String, path: String): T =
-        convert(value, contract, path) ?: throw IllegalArgumentException("contract '$contract' field '$path' must $problem")
+/** A wire payload that breaks its contract: `contractId` is the contract that was read, `field` the dotted path from its root. */
+class GeneratedAcmeWireException(val contractId: String, val field: String, message: String) : IllegalArgumentException(message)
+
+/** Where a record sits in a read: the contract the read started from and the dotted path to the record. */
+class GeneratedAcmeWirePlace(val root: String, val path: String) {
+    fun below(name: String) = if (path.isEmpty()) name else "$path.$name"
+}
+
+/** One value being read: its root and path for the exception, its own contract and name for the message. */
+class GeneratedAcmeWireField(val root: String, val path: String, val contract: String, val name: String) {
+    fun refuse(problem: String): Nothing = throw GeneratedAcmeWireException(root, path, "contract '$contract' field '$name'$problem")
+    fun element(index: Int) = GeneratedAcmeWireField(root, "$path[$index]", contract, "$name[$index]")
+}
+
+/** One declared kind of wire value, read from what org.json parsed. */
+class GeneratedAcmeWireKind<T : Any>(private val problem: String, private val convert: (Any, GeneratedAcmeWireField) -> T?) {
+    fun read(value: Any, field: GeneratedAcmeWireField): T = convert(value, field) ?: field.refuse(" must $problem")
+
+    /** The same kind with a number's declared bounds, refused as soon as the value is read. */
+    fun within(min: Double?, max: Double?, bounds: String) = GeneratedAcmeWireKind<T>(problem) { value, field ->
+        convert(value, field)?.also {
+            val number = (it as Number).toDouble()
+            if (min != null && number < min || max != null && number > max) field.refuse("=${GeneratedAcmeWire.js(number)} violates $bounds")
+        }
+    }
 }
 
 /** The kinds a wire contract declares. An integer is whole and within the range JavaScript reads exactly. */
 object GeneratedAcmeWire {
     const val MAX_SAFE_INTEGER = 9_007_199_254_740_991L
 
-    val string = GeneratedAcmeWireKind("be string") { value, _, _ -> value as? String }
-    val boolean = GeneratedAcmeWireKind("be boolean") { value, _, _ -> value as? Boolean }
-    val number = GeneratedAcmeWireKind("be number") { value, _, _ -> (value as? Number)?.toDouble()?.takeIf { it.isFinite() } }
-    val integer = GeneratedAcmeWireKind("be integer") { value, _, _ -> whole(value)?.takeIf { it in -MAX_SAFE_INTEGER..MAX_SAFE_INTEGER } }
+    val string = GeneratedAcmeWireKind("be string") { value, _ -> value as? String }
+    val boolean = GeneratedAcmeWireKind("be boolean") { value, _ -> value as? Boolean }
+    val number = GeneratedAcmeWireKind("be number") { value, _ -> (value as? Number)?.toDouble()?.takeIf { it.isFinite() } }
+    val integer = GeneratedAcmeWireKind("be integer") { value, _ -> whole(value)?.takeIf { it in -MAX_SAFE_INTEGER..MAX_SAFE_INTEGER } }
 
     fun <E : GeneratedAcmeWireValue> finite(id: String, entries: List<E>) =
-        GeneratedAcmeWireKind("belong to finite '$id'") { value, _, _ -> entries.firstOrNull { it.wire == value } }
+        GeneratedAcmeWireKind("belong to finite '$id'") { value, _ -> entries.firstOrNull { it.wire == value } }
 
-    fun <T : Any> record(id: String, parse: (JSONObject) -> T) =
-        GeneratedAcmeWireKind("be a '$id' record") { value, _, _ -> (value as? JSONObject)?.let(parse) }
+    fun <T : Any> record(id: String, parse: (JSONObject, GeneratedAcmeWirePlace) -> T) =
+        GeneratedAcmeWireKind("be a '$id' record") { value, field -> (value as? JSONObject)?.let { parse(it, GeneratedAcmeWirePlace(field.root, field.path)) } }
 
-    fun <T : Any> list(element: GeneratedAcmeWireKind<T>) = GeneratedAcmeWireKind("be a list") { value, contract, path ->
-        (value as? JSONArray)?.let { array -> List(array.length()) { index -> element.read(array.get(index), contract, "$path[$index]") } }
+    fun <T : Any> list(element: GeneratedAcmeWireKind<T>) = GeneratedAcmeWireKind("be a list") { value, field ->
+        (value as? JSONArray)?.let { array -> List(array.length()) { index -> element.read(array.get(index), field.element(index)) } }
     }
 
-    fun <T : Any> set(element: GeneratedAcmeWireKind<T>) = GeneratedAcmeWireKind<Set<T>>("be a list") { value, contract, path ->
+    fun <T : Any> set(element: GeneratedAcmeWireKind<T>) = GeneratedAcmeWireKind<Set<T>>("be a list") { value, field ->
         (value as? JSONArray)?.let { array ->
             val members = LinkedHashSet<T>()
             for (index in 0 until array.length()) {
-                val member = element.read(array.get(index), contract, "$path[$index]")
-                require(members.add(member)) { "contract '$contract' field '$path' repeats ${quoted(member)}" }
+                val member = element.read(array.get(index), field.element(index))
+                if (!members.add(member)) field.refuse(" repeats ${quoted(member)}")
             }
             members
         }
     }
+
+    /** A number as JavaScript writes it in a message: a whole number has no ".0". */
+    fun js(number: Double): String = if (number == Math.rint(number) && Math.abs(number) < 1e15) number.toLong().toString() else number.toString()
 
     private fun whole(value: Any): Long? = when (value) {
         is Int -> value.toLong()
@@ -57,31 +81,41 @@ object GeneratedAcmeWire {
     private fun quoted(value: Any): String = when (value) {
         is GeneratedAcmeWireValue -> "'${value.wire}'"
         is String -> "'$value'"
+        is Double -> js(value)
         else -> value.toString()
     }
 }
 
-/** Reads one wire contract's keys: missing and null are refused unless the field says otherwise. */
-class GeneratedAcmeWireReader(private val json: JSONObject, private val contract: String, fields: Set<String>, ignoreUnknown: Boolean) {
+/** Reads one wire record as readContractPayload does: an unknown key first, then each declared key in order. */
+class GeneratedAcmeWireReader(
+    private val json: JSONObject,
+    private val contract: String,
+    fields: Set<String>,
+    ignoreUnknown: Boolean,
+    private val place: GeneratedAcmeWirePlace,
+) {
     init {
-        if (!ignoreUnknown) for (key in json.keys()) require(key in fields) { "contract '$contract' has undeclared field '$key'" }
+        if (!ignoreUnknown) for (key in json.keys()) if (key !in fields) refuse(key, "contract '$contract' has undeclared field '$key'")
     }
 
-    fun <T : Any> required(name: String, kind: GeneratedAcmeWireKind<T>): T {
-        require(json.has(name)) { "contract '$contract' is missing field '$name'" }
-        return kind.read(json.get(name), contract, name)
-    }
+    private fun refuse(name: String, message: String): Nothing = throw GeneratedAcmeWireException(place.root, place.below(name), message)
+    private fun field(name: String) = GeneratedAcmeWireField(place.root, place.below(name), contract, name)
+    private fun present(name: String): Any = if (json.has(name)) json.get(name) else refuse(name, "contract '$contract' is missing field '$name'")
+
+    fun <T : Any> required(name: String, kind: GeneratedAcmeWireKind<T>): T = kind.read(present(name), field(name))
 
     /** A key that must be present; its value may be null. */
-    fun <T : Any> nullable(name: String, kind: GeneratedAcmeWireKind<T>): T? {
-        require(json.has(name)) { "contract '$contract' is missing field '$name'" }
-        val value = json.get(name)
-        return if (value == JSONObject.NULL) null else kind.read(value, contract, name)
-    }
+    fun <T : Any> nullable(name: String, kind: GeneratedAcmeWireKind<T>): T? =
+        present(name).let { value -> if (value == JSONObject.NULL) null else kind.read(value, field(name)) }
 
     /** A key that may be absent, read as null; when present it is not null. */
-    fun <T : Any> optional(name: String, kind: GeneratedAcmeWireKind<T>): T? =
-        if (json.has(name)) kind.read(json.get(name), contract, name) else null
+    fun <T : Any> optional(name: String, kind: GeneratedAcmeWireKind<T>): T? = if (json.has(name)) kind.read(json.get(name), field(name)) else null
+
+    /** A sibling law, checked after every key is read. */
+    fun atLeast(name: String, value: Number?, other: String, otherValue: Number?, unit: String) {
+        if (value == null || otherValue == null || value.toDouble() >= otherValue.toDouble()) return
+        field(name).refuse("=${GeneratedAcmeWire.js(value.toDouble())} must be >= '$other'=${GeneratedAcmeWire.js(otherValue.toDouble())}$unit")
+    }
 }
 
 /** Finite `shop.size`, as written on the wire. */
@@ -109,11 +143,6 @@ data class GeneratedAcmeShopOrder(
     val express: Boolean,
     val coupon: String? = null,
 ) {
-    init {
-        require(tipPercent == null || tipPercent >= 0.0 && tipPercent <= 100.0) { "contract 'shop.order' field 'tipPercent'=${tipPercent} violates 0..100" }
-        require(sequence >= 0L) { "contract 'shop.order' field 'sequence'=${sequence} violates 0..∞" }
-    }
-
     fun toJson(): JSONObject {
         val json = JSONObject()
         json.put("size", size.wire)
@@ -131,15 +160,17 @@ data class GeneratedAcmeShopOrder(
         const val CONTRACT = "shop.order"
         private val FIELDS = setOf("size", "toppings", "notes", "deliverTo", "tipPercent", "sequence", "express", "coupon")
 
-        fun parse(json: JSONObject): GeneratedAcmeShopOrder {
-            val read = GeneratedAcmeWireReader(json, CONTRACT, FIELDS, ignoreUnknown = false)
+        fun parse(json: JSONObject): GeneratedAcmeShopOrder = parse(json, GeneratedAcmeWirePlace(CONTRACT, ""))
+
+        internal fun parse(json: JSONObject, place: GeneratedAcmeWirePlace): GeneratedAcmeShopOrder {
+            val read = GeneratedAcmeWireReader(json, CONTRACT, FIELDS, ignoreUnknown = false, place)
             return GeneratedAcmeShopOrder(
                 size = read.required("size", GeneratedAcmeWire.finite("shop.size", GeneratedAcmeShopSize.entries)),
                 toppings = read.required("toppings", GeneratedAcmeWire.set(GeneratedAcmeWire.finite("shop.topping", GeneratedAcmeShopTopping.entries))),
                 notes = read.optional("notes", GeneratedAcmeWire.list(GeneratedAcmeWire.string)),
-                deliverTo = read.required("deliverTo", GeneratedAcmeWire.record("shop.address") { GeneratedAcmeShopAddress.parse(it) }),
-                tipPercent = read.nullable("tipPercent", GeneratedAcmeWire.number),
-                sequence = read.required("sequence", GeneratedAcmeWire.integer),
+                deliverTo = read.required("deliverTo", GeneratedAcmeWire.record("shop.address") { record, at -> GeneratedAcmeShopAddress.parse(record, at) }),
+                tipPercent = read.nullable("tipPercent", GeneratedAcmeWire.number.within(0.0, 100.0, "0..100")),
+                sequence = read.required("sequence", GeneratedAcmeWire.integer.within(0.0, null, "0..∞")),
                 express = read.required("express", GeneratedAcmeWire.boolean),
                 coupon = read.optional("coupon", GeneratedAcmeWire.string),
             )
@@ -152,10 +183,6 @@ data class GeneratedAcmeShopAddress(
     val street: String,
     val floor: Long?,
 ) {
-    init {
-        require(floor == null || floor >= 0L && floor <= 200L) { "contract 'shop.address' field 'floor'=${floor} violates 0..200" }
-    }
-
     fun toJson(): JSONObject {
         val json = JSONObject()
         json.put("street", street)
@@ -167,11 +194,13 @@ data class GeneratedAcmeShopAddress(
         const val CONTRACT = "shop.address"
         private val FIELDS = setOf("street", "floor")
 
-        fun parse(json: JSONObject): GeneratedAcmeShopAddress {
-            val read = GeneratedAcmeWireReader(json, CONTRACT, FIELDS, ignoreUnknown = false)
+        fun parse(json: JSONObject): GeneratedAcmeShopAddress = parse(json, GeneratedAcmeWirePlace(CONTRACT, ""))
+
+        internal fun parse(json: JSONObject, place: GeneratedAcmeWirePlace): GeneratedAcmeShopAddress {
+            val read = GeneratedAcmeWireReader(json, CONTRACT, FIELDS, ignoreUnknown = false, place)
             return GeneratedAcmeShopAddress(
                 street = read.required("street", GeneratedAcmeWire.string),
-                floor = read.nullable("floor", GeneratedAcmeWire.integer),
+                floor = read.nullable("floor", GeneratedAcmeWire.integer.within(0.0, 200.0, "0..200")),
             )
         }
     }
@@ -187,12 +216,6 @@ data class GeneratedAcmeShopReceipt(
     val deliverTo: GeneratedAcmeShopAddress?,
     val size: GeneratedAcmeShopSize,
 ) {
-    init {
-        require(schemaVersion >= 1L && schemaVersion <= 1L) { "contract 'shop.receipt' field 'schemaVersion'=${schemaVersion} violates 1..1" }
-        require(totalCents >= 0L) { "contract 'shop.receipt' field 'totalCents'=${totalCents} violates 0..∞" }
-        require(paidCents >= totalCents) { "contract 'shop.receipt' field 'paidCents'=${paidCents} must be >= 'totalCents'=${totalCents}" }
-    }
-
     fun toJson(): JSONObject {
         val json = JSONObject()
         json.put("schemaVersion", schemaVersion)
@@ -209,17 +232,21 @@ data class GeneratedAcmeShopReceipt(
         const val CONTRACT = "shop.receipt"
         private val FIELDS = setOf("schemaVersion", "orderId", "lines", "totalCents", "paidCents", "deliverTo", "size")
 
-        fun parse(json: JSONObject): GeneratedAcmeShopReceipt {
-            val read = GeneratedAcmeWireReader(json, CONTRACT, FIELDS, ignoreUnknown = true)
-            return GeneratedAcmeShopReceipt(
-                schemaVersion = read.required("schemaVersion", GeneratedAcmeWire.integer),
+        fun parse(json: JSONObject): GeneratedAcmeShopReceipt = parse(json, GeneratedAcmeWirePlace(CONTRACT, ""))
+
+        internal fun parse(json: JSONObject, place: GeneratedAcmeWirePlace): GeneratedAcmeShopReceipt {
+            val read = GeneratedAcmeWireReader(json, CONTRACT, FIELDS, ignoreUnknown = true, place)
+            val parsed = GeneratedAcmeShopReceipt(
+                schemaVersion = read.required("schemaVersion", GeneratedAcmeWire.integer.within(1.0, 1.0, "1..1")),
                 orderId = read.required("orderId", GeneratedAcmeWire.string),
-                lines = read.required("lines", GeneratedAcmeWire.list(GeneratedAcmeWire.record("shop.receipt-line") { GeneratedAcmeShopReceiptLine.parse(it) })),
-                totalCents = read.required("totalCents", GeneratedAcmeWire.integer),
+                lines = read.required("lines", GeneratedAcmeWire.list(GeneratedAcmeWire.record("shop.receipt-line") { record, at -> GeneratedAcmeShopReceiptLine.parse(record, at) })),
+                totalCents = read.required("totalCents", GeneratedAcmeWire.integer.within(0.0, null, "0..∞")),
                 paidCents = read.required("paidCents", GeneratedAcmeWire.integer),
-                deliverTo = read.nullable("deliverTo", GeneratedAcmeWire.record("shop.address") { GeneratedAcmeShopAddress.parse(it) }),
+                deliverTo = read.nullable("deliverTo", GeneratedAcmeWire.record("shop.address") { record, at -> GeneratedAcmeShopAddress.parse(record, at) }),
                 size = read.required("size", GeneratedAcmeWire.finite("shop.size", GeneratedAcmeShopSize.entries)),
             )
+            read.atLeast("paidCents", parsed.paidCents, "totalCents", parsed.totalCents, "")
+            return parsed
         }
     }
 }
@@ -229,10 +256,6 @@ data class GeneratedAcmeShopReceiptLine(
     val name: String,
     val cents: Long,
 ) {
-    init {
-        require(cents >= 0L) { "contract 'shop.receipt-line' field 'cents'=${cents} violates 0..∞" }
-    }
-
     fun toJson(): JSONObject {
         val json = JSONObject()
         json.put("name", name)
@@ -244,11 +267,13 @@ data class GeneratedAcmeShopReceiptLine(
         const val CONTRACT = "shop.receipt-line"
         private val FIELDS = setOf("name", "cents")
 
-        fun parse(json: JSONObject): GeneratedAcmeShopReceiptLine {
-            val read = GeneratedAcmeWireReader(json, CONTRACT, FIELDS, ignoreUnknown = true)
+        fun parse(json: JSONObject): GeneratedAcmeShopReceiptLine = parse(json, GeneratedAcmeWirePlace(CONTRACT, ""))
+
+        internal fun parse(json: JSONObject, place: GeneratedAcmeWirePlace): GeneratedAcmeShopReceiptLine {
+            val read = GeneratedAcmeWireReader(json, CONTRACT, FIELDS, ignoreUnknown = true, place)
             return GeneratedAcmeShopReceiptLine(
                 name = read.required("name", GeneratedAcmeWire.string),
-                cents = read.required("cents", GeneratedAcmeWire.integer),
+                cents = read.required("cents", GeneratedAcmeWire.integer.within(0.0, null, "0..∞")),
             )
         }
     }

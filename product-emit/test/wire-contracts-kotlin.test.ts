@@ -1,8 +1,10 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
+import { fileURLToPath } from "node:url";
 import { ContractPayloadError, field, finiteValueRef, finiteValues, readContractPayload, type LegoContract } from "@v1d/product-spec";
-import { emitWireContractsKotlin } from "../src/core/index.js";
+import { emitWireContractsKotlin, kotlinIdentifier } from "../src/core/index.js";
+import { kotlinSkip, runKotlin } from "./kotlin-toolchain.js";
 import { acmeOrder, acmeReceipt, acmeWireContracts, acmeWireValues } from "./wire-acme.js";
 
 const options = { packageName: "dev.acme.wire", symbolPrefix: "Acme", sourceFile: "test/wire-acme.ts", sourceSha: "fixture" };
@@ -33,6 +35,56 @@ for (const fixture of fixtures) {
       && error.message.startsWith(fixture.refuse!));
   });
 }
+
+/** What a read decides: the value it writes back, or the fault with its contract, its field path and its message. */
+function tsOutcome(fixture: WireFixture): unknown {
+  try {
+    return { value: JSON.parse(JSON.stringify(readContractPayload(contracts[fixture.contract]!, fixture.body, acmeWireValues))) };
+  } catch (error) {
+    if (!(error instanceof ContractPayloadError)) throw error;
+    return { contractId: error.contractId, field: error.field, message: error.message.replace(/\s*\[[^\]]*\]$/u, "") };
+  }
+}
+
+/** A Kotlin main that reads every fixture with its generated class and prints one JSON line per case. */
+const harness = `package dev.acme.wire
+
+import java.io.File
+import org.json.JSONArray
+import org.json.JSONObject
+
+fun main(args: Array<String>) {
+    val parsers: Map<String, (JSONObject) -> JSONObject> = mapOf(
+${Object.keys(contracts).map((id) => `        "${id}" to { json -> Generated${options.symbolPrefix}${kotlinIdentifier(id)}.parse(json).toJson() },`).join("\n")}
+    )
+    val fixtures = JSONArray(File(args[0]).readText())
+    for (index in 0 until fixtures.length()) {
+        val fixture = fixtures.getJSONObject(index)
+        val line = JSONObject()
+        try {
+            line.put("value", JSONObject(parsers.getValue(fixture.getString("contract"))(fixture.getJSONObject("body")).toString()))
+        } catch (error: Throwable) {
+            line.put("contractId", property(error, "getContractId") ?: JSONObject.NULL)
+                .put("field", property(error, "getField") ?: JSONObject.NULL)
+                .put("message", (error.message ?: error.javaClass.simpleName))
+        }
+        println(line.toString())
+    }
+}
+
+private fun property(error: Throwable, getter: String): String? =
+    runCatching { error.javaClass.getMethod(getter).invoke(error) as? String }.getOrNull()
+`;
+
+test("the emitted Kotlin decides every fixture as readContractPayload does: the same value, or the same fault at the same path", kotlinSkip, () => {
+  const sources = { "AcmeWire.kt": emitWireContractsKotlin(acmeWireContracts, acmeWireValues, options), "Harness.kt": harness };
+  const fixturePath = fileURLToPath(new URL("../../test/fixtures/wire-acme.json", import.meta.url));
+  for (const output of runKotlin(sources, "dev.acme.wire.HarnessKt", [fixturePath])) {
+    const lines = output.trim().split("\n").map((line) => JSON.parse(line) as unknown);
+    assert.equal(lines.length, fixtures.length);
+    fixtures.forEach((fixture, index) => assert.deepEqual(lines[index], tsOutcome(fixture), fixture.name));
+  }
+});
 
 test("the generated wire Kotlin is the golden file that was compiled and run on the fixtures", () => {
   assert.equal(emitWireContractsKotlin(acmeWireContracts, acmeWireValues, options), fromTest("golden/wire-contracts.kt"));

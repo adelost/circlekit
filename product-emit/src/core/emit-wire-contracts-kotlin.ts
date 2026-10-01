@@ -8,12 +8,13 @@ import { kotlinEnumToken, kotlinIdentifier, kotlinStringLiteral } from "./kotlin
 /**
  * Wire contracts as Kotlin over org.json, declared once in TypeScript and read by `readContractPayload` on the server.
  *
- * Per contract, a data class whose init refuses a value outside a declared bound, a `toJson()` that writes every key
- * (JSONObject.NULL for a null nullable key, nothing for a null optional key), and a `parse(json)` that refuses what
- * the TypeScript read refuses: a missing, mistyped, out-of-range or undeclared value, an element a distinct list
- * repeats, and an unknown key unless the contract ignores it. An absent optional key reads as null. Finite fields are
- * enums that carry their wire value, lists `List<T>` (`Set<T>` when distinct), nested contracts their own class,
- * integers `Long` within ±(2^53−1), numbers finite `Double`.
+ * Per contract, a data class with a `toJson()` that writes every key (JSONObject.NULL for a null nullable key, nothing
+ * for a null optional key) and a `parse(json)` that refuses what the TypeScript read refuses, in the order it reads:
+ * an unknown key unless the contract ignores it, then each declared key (missing, mistyped, out of range, undeclared,
+ * repeated in a distinct list), then the sibling laws. The first fault throws the generated WireException with the
+ * contract that was read and the dotted field path, as ContractPayloadError does. An absent optional key reads as
+ * null. Finite fields are enums that carry their wire value, lists `List<T>` (`Set<T>` when distinct), nested
+ * contracts their own class, integers `Long` within ±(2^53−1), numbers finite `Double`.
  *
  * A field both optional and nullable is refused: Kotlin has one null for "absent" and "null", and a client that
  * cannot say which would clear what it meant to leave alone.
@@ -51,12 +52,16 @@ interface WireNames {
   readonly kind: string;
   readonly wire: string;
   readonly reader: string;
+  readonly error: string;
+  readonly place: string;
+  readonly field: string;
 }
 
 function wireNames(prefix: string): WireNames {
   const generated = `Generated${prefix}`;
   return { prefix: generated, value: `${generated}WireValue`, kind: `${generated}WireKind`, wire: `${generated}Wire`,
-    reader: `${generated}WireReader` };
+    reader: `${generated}WireReader`, error: `${generated}WireException`, place: `${generated}WirePlace`,
+    field: `${generated}WireField` };
 }
 
 const typeName = (names: WireNames, id: string) => `${names.prefix}${kotlinIdentifier(id)}`;
@@ -151,7 +156,7 @@ function requireDistinctTypeNames(
   contracts: readonly LegoContract[],
   finites: readonly LegoFiniteValueDeclaration[],
 ): void {
-  const all = [names.value, names.kind, names.wire, names.reader,
+  const all = [names.value, names.kind, names.wire, names.reader, names.error, names.place, names.field,
     ...finites.map(({ id }) => typeName(names, id)), ...contracts.map(({ id }) => typeName(names, id))];
   const twice = all.find((name, index) => all.indexOf(name) !== index);
   if (twice !== undefined) throw new Error(`two wire declarations are emitted as Kotlin type ${twice}`);
@@ -175,13 +180,17 @@ function dataClass(contract: LegoContract, finites: readonly LegoFiniteValueDecl
   const fields = contract.fields.map((field) => ({ field, kind: kindOf(field.value), name: property(field.name) }));
   const properties = fields.map(({ field, kind, name: prop }) =>
     `    val ${prop}: ${kotlinType(kind, finiteName, names)}${nullable(field) ? "?" : ""}${field.optional === true ? " = null" : ""},`);
-  const laws = fields.flatMap(({ field, name: prop }) => declaredLaws(contract, field, prop));
+  const construct = `${name}(\n${fields.map(({ field, kind, name: prop }) =>
+    `                ${prop} = ${readKey(field, kind, finiteName, names)},`).join("\n")}\n            )`;
+  const siblings = fields.flatMap(({ field, name: prop }) => siblingLaw(contract, field, prop));
+  const body = siblings.length === 0 ? `            return ${construct}`
+    : `            val parsed = ${construct}\n${siblings.map((law) => `            ${law}`).join("\n")}\n            return parsed`;
   const policy = contract.unknownFields === "ignore" ? "an unknown key is ignored" : "an unknown key is refused";
   return `/** Wire contract \`${contract.id}\`; ${policy}. */
 data class ${name}(
 ${properties.join("\n")}
 ) {
-${laws.length === 0 ? "" : `    init {\n${laws.map((law) => `        ${law}`).join("\n")}\n    }\n\n`}    fun toJson(): JSONObject {
+    fun toJson(): JSONObject {
         val json = JSONObject()
 ${fields.map(({ field, kind, name: prop }) => `        ${writeKey(field, kind, prop)}`).join("\n")}
         return json
@@ -191,11 +200,11 @@ ${fields.map(({ field, kind, name: prop }) => `        ${writeKey(field, kind, p
         const val CONTRACT = "${contract.id}"
         private val FIELDS = setOf(${contract.fields.map(({ name: key }) => `"${key}"`).join(", ")})
 
-        fun parse(json: JSONObject): ${name} {
-            val read = ${names.reader}(json, CONTRACT, FIELDS, ignoreUnknown = ${contract.unknownFields === "ignore"})
-            return ${name}(
-${fields.map(({ field, kind, name: prop }) => `                ${prop} = ${readKey(field, kind, finiteName, names)},`).join("\n")}
-            )
+        fun parse(json: JSONObject): ${name} = parse(json, ${names.place}(CONTRACT, ""))
+
+        internal fun parse(json: JSONObject, place: ${names.place}): ${name} {
+            val read = ${names.reader}(json, CONTRACT, FIELDS, ignoreUnknown = ${contract.unknownFields === "ignore"}, place)
+${body}
         }
     }
 }`;
@@ -219,13 +228,16 @@ function readKind(kind: FieldKind, finiteName: (ref: string) => string, names: W
   switch (kind.kind) {
     case "string": case "boolean": case "integer": case "number": return `${names.wire}.${kind.kind}`;
     case "finite": return `${names.wire}.finite("${kind.ref}", ${finiteName(kind.ref)}.entries)`;
-    case "record": return `${names.wire}.record("${kind.contract.id}") { ${typeName(names, kind.contract.id)}.parse(it) }`;
+    case "record": return `${names.wire}.record("${kind.contract.id}") { record, at -> ${typeName(names, kind.contract.id)}.parse(record, at) }`;
     case "list": return `${names.wire}.${kind.distinct ? "set" : "list"}(${readKind(kind.element, finiteName, names)})`;
   }
 }
 
+/** A field's reader, with its declared bounds checked as soon as the value is read, as readContractPayload does. */
 function readKey(field: LegoField, kind: FieldKind, finiteName: (ref: string) => string, names: WireNames): string {
-  const reader = readKind(kind, finiteName, names);
+  const bounds = field.min === undefined && field.max === undefined ? ""
+    : `.within(${kotlinBound(field.min)}, ${kotlinBound(field.max)}, "${field.min ?? "-∞"}..${field.max ?? "∞"}${unitOf(field)}")`;
+  const reader = `${readKind(kind, finiteName, names)}${bounds}`;
   if (field.optional === true) return `read.optional("${field.name}", ${reader})`;
   return field.nullable ? `read.nullable("${field.name}", ${reader})` : `read.required("${field.name}", ${reader})`;
 }
@@ -251,31 +263,18 @@ function writeKey(field: LegoField, kind: FieldKind, prop: string): string {
   return `json.put("${field.name}", ${value} ?: JSONObject.NULL)`;
 }
 
-/** The declared bounds and sibling law of one field, so no instance outside them can be built. */
-function declaredLaws(contract: LegoContract, field: LegoField, prop: string): readonly string[] {
-  const where = `contract '${contract.id}' field '${field.name}'`;
-  const orNull = (law: string) => nullable(field) ? `${prop} == null || ${law}` : law;
-  const laws: string[] = [];
-  if (field.min !== undefined || field.max !== undefined) {
-    const literal = (bound: number) => field.value === "integer" && Number.isSafeInteger(bound) ? `${bound}L` : kotlinNumber(bound);
-    const bounds = [field.min === undefined ? undefined : `${prop} >= ${literal(field.min)}`,
-      field.max === undefined ? undefined : `${prop} <= ${literal(field.max)}`].filter((law) => law !== undefined);
-    const unit = field.unit === undefined ? "" : ` ${field.unit}`;
-    laws.push(`require(${orNull(bounds.join(" && "))}) { "${where}=\${${prop}} violates ${field.min ?? "-∞"}..${field.max ?? "∞"}${unit}" }`);
-  }
-  if (field.gteField !== undefined) {
-    const other = contract.fields.find(({ name }) => name === field.gteField)!;
-    const otherProp = property(other.name);
-    const compare = `${prop} >= ${otherProp}`;
-    const guarded = [nullable(field) ? `${prop} == null` : undefined, nullable(other) ? `${otherProp} == null` : undefined]
-      .filter((guard) => guard !== undefined);
-    laws.push(`require(${[...guarded, compare].join(" || ")}) { "${where}=\${${prop}} must be >= '${other.name}'=\${${otherProp}}" }`);
-  }
-  return laws;
+/** A sibling law, checked after every key is read, where readContractPayload checks it. */
+function siblingLaw(contract: LegoContract, field: LegoField, prop: string): readonly string[] {
+  if (field.gteField === undefined) return [];
+  const other = contract.fields.find(({ name }) => name === field.gteField)!;
+  return [`read.atLeast("${field.name}", parsed.${prop}, "${other.name}", parsed.${property(other.name)}, "${unitOf(field)}")`];
 }
 
-/** A Kotlin Double literal for a finite bound: `-90` is `-90.0`, `1e+21` stays as it is. */
-function kotlinNumber(value: number): string {
+const unitOf = (field: LegoField) => field.unit === undefined ? "" : ` ${field.unit}`;
+
+/** A Kotlin Double for a bound, or null: `-90` is `-90.0`, `1e+21` stays as it is. */
+function kotlinBound(value: number | undefined): string {
+  if (value === undefined) return "null";
   const text = String(value);
   return /[.eE]/u.test(text) ? text : `${text}.0`;
 }
@@ -286,41 +285,65 @@ interface ${names.value} {
     val wire: String
 }
 
-/** One declared kind of wire value read from what org.json parsed; a refusal names the contract and the field. */
-class ${names.kind}<T : Any>(private val problem: String, private val convert: (Any, String, String) -> T?) {
-    fun read(value: Any, contract: String, path: String): T =
-        convert(value, contract, path) ?: throw IllegalArgumentException("contract '$contract' field '$path' must $problem")
+/** A wire payload that breaks its contract: \`contractId\` is the contract that was read, \`field\` the dotted path from its root. */
+class ${names.error}(val contractId: String, val field: String, message: String) : IllegalArgumentException(message)
+
+/** Where a record sits in a read: the contract the read started from and the dotted path to the record. */
+class ${names.place}(val root: String, val path: String) {
+    fun below(name: String) = if (path.isEmpty()) name else "$path.$name"
+}
+
+/** One value being read: its root and path for the exception, its own contract and name for the message. */
+class ${names.field}(val root: String, val path: String, val contract: String, val name: String) {
+    fun refuse(problem: String): Nothing = throw ${names.error}(root, path, "contract '$contract' field '$name'$problem")
+    fun element(index: Int) = ${names.field}(root, "$path[$index]", contract, "$name[$index]")
+}
+
+/** One declared kind of wire value, read from what org.json parsed. */
+class ${names.kind}<T : Any>(private val problem: String, private val convert: (Any, ${names.field}) -> T?) {
+    fun read(value: Any, field: ${names.field}): T = convert(value, field) ?: field.refuse(" must $problem")
+
+    /** The same kind with a number's declared bounds, refused as soon as the value is read. */
+    fun within(min: Double?, max: Double?, bounds: String) = ${names.kind}<T>(problem) { value, field ->
+        convert(value, field)?.also {
+            val number = (it as Number).toDouble()
+            if (min != null && number < min || max != null && number > max) field.refuse("=\${${names.wire}.js(number)} violates $bounds")
+        }
+    }
 }
 
 /** The kinds a wire contract declares. An integer is whole and within the range JavaScript reads exactly. */
 object ${names.wire} {
     const val MAX_SAFE_INTEGER = 9_007_199_254_740_991L
 
-    val string = ${names.kind}("be string") { value, _, _ -> value as? String }
-    val boolean = ${names.kind}("be boolean") { value, _, _ -> value as? Boolean }
-    val number = ${names.kind}("be number") { value, _, _ -> (value as? Number)?.toDouble()?.takeIf { it.isFinite() } }
-    val integer = ${names.kind}("be integer") { value, _, _ -> whole(value)?.takeIf { it in -MAX_SAFE_INTEGER..MAX_SAFE_INTEGER } }
+    val string = ${names.kind}("be string") { value, _ -> value as? String }
+    val boolean = ${names.kind}("be boolean") { value, _ -> value as? Boolean }
+    val number = ${names.kind}("be number") { value, _ -> (value as? Number)?.toDouble()?.takeIf { it.isFinite() } }
+    val integer = ${names.kind}("be integer") { value, _ -> whole(value)?.takeIf { it in -MAX_SAFE_INTEGER..MAX_SAFE_INTEGER } }
 
     fun <E : ${names.value}> finite(id: String, entries: List<E>) =
-        ${names.kind}("belong to finite '$id'") { value, _, _ -> entries.firstOrNull { it.wire == value } }
+        ${names.kind}("belong to finite '$id'") { value, _ -> entries.firstOrNull { it.wire == value } }
 
-    fun <T : Any> record(id: String, parse: (JSONObject) -> T) =
-        ${names.kind}("be a '$id' record") { value, _, _ -> (value as? JSONObject)?.let(parse) }
+    fun <T : Any> record(id: String, parse: (JSONObject, ${names.place}) -> T) =
+        ${names.kind}("be a '$id' record") { value, field -> (value as? JSONObject)?.let { parse(it, ${names.place}(field.root, field.path)) } }
 
-    fun <T : Any> list(element: ${names.kind}<T>) = ${names.kind}("be a list") { value, contract, path ->
-        (value as? JSONArray)?.let { array -> List(array.length()) { index -> element.read(array.get(index), contract, "$path[$index]") } }
+    fun <T : Any> list(element: ${names.kind}<T>) = ${names.kind}("be a list") { value, field ->
+        (value as? JSONArray)?.let { array -> List(array.length()) { index -> element.read(array.get(index), field.element(index)) } }
     }
 
-    fun <T : Any> set(element: ${names.kind}<T>) = ${names.kind}<Set<T>>("be a list") { value, contract, path ->
+    fun <T : Any> set(element: ${names.kind}<T>) = ${names.kind}<Set<T>>("be a list") { value, field ->
         (value as? JSONArray)?.let { array ->
             val members = LinkedHashSet<T>()
             for (index in 0 until array.length()) {
-                val member = element.read(array.get(index), contract, "$path[$index]")
-                require(members.add(member)) { "contract '$contract' field '$path' repeats \${quoted(member)}" }
+                val member = element.read(array.get(index), field.element(index))
+                if (!members.add(member)) field.refuse(" repeats \${quoted(member)}")
             }
             members
         }
     }
+
+    /** A number as JavaScript writes it in a message: a whole number has no ".0". */
+    fun js(number: Double): String = if (number == Math.rint(number) && Math.abs(number) < 1e15) number.toLong().toString() else number.toString()
 
     private fun whole(value: Any): Long? = when (value) {
         is Int -> value.toLong()
@@ -332,30 +355,40 @@ object ${names.wire} {
     private fun quoted(value: Any): String = when (value) {
         is ${names.value} -> "'\${value.wire}'"
         is String -> "'$value'"
+        is Double -> js(value)
         else -> value.toString()
     }
 }
 
-/** Reads one wire contract's keys: missing and null are refused unless the field says otherwise. */
-class ${names.reader}(private val json: JSONObject, private val contract: String, fields: Set<String>, ignoreUnknown: Boolean) {
+/** Reads one wire record as readContractPayload does: an unknown key first, then each declared key in order. */
+class ${names.reader}(
+    private val json: JSONObject,
+    private val contract: String,
+    fields: Set<String>,
+    ignoreUnknown: Boolean,
+    private val place: ${names.place},
+) {
     init {
-        if (!ignoreUnknown) for (key in json.keys()) require(key in fields) { "contract '$contract' has undeclared field '$key'" }
+        if (!ignoreUnknown) for (key in json.keys()) if (key !in fields) refuse(key, "contract '$contract' has undeclared field '$key'")
     }
 
-    fun <T : Any> required(name: String, kind: ${names.kind}<T>): T {
-        require(json.has(name)) { "contract '$contract' is missing field '$name'" }
-        return kind.read(json.get(name), contract, name)
-    }
+    private fun refuse(name: String, message: String): Nothing = throw ${names.error}(place.root, place.below(name), message)
+    private fun field(name: String) = ${names.field}(place.root, place.below(name), contract, name)
+    private fun present(name: String): Any = if (json.has(name)) json.get(name) else refuse(name, "contract '$contract' is missing field '$name'")
+
+    fun <T : Any> required(name: String, kind: ${names.kind}<T>): T = kind.read(present(name), field(name))
 
     /** A key that must be present; its value may be null. */
-    fun <T : Any> nullable(name: String, kind: ${names.kind}<T>): T? {
-        require(json.has(name)) { "contract '$contract' is missing field '$name'" }
-        val value = json.get(name)
-        return if (value == JSONObject.NULL) null else kind.read(value, contract, name)
-    }
+    fun <T : Any> nullable(name: String, kind: ${names.kind}<T>): T? =
+        present(name).let { value -> if (value == JSONObject.NULL) null else kind.read(value, field(name)) }
 
     /** A key that may be absent, read as null; when present it is not null. */
-    fun <T : Any> optional(name: String, kind: ${names.kind}<T>): T? =
-        if (json.has(name)) kind.read(json.get(name), contract, name) else null
+    fun <T : Any> optional(name: String, kind: ${names.kind}<T>): T? = if (json.has(name)) kind.read(json.get(name), field(name)) else null
+
+    /** A sibling law, checked after every key is read. */
+    fun atLeast(name: String, value: Number?, other: String, otherValue: Number?, unit: String) {
+        if (value == null || otherValue == null || value.toDouble() >= otherValue.toDouble()) return
+        field(name).refuse("=\${${names.wire}.js(value.toDouble())} must be >= '$other'=\${${names.wire}.js(otherValue.toDouble())}$unit")
+    }
 }`;
 }

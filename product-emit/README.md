@@ -54,18 +54,25 @@ lane, its isolation and ordering, what Android built and how fully.
 wire contracts (product-spec `boundary: "wire"`) as Kotlin over org.json, so an
 app reads and writes the HTTP bodies a TypeScript server reads with
 `readContractPayload`, from the one declaration. Per contract it writes a data
-class whose init refuses a value outside a declared bound, `toJson()` that
-writes every key (JSONObject.NULL for a null nullable key, nothing for a null
-optional key) and `parse(json)` that refuses what the TypeScript read refuses:
-a missing, mistyped, out-of-range or undeclared value, an element a distinct
-list repeats, and an unknown key unless the contract ignores it. An absent
-optional key reads as null. Finite fields are enums carrying their wire value,
+class with `toJson()`, which writes every key (JSONObject.NULL for a null
+nullable key, nothing for a null optional key), and `parse(json)`, which
+refuses what the TypeScript read refuses in the order it reads: an unknown key
+unless the contract ignores it, then each declared key (missing, mistyped, out
+of range, undeclared, repeated in a distinct list), then the sibling laws. The
+first fault throws `Generated<Prefix>WireException` with `contractId` (the
+contract read) and `field` (the dotted path, such as `lines[1].cents`), as
+`ContractPayloadError` does. An absent optional key reads as null. Finite
+fields are enums carrying their wire value,
 `listOf` is `List<T>` (`Set<T>` when distinct), a nested contract its own data
 class, an integer `Long` within ±(2^53−1) and a number a finite `Double`. A field
 both optional and nullable is refused, because Kotlin has one null for both.
 `test/wire-contracts-kotlin.test.ts` pins the output for `test/wire-acme.ts`
-and runs the TypeScript read on `test/fixtures/wire-acme.json`, the cases the
-generated parse is specified against.
+and runs the TypeScript read on `test/fixtures/wire-acme.json`. With
+`V1D_KOTLIN_CLASSPATH` (kotlin-compiler-embeddable and its dependencies) and
+`V1D_ORG_JSON` (org.json classpaths separated by `;`) set, it also compiles the
+emitted Kotlin and runs every fixture on each org.json, and the decision, the
+written value, the contract, the field path and the message must equal the
+TypeScript read's; without them that test is skipped by name.
 
 ## Reading the product as a graph
 
