@@ -16,11 +16,25 @@ export function finiteSetRef<const Id extends string>(ref:Id):LegoFiniteSetRef<I
   return {ref,finiteSet:true};
 }
 
+/** A field holding one record of another wire contract, checked by that contract. Only a wire contract carries one. */
+export interface LegoContractRef<Contract extends LegoContract = LegoContract> extends LegoValueRef {
+  readonly contract: Contract;
+}
+
+/** WHAT: Nests one wire contract in another. WHY: A receipt names the record it echoes instead of copying its fields. */
+export function contractRef<const Contract extends LegoContract>(contract:Contract):LegoContractRef<Contract> {
+  return {ref:contract.id,contract};
+}
+
 type FieldValue = LegoField['value'];
 const isFiniteRef = (value:FieldValue):value is LegoFiniteValueRef =>
   typeof value!=='string'&&'finite' in value&&value.finite===true;
 const isFiniteSetRef = (value:FieldValue):value is LegoFiniteSetRef =>
   typeof value!=='string'&&'finiteSet' in value&&value.finiteSet===true;
+const isContractRef = (value:FieldValue):value is LegoContractRef =>
+  typeof value!=='string'&&'contract' in value&&isRecord(value.contract);
+const isRecord = (value:unknown):value is Record<string,unknown> =>
+  typeof value==='object'&&value!==null&&!Array.isArray(value);
 const numeric = (field:LegoField) => field.value==='number'||field.value==='integer';
 
 /** WHAT: A contract's identity. WHY: One id names one schema, so every field fact takes part in the comparison. */
@@ -31,7 +45,8 @@ export function contractFingerprint(contract:LegoContract):string {
     fields:contract.fields.map(item=>({
       name:item.name,
       value:typeof item.value==='string'?item.value
-        :{ref:item.value.ref,finite:isFiniteRef(item.value),finiteSet:isFiniteSetRef(item.value)},
+        :{ref:item.value.ref,finite:isFiniteRef(item.value),finiteSet:isFiniteSetRef(item.value),
+          contract:isContractRef(item.value)?contractFingerprint(item.value.contract):null},
       unit:item.unit??null,
       nullable:item.nullable,
       clockDomain:item.clockDomain,
@@ -44,11 +59,19 @@ export function contractFingerprint(contract:LegoContract):string {
 /** WHAT: Checks portable field laws. WHY: Keeps each bound inside its contract and opaque values off the wire. */
 export function validateContractLaws(contract:LegoContract):void {
   const fields=new Map(contract.fields.map(field=>[field.name,field]));
+  refuseNesting(contract,[]);
   for(const field of contract.fields){
-    if(isFiniteSetRef(field.value)&&contract.boundary!=='wire')
-      throw new Error(`contract '${contract.id}' field '${field.name}' is a finite set, which only a wire contract carries: use boundary 'wire'`);
-    if(contract.boundary==='wire'&&typeof field.value!=='string'&&!isFiniteRef(field.value)&&!isFiniteSetRef(field.value))
-      throw new Error(`wire contract '${contract.id}' field '${field.name}' has opaque value ref '${field.value.ref}'`);
+    const where=`contract '${contract.id}' field '${field.name}'`,value=field.value;
+    if(isFiniteSetRef(value)&&contract.boundary!=='wire')
+      throw new Error(`${where} is a finite set, which only a wire contract carries: use boundary 'wire'`);
+    if(isContractRef(value)&&contract.boundary!=='wire')
+      throw new Error(`${where} nests contract '${value.contract.id}', which only a wire contract carries: use boundary 'wire'`);
+    if(contract.boundary==='wire'&&typeof value!=='string'&&!isFiniteRef(value)&&!isFiniteSetRef(value)&&!isContractRef(value))
+      throw new Error(`wire contract '${contract.id}' field '${field.name}' has opaque value ref '${value.ref}'`);
+    if(isContractRef(value)){
+      if(value.contract.boundary!=='wire')throw new Error(`${where} nests '${value.contract.id}', which is not a wire contract`);
+      validateContract(value.contract);
+    }
     const bounded=field.min!==undefined||field.max!==undefined||field.gteField!==undefined;
     if(bounded&&!numeric(field))throw new Error(`contract '${contract.id}' law on nonnumeric field '${field.name}'`);
     if(field.min!==undefined&&!Number.isFinite(field.min)||field.max!==undefined&&!Number.isFinite(field.max)
@@ -60,6 +83,13 @@ export function validateContractLaws(contract:LegoContract):void {
         throw new Error(`contract '${contract.id}' field '${field.name}' needs numeric sibling '${field.gteField}' in the same unit`);
     }
   }
+}
+
+/** WHAT: Refuses a contract that nests itself. WHY: Every read and every emitter would recurse forever. */
+function refuseNesting(contract:LegoContract,path:readonly string[]):void {
+  const start=path.indexOf(contract.id);
+  if(start>=0)throw new Error(`contract '${contract.id}' nests itself: ${[...path.slice(start),contract.id].join(' -> ')}`);
+  for(const field of contract.fields)if(isContractRef(field.value))refuseNesting(field.value.contract,[...path,contract.id]);
 }
 
 /** WHAT: Checks and narrows a declared payload. WHY: Keeps TypeScript promises aligned with runtime checks. */
@@ -74,9 +104,8 @@ export function assertContractPayload<const Contract extends LegoContract,
 /** The one payload check: every declared field read in order, then the sibling laws on the checked values. */
 function payloadOf(contract:LegoContract,payload:unknown,finite:readonly LegoFiniteValueDeclaration[]):unknown {
   if(contract.kind==='event'&&contract.fields.length===0&&payload===undefined)return undefined;
-  if(!payload||typeof payload!=='object'||Array.isArray(payload))
-    throw new Error(`contract '${contract.id}' requires a record payload`);
-  const value=payload as Record<string,unknown>,declared=new Set(contract.fields.map(field=>field.name));
+  if(!isRecord(payload))throw new Error(`contract '${contract.id}' requires a record payload`);
+  const value=payload,declared=new Set(contract.fields.map(field=>field.name));
   for(const name of Object.keys(value))if(!declared.has(name))
     throw new Error(`contract '${contract.id}' has undeclared field '${name}'`);
   const read=Object.fromEntries(contract.fields.map(field=>[field.name,fieldOf(contract,field,value,finite)]));
@@ -96,6 +125,10 @@ function fieldOf(contract:LegoContract,field:LegoField,value:Record<string,unkno
   if(item===null&&field.nullable)return null;
   if(typeof kind==='string')return primitiveOf(contract,field,kind,item);
   const where=`contract '${contract.id}' field '${field.name}'`;
+  if(isContractRef(kind)){
+    if(!isRecord(item))throw new Error(`${where} must be a '${kind.contract.id}' record`);
+    return payloadOf(kind.contract,item,finite);
+  }
   if(members===undefined){
     if(item===null)throw new Error(`${where} must be nonnullable`);
     return item;
