@@ -1,6 +1,6 @@
 import type { LegoContract, PortBindingIr, PortRegistryEntry, ProductIr } from "@v1d/product-spec";
 import { contractTypeName } from "./emit-state-presentations-kotlin.js";
-import { kotlinIdentifier } from "./kotlin-syntax.js";
+import { kotlinIdentifier, kotlinMethodNameProblem } from "./kotlin-syntax.js";
 
 /** The Kotlin an action port carries: the value its handler takes and the result it hands back. */
 export interface ActionKotlinType {
@@ -46,6 +46,8 @@ export interface ComponentEventsModel {
 export interface ActionModel {
   readonly groups: readonly ActionGroup[];
   readonly components: readonly ComponentEventsModel[];
+  /** The contracts whose Kotlin type was derived as a data class, by id: pass them to `emitContractTypesKotlin`. */
+  readonly derivedContracts: readonly LegoContract[];
 }
 
 export interface ActionModelOptions {
@@ -57,11 +59,6 @@ export interface ActionModelOptions {
   /** Nodes whose action inputs are grouped by the owner that feeds them, instead of by the node. */
   readonly sinks?: readonly string[];
 }
-
-/** Kotlin's hard keywords: a method or parameter named by one does not compile unquoted. */
-export const KOTLIN_HARD_KEYWORDS: ReadonlySet<string> = new Set(["as", "break", "class", "continue", "do", "else",
-  "false", "for", "fun", "if", "in", "interface", "is", "null", "object", "package", "return", "super", "this", "throw",
-  "true", "try", "typealias", "typeof", "val", "var", "when", "while"]);
 
 /**
  * The type the declaration alone gives an event contract. No fields: Unit. Fields that are all primitive and none
@@ -100,20 +97,22 @@ export function projectActionModel(ir: Pick<ProductIr, "portRegistry">, options:
     }
   }
   const typedRefs = new Set<string>();
-  const derivedPayloads = new Map<string, string>();
+  const derived = new Map<string, LegoContract>();
   const typeOf = (entry: PortRegistryEntry): ActionKotlinType | undefined => {
     typedRefs.add(entry.ref);
     const declared = options.types?.[entry.ref];
-    const type = declared ?? derivedPayloadType(contractOf(entry));
+    const contract = contractOf(entry);
+    const type = declared ?? derivedPayloadType(contract);
     if (type === undefined) {
       problems.push(`action port '${entry.ref}' (contract '${entry.contractRef}') has no Kotlin type: pass it in types, or declare its fields primitive`);
     } else if (declared === undefined && type.value !== "Unit") {
-      derivedPayloads.set(entry.contractRef, type.value);
+      derived.set(contract.id, contract);
     }
     return type;
   };
-  const refuseKeyword = (method: string, ref: string) => {
-    if (KOTLIN_HARD_KEYWORDS.has(method)) problems.push(`action method '${method}' is a Kotlin keyword; rename port '${ref}'`);
+  const refuseMethodName = (method: string, ref: string) => {
+    const problem = kotlinMethodNameProblem(method);
+    if (problem !== undefined) problems.push(`action method '${method}' is ${problem}; rename port '${ref}'`);
   };
 
   const groups = new Map<string, { kind: ActionGroup["kind"]; ownerId: string; typeName: string; members: ActionMember[] }>();
@@ -123,7 +122,7 @@ export function projectActionModel(ir: Pick<ProductIr, "portRegistry">, options:
     const source = port(edge.from);
     const bySource = sinks.has(input.ownerId);
     const method = bySource ? source.portId : input.portId;
-    refuseKeyword(method, bySource ? source.ref : input.ref);
+    refuseMethodName(method, bySource ? source.ref : input.ref);
     const inputType = typeOf(input);
     const sourceType = edge.kind === "component-event" ? typeOf(source) : inputType;
     if (inputType === undefined || sourceType === undefined) continue;
@@ -136,9 +135,15 @@ export function projectActionModel(ir: Pick<ProductIr, "portRegistry">, options:
     const typeName = `Generated${options.symbolPrefix}${kotlinIdentifier(ownerId)}${kind === "node" ? "Inputs" : "Actions"}`;
     const group = groups.get(`${kind} ${ownerId}`) ?? { kind, ownerId, typeName, members: [] };
     groups.set(`${kind} ${ownerId}`, group);
+    const twin = group.members.find((member) => member.method === method);
+    if (twin !== undefined) {
+      const [first, second] = [twin.inputRef, input.ref].sort();
+      problems.push(`action method '${method}' of '${typeName}' would handle both '${first}' and '${second}'; feed each from its own output`);
+      continue;
+    }
     group.members.push({ method, inputRef: input.ref, sourceRef: source.ref, type: inputType });
     if (edge.kind !== "component-event") continue;
-    refuseKeyword(source.portId, source.ref);
+    refuseMethodName(source.portId, source.ref);
     const facade = facades.get(source.ownerId)
       ?? { componentId: source.ownerId, typeName: `Generated${options.symbolPrefix}${kotlinIdentifier(source.ownerId)}Events`, members: [] };
     facades.set(source.ownerId, facade);
@@ -147,7 +152,7 @@ export function projectActionModel(ir: Pick<ProductIr, "portRegistry">, options:
   for (const ref of Object.keys(options.types ?? {})) {
     if (!typedRefs.has(ref)) problems.push(`types names '${ref}', which no action binds; delete it`);
   }
-  refuseDuplicateNames(declaredTypeNames([...groups.values()], [...facades.values()], derivedPayloads, options.symbolPrefix), problems);
+  refuseDuplicateNames(declaredTypeNames([...groups.values()], [...facades.values()], [...derived.values()], options.symbolPrefix), problems);
   if (problems.length > 0) {
     const sorted = [...new Set(problems)].sort();
     throw new Error(`action handlers refused (${sorted.length}):\n  ${sorted.join("\n  ")}`);
@@ -155,6 +160,7 @@ export function projectActionModel(ir: Pick<ProductIr, "portRegistry">, options:
   return {
     groups: [...groups.values()].sort(byTypeName).map((group) => ({ ...group, members: group.members.sort(byMethod) })),
     components: [...facades.values()].sort(byTypeName).map((facade) => ({ ...facade, members: facade.members.sort(byMethod) })),
+    derivedContracts: [...derived.values()].sort((left, right) => compare(left.id, right.id)),
   };
 }
 
@@ -179,7 +185,7 @@ function actionEdges(
 function declaredTypeNames(
   groups: readonly Pick<ActionGroup, "kind" | "ownerId" | "typeName">[],
   facades: readonly Pick<ComponentEventsModel, "componentId" | "typeName">[],
-  derivedPayloads: ReadonlyMap<string, string>,
+  derivedContracts: readonly LegoContract[],
   symbolPrefix: string,
 ): readonly (readonly [string, string])[] {
   return [
@@ -190,7 +196,7 @@ function declaredTypeNames(
       [eventsImplementationName(facade, "Direct"), `direct events of '${facade.componentId}'`] as const,
     ]),
     [`Generated${symbolPrefix}ActionIndex`, "the action index"] as const,
-    ...[...derivedPayloads].map(([contractId, typeName]) => [typeName, `the payload of contract '${contractId}'`] as const),
+    ...derivedContracts.map((contract) => [contractTypeName(contract), `the payload of contract '${contract.id}'`] as const),
   ];
 }
 

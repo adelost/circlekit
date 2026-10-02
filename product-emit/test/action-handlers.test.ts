@@ -8,9 +8,10 @@ import {
   type ActionHandlersKotlinOptions,
   type ActionModelOptions,
 } from "../src/core/index.js";
-import { port } from "@v1d/product-spec";
+import { field, port, type LegoContract } from "@v1d/product-spec";
 import {
-  acmeActionOptions, acmeParts, acmePickType, acmeRename, acmeReset, compileAcme, noParts, serviceNode, serviceType, withFeed, type AcmeParts,
+  acmeActionOptions, acmeForwardedPick, acmeParts, acmePickType, acmeRename, acmeReset, compileAcme, noParts, serviceNode, serviceType,
+  withFeed, type AcmeParts,
 } from "./action-acme.js";
 import { compileKotlin, kotlinCompilerSkip } from "./kotlin-toolchain.js";
 
@@ -42,6 +43,12 @@ test("a port's type is its types entry, else Unit for no fields, else the contra
   assert.deepEqual(types.get("acme.surface.pick"), acmePickType);
 });
 
+test("the model lists each contract whose type it derived as a data class, and none it was given", () => {
+  assert.deepEqual(new Set(projectActionModel(acme, acmeActionOptions).derivedContracts.map(({ id }) => id)), new Set(["acme.rename"]));
+  const typed = { ...acmeActionOptions.types, "acme.panel.rename": { value: "Rename", result: "Unit" }, "acme.counter.rename": { value: "Rename", result: "Unit" } };
+  assert.deepEqual(projectActionModel(acme, { ...acmeActionOptions, types: typed }).derivedContracts, []);
+});
+
 test("each component instance gets one events facade, one method per bound output, naming the group that handles it", () => {
   const model = projectActionModel(acme, acmeActionOptions);
   assert.deepEqual(new Map(model.components.map(({ typeName, members }) =>
@@ -50,6 +57,14 @@ test("each component instance gets one events facade, one method per bound outpu
       "rename -> GeneratedAcmeAcmeCounterInputs", "pick -> GeneratedAcmeAcmePanelActions"])],
   ]));
 });
+
+/** `acme.state.forwardedPick` also feeds a second sink input, `statePick2`: one output, two inputs in one group. */
+const twinRelay: AcmeParts = { ...acmeParts,
+  nodeTypes: acmeParts.nodeTypes.map((type) => type.id !== "acme.surface" ? type
+    : serviceType("acme.surface", [...type.inputs, port("statePick2", acmeForwardedPick)])),
+  nodes: acmeParts.nodes.map((node) => node.id !== "acme.surface" ? node
+    : serviceNode("acme.surface", { ...node.bindings, statePick2: "acme.state.forwardedPick" })) };
+const objectMembers = ["hashCode", "notify", "notifyAll", "toString", "wait"] as const;
 
 const refusals: readonly (readonly [string, () => unknown, readonly string[]])[] = [
   ["a port with neither a types entry nor primitive fields", refusal(acmeParts, { types: { "acme.surface.statePick": acmePickType } }), [
@@ -76,6 +91,18 @@ const refusals: readonly (readonly [string, () => unknown, readonly string[]])[]
   ]],
   ["a types entry no action reads", refusal(acmeParts, { types: { ...acmeActionOptions.types, "acme.counter.missing": acmePickType } }), [
     "types names 'acme.counter.missing', which no action binds; delete it",
+  ]],
+  ["one output feeding two inputs of one group", refusal(twinRelay, { forwardedInputs: ["acme.surface.statePick", "acme.surface.statePick2"],
+    types: { ...acmeActionOptions.types, "acme.surface.statePick2": acmePickType } }), [
+    "action method 'forwardedPick' of 'GeneratedAcmeAcmeStateActions' would handle both 'acme.surface.statePick' and 'acme.surface.statePick2'; feed each from its own output",
+  ]],
+  ["a method named by a member of every Kotlin object",
+    refusal(withFeed(acmeParts, "acme.knob", "acme.dial", objectMembers.map((name) => [name, name, acmeReset] as const)), {}),
+    objectMembers.flatMap((name) => ["acme.dial", "acme.knob"].map((owner) =>
+      `action method '${name}' is a member of every Kotlin object; rename port '${owner}.${name}'`))],
+  ["a method named by underscores only", refusal(withFeed(acmeParts, "acme.knob", "acme.dial", [["__", "__", acmeReset]]), {}), [
+    "action method '__' is reserved in Kotlin; rename port 'acme.dial.__'",
+    "action method '__' is reserved in Kotlin; rename port 'acme.knob.__'",
   ]],
 ];
 
@@ -197,7 +224,10 @@ test("a group or facade too large for one file is refused by name", () => {
   });
 });
 
-const contractTypes = (packageName: string) => emitContractTypesKotlin([acmeRename], { ...emission, symbolPrefix: "Acme", packageName });
+/** A payload whose field is a Kotlin keyword: its derived class must still compile. */
+const acmeToggle: LegoContract = { id: "acme.toggle", kind: "event", boundary: "ui-event", fields: [field("in", "boolean")] };
+const contractTypes = (packageName: string) =>
+  emitContractTypesKotlin([acmeRename, acmeToggle], { ...emission, symbolPrefix: "Acme", packageName });
 
 /** A product's native owner for `acme.counter`, in the direct package; `reset` can be left out to prove the law. */
 const directOwner = (withReset: boolean) => `package dev.acme.direct
@@ -217,6 +247,7 @@ fun directCalls(): List<String> {
     events.reset()
     events.rename(GeneratedAcmeRename(name = "ada"))
     check(events.pick(AcmePick("LEFT")))
+    check(GeneratedAcmeToggle(\`in\` = true).\`in\`)
     return calls
 }
 `;

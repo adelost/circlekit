@@ -46,6 +46,13 @@ test("a renamed or retyped declared field renames or retypes the generated prope
   assert.match(retyped, /val pressureHpa: Long,/u);
 });
 
+test("a property named by a Kotlin keyword is quoted, so the class compiles; a soft keyword stays as it is", () => {
+  const kotlin = emitContractTypesKotlin([reading([field("in", "boolean"), field("Object", "string"), field("value", "number")])], options);
+  assert.match(kotlin, /^ {4}val `in`: Boolean,$/mu);
+  assert.match(kotlin, /^ {4}val `object`: String,$/mu);
+  assert.match(kotlin, /^ {4}val value: Double,$/mu);
+});
+
 test("a field that references another value, or a contract with no fields, is refused by contract and field", () => {
   assert.throws(() => emitContractTypesKotlin([reading([field("snapshot", valueRef("barometer.snapshot"))])], options),
     /contract 'barometer\.reading' field 'snapshot' references 'barometer\.snapshot'; a contract type is emitted from primitive fields only/u);

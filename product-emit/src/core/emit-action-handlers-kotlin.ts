@@ -1,7 +1,6 @@
 import type { ProductIr } from "@v1d/product-spec";
 import {
   eventsImplementationName,
-  KOTLIN_HARD_KEYWORDS,
   projectActionModel,
   type ActionGroup,
   type ActionKotlinType,
@@ -10,7 +9,7 @@ import {
   type ComponentEventsModel,
 } from "./action-handler-model.js";
 import type { SourcedKotlinEmissionOptions } from "./emission-options.js";
-import { kotlinEnumToken, kotlinPropertyName, kotlinStringLiteral } from "./kotlin-syntax.js";
+import { KOTLIN_HARD_KEYWORDS, kotlinEnumToken, kotlinPropertyName, kotlinStringLiteral } from "./kotlin-syntax.js";
 
 /**
  * How an emitted event reaches its handler. `port-runtime`: through the product's port runtime, which offers
