@@ -33,12 +33,12 @@ export interface AcmeParts {
 }
 
 /** An effectful service type, named like its one instance. */
-function serviceType(id: string, inputs: ProductNodeType["inputs"], outputs: ProductNodeType["outputs"] = []): ProductNodeType {
+export function serviceType(id: string, inputs: ProductNodeType["inputs"], outputs: ProductNodeType["outputs"] = []): ProductNodeType {
   return { id, kind: "service", inputs, outputs, runtime: { stateOwner: "none", lifetime: "process", durability: "transient",
     clockDomain: "none", contextInputs: [], effects: [`${id}-write`] } };
 }
 
-function serviceNode(id: string, bindings: Readonly<Record<string, string>>): ProductNodeInstance {
+export function serviceNode(id: string, bindings: Readonly<Record<string, string>>): ProductNodeInstance {
   return { id, nodeTypeRef: id, config: {}, bindings, activation: { kind: "lifetime", lifecycleSources: [] } };
 }
 

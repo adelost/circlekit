@@ -8,7 +8,10 @@ import {
   type ActionHandlersKotlinOptions,
   type ActionModelOptions,
 } from "../src/core/index.js";
-import { acmeActionOptions, acmeParts, acmePickType, acmeRename, acmeReset, compileAcme, noParts, withFeed, type AcmeParts } from "./action-acme.js";
+import { port } from "@v1d/product-spec";
+import {
+  acmeActionOptions, acmeParts, acmePickType, acmeRename, acmeReset, compileAcme, noParts, serviceNode, serviceType, withFeed, type AcmeParts,
+} from "./action-acme.js";
 import { compileKotlin, kotlinCompilerSkip } from "./kotlin-toolchain.js";
 
 const acme = compileAcme();
@@ -137,6 +140,23 @@ test("the index names each input's handler method and each output's facade metho
     'acme.panel.rename" to "GeneratedAcmeAcmePanelEvents.rename',
     'acme.panel.reset" to "GeneratedAcmeAcmePanelEvents.reset',
   ]));
+});
+
+test("DirectEvents refuses a handler parameter it cannot name: a Kotlin keyword, or two owners with one name", () => {
+  const keyword = withFeed(acmeParts, "acme.knob", "in", [["nudge", "nudge", acmeReset]]);
+  assert.throws(() => text(direct, keyword),
+    /direct events of 'acme\.knob' cannot name a handler parameter 'in' \(a Kotlin keyword, or two owners of that name\); rename an owner/u);
+  assert.ok(text(ported, keyword).includes("bindInput(AcmePorts.IN_NUDGE, scope) { handlers.nudge() },"));
+  const knob = withFeed(acmeParts, "acme.knob", "acme-knob", [["nudge", "nudge", acmeReset], ["poke", "poke", acmeReset]]);
+  const twoOwners: AcmeParts = { ...knob,
+    nodeTypes: [...knob.nodeTypes.filter(({ id }) => id !== "acme-knob"), serviceType("acme-knob", [port("nudge", acmeReset)]),
+      serviceType("acme.bus", [port("poke", acmeReset)])],
+    nodes: [...knob.nodes.filter(({ id }) => id !== "acme-knob"), serviceNode("acme-knob", { nudge: "acme.knob.nudge" }),
+      serviceNode("acme.bus", { poke: "acme.knob.poke" })],
+    components: knob.components.map((component) => component.id !== "acme.knob" ? component
+      : { ...component, bindings: { inputs: {}, events: { nudge: "acme-knob.nudge", poke: "acme.bus.poke" } } }) };
+  assert.throws(() => text({ ...direct, sinks: ["acme.surface", "acme.bus"] }, twoOwners),
+    /direct events of 'acme\.knob' cannot name a handler parameter 'acmeKnob'/u);
 });
 
 /** `count` components with ten outputs each, every one feeding its own service's input. */
