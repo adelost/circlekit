@@ -48,6 +48,25 @@ What a caller of 0.3.91 sees change on the bump to 0.3.92:
   screenRefs; list each screen once") where it said "needs screenRefs".
 - A finite value may hold capitals and ':', which the id rule refused.
 
+What a caller of 0.3.92 sees change on the bump to 0.3.93:
+
+- A broken range or `gteField` no longer ends its `ContractPayloadError` message
+  with the source line that declared it, which a server answering with
+  `error.message` sent to its client. The shipped vision example's "contract
+  'vision.yolo.cxcywh.ratio' field 'w'=1.2 violates 0..1 ratio
+  [<install path>/src/examples/vision-box.ts:19]" is now "contract
+  'vision.yolo.cxcywh.ratio' field 'w'=1.2 violates 0..1 ratio", and the line
+  is in the new `declaredAt` property, for the server's own log. A route that
+  stripped the bracket can stop; a test that matched the site in the message
+  reads `error.declaredAt` instead.
+- Every other payload fault keeps its message and has no `declaredAt`;
+  `contractId`, `field` and `name` are unchanged. A declaration fault, a plain
+  `Error`, still names its site in the message, and the dev-only `v1d-observe`
+  log still prints the site after the message.
+- Every entry exports the same names as in 0.3.92, so product-emit 0.1.59 and
+  skydiving-legos 0.1.16, which peer on `>=0.3.92 <0.4.0`, load with 0.3.93
+  unchanged.
+
 The authoring vocabulary has four executable building blocks:
 
 - `service(...)` owns external IO, persistence, a resource or platform
@@ -110,7 +129,9 @@ add response fields without breaking old clients. A wire field with `optional: t
 it absent: a read never invents a key, so absent (leave as is) and null (clear) stay two facts, and `nullable` is
 independent. Like a list or a nested contract, `optional` is refused on any other boundary. `assertContractPayload(contract, input)` runs the same check and narrows the value in place.
 Every payload fault throws `ContractPayloadError` with `contractId` (the contract read), `field` (the dotted path
-from its root, such as `history[2].role`, and '' for the payload itself) and the message. A fault in the
+from its root, such as `history[2].role`, and '' for the payload itself) and the message. The message names no
+source file, so a server may answer with it; a broken range or `gteField` carries the line that declared it in
+`declaredAt`, for the server's own log. A fault in the
 declaration or the call, such as a finite declaration left out, stays a plain `Error`: an HTTP adapter answers
 400 for the first and fails loudly for the second.
 

@@ -1,7 +1,7 @@
 import { decide as baseDecide, type Decision, type DecisionAxes, type DecisionColumns,
   type DecisionPoint, type DecisionTable } from './decision-table-model.js';
 import { step as baseStep, type Machine, type MachineStep } from './machine-model.js';
-import { assertPortPayload, type PortContracts } from './contract-law-model.js';
+import { assertPortPayload, ContractPayloadError, type PortContracts } from './contract-law-model.js';
 
 export type RawObservation =
   | {kind:'port';phase:'returned';portRef:string}
@@ -87,7 +87,11 @@ export function createObservationScope({onObservation,onFailure}: {
   };
 }
 
+/** A failure as the dev log prints it: the message, then the site a payload fault keeps out of its message. */
+const logged=(error:unknown):string=>error instanceof ContractPayloadError&&error.declaredAt!==undefined
+  ?`${error.message} [${error.declaredAt}]`:error instanceof Error?error.message:String(error);
+
 export const observedScope=createObservationScope({
   onObservation:event=>activeSink?.(event),
-  onFailure:error=>console.error(`ProductSpec contract law: ${error instanceof Error?error.message:String(error)}`),
+  onFailure:error=>console.error(`ProductSpec contract law: ${logged(error)}`),
 });

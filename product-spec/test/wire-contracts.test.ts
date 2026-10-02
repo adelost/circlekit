@@ -302,7 +302,7 @@ function readTypeProof(input: unknown) {
 void readTypeProof;
 
 // An HTTP adapter answers 400 for a ContractPayloadError and fails loudly (500) on anything else.
-type Caught = Error & { readonly contractId?: string; readonly field?: string };
+type Caught = Error & { readonly contractId?: string; readonly field?: string; readonly declaredAt?: string };
 const caught = (run: () => unknown): Caught => {
   try { run(); } catch (error) { return error as Caught; }
   throw new Error('expected a refusal');
@@ -338,6 +338,29 @@ test('a declaration fault stays a plain Error, such as finite declarations left 
     assert.equal(error instanceof ContractPayloadError, false);
     assert.equal(error.name, 'Error');
   }
+});
+
+// A server may answer a bad request with the message, so the message names the contract, the field and the broken
+// law and never a server file. The line that declared the law is in declaredAt, for the server's own log.
+const depth = { id: 'fixture.depth', kind: 'observation', boundary: 'wire', fields: [
+  field('lowM', 'number', { min: 0, max: 4000, unit: 'm' }),
+  field('highM', 'number', { min: 0, max: 4000, unit: 'm', gteField: 'lowM' })] } as const;
+const brokenRange = () => caught(() => readContractPayload(depth, { lowM: -5, highM: 10 }));
+const brokenGte = () => caught(() => readContractPayload(depth, { lowM: 300, highM: 200 }));
+
+test('a broken range says the law and no source site in its message', () => {
+  assert.equal(brokenRange().message, "contract 'fixture.depth' field 'lowM'=-5 violates 0..4000 m");
+});
+
+test('a broken gteField says the law and no source site in its message', () => {
+  assert.equal(brokenGte().message, "contract 'fixture.depth' field 'highM'=200 must be >= 'lowM'=300 m");
+});
+
+test('declaredAt names the file and line that declared the broken field', () => {
+  const lineOf = (error: Caught) => /[\\/]test[\\/]wire-contracts\.test\.ts:(\d+)$/u.exec(error.declaredAt ?? 'no declaredAt')?.[1];
+  const range = lineOf(brokenRange()), gte = lineOf(brokenGte());
+  assert.ok(range !== undefined && gte !== undefined, 'both faults name this test file and a line');
+  assert.equal(Number(gte), Number(range) + 1, 'highM is declared on the line after lowM');
 });
 
 // A finite value named inside a list or a nested record is as needed as one named by a field directly: every check
