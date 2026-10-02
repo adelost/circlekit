@@ -3,6 +3,7 @@ import test from "node:test";
 import {
   bindPortImplementations, bool, choice, decide, defineDecisionTable, defineLanes, defineProduct, fetchService, field,
   finiteValueRef, finiteValues, integer, laneRiders, listOf, on, portContracts, readContractPayload, record,
+  storedNumber, storedTypeOf, storedValueCatalog,
 } from "../src/index.js";
 import { assetCatalog, product as minimalProduct } from "./minimal-product.js";
 
@@ -81,4 +82,12 @@ test("the observed-port example binds a compiled product's contracts", () => {
   const ports = bindPortImplementations(implementations, contracts);
   assert.equal(ports, implementations);
   assert.equal(contracts.contracts.get("weather.fetch.forecast")?.id, "fixture.forecast");
+});
+
+test("the stored value example is a lawful float a catalog accepts, and its range refuses a default outside it", () => {
+  const altitudeStep = storedNumber({ id: "display.altitude-step", wireName: "altitudeDisplayStepM", store: "power-settings",
+               unit: "m", min: 0.1, max: 1.0, step: 0.1, defaultValue: 0.5 });
+  assert.equal(storedTypeOf(altitudeStep), "float");
+  assert.deepEqual(storedValueCatalog([altitudeStep], [{ id: "display.brightness", wireName: "groundBrightnessMode" }]), [altitudeStep]);
+  assert.throws(() => storedNumber({ ...altitudeStep, defaultValue: 2 }), /default 2 is outside 0\.1\.\.1/u);
 });
