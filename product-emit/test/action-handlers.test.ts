@@ -177,10 +177,11 @@ test("600 actions shard into files under 500 lines that together bind exactly th
   assert.deepEqual(new Set(files.map(({ name }) => name)), new Set(files.map((_, index) => `GeneratedAcmeActions${index}`)));
   for (const { name, content } of files) assert.ok(content.trimEnd().split("\n").length < 500, `${name} is 500 lines or more`);
   const all = files.map(({ content }) => content).join("\n");
-  const inputs = model.groups.flatMap(({ members }) => members.map(({ inputRef }) => kotlinEnumToken(inputRef)));
+  const inputs = model.groups.flatMap(({ members }) => members.map(({ inputRef, method }) => `${kotlinEnumToken(inputRef)} ${method}`));
   const outputs = model.components.flatMap(({ members }) => members.map(({ outputRef }) => kotlinEnumToken(outputRef)));
-  assert.equal(inputs.length, 600);
-  assert.deepEqual(lines(/bindInput\(AcmePorts\.(\w+), scope\)/gu, all), new Set(inputs));
+  assert.equal(new Set(inputs).size, 600);
+  assert.deepEqual(new Set([...all.matchAll(/bindInput\(AcmePorts\.(\w+), scope\) \{ handlers\.(\w+)\(/gu)].map(([, token, method]) => `${token} ${method}`)),
+    new Set(inputs));
   assert.deepEqual(lines(/componentEvent\(AcmePorts\.(\w+), scope\)/gu, all), new Set(outputs));
   for (const { typeName } of [...model.groups, ...model.components]) {
     assert.equal(all.split(`interface ${typeName} {`).length, 2, `${typeName} is declared once`);
