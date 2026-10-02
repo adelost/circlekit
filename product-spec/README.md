@@ -145,6 +145,8 @@ derive the literal unions of the payload type. A finite value is a letter, then 
 read. A widened contract remains `unknown`; a read cannot recover type information an author erased. The
 executable examples and type checks are in `test/wire-contracts.test.ts` and `test/contract-payload.test.ts`.
 
+`contractStore` keeps one wire contract in one SQL table (columns, cells, the read back) and `proveContractStore` proves a product's table and write path keep every field; GUIDE.md has the paragraph, `test/contract-store.test.ts` the examples.
+
 ## Decisions and runtime owners
 
 A decision over a few finite axes (which values hold in this phase and this
