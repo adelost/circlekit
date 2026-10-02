@@ -78,8 +78,7 @@ export function emitActionHandlersKotlin(
 }
 
 function groupBlock(group: ActionGroup, context: Context): string {
-  const owners = group.kind === "node" ? "" : ` bound to ${[...new Set(group.members.map(({ inputRef }) => ownerOf(inputRef)))].sort().map(code).join(", ")}`;
-  const declaration = `/** ${group.kind === "node" ? `The event inputs of ${code(group.ownerId)}` : `${code(group.ownerId)} events${owners}`}: one method per declared action. */
+  const declaration = `/** ${groupSummary(group)}: one method per declared action. */
 ${context.visibility}${group.members.length === 1 ? "fun " : ""}interface ${group.typeName} {
 ${group.members.map(({ method, type }) => `    fun ${method}(${parameter(type)})${returns(type)}`).join("\n")}
 }`;
@@ -94,6 +93,13 @@ ${context.visibility}fun ${runtimeType}.bindActions(
 ${group.members.map(({ method, inputRef, type }) =>
     `    bindInput(${portsObject}.${kotlinEnumToken(inputRef)}, scope) { handlers.${method}(${type.value === "Unit" ? "" : "it"}) },`).join("\n")}
 )`;
+}
+
+/** A node group names its node; a source group names the owner and the sinks it is bound to. */
+function groupSummary(group: ActionGroup): string {
+  if (group.kind === "node") return `The event inputs of ${code(group.ownerId)}`;
+  const sinks = [...new Set(group.members.map(({ inputRef }) => ownerOf(inputRef)))].sort();
+  return `${code(group.ownerId)} events bound to ${sinks.map(code).join(", ")}`;
 }
 
 function componentBlock(component: ComponentEventsModel, model: ActionModel, context: Context): string {
@@ -125,9 +131,9 @@ function directEvents(component: ComponentEventsModel, model: ActionModel, visib
   const targets = model.groups.filter(({ typeName }) => component.members.some(({ groupTypeName }) => groupTypeName === typeName));
   const parameters = new Map(targets.map((group) => [group.typeName, kotlinPropertyName(group.ownerId)] as const));
   const names = [...parameters.values()];
-  const clash = names.find((name, index) => names.indexOf(name) !== index || KOTLIN_HARD_KEYWORDS.has(name));
+  const clash = names.find((name, index) => names.indexOf(name) !== index || KOTLIN_HARD_KEYWORDS.has(name) || name === "event");
   if (clash !== undefined) {
-    throw new Error(`direct events of '${component.componentId}' cannot name a handler parameter '${clash}' (a Kotlin keyword, or two owners of that name); rename an owner`);
+    throw new Error(`direct events of '${component.componentId}' cannot name a handler parameter '${clash}' (a Kotlin keyword, the event parameter, or two owners of that name); rename an owner`);
   }
   const groupMethod = (inputRef: string, groupTypeName: string) =>
     targets.find(({ typeName }) => typeName === groupTypeName)!.members.find((member) => member.inputRef === inputRef)!.method;

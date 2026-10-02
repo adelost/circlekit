@@ -168,7 +168,8 @@ Refused by name, all problems collected and thrown once:
 - two declarations with one Kotlin name (groups, facades and their
   implementations, the index, derived payloads);
 - a `types` entry that no action reads;
-- a direct handler parameter that is a Kotlin keyword or names two owners.
+- a direct handler parameter that is a Kotlin keyword, `event`, or names two
+  owners.
 
 The result is `Generated<P>Actions<N>` files packed below 500 lines; write
 every one, the boundaries are not API. A group or facade that alone cannot fit

@@ -147,17 +147,7 @@ export function projectActionModel(ir: Pick<ProductIr, "portRegistry">, options:
   for (const ref of Object.keys(options.types ?? {})) {
     if (!typedRefs.has(ref)) problems.push(`types names '${ref}', which no action binds; delete it`);
   }
-  refuseDuplicateNames([
-    ...[...groups.values()].map(({ typeName, kind, ownerId }) =>
-      [typeName, `${kind === "node" ? "event inputs" : "actions"} of '${ownerId}'`] as const),
-    ...[...facades.values()].flatMap((facade) => [
-      [facade.typeName, `events of '${facade.componentId}'`] as const,
-      [eventsImplementationName(facade, "Port"), `port events of '${facade.componentId}'`] as const,
-      [eventsImplementationName(facade, "Direct"), `direct events of '${facade.componentId}'`] as const,
-    ]),
-    [`Generated${options.symbolPrefix}ActionIndex`, "the action index"] as const,
-    ...[...derivedPayloads].map(([contractId, typeName]) => [typeName, `the payload of contract '${contractId}'`] as const),
-  ], problems);
+  refuseDuplicateNames(declaredTypeNames([...groups.values()], [...facades.values()], derivedPayloads, options.symbolPrefix), problems);
   if (problems.length > 0) {
     const sorted = [...new Set(problems)].sort();
     throw new Error(`action handlers refused (${sorted.length}):\n  ${sorted.join("\n  ")}`);
@@ -183,6 +173,25 @@ function actionEdges(
     return [];
   });
   return [...bindings.filter((binding) => binding.kind === "component-event"), ...forwarded];
+}
+
+/** Every Kotlin type name the action emission declares or needs in its package, with who declares it. */
+function declaredTypeNames(
+  groups: readonly Pick<ActionGroup, "kind" | "ownerId" | "typeName">[],
+  facades: readonly Pick<ComponentEventsModel, "componentId" | "typeName">[],
+  derivedPayloads: ReadonlyMap<string, string>,
+  symbolPrefix: string,
+): readonly (readonly [string, string])[] {
+  return [
+    ...groups.map(({ typeName, kind, ownerId }) => [typeName, `${kind === "node" ? "event inputs" : "actions"} of '${ownerId}'`] as const),
+    ...facades.flatMap((facade) => [
+      [facade.typeName, `events of '${facade.componentId}'`] as const,
+      [eventsImplementationName(facade, "Port"), `port events of '${facade.componentId}'`] as const,
+      [eventsImplementationName(facade, "Direct"), `direct events of '${facade.componentId}'`] as const,
+    ]),
+    [`Generated${symbolPrefix}ActionIndex`, "the action index"] as const,
+    ...[...derivedPayloads].map(([contractId, typeName]) => [typeName, `the payload of contract '${contractId}'`] as const),
+  ];
 }
 
 function refuseDuplicateNames(declared: readonly (readonly [string, string])[], problems: string[]): void {

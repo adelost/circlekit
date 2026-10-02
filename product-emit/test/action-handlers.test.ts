@@ -142,10 +142,12 @@ test("the index names each input's handler method and each output's facade metho
   ]));
 });
 
-test("DirectEvents refuses a handler parameter it cannot name: a Kotlin keyword, or two owners with one name", () => {
+test("DirectEvents refuses a handler parameter it cannot name: a Kotlin keyword, the event parameter, or two owners with one name", () => {
   const keyword = withFeed(acmeParts, "acme.knob", "in", [["nudge", "nudge", acmeReset]]);
   assert.throws(() => text(direct, keyword),
-    /direct events of 'acme\.knob' cannot name a handler parameter 'in' \(a Kotlin keyword, or two owners of that name\); rename an owner/u);
+    /direct events of 'acme\.knob' cannot name a handler parameter 'in' \(a Kotlin keyword, the event parameter, or two owners of that name\); rename an owner/u);
+  assert.throws(() => text(direct, withFeed(acmeParts, "acme.knob", "event", [["nudge", "nudge", acmeRename]])),
+    /direct events of 'acme\.knob' cannot name a handler parameter 'event'/u);
   assert.ok(text(ported, keyword).includes("bindInput(AcmePorts.IN_NUDGE, scope) { handlers.nudge() },"));
   const knob = withFeed(acmeParts, "acme.knob", "acme-knob", [["nudge", "nudge", acmeReset], ["poke", "poke", acmeReset]]);
   const twoOwners: AcmeParts = { ...knob,
