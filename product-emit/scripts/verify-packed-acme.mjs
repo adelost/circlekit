@@ -1,9 +1,11 @@
 import { execFileSync } from "node:child_process";
-import { mkdtempSync, writeFileSync } from "node:fs";
+import { mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 
 const root = resolve(import.meta.dirname, "..");
+// The consumer gets the product-spec this package builds and tests on, so the pin cannot fall below the peer floor.
+const productSpec = JSON.parse(readFileSync(join(root, "package.json"), "utf8")).devDependencies["@v1d/product-spec"];
 const scratch = mkdtempSync(join(tmpdir(), "product-emit-acme-"));
 const packed = execFileSync("npm", ["pack", "--ignore-scripts", "--pack-destination", scratch], {
   cwd: root,
@@ -16,7 +18,7 @@ writeFileSync(join(scratch, "package.json"), JSON.stringify({
   type: "module",
   dependencies: {
     "@v1d/product-emit": `file:${join(scratch, packed)}`,
-    "@v1d/product-spec": "https://circlekit.pages.dev/npm/v1d/product-spec/0.3.66/v1d-product-spec-0.3.66.tgz",
+    "@v1d/product-spec": productSpec,
   },
 }, null, 2));
 writeFileSync(join(scratch, "tsconfig.json"), JSON.stringify({
