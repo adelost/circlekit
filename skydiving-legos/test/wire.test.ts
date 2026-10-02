@@ -46,7 +46,7 @@ const [, live] = bodies("trackbook/live-position/response").find(([name]) => nam
 // server does not know yet. Only code generated from these contracts writes the two requests, so an unknown key in
 // one is a newer field, never a misspelt one.
 const newerPairing: Record<string, unknown> = { ...released, appVersion: "0.5.1600" };
-const newerPoint: Record<string, unknown> = { ...point, speedMs: 52.4 };
+const newerPoint: Record<string, unknown> = { ...point, "not-declared": 52.4 };
 
 test("a request with an unknown field parses, and the copy leaves it out", () => {
   assert.deepEqual(read(pairingStartRequestContract, newerPairing), released);

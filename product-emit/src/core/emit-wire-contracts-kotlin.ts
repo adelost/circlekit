@@ -14,7 +14,9 @@ import { kotlinEnumToken, kotlinIdentifier, kotlinStringLiteral } from "./kotlin
  * repeated in a distinct list), then the sibling laws. The first fault throws the generated WireException with the
  * contract that was read and the dotted field path, as ContractPayloadError does. An absent optional key reads as
  * null. Finite fields are enums that carry their wire value, lists `List<T>` (`Set<T>` when distinct), nested
- * contracts their own class, integers `Long` within ±(2^53−1), numbers finite `Double`.
+ * contracts their own class, integers `Long` within ±(2^53−1), numbers finite `Double`. Every constructor parameter is
+ * required, an optional one included: a producer passes null to leave the key out, so a field added to a contract does
+ * not compile at any producer until it is filled.
  *
  * A field both optional and nullable is refused: Kotlin has one null for "absent" and "null", and a client that
  * cannot say which would clear what it meant to leave alone.
@@ -179,7 +181,7 @@ function dataClass(contract: LegoContract, finites: readonly LegoFiniteValueDecl
   const finiteName = (ref: string) => typeName(names, finites.find(({ id }) => id === ref)!.id);
   const fields = contract.fields.map((field) => ({ field, kind: kindOf(field.value), name: property(field.name) }));
   const properties = fields.map(({ field, kind, name: prop }) =>
-    `    val ${prop}: ${kotlinType(kind, finiteName, names)}${nullable(field) ? "?" : ""}${field.optional === true ? " = null" : ""},`);
+    `    val ${prop}: ${kotlinType(kind, finiteName, names)}${nullable(field) ? "?" : ""},`);
   const construct = `${name}(\n${fields.map(({ field, kind, name: prop }) =>
     `                ${prop} = ${readKey(field, kind, finiteName, names)},`).join("\n")}\n            )`;
   const siblings = fields.flatMap(({ field, name: prop }) => siblingLaw(contract, field, prop));

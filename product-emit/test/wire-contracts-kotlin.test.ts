@@ -4,7 +4,7 @@ import test from "node:test";
 import { fileURLToPath } from "node:url";
 import { ContractPayloadError, field, finiteValueRef, finiteValues, readContractPayload, type LegoContract } from "@v1d/product-spec";
 import { emitWireContractsKotlin, kotlinIdentifier } from "../src/core/index.js";
-import { kotlinSkip, runKotlin } from "./kotlin-toolchain.js";
+import { compileKotlin, kotlinSkip, runKotlin } from "./kotlin-toolchain.js";
 import { acmeBlob, acmeOrder, acmeReceipt, acmeScale, acmeWireContracts, acmeWireValues } from "./wire-acme.js";
 
 const options = { packageName: "dev.acme.wire", symbolPrefix: "Acme", sourceFile: "test/wire-acme.ts", sourceSha: "fixture" };
@@ -88,6 +88,23 @@ test("the emitted Kotlin decides every fixture as readContractPayload does: the 
       assert.deepEqual(written === undefined ? fault : { value: JSON.parse(written) }, tsOutcome(fixture), fixture.name);
     });
   }
+});
+
+/** A producer of the acme order that names every field but the two optional ones, plus [extra] arguments. */
+const producer = (extra: string) => ({ "AcmeWire.kt": emitWireContractsKotlin(acmeWireContracts, acmeWireValues, options),
+  "Producer.kt": `package dev.acme.wire
+
+fun order() = GeneratedAcmeShopOrder(GeneratedAcmeShopSize.M, setOf(GeneratedAcmeShopTopping.BASIL),
+    deliverTo = GeneratedAcmeShopAddress("Main 1", null), tipPercent = null, sequence = 1, express = false${extra})
+` });
+
+test("a producer that leaves out an optional field does not compile, so a field added to a contract is filled everywhere", kotlinSkip, () => {
+  const omitted = compileKotlin(producer(""));
+  assert.equal(omitted.compiled, false, "the producer that leaves out notes and coupon compiled");
+  const refusal = omitted.compiled ? "" : omitted.diagnostics;
+  assert.match(refusal, /no value passed for parameter 'notes'/u);
+  assert.match(refusal, /no value passed for parameter 'coupon'/u);
+  assert.equal(compileKotlin(producer(", notes = null, coupon = null")).compiled, true);
 });
 
 test("the generated wire Kotlin is the golden file that was compiled and run on the fixtures", () => {
