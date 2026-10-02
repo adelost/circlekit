@@ -42,9 +42,25 @@ const [, receipt] = bodies("trackbook/pair-start/response").find(([name]) => nam
 const [, point] = bodies("trackbook/live-position/request").find(([name]) => name === "v0.5.1245.json")!;
 const [, live] = bodies("trackbook/live-position/response").find(([name]) => name === "trackbook-e8a1a2f.json")!;
 
-test("a request with an unknown field is refused", () => {
-  refused(pairingStartRequestContract, { ...released, surprise: true }, "surprise", /has undeclared field 'surprise'/u);
-  refused(livePositionContract, { ...point, heading: 90 }, "heading", /has undeclared field 'heading'/u);
+// Watches auto-update from a release and trackbook deploys by hand, so a newer watch may send an optional field the
+// server does not know yet. Only code generated from these contracts writes the two requests, so an unknown key in
+// one is a newer field, never a misspelt one.
+const newerPairing: Record<string, unknown> = { ...released, appVersion: "0.5.1600" };
+const newerPoint: Record<string, unknown> = { ...point, speedMs: 52.4 };
+
+test("a request with an unknown field parses, and the copy leaves it out", () => {
+  assert.deepEqual(read(pairingStartRequestContract, newerPairing), released);
+  assert.deepEqual(read(livePositionContract, newerPoint), point);
+});
+
+test("an unknown field hides no fault in a declared one: each is refused by its field", () => {
+  refused(livePositionContract, { ...newerPoint, latitude: "56.18" }, "latitude", /field 'latitude' must be number/u);
+  refused(pairingStartRequestContract, { ...newerPairing, label: 42 }, "label", /field 'label' must be string/u);
+  const { phase: _phase, ...withoutPhase } = newerPoint;
+  refused(livePositionContract, withoutPhase, "phase", /is missing field 'phase'/u);
+  refused(livePositionContract, { ...newerPoint, latitude: 90.5 }, "latitude", /'latitude'=90\.5 violates -90\.\.90/u);
+  refused(pairingStartRequestContract, { ...newerPairing, platform: "pebble" }, "platform",
+    /must belong to finite 'trackbook\.device-platform'/u);
 });
 
 test("a response with an unknown field parses, and the copy leaves it out", () => {

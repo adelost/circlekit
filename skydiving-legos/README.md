@@ -43,8 +43,12 @@ body, trackbookWireValues)`; the app's Kotlin comes from product-emit's
 `emitWireContractsKotlin(trackbookWireContracts, trackbookWireValues, options)`.
 Importing the module checks every contract's laws.
 
-A request refuses an unknown key; a receipt ignores one, so trackbook can add
-fields. `operationId`, `pollSecret` and `scopes` may be absent from a pairing
+Every body ignores an unknown key, and a read leaves it out of the checked copy:
+trackbook can add a receipt field before released watches know it, and a newer
+watch can add an optional request field before trackbook is deployed with it
+(watches auto-update from a release; trackbook deploys by hand). A missing,
+mistyped, out-of-range or undeclared value is still refused by its field.
+`operationId`, `pollSecret` and `scopes` may be absent from a pairing
 request (releases v0.5.330 to v0.5.1580 leave them out) but are never null; the
 server reads an absent key as null itself. `test/fixtures/trackbook/` holds what
 every release sends and what trackbook returns, and each one reads as itself.
@@ -65,6 +69,21 @@ owners:
   instants, not strings: trackbook writes `...:10.000Z` for `...:10Z`), and for
   read access `requestedScopes` holds both scopes. From v0.5.1581, the receipt's
   `id` is the operationId and `pollSecret` comes back unchanged.
+
+What a caller of 0.1.16 sees change on the bump to 0.1.17:
+
+- `trackbook.pairing-start-request` and `trackbook.live-position` ignore an
+  unknown key, as the receipts already did. 0.1.16 refused a body from a newer
+  watch that added an optional field ("contract 'trackbook.live-position' has
+  undeclared field 'speedMs'"), so a server not yet deployed with the field
+  refused every such request. Only code generated from these contracts writes
+  the two bodies, so an unknown key in one is a newer field, never a misspelt
+  one.
+- Kotlin regenerated from the two requests with product-emit's
+  `emitWireContractsKotlin` changes two lines per class: the class comment says
+  an unknown key is ignored, and `parse` reads with `ignoreUnknown = true`.
+  `toJson`, what the watch sends, is unchanged.
+- The peer stays `>=0.3.92 <0.4.0`.
 
 ## Account read actions
 

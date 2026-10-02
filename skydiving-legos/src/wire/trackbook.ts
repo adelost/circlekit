@@ -2,10 +2,13 @@
  * The trackbook HTTP bodies a skydiving watch sends and reads, declared once: the trackbook server reads them with
  * `readContractPayload`, and the app's Kotlin comes from `emitWireContractsKotlin`.
  *
- * A request the server reads refuses an unknown key; a receipt the watch reads ignores one, so the server can add
- * fields without breaking released watches. Only field laws live here. The rules that are not (which scopes a
- * pairing may ask for, the shape of an operation id, label trimming, time normalisation, the echo check) stay
- * with their owners; the package README lists them.
+ * Every body ignores an unknown key and a read leaves it out of the checked copy. A receipt does so the server can
+ * add fields before released watches know them. A request does so a newer watch can add an optional field before
+ * trackbook knows it, because watches auto-update from a release while trackbook deploys by hand. Only code
+ * generated from these contracts writes the two requests, so an unknown key there is a newer field, never a misspelt
+ * one. Only field laws live here. The rules that are not (which scopes a pairing may ask for, the shape of an
+ * operation id, label trimming, time normalisation, the echo check) stay with their owners; the package README
+ * lists them.
  */
 import { contractRef, field, finiteValueRef, finiteValues, listOf, validateContract } from "@v1d/product-spec";
 
@@ -22,7 +25,7 @@ const deviceScopes = listOf(finiteValueRef("trackbook.device-scope"), { distinct
  * read-access pairing sends scopes, so those three keys may be absent; the server reads an absent key as null.
  */
 export const pairingStartRequestContract = {
-  id: "trackbook.pairing-start-request", kind: "event", boundary: "wire",
+  id: "trackbook.pairing-start-request", kind: "event", boundary: "wire", unknownFields: "ignore",
   fields: [
     field("platform", finiteValueRef("trackbook.device-platform")),
     field("label", "string"),
@@ -56,7 +59,8 @@ const livePositionFields = [
 
 /** PUT /api/mobile/live/position: one point of this jumper's live lane. Every key is sent, unknown as null. */
 export const livePositionContract = {
-  id: "trackbook.live-position", kind: "observation", boundary: "wire", fields: livePositionFields,
+  id: "trackbook.live-position", kind: "observation", boundary: "wire", unknownFields: "ignore",
+  fields: livePositionFields,
 } as const;
 
 /** The point as a receipt echoes it: the same fields, read by the watch, so the server may add one. */
