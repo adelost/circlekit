@@ -100,8 +100,10 @@ A port's Kotlin type is its `types` entry (`{ value, result }` by port ref).
 Without one it comes from the contract: no fields is `Unit` in and out; fields
 that are all primitive and none optional are the data class
 `emitContractTypesKotlin` writes for that contract (`contractTypeName`, result
-`Unit`), which the product emits into the same package. Types are written as
-given, so pass them fully qualified unless they share `packageName`.
+`Unit`; a property named by a Kotlin keyword is quoted). The product emits
+those classes into the same package: `projectActionModel(...).derivedContracts`
+lists exactly the contracts to pass. Types are written as given, so pass them
+fully qualified unless they share `packageName`.
 
 The `port-runtime` transport binds and emits through a runtime with
 `bindInput(port, scope, sink)` and `componentEvent(port, scope).emit(value)`,
@@ -164,7 +166,10 @@ Refused by name, all problems collected and thrown once:
 - a component event typed apart from the input it feeds;
 - a sink that is not a compiled node with inputs;
 - a forwarded input that is not an event fed by a node output;
-- a method named by a Kotlin keyword;
+- a method kotlinc refuses: a Kotlin keyword, a member of every object
+  (`toString`, `hashCode`, `notify`, `notifyAll`, `wait`) or underscores only;
+- two inputs of one group under one method name (one output feeding two
+  inputs of a sink);
 - two declarations with one Kotlin name (groups, facades and their
   implementations, the index, derived payloads);
 - a `types` entry that no action reads;
