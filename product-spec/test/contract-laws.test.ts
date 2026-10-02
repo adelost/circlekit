@@ -5,7 +5,7 @@ import path from 'node:path';
 import test from 'node:test';
 import { assertContractPayload, compileProductGraph, field, finiteValueRef, finiteValues,
   port, portContracts, service, type LegoContract } from '../src/index.js';
-import { createObservationScope } from '../src/observation.js';
+import { createObservationScope, observedScope } from '../src/observation.js';
 import { boxPx, imageSizePx, normalizeXywh, normalizeYolo, visionContracts, xyxyPx,
   xywhPx, yoloRatio } from '../src/examples/vision-box.js';
 
@@ -40,7 +40,7 @@ test('U6 the three declared normalizers yield the one pixel box format',()=>{
 
 test('U6 a broken ratio law names its authored contract field',()=>{
   assert.throws(()=>assertContractPayload(yoloRatio,{cx:.5,cy:.5,w:1.2,h:.1}),
-    /vision\.yolo\.cxcywh\.ratio.*w.*0\.\.1.*vision-box\.ts:\d+/u);
+    {message:/vision\.yolo\.cxcywh\.ratio.*w.*0\.\.1 ratio$/u,declaredAt:/vision-box\.ts:\d+$/u});
 });
 
 // One generated law proof per authored contract. Cases come from the fields, not a copied registry.
@@ -83,6 +83,15 @@ test('U6 test recording refuses a broken payload; debug-live reports it without 
   assert.equal(live['vision.source.value'](),broken);
   assert.match(failures[0]!.message,/vision.yolo.cxcywh.ratio.*w.*0.*1/u);
   assert.equal(events.length,1);
+});
+
+test('the dev-only observed log names the line that declared a broken law after the message',t=>{
+  const logged=t.mock.method(console,'error',()=>{});
+  const ports=observedScope.bindPortImplementations({'vision.source.value':()=>({cx:.5,cy:.5,w:1.2,h:.1})},
+    portContracts(graphFor(yoloRatio,yoloRatio).portRegistry));
+  ports['vision.source.value']();
+  assert.match(String(logged.mock.calls[0]?.arguments[0]),
+    /^ProductSpec contract law: contract 'vision\.yolo\.cxcywh\.ratio' field 'w'=1\.2 violates 0\.\.1 ratio \[\S*vision-box\.ts:\d+\]$/u);
 });
 
 const phase=finiteValues('fixture.phase',['day','night']);

@@ -115,11 +115,17 @@ function refuseNesting(contract:LegoContract,path:readonly string[]):void {
 /**
  * A payload that breaks its contract: a bad request or response, never a programming error. `contractId` is the
  * contract that was read and `field` the dotted path from its root (`history[2].role`; '' for the payload itself).
+ * The message never names a source file, because a server may answer its client with it: a broken range or
+ * gteField carries the site its field was declared at in `declaredAt` instead, for the server's own log.
  * A fault in the declaration or the call, such as a finite declaration left out, stays a plain Error.
  */
 export class ContractPayloadError extends Error {
   override readonly name='ContractPayloadError';
-  constructor(readonly contractId:string,readonly field:string,message:string){super(message);}
+  declare readonly declaredAt?:string;
+  constructor(readonly contractId:string,readonly field:string,message:string,declaredAt?:string){
+    super(message);
+    if(declaredAt!==undefined)this.declaredAt=declaredAt;
+  }
 }
 
 /** WHAT: Checks and narrows a declared payload in place. WHY: The same check as a read, for a value already in hand. */
@@ -157,7 +163,7 @@ const below = (path:string,name:string) => path===''?name:`${path}.${name}`;
 
 /** The one payload check: every declared key read in order, then the sibling laws on the checked values. */
 function payloadOf(contract:LegoContract,payload:unknown,read:PayloadRead,path:string):unknown {
-  const fail=(at:string,message:string)=>new ContractPayloadError(read.root,at,message);
+  const fail=(at:string,message:string,declaredAt?:string)=>new ContractPayloadError(read.root,at,message,declaredAt);
   if(contract.kind==='event'&&contract.fields.length===0&&payload===undefined)return undefined;
   if(!isRecord(payload))throw fail(path,`contract '${contract.id}' requires a record payload`);
   const declared=new Set(contract.fields.map(field=>field.name));
@@ -173,7 +179,7 @@ function payloadOf(contract:LegoContract,payload:unknown,read:PayloadRead,path:s
   for(const field of contract.fields){
     const item=copy[field.name],other=field.gteField===undefined?null:copy[field.gteField];
     if(typeof item==='number'&&typeof other==='number'&&item<other)
-      throw fail(below(path,field.name),`contract '${contract.id}' field '${field.name}'=${item} must be >= '${field.gteField}'=${other} ${field.unit??''} [${declaredSite(field)??'source unknown'}]`.trim());
+      throw fail(below(path,field.name),`contract '${contract.id}' field '${field.name}'=${item} must be >= '${field.gteField}'=${other} ${field.unit??''}`.trim(),declaredSite(field));
   }
   return copy;
 }
@@ -181,10 +187,10 @@ function payloadOf(contract:LegoContract,payload:unknown,read:PayloadRead,path:s
 /** One value of one kind: a primitive, a finite member, a nested record, or a list of one of those. */
 function valueOf(contract:LegoContract,field:LegoField,kind:FieldValue,item:unknown,place:Place,read:PayloadRead):unknown {
   const where=`contract '${contract.id}' field '${place.local}'`;
-  const fail=(message:string)=>new ContractPayloadError(read.root,place.path,message);
+  const fail=(message:string,declaredAt?:string)=>new ContractPayloadError(read.root,place.path,message,declaredAt);
   if(typeof kind==='string'){
     const problem=primitiveProblem(field,kind,item);
-    if(problem!==undefined)throw fail(`${where}${problem}`);
+    if(problem!==undefined)throw fail(`${where}${problem.tail}`,problem.declaredAt);
     return item;
   }
   if(isContractRef(kind)){
@@ -226,15 +232,15 @@ function finiteMembers(contract:LegoContract,finite:readonly LegoFiniteValueDecl
   return members;
 }
 
-/** What is wrong with a primitive value, as the tail of its message, or undefined when nothing is. */
-function primitiveProblem(field:LegoField,kind:LegoPrimitive,item:unknown):string|undefined {
+/** What is wrong with a primitive value: the tail of its message and, for a broken range, where it was declared. */
+function primitiveProblem(field:LegoField,kind:LegoPrimitive,item:unknown):{tail:string;declaredAt?:string|undefined}|undefined {
   const valid=kind==='number'?typeof item==='number'&&Number.isFinite(item)
     :kind==='integer'?typeof item==='number'&&Number.isSafeInteger(item)
     :kind==='boolean'?typeof item==='boolean'
     :typeof item==='string';
-  if(!valid)return ` must be ${kind}`;
+  if(!valid)return {tail:` must be ${kind}`};
   if(typeof item==='number'&&(field.min!==undefined&&item<field.min||field.max!==undefined&&item>field.max))
-    return `=${item} violates ${field.min??'-∞'}..${field.max??'∞'} ${field.unit??''} [${declaredSite(field)??'source unknown'}]`.trim();
+    return {tail:`=${item} violates ${field.min??'-∞'}..${field.max??'∞'} ${field.unit??''}`.trim(),declaredAt:declaredSite(field)};
   return undefined;
 }
 
