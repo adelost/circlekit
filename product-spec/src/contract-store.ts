@@ -30,7 +30,11 @@ export interface ContractStore<C extends LegoContract, V extends Values> {
   readonly columns: readonly string[];
   /** One per column: integer INTEGER, number REAL, string and finite TEXT, the rest column TEXT. */
   readonly types: readonly ContractStoreType[];
-  /** One cell per column: a field's value, NULL for an absent optional key; the rest fields present as one JSON object. */
+  /**
+   * One cell per column, from the contract's own read of the payload: a field's value, NULL for an absent optional key,
+   * the declared rest fields present as one JSON object in contract order. A payload the read refuses (NaN, an undeclared
+   * nested key, an undefined value) is a plain Error naming the store, so no value is stored that could not come back.
+   */
   cells(payload: ContractPayload<C, V>): readonly ContractStoreCell[];
   /** The payload a stored row holds, read by the contract; a row the contract refuses is a storage fault (plain Error). */
   payload(row: Readonly<Record<string, unknown>>): ContractPayload<C, V>;
@@ -57,6 +61,14 @@ export function contractStore<const C extends LegoContract, const V extends Valu
   const loose = contract.fields.filter((field) => !columnOf.has(field.name));
   const columns = [...kept.map(({ column }) => column), ...(rest === undefined ? [] : [rest])];
   const storageFault = (message: string) => new Error(`${where}: a stored row breaks the contract: ${message}`);
+  const toStore = (payload: unknown): Readonly<Record<string, unknown>> => {
+    try {
+      return readContractPayload(contract, payload, finiteValues) as Readonly<Record<string, unknown>>;
+    } catch (error) {
+      if (error instanceof ContractPayloadError) throw new Error(`${where}: the payload to store breaks the contract: ${error.message}`);
+      throw error;
+    }
+  };
   const restOf = (cell: unknown): readonly (readonly [string, unknown])[] => {
     if (cell === null) return [];
     let parsed: unknown;
@@ -74,7 +86,7 @@ export function contractStore<const C extends LegoContract, const V extends Valu
     contract, finiteValues, table, columns,
     types: [...kept.map(({ field }) => sqlType(field)), ...(rest === undefined ? [] : ['TEXT' as const])],
     cells(payload) {
-      const record = payload as Readonly<Record<string, unknown>>;
+      const record = toStore(payload);
       const cells = kept.map(({ field }) => (Object.hasOwn(record, field.name) ? record[field.name] : null) as ContractStoreCell);
       if (rest === undefined) return cells;
       const present = loose.filter((field) => Object.hasOwn(record, field.name));
@@ -183,57 +195,89 @@ function affinity(declared: string): string {
 
 /**
  * WHAT: The two payloads the proof writes: `full` with every declared field set, `bare` with every optional field
- * absent and every nullable one null. Numbers are distinct whenever their ranges allow, so a swapped column shows.
+ * absent and every nullable one null. Every top-level number and finite member differs from every other, so a swapped
+ * column shows; a range too narrow for that is a named error, never a repeat.
  * WHY: A product test can leave a full row behind and check its own tombstone with the same samples.
  */
 export function contractStoreSamples<const C extends LegoContract, const V extends Values>(
   store: ContractStore<C, V>): { readonly full: ContractPayload<C, V>; readonly bare: ContractPayload<C, V> } {
+  const where = `contract store '${store.table}' of '${store.contract.id}'`;
   const read = (shape: 'full' | 'bare') => {
+    const sample = sampleOf(store.contract, store.finiteValues, shape, where, new Set());
     try {
-      return readContractPayload(store.contract, sampleOf(store.contract, store.finiteValues, shape, new Set()), store.finiteValues);
+      return readContractPayload(store.contract, sample, store.finiteValues);
     } catch (error) {
-      throw new Error(`contract store '${store.table}' of '${store.contract.id}' has no ${shape} sample its contract accepts: `
-        + (error as Error).message);
+      throw new Error(`${where} has no ${shape} sample its contract accepts: ${(error as Error).message}`);
     }
   };
   return { full: read('full'), bare: read('bare') };
 }
 
-function sampleOf(contract: LegoContract, values: Values, shape: 'full' | 'bare', used: Set<unknown>): Record<string, unknown> {
-  const sample: Record<string, unknown> = {};
-  for (const field of contract.fields) {
-    if (shape === 'bare' && field.optional === true) continue;
-    const floor = field.gteField === undefined ? undefined : sample[field.gteField];
-    sample[field.name] = shape === 'bare' && field.nullable ? null
-      : valueSample(field, field.value, values, used, typeof floor === 'number' ? floor : -Infinity);
+/**
+ * One sample record. The narrowest range takes its value first, and the field a gteField names is sampled before the
+ * field that names it. `used` keeps the record's values apart; a nested record or list element lives in the rest
+ * column, where no column can swap it, so it takes its first value.
+ */
+function sampleOf(contract: LegoContract, values: Values, shape: 'full' | 'bare', where: string,
+  used?: Set<unknown>): Record<string, unknown> {
+  const fields = new Map(contract.fields.map((field) => [field.name, field]));
+  const sample = new Map<string, unknown>();
+  const visit = (field: LegoField, waiting: readonly string[]): void => {
+    if (sample.has(field.name) || shape === 'bare' && field.optional === true) return;
+    const sibling = field.gteField === undefined ? undefined : fields.get(field.gteField);
+    if (sibling !== undefined && !waiting.includes(sibling.name)) visit(sibling, [...waiting, field.name]);
+    const floor = sibling === undefined ? undefined : sample.get(sibling.name);
+    sample.set(field.name, shape === 'bare' && field.nullable ? null
+      : valueSample(field, field.value, values, where, used, typeof floor === 'number' ? floor : -Infinity));
+  };
+  [...contract.fields].sort((a, b) => width(a) - width(b) || 0).forEach((field) => visit(field, []));
+  return Object.fromEntries(contract.fields.filter((field) => sample.has(field.name))
+    .map((field) => [field.name, sample.get(field.name)]));
+}
+
+/** How wide a field's range is; a field without both bounds is infinitely wide. */
+const width = (field: LegoField): number => (field.max ?? Infinity) - (field.min ?? -Infinity);
+
+/** One field's sample: the first choice no other sample in the record holds; `sample <name>`, true, one element. */
+function valueSample(field: LegoField, kind: LegoField['value'], values: Values, where: string, used: Set<unknown> | undefined,
+  floor = -Infinity): unknown {
+  if (kind === 'boolean') return true;
+  if (kind === 'string') return `sample ${field.name}`;
+  if (isListRef(kind)) return [valueSample(field, kind.list, values, where, undefined)];
+  if (isContractRef(kind)) return sampleOf(kind.contract, values, 'full', where);
+  const choices = choicesOf(field, kind, values, where, floor);
+  if (choices === undefined) return undefined; // a finite declaration was not passed: the contract's read names it
+  const free = choices.values.find((value) => used === undefined || !used.has(value));
+  if (free === undefined) throw new Error(`${where} cannot give field '${field.name}' a sample no other field holds: `
+    + `${choices.range} is too narrow for every field to differ`);
+  used?.add(free);
+  return free;
+}
+
+/** What a number or a finite field may sample, best first, and its range as a refusal names it. */
+function choicesOf(field: LegoField, kind: LegoField['value'], values: Values, where: string, floor: number):
+  { readonly values: readonly unknown[]; readonly range: string } | undefined {
+  if (kind === 'integer' || kind === 'number') {
+    return { values: numberCandidates(field, kind, floor), range: `${field.min ?? '-∞'}..${field.max ?? '∞'}` };
   }
-  return sample;
+  if (typeof kind === 'string' || !isFiniteRef(kind)) {
+    throw new Error(`${where} field '${field.name}' holds '${typeof kind === 'string' ? kind : kind.ref}', which no store samples`);
+  }
+  const members = values.find(({ id }) => id === kind.ref)?.values ?? [];
+  return members.length === 0 ? undefined : { values: [...members].reverse(), range: `finite '${kind.ref}'` };
 }
 
 /**
- * One field's sample: an integer from `(min ?? 0) + 1` upward and a number from `min + 0.25` upward, the first value
- * no other sample holds; `sample <name>` for a string, true, the last finite member not yet used, one list element,
- * a nested record's own full sample.
+ * A number's candidates, best first, inside its range and at or above the field its gteField names: an integer counts
+ * up from its low end + 1 and ends on the low end; a bounded number takes `low + (max - low) * k / 64` from k = 1 and
+ * ends on `low`; a number without max counts up from `low + 0.25`.
  */
-function valueSample(field: LegoField, kind: LegoField['value'], values: Values, used: Set<unknown>, floor = -Infinity): unknown {
-  if (kind === 'boolean') return true;
-  if (kind === 'string') return `sample ${field.name}`;
-  if (kind === 'integer' || kind === 'number') {
-    const low = Math.max(field.min ?? (field.max === undefined ? 0 : Math.min(0, field.max - 64)), floor);
-    for (let step = 0; step < 64; step += 1) {
-      const value = (kind === 'integer' ? Math.ceil(low) + 1 : low + 0.25) + step;
-      if (field.max !== undefined && value > field.max) break;
-      if (used.has(value)) continue;
-      used.add(value);
-      return value;
-    }
-    return field.min ?? field.max ?? 0;
-  }
-  if (isListRef(kind)) return [valueSample(field, kind.list, values, used)];
-  if (isContractRef(kind)) return sampleOf(kind.contract, values, 'full', used);
-  if (!isFiniteRef(kind)) throw new Error(`field '${field.name}' holds opaque '${kind.ref}', which no store samples`);
-  const members = values.find(({ id }) => id === kind.ref)?.values ?? [];
-  const member = [...members].reverse().find((value) => !used.has(`${kind.ref}:${value}`)) ?? members.at(-1);
-  used.add(`${kind.ref}:${member}`);
-  return member;
+function numberCandidates(field: LegoField, kind: 'integer' | 'number', floor: number): readonly number[] {
+  const max = field.max;
+  const low = Math.max(field.min ?? (max === undefined ? 0 : Math.min(0, max - 64)), floor);
+  const steps = Array.from({ length: 64 }, (_, step) => step);
+  const candidates = kind === 'integer' ? [...steps.map((step) => Math.ceil(low) + 1 + step), Math.ceil(low)]
+    : max === undefined ? steps.map((step) => low + 0.25 + step)
+      : [...steps.slice(1).map((k) => low + (max - low) * k / 64), low];
+  return candidates.filter((value) => max === undefined || value <= max);
 }

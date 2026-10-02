@@ -1,7 +1,8 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { ContractPayloadError, contractRef, contractStore, contractStoreSamples, field, finiteValueRef, finiteValues, listOf,
-  proveContractStore, readContractPayload, type ContractPayload, type ContractStoreProbe, type LegoContract } from '../src/index.js';
+  proveContractStore, readContractPayload, type ContractPayload, type ContractStore, type ContractStoreProbe, type LegoContract,
+  type LegoFiniteValueDeclaration } from '../src/index.js';
 
 // contractStore keeps one wire contract in one SQL table: refused at declaration when a field could not be kept, read
 // back through the contract, and proven against the product's own table and write path by one generated proof.
@@ -27,14 +28,17 @@ const point = { id: 'live.point', kind: 'observation', boundary: 'wire', unknown
 const points = contractStore(point, [], { table: 'latest_points',
   columns: { sequence: 'sequence', latitude: 'latitude', longitude: 'longitude', phase: 'phase' }, rest: 'rest_json' });
 
-type Store = typeof orders | typeof points;
-/** A SQL table in memory: a write keeps one cell per column, a read hands the row back. */
-const roundTrip = (store: Store, payload: unknown, keep = (cells: readonly unknown[]) => cells) => {
-  const cells = keep(store.cells(readContractPayload(store.contract as LegoContract, payload, store.finiteValues) as never));
+type Values = readonly LegoFiniteValueDeclaration[];
+/** A SQL table in memory: the route reads the body, a write keeps one cell per column, a read hands the row back. */
+const roundTrip = <C extends LegoContract, V extends Values>(store: ContractStore<C, V>, payload: unknown,
+  keep = (cells: readonly unknown[]) => cells) => {
+  const cells = keep(store.cells(readContractPayload(store.contract, payload, store.finiteValues)));
   return store.payload(Object.fromEntries(store.columns.map((column, index) => [column, cells[index]])));
 };
-const tableOf = (store: Store) => store.columns.map((name, index) => ({ name, type: store.types[index]! }));
-const probe = (store: Store, overrides: Partial<ContractStoreProbe> = {}): ContractStoreProbe => ({
+const tableOf = <C extends LegoContract, V extends Values>(store: ContractStore<C, V>) =>
+  store.columns.map((name, index) => ({ name, type: store.types[index]! }));
+const probe = <C extends LegoContract, V extends Values>(store: ContractStore<C, V>,
+  overrides: Partial<ContractStoreProbe> = {}): ContractStoreProbe => ({
   columnsOf: async () => tableOf(store), roundTrip: async (payload) => roundTrip(store, payload), ...overrides });
 
 type Order = Parameters<typeof orders.cells>[0];
@@ -56,7 +60,7 @@ test('a store keeps each column field in its column and every other field in one
 test('a row reads back as exactly what was written: an absent key stays absent and null stays null', () => {
   for (const sent of [fullOrder, bareOrder]) assert.deepEqual(roundTrip(orders, sent), sent);
   for (const sent of [released, { ...released, headingDeg: 90 }]) assert.deepEqual(roundTrip(points, sent), sent);
-  assert.equal('coupon' in roundTrip(orders, bareOrder), false);
+  assert.equal('coupon' in (roundTrip(orders, bareOrder) as object), false);
 });
 
 test('a rest key the contract does not declare is decided by the contract: ignored, or refused', () => {
@@ -71,6 +75,23 @@ test('lost names the first declared field whose presence or value was not kept',
   assert.equal(points.lost({ ...released, headingDeg: 90 }, released), 'headingDeg');
   assert.equal(points.lost(released, { ...released, phase: 'FREEFALL' }), 'phase');
   assert.equal(points.lost({ ...released, headingDeg: 90 }, { ...released, headingDeg: 90 }), undefined);
+});
+
+test('a payload the contract refuses is never stored: NaN, Infinity, undefined and an undeclared nested key', () => {
+  const refused = <C extends LegoContract, V extends Values>(store: ContractStore<C, V>, payload: unknown, message: string) =>
+    assert.throws(() => store.cells(payload as ContractPayload<C, V>),
+    (error: Error) => !(error instanceof ContractPayloadError) && error.message === message);
+  const point = "contract store 'latest_points' of 'live.point': the payload to store breaks the contract: "
+    + "contract 'live.point' field 'headingDeg' must be number";
+  for (const headingDeg of [NaN, Infinity, undefined]) refused(points, { ...released, headingDeg }, point);
+  refused(orders, { ...fullOrder, deliverTo: { street: 'Main 1', floor: null, gate: 'B' } }, "contract store 'shop_orders' of "
+    + "'shop.order': the payload to store breaks the contract: contract 'shop.address' has undeclared field 'gate'");
+});
+
+test('the rest cell holds only declared fields, in contract order', () => {
+  assert.equal(points.cells({ headingDeg: 90, speedMs: 52.4, ...released } as never).at(-1), '{"headingDeg":90}');
+  const reversed = Object.fromEntries(Object.entries(fullOrder).reverse()) as Order;
+  assert.equal(orders.cells(reversed).at(-1), '{"express":true,"notes":["ring twice"],"deliverTo":{"street":"Main 1","floor":null},"day":null}');
 });
 
 const refusals: readonly (readonly [string, () => unknown, string])[] = [
@@ -158,15 +179,45 @@ test('the proof refuses a column whose type cannot keep its value (P2)', async (
 test('the proof refuses a write path that does not keep a field (P3)', async () => {
   const dropsRest = (payload: unknown) => roundTrip(points, payload, (cells) => [...cells.slice(0, -1), null]);
   await assert.rejects(proveContractStore(points, probe(points, { roundTrip: async (payload) => dropsRest(payload) })),
-    { message: "table 'latest_points' did not keep field 'headingDeg' of 'live.point': wrote 0.25, read back nothing" });
+    { message: "table 'latest_points' did not keep field 'headingDeg' of 'live.point': wrote 5.625, read back nothing" });
 });
 
 test('the samples give every number its own value, so a swapped latitude and longitude cannot pass', async () => {
   const { full, bare } = contractStoreSamples(points);
-  assert.deepEqual(full, { sequence: 1, latitude: -89.75, longitude: -179.75, phase: 'sample phase', headingDeg: 0.25 });
-  assert.deepEqual(bare, { sequence: 1, latitude: -89.75, longitude: -179.75, phase: null });
+  assert.deepEqual(full, { sequence: 1, latitude: -87.1875, longitude: -174.375, phase: 'sample phase', headingDeg: 5.625 });
+  assert.deepEqual(bare, { sequence: 1, latitude: -87.1875, longitude: -174.375, phase: null });
   const swaps = (payload: unknown) => roundTrip(points, payload, ([sequence, latitude, longitude, ...rest]) => [sequence, longitude, latitude, ...rest]);
   await assert.rejects(proveContractStore(points, probe(points, { roundTrip: async (payload) => swaps(payload) })),
     { message: "contract store 'latest_points' of 'live.point': a stored row breaks the contract: contract 'live.point' field "
-      + "'latitude'=-179.75 violates -90..90" });
+      + "'latitude'=-174.375 violates -90..90" });
+});
+
+test('numbers in one narrow range sample apart, so a write path that swaps two of them cannot pass', async () => {
+  const paint = { id: 'paint.colour', kind: 'snapshot', boundary: 'wire', fields: [field('red', 'number', { min: 0, max: 1 }),
+    field('green', 'number', { min: 0, max: 1 }), field('blue', 'number', { min: 0, max: 1 })] } as const;
+  const colours = contractStore(paint, [], { table: 'paints', columns: { red: 'red', green: 'green', blue: 'blue' } });
+  assert.deepEqual(contractStoreSamples(colours).full, { red: 0.015625, green: 0.03125, blue: 0.046875 });
+  const swaps = (payload: unknown) => roundTrip(colours, payload, ([red, green, blue]) => [red, blue, green]);
+  await assert.rejects(proveContractStore(colours, probe(colours, { roundTrip: async (payload) => swaps(payload) })),
+    { message: "table 'paints' did not keep field 'green' of 'paint.colour': wrote 0.03125, read back 0.046875" });
+});
+
+test('the narrowest range takes its value first, and a range too narrow for its fields is a named error, never a repeat', () => {
+  const versions = { id: 'api.versions', kind: 'snapshot', boundary: 'wire', fields: [field('sequence', 'integer', { min: 0 }),
+    field('schemaVersion', 'integer', { min: 1, max: 1 })] } as const;
+  const columns = { sequence: 'sequence', schemaVersion: 'schema_version' } as const;
+  assert.deepEqual(contractStoreSamples(contractStore(versions, [], { table: 'versions', columns })).full,
+    { sequence: 2, schemaVersion: 1 });
+  const crowded = { ...versions, fields: [...versions.fields, field('apiVersion', 'integer', { min: 1, max: 1 })] } as const;
+  assert.throws(() => contractStoreSamples(contractStore(crowded, [], { table: 'versions',
+    columns: { ...columns, apiVersion: 'api_version' } })), { message: "contract store 'versions' of 'api.versions' cannot give "
+    + "field 'apiVersion' a sample no other field holds: 1..1 is too narrow for every field to differ" });
+});
+
+test('a field whose gteField names a later field is sampled after it, so the contract stays provable', async () => {
+  const span = { id: 'jump.span', kind: 'snapshot', boundary: 'wire', fields: [
+    field('endMs', 'integer', { min: 0, gteField: 'startMs' }), field('startMs', 'integer', { min: 0 })] } as const;
+  const spans = contractStore(span, [], { table: 'spans', columns: { endMs: 'end_ms', startMs: 'start_ms' } });
+  assert.deepEqual(contractStoreSamples(spans).full, { endMs: 2, startMs: 1 });
+  await proveContractStore(spans, probe(spans));
 });
