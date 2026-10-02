@@ -1,6 +1,7 @@
 export * from "./conformance-model.js";
 export * from "./contract-law-model.js";
 export type { ContractPayload } from './contract-payload.js';
+export * from './contract-store.js';
 export * from "./component-tree-model.js";
 export * from "./decision-table-model.js";
 // The effect-kind words are the duplication law's own detail; its tests import the module directly.

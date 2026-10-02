@@ -91,6 +91,17 @@ const start = { id: "pairing.start", kind: "event", boundary: "wire", fields: [
 const request = readContractPayload(start, body, [platforms, scopes]);
 ```
 
+A wire contract kept in one SQL table is one `contractStore(contract, finiteValues, { table, columns, rest })`
+(`product-spec/src/contract-store.ts`). `columns` names the column of each field that has one, and `rest` one JSON
+TEXT column that keeps every other field, so a field declared later needs no migration; without `rest`, a field with
+no column is a type error. The declaration refuses a name that is not plain SQL, a column for an undeclared field, two
+values in one column, and a list, a record, a boolean or an optional nullable field in a column. The product builds
+its own statements from `store.columns`, binds `store.cells(payload)` and reads a row with `store.payload(row)`; a row
+the contract refuses throws a plain `Error`, a storage fault and never a 400, and `store.lost(sent, kept)` names the
+first field a write did not keep. One test per store runs `proveContractStore(store, { columnsOf, roundTrip })`:
+every column exists at its type, and every declared field comes back through the product's own write, once with
+every field set and once with optional keys absent and nullable ones null. See `product-spec/test/contract-store.test.ts`.
+
 A machine or table included in a product names its runtime **node type** with
 `ownerNodeTypeRef: "recording.runtime"`. The product compiler refuses a missing
 or unknown owner and carries the exact reference into ProductIr. It never
