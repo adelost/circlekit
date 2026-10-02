@@ -12,6 +12,7 @@ import {
   kotlinEnumToken,
   kotlinIdentifier,
   kotlinPropertyName,
+  kotlinQuotedName,
   kotlinStringLiteral,
 } from "./kotlin-syntax.js";
 
@@ -190,7 +191,8 @@ ${declaration.values.map((value) => `    ${kotlinEnumToken(value)},`).join("\n")
  * of a hand copy, so a renamed or retyped declared field stops compiling until the native code follows.
  *
  * Fields are primitives. A field that references another value is refused by name, because that value's Kotlin type
- * lives in another generated file with narrower visibility and this class would not compile against it.
+ * lives in another generated file with narrower visibility and this class would not compile against it. A property
+ * whose name is a Kotlin keyword is written in backticks, as the wire emitter does.
  */
 export function emitContractTypesKotlin(
   contracts: readonly LegoContract[],
@@ -198,7 +200,7 @@ export function emitContractTypesKotlin(
 ): string {
   const classes = contracts.map((contract) => {
     if (contract.fields.length === 0) throw new Error(`contract '${contract.id}' has no fields, so it has no data class`);
-    const properties = contract.fields.map((field) => [kotlinPropertyName(field.name), contractFieldType(contract, field)] as const);
+    const properties = contract.fields.map((field) => [kotlinQuotedName(kotlinPropertyName(field.name)), contractFieldType(contract, field)] as const);
     return `/** Contract \`${contract.id}\`. */\n${dataClass("", contractTypeName(contract), properties)}`;
   });
   return `// GENERATED FILE. DO NOT EDIT.
@@ -211,7 +213,7 @@ ${classes.join("\n\n")}
 }
 
 /** `barometer.reading` -> `GeneratedBarometerReading`, named like the source payloads beside it. */
-function contractTypeName(contract: Pick<LegoContract, "id">): string {
+export function contractTypeName(contract: Pick<LegoContract, "id">): string {
   return `Generated${kotlinIdentifier(contract.id)}`;
 }
 

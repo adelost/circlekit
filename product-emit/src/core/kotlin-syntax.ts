@@ -73,3 +73,28 @@ export function indent(value: string, spaces: number): string {
     .map((line) => (line.length === 0 ? line : prefix + line))
     .join("\n");
 }
+
+/** Kotlin's hard keywords: a declaration named by one does not compile unquoted. */
+export const KOTLIN_HARD_KEYWORDS: ReadonlySet<string> = new Set(["as", "break", "class", "continue", "do", "else",
+  "false", "for", "fun", "if", "in", "interface", "is", "null", "object", "package", "return", "super", "this", "throw",
+  "true", "try", "typealias", "typeof", "val", "var", "when", "while"]);
+
+/** `in` -> `` `in` ``: a property or parameter name as source, quoted when it is a hard keyword. */
+export function kotlinQuotedName(name: string): string {
+  return KOTLIN_HARD_KEYWORDS.has(name) ? `\`${name}\`` : name;
+}
+
+/**
+ * Members every Kotlin object has. A declared method of that name with no arguments hides one of `Any`
+ * (`toString`, `hashCode`) or accidentally overrides one of `java.lang.Object` (`notify`, `notifyAll`, `wait`),
+ * and kotlinc refuses both. `equals`, `getClass`, `clone` and `finalize` compile, so they are not listed.
+ */
+const OBJECT_MEMBER_NAMES: ReadonlySet<string> = new Set(["hashCode", "notify", "notifyAll", "toString", "wait"]);
+
+/** Why kotlinc refuses [name] as a declared method name, or undefined when it accepts it. */
+export function kotlinMethodNameProblem(name: string): string | undefined {
+  if (KOTLIN_HARD_KEYWORDS.has(name)) return "a Kotlin keyword";
+  if (OBJECT_MEMBER_NAMES.has(name)) return "a member of every Kotlin object";
+  if (/^_+$/u.test(name)) return "reserved in Kotlin";
+  return undefined;
+}

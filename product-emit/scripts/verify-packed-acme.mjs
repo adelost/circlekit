@@ -1,9 +1,11 @@
 import { execFileSync } from "node:child_process";
-import { mkdtempSync, writeFileSync } from "node:fs";
+import { mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 
 const root = resolve(import.meta.dirname, "..");
+// The consumer gets the product-spec this package builds and tests on, so the pin cannot fall below the peer floor.
+const productSpec = JSON.parse(readFileSync(join(root, "package.json"), "utf8")).devDependencies["@v1d/product-spec"];
 const scratch = mkdtempSync(join(tmpdir(), "product-emit-acme-"));
 const packed = execFileSync("npm", ["pack", "--ignore-scripts", "--pack-destination", scratch], {
   cwd: root,
@@ -16,7 +18,7 @@ writeFileSync(join(scratch, "package.json"), JSON.stringify({
   type: "module",
   dependencies: {
     "@v1d/product-emit": `file:${join(scratch, packed)}`,
-    "@v1d/product-spec": "https://circlekit.pages.dev/npm/v1d/product-spec/0.3.66/v1d-product-spec-0.3.66.tgz",
+    "@v1d/product-spec": productSpec,
   },
 }, null, 2));
 writeFileSync(join(scratch, "tsconfig.json"), JSON.stringify({
@@ -27,7 +29,7 @@ writeFileSync(join(scratch, "tsconfig.json"), JSON.stringify({
   include: ["acme.ts"],
 }, null, 2));
 writeFileSync(join(scratch, "acme.ts"), `
-import { kotlinIdentifier } from "@v1d/product-emit/core";
+import { emitActionHandlersKotlin, kotlinIdentifier, type ActionHandlersKotlinOptions } from "@v1d/product-emit/core";
 import type { SkydivingNativeSymbols } from "@v1d/product-emit/skydiving";
 
 const symbols = {
@@ -68,9 +70,15 @@ const symbols = {
   surfaceComponents: { ringSurface: "dev.acme.native.Surface", spatialMode: "dev.acme.native.SpatialMode" },
 } as const satisfies SkydivingNativeSymbols;
 
+const actionOptions: ActionHandlersKotlinOptions = {
+  packageName: "dev.acme.generated", symbolPrefix: "Acme", sourceFile: "acme.ts", sourceSha: "0", visibility: "public",
+  transport: { kind: "direct" }, sinks: [], forwardedInputs: [], types: { "acme.panel.pick": { value: "Pick", result: "Unit" } },
+};
+const emitActions: (product: Parameters<typeof emitActionHandlersKotlin>[0]) => readonly { readonly name: string; readonly content: string }[] =
+  (product) => emitActionHandlersKotlin(product, actionOptions);
 const generatedName: string = kotlinIdentifier("acme-main");
 const nativeSymbol: string = symbols.homeActions.homeActionId;
-if (generatedName.length === 0 || nativeSymbol.length === 0) throw new Error("Acme fixture is incomplete");
+if (generatedName.length === 0 || nativeSymbol.length === 0 || typeof emitActions !== "function") throw new Error("Acme fixture is incomplete");
 `);
 
 execFileSync("npm", ["install", "--ignore-scripts", "--no-audit", "--no-fund"], { cwd: scratch, stdio: "inherit" });

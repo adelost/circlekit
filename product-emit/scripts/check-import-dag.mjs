@@ -8,6 +8,7 @@ const coreRoot = join(sourceRoot, "core");
 const skydivingRoot = join(sourceRoot, "skydiving");
 
 const expectedCore = new Set([
+  "action-handler-model", "emit-action-handlers-kotlin",
   "capability-model", "compile-theme", "component-body-model", "component-copy-model", "declaration-ids", "decode-theme-registry",
   "diagnostics", "emission-options", "emit-component-body-kotlin", "emit-component-copy-kotlin", "emit-decision-table-kotlin",
   "emit-component-family-registry-kotlin", "emit-component-trees-kotlin",
