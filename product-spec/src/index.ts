@@ -22,6 +22,8 @@ export * from "./node-instance-model.js";
 export * from "./product-model.js";
 export * from "./state-authority-model.js";
 export * from './store-service-model.js';
+export * from "./saved-name-ledger.js";
+export * from "./stored-value-model.js";
 export {declaredSite} from './source-site.js';
 // defineProduct validates the asset catalog it receives; a product never defines one.
 export { definePalette, paletteTokenIds, validateProductIconRendererBindings,

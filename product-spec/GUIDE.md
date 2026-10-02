@@ -128,6 +128,25 @@ the IR, but the product refuses a store effect without exactly one compiled owne
 a fetch effect without any, and a fetch whose `ownerNodeRef` is not demanded on each
 of its `screenRefs`.
 
+A stored value is something a product saves under a name with no settings row of
+its own: its key, store, saved type, default and range, declared once with
+`storedFlag`, `storedInt`, `storedLong`, `storedNumber`, `storedChoice` or
+`storedText` (`product-spec/src/stored-value-model.ts`). A range that cannot hold
+its default, a default that is not a choice, or a number a device cannot hold is
+refused where it is declared; `storedValueCatalog` refuses two values, or a value
+and a setting, saved under one key. Read: "the grid step is a float under
+`gridStepM`, 0.5 m until changed, clamped to 0.1..1.0 m."
+
+```ts
+storedNumber({ id: "acme.grid-step", wireName: "gridStepM", store: "acme-settings",
+               unit: "m", min: 0.1, max: 1.0, step: 0.1, defaultValue: 0.5 })
+```
+
+The product's ledger of saved names only grows (`product-spec/src/saved-name-ledger.ts`):
+generate appends new names and pins each name's saved type, and refuses a retired
+name declared again or a pinned type that changed, because a device that holds the
+old bytes would fail its read and reset the store.
+
 An instance-owned transient UI event reducer is also a `service`, with
 `effects: []`, a UI-event input and a presentation-state output. A `derive`
 cannot receive a component event. Keep an event relay explicit when the same
