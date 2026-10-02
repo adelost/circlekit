@@ -1,3 +1,4 @@
+export * from "./action-handler-model.js";
 export * from "./capability-model.js";
 export * from "./compile-theme.js";
 export * from "./component-body-model.js";
@@ -6,6 +7,7 @@ export * from "./declaration-ids.js";
 export * from "./decode-theme-registry.js";
 export * from "./diagnostics.js";
 export * from "./emission-options.js";
+export * from "./emit-action-handlers-kotlin.js";
 export * from "./emit-component-body-kotlin.js";
 export * from "./emit-component-copy-kotlin.js";
 export * from "./emit-component-family-registry-kotlin.js";

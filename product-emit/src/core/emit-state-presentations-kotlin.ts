@@ -211,7 +211,7 @@ ${classes.join("\n\n")}
 }
 
 /** `barometer.reading` -> `GeneratedBarometerReading`, named like the source payloads beside it. */
-function contractTypeName(contract: Pick<LegoContract, "id">): string {
+export function contractTypeName(contract: Pick<LegoContract, "id">): string {
   return `Generated${kotlinIdentifier(contract.id)}`;
 }
 
