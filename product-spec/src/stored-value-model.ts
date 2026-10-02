@@ -59,6 +59,16 @@ const STORED_TYPES: { readonly [Kind in StoredValueDeclaration["kind"]]: StoredT
   "stored-flag": "boolean", "stored-int": "int", "stored-long": "long",
   "stored-number": "float", "stored-choice": "string", "stored-text": "string",
 };
+/** The fields of each kind besides id, wireName, store and property; any other field is refused, so none silently vanishes. */
+const FIELDS = {
+  "stored-flag": ["defaultValue"],
+  "stored-int": ["unit", "min", "max", "step", "defaultValue"],
+  "stored-long": ["unit", "min", "max", "optional", "defaultValue"],
+  "stored-number": ["unit", "min", "max", "step", "optional", "defaultValue"],
+  "stored-choice": ["values", "defaultValue"],
+  "stored-text": ["defaultValue"],
+} as const satisfies { readonly [Kind in StoredValueDeclaration["kind"]]: readonly (keyof Extract<StoredValueDeclaration, { kind: Kind }>)[] };
+const BASE_FIELDS = ["id", "wireName", "store", "property"] as const;
 const INT_RANGE = { min: -2_147_483_648, max: 2_147_483_647 } as const;
 const RANGE = ["min", "max", "step", "defaultValue"] as const;
 
@@ -73,22 +83,22 @@ export function storedPropertyOf(value: StoredValueDeclaration): string {
 }
 
 export function storedFlag<const Spec extends StoredFlagSpec>(spec: Spec): Spec & { readonly kind: "stored-flag" } {
-  return declared({ kind: "stored-flag", ...spec }, storedFlag);
+  return declared("stored-flag", spec, storedFlag);
 }
 export function storedInt<const Spec extends StoredIntSpec>(spec: Spec): Spec & { readonly kind: "stored-int" } {
-  return declared({ kind: "stored-int", ...spec }, storedInt);
+  return declared("stored-int", spec, storedInt);
 }
 export function storedLong<const Spec extends StoredLongSpec>(spec: Spec): Spec & { readonly kind: "stored-long" } {
-  return declared({ kind: "stored-long", ...spec }, storedLong);
+  return declared("stored-long", spec, storedLong);
 }
 export function storedNumber<const Spec extends StoredNumberSpec>(spec: Spec): Spec & { readonly kind: "stored-number" } {
-  return declared({ kind: "stored-number", ...spec }, storedNumber);
+  return declared("stored-number", spec, storedNumber);
 }
 export function storedChoice<const Spec extends StoredChoiceSpec>(spec: Spec): Spec & { readonly kind: "stored-choice" } {
-  return declared({ kind: "stored-choice", ...spec }, storedChoice);
+  return declared("stored-choice", spec, storedChoice);
 }
 export function storedText<const Spec extends StoredTextSpec>(spec: Spec): Spec & { readonly kind: "stored-text" } {
-  return declared({ kind: "stored-text", ...spec }, storedText);
+  return declared("stored-text", spec, storedText);
 }
 
 /**
@@ -122,7 +132,14 @@ export function storedValueCatalog<Value extends StoredValueDeclaration>(
   return frozen([...values]);
 }
 
-function declared<Value extends object>(value: Value, owner: Function): Value {
+/** `{ kind, ...spec }`, kind first as every product hashes it; a spread that carries another kind is refused, not kept. */
+function declared<const Kind extends StoredValueDeclaration["kind"], Spec extends object>(kind: Kind, spec: Spec,
+  owner: Function): Spec & { readonly kind: Kind } {
+  const { id, kind: given } = spec as { readonly id?: unknown; readonly kind?: unknown };
+  if (given !== undefined && given !== kind) {
+    throw new Error(`stored value '${String(id)}': ${owner.name} declares a ${kind}, not a ${String(given)}`);
+  }
+  const value = { kind, ...spec };
   requireStoredValue(value as unknown as StoredValueDeclaration);
   return frozen(rememberCallsite(value, owner));
 }
@@ -130,11 +147,15 @@ function declared<Value extends object>(value: Value, owner: Function): Value {
 function requireStoredValue(value: StoredValueDeclaration): void {
   const { id } = value;
   storedTypeOf(value);
+  const fields: readonly string[] = [...BASE_FIELDS, ...FIELDS[value.kind]];
+  const unknown = Object.keys(value).filter((key) => key !== "kind" && !fields.includes(key)).map((key) => `'${key}'`);
+  if (unknown.length > 0) {
+    throw new Error(`stored value '${id}': unknown field${unknown.length > 1 ? "s" : ""} ${unknown.join(", ")}; `
+      + `a ${value.kind} has ${fields.join(", ")}`);
+  }
   const property = storedPropertyOf(value);
-  try {
-    requireIdentifier(property, "stored value property");
-  } catch {
-    throw new Error(`stored value '${id}': property '${property}' is not an identifier`);
+  if (!isIdentifier(property)) {
+    throw new Error(`stored value '${id}': property '${property}' is not an identifier${value.property === undefined ? ": state a property" : ""}`);
   }
   switch (value.kind) {
     case "stored-flag":
@@ -162,6 +183,8 @@ function requireStoredValue(value: StoredValueDeclaration): void {
 }
 
 function requireChoices({ id, values, defaultValue }: StoredChoiceDeclaration): void {
+  const unnamed = values.find((choice) => !isIdentifier(choice));
+  if (unnamed !== undefined) throw new Error(`stored value '${id}': choice '${String(unnamed)}' is not an identifier`);
   const twice = values.find((choice, index) => values.indexOf(choice) !== index);
   if (twice !== undefined) throw new Error(`stored value '${id}': choice '${twice}' is listed twice`);
   if (!values.includes(defaultValue)) {
@@ -193,6 +216,16 @@ function requireNumbers(value: StoredValueDeclaration, names: readonly string[],
   const refused = names.filter((name) => (required || numbers[name] !== undefined)
     && (typeof numbers[name] !== "number" || !accepts(numbers[name])));
   if (refused.length > 0) throw new Error(`stored value '${value.id}': ${refused.join(", ")} must ${must}`);
+}
+
+/** A property and a choice each name a native symbol, so each is an identifier as node-model's `requireIdentifier` reads it. */
+function isIdentifier(value: unknown): boolean {
+  try {
+    requireIdentifier(value as string, "stored value");
+    return typeof value === "string";
+  } catch {
+    return false;
+  }
 }
 
 /** A device holds a 32-bit float: a finite double past its range would be saved as infinity. */

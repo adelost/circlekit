@@ -85,9 +85,9 @@ test("the observed-port example binds a compiled product's contracts", () => {
 });
 
 test("the stored value example is a lawful float a catalog accepts, and its range refuses a default outside it", () => {
-  const altitudeStep = storedNumber({ id: "display.altitude-step", wireName: "altitudeDisplayStepM", store: "power-settings",
+  const gridStep = storedNumber({ id: "acme.grid-step", wireName: "gridStepM", store: "acme-settings",
                unit: "m", min: 0.1, max: 1.0, step: 0.1, defaultValue: 0.5 });
-  assert.equal(storedTypeOf(altitudeStep), "float");
-  assert.deepEqual(storedValueCatalog([altitudeStep], [{ id: "display.brightness", wireName: "groundBrightnessMode" }]), [altitudeStep]);
-  assert.throws(() => storedNumber({ ...altitudeStep, defaultValue: 2 }), /default 2 is outside 0\.1\.\.1/u);
+  assert.equal(storedTypeOf(gridStep), "float");
+  assert.deepEqual(storedValueCatalog([gridStep], [{ id: "acme.theme", wireName: "themeMode" }]), [gridStep]);
+  assert.throws(() => storedNumber({ ...gridStep, defaultValue: 2 }), /default 2 is outside 0\.1\.\.1/u);
 });

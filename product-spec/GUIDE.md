@@ -134,11 +134,11 @@ its own: its key, store, saved type, default and range, declared once with
 `storedText` (`product-spec/src/stored-value-model.ts`). A range that cannot hold
 its default, a default that is not a choice, or a number a device cannot hold is
 refused where it is declared; `storedValueCatalog` refuses two values, or a value
-and a setting, saved under one key. Read: "the altitude step is a float under
-`altitudeDisplayStepM`, 0.5 m until changed, clamped to 0.1..1.0 m."
+and a setting, saved under one key. Read: "the grid step is a float under
+`gridStepM`, 0.5 m until changed, clamped to 0.1..1.0 m."
 
 ```ts
-storedNumber({ id: "display.altitude-step", wireName: "altitudeDisplayStepM", store: "power-settings",
+storedNumber({ id: "acme.grid-step", wireName: "gridStepM", store: "acme-settings",
                unit: "m", min: 0.1, max: 1.0, step: 0.1, defaultValue: 0.5 })
 ```
 
