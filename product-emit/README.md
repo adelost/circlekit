@@ -1,12 +1,15 @@
 # @v1d/product-emit
 
 The consuming product owns the `@v1d/product-spec` version. ProductEmit declares
-the peer `>=0.3.92 <0.4.0`, whose floor is the product-spec its own build and tests
+the peer `>=0.3.94 <0.4.0`, whose floor is the product-spec its own build and tests
 run against: devDependencies pin that tarball, and `npm run check:pins` refuses an
 installed version outside the peer. Its skydiving-legos 0.1.5 dependency keeps a
 private 0.3.52 copy, which is not ProductEmit's public type boundary.
 
-Bump the packages together. product-emit 0.1.59 peers on product-spec 0.3.92,
+Bump the packages together. The product-emit that adds the stored value
+emitters peers on product-spec 0.3.94; with 0.3.93 its `/core` fails to load
+with "does not provide an export named 'storedPropertyOf'" (measured on the
+packed tarball). product-emit 0.1.59 peers on product-spec 0.3.92,
 whose `listOf`, `contractRef` and `optional` its wire emitter writes; 0.1.58 still
 loads with 0.3.92. product-emit 0.1.50 to 0.1.57 cannot load with product-spec
 0.3.91 or later: `/core` fails with "does not provide an export named
@@ -226,6 +229,30 @@ mounted where its need is missing fails compilation
 state is read or written without a port, which is exactly what the dashed
 edges draw. That count is the distance between the declared graph and the
 running app, and it is meant to fall.
+
+## Stored values in Kotlin
+
+`emitStoredValueDescriptorsKotlin(values, options)` writes product-spec stored
+values as one object, `Generated<Prefix>StoredValues`, with a descriptor per
+value built from the product's own classes, which `options.symbols` names fully
+qualified, one per kind, plus an optional store enum. A store reads each key,
+default and range from it and never types them again.
+
+`emitStoredRecordKotlin(values, options)` writes one store's values as a typed
+record: the data class `Generated<Prefix><Name>Stored` with every value as a
+field and its declared default, the interface
+`Generated<Prefix><Name>StoredFields` a state class implements by delegation
+(`: Fields by stored`), and the codec. `read(values)` takes each key with its
+declared type; a missing key or an unknown choice is the default, a ranged value
+is clamped, an optional outside its bounds is absent. `writeTo(changes)` puts
+every key back, a ranged value clamped and an absent optional as null. A choice
+names its native enum in `nativeTypes`, and an exhaustive `when` makes Kotlin
+refuse an enum whose entries differ from the declared choices. An empty record,
+a record over two stores and a choice without an enum are refused.
+`test/stored-record-kotlin.test.ts` pins both outputs for `test/stored-acme.ts`;
+with the toolchain below set, it compiles them and runs
+`test/fixtures/stored-acme.json` through a key-value store that throws on a
+mistyped read, as SharedPreferences does.
 
 Build and run the bounded contract proof with `npm test`. `npm run
 verify:acme` packs the package and compiles a renamed minimal consumer from the

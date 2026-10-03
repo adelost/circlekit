@@ -28,6 +28,8 @@ export * from "./emit-profile-table-js.js";
 export * from "./emit-service-glances-kotlin.js";
 export * from "./emit-state-presentations-kotlin.js";
 export * from './emit-store-services-kotlin.js';
+export * from "./emit-stored-record-kotlin.js";
+export * from "./emit-stored-values-kotlin.js";
 export * from "./emit-theme.js";
 export * from "./emit-wire-contracts-kotlin.js";
 export * from "./kotlin-syntax.js";
