@@ -3,7 +3,7 @@ import {
   type LegoFiniteValueDeclaration, type LegoListRef, type LegoPrimitive,
 } from "@v1d/product-spec";
 import type { SourcedKotlinEmissionOptions } from "./emission-options.js";
-import { kotlinEnumToken, kotlinIdentifier, kotlinStringLiteral } from "./kotlin-syntax.js";
+import { kotlinEnumToken, kotlinIdentifier, kotlinQuotedName, kotlinStringLiteral } from "./kotlin-syntax.js";
 
 /**
  * Wire contracts as Kotlin over org.json, declared once in TypeScript and read by `readContractPayload` on the server.
@@ -171,15 +171,10 @@ ${declaration.values.map((value) => `    ${kotlinEnumToken(value)}(${kotlinStrin
 }`;
 }
 
-const KOTLIN_KEYWORDS = new Set(["as", "break", "class", "continue", "do", "else", "false", "for", "fun", "if", "in",
-  "interface", "is", "null", "object", "package", "return", "super", "this", "throw", "true", "try", "typealias",
-  "typeof", "val", "var", "when", "while"]);
-const property = (name: string) => KOTLIN_KEYWORDS.has(name) ? `\`${name}\`` : name;
-
 function dataClass(contract: LegoContract, finites: readonly LegoFiniteValueDeclaration[], names: WireNames): string {
   const name = typeName(names, contract.id);
   const finiteName = (ref: string) => typeName(names, finites.find(({ id }) => id === ref)!.id);
-  const fields = contract.fields.map((field) => ({ field, kind: kindOf(field.value), name: property(field.name) }));
+  const fields = contract.fields.map((field) => ({ field, kind: kindOf(field.value), name: kotlinQuotedName(field.name) }));
   const properties = fields.map(({ field, kind, name: prop }) =>
     `    val ${prop}: ${kotlinType(kind, finiteName, names)}${nullable(field) ? "?" : ""},`);
   const construct = `${name}(\n${fields.map(({ field, kind, name: prop }) =>
@@ -272,7 +267,7 @@ function writeKey(field: LegoField, kind: FieldKind, prop: string): string {
 function siblingLaw(contract: LegoContract, field: LegoField, prop: string): readonly string[] {
   if (field.gteField === undefined) return [];
   const other = contract.fields.find(({ name }) => name === field.gteField)!;
-  return [`read.atLeast("${field.name}", parsed.${prop}, "${other.name}", parsed.${property(other.name)}, "${unitOf(field)}")`];
+  return [`read.atLeast("${field.name}", parsed.${prop}, "${other.name}", parsed.${kotlinQuotedName(other.name)}, "${unitOf(field)}")`];
 }
 
 const unitOf = (field: LegoField) => field.unit === undefined ? "" : ` ${field.unit}`;
