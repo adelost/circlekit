@@ -4,67 +4,67 @@
     "saved": {},
     "read": {
       "soundEnabled": "Boolean true", "cacheRadiusM": "Int 20000", "scatterM": "Long 250", "pickedEpochDay": null,
-      "altitudeStepM": "Float 0.5", "noiseP95M": null, "glideRatio": "Float 2.5", "dropAltitudeM": "Float 4000.0",
-      "iconStyle": "IconStyle FILLED", "vectorSourceId": "String tiles-main"
+      "lastSyncEpochMs": null, "altitudeStepM": "Float 0.5", "noiseP95M": null, "offsetM": null, "glideRatio": "Float 2.5",
+      "dropAltitudeM": "Float 4000.0", "iconStyle": "IconStyle FILLED", "vectorSourceId": "String tiles-main"
     },
     "written": {
       "soundOn": "Boolean true", "cacheRadiusM": "Int 20000", "scatterM": "Long 250", "pickedEpochDay": null,
-      "altitudeStepM": "Float 0.5", "noiseP95M": null, "glideRatio": "Float 2.5", "dropAltitudeM": "Float 4000.0",
-      "iconStyle": "String FILLED", "vectorSourceId": "String tiles-main"
+      "lastSyncEpochMs": null, "altitudeStepM": "Float 0.5", "noiseP95M": null, "offsetM": null, "glideRatio": "Float 2.5",
+      "dropAltitudeM": "Float 4000.0", "iconStyle": "String FILLED", "vectorSourceId": "String tiles-main"
     }
   },
   {
     "name": "every key changed to a lawful value reads and writes back unchanged, each under its declared type",
     "saved": {
       "soundOn": "Boolean false", "cacheRadiusM": "Int 10000", "scatterM": "Long 900", "pickedEpochDay": "Long 20000",
-      "altitudeStepM": "Float 0.8", "noiseP95M": "Float 1.5", "glideRatio": "Float 3.0", "dropAltitudeM": "Float 3500.0",
-      "iconStyle": "String OUTLINE", "vectorSourceId": "String tiles-backup"
+      "lastSyncEpochMs": "Long 1700000000000", "altitudeStepM": "Float 0.8", "noiseP95M": "Float 1.5", "offsetM": "Float -2.5",
+      "glideRatio": "Float 3.0", "dropAltitudeM": "Float 3500.0", "iconStyle": "String OUTLINE", "vectorSourceId": "String tiles-backup"
     },
     "read": {
       "soundEnabled": "Boolean false", "cacheRadiusM": "Int 10000", "scatterM": "Long 900", "pickedEpochDay": "Long 20000",
-      "altitudeStepM": "Float 0.8", "noiseP95M": "Float 1.5", "glideRatio": "Float 3.0", "dropAltitudeM": "Float 3500.0",
-      "iconStyle": "IconStyle OUTLINE", "vectorSourceId": "String tiles-backup"
+      "lastSyncEpochMs": "Long 1700000000000", "altitudeStepM": "Float 0.8", "noiseP95M": "Float 1.5", "offsetM": "Float -2.5",
+      "glideRatio": "Float 3.0", "dropAltitudeM": "Float 3500.0", "iconStyle": "IconStyle OUTLINE", "vectorSourceId": "String tiles-backup"
     },
     "written": {
       "soundOn": "Boolean false", "cacheRadiusM": "Int 10000", "scatterM": "Long 900", "pickedEpochDay": "Long 20000",
-      "altitudeStepM": "Float 0.8", "noiseP95M": "Float 1.5", "glideRatio": "Float 3.0", "dropAltitudeM": "Float 3500.0",
-      "iconStyle": "String OUTLINE", "vectorSourceId": "String tiles-backup"
+      "lastSyncEpochMs": "Long 1700000000000", "altitudeStepM": "Float 0.8", "noiseP95M": "Float 1.5", "offsetM": "Float -2.5",
+      "glideRatio": "Float 3.0", "dropAltitudeM": "Float 3500.0", "iconStyle": "String OUTLINE", "vectorSourceId": "String tiles-backup"
     }
   },
   {
-    "name": "below its bounds a defaulted value is clamped up and an optional is absent; an unknown choice is the default",
+    "name": "below its bounds a defaulted value is clamped up and an optional is absent; with no bounds -1 is kept; an unknown choice is the default",
     "saved": {
       "soundOn": "Boolean false", "cacheRadiusM": "Int 100", "scatterM": "Long -5", "pickedEpochDay": "Long -1",
-      "altitudeStepM": "Float 0.01", "noiseP95M": "Float -1.0", "glideRatio": "Float -3.0", "dropAltitudeM": "Float -100.0",
-      "iconStyle": "String SHARP", "vectorSourceId": "String tiles-old"
+      "lastSyncEpochMs": "Long -1", "altitudeStepM": "Float 0.01", "noiseP95M": "Float -1.0", "offsetM": "Float -100.0",
+      "glideRatio": "Float -3.0", "dropAltitudeM": "Float -100.0", "iconStyle": "String SHARP", "vectorSourceId": "String tiles-old"
     },
     "read": {
       "soundEnabled": "Boolean false", "cacheRadiusM": "Int 500", "scatterM": "Long 0", "pickedEpochDay": null,
-      "altitudeStepM": "Float 0.1", "noiseP95M": null, "glideRatio": "Float -3.0", "dropAltitudeM": "Float -100.0",
-      "iconStyle": "IconStyle FILLED", "vectorSourceId": "String tiles-old"
+      "lastSyncEpochMs": "Long -1", "altitudeStepM": "Float 0.1", "noiseP95M": null, "offsetM": "Float -100.0",
+      "glideRatio": "Float -3.0", "dropAltitudeM": "Float -100.0", "iconStyle": "IconStyle FILLED", "vectorSourceId": "String tiles-old"
     },
     "written": {
       "soundOn": "Boolean false", "cacheRadiusM": "Int 500", "scatterM": "Long 0", "pickedEpochDay": null,
-      "altitudeStepM": "Float 0.1", "noiseP95M": null, "glideRatio": "Float -3.0", "dropAltitudeM": "Float -100.0",
-      "iconStyle": "String FILLED", "vectorSourceId": "String tiles-old"
+      "lastSyncEpochMs": "Long -1", "altitudeStepM": "Float 0.1", "noiseP95M": null, "offsetM": "Float -100.0",
+      "glideRatio": "Float -3.0", "dropAltitudeM": "Float -100.0", "iconStyle": "String FILLED", "vectorSourceId": "String tiles-old"
     }
   },
   {
-    "name": "above its bounds a defaulted value is clamped down; the absent marker and not-a-number read as absent",
+    "name": "above its bounds a defaulted value is clamped down; Long.MIN_VALUE, not-a-number and infinity read as absent, with or without bounds",
     "saved": {
       "cacheRadiusM": "Int 99999", "scatterM": "Long 999999999999", "pickedEpochDay": "Long MIN_VALUE",
-      "altitudeStepM": "Float 5.0", "noiseP95M": "Float NaN", "glideRatio": "Float 60.0", "dropAltitudeM": "Float 99999.0",
-      "iconStyle": "String filled"
+      "lastSyncEpochMs": "Long MIN_VALUE", "altitudeStepM": "Float 5.0", "noiseP95M": "Float NaN", "offsetM": "Float Infinity",
+      "glideRatio": "Float 60.0", "dropAltitudeM": "Float 99999.0", "iconStyle": "String filled"
     },
     "read": {
       "soundEnabled": "Boolean true", "cacheRadiusM": "Int 30000", "scatterM": "Long 999999999999", "pickedEpochDay": null,
-      "altitudeStepM": "Float 1.0", "noiseP95M": null, "glideRatio": "Float 20.0", "dropAltitudeM": "Float 99999.0",
-      "iconStyle": "IconStyle FILLED", "vectorSourceId": "String tiles-main"
+      "lastSyncEpochMs": null, "altitudeStepM": "Float 1.0", "noiseP95M": null, "offsetM": null, "glideRatio": "Float 20.0",
+      "dropAltitudeM": "Float 99999.0", "iconStyle": "IconStyle FILLED", "vectorSourceId": "String tiles-main"
     },
     "written": {
       "soundOn": "Boolean true", "cacheRadiusM": "Int 30000", "scatterM": "Long 999999999999", "pickedEpochDay": null,
-      "altitudeStepM": "Float 1.0", "noiseP95M": null, "glideRatio": "Float 20.0", "dropAltitudeM": "Float 99999.0",
-      "iconStyle": "String FILLED", "vectorSourceId": "String tiles-main"
+      "lastSyncEpochMs": null, "altitudeStepM": "Float 1.0", "noiseP95M": null, "offsetM": null, "glideRatio": "Float 20.0",
+      "dropAltitudeM": "Float 99999.0", "iconStyle": "String FILLED", "vectorSourceId": "String tiles-main"
     }
   },
   {
@@ -75,13 +75,13 @@
   {
     "name": "a record clamps each defaulted value it writes, and writes an optional as it holds it",
     "fields": {
-      "cacheRadiusM": "Int 99999", "scatterM": "Long -5", "pickedEpochDay": "Long -1", "altitudeStepM": "Float 5.0",
-      "noiseP95M": "Float -1.0", "glideRatio": "Float 60.0"
+      "cacheRadiusM": "Int 99999", "scatterM": "Long -5", "pickedEpochDay": "Long -1", "lastSyncEpochMs": "Long -1",
+      "altitudeStepM": "Float 5.0", "noiseP95M": "Float -1.0", "offsetM": "Float -3.5", "glideRatio": "Float 60.0"
     },
     "written": {
       "soundOn": "Boolean true", "cacheRadiusM": "Int 30000", "scatterM": "Long 0", "pickedEpochDay": "Long -1",
-      "altitudeStepM": "Float 1.0", "noiseP95M": "Float -1.0", "glideRatio": "Float 20.0", "dropAltitudeM": "Float 4000.0",
-      "iconStyle": "String FILLED", "vectorSourceId": "String tiles-main"
+      "lastSyncEpochMs": "Long -1", "altitudeStepM": "Float 1.0", "noiseP95M": "Float -1.0", "offsetM": "Float -3.5",
+      "glideRatio": "Float 20.0", "dropAltitudeM": "Float 4000.0", "iconStyle": "String FILLED", "vectorSourceId": "String tiles-main"
     }
   }
 ]

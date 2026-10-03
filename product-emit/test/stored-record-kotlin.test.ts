@@ -4,7 +4,7 @@ import { readFileSync } from "node:fs";
 import test from "node:test";
 import { storedChoice, storedFlag, storedInt, storedPropertyOf } from "@v1d/product-spec";
 import { emitStoredRecordKotlin, emitStoredValueDescriptorsKotlin, kotlinStringLiteral } from "../src/core/index.js";
-import { kotlinSkip, runKotlin } from "./kotlin-toolchain.js";
+import { compileKotlin, kotlinCompilerSkip, kotlinSkip, runKotlin } from "./kotlin-toolchain.js";
 import { acmeDescriptorOptions, acmeRecordOptions, acmeStoredValues } from "./stored-acme.js";
 
 const fromTest = (path: string) => readFileSync(new URL(`../../test/${path}`, import.meta.url), "utf8");
@@ -103,7 +103,7 @@ function kotlinValue(typed: string): string {
   switch (type) {
     case "Boolean": case "Int": return text;
     case "Long": return text === "MIN_VALUE" ? "Long.MIN_VALUE" : `${text}L`;
-    case "Float": return text === "NaN" ? "Float.NaN" : `${text}f`;
+    case "Float": return text === "NaN" ? "Float.NaN" : text === "Infinity" ? "Float.POSITIVE_INFINITY" : `${text}f`;
     case "String": return kotlinStringLiteral(text);
     default: throw new Error(`fixture value '${typed}' names no Kotlin type`);
   }
@@ -203,11 +203,10 @@ test("the emitted record reads, clamps and writes every case as declared, throug
     }
   });
 
-test("Kotlin refuses a native enum with an entry the declaration does not choose", kotlinSkip, () => {
-  assert.throws(() => runKotlin(sources("FILLED, OUTLINE, SHARP"), "dev.acme.stored.HarnessKt", []), (error: unknown) => {
-    const stderr = String((error as { readonly stderr?: unknown }).stderr);
-    assert.match(stderr, /AcmeSettingsStored\.kt:.*'when' expression must be exhaustive/u);
-    assert.match(stderr, /SHARP/u);
-    return true;
-  });
+test("Kotlin refuses a native enum with an entry the declaration does not choose", kotlinCompilerSkip, () => {
+  const verdict = compileKotlin({ "AcmeStore.kt": acmeStore, "IconStyle.kt": iconStyle("FILLED, OUTLINE, SHARP"),
+    "AcmeSettingsStored.kt": emitStoredRecordKotlin(acmeStoredValues, acmeRecordOptions) });
+  assert.equal(verdict.compiled, false, "kotlinc compiled an enum with an undeclared entry");
+  assert.match(verdict.compiled ? "" : verdict.diagnostics,
+    /AcmeSettingsStored\.kt:\d+:\d+: error: 'when' expression must be exhaustive\. Add the 'SHARP' branch/u);
 });

@@ -12,8 +12,10 @@ interface GeneratedAcmeSettingsStoredFields {
     val cacheRadiusM: Int
     val scatterM: Long
     val pickedEpochDay: Long?
+    val lastSyncEpochMs: Long?
     val altitudeStepM: Float
     val noiseP95M: Float?
+    val offsetM: Float?
     val glideRatio: Float
     val dropAltitudeM: Float
     val iconStyle: IconStyle
@@ -26,8 +28,10 @@ data class GeneratedAcmeSettingsStored(
     override val cacheRadiusM: Int = 20000,
     override val scatterM: Long = 250L,
     override val pickedEpochDay: Long? = null,
+    override val lastSyncEpochMs: Long? = null,
     override val altitudeStepM: Float = 0.5f,
     override val noiseP95M: Float? = null,
+    override val offsetM: Float? = null,
     override val glideRatio: Float = 2.5f,
     override val dropAltitudeM: Float = 4000.0f,
     override val iconStyle: IconStyle = IconStyle.FILLED,
@@ -39,8 +43,10 @@ data class GeneratedAcmeSettingsStored(
         changes["cacheRadiusM"] = this.cacheRadiusM.coerceIn(500, 30000)
         changes["scatterM"] = this.scatterM.coerceAtLeast(0L)
         changes["pickedEpochDay"] = this.pickedEpochDay
+        changes["lastSyncEpochMs"] = this.lastSyncEpochMs
         changes["altitudeStepM"] = this.altitudeStepM.coerceIn(0.1f, 1.0f)
         changes["noiseP95M"] = this.noiseP95M
+        changes["offsetM"] = this.offsetM
         changes["glideRatio"] = this.glideRatio.coerceAtMost(20.0f)
         changes["dropAltitudeM"] = this.dropAltitudeM
         changes["iconStyle"] = this.iconStyle.name
@@ -54,8 +60,10 @@ data class GeneratedAcmeSettingsStored(
             cacheRadiusM = values.int("cacheRadiusM", 20000).coerceIn(500, 30000),
             scatterM = values.long("scatterM", 250L).coerceAtLeast(0L),
             pickedEpochDay = values.long("pickedEpochDay", Long.MIN_VALUE).takeIf { it != Long.MIN_VALUE && it >= 0L },
+            lastSyncEpochMs = values.long("lastSyncEpochMs", Long.MIN_VALUE).takeIf { it != Long.MIN_VALUE },
             altitudeStepM = values.float("altitudeStepM", 0.5f).coerceIn(0.1f, 1.0f),
             noiseP95M = values.float("noiseP95M", Float.NaN).takeIf { it.isFinite() && it >= 0.0f },
+            offsetM = values.float("offsetM", Float.NaN).takeIf { it.isFinite() },
             glideRatio = values.float("glideRatio", 2.5f).coerceAtMost(20.0f),
             dropAltitudeM = values.float("dropAltitudeM", 4000.0f),
             iconStyle = values.string("iconStyle")?.let { s -> IconStyle.entries.firstOrNull { it.name == s } }
