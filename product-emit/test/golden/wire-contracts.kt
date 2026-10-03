@@ -137,12 +137,12 @@ enum class GeneratedAcmeShopTopping(override val wire: String) : GeneratedAcmeWi
 data class GeneratedAcmeShopOrder(
     val size: GeneratedAcmeShopSize,
     val toppings: Set<GeneratedAcmeShopTopping>,
-    val notes: List<String>? = null,
+    val notes: List<String>?,
     val deliverTo: GeneratedAcmeShopAddress,
     val tipPercent: Double?,
     val sequence: Long,
     val express: Boolean,
-    val coupon: String? = null,
+    val coupon: String?,
 ) {
     fun toJson(): JSONObject {
         val json = JSONObject()
@@ -314,7 +314,7 @@ data class GeneratedAcmeShopBlob(
     val read: String,
     val place: String,
     val it: String?,
-    val out: String? = null,
+    val out: String?,
 ) {
     fun toJson(): JSONObject {
         val json = JSONObject()

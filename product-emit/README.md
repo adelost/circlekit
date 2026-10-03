@@ -66,6 +66,9 @@ fields are enums carrying their wire value,
 `listOf` is `List<T>` (`Set<T>` when distinct), a nested contract its own data
 class, an integer `Long` within ±(2^53−1) and a number a finite `Double`. A field
 both optional and nullable is refused, because Kotlin has one null for both.
+Every constructor parameter is required, an optional one included: a producer
+passes null to leave the key out, so a field added to a contract does not
+compile at any producer until it is filled.
 `test/wire-contracts-kotlin.test.ts` pins the output for `test/wire-acme.ts`
 and runs the TypeScript read on `test/fixtures/wire-acme.json`. With
 `V1D_KOTLIN_CLASSPATH` (kotlin-compiler-embeddable and its dependencies) and

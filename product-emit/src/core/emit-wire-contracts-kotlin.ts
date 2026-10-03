@@ -3,7 +3,7 @@ import {
   type LegoFiniteValueDeclaration, type LegoListRef, type LegoPrimitive,
 } from "@v1d/product-spec";
 import type { SourcedKotlinEmissionOptions } from "./emission-options.js";
-import { kotlinEnumToken, kotlinIdentifier, kotlinStringLiteral } from "./kotlin-syntax.js";
+import { kotlinEnumToken, kotlinIdentifier, kotlinQuotedName, kotlinStringLiteral } from "./kotlin-syntax.js";
 
 /**
  * Wire contracts as Kotlin over org.json, declared once in TypeScript and read by `readContractPayload` on the server.
@@ -14,7 +14,9 @@ import { kotlinEnumToken, kotlinIdentifier, kotlinStringLiteral } from "./kotlin
  * repeated in a distinct list), then the sibling laws. The first fault throws the generated WireException with the
  * contract that was read and the dotted field path, as ContractPayloadError does. An absent optional key reads as
  * null. Finite fields are enums that carry their wire value, lists `List<T>` (`Set<T>` when distinct), nested
- * contracts their own class, integers `Long` within ±(2^53−1), numbers finite `Double`.
+ * contracts their own class, integers `Long` within ±(2^53−1), numbers finite `Double`. Every constructor parameter is
+ * required, an optional one included: a producer passes null to leave the key out, so a field added to a contract does
+ * not compile at any producer until it is filled.
  *
  * A field both optional and nullable is refused: Kotlin has one null for "absent" and "null", and a client that
  * cannot say which would clear what it meant to leave alone.
@@ -169,17 +171,12 @@ ${declaration.values.map((value) => `    ${kotlinEnumToken(value)}(${kotlinStrin
 }`;
 }
 
-const KOTLIN_KEYWORDS = new Set(["as", "break", "class", "continue", "do", "else", "false", "for", "fun", "if", "in",
-  "interface", "is", "null", "object", "package", "return", "super", "this", "throw", "true", "try", "typealias",
-  "typeof", "val", "var", "when", "while"]);
-const property = (name: string) => KOTLIN_KEYWORDS.has(name) ? `\`${name}\`` : name;
-
 function dataClass(contract: LegoContract, finites: readonly LegoFiniteValueDeclaration[], names: WireNames): string {
   const name = typeName(names, contract.id);
   const finiteName = (ref: string) => typeName(names, finites.find(({ id }) => id === ref)!.id);
-  const fields = contract.fields.map((field) => ({ field, kind: kindOf(field.value), name: property(field.name) }));
+  const fields = contract.fields.map((field) => ({ field, kind: kindOf(field.value), name: kotlinQuotedName(field.name) }));
   const properties = fields.map(({ field, kind, name: prop }) =>
-    `    val ${prop}: ${kotlinType(kind, finiteName, names)}${nullable(field) ? "?" : ""}${field.optional === true ? " = null" : ""},`);
+    `    val ${prop}: ${kotlinType(kind, finiteName, names)}${nullable(field) ? "?" : ""},`);
   const construct = `${name}(\n${fields.map(({ field, kind, name: prop }) =>
     `                ${prop} = ${readKey(field, kind, finiteName, names)},`).join("\n")}\n            )`;
   const siblings = fields.flatMap(({ field, name: prop }) => siblingLaw(contract, field, prop));
@@ -270,7 +267,7 @@ function writeKey(field: LegoField, kind: FieldKind, prop: string): string {
 function siblingLaw(contract: LegoContract, field: LegoField, prop: string): readonly string[] {
   if (field.gteField === undefined) return [];
   const other = contract.fields.find(({ name }) => name === field.gteField)!;
-  return [`read.atLeast("${field.name}", parsed.${prop}, "${other.name}", parsed.${property(other.name)}, "${unitOf(field)}")`];
+  return [`read.atLeast("${field.name}", parsed.${prop}, "${other.name}", parsed.${kotlinQuotedName(other.name)}, "${unitOf(field)}")`];
 }
 
 const unitOf = (field: LegoField) => field.unit === undefined ? "" : ` ${field.unit}`;
