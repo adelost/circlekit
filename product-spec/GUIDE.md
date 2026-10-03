@@ -154,9 +154,13 @@ storedNumber({ id: "acme.grid-step", wireName: "gridStepM", store: "acme-setting
 ```
 
 The product's ledger of saved names only grows (`product-spec/src/saved-name-ledger.ts`):
-generate appends new names and pins each name's saved type, and refuses a retired
-name declared again or a pinned type that changed, because a device that holds the
-old bytes would fail its read and reset the store.
+generate appends new names and pins each name's saved type and its store, kept beside
+each other as `savedTypes` and `savedStores` (`pinStoredTypes`, `pinSavedStores`; a
+ledger without `savedStores` pins none yet and gains the map whole). It refuses a
+retired name declared again, a pinned type that changed (a device that holds the old
+bytes would fail its read and reset the store) and a pinned store that changed (a
+device would read the name from another file and lose the value); the product's
+history check runs `assertStoredTypesKept` and `assertSavedStoresKept` per revision.
 
 An instance-owned transient UI event reducer is also a `service`, with
 `effects: []`, a UI-event input and a presentation-state output. A `derive`
