@@ -2,7 +2,9 @@ import {
   storedPropertyOf, storedValueCatalog, type StoredLongDeclaration, type StoredNumberDeclaration, type StoredValueDeclaration,
 } from "@v1d/product-spec";
 import type { SourcedKotlinEmissionOptions } from "./emission-options.js";
-import { kotlinFloatLiteral, kotlinLongLiteral, kotlinSimpleName, kotlinStringLiteral } from "./kotlin-syntax.js";
+import {
+  KOTLIN_HARD_KEYWORDS, kotlinFloatLiteral, kotlinLongLiteral, kotlinSimpleName, kotlinStringLiteral,
+} from "./kotlin-syntax.js";
 
 export interface StoredRecordKotlinOptions extends SourcedKotlinEmissionOptions {
   /** `Power` names the class `Generated<Prefix>PowerStored` and its interface `Generated<Prefix>PowerStoredFields`. */
@@ -23,7 +25,7 @@ interface RecordField {
   readonly defaultValue: string;
   readonly read: string;
   readonly write: string;
-  readonly choice?: { readonly enumType: string; readonly values: readonly string[] };
+  readonly choice?: { readonly id: string; readonly enumType: string; readonly values: readonly string[] };
 }
 
 /**
@@ -39,6 +41,7 @@ export function emitStoredRecordKotlin(values: readonly StoredValueDeclaration[]
   const [store, other] = [...new Set(values.map((value) => value.store))];
   if (other !== undefined) throw new Error(`stored record '${recordName}' mixes stores '${store}' and '${other}'`);
   const fields = storedValueCatalog(values).map((value) => recordField(value, options));
+  requireDistinctEnumNames(fields);
   const record = `Generated${options.symbolPrefix}${recordName}Stored`;
   const imports = new Set([options.keyValueStore, ...fields.flatMap(({ choice }) => choice === undefined ? [] : [choice.enumType])]);
   return [
@@ -77,6 +80,8 @@ export function emitStoredRecordKotlin(values: readonly StoredValueDeclaration[]
 
 function recordField(value: StoredValueDeclaration, options: StoredRecordKotlinOptions): RecordField {
   const property = storedPropertyOf(value);
+  const refusedProperty = fieldNameProblem(property);
+  if (refusedProperty !== undefined) throw new Error(`stored value '${value.id}': property '${property}' ${refusedProperty}`);
   const key = kotlinStringLiteral(value.wireName);
   const field = { property, key };
   switch (value.kind) {
@@ -95,6 +100,10 @@ function recordField(value: StoredValueDeclaration, options: StoredRecordKotlinO
       return { ...field, ...ranged(value, property, key, { type: "Float", literal: kotlinFloatLiteral, absent: "Float.NaN",
         present: "it.isFinite()" }) };
     case "stored-choice": {
+      for (const choice of value.values) {
+        const refusedChoice = entryNameProblem(choice);
+        if (refusedChoice !== undefined) throw new Error(`stored choice '${value.id}': choice '${choice}' ${refusedChoice}`);
+      }
       const enumType = Object.hasOwn(options.nativeTypes, value.id) ? options.nativeTypes[value.id] : undefined;
       if (enumType === undefined) {
         throw new Error(`stored choice '${value.id}' has no Kotlin enum: add '${value.id}': '<package.Enum>' to ${options.nativeTypesFile}`);
@@ -103,7 +112,7 @@ function recordField(value: StoredValueDeclaration, options: StoredRecordKotlinO
       const fallback = `${name}.${value.defaultValue}`;
       return { ...field, type: name, defaultValue: fallback, write: `this.${property}.name`,
         read: `values.string(${key})?.let { s -> ${name}.entries.firstOrNull { it.name == s } }\n                ?: ${fallback}`,
-        choice: { enumType, values: value.values } };
+        choice: { id: value.id, enumType, values: value.values } };
     }
     case "stored-text": {
       const fallback = kotlinStringLiteral(value.defaultValue);
@@ -145,4 +154,34 @@ function choiceParity(property: string, { enumType, values }: NonNullable<Record
     `private fun declared${property[0]!.toUpperCase()}${property.slice(1)}(value: ${name}): Unit = `
       + `when (value) { ${values.map((choice) => `${name}.${choice}`).join(", ")} -> Unit }`,
   ];
+}
+
+/** Why kotlinc refuses [property] as a field of the record, or undefined when it accepts it. */
+function fieldNameProblem(property: string): string | undefined {
+  if (KOTLIN_HARD_KEYWORDS.has(property)) return "is a Kotlin keyword";
+  if (property === "Companion") return "is the name of the record's companion object";
+  if (/^_+$/u.test(property)) return "is reserved in Kotlin";
+  return undefined;
+}
+
+/** Why kotlinc refuses [choice] as an enum entry the record names, or undefined when it accepts it. */
+function entryNameProblem(choice: string): string | undefined {
+  if (KOTLIN_HARD_KEYWORDS.has(choice)) return "is a Kotlin keyword";
+  if (choice === "entries") return "hides the enum's entries, which read() searches";
+  return undefined;
+}
+
+/** One file imports each enum by its simple name, so two enums of one name cannot both be imported. */
+function requireDistinctEnumNames(fields: readonly RecordField[]): void {
+  const owners = new Map<string, NonNullable<RecordField["choice"]>>();
+  for (const { choice } of fields) {
+    if (choice === undefined) continue;
+    const name = kotlinSimpleName(choice.enumType);
+    const owner = owners.get(name);
+    if (owner !== undefined && owner.enumType !== choice.enumType) {
+      throw new Error(`stored choices '${owner.id}' and '${choice.id}' import two Kotlin enums named ${name}: `
+        + `'${owner.enumType}' and '${choice.enumType}'`);
+    }
+    owners.set(name, choice);
+  }
 }

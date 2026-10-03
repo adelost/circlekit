@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
 import test from "node:test";
-import { storedFlag, storedInt, storedPropertyOf } from "@v1d/product-spec";
+import { storedChoice, storedFlag, storedInt, storedPropertyOf } from "@v1d/product-spec";
 import { emitStoredRecordKotlin, emitStoredValueDescriptorsKotlin, kotlinStringLiteral } from "../src/core/index.js";
 import { kotlinSkip, runKotlin } from "./kotlin-toolchain.js";
 import { acmeDescriptorOptions, acmeRecordOptions, acmeStoredValues } from "./stored-acme.js";
@@ -44,6 +44,12 @@ test("the descriptors of every kind, with their store, are the golden file the K
 });
 
 const sound = acmeStoredValues[0];
+const icons = acmeStoredValues.find(({ id }) => id === "acme.icon-style")!;
+const flag = (id: string, property: string) => storedFlag({ id, wireName: `${property}On`, store: "acme-settings", property,
+  defaultValue: true });
+const flow = (values: readonly string[]) => storedChoice({ id: "acme.flow", wireName: "flow", store: "acme-settings", values,
+  defaultValue: "OTHER" });
+const withFlow = { ...acmeRecordOptions, nativeTypes: { "acme.flow": "dev.acme.ui.Flow" } };
 const refusals: readonly (readonly [string, () => unknown, string])[] = [
   ["a record of nothing", () => emitStoredRecordKotlin([], acmeRecordOptions),
     "stored record 'Settings' is empty: a store with nothing to save has no record"],
@@ -57,6 +63,21 @@ const refusals: readonly (readonly [string, () => unknown, string])[] = [
     "stored values 'acme.sound' and 'acme-sound' are one Kotlin name AcmeSound"],
   ["a record that breaks the catalog law", () => emitStoredRecordKotlin([sound, storedFlag({ ...sound, id: "acme.twin" })],
     acmeRecordOptions), "stored value 'acme.twin' reuses wire name 'soundOn', already saved by 'acme.sound'"],
+  ["a property that is a Kotlin keyword", () => emitStoredRecordKotlin([flag("acme.in", "in")], acmeRecordOptions),
+    "stored value 'acme.in': property 'in' is a Kotlin keyword"],
+  ["a property named like the companion object", () => emitStoredRecordKotlin([flag("acme.companion", "Companion")],
+    acmeRecordOptions), "stored value 'acme.companion': property 'Companion' is the name of the record's companion object"],
+  ["a property Kotlin reserves", () => emitStoredRecordKotlin([flag("acme.blank", "__")], acmeRecordOptions),
+    "stored value 'acme.blank': property '__' is reserved in Kotlin"],
+  ["a choice that is a Kotlin keyword", () => emitStoredRecordKotlin([flow(["in", "OTHER"])], withFlow),
+    "stored choice 'acme.flow': choice 'in' is a Kotlin keyword"],
+  ["a choice that hides the enum's entries", () => emitStoredRecordKotlin([flow(["entries", "OTHER"])], withFlow),
+    "stored choice 'acme.flow': choice 'entries' hides the enum's entries, which read() searches"],
+  ["two choice enums with one simple name", () => emitStoredRecordKotlin([icons, storedChoice({ id: "acme.map-icons",
+    wireName: "mapIconStyle", store: "acme-settings", values: ["FILLED", "OUTLINE"], defaultValue: "FILLED" })],
+  { ...acmeRecordOptions, nativeTypes: { "acme.icon-style": "dev.acme.ui.IconStyle", "acme.map-icons": "dev.acme.map.IconStyle" } }),
+    "stored choices 'acme.icon-style' and 'acme.map-icons' import two Kotlin enums named IconStyle: 'dev.acme.ui.IconStyle' "
+      + "and 'dev.acme.map.IconStyle'"],
 ];
 
 for (const [law, emit, message] of refusals) {
