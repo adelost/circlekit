@@ -17,6 +17,7 @@ const expectedCore = new Set([
   "emit-native-lego-kotlin", "emit-navigation-kotlin",
   "emit-profile-table-js", "emit-service-glances-kotlin", "emit-state-presentations-kotlin", "emit-store-services-kotlin", "emit-theme",
   "emit-wire-contracts-kotlin", "index",
+  "emit-stored-record-kotlin", "emit-stored-values-kotlin",
   "kotlin-syntax", "model", "profile-table-model", "service-glance-model", "theme-model", "validate-capabilities",
   "validate-invariants",
   "validate-native-legos", "validate-profile-table",

@@ -66,6 +66,24 @@ export function kotlinStringLiteral(value: string): string {
   return `"${out}"`;
 }
 
+/** `0.5` -> `0.5f`, `1` -> `1.0f`, `1e-7` -> `1e-7f`: a Kotlin Float literal for a finite number. */
+export function kotlinFloatLiteral(value: number): string {
+  if (!Number.isFinite(value)) throw new Error(`cannot emit Kotlin Float literal for ${value}`);
+  const text = String(value);
+  return /[.e]/u.test(text) ? `${text}f` : `${text}.0f`;
+}
+
+/** `dev.acme.ui.IconStyle` -> `IconStyle`: how a file that imports a symbol names it. */
+export function kotlinSimpleName(qualified: string): string {
+  return qualified.slice(qualified.lastIndexOf(".") + 1);
+}
+
+/** `250` -> `250L`: a Kotlin Long literal for a whole number JavaScript holds exactly. */
+export function kotlinLongLiteral(value: number): string {
+  if (!Number.isSafeInteger(value)) throw new Error(`cannot emit Kotlin Long literal for ${value}`);
+  return `${value}L`;
+}
+
 export function indent(value: string, spaces: number): string {
   const prefix = " ".repeat(spaces);
   return value
