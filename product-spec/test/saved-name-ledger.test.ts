@@ -1,7 +1,8 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import {
-  appendSavedNames, assertHeldOnlyShrinks, assertStoredTypesKept, pinStoredTypes, type SavedNameSection, type StoredType,
+  appendSavedNames, assertHeldOnlyShrinks, assertSavedStoresKept, assertStoredTypesKept, pinSavedStores, pinStoredTypes,
+  type SavedNameSection, type StoredType,
 } from "../src/index.js";
 
 /** A product's ledger as its generate writes it: two-space JSON and a final newline. */
@@ -105,4 +106,44 @@ test("a name held natively may leave the held list", () => {
 test("refused: a name that joined the held list since a revision", () => {
   assert.throws(() => assertHeldOnlyShrinks(["zoomLevel"], ["zoomLevel", "tileRadiusM"], "4f2a9c1"),
     refused("'tileRadiusM' is held natively now but was not in 4f2a9c1: a new saved value is held by its generated record"));
+});
+
+const declaredStores = [{ name: "gridStepM", store: "acme-settings" }, { name: "zoomLevel", store: "acme-settings" }] as const;
+
+test("a ledger that pins no store yet gains the store map whole after its existing bytes, and a second generate keeps it", () => {
+  const before = JSON.parse(ledgerText) as Ledger & { readonly savedStores?: Readonly<Record<string, string>> };
+  const next = { ...before, savedStores: pinSavedStores(before.savedStores, declaredStores) };
+  assert.equal(written(next), ledgerText.replace(/\n\}\n$/u,
+    ',\n  "savedStores": {\n    "gridStepM": "acme-settings",\n    "zoomLevel": "acme-settings"\n  }\n}\n'));
+  assert.equal(written({ ...next, savedStores: pinSavedStores(next.savedStores, [...declaredStores].reverse()) }), written(next));
+});
+
+test("a new saved name's store is pinned after the pinned ones", () => {
+  const next = pinSavedStores({ gridStepM: "acme-settings" }, [{ name: "panSpeed", store: "acme-dev" },
+    { name: "gridStepM", store: "acme-settings" }]);
+  assert.deepEqual(Object.entries(next), [["gridStepM", "acme-settings"], ["panSpeed", "acme-dev"]]);
+});
+
+test("refused: a saved name declared in another store", () => {
+  assert.throws(() => pinSavedStores({ gridStepM: "acme-settings" }, [{ name: "gridStepM", store: "acme-dev" }]),
+    refused("'gridStepM' was saved in 'acme-settings'; declaring it in 'acme-dev' makes every device lose its saved value. "
+      + "Retire 'gridStepM' and declare a new name"));
+});
+
+test("a pinned store is kept across revisions, new pins may join, and a revision that pinned no store keeps none", () => {
+  const previous = { gridStepM: "acme-settings" };
+  assertSavedStoresKept(previous, previous, "4f2a9c1");
+  assertSavedStoresKept(previous, { ...previous, panSpeed: "acme-dev" }, "4f2a9c1");
+  assertSavedStoresKept(undefined, previous, "4f2a9c1");
+});
+
+test("refused: a pinned store that changed since a revision", () => {
+  assert.throws(() => assertSavedStoresKept({ gridStepM: "acme-settings" }, { gridStepM: "acme-dev" }, "4f2a9c1"),
+    refused("'gridStepM' was pinned to 'acme-settings' in 4f2a9c1 and is in 'acme-dev' now: a pinned store never changes or leaves"));
+});
+
+test("refused: a pinned store that left since a revision, or a ledger that dropped its store map", () => {
+  const gone = "'gridStepM' was pinned to 'acme-settings' in 4f2a9c1 and is gone now: a pinned store never changes or leaves";
+  assert.throws(() => assertSavedStoresKept({ gridStepM: "acme-settings" }, { zoomLevel: "acme-settings" }, "4f2a9c1"), refused(gone));
+  assert.throws(() => assertSavedStoresKept({ gridStepM: "acme-settings" }, undefined, "4f2a9c1"), refused(gone));
 });
