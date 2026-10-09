@@ -173,6 +173,7 @@ test("an iso choice emits total state faces and derives reset from the setting d
   const output = emitIsoOptionsKotlin(options, settings, [
     { state: "FLOWING", glyph: null, accent: "NEUTRAL", meaning: "Flowing." },
     { state: "LOADING", glyph: "MAP", accent: "NEUTRAL", meaning: "Loading." },
+    { state: "COARSE", glyph: "GRID", accent: "NEUTRAL", meaning: "Coarse." },
     { state: "OFF", glyph: "EYE_OFF", accent: "NEUTRAL", meaning: "Off." },
     { state: "MISSING", glyph: "LAYERS", accent: "CAUTION", meaning: "Missing." },
   ], {
@@ -182,6 +183,9 @@ test("an iso choice emits total state faces and derives reset from the setting d
     sourceSha: "fixture",
     nativeSymbols: acmeSymbols.isoOptions,
   });
+  // Worst first, because a surface reports the lowest ordinal across its layers: a coarse picture
+  // yields to one still loading and outranks a layer switched off.
+  assert.match(output, /enum class GeneratedAcmeIsoDataStatus \{ MISSING, LOADING, COARSE, OFF, FLOWING \}/u);
   assert.match(output, /"NONE" to GeneratedAcmeIsoOptionStateFace\(MenuIconToken\.EYE_OFF, MenuAccentToken\.NEUTRAL, "Fetches no imagery\.", true\)/u);
   assert.match(output, /"HIGH" to GeneratedAcmeIsoOptionStateFace\(MenuIconToken\.LAYERS, null, "Fetches detailed imagery\.", false\)/u);
 
