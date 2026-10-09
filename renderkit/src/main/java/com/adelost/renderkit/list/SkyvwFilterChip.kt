@@ -1,7 +1,6 @@
 package com.adelost.renderkit.list
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
@@ -162,21 +161,15 @@ fun SkyvwFilterChip(
     Row(
         modifier = Modifier
             .clip(shape)
+            // No frame (Mattias 2026-10-09: "jag gillar inte att ha fula ramar på de andra layouterna"): the chosen
+            // chip is a brighter plate with white words, the others a faint one. It does not invert, because a chip's
+            // own coloured icon would wash out on white.
             .background(
                 if (chip.selected) {
-                    GraphiteTokens.Ink.copy(alpha = 0.12f)
+                    GraphiteTokens.Ink.copy(alpha = 0.18f)
                 } else {
-                    GraphiteTokens.Faint.copy(alpha = 0.06f)
+                    GraphiteTokens.Faint.copy(alpha = 0.08f)
                 },
-            )
-            .border(
-                width = 1.dp,
-                color = if (chip.selected) {
-                    GraphiteTokens.Ink.copy(alpha = 0.55f)
-                } else {
-                    GraphiteTokens.Faint.copy(alpha = 0.28f)
-                },
-                shape = shape,
             )
             .semantics {
                 this.selected = chip.selected

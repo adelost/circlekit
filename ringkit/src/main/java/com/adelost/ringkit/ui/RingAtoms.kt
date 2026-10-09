@@ -171,8 +171,9 @@ fun HoldPill(
         onLongClickLabel = text,
         onConfirm = onConfirm,
         fill = fill,
-        background = Color.Transparent,
-        outline = if (destructive) RingTokens.Broken.copy(alpha = 0.7f) else RingTokens.Outline,
+        // A plate, never a frame (Mattias 2026-10-09: "jag gillar inte att ha fula ramar på de andra layouterna").
+        background = GraphiteTokens.Surface,
+        outline = null,
         holdMs = holdMs,
         modifier = modifier,
         contentPaddingH = 16.dp,
