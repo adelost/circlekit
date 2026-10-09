@@ -136,10 +136,16 @@ export const ISO_VIEW_SHEET_MAX = 6;
  * chronic chrome on a watch face is noise, and an icon that is always lit
  * stops being read long before the day it means something.
  *
- * Declared here rather than branched in a renderer so the four states and
- * their glyphs cannot diverge between the surfaces that mount the slot.
+ * Declared here rather than branched in a renderer so the states and their
+ * glyphs cannot diverge between the surfaces that mount the slot.
+ *
+ * COARSE is the picture covering the ground but coarser than the zoom asked
+ * for. It used to be the only one of these said in words, "LOW DETAIL" on the
+ * rim; Mattias 2026-10-09: "Jag hatar text ... det ska liksom i alla fall vara
+ * någon ikon". It is a detail statement, not a gap: quieter than LOADING,
+ * louder than OFF.
  */
-export type IsoDataStatusRef = "FLOWING" | "LOADING" | "OFF" | "MISSING";
+export type IsoDataStatusRef = "FLOWING" | "LOADING" | "COARSE" | "OFF" | "MISSING";
 
 /** One state's whole presentation. A null glyph draws nothing at all. */
 export interface IsoDataStatusDeclaration<IconRef extends string = string> {
@@ -158,6 +164,7 @@ export interface IsoDataStatusDeclaration<IconRef extends string = string> {
 export const ISO_DATA_STATUS_SEVERITY: readonly IsoDataStatusRef[] = [
   "MISSING",
   "LOADING",
+  "COARSE",
   "OFF",
   "FLOWING",
 ];
