@@ -42,17 +42,26 @@ export function oklchToHex(lightness: number, chroma: number, hueDeg: number): s
     .join("")}`;
 }
 
-/** Chroma carries magnitude inside a band; lightness barely moves. */
-export function bandStops(band: RampBand): readonly string[] {
+/**
+ * Chroma carries magnitude inside a band; lightness barely moves.
+ *
+ * The ramp decides where on the step's travel its bands start (`travelFrom`,
+ * 0 = the palest tone) and which edge is strong (`strongEdge`). Stops are
+ * always emitted low end first, so a ramp whose strong edge is low runs them
+ * strong-first and the sampler needs no direction of its own.
+ */
+export function bandStops(band: RampBand, ramp: Pick<Ramp, "travelFrom" | "strongEdge"> = {}): readonly string[] {
   if (band.solid) return [oklchToHex(band.lightness, band.chromaMax, band.hueDeg)];
-  return Array.from({ length: STOPS_PER_BAND }, (_, index) => {
-    const t = index / (STOPS_PER_BAND - 1);
+  const from = ramp.travelFrom ?? 0;
+  const stops = Array.from({ length: STOPS_PER_BAND }, (_, index) => {
+    const t = from + (1 - from) * (index / (STOPS_PER_BAND - 1));
     return oklchToHex(
       band.lightness - band.lightnessTravel * t,
       band.chromaMax * (CHROMA_FLOOR_RATIO + (1 - CHROMA_FLOOR_RATIO) * t),
       band.hueDeg,
     );
   });
+  return ramp.strongEdge === "low" ? stops.reverse() : stops;
 }
 
 export function emitThemeKotlin(ir: ThemeCatalogIr, options: SourcedKotlinEmissionOptions): string {
@@ -180,7 +189,7 @@ export function emitThemeCss(ir: ThemeCatalogIr, options: CssEmissionOptions): s
     const ramps = theme.ramps
       .flatMap((ramp) =>
         ramp.bands.flatMap((band) => {
-          const stops = bandStops(band);
+          const stops = bandStops(band, ramp);
           const rows = stops.map((hex, index) => `  --${tokenPrefix}-${ramp.id}-${band.id}-${index}: ${hex};`);
           rows.push(`  --${tokenPrefix}-${ramp.id}-${band.id}: linear-gradient(90deg, ${stops.join(", ")});`);
           return rows;
@@ -227,7 +236,7 @@ function emitKotlinScalePalette(theme: ThemeCatalogIr["themes"][number], symbolP
 function emitKotlinRamp(ramp: Ramp, indent: string): string {
   const bandIndent = `${indent}        `;
   const bands = ramp.bands.map((band) => {
-    const stops = bandStops(band).map((hex) => `Color(0x${argb(hex)})`).join(", ");
+    const stops = bandStops(band, ramp).map((hex) => `Color(0x${argb(hex)})`).join(", ");
     return `${bandIndent}ThemeBand(${kotlinStringLiteral(band.id)}, ${band.upTo}f, ruleEdge = ${band.ruleEdge}, label = ${kotlinStringLiteral(band.label)}, stops = listOf(${stops}))`;
   }).join(",\n");
   return `ThemeRamp(\n${indent}    id = ${kotlinStringLiteral(ramp.id)},\n${indent}    kind = ThemeRampKind.${ramp.kind === "magnitude" ? "MAGNITUDE" : "SAFETY_ENVELOPE"},\n${indent}    unit = ${kotlinStringLiteral(ramp.unit)},\n${indent}    bands = listOf(\n${bands},\n${indent}    ),\n${indent})`;
