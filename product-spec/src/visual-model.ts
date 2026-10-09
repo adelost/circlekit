@@ -16,6 +16,17 @@ export interface PortableRamp {
   readonly id: string;
   readonly kind: "safety-envelope" | "magnitude";
   readonly unit: string;
+  /**
+   * Which edge of every band is its strong end: "high", the default, when the
+   * severity rises with the value, as wind does; "low" when it falls, as height.
+   */
+  readonly strongEdge?: "high" | "low";
+  /**
+   * Where each band starts along its step's travel: 0, the default, is the
+   * palest tone; 0.5 keeps only the strong half, so a band never opens paler
+   * than the band before it ended. Below 1.
+   */
+  readonly travelFrom?: number;
   readonly bands: readonly PortableRampBand[];
 }
 
@@ -96,6 +107,7 @@ export function definePalette<const Variants extends readonly PortablePaletteVar
   const [first, ...rest] = variants;
   const shape = (variant: PortablePaletteVariant) => JSON.stringify(variant.ramps.map((ramp) => ({
     id: ramp.id, kind: ramp.kind, unit: ramp.unit,
+    strongEdge: ramp.strongEdge ?? "high", travelFrom: ramp.travelFrom ?? 0,
     bands: ramp.bands.map(({ id, upTo, ruleEdge, label, hueDeg, solid }) =>
       ({ id, upTo, ruleEdge, label, hueDeg, solid: Boolean(solid) })),
   })));
@@ -190,6 +202,12 @@ function validateVariant(variant: PortablePaletteVariant): void {
   for (const ramp of variant.ramps) {
     requireWireId(ramp.id, "palette ramp");
     if (ramp.unit.trim() === "" || ramp.bands.length === 0) throw new Error(`ramp '${ramp.id}' is incomplete`);
+    if (ramp.strongEdge !== undefined && ramp.strongEdge !== "high" && ramp.strongEdge !== "low") {
+      throw new Error(`ramp '${ramp.id}' has invalid strong edge '${String(ramp.strongEdge)}'`);
+    }
+    if (ramp.travelFrom !== undefined && !(ramp.travelFrom >= 0 && ramp.travelFrom < 1)) {
+      throw new Error(`ramp '${ramp.id}' starts its bands at ${ramp.travelFrom}, outside 0 to below 1`);
+    }
     requireUnique(ramp.bands.map(({ id }) => id), `band in ramp '${ramp.id}'`);
     ramp.bands.forEach((band, index) => {
       requireWireId(band.id, "palette band");
