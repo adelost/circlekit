@@ -79,7 +79,8 @@ fun SkyvwLinearListHost(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .then(
-                                    if (spec.policy.scrollEffect == SkyvwListScrollEffect.CENTER_FOCUS) {
+                                    // CENTER_SNAP's rows all show in full here, where there is room for them.
+                                    if (spec.policy.scrollEffect != SkyvwListScrollEffect.NONE) {
                                         Modifier.skyvwCenterFocusScale(listState, index)
                                     } else {
                                         Modifier
