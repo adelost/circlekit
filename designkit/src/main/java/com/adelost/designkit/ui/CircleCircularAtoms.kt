@@ -4,7 +4,6 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -467,14 +466,15 @@ fun CircleBackDisc(
             // different language from every other gated control: one stroke inside the contour, in the
             // product's accent, nothing at all at zero.
             .circleHoldCue(holdProgress, circleBrandColor())
-            .border(
-                MenuDesign.contourStroke,
+            // The same contour as every icon ring beside it, so the escape reads as one of the circles and not a
+            // heavier one (Mattias 2026-10-09: "cirklarna ... Det ska ju vara konsekvent"). It drew a full 1 dp
+            // border in a brighter grey: 5 px against 3 px at his 320 dp preview.
+            .circleRingContour(
                 when {
                     !enabled -> RingTokens.Off
                     pressed -> RingTokens.OutlineStrong
-                    else -> RingTokens.Outline
+                    else -> MenuDesign.ringNeutral
                 },
-                CircleShape,
             ),
         contentAlignment = Alignment.Center,
     ) {
