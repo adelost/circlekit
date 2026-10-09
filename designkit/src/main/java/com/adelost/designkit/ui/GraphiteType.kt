@@ -21,6 +21,19 @@ object GraphiteType {
     val Sans: FontFamily by lazy { sans(R.font.onest) }
 
     /**
+     * The numeral face: Barlow Semi Condensed, narrow instrument digits for values, counts, dates and times, while
+     * words stay in [Sans]. A product's approved design set its numbers in it and its owner chose it over Onest's
+     * digits (Skyvw logbook, 2026-10-09: "jag gillar fonten bättre som var i skissen"). designkit ships its two
+     * weights; a lighter request meets SemiBold.
+     */
+    val Numerals: FontFamily by lazy {
+        FontFamily(
+            Font(R.font.barlow_semi_condensed_semibold, weight = FontWeight.SemiBold),
+            Font(R.font.barlow_semi_condensed_bold, weight = FontWeight.Bold),
+        )
+    }
+
+    /**
      * Every weight a caller requests must be registered here: Compose matches
      * an unregistered weight to the nearest registered one, so a missing entry
      * silently renders lighter instead of failing. The altitude hero asks for
