@@ -2,6 +2,7 @@ package com.adelost.renderkit.list
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
+import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.staticCompositionLocalOf
 import com.adelost.renderkit.data.OledDataPlotModuleLayout
 import com.adelost.renderkit.data.OledDataPlotModuleSpec
@@ -73,7 +74,24 @@ enum class SkyvwListScrollEffect {
      *  recede slightly. Wear gets this from ScalingLazyColumn, while linear
      *  hosts apply the same semantic focus themselves. */
     CENTER_FOCUS,
+
+    /** [CENTER_FOCUS], and on a round host the list comes to rest with a row
+     *  at the focus: the crown and a fling move it one row at a time, and the
+     *  host tells each row whether it holds the focus
+     *  ([LocalSkyvwListItemFocused]). The row there may show more than its
+     *  neighbours, as the logbook's day grows the jump in the middle into a
+     *  card. A linear host has the room to show every row in full: it scales
+     *  as [CENTER_FOCUS] and leaves the local null. */
+    CENTER_SNAP,
 }
+
+/**
+ * Whether the row being composed holds a [SkyvwListScrollEffect.CENTER_SNAP]
+ * list's focus: true for the row the list rests on, false for the others, null
+ * in every other list. The host provides it per row; a row reads it to choose
+ * its own layout, never the list's.
+ */
+val LocalSkyvwListItemFocused = compositionLocalOf<Boolean?> { null }
 
 enum class SkyvwListAnchor {
     /** Plain top-aligned reading list. */

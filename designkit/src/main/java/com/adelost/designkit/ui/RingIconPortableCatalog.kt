@@ -24,6 +24,7 @@ internal val PORTABLE_RING_ICON_CATALOG = listOf(
     RingIcons.Plane,
     RingIcons.Gps,
     RingIcons.Map,
+    RingIcons.Pin,
     RingIcons.Mountain,
     RingIcons.Sun,
     RingIcons.Book,
