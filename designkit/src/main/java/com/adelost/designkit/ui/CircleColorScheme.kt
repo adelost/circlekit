@@ -42,12 +42,18 @@ data class CircleColorScheme(
 
 /**
  * Curated variants of the dial's established semantic hues. Themes may tune
- * lightness/chroma, never swap meaning: sky stays blue, time stays green,
- * break-off amber, pull red and hard deck purple.
+ * lightness/chroma, never swap meaning: the sky is white, time green, break-off
+ * amber, pull red and hard deck purple.
+ *
+ * The sky was blue until 0.3.124. Mattias 2026-10-09: "jag tror jag vill att
+ * istället för blått att den ska vara vit när den är över rätt höjd. För då vitt
+ * är lätt att se ... Jag tycker inte blått är en så bra färg". Its REST weight is
+ * a cool grey rather than white, so it stays a different pigment from the
+ * approach strip's and the two bands keep two identities.
  */
 data class CircleAltitudeColorScheme(
-    val blue: Color,
-    val blueActive: Color,
+    val sky: Color,
+    val skyActive: Color,
     val green: Color,
     val greenActive: Color,
     val amber: Color,
@@ -67,7 +73,7 @@ data class CircleAltitudeColorScheme(
  * one colour at both weights: it is the band that has to stay readable when
  * every decision above it has already been missed.
  */
-enum class CircleAltitudeBand { BLUE, GREEN, AMBER, RED, PURPLE, APPROACH }
+enum class CircleAltitudeBand { SKY, GREEN, AMBER, RED, PURPLE, APPROACH }
 
 /**
  * The two weights each band carries. [REST] sits behind content, [ACTIVE] is
@@ -80,7 +86,7 @@ enum class CircleAltitudeWeight { REST, ACTIVE }
  *
  * The named fields above are the declaration; this is how a product reads them
  * without copying the mapping. A consumer that spells out its own
- * `when (band) { BLUE -> blueActive; ... }` has made a second table that
+ * `when (band) { SKY -> skyActive; ... }` has made a second table that
  * nothing compares against, which is exactly how the dial's bands and this
  * scheme drifted apart before.
  */
@@ -90,7 +96,7 @@ fun CircleAltitudeColorScheme.color(
 ): Color {
     val rest = weight == CircleAltitudeWeight.REST
     return when (band) {
-        CircleAltitudeBand.BLUE -> if (rest) blue else blueActive
+        CircleAltitudeBand.SKY -> if (rest) sky else skyActive
         CircleAltitudeBand.GREEN -> if (rest) green else greenActive
         CircleAltitudeBand.AMBER -> if (rest) amber else amberActive
         CircleAltitudeBand.RED -> if (rest) red else redActive
@@ -108,8 +114,8 @@ object CircleColorSchemes {
         container = Color(0xFF213E3C),
         subdued = Color(0xFF52706D),
         altitude = CircleAltitudeColorScheme(
-            blue = Color(0xFF2F6F92),
-            blueActive = Color(0xFF38BDF8),
+            sky = Color(0xFF8E979C),
+            skyActive = Color(0xFFF5F8FA),
             green = Color(0xFF34C36B),
             greenActive = Color(0xFF34C36B),
             amber = Color(0xFF836829),
@@ -129,8 +135,8 @@ object CircleColorSchemes {
         container = Color(0xFF17383F),
         subdued = Color(0xFF496B73),
         altitude = CircleAltitudeColorScheme(
-            blue = Color(0xFF2C759A),
-            blueActive = Color(0xFF45C4F4),
+            sky = Color(0xFF8C969D),
+            skyActive = Color(0xFFF2F6F9),
             green = Color(0xFF39B96D),
             greenActive = Color(0xFF56D783),
             amber = Color(0xFF9C792B),
@@ -150,8 +156,8 @@ object CircleColorSchemes {
         container = Color(0xFF293938),
         subdued = Color(0xFF596A68),
         altitude = CircleAltitudeColorScheme(
-            blue = Color(0xFF3E6577),
-            blueActive = Color(0xFF6FA7BE),
+            sky = Color(0xFF7C8387),
+            skyActive = Color(0xFFDDE2E3),
             green = Color(0xFF3D6950),
             greenActive = Color(0xFF71A887),
             amber = Color(0xFF6C6242),
@@ -171,8 +177,8 @@ object CircleColorSchemes {
         container = Color(0xFF123D38),
         subdued = Color(0xFF4F7975),
         altitude = CircleAltitudeColorScheme(
-            blue = Color(0xFF174B65),
-            blueActive = Color(0xFF3BD5FF),
+            sky = Color(0xFF9DA6AC),
+            skyActive = Color(0xFFFFFFFF),
             green = Color(0xFF145E37),
             greenActive = Color(0xFF4BE883),
             amber = Color(0xFF654A08),
