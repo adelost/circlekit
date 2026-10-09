@@ -55,7 +55,8 @@ class CircleColorSchemeTest {
     fun `the default band table is the pigment products consume`() {
         val expected = mapOf(
             //                            REST                  ACTIVE
-            CircleAltitudeBand.BLUE to (Color(0xFF2F6F92) to Color(0xFF38BDF8)),
+            // White over the right height, Mattias 2026-10-09; a cool grey at rest, so it is not the approach's.
+            CircleAltitudeBand.SKY to (Color(0xFF8E979C) to Color(0xFFF5F8FA)),
             CircleAltitudeBand.GREEN to (Color(0xFF34C36B) to Color(0xFF34C36B)),
             CircleAltitudeBand.AMBER to (Color(0xFF836829) to Color(0xFFF4C542)),
             CircleAltitudeBand.RED to (Color(0xFF7F3336) to Color(0xFFEF5350)),
@@ -76,7 +77,7 @@ class CircleColorSchemeTest {
         CircleColorSchemes.all.forEach { scheme ->
             val a = scheme.altitude
             val named = listOf(
-                CircleAltitudeBand.BLUE to (a.blue to a.blueActive),
+                CircleAltitudeBand.SKY to (a.sky to a.skyActive),
                 CircleAltitudeBand.GREEN to (a.green to a.greenActive),
                 CircleAltitudeBand.AMBER to (a.amber to a.amberActive),
                 CircleAltitudeBand.RED to (a.red to a.redActive),
