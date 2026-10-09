@@ -2321,6 +2321,19 @@ test("visual contracts still fail on unknown palette and asset refs", () => {
   }), /uses missing palette token/);
 });
 
+test("a ramp says where its bands start and which edge is strong, and every theme agrees", () => {
+  const ramp = paletteVariant.ramps[0];
+  const variant = (over: object, id = "default") => ({ ...paletteVariant, id, ramps: [{ ...ramp, ...over }] });
+  assert.doesNotThrow(() => definePalette([variant({ strongEdge: "low", travelFrom: 0.5 })] as const));
+  assert.throws(() => definePalette([variant({ travelFrom: 1 })] as const), /starts its bands at 1/);
+  assert.throws(() => definePalette([variant({ travelFrom: -0.1 })] as const), /starts its bands at -0.1/);
+  assert.throws(() => definePalette([variant({ strongEdge: "middle" })] as never), /invalid strong edge 'middle'/);
+  // a retuned theme may change lightness and chroma, never where the scale starts or which way it runs
+  assert.throws(() => definePalette([variant({ travelFrom: 0.5 }), variant({}, "steel")] as const), /palette 'steel' changes ramp structure/);
+  assert.throws(() => definePalette([variant({ strongEdge: "low" }), variant({}, "steel")] as const), /palette 'steel' changes ramp structure/);
+  assert.doesNotThrow(() => definePalette([variant({}), variant({ strongEdge: "high", travelFrom: 0 }, "steel")] as const));
+});
+
 test("decision tables reach the product IR and its JSON only when declared", () => {
   assert.equal("decisionTables" in fixture(), false);
   const table = defineDecisionTable({
