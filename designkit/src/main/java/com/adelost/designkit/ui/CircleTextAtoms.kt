@@ -74,13 +74,15 @@ fun CircleText(
     /** Wrap into lines of even length instead of filling each line first, so
      *  a centred sentence never leaves one word alone on its last line. */
     balancedLines: Boolean = false,
+    /** A value, count, date or time: set in [GraphiteType.Numerals] instead of the sans. */
+    numerals: Boolean = false,
 ) {
     val layouts = LocalCircleTextLayouts.current
     BasicText(
         text = text,
         modifier = modifier,
         style = circleTextStyle(color, fontSizeSp, fontWeight, letterSpacingSp,
-            textAlign, tabularNumerals, lineHeightSp).let {
+            textAlign, tabularNumerals, lineHeightSp, numerals).let {
             if (balancedLines) it.copy(lineBreak = BALANCED_LINES) else it
         },
         maxLines = maxLines,
@@ -101,9 +103,10 @@ internal fun circleTextStyle(
     textAlign: TextAlign? = null,
     tabularNumerals: Boolean = false,
     lineHeightSp: Float? = null,
+    numerals: Boolean = false,
 ): TextStyle = TextStyle(
             color = color,
-            fontFamily = GraphiteType.Sans,
+            fontFamily = if (numerals) GraphiteType.Numerals else GraphiteType.Sans,
             fontSize = circleFixedSp(fontSizeSp),
             fontWeight = fontWeight,
             // Do not call circleFixedSp(0): zero means "unspecified", while
@@ -147,6 +150,8 @@ fun CircleFittedText(
     tabularNumerals: Boolean = false,
     lineHeightSp: Float? = null,
     textAlign: TextAlign? = null,
+    /** A value, count, date or time: set in [GraphiteType.Numerals] instead of the sans. */
+    numerals: Boolean = false,
 ) {
     var sizeSp by remember(text, fontSizeSp, maxLines) { mutableFloatStateOf(fontSizeSp) }
     CircleText(
@@ -161,6 +166,7 @@ fun CircleFittedText(
         tabularNumerals = tabularNumerals,
         lineHeightSp = lineHeightSp,
         modifier = modifier,
+        numerals = numerals,
         onTextLayout = { result ->
             if (result.hasVisualOverflow && sizeSp > minFontSizeSp) {
                 sizeSp = (sizeSp - shrinkStepSp).coerceAtLeast(minFontSizeSp)
