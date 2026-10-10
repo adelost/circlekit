@@ -12,6 +12,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 
 /**
@@ -40,13 +41,17 @@ fun CircleResponsiveSurface(
             CircleUiProfiles.phoneProfileFor(surface.surfaceClass)
         }
         CompositionLocalProvider(LocalCircleSurfaceLayout provides surface) {
-            Box(
-                modifier = Modifier
-                    .widthIn(max = surface.contentMaxWidthDp.dp)
-                    .fillMaxSize()
-                    .safeDrawingPadding(),
-            ) {
-                content(profile)
+            // The phone's own density is the surface's: a window over it is drawn at the phone's scale, even when
+            // it is opened from a component that scales its subtree.
+            ProvideCircleSurfaceDensity(LocalDensity.current) {
+                Box(
+                    modifier = Modifier
+                        .widthIn(max = surface.contentMaxWidthDp.dp)
+                        .fillMaxSize()
+                        .safeDrawingPadding(),
+                ) {
+                    content(profile)
+                }
             }
         }
     }

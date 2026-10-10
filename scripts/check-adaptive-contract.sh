@@ -181,6 +181,32 @@ if grep -q 'detectTransformGestures' "$RENDER_GESTURES/PagerMapTransform.kt"; th
   fail "pager transform forked back to detectTransformGestures"
 fi
 
+# --- one window: a window over a surface draws at the surface's scale -------
+# Skyvw 2026-10-09/10: a menu window dropped the face's scale (60 % of the page
+# at 320 dp), and then took its caller's (twice the phone, opened from inside
+# the dial). A new Compose window gives its content the platform's density, so
+# each host records the surface's density through ProvideCircleSurfaceDensity
+# and CircleWindow gives that one to the window
+# (AWindowKeepsItsSurfaceScaleTest). No shared module opens a window another
+# way, and no host gives its tree a density the window cannot see.
+WINDOW="$DESIGN/CircleWindow.kt"
+[ -f "$WINDOW" ] || fail "the one window is missing: $WINDOW (renamed? point this gate at its replacement)"
+RAW_WINDOWS=$(grep -rEn 'androidx\.compose\.ui\.window\.|androidx\.compose\.material3?\.(AlertDialog|BasicAlertDialog|ModalBottomSheet|DropdownMenu)|androidx\.wear\.compose\.material3?\.dialog\.' \
+  designkit/src/main ringkit/src/main renderkit/src/main servicekit/src/main releasekit/src/main \
+  releasekit-ui/src/main bddkit/src/main studio-debug-android/src/main \
+  | grep -v "^$WINDOW:" | grep -vE ':[0-9]+:[[:space:]]*(\*|//)' || true)
+if [ -n "$RAW_WINDOWS" ]; then
+  echo "$RAW_WINDOWS" >&2
+  fail "a shared module opens a window outside CircleWindow; use CircleWindow, which keeps the surface's scale"
+fi
+for host in "$DESIGN/CircleHostPreview.kt" "$DESIGN/CircleResponsiveSurface.kt"; do
+  grep -q 'ProvideCircleSurfaceDensity(' "$host" \
+    || fail "$host no longer records its surface's density for CircleWindow"
+  if grep -q 'LocalDensity provides' "$host"; then
+    fail "$host gives its tree a density outside ProvideCircleSurfaceDensity; a CircleWindow over it would draw at another scale"
+  fi
+done
+
 echo "ok    adaptive contract holds: 3 surface classes, 192dp canon, atomScale 1,"
 echo "      one renderer, one clip boundary, declarative viewports, pure modules,"
-echo "      one atom per shape, RingScreen cases $SCREEN_CASES (baseline $SCREEN_CASE_BASELINE)"
+echo "      one atom per shape, one window, RingScreen cases $SCREEN_CASES (baseline $SCREEN_CASE_BASELINE)"
