@@ -124,7 +124,10 @@ internal fun circleTextStyle(
         )
 
 /** How far [CircleFittedText] shrinks by default before it ellipsises, as a share of its design size. */
-internal const val CIRCLE_FITTED_TEXT_MIN_SCALE = 0.75f
+const val CIRCLE_FITTED_TEXT_MIN_SCALE = 0.75f
+
+/** One step of a label's shrink toward [CIRCLE_FITTED_TEXT_MIN_SCALE], as a share of its design size. */
+const val CIRCLE_FITTED_TEXT_SCALE_STEP = 0.05f
 
 /**
  * Text that stays whole: renders at [fontSizeSp] and steps down as far as

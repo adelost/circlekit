@@ -8,6 +8,10 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.BasicText
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -17,6 +21,7 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
@@ -126,11 +131,15 @@ internal fun CircleIconRingFrame(
                 )
             }
         }
+        // A word stays whole: a one-word label wider than its cell broke as "RECORDIN / G" under its circle
+        // (Skyvw SETTINGS, 2026-10-09). The label steps down to CircleFittedText's floor before a word may
+        // break or ellipsise, the same rule that keeps row titles whole.
+        var labelScale by remember(label, labelSize) { mutableFloatStateOf(1f) }
         BasicText(
             text = label,
             style = TextStyle(
                 color = if (enabled) RingTokens.Dim else RingTokens.Off,
-                fontSize = fixedCircleUiSp(labelSize.value, fontScale).sp,
+                fontSize = fixedCircleUiSp(labelSize.value * labelScale, fontScale).sp,
                 fontFamily = fontFamily,
                 fontWeight = FontWeight.Bold,
                 letterSpacing = 1.sp,
@@ -138,6 +147,12 @@ internal fun CircleIconRingFrame(
             ),
             maxLines = 2,
             overflow = TextOverflow.Ellipsis,
+            onTextLayout = { layout ->
+                val tooBig = layout.hasVisualOverflow || layout.breaksAWord(label)
+                if (tooBig && labelScale > CIRCLE_FITTED_TEXT_MIN_SCALE) {
+                    labelScale = (labelScale - CIRCLE_FITTED_TEXT_SCALE_STEP).coerceAtLeast(CIRCLE_FITTED_TEXT_MIN_SCALE)
+                }
+            },
             modifier = Modifier
                 .padding(top = 4.dp)
                 .then(
@@ -172,3 +187,11 @@ internal fun CircleIconRingFrame(
         }
     }
 }
+
+/** Whether a line ends inside a word: two letters meet at the break, so the word was cut in two. */
+internal fun TextLayoutResult.breaksAWord(text: String): Boolean =
+    (0 until lineCount - 1).any { line ->
+        val end = getLineEnd(line)
+        end in 1 until text.length && !text[end - 1].isWhitespace() && !text[end].isWhitespace() &&
+            text[end - 1] != '-'
+    }
