@@ -157,18 +157,21 @@ private fun CircleWatchExactSurface(
         val canonScale = faceSide.value / CircleUiProfiles.CANON_ROUND_CANVAS_DP
         val hostDensity = LocalDensity.current
         Box(Modifier.size(faceSide).roundFaceClip()) {
-            CompositionLocalProvider(
-                LocalDensity provides Density(
+            ProvideCircleSurfaceDensity(
+                Density(
                     density = hostDensity.density * canonScale,
                     fontScale = hostDensity.fontScale,
                 ),
-                LocalCircleSurfaceLayout provides resolveCircleSurfaceLayout(
-                    shortSideDp = CircleUiProfiles.CANON_ROUND_CANVAS_DP,
-                    round = true,
-                ),
-                LocalCircleFaceShortSideDp provides CircleUiProfiles.CANON_ROUND_CANVAS_DP,
             ) {
-                content(CircleUiProfiles.WatchCanonical)
+                CompositionLocalProvider(
+                    LocalCircleSurfaceLayout provides resolveCircleSurfaceLayout(
+                        shortSideDp = CircleUiProfiles.CANON_ROUND_CANVAS_DP,
+                        round = true,
+                    ),
+                    LocalCircleFaceShortSideDp provides CircleUiProfiles.CANON_ROUND_CANVAS_DP,
+                ) {
+                    content(CircleUiProfiles.WatchCanonical)
+                }
             }
         }
         if (
