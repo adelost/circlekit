@@ -105,6 +105,7 @@ internal val PORTABLE_RING_ICON_CATALOG = listOf(
     RingIcons.Play,
     RingIcons.Pause,
     RingIcons.Phone,
+    RingIcons.Search,
 )
 
 internal val PORTABLE_COMPOSITE_ICON_STYLES: Map<String, CircleIconStyle> by lazy { mapOf(

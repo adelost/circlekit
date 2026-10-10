@@ -94,6 +94,7 @@ export const RING_ICON_ASSETS = [
   {"id":"play","viewport":{"width":24,"height":24},"paths":[{"kind":"fill","pathData":"M8.2 5.1a1 1 0 0 1 1.5 -0.9l10.2 6.9a1 1 0 0 1 0 1.8L9.7 19.8a1 1 0 0 1 -1.5 -0.9Z","fillRule":"nonzero"}]},
   {"id":"pause","viewport":{"width":24,"height":24},"paths":[{"kind":"fill","pathData":"M6.8 5h3.4a0.6 0.6 0 0 1 0.6 0.6v12.8a0.6 0.6 0 0 1 -0.6 0.6H6.8a0.6 0.6 0 0 1 -0.6 -0.6V5.6a0.6 0.6 0 0 1 0.6 -0.6Z","fillRule":"nonzero"},{"kind":"fill","pathData":"M13.8 5h3.4a0.6 0.6 0 0 1 0.6 0.6v12.8a0.6 0.6 0 0 1 -0.6 0.6h-3.4a0.6 0.6 0 0 1 -0.6 -0.6V5.6a0.6 0.6 0 0 1 0.6 -0.6Z","fillRule":"nonzero"}]},
   {"id":"phone","viewport":{"width":24,"height":24},"paths":[{"kind":"fill","pathData":"M8.5 3.5h7A1.5 1.5 0 0 1 17 5v14a1.5 1.5 0 0 1 -1.5 1.5h-7A1.5 1.5 0 0 1 7 19V5a1.5 1.5 0 0 1 1.5 -1.5ZM10.4 17.6h3.2v1.1h-3.2Z","fillRule":"evenodd"}]},
+  {"id":"search","viewport":{"width":24,"height":24},"paths":[{"kind":"stroke","pathData":"M10.5 4.4a6.1 6.1 0 1 0 0.001 0Z","strokeWidth":2.8},{"kind":"stroke","pathData":"M15.2 15.2l4.8 4.8","strokeWidth":3.4}]},
 ] as const;
 
 /** WHAT: Defines the immutable catalog identity consumed by ProductSpec.
