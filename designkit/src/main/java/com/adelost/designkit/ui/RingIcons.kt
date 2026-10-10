@@ -137,4 +137,5 @@ object RingIcons {
     val Play: ImageVector by lazy { glyph("play") { fill("M8.2 5.1a1 1 0 0 1 1.5 -0.9l10.2 6.9a1 1 0 0 1 0 1.8L9.7 19.8a1 1 0 0 1 -1.5 -0.9Z", PathFillType.NonZero) } }
     val Pause: ImageVector by lazy { glyph("pause") { fill("M6.8 5h3.4a0.6 0.6 0 0 1 0.6 0.6v12.8a0.6 0.6 0 0 1 -0.6 0.6H6.8a0.6 0.6 0 0 1 -0.6 -0.6V5.6a0.6 0.6 0 0 1 0.6 -0.6Z", PathFillType.NonZero); fill("M13.8 5h3.4a0.6 0.6 0 0 1 0.6 0.6v12.8a0.6 0.6 0 0 1 -0.6 0.6h-3.4a0.6 0.6 0 0 1 -0.6 -0.6V5.6a0.6 0.6 0 0 1 0.6 -0.6Z", PathFillType.NonZero) } }
     val Phone: ImageVector by lazy { glyph("phone") { fill("M8.5 3.5h7A1.5 1.5 0 0 1 17 5v14a1.5 1.5 0 0 1 -1.5 1.5h-7A1.5 1.5 0 0 1 7 19V5a1.5 1.5 0 0 1 1.5 -1.5ZM10.4 17.6h3.2v1.1h-3.2Z", PathFillType.EvenOdd) } }
+    val Search: ImageVector by lazy { glyph("search") { stroke("M10.5 4.4a6.1 6.1 0 1 0 0.001 0Z", 2.8f); stroke("M15.2 15.2l4.8 4.8", 3.4f) } }
 }
