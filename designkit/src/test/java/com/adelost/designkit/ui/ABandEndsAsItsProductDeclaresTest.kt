@@ -63,6 +63,14 @@ class ABandEndsAsItsProductDeclaresTest {
         assertFalse("the dot grew past its own radius", dot.has(c, 1000f, 6.5f) || dot.has(c, 1000f, -6.5f))
     }
 
+    @Test
+    fun `a band of a whole turn is the whole ring`() {
+        val c = Offset(2000f, 2000f)
+        val ring = circleArcBandPath(c, 900f, 1100f, -90f, 360f, CircleBandEnds.SQUARE, CircleBandEnds.SQUARE)
+        assertTrue("the whole ring lost part of its turn", listOf(-90f, 0f, 90f, 180f).all { ring.has(c, 1000f, it) })
+        assertFalse("the whole ring filled its hole", ring.has(c, 800f, 0f) || ring.has(c.x, c.y))
+    }
+
     private fun Path.has(x: Float, y: Float): Boolean {
         val region = Region()
         region.setPath(asAndroidPath(), Region(-5000, -5000, 5000, 5000))

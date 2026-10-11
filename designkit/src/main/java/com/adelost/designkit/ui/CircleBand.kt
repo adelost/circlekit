@@ -5,6 +5,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.geometry.RoundRect
 import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.PathFillType
 import kotlin.math.abs
 import kotlin.math.cos
 import kotlin.math.sin
@@ -32,7 +33,7 @@ fun circleBarPath(left: Float, top: Float, right: Float, height: Float, ends: Ci
 /**
  * A band of a ring between [inner] and [outer], from [startDeg] through [sweepDeg] (0 is three o'clock, clockwise),
  * as one filled shape that spans exactly those angles, with each end as given. A band shorter than its two round
- * ends is a dot.
+ * ends is a dot. A band of a whole turn is the ring itself: it has no ends.
  *
  * One shape rather than a stroke and two circles: a translucent band would show a darker lens wherever a circle
  * overlaps the stroke.
@@ -46,6 +47,7 @@ fun circleArcBandPath(
     startEnd: CircleBandEnds,
     endEnd: CircleBandEnds,
 ): Path {
+    if (abs(sweepDeg) >= FULL_TURN_DEG) return wholeRing(center, inner, outer)
     val capDeg = Math.toDegrees(((outer - inner) / 2f / ((inner + outer) / 2f)).toDouble()).toFloat()
     val inset = minOf(capDeg, abs(sweepDeg) / 2f)
     val sign = if (sweepDeg >= 0f) 1f else -1f
@@ -80,6 +82,15 @@ private fun bandWithCaps(
     }
     close()
 }
+
+/** The ring between [inner] and [outer]. An arc of a whole turn draws nothing: a path takes its sweep mod 360. */
+private fun wholeRing(center: Offset, inner: Float, outer: Float): Path = Path().apply {
+    fillType = PathFillType.EvenOdd
+    addOval(Rect(center, outer))
+    addOval(Rect(center, inner))
+}
+
+private const val FULL_TURN_DEG = 360f
 
 private fun pointAt(center: Offset, radius: Float, deg: Float): Offset {
     val rad = Math.toRadians(deg.toDouble())
