@@ -19,6 +19,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
+import com.adelost.designkit.ui.circleScrollPosition
 
 /**
  * Rectangular host translation of [SkyvwListSpec]. The items remain the exact
@@ -57,7 +58,8 @@ fun SkyvwLinearListHost(
                     contentMaxWidthDp?.let {
                         Modifier.widthIn(max = it.dp).fillMaxWidth().fillMaxHeight()
                     } ?: Modifier.fillMaxSize(),
-                ),
+                )
+                .circleScrollPosition(listState),
             contentPadding = PaddingValues(
                 start = spec.policy.paddingHorizontalDp.dp,
                 end = spec.policy.paddingHorizontalDp.dp,

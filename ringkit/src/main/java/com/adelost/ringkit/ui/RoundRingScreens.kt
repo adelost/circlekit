@@ -17,7 +17,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.State
@@ -119,7 +118,7 @@ internal fun HubScreen(s: RingScreen.Hub, nav: RingNavigator) {
     val grid = MenuGridCatalog.RoundStatus
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = Modifier.fillMaxSize().verticalScroll(scrollState).rotaryScroll(scrollState),
+        modifier = Modifier.fillMaxSize().circleVerticalScroll(scrollState).rotaryScroll(scrollState),
     ) {
         ScreenTitle(s.title)
         Spacer(Modifier.height(6.dp))
@@ -176,7 +175,7 @@ internal fun DetailScreen(s: RingScreen.Detail) {
         val readingWidth = Modifier.fillMaxWidth().padding(start = insets.start, end = insets.end)
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
-            modifier = Modifier.fillMaxSize().verticalScroll(scrollState).rotaryScroll(scrollState),
+            modifier = Modifier.fillMaxSize().circleVerticalScroll(scrollState).rotaryScroll(scrollState),
         ) {
             ScreenTitle(s.title, s.icon)
             Spacer(Modifier.height(10.dp))
@@ -222,7 +221,7 @@ internal fun LauncherScreen(
     val scrollState = remember(s) { ScrollState(0) }
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = Modifier.fillMaxSize().verticalScroll(scrollState).rotaryScroll(scrollState),
+        modifier = Modifier.fillMaxSize().circleVerticalScroll(scrollState).rotaryScroll(scrollState),
     ) {
         ScreenTitle(s.title)
         Spacer(Modifier.height(8.dp))
@@ -287,7 +286,7 @@ internal fun RowsScreen(
         ).dp
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
-            modifier = Modifier.fillMaxSize().verticalScroll(scrollState).rotaryScroll(scrollState),
+            modifier = Modifier.fillMaxSize().circleVerticalScroll(scrollState).rotaryScroll(scrollState),
         ) {
             // The title sits at the SAME height as on every other menu screen,
             // and the rows start below whichever comes lower.

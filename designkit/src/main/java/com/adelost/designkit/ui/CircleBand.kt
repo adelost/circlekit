@@ -1,5 +1,6 @@
 package com.adelost.designkit.ui
 
+import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
@@ -21,6 +22,13 @@ import kotlin.math.sin
  * A round end is pulled in by its own radius, so no band grows longer than its value.
  */
 enum class CircleBandEnds { ROUND, SQUARE }
+
+/**
+ * The ends the product declared, for the bands the kit's own components draw, such as the scroll position's arc. The
+ * product's host provides its one choice here (Skyvw: `ui.band`), so a kit band never ends differently from the
+ * product's own.
+ */
+val LocalCircleBandEnds = staticCompositionLocalOf { CircleBandEnds.ROUND }
 
 /** A bar from [left] to [right], [height] tall, with [ends] on both ends; empty when it has no length. */
 fun circleBarPath(left: Float, top: Float, right: Float, height: Float, ends: CircleBandEnds): Path = Path().apply {

@@ -81,6 +81,8 @@ dependencies {
     implementation(libs.kotlinx.coroutines.core)
 
     testImplementation(libs.junit)
+    // The scroll position law mounts the phone's list host beside the ring screens (EveryScrollShowsWhereItIsTest).
+    testImplementation(project(":renderkit"))
     // Row 225: the control Mattias pressed is a RingChoiceRow, so the case that proves it obeys
     // mounts one, on the JVM.
     testImplementation(libs.robolectric)

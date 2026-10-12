@@ -18,7 +18,6 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.State
 import androidx.compose.runtime.collectAsState
@@ -155,7 +154,7 @@ private fun PhoneHubScreen(
     val design = phoneSurfaceDesign()
     val grid = design.hubGrid
     Column(
-        modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()),
+        modifier = Modifier.fillMaxSize().circleVerticalScroll(rememberScrollState()),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         PhoneScreenHeader(screen.title, back, backLabel)
@@ -202,7 +201,7 @@ private fun PhoneDetailScreen(
         modifier = Modifier
             .fillMaxSize()
             .widthIn(max = 560.dp)
-            .verticalScroll(rememberScrollState()),
+            .circleVerticalScroll(rememberScrollState()),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         PhoneScreenHeader(screen.title, back, backLabel, screen.icon)
@@ -244,7 +243,7 @@ private fun PhoneLauncherScreen(
         gridRole,
     )
     Column(
-        modifier = Modifier.fillMaxSize().verticalScroll(scrollState).rotaryScroll(scrollState),
+        modifier = Modifier.fillMaxSize().circleVerticalScroll(scrollState).rotaryScroll(scrollState),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         PhoneScreenHeader(screen.title, back, backLabel)
@@ -280,7 +279,7 @@ private fun PhoneRowsScreen(
     val listState = remember(screen) { androidx.compose.foundation.lazy.LazyListState() }
     LazyColumn(
         state = listState,
-        modifier = Modifier.fillMaxSize().widthIn(max = 640.dp),
+        modifier = Modifier.fillMaxSize().widthIn(max = 640.dp).circleScrollPosition(listState),
         contentPadding = PaddingValues(bottom = 28.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
