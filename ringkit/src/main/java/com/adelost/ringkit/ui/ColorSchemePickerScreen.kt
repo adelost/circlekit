@@ -18,7 +18,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -46,6 +45,7 @@ import com.adelost.designkit.ui.GraphiteTokens
 import com.adelost.designkit.ui.MenuDesign
 import com.adelost.designkit.ui.RingIcons
 import com.adelost.designkit.ui.CircleActionTiming
+import com.adelost.designkit.ui.circleVerticalScroll
 import com.adelost.designkit.ui.CircleColorScheme
 import com.adelost.designkit.ui.CircleColorSchemes
 import com.adelost.designkit.ui.CircleColorTheme
@@ -85,7 +85,7 @@ internal fun PhoneColorPickerScreen(
 ) {
     val selected = screen.selected.collectAsState(initial = CircleColorTheme.SEA_GLASS).value
     Column(
-        modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()),
+        modifier = Modifier.fillMaxSize().circleVerticalScroll(rememberScrollState()),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         PhoneScreenHeader(screen.title, onBack, backLabel)
@@ -338,7 +338,7 @@ internal fun PhoneDialPreviewScreen(
     backLabel: String,
 ) {
     Column(
-        modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()),
+        modifier = Modifier.fillMaxSize().circleVerticalScroll(rememberScrollState()),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         PhoneScreenHeader(screen.title, onBack, backLabel)
