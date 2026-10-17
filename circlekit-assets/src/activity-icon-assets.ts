@@ -29,13 +29,21 @@ export const ACTIVITY_ICON_ASSETS = [
     stroke("M9 14.5V18L13 20L15.8 19M14 15.8V19L18 21L21 19.5", 2),
     stroke("M10.5 16.8L14 17.8M14 16.5L17 14.8", 1.6),
   ] },
+  // From above, where the wings show: the arm wings end at a notch by the hips and the leg wing is one piece.
   { id: "wingsuit", viewport: { width: 24, height: 24 }, paths: [
-    head(12, 3.4, 1.8),
-    fill("M10 6H14L21 9L20 12L15 15L16.3 21H13.3L12 18.7L10.7 21H7.7L9 15L4 12L3 9Z"),
+    head(12, 3.3, 2.05),
+    fill("M12 6Q13 6 13.8 6.5L21.8 10Q22.6 10.6 21.8 11.4Q17.6 11.3 15.6 13.6Q16.4 14.4 16 15.2L15.9 21Q12 18.6 8.1 21L8 15.2Q7.6 14.4 8.4 13.6Q6.4 11.3 2.2 11.4Q1.4 10.6 2.2 10L10.2 6.5Q11 6 12 6Z"),
   ] },
   { id: "tracking", viewport: { width: 24, height: 24 }, paths: [
     head(19, 16, 1.8),
     stroke("M16.2 14.6L11 10.8L5 3.5M11 10.8L3 7M14.4 13.4L8 15M14.4 13.4L15 7", 2.6),
+  ] },
+  // Angle flying from the side: head first down a 45 degree slope, legs apart, an arm swept back.
+  { id: "angle", viewport: { width: 24, height: 24 }, paths: [
+    head(18.35, 17.3, 2.35),
+    stroke("M14.6 13.9L11.6 11.2", 4.4),
+    stroke("M11.6 11.2L4.6 6.8M11.6 11.2L6.8 4.4", 3.3),
+    stroke("M14.6 13.9L10.2 14.6", 3.1),
   ] },
   { id: "canopy-swoop", viewport: { width: 24, height: 24 }, paths: [
     fill("M5 8L6 4Q14 0 22 3L21 7Q13 4 5 8Z"),
