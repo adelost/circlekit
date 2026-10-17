@@ -1,6 +1,5 @@
 package com.adelost.designkit.ui
 
-import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -18,7 +17,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.clearAndSetSemantics
@@ -45,7 +43,6 @@ internal fun CircleIconRingFrame(
     fontFamily: FontFamily?,
     labelSize: TextUnit,
     centerValue: String?,
-    contourColor: Color?,
     iconRotationDegrees: Float,
     choiceState: CircleChoiceState?,
     sub: String?,
@@ -53,8 +50,11 @@ internal fun CircleIconRingFrame(
     gestureModifier: Modifier,
     semanticColor: Color? = null,
     suggested: Boolean = false,
+    centerValueColor: Color? = null,
 ) {
     val fontScale = LocalDensity.current.fontScale
+    // One C disc for every ring, a data source's included (style C, Mattias 2026-10-17): the kind's ground and edge
+    // and the icon in its kind. A reading's state is [centerValueColor] and sits on the value, never on the edge.
     val look = circleDiscLook(operable = true, active = if (enabled) active else false, tones = circleAccentTones(accent))
     Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = modifier) {
         Box(
@@ -64,31 +64,18 @@ internal fun CircleIconRingFrame(
                 .then(gestureModifier),
             contentAlignment = Alignment.Center,
         ) {
-            if (contourColor != null) {
-                Canvas(Modifier.size(diameter)) {
-                    drawCircle(
-                        color = circleSuggestedContour(contourColor, suggested),
-                        radius = size.minDimension / 2f - 2.dp.toPx(),
-                        style = Stroke(width = RingMetrics.StrokeWidth.toPx()),
-                    )
-                }
-            } else {
-                Box(
-                    Modifier
-                        .size(diameter)
-                        .background(look.ground, CircleShape)
-                        .circleRingContour(color = requireNotNull(look.contour), suggested = suggested),
-                )
-            }
+            Box(
+                Modifier
+                    .size(diameter)
+                    .background(look.ground, CircleShape)
+                    .circleRingContour(color = requireNotNull(look.contour), suggested = suggested),
+            )
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 CircleStyledIcon(
                     style = ringIconStyle(icon, accent),
                     contentDescription = label.takeUnless { LocalActionParentOwnsRowCopy.current },
                     strength = if (!enabled || active == false) CircleAccentStrength.INACTIVE else CircleAccentStrength.ACTIVE,
-                    tintOverride = when {
-                        centerValue != null -> RingTokens.Ink
-                        else -> semanticColor
-                    },
+                    tintOverride = semanticColor,
                     modifier = Modifier
                         .size(
                             diameter * if (centerValue != null) {
@@ -103,7 +90,7 @@ internal fun CircleIconRingFrame(
                     BasicText(
                         text = value,
                         style = TextStyle(
-                            color = RingTokens.Ink,
+                            color = centerValueColor ?: RingTokens.Ink,
                             fontSize = fixedCircleUiSp(MenuDesign.statValueSize.value, fontScale).sp,
                             fontFamily = fontFamily,
                             fontWeight = FontWeight.Black,

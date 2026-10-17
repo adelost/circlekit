@@ -303,9 +303,9 @@ fun CircleIconRing(
     /** Optional value rendered under the icon. Data-source rings use this
      * variant instead of maintaining a second ring/label implementation. */
     centerValue: String? = null,
-    /** Optional semantic contour (for example source health). Navigation
-     * rings keep deriving their contour from [accent] and [active]. */
-    contourColor: Color? = null,
+    /** The state of [centerValue] (for example source health): the scale's colour on the value. The disc and the
+     * icon keep the ring's kind, so a state has no other way onto a ring (style C). Null reads as ink. */
+    centerValueColor: Color? = null,
     iconRotationDegrees: Float = 0f,
     /** Finite-state position for a cycling action. Boolean state still lives
      * in [active]; this compact rail/dot mark distinguishes ordered choices. */
@@ -344,7 +344,7 @@ fun CircleIconRing(
             fontFamily = fontFamily,
             labelSize = labelSize,
             centerValue = centerValue,
-            contourColor = contourColor,
+            centerValueColor = centerValueColor,
             iconRotationDegrees = iconRotationDegrees,
             choiceState = choiceState,
             sub = sub,
@@ -406,7 +406,6 @@ fun CirclePressIconRing(
         fontFamily = fontFamily,
         labelSize = labelSize,
         centerValue = centerValue,
-        contourColor = null,
         iconRotationDegrees = 0f,
         choiceState = null,
         sub = sub,

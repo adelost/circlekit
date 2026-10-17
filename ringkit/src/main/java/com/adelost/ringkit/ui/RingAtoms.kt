@@ -84,8 +84,9 @@ const val DELIBERATE_CHANGE_HOLD_MS = MenuDesign.holdDeliberateMs
  */
 
 /**
- * A data source as a mini-ring: icon + ONE value + the freshness ring.
- * The centre always shows the VALUE; age is the ring colour's job.
+ * A data source as a mini-ring: icon + ONE value, and the value wears the source's health.
+ * A C disc like every other (style C, Mattias 2026-10-17): the disc and the icon speak the source's kind and the
+ * health is the scale's colour on the value. A source that is off is an off disc, its value dimmed text.
  */
 @Composable
 fun StatRing(
@@ -98,16 +99,18 @@ fun StatRing(
     modifier: Modifier = Modifier,
     diameter: Dp = MenuDesign.statRingDiameter,
 ) {
+    val off = health == Health.OFF
     CircleIconRing(
         icon = icon,
         label = label,
         onTap = onTap,
         modifier = modifier,
         diameter = diameter,
+        active = if (off) false else null,
         fontFamily = androidx.wear.compose.material.MaterialTheme.typography.caption2.fontFamily,
         labelSize = MenuDesign.statLabelSize,
         centerValue = value,
-        contourColor = health.ringColor(),
+        centerValueColor = if (off) RingTokens.Dim else health.stateColor(),
         iconRotationDegrees = iconRotationDeg,
     )
 }

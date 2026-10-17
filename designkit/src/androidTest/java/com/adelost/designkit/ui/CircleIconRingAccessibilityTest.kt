@@ -76,7 +76,6 @@ class CircleIconRingAccessibilityTest {
                 fontFamily = null,
                 labelSize = 9.5.sp,
                 centerValue = null,
-                contourColor = null,
                 iconRotationDegrees = 0f,
                 choiceState = null,
                 sub = SUB,
