@@ -63,15 +63,17 @@ data class CircleAltitudeColorScheme(
     val purple: Color,
     val purpleActive: Color,
     val approach: Color,
+    val approachActive: Color = approach,
 )
 
 /**
  * The altitude meanings a scheme colours, highest first. The band is the unit a
  * product asks for; a surface never names a pigment.
  *
- * APPROACH is the strip under the last decision height, and it is deliberately
- * one colour at both weights: it is the band that has to stay readable when
- * every decision above it has already been missed.
+ * APPROACH is the strip under the last decision height. The curated schemes
+ * give it one colour at both weights, so it stays readable when every decision
+ * above it has already been missed. A product whose scale dims every step may
+ * give its rest a dimmer tone than its front.
  */
 enum class CircleAltitudeBand { SKY, GREEN, AMBER, RED, PURPLE, APPROACH }
 
@@ -101,7 +103,7 @@ fun CircleAltitudeColorScheme.color(
         CircleAltitudeBand.AMBER -> if (rest) amber else amberActive
         CircleAltitudeBand.RED -> if (rest) red else redActive
         CircleAltitudeBand.PURPLE -> if (rest) purple else purpleActive
-        CircleAltitudeBand.APPROACH -> approach
+        CircleAltitudeBand.APPROACH -> if (rest) approach else approachActive
     }
 }
 

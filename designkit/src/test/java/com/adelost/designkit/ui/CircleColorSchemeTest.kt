@@ -94,7 +94,7 @@ class CircleColorSchemeTest {
                 CircleAltitudeBand.AMBER to (a.amber to a.amberActive),
                 CircleAltitudeBand.RED to (a.red to a.redActive),
                 CircleAltitudeBand.PURPLE to (a.purple to a.purpleActive),
-                CircleAltitudeBand.APPROACH to (a.approach to a.approach),
+                CircleAltitudeBand.APPROACH to (a.approach to a.approachActive),
             )
             assertEquals(CircleAltitudeBand.entries, named.map { it.first })
             named.forEach { (band, pigment) ->
@@ -109,6 +109,21 @@ class CircleColorSchemeTest {
                     a.color(band, CircleAltitudeWeight.ACTIVE),
                 )
             }
+        }
+    }
+
+    @Test
+    fun `a product that dims the approach reads its rest and its front apart`() {
+        val dimmed = CircleColorSchemes.default.altitude.copy(
+            approach = Color(0xFF6C91BB),
+            approachActive = Color.White,
+        )
+
+        assertEquals(Color(0xFF6C91BB), dimmed.color(CircleAltitudeBand.APPROACH, CircleAltitudeWeight.REST))
+        assertEquals(Color.White, dimmed.color(CircleAltitudeBand.APPROACH, CircleAltitudeWeight.ACTIVE))
+        // The curated schemes keep the strip one colour at both weights.
+        CircleColorSchemes.all.forEach { scheme ->
+            assertEquals("${scheme.theme}", scheme.altitude.approach, scheme.altitude.approachActive)
         }
     }
 
