@@ -17,8 +17,8 @@ export interface CircleTones {
 
 /** Optional tones a declaration states instead of deriving: white has no dimmed self that is not grey. */
 export interface CircleToneOverrides {
-  readonly dim?: string;
-  readonly ground?: string;
+  readonly dim?: string | undefined;
+  readonly ground?: string | undefined;
 }
 
 /** [strong]'s tones by the house rule, any of them stated instead by [overrides]. */

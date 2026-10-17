@@ -27,7 +27,7 @@ export * from "./saved-name-ledger.js";
 export * from "./stored-value-model.js";
 export {declaredSite} from './source-site.js';
 // defineProduct validates the asset catalog it receives; a product never defines one.
-export { definePalette, paletteTokenIds, validateProductIconRendererBindings,
+export { definePalette, flatStep, paletteTokenIds, validateProductIconRendererBindings,
   type PaletteTokenRef, type PortableAssetCatalog, type PortableAssetCatalogRef, type PortablePaletteVariant,
-  type PortableRamp, type PortableRampBand, type PortableVectorAsset, type PortableVectorPath, type ProductIconRef,
+  type PortableRamp, type PortableRampBand, type PortableToneColour, type PortableVectorAsset, type PortableVectorPath, type ProductIconRef,
   type ProductIconRendererBinding, type ProductPalette } from "./visual-model.js";

@@ -3,18 +3,20 @@ import type { KotlinEmissionOptions } from "../core/emission-options.js";
 import type { ProductIr } from "@v1d/product-spec";
 import type { ProductIconsNativeSymbols } from "./native-symbols.js";
 
-const nativeAccentByPaletteToken: Readonly<Record<string, string>> = {
-  "category.achievement": "ACHIEVEMENT",
-  "category.cloud": "CLOUD",
-  "category.cold": "COLD",
-  "category.rain": "RAIN",
-  "category.sky": "SKY",
-  "category.sun": "SUN",
-  "category.violet": "VIOLET",
+/**
+ * A palette token's native accent: a category is its own id (`category.head-down` is `HEAD_DOWN`), so a product's
+ * accent enum names its categories and nothing here has to learn a new one; the three statuses keep their names.
+ */
+const nativeAccentByStatus: Readonly<Record<string, string>> = {
   "status.caution": "CAUTION",
   "status.danger": "DANGER",
   "status.ok": "POSITIVE",
 };
+
+function nativeAccentOfToken(token: string): string | undefined {
+  if (token.startsWith("category.")) return token.slice("category.".length).toUpperCase().replaceAll("-", "_");
+  return nativeAccentByStatus[token];
+}
 
 /** Product semantics only; native geometry capability is attested separately. */
 export function emitProductIconsKotlin(
@@ -60,7 +62,7 @@ function nativeAccent(icon: { id: string; accent?: string; layers?: readonly unk
   }
   if (composite) return "COMPOSITE";
   if (icon.accent === undefined) return "NEUTRAL";
-  const accent = nativeAccentByPaletteToken[icon.accent];
+  const accent = nativeAccentOfToken(icon.accent);
   if (accent === undefined) {
     throw new Error(`product icon '${icon.id}' has no native accent projection for '${icon.accent}'`);
   }
