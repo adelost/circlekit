@@ -31,10 +31,11 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.wear.compose.material.Icon
 import androidx.wear.compose.material.Text
 import com.adelost.designkit.ui.circleResolvedTiming
 import com.adelost.designkit.ui.CircleActionCue
+import com.adelost.designkit.ui.CircleStyledIcon
+import com.adelost.designkit.ui.ringIconStyle
 import com.adelost.designkit.ui.CircleActionCueEvent
 import com.adelost.designkit.ui.LocalCircleActionCuePublisher
 import com.adelost.designkit.ui.MenuDesign
@@ -198,10 +199,10 @@ private fun RingExplanationCue(cue: CircleActionCue, onDismiss: () -> Unit) {
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier.widthIn(max = if (round) 150.dp else 340.dp).padding(horizontal = 12.dp),
     ) {
-        Icon(
-            imageVector = cue.icon,
+        // The icon wears its kind, as on its row (style C); the row's state goes on the value below, never here.
+        CircleStyledIcon(
+            style = ringIconStyle(cue.icon),
             contentDescription = cue.label,
-            tint = cue.semanticColor ?: RingTokens.Ink,
             modifier = Modifier.size(24.dp).rotate(cue.iconRotationDeg),
         )
         Text(

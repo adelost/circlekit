@@ -6,11 +6,13 @@ import android.view.View
 import androidx.activity.ComponentActivity
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.test.SemanticsNodeInteraction
 import androidx.compose.ui.test.junit4.AndroidComposeTestRule
 import com.adelost.designkit.ui.CircleAccent
 import com.adelost.designkit.ui.CircleAccentPalette
 import com.adelost.designkit.ui.CircleTones
 import kotlin.math.abs
+import kotlin.math.roundToInt
 
 /**
  * WHICH COLOUR A SURFACE PAINTS, READ OFF THE GLASS.
@@ -25,14 +27,21 @@ class CircleGlass(private val compose: AndroidComposeTestRule<*, ComponentActivi
     /**
      * The pixels within [within] of [color] on every channel: a stroke's or a glyph's core, never a blend at its edge.
      * A grey needs 0: text's anti-aliased edge runs from its grey to black and passes near every darker grey.
+     * [inside] limits the count to one node's bounds, for a colour another part of the surface also wears.
      */
-    fun count(color: Color, within: Int = NEAR): Int {
+    fun count(color: Color, within: Int = NEAR, inside: SemanticsNodeInteraction? = null): Int {
         compose.waitForIdle()
         val view = compose.activity.findViewById<View>(android.R.id.content)
         val bitmap = Bitmap.createBitmap(view.width, view.height, Bitmap.Config.ARGB_8888)
         view.draw(Canvas(bitmap))
-        val pixels = IntArray(bitmap.width * bitmap.height)
-        bitmap.getPixels(pixels, 0, bitmap.width, 0, 0, bitmap.width, bitmap.height)
+        val box = inside?.fetchSemanticsNode()?.boundsInRoot
+        val left = box?.left?.roundToInt()?.coerceAtLeast(0) ?: 0
+        val top = box?.top?.roundToInt()?.coerceAtLeast(0) ?: 0
+        val right = box?.right?.roundToInt()?.coerceAtMost(bitmap.width) ?: bitmap.width
+        val bottom = box?.bottom?.roundToInt()?.coerceAtMost(bitmap.height) ?: bitmap.height
+        if (right <= left || bottom <= top) return 0
+        val pixels = IntArray((right - left) * (bottom - top))
+        bitmap.getPixels(pixels, 0, right - left, left, top, right - left, bottom - top)
         val target = color.toArgb()
         return pixels.count { pixel -> CHANNELS.all { abs((pixel shr it and 0xFF) - (target shr it and 0xFF)) <= within } }
     }
