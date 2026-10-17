@@ -99,14 +99,9 @@ internal fun ScreenTitle(
             CircleStyledIcon(ringIconStyle(icon), contentDescription = null, modifier = Modifier.size(14.dp))
             Spacer(Modifier.width(6.dp))
         }
-        Text(
-            text = text,
-            color = RingTokens.Dim,
-            fontSize = 11.sp,
-            fontWeight = FontWeight.Bold,
-            letterSpacing = 3.sp,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
+        com.adelost.designkit.ui.CircleText(
+            text = text, role = com.adelost.designkit.ui.CircleTextRole.TITLE, color = RingTokens.Dim,
+            textAlign = androidx.compose.ui.text.style.TextAlign.Center,
         )
     }
 }
@@ -180,23 +175,21 @@ internal fun DetailScreen(s: RingScreen.Detail) {
         ) {
             ScreenTitle(s.title, s.icon)
             Spacer(Modifier.height(10.dp))
-            Text(text = hero, color = RingTokens.Ink, fontSize = 30.sp, fontWeight = FontWeight.Black,
-                textAlign = TextAlign.Center, modifier = readingWidth)
+            com.adelost.designkit.ui.CircleText(text = hero, role = com.adelost.designkit.ui.CircleTextRole.NUMBER,
+                color = RingTokens.Ink, textAlign = TextAlign.Center, modifier = readingWidth)
             // Supporting source information wraps inside that same stable band.
             if (sub.isNotEmpty()) {
-                Text(
-                    text = sub,
+                com.adelost.designkit.ui.CircleText(
+                    text = sub, role = com.adelost.designkit.ui.CircleTextRole.VALUE,
                     color = RingTokens.Dim,
-                    fontSize = 11.sp,
                     textAlign = TextAlign.Center,
                     modifier = readingWidth,
                 )
             }
             Spacer(Modifier.height(6.dp))
-            Text(
-                text = freshness,
+            com.adelost.designkit.ui.CircleText(
+                text = freshness, role = com.adelost.designkit.ui.CircleTextRole.NOTE,
                 color = health.stateColor(),
-                fontSize = 10.5.sp,
                 textAlign = TextAlign.Center,
                 modifier = readingWidth,
             )

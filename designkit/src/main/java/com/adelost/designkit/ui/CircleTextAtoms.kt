@@ -52,6 +52,7 @@ fun circleFixedSp(baseSp: Float): TextUnit {
  */
 val LocalCircleTextLayouts = staticCompositionLocalOf<((text: String, layout: TextLayoutResult) -> Unit)?> { null }
 
+@Deprecated("Local stage-1 adapter. Convert the consumer to CircleTextRole before publication.")
 @Composable
 fun CircleText(
     text: String,
@@ -123,29 +124,15 @@ internal fun circleTextStyle(
             platformStyle = PlatformTextStyle(includeFontPadding = false),
         )
 
-/** How far [CircleFittedText] shrinks by default before it ellipsises, as a share of its design size. */
-const val CIRCLE_FITTED_TEXT_MIN_SCALE = 0.75f
-
-/** One step of a label's shrink toward [CIRCLE_FITTED_TEXT_MIN_SCALE], as a share of its design size. */
-const val CIRCLE_FITTED_TEXT_SCALE_STEP = 0.05f
-
-/**
- * Text that stays whole: renders at [fontSizeSp] and steps down as far as
- * [minFontSizeSp] when the measured line would not fit, so a wide surface is
- * unaffected and a narrow one loses weight instead of letters. Below the
- * floor it ellipsises — an unreadable label is worse than an honest "…".
- *
- * This is the row-title mechanism promoted to a shared atom: labels that
- * ellipsised mid-word ("GREAT VISIBILI…") did so because only CircleRingRow
- * could reach the shrink (Mattias 2026-08-17: labels truncate mid-word).
- */
+/** Local-only source adapter for pages not converted until stage2. No fit or shrink policy. */
+@Deprecated("Local stage-1 adapter, no shrinking. Delete before publication.")
 @Composable
 fun CircleFittedText(
     text: String,
     color: Color,
     fontSizeSp: Float,
     modifier: Modifier = Modifier,
-    minFontSizeSp: Float = fontSizeSp * CIRCLE_FITTED_TEXT_MIN_SCALE,
+    minFontSizeSp: Float = fontSizeSp,
     shrinkStepSp: Float = 0.5f,
     fontWeight: FontWeight = FontWeight.Normal,
     letterSpacingSp: Float = 0f,
@@ -156,25 +143,12 @@ fun CircleFittedText(
     /** A value, count, date or time: set in [GraphiteType.Numerals] instead of the sans. */
     numerals: Boolean = false,
 ) {
-    var sizeSp by remember(text, fontSizeSp, maxLines) { mutableFloatStateOf(fontSizeSp) }
+    // Local-only staging adapter. It must leave with the last size-based consumer before publication.
     CircleText(
-        text = text,
-        color = color,
-        fontSizeSp = sizeSp,
-        fontWeight = fontWeight,
-        letterSpacingSp = letterSpacingSp,
-        textAlign = textAlign,
-        maxLines = maxLines,
-        overflow = TextOverflow.Ellipsis,
-        tabularNumerals = tabularNumerals,
-        lineHeightSp = lineHeightSp,
-        modifier = modifier,
-        numerals = numerals,
-        onTextLayout = { result ->
-            if (result.hasVisualOverflow && sizeSp > minFontSizeSp) {
-                sizeSp = (sizeSp - shrinkStepSp).coerceAtLeast(minFontSizeSp)
-            }
-        },
+        text = text, color = color, fontSizeSp = fontSizeSp, modifier = modifier,
+        fontWeight = fontWeight, letterSpacingSp = letterSpacingSp, textAlign = textAlign,
+        maxLines = maxLines, overflow = TextOverflow.Visible, tabularNumerals = tabularNumerals,
+        lineHeightSp = lineHeightSp, numerals = numerals,
     )
 }
 

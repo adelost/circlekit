@@ -34,7 +34,7 @@ object MenuDesign {
     /** Transient explanation affordance shown only on the last-touched row. */
     val rowInfoDiameter: Dp = 22.dp
     val rowInfoIconSize: Dp = 10.dp
-    val rowCenterValueSize: TextUnit = 7.5.sp
+    val rowCenterValueSize: TextUnit = CircleTextRole.NUMBER.watch.sp.sp
     val iconTextGap: Dp = 8.dp
     val roundMediaContentWidth: Dp = 112.dp
     /** One centred chord for round launcher grids and reading rows. */
@@ -45,24 +45,22 @@ object MenuDesign {
     val statRingDiameter: Dp = 46.dp
     /** The round STATUS hub's content column: two stat rings close enough to the centre that their labels fit the chord. */
     val roundStatusGridMaxWidth: Dp = 128.dp
-    val statValueSize: TextUnit = 12.sp
-    val statLabelSize: TextUnit = 6.5.sp
+    val statValueSize: TextUnit = CircleTextRole.NUMBER.watch.sp.sp
+    val statLabelSize: TextUnit = CircleTextRole.LABEL.watch.sp.sp
     val launcherDiameter: Dp = watchActionRingDiameter
     val cornerDiameter: Dp = watchActionRingDiameter
     val stepperIconSize: Dp = 10.dp
     val stepperIconGap: Dp = 3.dp
-    // 10 sp keeps "12.0 m/s" on one line inside the narrowed ROUND settings
-    // rows (36 dp insets leave a 60 dp value column; 12 sp wrapped mid-unit).
-    val stepperValueSize: TextUnit = 10.sp
+    // A reading keeps its role size. The adjustment page, not a smaller font, supplies its room.
+    val stepperValueSize: TextUnit = CircleTextRole.NUMBER.watch.sp.sp
 
-    /** Derived from the smallest supported watch, see [CircleGlanceLegibility]
-     *  (10 sp; was 11 sp before Mattias 2026-09-14 asked for smaller rows). */
-    val titleSize: TextUnit = CircleGlanceLegibility.rowTitleSp.sp
-    /** A row without an icon keeps its one-step larger identity (11 sp; was 12). */
-    val titleSizeNoIcon: TextUnit = (CircleGlanceLegibility.rowTitleSp + 1f).sp
-    val titleTracking: TextUnit = 0.2.sp
-    /** Derived like [titleSize] (9 sp; was 9.5 sp). */
-    val subSize: TextUnit = CircleGlanceLegibility.rowValueSp.sp
+    /** Legacy size readers use the role too until their local adapter is removed. */
+    val titleSize: TextUnit = CircleTextRole.NAME.watch.sp.sp
+    /** Icons do not change a name's role. */
+    val titleSizeNoIcon: TextUnit = CircleTextRole.NAME.watch.sp.sp
+    val titleTracking: TextUnit = (CircleTextRole.NAME.watch.sp * CircleTextRole.NAME.watch.trackingEm).sp
+    /** The state under a row's name. */
+    val subSize: TextUnit = CircleTextRole.VALUE.watch.sp.sp
 
     /**
      * Maximum authored label for the compact option rows on a 192 dp round

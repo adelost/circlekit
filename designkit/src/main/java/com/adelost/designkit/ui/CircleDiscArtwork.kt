@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.BasicText
@@ -88,20 +89,11 @@ fun fitCircleDiscText(
     measureWidthPx: (text: String, sizeSp: Float) -> Float,
 ): CircleDiscTextFit {
     require(availableWidthPx > 0f)
-    var primarySp = budget.maximumPrimarySp
-    while (true) {
-        val unitSp = primarySp * budget.unitScale
-        val primaryWidth = measureWidthPx(primaryValue, primarySp)
-        val unitWidth = unit?.takeIf(String::isNotBlank)?.let {
-            measureWidthPx(" ", unitSp) + measureWidthPx(it, unitSp)
-        } ?: 0f
-        val measured = primaryWidth + unitWidth
-        val fits = measured <= availableWidthPx
-        if (fits || primarySp <= budget.minimumPrimarySp) {
-            return CircleDiscTextFit(primarySp, unitSp, measured, fits)
-        }
-        primarySp = max(budget.minimumPrimarySp, primarySp - budget.stepSp)
-    }
+    val primarySp = CircleTextRole.NUMBER.watch.sp
+    val unitSp = CircleTextRole.NUMBER.watch.unitSp
+    val width = measureWidthPx(primaryValue, primarySp) +
+        (unit?.takeIf(String::isNotBlank)?.let { measureWidthPx(" $it", unitSp) } ?: 0f)
+    return CircleDiscTextFit(primarySp, unitSp, width, width <= availableWidthPx)
 }
 
 /**
@@ -144,73 +136,19 @@ fun CircleDiscArtwork(
     modifier: Modifier = Modifier,
     textBudget: CircleDiscTextBudget = CircleDiscTextBudget(maximumPrimarySp = 18f),
 ) {
-    val density = LocalDensity.current
-    val fontScale = density.fontScale
-    val measurer = rememberTextMeasurer()
     BoxWithConstraints(
         contentAlignment = Alignment.Center,
-        modifier = modifier
-            .clip(CircleShape)
-            .background(spec.background)
+        modifier = modifier.clip(CircleShape).background(spec.background)
             .circleRingContour(spec.secondaryRimColor ?: spec.contour),
     ) {
-        val containerWidthPx = with(density) { maxWidth.toPx() }
-        val containerHeightPx = with(density) { maxHeight.toPx() }
-        val fit = remember(
-            spec.primaryValue,
-            spec.unit,
-            containerWidthPx,
-            containerHeightPx,
-            textBudget,
-            fontScale,
-        ) {
-            fitCircleDiscTextForBounds(
-                primaryValue = spec.primaryValue,
-                unit = spec.unit,
-                containerWidthPx = containerWidthPx,
-                containerHeightPx = containerHeightPx,
-                budget = textBudget,
-                measureWidthPx = { text, sizeSp ->
-                    measurer.measure(
-                        text = AnnotatedString(text),
-                        style = TextStyle(
-                            fontFamily = GraphiteType.Sans,
-                            fontWeight = FontWeight.Bold,
-                            fontSize = fixedCircleUiSp(sizeSp, fontScale).sp,
-                            fontFeatureSettings = GraphiteType.TABULAR_NUMERALS,
-                        ),
-                        maxLines = 1,
-                    ).size.width.toFloat()
-                },
-            )
-        } ?: return@BoxWithConstraints
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            BasicText(
-                text = spec.primaryValue,
-                style = discTextStyle(spec.primaryColor, fit.primarySp, fontScale, FontWeight.Bold),
-                maxLines = 1,
-                overflow = TextOverflow.Clip,
-            )
-            spec.unit?.takeIf(String::isNotBlank)?.let { unit ->
-                BasicText(
-                    text = " $unit",
-                    style = discTextStyle(spec.unitColor, fit.unitSp, fontScale, FontWeight.SemiBold),
-                    maxLines = 1,
-                    overflow = TextOverflow.Clip,
-                )
-            }
-        }
+        if (constraints.maxWidth <= 0 || constraints.maxHeight <= 0) return@BoxWithConstraints
+        CircleReading(spec.primaryValue, spec.unit, spec.primaryColor,
+            modifier = Modifier.width(maxWidth * textBudget.horizontalFraction), unitColor = spec.unitColor,
+            textAlign = TextAlign.Center)
         spec.secondaryLabel?.let { secondary ->
-            BasicText(
-                text = secondary.text,
-                style = discTextStyle(secondary.color, 7f, fontScale, FontWeight.Bold),
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                modifier = Modifier
-                    .align(Alignment.BottomCenter)
-                    .fillMaxWidth(0.72f)
-                    .padding(bottom = 4.dp),
-            )
+            CircleText(text = secondary.text, role = CircleTextRole.NOTE, color = secondary.color,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.align(Alignment.BottomCenter).fillMaxWidth(0.72f).padding(bottom = 4.dp))
         }
     }
 }

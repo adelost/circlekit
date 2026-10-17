@@ -193,7 +193,7 @@ private fun StepperPillRow(
     val centreTiming = circleResolvedTiming(CircleActionTiming.DELIBERATE)
     val brandColor = circleBrandColor()
     // The glyph keeps its kind and a state sits on the value (style C): [semanticColor] colours only the number.
-    val glyphColor = circleAccentColor(accent, CircleAccentStrength.SUPPORTING)
+    val glyphColor = circleAccentColor(accent, CircleAccentStrength.ACTIVE)
     Row(verticalAlignment = Alignment.CenterVertically, modifier = modifier) {
         StepCircle(
             text = "−",
@@ -230,15 +230,9 @@ private fun StepperPillRow(
                         )
                         Spacer(Modifier.size(MenuDesign.stepperIconGap))
                     }
-                    Text(
-                        text = value,
-                        color = if (enabled == false) {
-                            (semanticColor ?: RingTokens.Dim).copy(alpha = 0.45f)
-                        } else {
-                            semanticColor ?: brandColor
-                        },
-                        fontSize = MenuDesign.stepperValueSize,
-                        fontWeight = FontWeight.Black,
+                    com.adelost.designkit.ui.CircleReading(
+                        value = value, unit = null,
+                        color = glyphColor,
                         textAlign = TextAlign.Center,
                     )
                     if (enabled != null) {
@@ -251,13 +245,9 @@ private fun StepperPillRow(
                     }
                 }
                 if (supporting != null) {
-                    Text(
-                        text = supporting,
-                        color = RingTokens.Dim,
-                        fontSize = 7.sp,
-                        fontWeight = FontWeight.Bold,
-                        textAlign = TextAlign.Center,
-                        maxLines = 1,
+                    com.adelost.designkit.ui.CircleText(
+                        text = supporting, role = com.adelost.designkit.ui.CircleTextRole.NOTE,
+                        color = RingTokens.Dim, textAlign = TextAlign.Center,
                     )
                 }
             }

@@ -17,6 +17,11 @@ import com.adelost.designkit.R
  * [FontWeight]), so one file covers 400–900.
  */
 object GraphiteType {
+    fun forContent(numerals: Boolean): FontFamily = when (if (numerals) CircleTextFaces.Numerals else CircleTextFaces.Words) {
+        CircleTextFace.ONEST -> Sans
+        CircleTextFace.BARLOW_SEMI_CONDENSED -> Numerals
+    }
+
     /** The one product sans family, built from designkit's own resource. */
     val Sans: FontFamily by lazy { sans(R.font.onest) }
 

@@ -9,22 +9,26 @@ class CircleDiscArtworkTest {
     private val budget = CircleDiscTextBudget(maximumPrimarySp = 20f, minimumPrimarySp = 10f)
 
     @Test
-    fun `pressure value and comma fit from measured glyph widths`() {
+    fun `pressure readings keep the role and unit sizes regardless of commas`() {
         val plain = fitCircleDiscText("1008.1", "hPa", 75f, budget, ::measuredWidth)
         val comma = fitCircleDiscText("1,008.1", "hPa", 75f, budget, ::measuredWidth)
 
         assertTrue(plain.fits)
         assertTrue(comma.fits)
-        assertTrue(comma.primarySp < plain.primarySp)
+        assertEquals(CircleTextRole.NUMBER.watch.sp, plain.primarySp, 0f)
+        assertEquals(plain.primarySp, comma.primarySp, 0f)
+        assertEquals(CircleTextRole.NUMBER.watch.unitSp, comma.unitSp, 0f)
     }
 
     @Test
-    fun `equal length values can choose different sizes`() {
-        val narrow = fitCircleDiscText("111111", null, 60f, budget, ::measuredWidth)
-        val wide = fitCircleDiscText("000000", null, 60f, budget, ::measuredWidth)
+    fun `a wide reading reports its shortage without reducing its role size`() {
+        val narrow = fitCircleDiscText("111111", null, 30f, budget, ::measuredWidth)
+        val wide = fitCircleDiscText("000000", null, 30f, budget, ::measuredWidth)
 
-        assertEquals(narrow.primarySp, budget.maximumPrimarySp, 0f)
-        assertTrue(wide.primarySp < narrow.primarySp)
+        assertTrue(narrow.fits)
+        assertFalse(wide.fits)
+        assertEquals(CircleTextRole.NUMBER.watch.sp, narrow.primarySp, 0f)
+        assertEquals(narrow.primarySp, wide.primarySp, 0f)
         assertFalse(narrow.measuredWidthPx == wide.measuredWidthPx)
     }
 

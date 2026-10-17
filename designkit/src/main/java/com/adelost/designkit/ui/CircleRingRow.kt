@@ -293,21 +293,9 @@ fun CircleRingRowContent(
                     },
                 ),
         ) {
-            // A row beside the floating chrome has roughly 40 dp of title
-            // column left, which is five characters at the design size — and
-            // maxLines=1 with the default Clip overflow turned CONTROL into
-            // "CONTR" and DETAIL into "DETAI" with no sign anything was
-            // missing (Mattias 2026-07-27). A title states which setting the
-            // row IS, so it shrinks to stay whole rather than losing letters.
-            CircleFittedTitle(
-                text = title,
-                color = titleColor ?: RingTokens.Ink,
-                fontSizeSp = phoneDesign?.rowTitleSize?.value ?: (
-                    if (icon == null) MenuDesign.titleSizeNoIcon else MenuDesign.titleSize
-                    ).value,
-                maxLines = if (multiline) Int.MAX_VALUE else 1,
-                spoken = !LocalActionParentOwnsRowCopy.current,
-                widthLentToEndSlot = widthLentToEndSlot,
+            CircleText(
+                text = title, role = CircleTextRole.NAME, color = titleColor ?: RingTokens.Ink,
+                modifier = if (LocalActionParentOwnsRowCopy.current) Modifier.clearAndSetSemantics { } else Modifier,
             )
             // The state indicator rides the VALUE line, not the whole row.
             // Sitting beside both lines, it charged the TITLE for width the
@@ -322,31 +310,11 @@ fun CircleRingRowContent(
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     // A state sits on the value on every row, pressable or not; the glyph keeps its kind (style C).
                     val subColor = semanticColor ?: RingTokens.Dim
-                    val subSizeSp = phoneDesign?.rowSubtitleSize?.value ?: MenuDesign.subSize.value
-                    CircleRowLineKeepingOneLine(
-                        text = sub, fontSizeSp = subSizeSp, letterSpacingSp = 0f, fontWeight = FontWeight.Normal,
-                        lentWidth = widthLentToEndSlot, maxLines = if (multiline) Int.MAX_VALUE else 1,
+                    CircleText(
+                        text = sub, role = CircleTextRole.VALUE, color = subColor,
                         modifier = (if (trailing != null && phoneDesign == null) Modifier.weight(1f) else Modifier)
-                            .then(
-                                if (LocalActionParentOwnsRowCopy.current) {
-                                    Modifier.clearAndSetSemantics { }
-                                } else {
-                                    Modifier
-                                },
-                            ),
-                    ) { lines, lineModifier ->
-                        if (multiline && lines == 1) {
-                            CircleFittedText(
-                                text = sub, color = subColor, fontSizeSp = subSizeSp, maxLines = 1,
-                                modifier = lineModifier,
-                            )
-                        } else {
-                            CircleText(
-                                text = sub, color = subColor, fontSizeSp = subSizeSp, maxLines = lines,
-                                overflow = TextOverflow.Ellipsis, modifier = lineModifier,
-                            )
-                        }
-                    }
+                            .then(if (LocalActionParentOwnsRowCopy.current) Modifier.clearAndSetSemantics { } else Modifier),
+                    )
                     if (trailing != null && phoneDesign == null) {
                         Spacer(Modifier.size(6.dp))
                         trailing()
@@ -385,58 +353,18 @@ private fun CirclePassiveReadingContent(
     widthLentToEndSlot: Dp,
 ) {
     Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
-        CircleRowLineKeepingOneLine(
-            text = title, fontSizeSp = MenuDesign.titleSize.value, letterSpacingSp = MenuDesign.titleTracking.value,
-            fontWeight = FontWeight.Bold, lentWidth = widthLentToEndSlot, maxLines = Int.MAX_VALUE,
-            modifier = Modifier.fillMaxWidth(), minFontSizeSp = CIRCLE_TITLE_MIN_SIZE_SP,
-        ) { maxLines, lineModifier ->
-            CircleFittedText(
-                text = title,
-                color = titleColor ?: RingTokens.Ink,
-                fontSizeSp = MenuDesign.titleSize.value,
-                minFontSizeSp = if (maxLines == 1) CIRCLE_TITLE_MIN_SIZE_SP else MenuDesign.titleSize.value,
-                fontWeight = FontWeight.Bold,
-                letterSpacingSp = MenuDesign.titleTracking.value,
-                maxLines = maxLines,
-                textAlign = androidx.compose.ui.text.style.TextAlign.Center,
-                modifier = lineModifier.fillMaxWidth(),
-            )
-        }
+        CircleText(text = title, role = CircleTextRole.NAME, color = titleColor ?: RingTokens.Ink,
+            textAlign = androidx.compose.ui.text.style.TextAlign.Center, modifier = Modifier.fillMaxWidth())
         if (icon != null || sub.isNotBlank() || trailing != null) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 if (icon != null) {
-                    CircleStyledIcon(
-                        style = ringIconStyle(icon, accent),
-                        contentDescription = null,
-                        modifier = Modifier.size(MenuDesign.iconSize).rotate(iconRotationDeg),
-                    )
+                    CircleStyledIcon(style = ringIconStyle(icon, accent), contentDescription = null,
+                        modifier = Modifier.size(MenuDesign.iconSize).rotate(iconRotationDeg))
                     if (sub.isNotBlank() || trailing != null) Spacer(Modifier.size(6.dp))
                 }
                 if (sub.isNotBlank()) {
-                    // A reading wraps freely; balanced so "your phone's own,
-                    // screen held / on" cannot leave a word alone (Skyvw row 117).
-                    CircleRowLineKeepingOneLine(
-                        text = sub, fontSizeSp = MenuDesign.subSize.value, letterSpacingSp = 0f,
-                        fontWeight = FontWeight.Normal, lentWidth = widthLentToEndSlot, maxLines = Int.MAX_VALUE,
-                        modifier = Modifier.weight(1f, fill = false),
-                    ) { lines, lineModifier ->
-                        if (lines == 1) {
-                            CircleFittedText(
-                                text = sub, color = semanticColor ?: RingTokens.Dim,
-                                fontSizeSp = MenuDesign.subSize.value, maxLines = 1,
-                                textAlign = androidx.compose.ui.text.style.TextAlign.Center, modifier = lineModifier,
-                            )
-                        } else {
-                            CircleText(
-                                text = sub,
-                                color = semanticColor ?: RingTokens.Dim,
-                                fontSizeSp = MenuDesign.subSize.value,
-                                textAlign = androidx.compose.ui.text.style.TextAlign.Center,
-                                modifier = lineModifier,
-                                balancedLines = true,
-                            )
-                        }
-                    }
+                    CircleText(text = sub, role = CircleTextRole.VALUE, color = semanticColor ?: RingTokens.Dim,
+                        textAlign = androidx.compose.ui.text.style.TextAlign.Center, modifier = Modifier.weight(1f, fill = false))
                 }
                 if (trailing != null) {
                     if (sub.isNotBlank()) Spacer(Modifier.size(6.dp))
@@ -446,44 +374,3 @@ private fun CirclePassiveReadingContent(
         }
     }
 }
-
-/**
- * A row title that stays whole. It renders at the design size and steps down
- * only as far as [CIRCLE_TITLE_MIN_SIZE_SP] when the measured line would not
- * fit, so a wide row is unaffected and a narrow one loses weight instead of
- * letters. Below the floor it ellipsises: an unreadable title is worse than
- * an honest "…".
- */
-@Composable
-private fun CircleFittedTitle(
-    text: String,
-    color: Color,
-    fontSizeSp: Float,
-    maxLines: Int = 1,
-    spoken: Boolean = true,
-    widthLentToEndSlot: Dp = 0.dp,
-) {
-    // Delegates to the shared fitted-text atom so there is ONE shrink
-    // mechanism; this wrapper only owns the row-title styling choices.
-    CircleRowLineKeepingOneLine(
-        text = text, fontSizeSp = fontSizeSp, letterSpacingSp = MenuDesign.titleTracking.value,
-        fontWeight = FontWeight.Bold, lentWidth = widthLentToEndSlot, maxLines = maxLines,
-        minFontSizeSp = CIRCLE_TITLE_MIN_SIZE_SP,
-    ) { lines, lineModifier ->
-        CircleFittedText(
-            text = text,
-            color = color,
-            fontSizeSp = fontSizeSp,
-            minFontSizeSp = CIRCLE_TITLE_MIN_SIZE_SP,
-            shrinkStepSp = CIRCLE_TITLE_SHRINK_STEP_SP,
-            fontWeight = FontWeight.Bold,
-            letterSpacingSp = MenuDesign.titleTracking.value,
-            maxLines = lines,
-            modifier = lineModifier.then(if (spoken) Modifier else Modifier.clearAndSetSemantics { }),
-        )
-    }
-}
-
-/** The smallest a row title may shrink before ellipsis takes over. */
-private const val CIRCLE_TITLE_MIN_SIZE_SP = 7.5f
-private const val CIRCLE_TITLE_SHRINK_STEP_SP = 0.5f

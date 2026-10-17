@@ -55,14 +55,8 @@ internal fun CircleRowLeadingRing(
                 modifier = Modifier.size(phoneDesign?.rowIconSize ?: MenuDesign.iconSize).rotate(iconRotationDeg),
             )
         } else {
-            CircleText(
-                text = requireNotNull(centerValue),
-                color = semanticColor ?: look.icon,
-                fontSizeSp = (phoneDesign?.rowCenterValueSize ?: MenuDesign.rowCenterValueSize).value,
-                fontWeight = FontWeight.Black,
-                tabularNumerals = true,
-                maxLines = 1,
-            )
+            CircleText(text = requireNotNull(centerValue), role = CircleTextRole.NUMBER,
+                color = semanticColor ?: look.icon)
         }
     }
 }

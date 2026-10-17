@@ -100,13 +100,9 @@ fun PhoneScreenHeader(
         icon?.let {
             CircleStyledIcon(ringIconStyle(it), contentDescription = null, modifier = Modifier.size(design.actionIconSize))
         }
-        Text(
-            text = title,
-            color = RingTokens.Ink,
-            fontSize = design.headerTitleSize,
-            fontWeight = FontWeight.SemiBold,
-            letterSpacing = 1.2.sp,
-            modifier = Modifier.weight(1f),
+        com.adelost.designkit.ui.CircleText(
+            text = title, role = com.adelost.designkit.ui.CircleTextRole.TITLE,
+            color = RingTokens.Ink, modifier = Modifier.weight(1f),
         )
         actions.forEach { action ->
             CircleIconDisc(
@@ -201,14 +197,13 @@ private fun PhoneDetailScreen(
     ) {
         PhoneScreenHeader(screen.title, back, backLabel, screen.icon)
         Spacer(Modifier.height(24.dp))
-        Text(hero, color = RingTokens.Ink, fontSize = 38.sp, fontWeight = FontWeight.Black)
+        com.adelost.designkit.ui.CircleText(hero, role = com.adelost.designkit.ui.CircleTextRole.NUMBER, color = RingTokens.Ink)
         if (sub.isNotEmpty()) {
-            Text(sub, color = RingTokens.Dim, fontSize = 12.sp)
+            com.adelost.designkit.ui.CircleText(sub, role = com.adelost.designkit.ui.CircleTextRole.VALUE, color = RingTokens.Dim)
         }
-        Text(
-            freshness,
+        com.adelost.designkit.ui.CircleText(
+            freshness, role = com.adelost.designkit.ui.CircleTextRole.NOTE,
             color = health.stateColor(),
-            fontSize = 10.5.sp,
             textAlign = TextAlign.Center,
             modifier = Modifier.padding(top = 8.dp),
         )

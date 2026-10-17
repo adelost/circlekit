@@ -91,10 +91,10 @@ object MenuGridCatalog {
     val PhoneRegular = MenuGridSpec(
         columns = 3,
         diameter = 56.dp,
-        horizontalGap = 34.dp,
+        horizontalGap = 18.dp,
         verticalGap = 20.dp,
-        contentWidthFraction = MenuDesign.centeredGridWidthFraction,
-        contentMaxWidth = 360.dp,
+        contentWidthFraction = 1f,
+        contentMaxWidth = 400.dp,
     )
     val PhoneCompact = MenuGridSpec(
         columns = 4,

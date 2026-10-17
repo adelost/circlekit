@@ -89,17 +89,8 @@ internal fun CircleIconRingFrame(
                         .rotate(iconRotationDegrees),
                 )
                 centerValue?.let { value ->
-                    BasicText(
-                        text = value,
-                        style = TextStyle(
-                            color = centerValueColor ?: RingTokens.Ink,
-                            fontSize = fixedCircleUiSp(MenuDesign.statValueSize.value, fontScale).sp,
-                            fontFamily = fontFamily,
-                            fontWeight = FontWeight.Black,
-                            textAlign = TextAlign.Center,
-                        ),
-                        maxLines = 1,
-                    )
+                    CircleReading(value = value, unit = null, color = centerValueColor ?: RingTokens.Ink,
+                        textAlign = TextAlign.Center)
                 }
             }
             choiceState?.let { state ->
@@ -112,58 +103,19 @@ internal fun CircleIconRingFrame(
                 )
             }
         }
-        // A word stays whole: a one-word label wider than its cell broke as "RECORDIN / G" under its circle
-        // (Skyvw SETTINGS, 2026-10-09). The label steps down to CircleFittedText's floor before a word may
-        // break or ellipsise, the same rule that keeps row titles whole.
-        var labelScale by remember(label, labelSize) { mutableFloatStateOf(1f) }
-        BasicText(
-            text = label,
-            style = TextStyle(
-                color = if (enabled) RingTokens.Dim else RingTokens.Off,
-                fontSize = fixedCircleUiSp(labelSize.value * labelScale, fontScale).sp,
-                fontFamily = fontFamily,
-                fontWeight = FontWeight.Bold,
-                letterSpacing = 1.sp,
-                textAlign = TextAlign.Center,
-            ),
-            maxLines = 2,
-            overflow = TextOverflow.Ellipsis,
-            onTextLayout = { layout ->
-                val tooBig = layout.hasVisualOverflow || layout.breaksAWord(label)
-                if (tooBig && labelScale > CIRCLE_FITTED_TEXT_MIN_SCALE) {
-                    labelScale = (labelScale - CIRCLE_FITTED_TEXT_SCALE_STEP).coerceAtLeast(CIRCLE_FITTED_TEXT_MIN_SCALE)
-                }
-            },
-            modifier = Modifier
-                .padding(top = 4.dp)
-                .then(
-                    if (LocalActionParentOwnsRowCopy.current) {
-                        Modifier.clearAndSetSemantics { }
-                    } else {
-                        Modifier
-                    },
-                ),
+        CircleText(
+            text = label, role = CircleTextRole.LABEL,
+            color = if (enabled) RingTokens.Dim else RingTokens.Off,
+            textAlign = TextAlign.Center, modifier = Modifier.padding(top = 4.dp).then(
+                if (LocalActionParentOwnsRowCopy.current) Modifier.clearAndSetSemantics { } else Modifier),
         )
         sub?.let {
-            BasicText(
-                text = it,
-                style = TextStyle(
-                    color = if (enabled) RingTokens.Dim else RingTokens.Off,
-                    fontSize = fixedCircleUiSp(labelSize.value * 0.72f, fontScale).sp,
-                    fontFamily = fontFamily,
-                    textAlign = TextAlign.Center,
-                ),
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                modifier = Modifier
-                    .padding(top = 1.dp)
-                    .then(
-                        if (LocalActionParentOwnsRowCopy.current) {
-                            Modifier.clearAndSetSemantics { }
-                        } else {
-                            Modifier
-                        },
-                    ),
+            CircleText(
+                text = it, role = CircleTextRole.NOTE,
+                color = if (enabled) RingTokens.Dim else RingTokens.Off,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.padding(top = 1.dp).then(
+                    if (LocalActionParentOwnsRowCopy.current) Modifier.clearAndSetSemantics { } else Modifier),
             )
         }
     }

@@ -401,14 +401,9 @@ internal fun RowTitle(
             )
             Spacer(Modifier.size(5.dp))
         }
-        Text(
-            text = title,
-            color = color,
-            fontSize = fontSize,
-            fontWeight = FontWeight.Bold,
-            letterSpacing = letterSpacing,
-            textAlign = TextAlign.Center,
-            maxLines = 1,
+        com.adelost.designkit.ui.CircleText(
+            text = title, role = com.adelost.designkit.ui.CircleTextRole.LABEL,
+            color = color, textAlign = TextAlign.Center,
         )
     }
 }

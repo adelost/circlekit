@@ -184,23 +184,10 @@ fun HoldPill(
         contentPaddingH = 16.dp,
         contentPaddingV = 5.dp,
     ) {
-        // One centred line: the words step down to the fitted floor before they wrap, and wrap centred only when
-        // even the floor is too wide. Skyvw 2026-10-10: MAP DETAIL's "RESET TO / DEFAULT" sat left-aligned on two
-        // lines in its explanation, on the watch and at 320 dp.
-        var scale by remember(text) { mutableFloatStateOf(1f) }
-        Text(
-            text = text,
+        com.adelost.designkit.ui.CircleText(
+            text = text, role = com.adelost.designkit.ui.CircleTextRole.NAME,
             color = if (destructive) danger else RingTokens.Dim,
-            fontSize = (10f * scale).sp,
-            fontWeight = FontWeight.Bold,
-            letterSpacing = 1.sp,
             textAlign = TextAlign.Center,
-            maxLines = 2,
-            onTextLayout = { layout ->
-                if (layout.lineCount > 1 && scale > CIRCLE_FITTED_TEXT_MIN_SCALE) {
-                    scale = (scale - CIRCLE_FITTED_TEXT_SCALE_STEP).coerceAtLeast(CIRCLE_FITTED_TEXT_MIN_SCALE)
-                }
-            },
         )
     }
 }

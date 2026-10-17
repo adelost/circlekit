@@ -24,6 +24,20 @@ export const CIRCLEKIT_STYLE = {
   action: "#f2f4f7",
 } as const;
 
+/** Fixed type roles. The phone scale is derived from the note floor, never a second palette. */
+export const CIRCLEKIT_TEXT = {
+  phoneFloorSp: 12,
+  faces: { words: "Onest", numerals: "Barlow Semi Condensed" },
+  roles: {
+    title: { sp: 11, weight: 700, tracking: 0.27 },
+    name: { sp: 9.5, weight: 700, tracking: 0.02 },
+    label: { sp: 7.5, weight: 700, tracking: 0.13 },
+    value: { sp: 9, weight: 400, tracking: 0 },
+    number: { sp: 12, weight: 700, tracking: 0, unitSp: 7.5, unitWeight: 600 },
+    note: { sp: 6.5, weight: 600, tracking: 0 },
+  },
+} as const;
+
 /**
  * How a colour's quieter tones follow from it. A colour is written once, as the tone you read (strong); its ground
  * sits behind an icon at a fixed lightness with a capped chroma, and its dimmed tone lies part of the way from the

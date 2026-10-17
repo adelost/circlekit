@@ -2,7 +2,7 @@ import { readFileSync, writeFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { RING_ICON_ASSETS } from "../dist/src/ring-icon-assets.js";
-import { CIRCLEKIT_ACCENTS, CIRCLEKIT_NEUTRAL_TONES, CIRCLEKIT_STYLE, CIRCLEKIT_SWITCH, CIRCLEKIT_TONE } from "../dist/src/circle-style.js";
+import { CIRCLEKIT_ACCENTS, CIRCLEKIT_NEUTRAL_TONES, CIRCLEKIT_STYLE, CIRCLEKIT_SWITCH, CIRCLEKIT_TONE, CIRCLEKIT_TEXT } from "../dist/src/circle-style.js";
 import { circleTones } from "../dist/src/circle-tone.js";
 import { DEFAULT_COMPOSITE_ICON_STYLES } from "./ring-icon-native-styles.mjs";
 
@@ -12,6 +12,7 @@ const outputs = new Map([
   [resolve(designkit, "RingIcons.kt"), emitRingIcons()],
   [resolve(designkit, "RingIconPortableCatalog.kt"), emitCatalog()],
   [resolve(designkit, "CircleStyleTokens.kt"), emitCircleStyle()],
+  [resolve(designkit, "CircleTextRoles.kt"), emitCircleText()],
 ]);
 const check = process.argv.includes("--check");
 let drift = false;
@@ -26,6 +27,20 @@ for (const [path, content] of outputs) {
   }
 }
 if (drift) process.exitCode = 1;
+
+function emitCircleText() {
+  const scale = CIRCLEKIT_TEXT.phoneFloorSp / CIRCLEKIT_TEXT.roles.note.sp;
+  const float = value => `${Number(value.toFixed(6))}f`;
+  const spec = (role, factor) => `CircleRoleStyle(${float(role.sp * factor)}, ${role.weight}, ${float(role.tracking)}, ${float((role.unitSp ?? role.sp) * factor)}, ${role.unitWeight ?? role.weight})`;
+  const roles = Object.entries(CIRCLEKIT_TEXT.roles).map(([id, role]) =>
+    `    ${id.toUpperCase()}(${spec(role, 1)}, ${spec(role, scale)})`).join(",\n");
+  return `// GENERATED from circlekit-assets/src/circle-style.ts - do not edit.\n` +
+    `package com.adelost.designkit.ui\n\n` +
+    `data class CircleRoleStyle(val sp: Float, val weight: Int, val trackingEm: Float, val unitSp: Float, val unitWeight: Int)\n\n` +
+    `enum class CircleTextFace { ONEST, BARLOW_SEMI_CONDENSED }\n\n` +
+    `object CircleTextFaces { val Words = CircleTextFace.${CIRCLEKIT_TEXT.faces.words.toUpperCase().replaceAll(" ", "_")}; val Numerals = CircleTextFace.${CIRCLEKIT_TEXT.faces.numerals.toUpperCase().replaceAll(" ", "_")} }\n\n` +
+    `enum class CircleTextRole(val watch: CircleRoleStyle, val phone: CircleRoleStyle) {\n${roles};\n}\n`;
+}
 
 function emitRingIcons() {
   const properties = RING_ICON_ASSETS.map((icon) => {

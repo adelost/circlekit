@@ -1,3 +1,4 @@
+import { emitCircleTextCss } from "./emit-circle-text-css.js";
 import {
   CHROMA_FLOOR_RATIO,
   STOPS_PER_BAND,
@@ -195,6 +196,7 @@ export function emitThemeCss(ir: ThemeCatalogIr, options: CssEmissionOptions): s
   const chrome = Object.entries(CIRCLEKIT_STYLE)
     .map(([id, hex]) => `  --circle-${kebab(id)}: ${hex};`)
     .join("\n");
+  const text = emitCircleTextCss();
   const identity = Object.entries(fixed.identity)
     .map(([id, hex]) => `  --${tokenPrefix}-identity-${id}: ${hex};`)
     .join("\n");
@@ -224,6 +226,8 @@ export function emitThemeCss(ir: ThemeCatalogIr, options: CssEmissionOptions): s
    the watch and on the web because neither side chose the pigment. */
 :root {
 ${chrome}
+
+${text}
 
 ${identity}
 
