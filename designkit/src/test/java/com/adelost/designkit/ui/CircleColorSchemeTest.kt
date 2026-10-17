@@ -1,6 +1,7 @@
 package com.adelost.designkit.ui
 
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.colorspace.ColorSpaces
 import androidx.compose.ui.graphics.luminance
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -15,6 +16,17 @@ class CircleColorSchemeTest {
         assertEquals(Color(0xFF689693), CircleColorSchemes.default.supporting)
         assertEquals(Color(0xFF213E3C), CircleColorSchemes.default.container)
         assertEquals(Color(0xFF52706D), CircleColorSchemes.default.subdued)
+    }
+
+    @Test
+    fun `the hard deck's constant is the default scheme's band, not a second copy`() {
+        val band = CircleColorSchemes.default.altitude.color(CircleAltitudeBand.PURPLE, CircleAltitudeWeight.ACTIVE)
+
+        assertEquals(band, GraphiteTokens.Purple)
+        // The constant once took its own hex because the band's rest weight (OKLab L 0.39) is a dial-bar fill, too
+        // dark for a thin line on OLED. Its active weight clears the 0.68 the constant was drawn at.
+        val lightness = GraphiteTokens.Purple.convert(ColorSpaces.Oklab).red
+        assertTrue("a line, not a fill: L $lightness", lightness >= 0.68f)
     }
 
     @Test

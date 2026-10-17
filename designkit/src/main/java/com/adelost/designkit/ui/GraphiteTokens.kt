@@ -28,10 +28,9 @@ object GraphiteTokens {
     val Orange = CircleAccentPalette.Default.color(CircleAccent.CAUTION)
     val Red = CircleAccentPalette.Default.color(CircleAccent.DANGER)
     val Green = CircleAccentPalette.Default.color(CircleAccent.POSITIVE)
-    // The step after Red on an altitude scale (below the hard deck), at Red's
-    // OKLab lightness (0.68) so a thin stroke on OLED stays legible; the
-    // altitude scheme's purple (0.39) is a dial-bar fill, too dark for a line.
-    val Purple = Color(0xFF9C87D9)
+    // The step after Red on an altitude scale (below the hard deck): the default scheme's hard-deck band at its active
+    // weight, one copy. OKLab L 0.72 keeps a thin stroke legible on OLED; the band's rest weight (0.39) is a fill.
+    val Purple = CircleColorSchemes.default.altitude.color(CircleAltitudeBand.PURPLE, CircleAltitudeWeight.ACTIVE)
 }
 
 object GraphiteMetrics {
