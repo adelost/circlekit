@@ -211,6 +211,18 @@ fun CircleColorSchemeProvider(
     )
 }
 
+/**
+ * [scheme] for everything below: a product that writes its colours in its own declaration supplies the scheme it
+ * built from them, instead of one of the kit's curated four.
+ */
+@Composable
+fun CircleColorSchemeProvider(
+    scheme: CircleColorScheme,
+    content: @Composable () -> Unit,
+) {
+    CompositionLocalProvider(LocalCircleColorScheme provides scheme, content = content)
+}
+
 /** The selected product accent at the same loudness ladder as semantic icons. */
 @Composable
 fun circleBrandColor(

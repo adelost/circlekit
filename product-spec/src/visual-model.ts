@@ -10,6 +10,21 @@ export interface PortableRampBand {
   readonly chromaMax: number;
   readonly solid?: boolean;
   readonly label: string;
+  /** Tones stated instead of derived by CircleKit's tone rule (circlekit-assets circle-tone.ts). */
+  readonly dim?: string;
+  readonly ground?: string;
+}
+
+/**
+ * A colour a product writes once, as its strong tone. Its dimmed tone, its ground and an icon disc's edge follow from
+ * CircleKit's tone rule unless stated: white has no dimmed self that is not grey.
+ */
+export interface PortableToneColour {
+  readonly id: string;
+  readonly hex: string;
+  readonly meaning: string;
+  readonly dim?: string;
+  readonly ground?: string;
 }
 
 export interface PortableRamp {
@@ -34,7 +49,7 @@ export interface PortableRamp {
 export interface PortablePaletteVariant {
   readonly id: string;
   readonly identity: Readonly<Record<string, string>>;
-  readonly categories: readonly Readonly<{ id: string; hex: string; meaning: string }>[];
+  readonly categories: readonly PortableToneColour[];
   readonly status: Readonly<Record<string, string>>;
   readonly ramps: readonly PortableRamp[];
 }
@@ -197,7 +212,10 @@ function validateVariant(variant: PortablePaletteVariant): void {
   requireUnique(variant.categories.map(({ id }) => id), `category in palette '${variant.id}'`);
   requireUnique(variant.ramps.map(({ id }) => id), `ramp in palette '${variant.id}'`);
   Object.entries(variant.identity).forEach(([id, value]) => { requireWireId(id, "identity token"); requireHex(value, id); });
-  variant.categories.forEach(({ id, hex }) => { requireWireId(id, "palette category"); requireHex(hex, id); });
+  variant.categories.forEach(({ id, hex, dim, ground }) => {
+    requireWireId(id, "palette category");
+    [hex, dim, ground].forEach((value) => value === undefined || requireHex(value, id));
+  });
   Object.entries(variant.status).forEach(([id, value]) => requireHex(value, id));
   for (const ramp of variant.ramps) {
     requireWireId(ramp.id, "palette ramp");
@@ -211,6 +229,7 @@ function validateVariant(variant: PortablePaletteVariant): void {
     requireUnique(ramp.bands.map(({ id }) => id), `band in ramp '${ramp.id}'`);
     ramp.bands.forEach((band, index) => {
       requireWireId(band.id, "palette band");
+      [band.dim, band.ground].forEach((value) => value === undefined || requireHex(value, band.id));
       if (index > 0 && band.upTo <= ramp.bands[index - 1]!.upTo) throw new Error(`ramp '${ramp.id}' does not advance`);
     });
   }

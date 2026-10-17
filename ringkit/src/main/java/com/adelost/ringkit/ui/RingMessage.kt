@@ -20,9 +20,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.wear.compose.material.Text
 import com.adelost.designkit.ui.CircleAccent
+import com.adelost.designkit.ui.CircleAccentPalette
 import com.adelost.designkit.ui.CircleAccentStrength
+import com.adelost.designkit.ui.LocalCircleAccentPalette
 import com.adelost.designkit.ui.CircleSurfaceClass
-import com.adelost.designkit.ui.circleAccentColor
 import com.adelost.designkit.ui.LocalCircleSurfaceLayout
 import com.adelost.designkit.ui.RingTokens
 
@@ -45,16 +46,16 @@ data class RingMessageSpec(
 /** Resolved pigments and inset for one message; pure so both hosts share the exact rule. */
 data class RingMessageLayout(val authorColor: Color, val edgeColor: Color?, val startInsetDp: Int)
 
-fun ringMessageLayout(spec: RingMessageSpec, round: Boolean): RingMessageLayout = RingMessageLayout(
-    authorColor = spec.accent?.let { circleAccentColor(it, CircleAccentStrength.ACTIVE) } ?: RingTokens.Dim,
-    edgeColor = spec.accent?.let { circleAccentColor(it, CircleAccentStrength.SUPPORTING) },
+fun ringMessageLayout(spec: RingMessageSpec, round: Boolean, palette: CircleAccentPalette): RingMessageLayout = RingMessageLayout(
+    authorColor = spec.accent?.let { palette.color(it, CircleAccentStrength.ACTIVE) } ?: RingTokens.Dim,
+    edgeColor = spec.accent?.let { palette.color(it, CircleAccentStrength.SUPPORTING) },
     startInsetDp = if (spec.side == RingMessageSide.END) (if (round) 16 else 48) else 0,
 )
 
 @Composable
 fun RingMessage(spec: RingMessageSpec, modifier: Modifier = Modifier) {
     val round = LocalCircleSurfaceLayout.current.surfaceClass == CircleSurfaceClass.ROUND
-    val layout = ringMessageLayout(spec, round)
+    val layout = ringMessageLayout(spec, round, LocalCircleAccentPalette.current)
     Column(modifier.fillMaxWidth()) {
         Row(Modifier.fillMaxWidth().padding(start = layout.startInsetDp.dp).height(IntrinsicSize.Min)) {
             layout.edgeColor?.let { edge ->

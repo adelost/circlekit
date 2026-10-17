@@ -384,13 +384,18 @@ fun RingChoiceRow(
         infoSelected = infoSelected,
         onInfoTouch = onInfoTouch,
         trailing = {
-            CircleChoiceIndicator(
-                state = choiceState,
-                modifier = Modifier.size(
-                    width = circleChoiceIndicatorWidth(choiceState.optionCount),
-                    height = 8.dp,
-                ),
-            )
+            // A boolean is a switch in the row's colour; an ordered choice keeps its dots, whose position is the state.
+            if (role == CircleChoiceRole.TOGGLE && options.size == 2) {
+                CircleSwitch(on = active, tones = circleAccentTones(accent))
+            } else {
+                CircleChoiceIndicator(
+                    state = choiceState,
+                    modifier = Modifier.size(
+                        width = circleChoiceIndicatorWidth(choiceState.optionCount),
+                        height = 8.dp,
+                    ),
+                )
+            }
         },
         modifier = modifier,
     )

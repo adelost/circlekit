@@ -2,7 +2,8 @@ import { readFileSync, writeFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { RING_ICON_ASSETS } from "../dist/src/ring-icon-assets.js";
-import { CIRCLEKIT_STYLE } from "../dist/src/circle-style.js";
+import { CIRCLEKIT_ACCENTS, CIRCLEKIT_NEUTRAL_TONES, CIRCLEKIT_STYLE, CIRCLEKIT_SWITCH, CIRCLEKIT_TONE } from "../dist/src/circle-style.js";
+import { circleTones } from "../dist/src/circle-tone.js";
 import { DEFAULT_COMPOSITE_ICON_STYLES } from "./ring-icon-native-styles.mjs";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
@@ -84,13 +85,37 @@ function emitCatalog() {
 }
 
 function emitCircleStyle() {
-  const entries = Object.entries(CIRCLEKIT_STYLE).map(([id, hex]) =>
-    `    val ${pascal(id)} = Color(0xFF${hex.slice(1).toUpperCase()})`).join("\n");
+  const colour = (hex) => `Color(0xFF${hex.slice(1).toUpperCase()})`;
+  const entries = Object.entries(CIRCLEKIT_STYLE).map(([id, hex]) => `    val ${pascal(id)} = ${colour(hex)}`).join("\n");
+  const tone = Object.entries(CIRCLEKIT_TONE).map(([id, value]) => `    const val ${pascal(id)} = ${value}f`).join("\n");
+  const neutral = Object.entries(CIRCLEKIT_NEUTRAL_TONES).map(([id, hex]) => `${id} = ${colour(hex)}`).join(", ");
   return `// GENERATED from circlekit-assets/src/circle-style.ts - do not edit.\n` +
 `package com.adelost.designkit.ui\n\n` +
-`import androidx.compose.ui.graphics.Color\n\n` +
+`import androidx.compose.ui.graphics.Color\n` +
+`import androidx.compose.ui.unit.dp\n\n` +
 `/** Opinionated cross-product chrome. Semantic product colour lives in ProductPalette. */\n` +
-`object CircleStyleTokens {\n${entries}\n}\n`;
+`object CircleStyleTokens {\n${entries}\n\n` +
+`    /** The tones of a thing that is about no kind: a pointer, the weather, an icon without a colour. */\n` +
+`    val NeutralTones = CircleTones(${neutral})\n}\n\n` +
+`/** The house tone rule, as circle-tone.ts applies it at build time. Read, never re-implemented, at runtime. */\n` +
+`object CircleToneRule {\n${tone}\n}\n\n` +
+`/** The house colours of the kit's icon vocabulary, tones derived at build time. A product supplies its own. */\n` +
+`internal val CIRCLE_ACCENT_DEFAULT_TONES: Map<CircleAccent, CircleTones> = mapOf(\n${accents()}\n)\n\n` +
+`/** The on/off switch's geometry. */\n` +
+`object CircleSwitchTokens {\n${dimensions(CIRCLEKIT_SWITCH)}\n}\n`;
+}
+
+function dimensions(group) {
+  return Object.entries(group).map(([id, value]) => `    val ${pascal(id)} = ${value}.dp`).join("\n");
+}
+
+function accents() {
+  const colour = (hex) => `Color(0xFF${hex.slice(1).toUpperCase()})`;
+  return Object.entries(CIRCLEKIT_ACCENTS).map(([id, value]) => {
+    const tones = typeof value === "string" ? circleTones(value) : value;
+    const fields = ["strong", "dim", "ground", "edge"].map((key) => `${key} = ${colour(tones[key])}`).join(", ");
+    return `    CircleAccent.${id.toUpperCase()} to CircleTones(${fields}),`;
+  }).join("\n");
 }
 
 function kotlinString(value) {

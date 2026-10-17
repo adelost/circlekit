@@ -89,30 +89,35 @@ data class CircleActionDiscChrome(
  * One feedback law for icon-only and value-only circles. A circle without an
  * external label must never paint [circleLabelProgress] across its glyph or
  * value; the surface and contour answer instead.
+ *
+ * At rest a disc is drawn as [circleDiscLook] says, in its kind's [tones]. Over a picture it keeps its dark disc and a
+ * neutral edge, and only the icon speaks its kind (style C, the plan's "Knapp över en bild").
  */
 fun circleActionDiscChrome(
     enabled: Boolean,
     active: Boolean,
     pressed: Boolean,
     scrim: Boolean,
-    activeContour: Color = MenuDesign.ringActive,
+    tones: CircleTones = CircleStyleTokens.NeutralTones,
     iconTint: Color? = null,
-): CircleActionDiscChrome = CircleActionDiscChrome(
-    fill = when {
-        pressed -> RingTokens.ProgressSurface.copy(alpha = 0.78f)
-        scrim -> RingTokens.ProgressSurface.copy(alpha = 0.58f)
-        else -> Color.Transparent
-    },
-    contour = when {
-        !enabled -> RingTokens.Off
-        pressed -> RingTokens.OutlineStrong
-        active -> activeContour
-        else -> MenuDesign.ringNeutral
-    },
-    scale = if (pressed) MenuDesign.backPressScale else 1f,
-    // Unavailable actions must not look enabled through a semantic/custom tint.
-    iconTint = if (enabled) iconTint else RingTokens.Off,
-)
+): CircleActionDiscChrome {
+    val look = circleDiscLook(operable = true, active = if (enabled) active else false, tones = tones)
+    return CircleActionDiscChrome(
+        fill = when {
+            pressed -> RingTokens.ProgressSurface.copy(alpha = 0.78f)
+            scrim -> RingTokens.ProgressSurface.copy(alpha = 0.58f)
+            else -> look.ground
+        },
+        contour = when {
+            pressed -> RingTokens.OutlineStrong
+            scrim && enabled && !active -> MenuDesign.ringNeutral
+            else -> requireNotNull(look.contour)
+        },
+        scale = if (pressed) MenuDesign.backPressScale else 1f,
+        // Unavailable actions must not look enabled through a semantic/custom tint.
+        iconTint = if (enabled) iconTint else look.icon,
+    )
+}
 
 /**
  * THE label-free icon action. Product icons stay in [RING_ICON_CATALOG]; this
@@ -154,7 +159,7 @@ fun CircleIconDisc(
     effect: CircleActionEffect = CircleActionEffect.ACTS,
 ) {
     val feedback = rememberCircleActionFeedbackState()
-    val activeContour = circleBrandColor()
+    val tones = circleAccentTones(accent)
     // ONE resolution, handed to the cue and to the gate. Nothing downstream sees the declaration.
     val resolved = circleResolvedTiming(timing, effect = effect)
     val cue = rememberCircleActionCueController(
@@ -169,7 +174,7 @@ fun CircleIconDisc(
         active = active,
         pressed = feedback.pressed,
         scrim = scrim,
-        activeContour = activeContour,
+        tones = tones,
         iconTint = iconTint,
     )
     val progressSweep = rememberCircleFeedbackSweep(progress = labelProgress, feedback = feedback)
@@ -241,7 +246,6 @@ fun CircleValueDisc(
     effect: CircleActionEffect = CircleActionEffect.ACTS,
 ) {
     val feedback = rememberCircleActionFeedbackState()
-    val activeContour = circleBrandColor()
     val resolved = circleResolvedTiming(timing, effect = effect)
     val cue = rememberCircleActionCueController(
         icon = RingIcons.Gauge,
@@ -254,7 +258,6 @@ fun CircleValueDisc(
         active = active,
         pressed = feedback.pressed,
         scrim = false,
-        activeContour = activeContour,
     )
     val scale by animateFloatAsState(chrome.scale, label = "circleValueDiscPress")
     Box(

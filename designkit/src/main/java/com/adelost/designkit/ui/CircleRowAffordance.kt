@@ -32,20 +32,28 @@ value class CircleRowAffordance private constructor(val operable: Boolean) {
 }
 
 /**
- * The contour a row's leading ring is drawn with, or null when there is no
- * ring to draw.
+ * How a row's leading disc is drawn: its ground, its contour (null when there is no ring) and its icon.
  *
- * The whole grammar is these three lines, and it sits here rather than inside
- * the layout so it can be read, tested and mutated on its own — the same
- * split the rest of the kit keeps between deciding and drawing. A renderer
- * that wants to disagree has to delete this function first.
+ * Style C (Mattias 2026-10-17, the plan's "Ikonskiva"): a disc wears its kind's ground with a fine edge in its
+ * colour and the icon strong; lit, the edge takes the full colour; off, the disc loses its ground, the edge turns
+ * the grey that means off and the icon dims. A reading has no disc at all, only its icon (Mattias 2026-08-06).
+ *
+ * The whole grammar is these four lines, and it sits here rather than inside the layout so it can be read, tested
+ * and mutated on its own. A renderer that wants to disagree has to delete this function first.
  */
-fun circleRowRingContour(
+fun circleRowDiscLook(
     affordance: CircleRowAffordance,
     active: Boolean?,
-    activeColor: Color,
-): Color? = when {
-    !affordance.operable -> null
-    active == true -> activeColor
-    else -> MenuDesign.ringNeutral
+    tones: CircleTones,
+): CircleDiscLook = circleDiscLook(affordance.operable, active, tones)
+
+/** [circleRowDiscLook] for any disc: a launcher is operable by being one, and a disabled one wears off. */
+fun circleDiscLook(operable: Boolean, active: Boolean?, tones: CircleTones): CircleDiscLook = when {
+    !operable -> CircleDiscLook(ground = Color.Transparent, contour = null, icon = tones.strong)
+    active == false -> CircleDiscLook(ground = Color.Transparent, contour = CircleStyleTokens.Off, icon = tones.dim)
+    active == true -> CircleDiscLook(ground = tones.ground, contour = tones.strong, icon = tones.strong)
+    else -> CircleDiscLook(ground = tones.ground, contour = tones.edge, icon = tones.strong)
 }
+
+/** A leading disc's three colours; [contour] null draws no ring. */
+data class CircleDiscLook(val ground: Color, val contour: Color?, val icon: Color)

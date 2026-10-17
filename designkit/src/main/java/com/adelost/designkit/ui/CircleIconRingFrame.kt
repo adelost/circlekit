@@ -1,6 +1,7 @@
 package com.adelost.designkit.ui
 
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
@@ -54,7 +55,7 @@ internal fun CircleIconRingFrame(
     suggested: Boolean = false,
 ) {
     val fontScale = LocalDensity.current.fontScale
-    val activeContour = circleBrandColor()
+    val look = circleDiscLook(operable = true, active = if (enabled) active else false, tones = circleAccentTones(accent))
     Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = modifier) {
         Box(
             modifier = Modifier
@@ -78,22 +79,16 @@ internal fun CircleIconRingFrame(
                 Box(
                     Modifier
                         .size(diameter)
-                        .circleRingContour(
-                            color = when {
-                                !enabled -> RingTokens.Off
-                                active == true -> activeContour
-                                else -> MenuDesign.ringNeutral
-                            },
-                            suggested = suggested,
-                        ),
+                        .background(look.ground, CircleShape)
+                        .circleRingContour(color = requireNotNull(look.contour), suggested = suggested),
                 )
             }
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 CircleStyledIcon(
                     style = ringIconStyle(icon, accent),
                     contentDescription = label.takeUnless { LocalActionParentOwnsRowCopy.current },
+                    strength = if (!enabled || active == false) CircleAccentStrength.INACTIVE else CircleAccentStrength.ACTIVE,
                     tintOverride = when {
-                        !enabled -> RingTokens.Off
                         centerValue != null -> RingTokens.Ink
                         else -> semanticColor
                     },

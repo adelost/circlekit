@@ -7,7 +7,7 @@ import {
   type ThemeSpec,
 } from "./theme-model.js";
 import { kotlinIdentifier, kotlinStringLiteral } from "./kotlin-syntax.js";
-import { CIRCLEKIT_STYLE } from "@v1d/circlekit-assets";
+import { CIRCLEKIT_STYLE, circleTones, type CircleTones } from "@v1d/circlekit-assets";
 import type { CssEmissionOptions, SourcedKotlinEmissionOptions } from "./emission-options.js";
 
 /**
@@ -64,6 +64,18 @@ export function bandStops(band: RampBand, ramp: Pick<Ramp, "travelFrom" | "stron
   return ramp.strongEdge === "low" ? stops.reverse() : stops;
 }
 
+/** A band's tones: its strongest stop by CircleKit's tone rule, unless the band states its own. */
+export function bandTones(band: RampBand, ramp: Pick<Ramp, "travelFrom" | "strongEdge"> = {}): CircleTones {
+  const stops = bandStops(band, ramp);
+  const strongest = ramp.strongEdge === "low" ? stops[0]! : stops[stops.length - 1]!;
+  return circleTones(strongest, { dim: band.dim, ground: band.ground });
+}
+
+/** A declared colour's tones; [hex] is its strong tone. */
+export function colourTones(colour: Readonly<{ hex: string; dim?: string; ground?: string }>): CircleTones {
+  return circleTones(colour.hex, { dim: colour.dim, ground: colour.ground });
+}
+
 export function emitThemeKotlin(ir: ThemeCatalogIr, options: SourcedKotlinEmissionOptions): string {
   const { symbolPrefix } = options;
   const fixed = ir.themes[0]!;
@@ -71,10 +83,10 @@ export function emitThemeKotlin(ir: ThemeCatalogIr, options: SourcedKotlinEmissi
     .map(([id, hex]) => `    val ${pascal(id)} = Color(0x${argb(hex)})`)
     .join("\n");
   const categories = fixed.categories
-    .map((a) => `    /** ${a.meaning} */\n    val ${pascal(a.id)} = Color(0x${argb(a.hex)})`)
+    .map((a) => `    /** ${a.meaning} */\n    val ${pascal(a.id)} = ${kotlinTones(colourTones(a))}`)
     .join("\n");
   const status = Object.entries(fixed.status)
-    .map(([id, hex]) => `    val ${pascal(id)} = Color(0x${argb(hex)})`)
+    .map(([id, hex]) => `    val ${pascal(id)} = ${kotlinTones(colourTones({ hex }))}`)
     .join("\n");
   const palettes = ir.themes.map((theme) => emitKotlinScalePalette(theme, symbolPrefix)).join("\n\n");
   const all = ir.themes.map((theme) => pascal(theme.native.nativeTheme)).join(", ");
@@ -85,6 +97,7 @@ export function emitThemeKotlin(ir: ThemeCatalogIr, options: SourcedKotlinEmissi
 
 import androidx.compose.ui.graphics.Color
 import com.adelost.designkit.ui.CircleColorTheme
+import com.adelost.designkit.ui.CircleTones
 
 // GENERATED from ${options.sourceFile} - do not edit.
 // SOURCE ${options.sourceSha}
@@ -95,13 +108,14 @@ import com.adelost.designkit.ui.CircleColorTheme
 
 enum class ThemeRampKind { SAFETY_ENVELOPE, MAGNITUDE }
 
-/** [stops] is low end first. A solid band carries exactly one stop. */
+/** [stops] is low end first. A solid band carries exactly one stop. [tones] are its strongest stop's. */
 data class ThemeBand(
     val id: String,
     val upTo: Float,
     val ruleEdge: Boolean,
     val label: String,
     val stops: List<Color>,
+    val tones: CircleTones,
 )
 
 data class ThemeRamp(
@@ -128,6 +142,9 @@ data class ThemeRamp(
     }
 
     fun bandOf(value: Float): ThemeBand = bands.firstOrNull { value < it.upTo } ?: bands.last()
+
+    /** The tones of the band a value falls in: strong to read it, dim behind it. */
+    fun tonesOf(value: Float): CircleTones = bandOf(value).tones
 }
 
 private fun lerpColor(from: Color, to: Color, t: Float) = Color(
@@ -142,7 +159,7 @@ object ${symbolPrefix}PaletteIdentity {
 ${identity}
 }
 
-/** Fixed semantic categories. This is not the user-selectable theme axis. */
+/** Fixed semantic categories, each its strong tone and the tones CircleKit's rule derives. Not the theme axis. */
 object ${symbolPrefix}PaletteCategory {
 ${categories}
 }
@@ -181,9 +198,9 @@ export function emitThemeCss(ir: ThemeCatalogIr, options: CssEmissionOptions): s
   const identity = Object.entries(fixed.identity)
     .map(([id, hex]) => `  --${tokenPrefix}-identity-${id}: ${hex};`)
     .join("\n");
-  const categories = fixed.categories.map((category) => `  --${tokenPrefix}-category-${category.id}: ${category.hex};`).join("\n");
+  const categories = fixed.categories.map((category) => cssTones(`--${tokenPrefix}-category-${category.id}`, colourTones(category))).join("\n");
   const fixedStatus = Object.entries(fixed.status)
-    .map(([id, hex]) => `  --${tokenPrefix}-status-${id}: ${hex};`)
+    .map(([id, hex]) => cssTones(`--${tokenPrefix}-status-${id}`, colourTones({ hex })))
     .join("\n");
   const palettes = ir.themes.map((theme) => {
     const ramps = theme.ramps
@@ -192,6 +209,7 @@ export function emitThemeCss(ir: ThemeCatalogIr, options: CssEmissionOptions): s
           const stops = bandStops(band, ramp);
           const rows = stops.map((hex, index) => `  --${tokenPrefix}-${ramp.id}-${band.id}-${index}: ${hex};`);
           rows.push(`  --${tokenPrefix}-${ramp.id}-${band.id}: linear-gradient(90deg, ${stops.join(", ")});`);
+          rows.push(cssTones(`--${tokenPrefix}-${ramp.id}-${band.id}-tone`, bandTones(band, ramp)));
           return rows;
         }),
       )
@@ -237,7 +255,7 @@ function emitKotlinRamp(ramp: Ramp, indent: string): string {
   const bandIndent = `${indent}        `;
   const bands = ramp.bands.map((band) => {
     const stops = bandStops(band, ramp).map((hex) => `Color(0x${argb(hex)})`).join(", ");
-    return `${bandIndent}ThemeBand(${kotlinStringLiteral(band.id)}, ${band.upTo}f, ruleEdge = ${band.ruleEdge}, label = ${kotlinStringLiteral(band.label)}, stops = listOf(${stops}))`;
+    return `${bandIndent}ThemeBand(${kotlinStringLiteral(band.id)}, ${band.upTo}f, ruleEdge = ${band.ruleEdge}, label = ${kotlinStringLiteral(band.label)}, stops = listOf(${stops}), tones = ${kotlinTones(bandTones(band, ramp))})`;
   }).join(",\n");
   return `ThemeRamp(\n${indent}    id = ${kotlinStringLiteral(ramp.id)},\n${indent}    kind = ThemeRampKind.${ramp.kind === "magnitude" ? "MAGNITUDE" : "SAFETY_ENVELOPE"},\n${indent}    unit = ${kotlinStringLiteral(ramp.unit)},\n${indent}    bands = listOf(\n${bands},\n${indent}    ),\n${indent})`;
 }
@@ -259,6 +277,15 @@ function kebab(id: string): string {
   return id.replace(/[A-Z]/g, (character) => `-${character.toLowerCase()}`).replaceAll("_", "-");
 }
 
+function kotlinTones(tones: CircleTones): string {
+  const colour = (hex: string) => `Color(0x${argb(hex)})`;
+  return `CircleTones(strong = ${colour(tones.strong)}, dim = ${colour(tones.dim)}, ground = ${colour(tones.ground)}, edge = ${colour(tones.edge)})`;
+}
+
+function cssTones(name: string, tones: CircleTones): string {
+  return [`  ${name}: ${tones.strong};`, `  ${name}-dim: ${tones.dim};`, `  ${name}-ground: ${tones.ground};`, `  ${name}-edge: ${tones.edge};`].join("\n");
+}
+
 function argb(hex: string): string {
   return `FF${hex.replace("#", "").toUpperCase()}`;
 }
@@ -269,19 +296,13 @@ function argb(hex: string): string {
  * and the architecture views move with the watch.
  */
 export function themeToolTokens(theme: ThemeSpec): string {
-  const category = (id: string) => theme.categories.find((entry) => entry.id === id)!.hex;
   return [
     `background:${CIRCLEKIT_STYLE.surface};color:${CIRCLEKIT_STYLE.action}`,
     `--ink:${CIRCLEKIT_STYLE.action}`,
     `--muted:${CIRCLEKIT_STYLE.actionMuted}`,
     `--dim:${CIRCLEKIT_STYLE.faint}`,
     `--line:${CIRCLEKIT_STYLE.line}`,
-    `--sky:${category("sky")}`,
-    `--rain:${category("rain")}`,
-    `--sun:${category("sun")}`,
-    `--violet:${category("violet")}`,
-    `--positive:${theme.status.ok}`,
-    `--caution:${theme.status.caution}`,
-    `--danger:${theme.status.danger}`,
+    ...theme.categories.map((category) => `--${category.id}:${category.hex}`),
+    ...Object.entries(theme.status).map(([id, hex]) => `--status-${id}:${hex}`),
   ].join(";");
 }

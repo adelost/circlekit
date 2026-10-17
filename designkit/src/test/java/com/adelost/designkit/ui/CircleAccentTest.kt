@@ -1,5 +1,6 @@
 package com.adelost.designkit.ui
 
+import androidx.compose.ui.graphics.luminance
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertTrue
@@ -7,19 +8,17 @@ import org.junit.Test
 
 class CircleAccentTest {
     @Test
-    fun `semantic strength stays ordered without changing identity`() {
+    fun `semantic strength steps from the strong tone down to the dimmed one`() {
+        val palette = CircleAccentPalette.Default
         CircleAccent.entries.forEach { accent ->
-            val active = circleAccentColor(accent, CircleAccentStrength.ACTIVE)
-            val supporting = circleAccentColor(accent, CircleAccentStrength.SUPPORTING)
-            val inactive = circleAccentColor(accent, CircleAccentStrength.INACTIVE)
+            val active = palette.color(accent, CircleAccentStrength.ACTIVE).luminance()
+            val supporting = palette.color(accent, CircleAccentStrength.SUPPORTING).luminance()
+            val inactive = palette.color(accent, CircleAccentStrength.INACTIVE).luminance()
 
-            assertTrue("$accent supporting", supporting.alpha <= active.alpha)
-            assertTrue("$accent inactive", inactive.alpha <= supporting.alpha)
+            assertTrue("$accent supporting", supporting <= active)
+            assertTrue("$accent inactive", inactive <= supporting)
         }
-        assertNotEquals(
-            circleAccentColor(CircleAccent.SUN),
-            circleAccentColor(CircleAccent.RAIN),
-        )
+        assertNotEquals(palette.color(CircleAccent.SUN), palette.color(CircleAccent.RAIN))
     }
 
     @Test
@@ -27,7 +26,7 @@ class CircleAccentTest {
         RING_ICON_CATALOG.forEach { icon ->
             assertEquals(icon.name, CircleAccent.NEUTRAL, ringIconAccent(icon))
         }
-        assertEquals(CircleStyleTokens.Action, circleAccentColor(CircleAccent.NEUTRAL))
+        assertEquals(CircleStyleTokens.Action, CircleAccentPalette.Default.color(CircleAccent.NEUTRAL))
     }
 
     @Test
