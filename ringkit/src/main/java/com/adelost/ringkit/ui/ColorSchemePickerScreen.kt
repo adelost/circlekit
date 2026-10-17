@@ -130,18 +130,15 @@ private fun ColorPickerContent(
     ) {
         if (!phone) ScreenTitle(title)
         Spacer(Modifier.height(if (phone) 8.dp else 2.dp))
-        Text(
+        com.adelost.designkit.ui.CircleText(
             text = selected.optionLabel,
             color = scheme.highlight,
-            fontSize = if (phone) 15.sp else 8.sp,
-            fontWeight = FontWeight.Bold,
-            letterSpacing = if (phone) 1.8.sp else 0.8.sp,
+            role = com.adelost.designkit.ui.CircleTextRole.NAME,
         )
-        Text(
+        com.adelost.designkit.ui.CircleText(
             text = selected.character,
             color = GraphiteTokens.Muted,
-            fontSize = if (phone) 10.sp else 6.sp,
-            letterSpacing = 0.6.sp,
+            role = com.adelost.designkit.ui.CircleTextRole.NOTE,
         )
         Spacer(Modifier.height(if (phone) 18.dp else 3.dp))
         Row(
@@ -161,12 +158,10 @@ private fun ColorPickerContent(
             }
         }
         Spacer(Modifier.height(if (phone) 28.dp else 4.dp))
-        Text(
+        com.adelost.designkit.ui.CircleText(
             text = "START · $altitudeLabel",
             color = scheme.supporting,
-            fontSize = if (phone) 11.sp else 6.5.sp,
-            fontWeight = FontWeight.SemiBold,
-            letterSpacing = 0.7.sp,
+            role = com.adelost.designkit.ui.CircleTextRole.NOTE,
         )
         AltitudePreviewScrubber(
             altitudeM = startAltitudeM,
@@ -187,12 +182,10 @@ private fun ColorPickerContent(
             iconTint = scheme.active,
             timing = CircleActionTiming.IMMEDIATE,
         )
-        Text(
+        com.adelost.designkit.ui.CircleText(
             text = "PREVIEW",
             color = scheme.highlight,
-            fontSize = if (phone) 10.sp else 6.sp,
-            fontWeight = FontWeight.Bold,
-            letterSpacing = 0.7.sp,
+            role = com.adelost.designkit.ui.CircleTextRole.LABEL,
         )
         Spacer(Modifier.height(if (phone) 32.dp else 0.dp))
     }
@@ -220,12 +213,10 @@ private fun ColorSchemeChoice(
             timing = CircleActionTiming.DELIBERATE,
         )
         Spacer(Modifier.height(if (phone) 7.dp else 2.dp))
-        Text(
+        com.adelost.designkit.ui.CircleText(
             text = scheme.theme.shortLabel,
             color = if (selected) scheme.highlight else GraphiteTokens.Muted,
-            fontSize = if (phone) 10.sp else 5.8.sp,
-            fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium,
-            maxLines = 1,
+            role = com.adelost.designkit.ui.CircleTextRole.NAME,
         )
     }
 }

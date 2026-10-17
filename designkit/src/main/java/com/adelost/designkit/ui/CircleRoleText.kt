@@ -23,7 +23,8 @@ import androidx.compose.ui.unit.sp
 
 @Composable
 fun circleRoleStyle(role: CircleTextRole): CircleRoleStyle =
-    if (LocalCircleUiProfile.current.surfaceClass == CircleSurfaceClass.ROUND) role.watch else role.phone
+    if (LocalCircleCanonicalText.current || LocalCircleUiProfile.current.surfaceClass == CircleSurfaceClass.ROUND)
+        role.watch else role.phone
 
 /** Canvas and measured layouts consume the same role metrics as the text atom. */
 @Composable

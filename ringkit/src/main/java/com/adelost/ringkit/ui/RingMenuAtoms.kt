@@ -213,16 +213,14 @@ fun TextAction(
             .padding(horizontal = 18.dp, vertical = 7.dp),
         contentAlignment = Alignment.Center,
     ) {
-        Text(
+        com.adelost.designkit.ui.CircleText(
             text = text,
             color = if (enabled) RingTokens.Dim else RingTokens.NeutralRing,
-            fontSize = MenuDesign.textActionSize,
-            fontWeight = FontWeight.Bold,
-            letterSpacing = MenuDesign.textActionTracking,
             modifier = Modifier.circleLabelProgress(
                 progress = labelProgress,
                 feedback = feedback,
             ).clearAndSetSemantics { },
+            role = com.adelost.designkit.ui.CircleTextRole.NAME,
         )
     }
 }
@@ -388,8 +386,6 @@ internal fun RowTitle(
     title: String,
     color: Color,
     iconColor: Color = RingTokens.Dim,
-    fontSize: androidx.compose.ui.unit.TextUnit,
-    letterSpacing: androidx.compose.ui.unit.TextUnit,
 ) {
     Row(verticalAlignment = Alignment.CenterVertically) {
         if (icon != null) {
@@ -402,8 +398,10 @@ internal fun RowTitle(
             Spacer(Modifier.size(5.dp))
         }
         com.adelost.designkit.ui.CircleText(
-            text = title, role = com.adelost.designkit.ui.CircleTextRole.LABEL,
-            color = color, textAlign = TextAlign.Center,
+            text = title,
+            role = com.adelost.designkit.ui.CircleTextRole.LABEL,
+            color = color,
+            textAlign = TextAlign.Center,
         )
     }
 }

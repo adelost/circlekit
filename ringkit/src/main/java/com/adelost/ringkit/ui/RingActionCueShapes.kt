@@ -129,20 +129,11 @@ private fun RingBareCue(cue: CircleActionCue) {
                 tint = cue.inkColor(),
                 modifier = Modifier.size(24.dp).rotate(cue.iconRotationDeg),
             )
-            Text(
+            com.adelost.designkit.ui.CircleText(
                 text = cue.label,
                 color = RingTokens.Ink,
-                fontSize = 12.sp,
-                lineHeight = 13.sp,
-                fontWeight = FontWeight.SemiBold,
-                letterSpacing = 0.5.sp,
                 textAlign = TextAlign.Center,
-                maxLines = 2,
-                // Authored labels are verbs and fit. A few are data — a filter
-                // chip carries its tag's name — and those have no length the
-                // product controls, so the overflow is stated rather than
-                // clipped mid-glyph as if nothing had been cut.
-                overflow = TextOverflow.Ellipsis,
+                role = com.adelost.designkit.ui.CircleTextRole.NAME,
             )
             // A switch names its answer three ways at once: glyph, word and
             // its answers below, lit at that same answer (Mattias 2026-09-14, C).
@@ -151,16 +142,11 @@ private fun RingBareCue(cue: CircleActionCue) {
             // only that SOMETHING happened, which is the part the reader
             // already knew.
             cue.value?.takeIf { cue.confirmed }?.let { value ->
-                Text(
+                com.adelost.designkit.ui.CircleText(
                     text = value,
                     color = cue.ringColor(),
-                    fontSize = 11.sp,
-                    lineHeight = 12.sp,
-                    fontWeight = FontWeight.Bold,
-                    letterSpacing = 0.5.sp,
                     textAlign = TextAlign.Center,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
+                    role = com.adelost.designkit.ui.CircleTextRole.VALUE,
                 )
             }
         }
@@ -223,36 +209,25 @@ private fun RingSettledExplainCue(cue: CircleActionCue) {
                     modifier = Modifier.size(18.dp).rotate(cue.iconRotationDeg),
                 )
             }
-            Text(
+            com.adelost.designkit.ui.CircleText(
                 text = cue.label,
                 color = cue.inkColor(),
-                fontSize = 11.sp,
-                fontWeight = FontWeight.Bold,
-                letterSpacing = 0.8.sp,
                 textAlign = TextAlign.Center,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
+                role = com.adelost.designkit.ui.CircleTextRole.NAME,
             )
             cue.value?.let { value ->
-                Text(
+                com.adelost.designkit.ui.CircleText(
                     text = value,
                     color = cue.ringColor(),
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.Bold,
-                    letterSpacing = 0.6.sp,
                     textAlign = TextAlign.Center,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
+                    role = com.adelost.designkit.ui.CircleTextRole.VALUE,
                 )
             }
-            Text(
+            com.adelost.designkit.ui.CircleText(
                 text = sentence,
                 color = RingTokens.Dim,
-                fontSize = 10.sp,
-                lineHeight = 13.sp,
                 textAlign = TextAlign.Center,
-                maxLines = SETTLED_HINT_MAX_LINES,
-                overflow = TextOverflow.Ellipsis,
+                role = com.adelost.designkit.ui.CircleTextRole.VALUE,
             )
             cue.infoAction?.let { action ->
                 TextAction(text = action.label, onTap = action.onInvoke)
@@ -346,39 +321,29 @@ private fun RingExplainingCue(cue: CircleActionCue) {
                     modifier = Modifier.size(22.dp).rotate(cue.iconRotationDeg),
                 )
             }
-            Text(
+            com.adelost.designkit.ui.CircleText(
                 text = cue.label,
                 color = cue.inkColor(),
-                fontSize = 12.sp,
-                fontWeight = FontWeight.Bold,
-                letterSpacing = 1.sp,
                 textAlign = TextAlign.Center,
-                maxLines = 1,
+                role = com.adelost.designkit.ui.CircleTextRole.NAME,
             )
             cue.value?.let { value ->
-                Text(
+                com.adelost.designkit.ui.CircleText(
                     text = value,
                     color = cue.ringColor(),
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    letterSpacing = 0.6.sp,
                     textAlign = TextAlign.Center,
-                    maxLines = 1,
+                    role = com.adelost.designkit.ui.CircleTextRole.VALUE,
                 )
             }
             cue.hint?.let { sentence ->
-                Text(
+                com.adelost.designkit.ui.CircleText(
                     text = sentence,
                     color = RingTokens.Dim,
-                    fontSize = 10.sp,
-                    lineHeight = 13.sp,
                     textAlign = TextAlign.Center,
-                    maxLines = EXPLAIN_HINT_MAX_LINES,
-                    overflow = TextOverflow.Ellipsis,
-                    // The sentence lives lowest, so it pays the deepest chord.
                     modifier = Modifier.padding(
                         horizontal = (hintInset - headInset).coerceAtLeast(0.dp),
                     ),
+                    role = com.adelost.designkit.ui.CircleTextRole.VALUE,
                 )
             }
         }

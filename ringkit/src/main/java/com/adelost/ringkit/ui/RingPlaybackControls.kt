@@ -117,19 +117,15 @@ fun RingPlaybackControls(
             modifier = Modifier.weight(1f),
             verticalArrangement = Arrangement.spacedBy(4.dp),
         ) {
-            CircleText(
+            com.adelost.designkit.ui.CircleText(
                 text = spec.title,
                 color = RingTokens.Ink,
-                fontSizeSp = phoneDesign?.rowTitleSize?.value ?: MenuDesign.titleSize.value,
-                fontWeight = FontWeight.Bold,
-                maxLines = 1,
+                role = com.adelost.designkit.ui.CircleTextRole.NAME,
             )
-            CircleText(
+            com.adelost.designkit.ui.CircleText(
                 text = playbackStatusLabel(spec.state, spec.positionMs, spec.durationMs),
                 color = statusColor,
-                fontSizeSp = phoneDesign?.metadataSize?.value ?: MenuDesign.subSize.value,
-                tabularNumerals = true,
-                maxLines = 1,
+                role = com.adelost.designkit.ui.CircleTextRole.NOTE,
             )
             PlaybackProgress(progress = progress, pigment = brand)
         }
@@ -162,19 +158,15 @@ private fun RoundPlaybackControls(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(MenuDesign.mediaContentGap),
     ) {
-        CircleText(
+        com.adelost.designkit.ui.CircleText(
             text = spec.title,
             color = RingTokens.Ink,
-            fontSizeSp = MenuDesign.titleSize.value,
-            fontWeight = FontWeight.Bold,
-            maxLines = 1,
+            role = com.adelost.designkit.ui.CircleTextRole.NAME,
         )
-        CircleText(
+        com.adelost.designkit.ui.CircleText(
             text = playbackStatusLabel(spec.state, spec.positionMs, spec.durationMs),
             color = statusColor,
-            fontSizeSp = MenuDesign.subSize.value,
-            tabularNumerals = true,
-            maxLines = 1,
+            role = com.adelost.designkit.ui.CircleTextRole.NOTE,
         )
         PlaybackProgress(progress = progress, pigment = circleBrandColor())
         Row(

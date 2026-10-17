@@ -33,14 +33,11 @@ fun CircleMenuOptionSection(
         // VIEW / [disc] / VIEW — Mattias 2026-08-17). The header is grouping
         // chrome, and one option is not a group.
         if (!sectionHeaderEchoesOnlyOption(section)) {
-            CircleText(
+            com.adelost.designkit.ui.CircleText(
                 text = section.label,
                 color = GraphiteTokens.Muted,
-                fontSizeSp = layout.sectionLabelSizeSp,
-                fontWeight = FontWeight.Bold,
-                letterSpacingSp = 0.8f,
-                lineHeightSp = layout.sectionLabelSizeSp + 3f,
                 modifier = Modifier.padding(top = layout.verticalGap / 2),
+                role = com.adelost.designkit.ui.CircleTextRole.TITLE,
             )
         }
         CircleMenuOptionRows(

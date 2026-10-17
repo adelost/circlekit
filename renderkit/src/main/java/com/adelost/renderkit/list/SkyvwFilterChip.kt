@@ -189,15 +189,11 @@ fun SkyvwFilterChip(
     ) {
         chip.icon?.invoke()
         if (showLabel) {
-            CircleText(
+            com.adelost.designkit.ui.CircleText(
                 text = chip.label,
                 color = if (chip.selected) GraphiteTokens.Ink else GraphiteTokens.Muted,
-                fontSizeSp = design.textSizeSp,
-                fontWeight = FontWeight.Bold,
-                letterSpacingSp = 0.7f,
-                lineHeightSp = design.lineHeightSp,
-                tabularNumerals = true,
                 modifier = Modifier.clearAndSetSemantics { },
+                role = com.adelost.designkit.ui.CircleTextRole.LABEL,
             )
         }
     }

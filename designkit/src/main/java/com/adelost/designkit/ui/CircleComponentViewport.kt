@@ -84,7 +84,11 @@ fun CircleComponentViewport(
                 fontScale = hostDensity.fontScale,
             ),
         ) {
-            Box(Modifier.fillMaxSize()) { content() }
+            if (spec.contentScale is CircleContentScale.CanonicalFit) {
+                CircleCanonicalText { Box(Modifier.fillMaxSize()) { content() } }
+            } else {
+                Box(Modifier.fillMaxSize()) { content() }
+            }
         }
         if (boundaryVisible) {
             when (spec.boundaryEdge) {

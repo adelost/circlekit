@@ -220,8 +220,6 @@ private fun StepperPillRow(
                     title = title,
                     color = RingTokens.Dim,
                     iconColor = glyphColor,
-                    fontSize = 8.5.sp,
-                    letterSpacing = 0.2.sp,
                 )
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     if (icon != null && enabled == null) {
@@ -249,8 +247,10 @@ private fun StepperPillRow(
                 }
                 if (supporting != null) {
                     com.adelost.designkit.ui.CircleText(
-                        text = supporting, role = com.adelost.designkit.ui.CircleTextRole.NOTE,
-                        color = RingTokens.Dim, textAlign = TextAlign.Center,
+                        text = supporting,
+                        role = com.adelost.designkit.ui.CircleTextRole.NOTE,
+                        color = RingTokens.Dim,
+                        textAlign = TextAlign.Center,
                     )
                 }
             }
@@ -326,7 +326,11 @@ private fun StepCircle(
             contentPaddingV = 0.dp,
             progressFeedback = HoldProgressFeedback.External(onProgressChange),
         ) {
-            Text(text = text, color = RingTokens.Ink, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+            com.adelost.designkit.ui.CircleText(
+                text = text,
+                color = RingTokens.Ink,
+                role = com.adelost.designkit.ui.CircleTextRole.NAME,
+            )
         }
         return
     }
@@ -347,12 +351,11 @@ private fun StepCircle(
             ),
         contentAlignment = Alignment.Center,
     ) {
-        Text(
+        com.adelost.designkit.ui.CircleText(
             text = text,
             color = RingTokens.Ink,
-            fontSize = 16.sp,
-            fontWeight = FontWeight.Bold,
             modifier = Modifier.circleLabelProgress(feedback = feedback),
+            role = com.adelost.designkit.ui.CircleTextRole.NAME,
         )
     }
 }

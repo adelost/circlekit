@@ -205,42 +205,31 @@ private fun RingExplanationCue(cue: CircleActionCue, onDismiss: () -> Unit) {
             contentDescription = cue.label,
             modifier = Modifier.size(24.dp).rotate(cue.iconRotationDeg),
         )
-        Text(
+        com.adelost.designkit.ui.CircleText(
             text = cue.label,
             color = RingTokens.Ink,
-            fontSize = if (round) 11.sp else 18.sp,
-            fontWeight = FontWeight.Bold,
-            letterSpacing = 0.5.sp,
             textAlign = TextAlign.Center,
-            maxLines = 2,
-            overflow = TextOverflow.Ellipsis,
+            role = com.adelost.designkit.ui.CircleTextRole.NAME,
         )
         cue.value?.let { value ->
             // CircleText, as the hint below: a Wear `Text` spaced the RATE reading's three lines at body1's 20 sp
             // and pushed the close button to the rim (Skyvw row 126).
-            CircleText(
+            com.adelost.designkit.ui.CircleText(
                 text = value,
                 color = cue.semanticColor ?: circleBrandColor(),
-                fontSizeSp = if (round) 10f else 14f,
-                fontWeight = FontWeight.Bold,
                 textAlign = TextAlign.Center,
-                // A value that carries its own lines keeps them: one line cut Skyvw's RATE reading to
-                // "Sensor max 100…", a number that reads as going on (row 126).
-                maxLines = value.lines().size,
-                overflow = TextOverflow.Ellipsis,
+                role = com.adelost.designkit.ui.CircleTextRole.VALUE,
             )
         }
         // CircleText, as a row's subtitle: a Wear `Text` inherits body1's
         // 20 sp line height whatever its size, which spread a 9 sp explanation
         // to twice its lines (Skyvw row 117: 66 px a line against a row's 44).
-        CircleText(
+        com.adelost.designkit.ui.CircleText(
             text = requireNotNull(cue.hint),
             color = RingTokens.Dim,
-            fontSizeSp = if (round) 9f else 16f,
             textAlign = TextAlign.Center,
-            maxLines = 5,
-            overflow = TextOverflow.Ellipsis,
             modifier = Modifier.padding(top = 5.dp),
+            role = com.adelost.designkit.ui.CircleTextRole.VALUE,
         )
         cue.infoAction?.let { action ->
             HoldPill(

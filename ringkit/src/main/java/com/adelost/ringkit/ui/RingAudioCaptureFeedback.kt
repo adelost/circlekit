@@ -50,11 +50,10 @@ fun RingAudioCaptureFeedback(
         modifier = modifier,
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        Text(
+        com.adelost.designkit.ui.CircleText(
             text = formatCaptureDuration(spec.elapsedMs),
             color = RingTokens.Ink,
-            fontSize = 13.sp,
-            fontWeight = FontWeight.Bold,
+            role = com.adelost.designkit.ui.CircleTextRole.NUMBER,
         )
         BoxWithConstraints(
             modifier = Modifier.fillMaxWidth().roundSafeContentInset(enabled = round),

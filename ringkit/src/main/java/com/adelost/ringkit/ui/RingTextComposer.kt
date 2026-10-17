@@ -82,11 +82,8 @@ fun RingTextComposer(
             enabled = spec.enabled,
             maxLines = 5,
             cursorBrush = SolidColor(CircleStyleTokens.Action),
-            textStyle = TextStyle(
-                color = RingTokens.Ink,
-                fontSize = design.rowTitleSize,
-                fontWeight = FontWeight.Medium,
-            ),
+            textStyle = com.adelost.designkit.ui.circleRoleTextStyle(
+                com.adelost.designkit.ui.CircleTextRole.NAME, RingTokens.Ink),
             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Send),
             keyboardActions = KeyboardActions(
                 onSend = { if (canSubmit) spec.onSubmit() },
@@ -102,10 +99,10 @@ fun RingTextComposer(
                     contentAlignment = Alignment.CenterStart,
                 ) {
                     if (spec.value.isEmpty()) {
-                        Text(
+                        com.adelost.designkit.ui.CircleText(
                             text = spec.label,
                             color = RingTokens.Dim,
-                            fontSize = design.rowSubtitleSize,
+                            role = com.adelost.designkit.ui.CircleTextRole.NAME,
                         )
                     }
                     field()

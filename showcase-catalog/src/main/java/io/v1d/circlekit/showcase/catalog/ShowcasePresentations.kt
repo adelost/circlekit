@@ -166,11 +166,11 @@ object ShowcasePresentations {
     }
 
     @Composable
-    private fun DemoNote(text: String) = CircleText(
+    private fun DemoNote(text: String) = com.adelost.designkit.ui.CircleText(
         text = text,
         color = RingTokens.Dim,
-        fontSizeSp = MenuDesign.subSize.value,
         textAlign = TextAlign.Center,
+        role = com.adelost.designkit.ui.CircleTextRole.NOTE,
     )
 
     @Composable

@@ -67,22 +67,26 @@ fun RingMessage(spec: RingMessageSpec, modifier: Modifier = Modifier) {
                     .padding(vertical = 12.dp),
                 verticalArrangement = Arrangement.spacedBy(6.dp),
             ) {
-                if (spec.author.isNotBlank()) Text(
+                if (spec.author.isNotBlank()) com.adelost.designkit.ui.CircleText(
                     text = spec.author,
                     color = layout.authorColor,
-                    fontSize = if (round) 10.sp else 12.sp,
-                    fontWeight = FontWeight.SemiBold,
+                    role = com.adelost.designkit.ui.CircleTextRole.NAME,
+                    userContent = true,
                 )
                 SelectionContainer {
-                    Text(
+                    com.adelost.designkit.ui.CircleText(
                         text = spec.body,
                         color = RingTokens.Ink,
-                        fontSize = if (round) 13.sp else 16.sp,
-                        lineHeight = if (round) 18.sp else 24.sp,
+                        role = com.adelost.designkit.ui.CircleTextRole.VALUE,
+                        userContent = true,
                     )
                 }
                 if (spec.status.isNotBlank()) {
-                    Text(text = spec.status, color = RingTokens.Dim, fontSize = if (round) 10.sp else 12.sp)
+                    com.adelost.designkit.ui.CircleText(
+                        text = spec.status,
+                        color = RingTokens.Dim,
+                        role = com.adelost.designkit.ui.CircleTextRole.NOTE,
+                    )
                 }
             }
         }
