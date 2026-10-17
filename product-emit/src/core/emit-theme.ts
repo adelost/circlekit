@@ -9,6 +9,7 @@ import {
 } from "./theme-model.js";
 import { kotlinIdentifier, kotlinStringLiteral } from "./kotlin-syntax.js";
 import { CIRCLEKIT_STYLE, circleTones, type CircleTones } from "@v1d/circlekit-assets";
+import { emitCircleLineCss } from "./emit-circle-line-css.js";
 import type { CssEmissionOptions, SourcedKotlinEmissionOptions } from "./emission-options.js";
 
 /**
@@ -228,6 +229,8 @@ export function emitThemeCss(ir: ThemeCatalogIr, options: CssEmissionOptions): s
 ${chrome}
 
 ${text}
+
+${emitCircleLineCss()}
 
 ${identity}
 

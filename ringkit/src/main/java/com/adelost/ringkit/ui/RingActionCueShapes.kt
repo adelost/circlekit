@@ -1,5 +1,8 @@
 package com.adelost.ringkit.ui
 
+import com.adelost.designkit.ui.CircleLine
+import com.adelost.designkit.ui.circleProgressStroke
+
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -114,8 +117,8 @@ private fun RingBareCue(cue: CircleActionCue) {
         ProgressRing(
             progress = cue.progress,
             diameter = ringSize,
-            trackWidth = 6.dp,
-            progressWidth = 6.dp,
+            trackWidth = circleProgressStroke(ringSize),
+            progressWidth = circleProgressStroke(ringSize),
             progressColor = cue.ringColor(),
         )
         Column(
@@ -198,8 +201,8 @@ private fun RingSettledExplainCue(cue: CircleActionCue) {
                 ProgressRing(
                     progress = 1f,
                     diameter = SETTLED_RING_DIAMETER,
-                    trackWidth = 3.dp,
-                    progressWidth = 3.dp,
+                    trackWidth = circleProgressStroke(SETTLED_RING_DIAMETER),
+                    progressWidth = circleProgressStroke(SETTLED_RING_DIAMETER),
                     progressColor = cue.ringColor(),
                 )
                 Icon(
@@ -310,8 +313,8 @@ private fun RingExplainingCue(cue: CircleActionCue) {
                 ProgressRing(
                     progress = cue.progress,
                     diameter = EXPLAIN_RING_DIAMETER,
-                    trackWidth = 4.dp,
-                    progressWidth = 4.dp,
+                    trackWidth = circleProgressStroke(EXPLAIN_RING_DIAMETER),
+                    progressWidth = circleProgressStroke(EXPLAIN_RING_DIAMETER),
                     progressColor = cue.ringColor(),
                 )
                 Icon(

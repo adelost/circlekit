@@ -121,7 +121,7 @@ fun CircleChoiceIndicator(
                 color = restColor,
                 start = Offset(xFor(0f), centerY),
                 end = Offset(xFor(1f), centerY),
-                strokeWidth = 0.7.dp.toPx(),
+                strokeWidth = CircleLine.Edge.toPx(),
                 cap = StrokeCap.Round,
             )
         }
@@ -130,7 +130,7 @@ fun CircleChoiceIndicator(
                 color = restColor,
                 radius = radius,
                 center = Offset(xFor(index.toFloat()), centerY),
-                style = Stroke(width = 0.7.dp.toPx()),
+                style = Stroke(width = CircleLine.Edge.toPx()),
             )
         }
         drawCircle(

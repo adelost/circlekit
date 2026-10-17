@@ -28,8 +28,8 @@ object MenuDesign {
     val watchActionRingDiameter: Dp = 30.dp
 
     val iconRingDiameter: Dp = watchActionRingDiameter
-    val iconRingStroke: Dp = 1.5.dp
-    val contourStroke: Dp = 1.dp
+    val iconRingStroke: Dp = CircleLine.Edge
+    val contourStroke: Dp = CircleLine.Edge
     val iconSize: Dp = 14.dp
     /** Transient explanation affordance shown only on the last-touched row. */
     val rowInfoDiameter: Dp = 22.dp
@@ -161,7 +161,7 @@ object MenuDesign {
      * the SAME chrome as the icon rings is drawn at this width, not at the
      * stroke the arc is issued with (Mattias 2026-07-21: "samma som gråa
      * strecket runt ikoner.. samma tjocklek också"). */
-    val contourHairline: Dp = iconRingStroke / 2
+    val contourHairline: Dp = CircleLine.Hairline
 
     /** How much of its colour a suggested control's ring keeps: dimmed, never dashed (style C). */
     const val suggestedContourShare: Float = 0.5f

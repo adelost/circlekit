@@ -22,6 +22,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.draw.scale
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.PathEffect
@@ -36,11 +38,9 @@ import androidx.compose.ui.unit.sp
 /**
  * THE ring contour — the one drawing behind every icon ring: start-screen
  * actions, menu launchers and settings rows. An edge arc on a
- * circle-clipped box; the clip takes the outer half of the stroke, leaving
- * the approved hairline. Colour is the caller's single decision (neutral at
- * rest, [MenuDesign.ringActive] for an ON toggle). The host box MUST carry
- * `clip(CircleShape)` — without the clip the full stroke renders and the
- * ring reads twice as heavy.
+ * circle-clipped box. Its stroke sits inside the bounds, so the visible edge
+ * is the same Edge role as an unclipped ring. Colour is the caller's single
+ * decision (neutral at rest, [MenuDesign.ringActive] for an ON toggle).
  *
  * [suggested] is a control the product proposed rather than one a person chose: its ring is drawn solid in the dimmed
  * weight of its own colour ([circleSuggestedContour]). Style C (skydive-altimeter docs/plans/2026-10-17-skyvw-style-c.md,
@@ -52,12 +52,15 @@ fun Modifier.circleRingContour(
     strokeWidth: Dp = MenuDesign.iconRingStroke,
     suggested: Boolean = false,
 ): Modifier = drawBehind {
+    val stroke = strokeWidth.toPx()
     drawArc(
         color = circleSuggestedContour(color, suggested),
+        topLeft = Offset(stroke / 2f, stroke / 2f),
+        size = Size((size.width - stroke).coerceAtLeast(0f), (size.height - stroke).coerceAtLeast(0f)),
         startAngle = -90f,
         sweepAngle = 360f,
         useCenter = false,
-        style = Stroke(width = strokeWidth.toPx()),
+        style = Stroke(width = stroke),
     )
 }
 

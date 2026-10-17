@@ -2,7 +2,7 @@ import { readFileSync, writeFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { RING_ICON_ASSETS } from "../dist/src/ring-icon-assets.js";
-import { CIRCLEKIT_ACCENTS, CIRCLEKIT_NEUTRAL_TONES, CIRCLEKIT_STYLE, CIRCLEKIT_SWITCH, CIRCLEKIT_TONE, CIRCLEKIT_TEXT } from "../dist/src/circle-style.js";
+import { CIRCLEKIT_ACCENTS, CIRCLEKIT_LINE, CIRCLEKIT_NEUTRAL_TONES, CIRCLEKIT_STYLE, CIRCLEKIT_SWITCH, CIRCLEKIT_TONE, CIRCLEKIT_TEXT } from "../dist/src/circle-style.js";
 import { circleTones } from "../dist/src/circle-tone.js";
 import { DEFAULT_COMPOSITE_ICON_STYLES } from "./ring-icon-native-styles.mjs";
 
@@ -13,6 +13,7 @@ const outputs = new Map([
   [resolve(designkit, "RingIconPortableCatalog.kt"), emitCatalog()],
   [resolve(designkit, "CircleStyleTokens.kt"), emitCircleStyle()],
   [resolve(designkit, "CircleTextRoles.kt"), emitCircleText()],
+  [resolve(designkit, "CircleLine.kt"), emitCircleLine()],
 ]);
 const check = process.argv.includes("--check");
 let drift = false;
@@ -40,6 +41,15 @@ function emitCircleText() {
     `enum class CircleTextFace { ONEST, BARLOW_SEMI_CONDENSED }\n\n` +
     `object CircleTextFaces { val Words = CircleTextFace.${CIRCLEKIT_TEXT.faces.words.toUpperCase().replaceAll(" ", "_")}; val Numerals = CircleTextFace.${CIRCLEKIT_TEXT.faces.numerals.toUpperCase().replaceAll(" ", "_")} }\n\n` +
     `enum class CircleTextRole(val watch: CircleRoleStyle, val phone: CircleRoleStyle) {\n${roles};\n}\n`;
+}
+
+function emitCircleLine() {
+  const roles = Object.entries(CIRCLEKIT_LINE).map(([id, value]) =>
+    `    const val ${pascal(id)}Dp = ${value}f\n    val ${pascal(id)} = ${pascal(id)}Dp.dp`).join("\n");
+  return `// GENERATED from circlekit-assets/src/circle-style.ts - do not edit.\n` +
+    `package com.adelost.designkit.ui\n\nimport androidx.compose.ui.unit.dp\n\n` +
+    `/** Line roles at the canonical 192 dp face; density scaling belongs to the viewport. */\n` +
+    `object CircleLine {\n${roles}\n}\n`;
 }
 
 function emitRingIcons() {

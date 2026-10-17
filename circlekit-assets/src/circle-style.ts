@@ -38,6 +38,14 @@ export const CIRCLEKIT_TEXT = {
   },
 } as const;
 
+/** Fixed line roles in dp on the 192 dp face. Canonical viewports scale the whole drawing together. */
+export const CIRCLEKIT_LINE = {
+  hairline: 0.75,
+  edge: 1.5,
+  stroke: 2,
+  bar: 4,
+} as const;
+
 /**
  * How a colour's quieter tones follow from it. A colour is written once, as the tone you read (strong); its ground
  * sits behind an icon at a fixed lightness with a capped chroma, and its dimmed tone lies part of the way from the

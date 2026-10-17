@@ -2,6 +2,9 @@ package com.adelost.ringkit.ui
 
 import com.adelost.designkit.ui.*
 
+import com.adelost.designkit.ui.CircleLine
+import com.adelost.designkit.ui.circleProgressStroke
+
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
@@ -104,7 +107,7 @@ fun ProgressRing(
     progress: Float?,
     modifier: Modifier = Modifier,
     diameter: Dp = 34.dp,
-    trackWidth: Dp = 2.5.dp,
+    trackWidth: Dp = CircleLine.Edge,
     progressWidth: Dp = trackWidth,
     trackColor: Color = RingTokens.ProgressTrack,
     progressColor: Color? = null,
@@ -153,8 +156,8 @@ fun ProgressArcRing(
         ProgressRing(
             progress = fraction,
             diameter = diameter,
-            trackWidth = 2.5.dp,
-            progressWidth = 3.dp,
+            trackWidth = CircleLine.Edge,
+            progressWidth = CircleLine.Edge,
             surfaceColor = RingTokens.ProgressSurface,
             progressCap = StrokeCap.Round,
         )
