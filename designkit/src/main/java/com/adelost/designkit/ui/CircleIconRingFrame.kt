@@ -56,6 +56,8 @@ internal fun CircleIconRingFrame(
     // One C disc for every ring, a data source's included (style C, Mattias 2026-10-17): the kind's ground and edge
     // and the icon in its kind. A reading's state is [centerValueColor] and sits on the value, never on the edge.
     val look = circleDiscLook(operable = true, active = if (enabled) active else false, tones = circleAccentTones(accent))
+    // Off, disabled or a toggle that is off, dims the icon whatever pigment it was handed: off never shows a colour.
+    val off = !enabled || active == false
     Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = modifier) {
         Box(
             modifier = Modifier
@@ -74,8 +76,8 @@ internal fun CircleIconRingFrame(
                 CircleStyledIcon(
                     style = ringIconStyle(icon, accent),
                     contentDescription = label.takeUnless { LocalActionParentOwnsRowCopy.current },
-                    strength = if (!enabled || active == false) CircleAccentStrength.INACTIVE else CircleAccentStrength.ACTIVE,
-                    tintOverride = semanticColor,
+                    strength = if (off) CircleAccentStrength.INACTIVE else CircleAccentStrength.ACTIVE,
+                    tintOverride = semanticColor?.takeUnless { off },
                     modifier = Modifier
                         .size(
                             diameter * if (centerValue != null) {
