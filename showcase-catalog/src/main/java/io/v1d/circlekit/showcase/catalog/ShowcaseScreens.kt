@@ -126,7 +126,7 @@ object ShowcaseScreens {
                     title = scenario.label,
                     sub = scenario.description,
                     icon = ShowcaseNativeBindings.requireIcon(case.iconId),
-                    semanticColor = androidx.compose.ui.graphics.Color(case.family.categoryArgb),
+                    // No family colour here: a row's semanticColor is a state on its value, and this value is prose.
                     onTap = { session.open(case.id, scenario.id) },
                     multiline = true,
                 )

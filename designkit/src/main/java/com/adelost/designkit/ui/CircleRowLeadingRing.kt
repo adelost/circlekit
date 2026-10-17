@@ -32,7 +32,9 @@ internal fun CircleRowLeadingRing(
     feedbackSweep: () -> Float,
     iconRotationDeg: Float,
 ) {
-    // Progress is the one action colour (the scheme in scope); the disc speaks the row's own kind (circleRowDiscLook).
+    // Progress is the one action colour (the scheme in scope); the disc and the glyph speak the row's own kind
+    // (circleRowDiscLook). A state is the scale's colour on the value (style C), so [semanticColor] colours a centre
+    // value and never the glyph: the same icon has the same colour everywhere.
     val progressContour = circleBrandColor()
     val look = circleRowDiscLook(affordance, active, circleAccentTones(accent))
     val off = affordance.operable && active == false
@@ -50,7 +52,6 @@ internal fun CircleRowLeadingRing(
                 style = ringIconStyle(icon, accent),
                 contentDescription = null,
                 strength = if (off) CircleAccentStrength.INACTIVE else CircleAccentStrength.ACTIVE,
-                tintOverride = semanticColor,
                 modifier = Modifier.size(phoneDesign?.rowIconSize ?: MenuDesign.iconSize).rotate(iconRotationDeg),
             )
         } else {
