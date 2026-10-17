@@ -1,5 +1,6 @@
 package com.adelost.ringkit.ui
 
+import com.adelost.designkit.ui.CircleLine
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.tween
@@ -261,7 +262,8 @@ private fun AltitudePreviewScrubber(
             },
     ) {
         val y = size.height / 2f
-        val stroke = if (phone) 4.dp.toPx() else 2.dp.toPx()
+        val stroke = CircleLine.Bar.toPx()
+        val markerUnit = if (phone) 4.dp.toPx() else 2.dp.toPx()
         drawLine(
             color = scheme.subdued.copy(alpha = 0.55f),
             start = Offset(0f, y),
@@ -280,20 +282,20 @@ private fun AltitudePreviewScrubber(
             val x = size.width * (checkpoint / spec.maxAltitudeM).coerceIn(0f, 1f)
             drawLine(
                 color = spec.colorAt(checkpoint, scheme.theme).copy(alpha = 0.8f),
-                start = Offset(x, y - stroke * 1.8f),
-                end = Offset(x, y + stroke * 1.8f),
-                strokeWidth = stroke * 0.65f,
+                start = Offset(x, y - markerUnit * 1.8f),
+                end = Offset(x, y + markerUnit * 1.8f),
+                strokeWidth = CircleLine.Hairline.toPx(),
                 cap = StrokeCap.Round,
             )
         }
         drawCircle(
             color = Color.Black,
-            radius = stroke * 2.2f,
+            radius = markerUnit * 2.2f,
             center = Offset(size.width * fraction, y),
         )
         drawCircle(
             color = currentColor,
-            radius = stroke * 1.45f,
+            radius = markerUnit * 1.45f,
             center = Offset(size.width * fraction, y),
         )
     }

@@ -39,7 +39,7 @@ object MenuDesign {
     val roundMediaContentWidth: Dp = 112.dp
     /** One centred chord for round launcher grids and reading rows. */
     val roundMenuContentMaxWidth: Dp = 136.dp
-    val mediaTrackHeight: Dp = 3.dp
+    val mediaTrackHeight: Dp = CircleLine.Bar
     val mediaContentGap: Dp = 4.dp
 
     val statRingDiameter: Dp = 46.dp

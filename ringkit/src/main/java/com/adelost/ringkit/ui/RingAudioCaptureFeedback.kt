@@ -1,5 +1,6 @@
 package com.adelost.ringkit.ui
 
+import com.adelost.designkit.ui.CircleLine
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -73,7 +74,7 @@ fun RingAudioCaptureFeedback(
                             color = pigment.copy(alpha = 0.38f + level * 0.62f),
                             start = Offset(index * step, centerY - halfHeight),
                             end = Offset(index * step, centerY + halfHeight),
-                            strokeWidth = 3.dp.toPx(),
+                            strokeWidth = CircleLine.Bar.toPx(),
                             cap = StrokeCap.Round,
                         )
                     }

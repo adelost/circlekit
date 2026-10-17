@@ -1,5 +1,6 @@
 package com.adelost.ringkit.ui
 
+import com.adelost.designkit.ui.CircleLine
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -91,7 +92,7 @@ fun RingTextComposer(
             modifier = Modifier
                 .weight(1f)
                 .heightIn(min = 56.dp)
-                .border(1.dp, RingTokens.Outline, RoundedCornerShape(14.dp))
+                .border(CircleLine.Edge, RingTokens.Outline, RoundedCornerShape(14.dp))
                 .background(GraphiteTokens.Canvas, RoundedCornerShape(14.dp)),
             decorationBox = { field ->
                 Box(

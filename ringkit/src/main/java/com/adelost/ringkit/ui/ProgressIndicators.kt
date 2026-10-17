@@ -53,7 +53,7 @@ fun LabelProgressBar(
     progress: Float?,
     modifier: Modifier = Modifier,
     width: Dp = 44.dp,
-    height: Dp = 2.dp,
+    height: Dp = CircleLine.Bar,
     trackColor: Color = RingTokens.ProgressTrack,
     fillColor: Color? = null,
 ) {

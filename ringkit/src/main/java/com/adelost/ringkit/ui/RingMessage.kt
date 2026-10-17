@@ -1,5 +1,6 @@
 package com.adelost.ringkit.ui
 
+import com.adelost.designkit.ui.CircleLine
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -59,7 +60,7 @@ fun RingMessage(spec: RingMessageSpec, modifier: Modifier = Modifier) {
     Column(modifier.fillMaxWidth()) {
         Row(Modifier.fillMaxWidth().padding(start = layout.startInsetDp.dp).height(IntrinsicSize.Min)) {
             layout.edgeColor?.let { edge ->
-                Box(Modifier.padding(vertical = 12.dp).width(2.dp).fillMaxHeight().background(edge))
+                Box(Modifier.padding(vertical = 12.dp).width(CircleLine.Edge).fillMaxHeight().background(edge))
             }
             Column(
                 modifier = Modifier.fillMaxWidth()
@@ -90,6 +91,6 @@ fun RingMessage(spec: RingMessageSpec, modifier: Modifier = Modifier) {
                 }
             }
         }
-        Box(Modifier.padding(top = 8.dp).fillMaxWidth().height(0.5.dp).background(RingTokens.Outline))
+        Box(Modifier.padding(top = 8.dp).fillMaxWidth().height(CircleLine.Hairline).background(RingTokens.Outline))
     }
 }

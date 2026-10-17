@@ -44,7 +44,7 @@ object RingTokens {
 
 /** Shared geometry for the Graphite icon-ring language across app surfaces. */
 object RingMetrics {
-    val StrokeWidth = 2.5.dp
+    val StrokeWidth = CircleLine.Edge
 
     /** Icon share of its ring, pinned to the approved start-screen proportion
      * (PhoneSurfaceDesign action: 24dp icon in a 56dp ring). Menu launchers

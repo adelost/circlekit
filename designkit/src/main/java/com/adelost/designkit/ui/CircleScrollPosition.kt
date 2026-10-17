@@ -59,7 +59,7 @@ object CircleScrollPositionDesign {
     /** On a phone, from the right edge to the middle of the line, and the gap the line keeps at either end. */
     val PhoneEdgeInset = 4.dp
     val PhoneEndInset = 8.dp
-    val Stroke = RingMetrics.StrokeWidth
+    val Stroke = CircleLine.Bar
     /** The shown part never draws shorter than this share of the track, so a long page still shows one. */
     const val MIN_SHOWN_SHARE = 0.2f
     /** Shown this long after the position last moved, then faded. */
