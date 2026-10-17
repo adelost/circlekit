@@ -433,19 +433,7 @@ object RingIconsOutline {
     val ChevronLeft: ImageVector by lazy { stroke("chevron-left", "M15 18l-6 -6l6 -6") }
 
     // ---- jump-tag glyphs (same stroke grammar, hand-drawn figures) ----
-
-    /** Head-up sit-fly figure: head on top, arms up, knees bent. */
-    val Freefly: ImageVector by lazy {
-        stroke(
-            "freefly",
-            "M12 4.4m-1.9 0a1.9 1.9 0 1 0 3.8 0a1.9 1.9 0 1 0 -3.8 0",
-            "M12 7v6",
-            "M12 9.5L7.5 5.7",
-            "M12 9.5l4.5 -3.8",
-            "M12 13l-4 5.5",
-            "M12 13l4 5.5",
-        )
-    }
+    // FREEFLY and BELLY-ARCH have no outline: their filled figures are drawn in strokes already, so both styles share them.
 
     /** Inverted figure: head at the bottom, legs up in a V. */
     val HeadDown: ImageVector by lazy {
@@ -457,15 +445,6 @@ object RingIconsOutline {
             "M12 14.5l4.5 3.8",
             "M12 11l-4 -5.5",
             "M12 11l4 -5.5",
-        )
-    }
-
-    /** Belly arch seen from the side, head to the right. */
-    val BellyArch: ImageVector by lazy {
-        stroke(
-            "belly-arch",
-            "M3.5 15Q12 7.5 20.5 15",
-            "M20.6 11.9m-1.6 0a1.6 1.6 0 1 0 3.2 0a1.6 1.6 0 1 0 -3.2 0",
         )
     }
 

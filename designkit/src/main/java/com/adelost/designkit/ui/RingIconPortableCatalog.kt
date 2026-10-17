@@ -13,6 +13,7 @@ internal val PORTABLE_RING_ICON_CATALOG = listOf(
     RingIcons.Tandem,
     RingIcons.Wingsuit,
     RingIcons.Tracking,
+    RingIcons.Angle,
     RingIcons.CanopySwoop,
     RingIcons.Formation,
     RingIcons.Camera,
