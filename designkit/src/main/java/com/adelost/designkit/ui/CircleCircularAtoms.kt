@@ -320,8 +320,8 @@ fun CircleIconRing(
     effect: CircleActionEffect = CircleActionEffect.ACTS,
     enabled: Boolean = true,
     semanticColor: Color? = null,
-    /** The product proposed this, a person did not choose it: a dashed
-     *  contour, the one reading a suggestion has anywhere in the language. */
+    /** The product proposed this, a person did not choose it: the ring is
+     *  dimmed in its own colour, never dashed ([circleSuggestedContour]). */
     suggested: Boolean = false,
 ) {
     val feedback = rememberCircleActionFeedbackState()
