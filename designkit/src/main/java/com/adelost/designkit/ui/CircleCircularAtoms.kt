@@ -101,7 +101,8 @@ fun circleActionDiscChrome(
     tones: CircleTones = CircleStyleTokens.NeutralTones,
     iconTint: Color? = null,
 ): CircleActionDiscChrome {
-    val look = circleDiscLook(operable = true, active = if (enabled) active else false, tones = tones)
+    // An action disc that is not lit is at rest, not off; only an unavailable one wears off.
+    val look = circleDiscLook(operable = true, active = if (!enabled) false else active.takeIf { it }, tones = tones)
     return CircleActionDiscChrome(
         fill = when {
             pressed -> RingTokens.ProgressSurface.copy(alpha = 0.78f)

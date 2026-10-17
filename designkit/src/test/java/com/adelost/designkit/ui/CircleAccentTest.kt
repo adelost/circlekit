@@ -8,15 +8,15 @@ import org.junit.Test
 
 class CircleAccentTest {
     @Test
-    fun `semantic strength steps from the strong tone down to the dimmed one`() {
+    fun `the supporting and inactive tones are quieter than the strong one`() {
         val palette = CircleAccentPalette.Default
         CircleAccent.entries.forEach { accent ->
             val active = palette.color(accent, CircleAccentStrength.ACTIVE).luminance()
             val supporting = palette.color(accent, CircleAccentStrength.SUPPORTING).luminance()
             val inactive = palette.color(accent, CircleAccentStrength.INACTIVE).luminance()
 
-            assertTrue("$accent supporting", supporting <= active)
-            assertTrue("$accent inactive", inactive <= supporting)
+            assertTrue("$accent supporting", supporting < active)
+            assertTrue("$accent inactive", inactive < active)
         }
         assertNotEquals(palette.color(CircleAccent.SUN), palette.color(CircleAccent.RAIN))
     }
