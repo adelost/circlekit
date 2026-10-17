@@ -27,7 +27,7 @@
     "pack:release": "npm run test && npm run verify:acme && npm pack"
   },
   "dependencies": {
-    "@v1d/circlekit-assets": "https://circlekit.pages.dev/npm/v1d/circlekit-assets/0.3.131/v1d-circlekit-assets-0.3.131.tgz",
+    "@v1d/circlekit-assets": "https://circlekit.pages.dev/npm/v1d/circlekit-assets/0.3.132/v1d-circlekit-assets-0.3.132.tgz",
     "@v1d/skydiving-legos": "https://circlekit.pages.dev/npm/v1d/skydiving-legos/0.1.5/v1d-skydiving-legos-0.1.5.tgz"
   },
   "peerDependencies": {
