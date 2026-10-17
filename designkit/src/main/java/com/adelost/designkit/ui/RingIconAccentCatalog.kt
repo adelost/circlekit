@@ -23,8 +23,21 @@ val LocalCircleIconSetStyle = androidx.compose.runtime.staticCompositionLocalOf 
 fun circleIconVariant(icon: ImageVector, style: CircleIconSetStyle): ImageVector =
     if (style == CircleIconSetStyle.OUTLINE) RING_ICON_OUTLINE_BY_NAME[icon.name] ?: icon else icon
 
-@Suppress("UNUSED_PARAMETER")
-fun ringIconAccent(icon: ImageVector?): CircleAccent = CircleAccent.NEUTRAL
+/**
+ * Each catalogue icon's colour, by asset id, as the product declares it (Skyvw: product-icons.ts), registered once when
+ * the app starts. Style C, Mattias 2026-10-17: the colour belongs to the icon, so a row that draws an icon without
+ * naming a colour still speaks the icon's kind (136 Skyvw rows drew warm white because this answered NEUTRAL).
+ */
+private val registeredIconAccents = java.util.concurrent.atomic.AtomicReference<Map<String, CircleAccent>>(emptyMap())
+
+/** Registers the product's icon colours; [accents] maps an asset id ([ImageVector.name] in [RingIcons]) to its accent. */
+fun registerRingIconAccents(accents: Map<String, CircleAccent>) {
+    registeredIconAccents.set(accents.toMap())
+}
+
+/** The colour the product declared for [icon], or NEUTRAL for an icon it gave none: a pointer, a tool. */
+fun ringIconAccent(icon: ImageVector?): CircleAccent =
+    icon?.let { registeredIconAccents.get()[it.name] } ?: CircleAccent.NEUTRAL
 
 /** A composable glyph is a stack of vectors sharing the same 24x24 viewport. */
 @Immutable

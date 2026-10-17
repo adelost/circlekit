@@ -67,12 +67,9 @@ internal fun CircleIconRingFrame(
             if (contourColor != null) {
                 Canvas(Modifier.size(diameter)) {
                     drawCircle(
-                        color = contourColor,
+                        color = circleSuggestedContour(contourColor, suggested),
                         radius = size.minDimension / 2f - 2.dp.toPx(),
-                        style = Stroke(
-                            width = RingMetrics.StrokeWidth.toPx(),
-                            pathEffect = circleSuggestedDashEffect(suggested) { it.toPx() },
-                        ),
+                        style = Stroke(width = RingMetrics.StrokeWidth.toPx()),
                     )
                 }
             } else {

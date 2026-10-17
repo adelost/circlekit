@@ -42,9 +42,10 @@ import androidx.compose.ui.unit.sp
  * `clip(CircleShape)` — without the clip the full stroke renders and the
  * ring reads twice as heavy.
  *
- * [suggested] is the one dashed reading in the language: a control the product
- * proposed rather than one a person chose. It is the ring's GEOMETRY that says
- * so, never shade alone, or a suggestion reads as a disabled control.
+ * [suggested] is a control the product proposed rather than one a person chose: its ring is drawn solid in the dimmed
+ * weight of its own colour ([circleSuggestedContour]). Style C (skydive-altimeter docs/plans/2026-10-17-skyvw-style-c.md,
+ * "Osäkert är dämpat, aldrig streckat"): uncertainty is dimmed, never dashed. It stays apart from a disabled control,
+ * whose ring is the off grey, because it keeps its own colour.
  */
 fun Modifier.circleRingContour(
     color: Color,
@@ -52,29 +53,17 @@ fun Modifier.circleRingContour(
     suggested: Boolean = false,
 ): Modifier = drawBehind {
     drawArc(
-        color = color,
+        color = circleSuggestedContour(color, suggested),
         startAngle = -90f,
         sweepAngle = 360f,
         useCenter = false,
-        style = Stroke(
-            width = strokeWidth.toPx(),
-            pathEffect = circleSuggestedDashEffect(suggested) { it.toPx() },
-        ),
+        style = Stroke(width = strokeWidth.toPx()),
     )
 }
 
-/**
- * The dash a suggested contour is drawn with, as a decision separate from the
- * drawing: an empty gap array silently renders a SOLID ring, so "did the
- * suggestion keep its dash?" has to be answerable without a screenshot.
- */
-fun circleSuggestedDashLengths(suggested: Boolean): List<Dp> =
-    if (suggested) listOf(MenuDesign.suggestedDashOn, MenuDesign.suggestedDashOff) else emptyList()
-
-internal fun circleSuggestedDashEffect(suggested: Boolean, toPx: (Dp) -> Float): PathEffect? =
-    circleSuggestedDashLengths(suggested)
-        .takeIf { it.isNotEmpty() }
-        ?.let { PathEffect.dashPathEffect(it.map(toPx).toFloatArray()) }
+/** A contour's colour, dimmed when the product only suggests the control: the decision apart from the drawing. */
+fun circleSuggestedContour(color: Color, suggested: Boolean): Color =
+    if (suggested) color.copy(alpha = color.alpha * MenuDesign.suggestedContourShare) else color
 
 /** Resolved visual state for a label-free circular action. */
 @Immutable
