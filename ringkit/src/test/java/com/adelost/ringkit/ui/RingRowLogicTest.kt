@@ -45,12 +45,14 @@ class RingRowLogicTest {
     private val threeWay = listOf("A", "B", "C")
 
     @Test
-    fun `resting choice keeps the ring dark, anything past it lights it`() {
-        assertFalse(choiceIsActive(onOff, "OFF", CircleChoiceRole.TOGGLE))
-        assertTrue(choiceIsActive(onOff, "ON", CircleChoiceRole.TOGGLE))
-        assertFalse(choiceIsActive(volume, "QUIET", CircleChoiceRole.STEPPED))
-        assertFalse(choiceIsActive(volume, "NORMAL", CircleChoiceRole.STEPPED))
-        assertFalse(choiceIsActive(threeWay, "C", CircleChoiceRole.STEPPED))
+    fun `a toggle is off or lit, and an ordered choice rests whatever it holds`() {
+        // Style C: false draws the disc off (no ground, the grey edge), so only a boolean may say it; an ordered
+        // choice is never off, and its dots carry the position.
+        assertEquals(false, choiceRing(onOff, "OFF", CircleChoiceRole.TOGGLE))
+        assertEquals(true, choiceRing(onOff, "ON", CircleChoiceRole.TOGGLE))
+        assertNull(choiceRing(volume, "QUIET", CircleChoiceRole.STEPPED))
+        assertNull(choiceRing(volume, "NORMAL", CircleChoiceRole.STEPPED))
+        assertNull(choiceRing(threeWay, "C", CircleChoiceRole.STEPPED))
     }
 
     @Test
@@ -107,7 +109,7 @@ class RingRowLogicTest {
     fun `a selected value outside the choice set fails loud`() {
         assertThrows(IllegalArgumentException::class.java) { nextChoice(onOff, "MAYBE") }
         assertThrows(IllegalArgumentException::class.java) {
-            choiceIsActive(onOff, "MAYBE", CircleChoiceRole.TOGGLE)
+            choiceRing(onOff, "MAYBE", CircleChoiceRole.TOGGLE)
         }
     }
 
