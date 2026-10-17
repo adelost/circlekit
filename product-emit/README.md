@@ -1,12 +1,14 @@
 # @v1d/product-emit
 
 The consuming product owns the `@v1d/product-spec` version. ProductEmit declares
-the peer `>=0.3.94 <0.4.0`, whose floor is the product-spec its own build and tests
+the peer `>=0.3.97 <0.4.0`, whose floor is the product-spec its own build and tests
 run against: devDependencies pin that tarball, and `npm run check:pins` refuses an
 installed version outside the peer. Its skydiving-legos 0.1.5 dependency keeps a
 private 0.3.52 copy, which is not ProductEmit's public type boundary.
 
-Bump the packages together. The product-emit that adds the stored value
+Bump the packages together. product-emit 0.1.63 peers on product-spec 0.3.97: its
+theme emitter reads a ramp band's `dim` and `ground` (style C's two tones), which
+0.3.96 does not declare. The product-emit that adds the stored value
 emitters peers on product-spec 0.3.94; with 0.3.93 its `/core` fails to load
 with "does not provide an export named 'storedPropertyOf'" (measured on the
 packed tarball). product-emit 0.1.59 peers on product-spec 0.3.92,
