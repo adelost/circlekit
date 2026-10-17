@@ -207,7 +207,7 @@ private fun PhoneDetailScreen(
         }
         Text(
             freshness,
-            color = health.ringColor(),
+            color = health.stateColor(),
             fontSize = 10.5.sp,
             textAlign = TextAlign.Center,
             modifier = Modifier.padding(top = 8.dp),

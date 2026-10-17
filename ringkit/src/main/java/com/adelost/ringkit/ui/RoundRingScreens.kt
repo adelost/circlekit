@@ -195,7 +195,7 @@ internal fun DetailScreen(s: RingScreen.Detail) {
             Spacer(Modifier.height(6.dp))
             Text(
                 text = freshness,
-                color = health.ringColor(),
+                color = health.stateColor(),
                 fontSize = 10.5.sp,
                 textAlign = TextAlign.Center,
                 modifier = readingWidth,

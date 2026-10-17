@@ -26,6 +26,8 @@ import com.adelost.designkit.ui.CircleText
 import com.adelost.designkit.ui.CircleIconDisc
 import com.adelost.designkit.ui.phoneSurfaceDesignFor
 import com.adelost.designkit.ui.circleBrandColor
+import com.adelost.designkit.ui.CircleAccent
+import com.adelost.designkit.ui.circleAccentColor
 
 enum class RingPlaybackState {
     LOADING,
@@ -74,8 +76,8 @@ fun RingPlaybackControls(
     val canStop = spec.state == RingPlaybackState.PLAYING ||
         spec.state == RingPlaybackState.PAUSED || spec.state == RingPlaybackState.LOADING
     val statusColor = when (spec.state) {
-        RingPlaybackState.FAILED -> RingTokens.Broken
-        RingPlaybackState.COMPLETE -> RingTokens.Fresh
+        RingPlaybackState.FAILED -> circleAccentColor(CircleAccent.DANGER)
+        RingPlaybackState.COMPLETE -> circleAccentColor(CircleAccent.POSITIVE)
         else -> RingTokens.Dim
     }
 

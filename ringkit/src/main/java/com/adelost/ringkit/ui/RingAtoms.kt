@@ -168,7 +168,8 @@ fun HoldPill(
     destructive: Boolean = false,
     holdMs: Long = MenuDesign.holdDestructiveMs,
 ) {
-    val fill = if (destructive) RingTokens.Broken else circleBrandColor()
+    val danger = circleAccentColor(CircleAccent.DANGER)
+    val fill = if (destructive) danger else circleBrandColor()
     HoldFillBox(
         // The visible text is this control's complete merged name.
         label = null,
@@ -189,7 +190,7 @@ fun HoldPill(
         var scale by remember(text) { mutableFloatStateOf(1f) }
         Text(
             text = text,
-            color = if (destructive) RingTokens.Broken else RingTokens.Dim,
+            color = if (destructive) danger else RingTokens.Dim,
             fontSize = (10f * scale).sp,
             fontWeight = FontWeight.Bold,
             letterSpacing = 1.sp,
