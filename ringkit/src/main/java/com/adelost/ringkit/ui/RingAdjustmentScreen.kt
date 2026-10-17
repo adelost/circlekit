@@ -112,7 +112,8 @@ internal fun RingAdjustmentScreen(screen: RingScreen.Adjustment) {
             ScreenTitle(screen.title)
             StepperPillRow(
                 title = "VALUE",
-                value = row.adjustmentValue?.primary ?: row.sub,
+                value = row.adjustmentValue?.number ?: row.adjustmentValue?.primary ?: row.sub,
+                unit = row.adjustmentValue?.unit,
                 supporting = row.adjustmentValue?.supporting,
                 icon = row.icon,
                 semanticColor = row.semanticColor,
@@ -152,7 +153,8 @@ internal fun PhoneAdjustmentScreen(
         Spacer(Modifier.height(28.dp))
         StepperPillRow(
             title = "VALUE",
-            value = row.adjustmentValue?.primary ?: row.sub,
+            value = row.adjustmentValue?.number ?: row.adjustmentValue?.primary ?: row.sub,
+            unit = row.adjustmentValue?.unit,
             supporting = row.adjustmentValue?.supporting,
             icon = row.icon,
             semanticColor = row.semanticColor,
@@ -176,6 +178,7 @@ internal fun PhoneAdjustmentScreen(
 private fun StepperPillRow(
     title: String,
     value: String,
+    unit: String? = null,
     supporting: String? = null,
     onDec: () -> Unit,
     onInc: () -> Unit,
@@ -231,7 +234,7 @@ private fun StepperPillRow(
                         Spacer(Modifier.size(MenuDesign.stepperIconGap))
                     }
                     com.adelost.designkit.ui.CircleReading(
-                        value = value, unit = null,
+                        value = value, unit = unit,
                         color = glyphColor,
                         textAlign = TextAlign.Center,
                     )

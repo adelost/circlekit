@@ -366,12 +366,16 @@ data class RowSpec(
 data class AdjustmentValuePresentation(
     val primary: String,
     val supporting: String? = null,
+    val number: String? = null,
+    val unit: String? = null,
 ) {
     init {
         require(primary.isNotBlank()) { "An adjustment value needs visible primary copy" }
         require(supporting == null || supporting.isNotBlank()) {
             "Adjustment supporting copy is either absent or visible"
         }
+        require(number == null || number.isNotBlank()) { "An adjustment number is absent or visible" }
+        require(unit == null || (unit.isNotBlank() && number != null)) { "An adjustment unit needs its number" }
     }
 }
 
