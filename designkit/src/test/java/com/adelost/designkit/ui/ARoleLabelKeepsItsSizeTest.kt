@@ -2,6 +2,7 @@ package com.adelost.designkit.ui
 
 import androidx.activity.ComponentActivity
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.width
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -51,6 +52,15 @@ class ARoleLabelKeepsItsSizeTest {
         assertEquals(GraphiteType.Numerals, style.fontFamily)
         assertEquals(0f, style.letterSpacing.value)
         assertEquals(7.5f, style.fontSize.value)
+    }
+
+    @Test fun `a parent may ask for intrinsic width before laying out its label`() {
+        compose.setContent {
+            Box(Modifier.width(IntrinsicSize.Max)) {
+                CircleText("RECORDING", role = CircleTextRole.LABEL, color = Color.White)
+            }
+        }
+        assertEquals(7.5f, layoutOf().layoutInput.style.fontSize.value)
     }
 
     private fun mount(width: Int) = compose.setContent {

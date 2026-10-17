@@ -6,6 +6,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.PlatformTextStyle
 import androidx.compose.ui.text.SpanStyle
@@ -47,7 +48,12 @@ fun CircleText(
     val style = roleTextStyle(roleStyle, color, textAlign, numerals)
     val measurer = rememberTextMeasurer()
     val layouts = LocalCircleTextLayouts.current
-    BoxWithConstraints(modifier) {
+    val tracking = if (numerals) 0f else roleStyle.trackingEm * style.fontSize.value
+    val intrinsic = remember(text, style, tracking, role, maxLines, measurer) {
+        CircleTextIntrinsicPolicy(text, style, tracking, role == CircleTextRole.NUMBER, maxLines, measurer)
+    }
+    Layout(modifier = modifier, measurePolicy = intrinsic, content = {
+      BoxWithConstraints {
         val fit = remember(text, style, constraints.maxWidth, role) {
             fitCircleRoleText(text, if (numerals) 0f else roleStyle.trackingEm * style.fontSize.value, constraints.maxWidth.toFloat(),
                 noWrap = role == CircleTextRole.NUMBER,
@@ -64,7 +70,8 @@ fun CircleText(
             overflow = if (userContent) TextOverflow.Ellipsis else TextOverflow.Visible,
             onTextLayout = { layout -> onTextLayout?.invoke(layout); layouts?.invoke(text, layout) },
         )
-    }
+      }
+    })
 }
 
 /** A reading and its unit share one unbreakable line and one generated role. */
