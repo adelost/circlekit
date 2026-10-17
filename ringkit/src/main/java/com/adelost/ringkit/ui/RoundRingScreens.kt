@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.runtime.Composable
@@ -34,7 +35,6 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.wear.compose.material.Icon
 import androidx.wear.compose.material.Text
 import com.adelost.ringkit.data.Health
 
@@ -95,7 +95,8 @@ internal fun ScreenTitle(
             .roundSafeContentInset(),
     ) {
         if (icon != null) {
-            Icon(icon, contentDescription = null, tint = RingTokens.Dim, modifier = Modifier.width(14.dp))
+            // The icon wears its kind, as on every disc (style C): the same icon has the same colour everywhere.
+            CircleStyledIcon(ringIconStyle(icon), contentDescription = null, modifier = Modifier.size(14.dp))
             Spacer(Modifier.width(6.dp))
         }
         Text(
