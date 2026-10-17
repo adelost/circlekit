@@ -22,6 +22,18 @@ class CircleAccentTest {
     }
 
     @Test
+    fun `the scale's constants are the kit's default tones, not a second copy`() {
+        val palette = CircleAccentPalette.Default
+
+        assertEquals("ok", palette.color(CircleAccent.POSITIVE), GraphiteTokens.Green)
+        assertEquals("caution", palette.color(CircleAccent.CAUTION), GraphiteTokens.Orange)
+        assertEquals("danger", palette.color(CircleAccent.DANGER), GraphiteTokens.Red)
+        assertEquals("fresh", palette.color(CircleAccent.POSITIVE), RingTokens.Fresh)
+        assertEquals("aging", palette.color(CircleAccent.CAUTION), RingTokens.Aging)
+        assertEquals("broken", palette.color(CircleAccent.DANGER), RingTokens.Broken)
+    }
+
+    @Test
     fun `generic icon catalog defaults to warm-white neutral actions`() {
         RING_ICON_CATALOG.forEach { icon ->
             assertEquals(icon.name, CircleAccent.NEUTRAL, ringIconAccent(icon))

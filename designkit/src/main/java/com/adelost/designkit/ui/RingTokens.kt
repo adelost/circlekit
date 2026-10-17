@@ -9,8 +9,8 @@ import androidx.compose.ui.unit.dp
  * without pretending every surface is a status ring.
  */
 object RingTokens {
-    // Health remains an explicit instrument semantic, and its pigments come
-    // from the same Cinematic Graphite ladder as the neutral surfaces.
+    // Health is the scale's ok, caution and danger. These constants are the
+    // kit's default tones (GraphiteTokens); a composable reads the palette in scope.
     val Fresh = GraphiteTokens.Green
     val Aging = GraphiteTokens.Orange
     val Broken = GraphiteTokens.Red

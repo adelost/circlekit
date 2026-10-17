@@ -23,9 +23,11 @@ object GraphiteTokens {
     val PrimaryInk = CircleStyleTokens.Surface
     val PrimaryStrong = CircleStyleTokens.Action
     val Blue = CircleColorSchemes.SeaGlass.active
-    val Orange = Color(0xFFE2AF32)
-    val Red = Color(0xFFED6863)
-    val Green = Color(0xFF63C375)
+    // The scale's caution, danger and ok for code with no composition: the kit's default tones, never a second copy.
+    // A composable reads the palette in scope instead (circleAccentColor), so a product's own colours answer.
+    val Orange = CircleAccentPalette.Default.color(CircleAccent.CAUTION)
+    val Red = CircleAccentPalette.Default.color(CircleAccent.DANGER)
+    val Green = CircleAccentPalette.Default.color(CircleAccent.POSITIVE)
     // The step after Red on an altitude scale (below the hard deck), at Red's
     // OKLab lightness (0.68) so a thin stroke on OLED stays legible; the
     // altitude scheme's purple (0.39) is a dial-bar fill, too dark for a line.
