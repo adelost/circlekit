@@ -3,9 +3,7 @@ package com.adelost.designkit.ui
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 
 /** User-selectable circle-grid density (DISPLAY → MENU GRID). REGULAR is the
  * calm 3-column composition; COMPACT trades ring size for a 4-column sweep. */
@@ -38,9 +36,6 @@ data class MenuGridSpec(
     /** Cap for the grid's content column. ROUND uses the shared menu chord;
      * rectangular hosts use their responsive surface cap. */
     val contentMaxWidth: Dp?,
-    /** Label text size under each ring. Cells are strict equal-width, so this
-     * size must remain readable after the host reserves its chrome. */
-    val labelSize: TextUnit = 9.5.sp,
 ) {
     init {
         require(contentWidthFraction > 0f && contentWidthFraction <= 1f) {
@@ -72,7 +67,6 @@ object MenuGridCatalog {
         // Base symmetric margin; the renderer also honours occupied slots.
         contentWidthFraction = MenuDesign.centeredGridWidthFraction,
         contentMaxWidth = MenuDesign.roundMenuContentMaxWidth,
-        labelSize = 8.sp,
     )
 
     // The round STATUS hub: two columns of 46 dp stat rings with a label under each. At RoundPair's width the second
@@ -104,7 +98,6 @@ object MenuGridCatalog {
         verticalGap = 16.dp,
         contentWidthFraction = MenuDesign.centeredGridWidthFraction,
         contentMaxWidth = 380.dp,
-        labelSize = 8.5.sp,
     )
 
     // Wide/tablet: capacity and content width grow, physical atom size never

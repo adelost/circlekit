@@ -4,6 +4,7 @@ import androidx.activity.ComponentActivity
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.width
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
@@ -25,7 +26,7 @@ import org.robolectric.annotation.GraphicsMode
 
 /**
  * Skyvw's SETTINGS, 2026-10-09: "RECORDING" stood under its circle as "RECORDIN / G", on the watch and at
- * 320 dp. A one-word label a little wider than its cell must shrink to fit before it breaks.
+ * 320 dp. The fixed role now loses tracking before it wraps, never size (style C text build).
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(application = android.app.Application::class, sdk = [35], qualifiers = "w192dp-h192dp-round-xhdpi")
@@ -40,7 +41,7 @@ class AWordStaysWholeUnderItsCircleTest {
             // The cell is 92 % of the word at its design size, which is where it broke in two.
             val measured = rememberTextMeasurer().measure(
                 LABEL,
-                TextStyle(fontSize = 9.5.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp),
+                circleRoleTextStyle(CircleTextRole.LABEL, Color.White),
             )
             cellDp = with(LocalDensity.current) { measured.size.width.toDp().value } * 0.92f
             // The frame every icon ring draws, with its label's own semantics: inside a row action the
@@ -49,7 +50,7 @@ class AWordStaysWholeUnderItsCircleTest {
                 CircleIconRingFrame(
                     icon = RingIcons.Record, label = LABEL, modifier = Modifier,
                     diameter = MenuDesign.launcherDiameter, active = null, accent = ringIconAccent(RingIcons.Record),
-                    fontFamily = null, labelSize = 9.5.sp, centerValue = null,
+                    centerValue = null,
                     iconRotationDegrees = 0f, choiceState = null, sub = null, enabled = true,
                     gestureModifier = Modifier,
                 )
@@ -62,7 +63,8 @@ class AWordStaysWholeUnderItsCircleTest {
             .map { LABEL.substring(it.first, it.last + 1) }
         println("cell $cellDp dp: $lines at ${layout.layoutInput.style.fontSize}")
         assertEquals("the word broke across lines: $lines", 1, layout.lineCount)
-        assertTrue("it fits by being smaller, not by spilling over", !layout.hasVisualOverflow)
+        assertEquals("the approved label role never shrinks", 7.5f, layout.layoutInput.style.fontSize.value)
+        assertTrue("it fits by losing tracking, not by spilling over", !layout.hasVisualOverflow)
     }
 
     private fun layoutOf(text: String): TextLayoutResult {

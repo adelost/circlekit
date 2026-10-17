@@ -4,6 +4,8 @@ import androidx.activity.ComponentActivity
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.size
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.SemanticsActions
@@ -70,6 +72,25 @@ class ARoleLabelKeepsItsSizeTest {
             }
         }
         assertEquals(7.5f, layoutOf().layoutInput.style.fontSize.value)
+    }
+
+    @Test fun `a row title measures in the width lent to its empty end slot`() {
+        val receipts = mutableMapOf<String, CircleTextLayout>()
+        compose.setContent {
+            CompositionLocalProvider(LocalCircleTextLayouts provides { receipts[it.text] = it }) {
+                Box(Modifier.width(70.dp)) {
+                    CircleRingRowContent("BRIGHTNESS", "50 %", null, null,
+                        CircleRowAffordance.of({}), leading = null, trailing = null, feedback = null,
+                        endSlot = CircleRowEndSlot(28.dp, occupied = false) { Box(Modifier.size(28.dp)) })
+                }
+            }
+        }
+        compose.waitForIdle()
+        val title = receipts.getValue("BRIGHTNESS")
+        assertFalse("empty slot must not clip the title: ${title.layout.layoutInput.constraints}",
+            title.layout.didOverflowWidth)
+        assertTrue("own text bounds include the lent width: ${title.boundsInRoot}",
+            title.boundsInRoot.width >= title.layout.getLineRight(0))
     }
 
     private fun mount(width: Int) = compose.setContent {

@@ -47,8 +47,6 @@ data class SkyvwFilterChipDesign(
     val gap: Dp,
     val iconSize: Dp,
     val activeIconSize: Dp,
-    val textSizeSp: Float,
-    val lineHeightSp: Float,
     /** Filters are reversible view state, so they belong to the immediate
      * action class and never draw a delayed rectangular label sweep. */
     val actionTiming: CircleActionTiming,
@@ -71,8 +69,6 @@ fun filterChipDesign(surface: CircleSurfaceClass): SkyvwFilterChipDesign {
         gap = phone.controlGap,
         iconSize = 16.dp,
         activeIconSize = 16.dp,
-        textSizeSp = phone.rowSubtitleSize.value,
-        lineHeightSp = phone.rowSubtitleSize.value + 4f,
         actionTiming = CircleActionTiming.IMMEDIATE,
     )
 }
@@ -84,8 +80,6 @@ private val WatchFilterChip = SkyvwFilterChipDesign(
     gap = 5.dp,
     iconSize = 10.dp,
     activeIconSize = 11.dp,
-    textSizeSp = 8f,
-    lineHeightSp = WATCH_TEXT_LINE_HEIGHT_SP,
     actionTiming = CircleActionTiming.IMMEDIATE,
 )
 

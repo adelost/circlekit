@@ -52,12 +52,15 @@ fun CircleText(
     val style = roleTextStyle(roleStyle, color, textAlign, numeric).copy(shadow = shadow)
     val measurer = rememberTextMeasurer()
     val layouts = LocalCircleTextLayouts.current
+    val reporter = remember(text, role, style.fontSize, userContent, layouts) {
+        layouts?.let { CircleTextLayoutReporter(text, role, style.fontSize.value, userContent, it) }
+    }
     val tracking = if (numeric) 0f else roleStyle.trackingEm * style.fontSize.value
     val intrinsic = remember(text, style, tracking, role, lineLimit, measurer) {
         CircleTextIntrinsicPolicy(text, style, tracking, role == CircleTextRole.NUMBER, lineLimit, measurer)
     }
     Layout(modifier = modifier, measurePolicy = intrinsic, content = {
-      BoxWithConstraints {
+      BoxWithConstraints(propagateMinConstraints = true) {
         val fit = remember(text, style, constraints.maxWidth, role) {
             fitCircleRoleText(text, tracking, constraints.maxWidth.toFloat(),
                 noWrap = role == CircleTextRole.NUMBER,
@@ -68,11 +71,12 @@ fun CircleText(
         }
         BasicText(
             text = fit.text,
+            modifier = reporter?.modifier ?: Modifier,
             style = style.copy(letterSpacing = fit.trackingSp.sp),
             softWrap = false,
             maxLines = lineLimit,
             overflow = if (userContent) TextOverflow.Ellipsis else TextOverflow.Visible,
-            onTextLayout = { layout -> onTextLayout?.invoke(layout); layouts?.invoke(text, layout) },
+            onTextLayout = { layout -> onTextLayout?.invoke(layout); reporter?.laidOut(layout) },
         )
       }
     })
@@ -99,8 +103,12 @@ fun CircleReading(
         }
     }
     val layouts = LocalCircleTextLayouts.current
-    BasicText(text, modifier, style = roleTextStyle(spec, color, textAlign, true), softWrap = false,
-        maxLines = 1, overflow = TextOverflow.Visible, onTextLayout = { layouts?.invoke(text.text, it) })
+    val style = roleTextStyle(spec, color, textAlign, true)
+    val reporter = remember(text, style.fontSize, layouts) {
+        layouts?.let { CircleTextLayoutReporter(text.text, CircleTextRole.NUMBER, style.fontSize.value, false, it) }
+    }
+    BasicText(text, modifier.then(reporter?.modifier ?: Modifier), style = style, softWrap = false,
+        maxLines = 1, overflow = TextOverflow.Visible, onTextLayout = { reporter?.laidOut(it) })
 }
 
 @Composable

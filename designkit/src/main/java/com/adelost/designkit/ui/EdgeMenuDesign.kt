@@ -8,8 +8,6 @@ data class EdgeMenuLayout(
     val ringDiameter: Dp,
     val horizontalGap: Dp,
     val verticalGap: Dp,
-    val labelSizeSp: Float,
-    val sectionLabelSizeSp: Float,
 )
 
 /** Shared geometry for a compact group of menu-option rings. */
@@ -23,7 +21,6 @@ object EdgeMenuDesign {
 
     /** Same 30 dp atom as the home rim buttons. */
     val optionRingDiameter: Dp = MenuDesign.watchActionRingDiameter
-    const val optionLabelSizeSp: Float = 8f
 
     /** Host translation for the same option group. */
     fun optionLayout(
@@ -35,21 +32,16 @@ object EdgeMenuDesign {
             ringDiameter = optionRingDiameter,
             horizontalGap = optionSpacing,
             verticalGap = optionGapTop + optionGapBottom,
-            labelSizeSp = optionLabelSizeSp,
-            sectionLabelSizeSp = 7.5f,
         )
         CircleSurfaceClass.PHONE_COMPACT,
         CircleSurfaceClass.PHONE_WIDE,
         -> {
             val grid = menuGridSpec(surfaceClass, menuDensity, MenuGridRole.SETTINGS)
-            val phone = requireNotNull(phoneSurfaceDesignFor(surfaceClass))
             EdgeMenuLayout(
                 columns = grid.columns,
                 ringDiameter = grid.diameter,
                 horizontalGap = grid.horizontalGap,
                 verticalGap = grid.verticalGap,
-                labelSizeSp = phone.actionLabelSize.value,
-                sectionLabelSizeSp = phone.sectionLabelSize.value,
             )
         }
     }

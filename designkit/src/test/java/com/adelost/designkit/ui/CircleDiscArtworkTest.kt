@@ -29,7 +29,7 @@ class CircleDiscArtworkTest {
 
     @Test fun `pressure readings keep their role and unit size regardless of commas`() {
         compose.setContent {
-            CompositionLocalProvider(LocalCircleTextLayouts provides { text, layout -> layouts[text] = layout }) {
+            CompositionLocalProvider(LocalCircleTextLayouts provides { receipt -> layouts[receipt.text] = receipt.layout }) {
                 Column {
                     for (value in listOf("1008.1", "1,008.1")) {
                         CircleDiscArtwork(spec(value, "hPa"), Modifier.size(100.dp))
@@ -47,7 +47,7 @@ class CircleDiscArtworkTest {
 
     @Test fun `a wide reading reports its shortage without reducing the role`() {
         compose.setContent {
-            CompositionLocalProvider(LocalCircleTextLayouts provides { text, layout -> layouts[text] = layout }) {
+            CompositionLocalProvider(LocalCircleTextLayouts provides { receipt -> layouts[receipt.text] = receipt.layout }) {
                 CircleDiscArtwork(spec("1008.1", "hPa"), Modifier.size(20.dp))
             }
         }
@@ -60,7 +60,7 @@ class CircleDiscArtworkTest {
 
     @Test fun `zero width renders no disc reading`() {
         compose.setContent {
-            CompositionLocalProvider(LocalCircleTextLayouts provides { text, layout -> layouts[text] = layout }) {
+            CompositionLocalProvider(LocalCircleTextLayouts provides { receipt -> layouts[receipt.text] = receipt.layout }) {
                 Box(Modifier.size(0.dp)) { CircleDiscArtwork(spec("1008.1", "hPa")) }
             }
         }
@@ -71,7 +71,7 @@ class CircleDiscArtworkTest {
     @Test fun `a DEV word grows its chip instead of shrinking or clipping`() {
         compose.setContent {
             CompositionLocalProvider(
-                LocalCircleTextLayouts provides { text, layout -> layouts[text] = layout },
+                LocalCircleTextLayouts provides { receipt -> layouts[receipt.text] = receipt.layout },
                 LocalCircleActionHostCost provides CircleActionHostCost.WORN,
             ) {
                 CircleValueDisc("AUTO", "responsive layout", "AUTO SIZE", {}, valueRole = CircleTextRole.NAME)

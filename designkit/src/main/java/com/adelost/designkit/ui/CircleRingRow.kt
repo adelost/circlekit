@@ -247,7 +247,7 @@ fun CircleRingRowContent(
     val phoneDesign = phoneSurfaceDesignFor(LocalCircleSurfaceLayout.current.surfaceClass)
     val hasSlots = leading != null || trailing != null || endSlot != null
     val endSlotGap = phoneDesign?.controlGap ?: 6.dp
-    val widthLentToEndSlot = endSlot?.let { it.width + endSlotGap } ?: 0.dp
+    val widthLentToEndSlot = endSlot?.takeUnless { it.occupied }?.let { it.width + endSlotGap } ?: 0.dp
     val hasLeadingRing = icon != null || centerValue != null
     // A passive, wrapping reading has no action ring to align with. Give its
     // identity the full reading width; the small source/status glyph belongs
@@ -295,7 +295,8 @@ fun CircleRingRowContent(
         ) {
             CircleText(
                 text = title, role = CircleTextRole.NAME, color = titleColor ?: RingTokens.Ink,
-                modifier = if (LocalActionParentOwnsRowCopy.current) Modifier.clearAndSetSemantics { } else Modifier,
+                modifier = Modifier.circleRowTitleWidth(widthLentToEndSlot)
+                    .then(if (LocalActionParentOwnsRowCopy.current) Modifier.clearAndSetSemantics { } else Modifier),
             )
             // The state indicator rides the VALUE line, not the whole row.
             // Sitting beside both lines, it charged the TITLE for width the
@@ -354,7 +355,8 @@ private fun CirclePassiveReadingContent(
 ) {
     Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
         CircleText(text = title, role = CircleTextRole.NAME, color = titleColor ?: RingTokens.Ink,
-            textAlign = androidx.compose.ui.text.style.TextAlign.Center, modifier = Modifier.fillMaxWidth())
+            textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+            modifier = Modifier.circleRowTitleWidth(widthLentToEndSlot).fillMaxWidth())
         if (icon != null || sub.isNotBlank() || trailing != null) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 if (icon != null) {

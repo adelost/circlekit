@@ -270,7 +270,7 @@ fun RingRow(
     val rowModifier = modifier.selectRingInfoOnTouch(onInfoTouch.takeIf { explanation != null })
     // A row that can reveal its (i) keeps the button's place at all times, so a touch only fills it.
     val infoSlot: CircleRowEndSlot? = if (explanation != null && (onInfoTouch != null || infoSelected)) {
-        CircleRowEndSlot(width = ringInfoButtonDiameter()) {
+        CircleRowEndSlot(width = ringInfoButtonDiameter(), occupied = infoSelected) {
             RingRowInfoSlot(shown = infoSelected) {
                 RingRowInfoButton(
                     rowIcon = icon,

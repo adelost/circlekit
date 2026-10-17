@@ -27,15 +27,10 @@ import androidx.compose.ui.unit.sp
 /**
  * The wear-free text/icon primitives every SHARED Circle screen renders
  * through (port contract, docs/plans/2026-07-18-phone-responsive-port.md).
- * Wear and phone hosts both get exactly this rendering — one font family
- * ([GraphiteType.Sans]), one sizing rule — so a shared screen cannot fork
- * typography per form factor.
- *
- * Sizing rule: sizes are passed as raw sp floats and resolved through
- * [circleFixedSp] — the same compensation as `fixedCircleUiSp`/`swSp`:
- * approved atom sizes scale with the profile's atomScale (locked 1x today)
- * and are DIVIDED by any system font-scale above 1, so accessibility
- * font settings and viewport swaps never inflate an approved atom.
+ * Words and numbers use their declared faces. Text callers take roles, not
+ * size inputs; [circleFixedSp] is the shared role-metric conversion and the
+ * unchanged altitude exception's conversion. Profile scale is applied once,
+ * with system font-scale compensation, before the host scales its face.
  */
 @Composable
 fun circleFixedSp(baseSp: Float): TextUnit {
@@ -50,7 +45,7 @@ fun circleFixedSp(baseSp: Float): TextUnit {
  * whose action speaks for it clears its title's text semantics, so this is the only reading of that title. Null, the
  * default, lays out exactly as before.
  */
-val LocalCircleTextLayouts = staticCompositionLocalOf<((text: String, layout: TextLayoutResult) -> Unit)?> { null }
+val LocalCircleTextLayouts = staticCompositionLocalOf<((CircleTextLayout) -> Unit)?> { null }
 
 @Composable
 fun CircleIcon(

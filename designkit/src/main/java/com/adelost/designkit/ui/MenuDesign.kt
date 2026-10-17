@@ -258,6 +258,4 @@ object MenuDesign {
     const val backHoldMs: Long = holdDeliberateMs
     val overlayScrim: Color = Color.Black.copy(alpha = 0.45f)
     val actionCueScrim: Color = Color.Black
-    val textActionSize: TextUnit = 10.5.sp
-    val textActionTracking: TextUnit = 1.5.sp
 }

@@ -27,7 +27,7 @@ class MenuGridSpecTest {
         assertEquals(136.dp, logbook.contentMaxWidth)
         // The one watch action-ring standard: the home rim buttons' 30 dp.
         assertEquals(MenuDesign.watchActionRingDiameter, logbook.diameter)
-        assertEquals(8f, logbook.labelSize.value)
+        // Labels now resolve through CircleTextRole.LABEL, never through grid geometry.
         // SETTINGS is not a second composition: same columns, same ring, same
         // gaps. A watch screen shows one rhythm, never two.
         MenuGridRole.entries.forEach { role ->
@@ -50,20 +50,23 @@ class MenuGridSpecTest {
     }
 
     @Test
-    fun `every menu role reserves twelve point five percent per side on every host`() {
+    fun `watch and compact grids keep their margins while regular phone grids lend text the full width`() {
         CircleSurfaceClass.entries.forEach { surface ->
             CircleMenuDensity.entries.forEach { density ->
                 MenuGridRole.entries.forEach { role ->
                     val spec = menuGridSpec(surface, density, role)
+                    // Style C text brief, decision 3: phone cells widen for the phone roles.
+                    val expected = if (surface != CircleSurfaceClass.ROUND && density == CircleMenuDensity.REGULAR)
+                        1f else MenuDesign.centeredGridWidthFraction
                     assertEquals(
                         "$surface/$density/$role width",
-                        MenuDesign.centeredGridWidthFraction,
+                        expected,
                         spec.contentWidthFraction,
                         0.001f,
                     )
                     assertEquals(
                         "$surface/$density/$role side margin",
-                        0.125f,
+                        (1f - expected) / 2f,
                         (1f - spec.contentWidthFraction) / 2f,
                         0.001f,
                     )
@@ -90,15 +93,6 @@ class MenuGridSpecTest {
                 requireNotNull(wideContentDp[density]),
             )
         }
-    }
-
-    @Test
-    fun `compact phone menu keeps labels readable inside its tighter cells`() {
-        assertEquals(8.5f, MenuGridCatalog.PhoneCompact.labelSize.value, 0.001f)
-        assertEquals(
-            MenuGridCatalog.PhoneCompact.labelSize,
-            MenuGridCatalog.WideCompact.labelSize,
-        )
     }
 
     @Test
