@@ -28,18 +28,25 @@ class CircleActionDiscChromeTest {
     }
 
     @Test
-    fun `active and disabled states remain semantic at rest`() {
-        val active = circleActionDiscChrome(true, true, false, false)
-        val disabled = circleActionDiscChrome(false, false, false, false)
+    fun `a disc wears its kind at rest, lights when active and goes grey when unavailable`() {
+        val tones = CircleTones(
+            strong = Color(0xFF5BE2CD), dim = Color(0xFF29766A), ground = Color(0xFF0F3C36), edge = Color(0xFF2D7D71),
+        )
+        val rest = circleActionDiscChrome(true, false, false, false, tones = tones)
+        val active = circleActionDiscChrome(true, true, false, false, tones = tones)
+        val disabled = circleActionDiscChrome(false, false, false, false, tones = tones)
+        val overPicture = circleActionDiscChrome(true, false, false, true, tones = tones)
 
-        assertEquals(MenuDesign.ringActive, active.contour)
-        assertEquals(RingTokens.Off, disabled.contour)
+        assertEquals(tones.ground, rest.fill)
+        assertEquals(tones.edge, rest.contour)
+        assertEquals(tones.strong, active.contour)
+        assertEquals(CircleStyleTokens.Off, disabled.contour)
+        assertEquals(MenuDesign.ringNeutral, overPicture.contour)
+        assertNotEquals(tones.ground, overPicture.fill)
         // Empty SEND is unavailable even when its caller supplies a bright tint.
         for (tint in listOf(null, Color.White, Color.Magenta)) {
-            assertEquals(RingTokens.Off,
-                circleActionDiscChrome(false, true, false, false, iconTint = tint).iconTint)
-            assertEquals(tint,
-                circleActionDiscChrome(true, false, false, false, iconTint = tint).iconTint)
+            assertEquals(tones.dim, circleActionDiscChrome(false, true, false, false, tones = tones, iconTint = tint).iconTint)
+            assertEquals(tint, circleActionDiscChrome(true, false, false, false, tones = tones, iconTint = tint).iconTint)
         }
     }
 }

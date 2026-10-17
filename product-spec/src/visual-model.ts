@@ -10,6 +10,21 @@ export interface PortableRampBand {
   readonly chromaMax: number;
   readonly solid?: boolean;
   readonly label: string;
+  /** Tones stated instead of derived by CircleKit's tone rule (circlekit-assets circle-tone.ts). */
+  readonly dim?: string;
+  readonly ground?: string;
+}
+
+/**
+ * A colour a product writes once, as its strong tone. Its dimmed tone, its ground and an icon disc's edge follow from
+ * CircleKit's tone rule unless stated: white has no dimmed self that is not grey.
+ */
+export interface PortableToneColour {
+  readonly id: string;
+  readonly hex: string;
+  readonly meaning: string;
+  readonly dim?: string;
+  readonly ground?: string;
 }
 
 export interface PortableRamp {
@@ -34,7 +49,7 @@ export interface PortableRamp {
 export interface PortablePaletteVariant {
   readonly id: string;
   readonly identity: Readonly<Record<string, string>>;
-  readonly categories: readonly Readonly<{ id: string; hex: string; meaning: string }>[];
+  readonly categories: readonly PortableToneColour[];
   readonly status: Readonly<Record<string, string>>;
   readonly ramps: readonly PortableRamp[];
 }
@@ -197,7 +212,10 @@ function validateVariant(variant: PortablePaletteVariant): void {
   requireUnique(variant.categories.map(({ id }) => id), `category in palette '${variant.id}'`);
   requireUnique(variant.ramps.map(({ id }) => id), `ramp in palette '${variant.id}'`);
   Object.entries(variant.identity).forEach(([id, value]) => { requireWireId(id, "identity token"); requireHex(value, id); });
-  variant.categories.forEach(({ id, hex }) => { requireWireId(id, "palette category"); requireHex(hex, id); });
+  variant.categories.forEach(({ id, hex, dim, ground }) => {
+    requireWireId(id, "palette category");
+    [hex, dim, ground].forEach((value) => value === undefined || requireHex(value, id));
+  });
   Object.entries(variant.status).forEach(([id, value]) => requireHex(value, id));
   for (const ramp of variant.ramps) {
     requireWireId(ramp.id, "palette ramp");
@@ -211,6 +229,7 @@ function validateVariant(variant: PortablePaletteVariant): void {
     requireUnique(ramp.bands.map(({ id }) => id), `band in ramp '${ramp.id}'`);
     ramp.bands.forEach((band, index) => {
       requireWireId(band.id, "palette band");
+      [band.dim, band.ground].forEach((value) => value === undefined || requireHex(value, band.id));
       if (index > 0 && band.upTo <= ramp.bands[index - 1]!.upTo) throw new Error(`ramp '${ramp.id}' does not advance`);
     });
   }
@@ -226,4 +245,25 @@ function requireWireId(value: string, owner: string): void {
 
 function requireUnique(values: readonly string[], owner: string): void {
   if (new Set(values).size !== values.length) throw new Error(`duplicate ${owner}`);
+}
+
+/**
+ * A flat step of a scale written as its strong tone: the OKLCH a band declares, read off [hex], with no travel, so the
+ * band is that one colour (style C: "Stegen är platta", the step is the reading). A theme that retunes lightness and
+ * chroma still can, since the step is stated in OKLCH.
+ */
+export function flatStep(hex: string): Pick<PortableRampBand, "hueDeg" | "lightness" | "lightnessTravel" | "chromaMax" | "solid"> {
+  requireHex(hex, "flat step");
+  const [r, g, b] = [1, 3, 5].map((at) => {
+    const v = parseInt(hex.slice(at, at + 2), 16) / 255;
+    return v <= 0.04045 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4;
+  }) as [number, number, number];
+  const l = Math.cbrt(0.4122214708 * r + 0.5363325363 * g + 0.0514459929 * b);
+  const m = Math.cbrt(0.2119034982 * r + 0.6806995451 * g + 0.1073969566 * b);
+  const s = Math.cbrt(0.0883024619 * r + 0.2817188376 * g + 0.6299787005 * b);
+  const lightness = 0.2104542553 * l + 0.793617785 * m - 0.0040720468 * s;
+  const a = 1.9779984951 * l - 2.428592205 * m + 0.4505937099 * s;
+  const bb = 0.0259040371 * l + 0.7827717662 * m - 0.808675766 * s;
+  const hueDeg = ((Math.atan2(bb, a) * 180) / Math.PI + 360) % 360;
+  return { hueDeg, lightness, lightnessTravel: 0, chromaMax: Math.hypot(a, bb), solid: true };
 }

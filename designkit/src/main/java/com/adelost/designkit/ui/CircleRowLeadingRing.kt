@@ -1,5 +1,6 @@
 package com.adelost.designkit.ui
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
@@ -31,24 +32,18 @@ internal fun CircleRowLeadingRing(
     feedbackSweep: () -> Float,
     iconRotationDeg: Float,
 ) {
-    val activeContour = circleBrandColor()
+    // Progress is the one action colour (the scheme in scope); the disc and the glyph speak the row's own kind
+    // (circleRowDiscLook). A state is the scale's colour on the value (style C), so [semanticColor] colours a centre
+    // value and never the glyph: the same icon has the same colour everywhere.
     val progressContour = circleBrandColor()
-    // The start screen's language everywhere (Mattias 2026-07-21: "samma
-    // ljusstyrka som på huvudsidan"): the icon always speaks at full
-    // strength — the RING alone carries state, neutral unless the toggle
-    // is ON. One shared contour renderer, so a row ring can never weigh
-    // differently from a launcher or home ring again.
-    //
-    // A reading keeps the icon and keeps the SIZE — the list's titles still
-    // line up down a straight edge, and nothing moves when a row's action
-    // appears or goes away. Only the circle is withheld, because only the
-    // circle was making a promise (see [CircleRowAffordance]).
-    val contour = circleRowRingContour(affordance, active, activeContour)
+    val look = circleRowDiscLook(affordance, active, circleAccentTones(accent))
+    val off = affordance.operable && active == false
     Box(
         modifier = Modifier
             .size(phoneDesign?.rowIconDiameter ?: MenuDesign.iconRingDiameter)
             .clip(CircleShape)
-            .then(contour?.let { Modifier.circleRingContour(it) } ?: Modifier)
+            .background(look.ground)
+            .then(look.contour?.let { Modifier.circleRingContour(it) } ?: Modifier)
             .circleProgressContour(feedbackSweep, color = progressContour),
         contentAlignment = Alignment.Center,
     ) {
@@ -56,13 +51,13 @@ internal fun CircleRowLeadingRing(
             CircleStyledIcon(
                 style = ringIconStyle(icon, accent),
                 contentDescription = null,
-                tintOverride = semanticColor,
+                strength = if (off) CircleAccentStrength.INACTIVE else CircleAccentStrength.ACTIVE,
                 modifier = Modifier.size(phoneDesign?.rowIconSize ?: MenuDesign.iconSize).rotate(iconRotationDeg),
             )
         } else {
             CircleText(
                 text = requireNotNull(centerValue),
-                color = semanticColor ?: circleAccentColor(accent),
+                color = semanticColor ?: look.icon,
                 fontSizeSp = (phoneDesign?.rowCenterValueSize ?: MenuDesign.rowCenterValueSize).value,
                 fontWeight = FontWeight.Black,
                 tabularNumerals = true,

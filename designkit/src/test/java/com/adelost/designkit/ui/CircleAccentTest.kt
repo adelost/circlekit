@@ -1,5 +1,6 @@
 package com.adelost.designkit.ui
 
+import androidx.compose.ui.graphics.luminance
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertTrue
@@ -7,19 +8,29 @@ import org.junit.Test
 
 class CircleAccentTest {
     @Test
-    fun `semantic strength stays ordered without changing identity`() {
+    fun `the supporting and inactive tones are quieter than the strong one`() {
+        val palette = CircleAccentPalette.Default
         CircleAccent.entries.forEach { accent ->
-            val active = circleAccentColor(accent, CircleAccentStrength.ACTIVE)
-            val supporting = circleAccentColor(accent, CircleAccentStrength.SUPPORTING)
-            val inactive = circleAccentColor(accent, CircleAccentStrength.INACTIVE)
+            val active = palette.color(accent, CircleAccentStrength.ACTIVE).luminance()
+            val supporting = palette.color(accent, CircleAccentStrength.SUPPORTING).luminance()
+            val inactive = palette.color(accent, CircleAccentStrength.INACTIVE).luminance()
 
-            assertTrue("$accent supporting", supporting.alpha <= active.alpha)
-            assertTrue("$accent inactive", inactive.alpha <= supporting.alpha)
+            assertTrue("$accent supporting", supporting < active)
+            assertTrue("$accent inactive", inactive < active)
         }
-        assertNotEquals(
-            circleAccentColor(CircleAccent.SUN),
-            circleAccentColor(CircleAccent.RAIN),
-        )
+        assertNotEquals(palette.color(CircleAccent.SUN), palette.color(CircleAccent.RAIN))
+    }
+
+    @Test
+    fun `the scale's constants are the kit's default tones, not a second copy`() {
+        val palette = CircleAccentPalette.Default
+
+        assertEquals("ok", palette.color(CircleAccent.POSITIVE), GraphiteTokens.Green)
+        assertEquals("caution", palette.color(CircleAccent.CAUTION), GraphiteTokens.Orange)
+        assertEquals("danger", palette.color(CircleAccent.DANGER), GraphiteTokens.Red)
+        assertEquals("fresh", palette.color(CircleAccent.POSITIVE), RingTokens.Fresh)
+        assertEquals("aging", palette.color(CircleAccent.CAUTION), RingTokens.Aging)
+        assertEquals("broken", palette.color(CircleAccent.DANGER), RingTokens.Broken)
     }
 
     @Test
@@ -27,7 +38,7 @@ class CircleAccentTest {
         RING_ICON_CATALOG.forEach { icon ->
             assertEquals(icon.name, CircleAccent.NEUTRAL, ringIconAccent(icon))
         }
-        assertEquals(CircleStyleTokens.Action, circleAccentColor(CircleAccent.NEUTRAL))
+        assertEquals(CircleStyleTokens.Action, CircleAccentPalette.Default.color(CircleAccent.NEUTRAL))
     }
 
     @Test

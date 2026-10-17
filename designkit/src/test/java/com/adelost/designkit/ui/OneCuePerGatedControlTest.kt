@@ -96,14 +96,16 @@ class OneCuePerGatedControlTest {
     private val declaredRowHoldMs = mutableStateOf(MenuDesign.wornTouchCostMs)
 
     private fun mountTheRow() = probe.mount(CircleActionHostCost.WORN) {
-        Box(Modifier.fillMaxSize().background(Color.Black)) {
-            CircleRingRow(
-                title = "WAKE PHRASE",
-                sub = "HEY JARVIS",
-                icon = RingIcons.Grid,
-                onTap = {},
-                timing = circleResolvedTiming(CircleActionTiming.DELIBERATE, declaredRowHoldMs.value),
-            )
+        CircleAccentPaletteProvider(GREY) {
+            Box(Modifier.fillMaxSize().background(Color.Black)) {
+                CircleRingRow(
+                    title = "WAKE PHRASE",
+                    sub = "HEY JARVIS",
+                    icon = RingIcons.Grid,
+                    onTap = {},
+                    timing = circleResolvedTiming(CircleActionTiming.DELIBERATE, declaredRowHoldMs.value),
+                )
+            }
         }
     }
 
@@ -114,18 +116,20 @@ class OneCuePerGatedControlTest {
     }
 
     private fun mountTheDisc() = probe.mount(CircleActionHostCost.WORN) {
-        Box(Modifier.fillMaxSize().background(Color.Black)) {
-            CircleIconDisc(
-                icon = RingIcons.Grid,
-                contentDescription = THE_DISC,
-                actionLabel = "GRID",
-                onTap = {},
-                // A neutral glyph, so the only colour inside these bounds is the cue. The disc dips
-                // ([MenuDesign.backPressScale]) while it is held, and a tinted glyph moving under that
-                // scale would be counted as cue that grew.
-                iconTint = RingTokens.Ink,
-                timing = CircleActionTiming.DELIBERATE,
-            )
+        CircleAccentPaletteProvider(GREY) {
+            Box(Modifier.fillMaxSize().background(Color.Black)) {
+                CircleIconDisc(
+                    icon = RingIcons.Grid,
+                    contentDescription = THE_DISC,
+                    actionLabel = "GRID",
+                    onTap = {},
+                    // A neutral glyph, so the only colour inside these bounds is the cue. The disc dips
+                    // ([MenuDesign.backPressScale]) while it is held, and a tinted glyph moving under that
+                    // scale would be counted as cue that grew.
+                    iconTint = RingTokens.Ink,
+                    timing = CircleActionTiming.DELIBERATE,
+                )
+            }
         }
     }
 
@@ -135,6 +139,17 @@ class OneCuePerGatedControlTest {
     }
 
     private companion object {
+        /**
+         * Grey tones for every kind. A disc at rest wears its kind's ground and edge (style C), and the press chrome
+         * replaces them, so a coloured rest would be taken off a press that no longer draws it and hide the cue's
+         * first frames. The probe tells the cue by its colour; in grey the only colour in these bounds is the cue.
+         */
+        val GREY = CircleAccentPalette(
+            CircleAccent.entries.associateWith {
+                CircleTones(strong = Color(0xFFF0F0F0), dim = Color(0xFF808080), ground = Color(0xFF222222), edge = Color(0xFF444444))
+            },
+        )
+
         /** [circleRingRowAccessibilityLabel] of the row's title and its value. */
         const val THE_ROW = "WAKE PHRASE · HEY JARVIS"
         const val THE_DISC = "Show the grid"

@@ -192,6 +192,8 @@ private fun StepperPillRow(
     val centreFeedback = rememberCircleActionFeedbackState()
     val centreTiming = circleResolvedTiming(CircleActionTiming.DELIBERATE)
     val brandColor = circleBrandColor()
+    // The glyph keeps its kind and a state sits on the value (style C): [semanticColor] colours only the number.
+    val glyphColor = circleAccentColor(accent, CircleAccentStrength.SUPPORTING)
     Row(verticalAlignment = Alignment.CenterVertically, modifier = modifier) {
         StepCircle(
             text = "−",
@@ -214,8 +216,7 @@ private fun StepperPillRow(
                     icon = if (enabled != null) icon else null,
                     title = title,
                     color = RingTokens.Dim,
-                    iconColor = semanticColor
-                        ?: circleAccentColor(accent, CircleAccentStrength.SUPPORTING),
+                    iconColor = glyphColor,
                     fontSize = 8.5.sp,
                     letterSpacing = 0.2.sp,
                 )
@@ -224,8 +225,7 @@ private fun StepperPillRow(
                         Icon(
                             imageVector = icon,
                             contentDescription = null,
-                            tint = semanticColor
-                                ?: circleAccentColor(accent, CircleAccentStrength.SUPPORTING),
+                            tint = glyphColor,
                             modifier = Modifier.size(MenuDesign.stepperIconSize),
                         )
                         Spacer(Modifier.size(MenuDesign.stepperIconGap))

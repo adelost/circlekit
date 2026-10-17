@@ -13,7 +13,9 @@ import org.junit.Test
  * cannot be pressed must not be able to obtain one.
  */
 class CircleRowAffordanceTest {
-    private val brand = Color(0xFFE2AF32)
+    private val tones = CircleTones(
+        strong = Color(0xFFCBA8EF), dim = Color(0xFF6D5883), ground = Color(0xFF3B2D48), edge = Color(0xFF745D8A),
+    )
 
     @Test
     fun `an action makes a row operable and its absence makes it a reading`() {
@@ -22,23 +24,24 @@ class CircleRowAffordanceTest {
     }
 
     @Test
-    fun `a reading has no contour at all, lit or neutral`() {
+    fun `a reading has no disc at all, lit or off`() {
         val reading = CircleRowAffordance.of(null)
 
-        assertNull(circleRowRingContour(reading, active = null, activeColor = brand))
-        // Not even a state claim can bring the ring back: a row nobody can
-        // press has no state to change, so `active` is not a second opinion
-        // about whether it is operable.
-        assertNull(circleRowRingContour(reading, active = true, activeColor = brand))
-        assertNull(circleRowRingContour(reading, active = false, activeColor = brand))
+        listOf(null, true, false).forEach { active ->
+            // Not even a state claim can bring the ring back: a row nobody can press has no state to change.
+            val look = circleRowDiscLook(reading, active, tones)
+            assertNull("contour, active=$active", look.contour)
+            assertEquals("ground, active=$active", Color.Transparent, look.ground)
+            assertEquals("icon, active=$active", tones.strong, look.icon)
+        }
     }
 
     @Test
-    fun `an operable row keeps the neutral ring, and a toggle lights it`() {
+    fun `an operable disc wears its ground and edge, lights on, and goes grey off`() {
         val operable = CircleRowAffordance.of({})
 
-        assertEquals(MenuDesign.ringNeutral, circleRowRingContour(operable, null, brand))
-        assertEquals(MenuDesign.ringNeutral, circleRowRingContour(operable, false, brand))
-        assertEquals(brand, circleRowRingContour(operable, true, brand))
+        assertEquals(CircleDiscLook(tones.ground, tones.edge, tones.strong), circleRowDiscLook(operable, null, tones))
+        assertEquals(CircleDiscLook(tones.ground, tones.strong, tones.strong), circleRowDiscLook(operable, true, tones))
+        assertEquals(CircleDiscLook(Color.Transparent, CircleStyleTokens.Off, tones.dim), circleRowDiscLook(operable, false, tones))
     }
 }

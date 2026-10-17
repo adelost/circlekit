@@ -33,7 +33,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.wear.compose.material.Icon
 import androidx.wear.compose.material.Text
 import com.adelost.ringkit.data.Health
 import com.adelost.ringkit.data.Progress
@@ -97,13 +96,9 @@ fun PhoneScreenHeader(
         horizontalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         onBack?.let { BackRing(label = backLabel, onBack = it, diameter = design.actionDiameter) }
+        // The icon wears its kind, as on every disc (style C): the same icon has the same colour everywhere.
         icon?.let {
-            Icon(
-                it,
-                contentDescription = null,
-                tint = RingTokens.Dim,
-                modifier = Modifier.size(design.actionIconSize),
-            )
+            CircleStyledIcon(ringIconStyle(it), contentDescription = null, modifier = Modifier.size(design.actionIconSize))
         }
         Text(
             text = title,
@@ -212,7 +207,7 @@ private fun PhoneDetailScreen(
         }
         Text(
             freshness,
-            color = health.ringColor(),
+            color = health.stateColor(),
             fontSize = 10.5.sp,
             textAlign = TextAlign.Center,
             modifier = Modifier.padding(top = 8.dp),

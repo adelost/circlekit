@@ -320,9 +320,8 @@ fun CircleRingRowContent(
             // edge, so rails still line up down the list.
             if (sub.isNotBlank() || (trailing != null && phoneDesign == null)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    // A passive reading's pigment describes its value, not
-                    // just its icon. Ordinary action copy stays neutral.
-                    val subColor = if (!affordance.operable) semanticColor ?: RingTokens.Dim else RingTokens.Dim
+                    // A state sits on the value on every row, pressable or not; the glyph keeps its kind (style C).
+                    val subColor = semanticColor ?: RingTokens.Dim
                     val subSizeSp = phoneDesign?.rowSubtitleSize?.value ?: MenuDesign.subSize.value
                     CircleRowLineKeepingOneLine(
                         text = sub, fontSizeSp = subSizeSp, letterSpacingSp = 0f, fontWeight = FontWeight.Normal,
@@ -409,7 +408,6 @@ private fun CirclePassiveReadingContent(
                     CircleStyledIcon(
                         style = ringIconStyle(icon, accent),
                         contentDescription = null,
-                        tintOverride = semanticColor,
                         modifier = Modifier.size(MenuDesign.iconSize).rotate(iconRotationDeg),
                     )
                     if (sub.isNotBlank() || trailing != null) Spacer(Modifier.size(6.dp))

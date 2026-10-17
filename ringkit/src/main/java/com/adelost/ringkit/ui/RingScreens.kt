@@ -260,8 +260,8 @@ data class RowSpec(
     val hint: String = "",
     /** Product meaning, resolved to the same pigment on Watch and Phone. */
     val accent: CircleAccent = ringIconAccent(icon),
-    /** Optional product-semantic colour for the row's value/icon (for
-     * altitude alarm bands, health states, etc.). */
+    /** Optional state for the row's value (altitude alarm bands, health states, etc.): the scale's colour on the
+     * value, never on the icon, which keeps its kind (style C). */
     val semanticColor: Color? = null,
     /** Optional product-semantic colour for the title alone, when the title and the value carry different laws
      *  (Skyvw's wind aloft: the height wears the altitude scale, its speed the wind scale). */

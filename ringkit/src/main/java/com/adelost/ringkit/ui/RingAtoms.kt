@@ -84,8 +84,9 @@ const val DELIBERATE_CHANGE_HOLD_MS = MenuDesign.holdDeliberateMs
  */
 
 /**
- * A data source as a mini-ring: icon + ONE value + the freshness ring.
- * The centre always shows the VALUE; age is the ring colour's job.
+ * A data source as a mini-ring: icon + ONE value, and the value wears the source's health.
+ * A C disc like every other (style C, Mattias 2026-10-17): the disc and the icon speak the source's kind and the
+ * health is the scale's colour on the value. A source that is off is an off disc, its value dimmed text.
  */
 @Composable
 fun StatRing(
@@ -98,16 +99,18 @@ fun StatRing(
     modifier: Modifier = Modifier,
     diameter: Dp = MenuDesign.statRingDiameter,
 ) {
+    val off = health == Health.OFF
     CircleIconRing(
         icon = icon,
         label = label,
         onTap = onTap,
         modifier = modifier,
         diameter = diameter,
+        active = if (off) false else null,
         fontFamily = androidx.wear.compose.material.MaterialTheme.typography.caption2.fontFamily,
         labelSize = MenuDesign.statLabelSize,
         centerValue = value,
-        contourColor = health.ringColor(),
+        centerValueColor = if (off) RingTokens.Dim else health.stateColor(),
         iconRotationDegrees = iconRotationDeg,
     )
 }
@@ -165,7 +168,8 @@ fun HoldPill(
     destructive: Boolean = false,
     holdMs: Long = MenuDesign.holdDestructiveMs,
 ) {
-    val fill = if (destructive) RingTokens.Broken else circleBrandColor()
+    val danger = circleAccentColor(CircleAccent.DANGER)
+    val fill = if (destructive) danger else circleBrandColor()
     HoldFillBox(
         // The visible text is this control's complete merged name.
         label = null,
@@ -186,7 +190,7 @@ fun HoldPill(
         var scale by remember(text) { mutableFloatStateOf(1f) }
         Text(
             text = text,
-            color = if (destructive) RingTokens.Broken else RingTokens.Dim,
+            color = if (destructive) danger else RingTokens.Dim,
             fontSize = (10f * scale).sp,
             fontWeight = FontWeight.Bold,
             letterSpacing = 1.sp,
@@ -321,15 +325,15 @@ fun HoldFillBox(
     }
 }
 
-/** Boolean choices keep the established OFF/ON ring; ordered selections
- * stay neutral because their dot position carries state. */
-internal fun choiceIsActive(
+/** A choice row's ring: a boolean is off at its first option and lit past it; an ordered selection rests (null),
+ * because its dot position carries the state and in style C a false ring draws the disc off. */
+internal fun choiceRing(
     options: List<String>,
     selected: String,
     role: CircleChoiceRole,
-): Boolean {
+): Boolean? {
     require(selected in options) { "Selected value '$selected' is not one of $options" }
-    return role == CircleChoiceRole.TOGGLE && selected != options.first()
+    return if (role == CircleChoiceRole.TOGGLE) selected != options.first() else null
 }
 
 /** The choice a completed hold advances to: next in declaration order,
@@ -341,8 +345,8 @@ internal fun nextChoice(options: List<String>, selected: String): String {
 
 /** Settings-list choice control in the circle language (Mattias 2026-07-16:
  * menu rows drop the pill, circles all the way — mockup B): one
- * [RingRow]-shaped row whose RING is the state — lit
- * accent past the resting option, faint otherwise. The whole row is the
+ * [RingRow]-shaped row whose RING is a toggle's state, lit past its
+ * resting option and off at it; an ordered choice rests in its kind. The whole row is the
  * target; the shared deliberate hold advances to the next choice. Progress
  * and confirmation are owned by [RingRow]'s one centre-screen action cue,
  * so choice rows cannot regress to a private label sweep. */
@@ -367,7 +371,7 @@ fun RingChoiceRow(
     multiline: Boolean = false,
     iconRotationDeg: Float = 0f,
 ) {
-    val active = choiceIsActive(options, selected, role)
+    val ring = choiceRing(options, selected, role)
     val choiceState = circleChoiceState(options, selected)
     RingRow(
         title = title,
@@ -377,20 +381,25 @@ fun RingChoiceRow(
         icon = icon,
         accent = accent,
         onTap = { onSelect(nextChoice(options, selected)) },
-        ringActive = active,
+        ringActive = ring,
         timing = timing,
         hint = hint,
         infoAction = infoAction,
         infoSelected = infoSelected,
         onInfoTouch = onInfoTouch,
         trailing = {
-            CircleChoiceIndicator(
-                state = choiceState,
-                modifier = Modifier.size(
-                    width = circleChoiceIndicatorWidth(choiceState.optionCount),
-                    height = 8.dp,
-                ),
-            )
+            // A boolean is a switch in the row's colour; an ordered choice keeps its dots, whose position is the state.
+            if (role == CircleChoiceRole.TOGGLE && options.size == 2) {
+                CircleSwitch(on = ring == true, tones = circleAccentTones(accent))
+            } else {
+                CircleChoiceIndicator(
+                    state = choiceState,
+                    modifier = Modifier.size(
+                        width = circleChoiceIndicatorWidth(choiceState.optionCount),
+                        height = 8.dp,
+                    ),
+                )
+            }
         },
         modifier = modifier,
     )

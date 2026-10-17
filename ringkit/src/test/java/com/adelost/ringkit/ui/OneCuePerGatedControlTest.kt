@@ -63,9 +63,12 @@ class OneCuePerGatedControlTest {
         // exactly the wash under the word; a complete press must paint the same ink. Until this row the
         // gesture also painted on ITS bounds, which here are the word plus eighteen dp of padding on
         // either side, so a press drew both and the pressed frame carried far more ink than one cue is.
-        theWord.value = CircleLabelProgress.Determinate(1f)
+        // Both sides net of the word at rest, as every press reading is: style C's dimmed text is a cool grey
+        // that the probe counts as colour, and a gross count at full would carry the word's own pixels.
         mountTheWord()
-        val oneCueAtFull = probe.colouredAtRest(compose.onNodeWithContentDescription(THE_WORD))
+        val restingWord = probe.colouredAtRest(compose.onNodeWithContentDescription(THE_WORD))
+        theWord.value = CircleLabelProgress.Determinate(1f)
+        val oneCueAtFull = probe.colouredAtRest(compose.onNodeWithContentDescription(THE_WORD)) - restingWord
         theWord.value = null
 
         val pressed = pressTheWord(MenuDesign.wornTouchCostMs)

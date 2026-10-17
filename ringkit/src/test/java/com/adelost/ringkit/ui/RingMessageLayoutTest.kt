@@ -1,27 +1,27 @@
 package com.adelost.ringkit.ui
 
 import com.adelost.designkit.ui.CircleAccent
+import com.adelost.designkit.ui.CircleAccentPalette
 import com.adelost.designkit.ui.CircleAccentStrength
 import com.adelost.designkit.ui.RingIcons
 import com.adelost.designkit.ui.RingTokens
-import com.adelost.designkit.ui.circleAccentColor
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
 class RingMessageLayoutTest {
     @Test fun anUnaccentedMessageKeepsTodaysLook() {
-        assertEquals(RingMessageLayout(RingTokens.Dim, null, 0), ringMessageLayout(RingMessageSpec("YOU", "Hej"), round = false))
+        assertEquals(RingMessageLayout(RingTokens.Dim, null, 0), ringMessageLayout(RingMessageSpec("YOU", "Hej"), round = false, palette = CircleAccentPalette.Default))
     }
 
     @Test fun aSenderAccentColoursTheLabelAndEdgeButNeverTheBody() {
-        val layout = ringMessageLayout(RingMessageSpec("claw:1", "Svar", accent = CircleAccent.SKY), round = false)
-        assertEquals(circleAccentColor(CircleAccent.SKY, CircleAccentStrength.ACTIVE), layout.authorColor)
-        assertEquals(circleAccentColor(CircleAccent.SKY, CircleAccentStrength.SUPPORTING), layout.edgeColor)
+        val layout = ringMessageLayout(RingMessageSpec("claw:1", "Svar", accent = CircleAccent.SKY), round = false, palette = CircleAccentPalette.Default)
+        assertEquals(CircleAccentPalette.Default.color(CircleAccent.SKY, CircleAccentStrength.ACTIVE), layout.authorColor)
+        assertEquals(CircleAccentPalette.Default.color(CircleAccent.SKY, CircleAccentStrength.SUPPORTING), layout.edgeColor)
     }
 
     @Test fun theReadersOwnWordsSitInsetSoRolesSurviveGreyscale() {
-        assertEquals(48, ringMessageLayout(RingMessageSpec("YOU", "Hej", side = RingMessageSide.END), round = false).startInsetDp)
-        assertEquals(16, ringMessageLayout(RingMessageSpec("YOU", "Hej", side = RingMessageSide.END), round = true).startInsetDp)
+        assertEquals(48, ringMessageLayout(RingMessageSpec("YOU", "Hej", side = RingMessageSide.END), round = false, palette = CircleAccentPalette.Default).startInsetDp)
+        assertEquals(16, ringMessageLayout(RingMessageSpec("YOU", "Hej", side = RingMessageSide.END), round = true, palette = CircleAccentPalette.Default).startInsetDp)
     }
 
     @Test fun anOptionAccentNamesItsRowWhileTheSelectedCheckStays() {

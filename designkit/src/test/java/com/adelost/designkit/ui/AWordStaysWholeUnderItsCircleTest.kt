@@ -49,7 +49,7 @@ class AWordStaysWholeUnderItsCircleTest {
                 CircleIconRingFrame(
                     icon = RingIcons.Record, label = LABEL, modifier = Modifier,
                     diameter = MenuDesign.launcherDiameter, active = null, accent = ringIconAccent(RingIcons.Record),
-                    fontFamily = null, labelSize = 9.5.sp, centerValue = null, contourColor = null,
+                    fontFamily = null, labelSize = 9.5.sp, centerValue = null,
                     iconRotationDegrees = 0f, choiceState = null, sub = null, enabled = true,
                     gestureModifier = Modifier,
                 )

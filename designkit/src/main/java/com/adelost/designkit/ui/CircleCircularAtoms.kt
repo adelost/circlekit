@@ -42,9 +42,10 @@ import androidx.compose.ui.unit.sp
  * `clip(CircleShape)` — without the clip the full stroke renders and the
  * ring reads twice as heavy.
  *
- * [suggested] is the one dashed reading in the language: a control the product
- * proposed rather than one a person chose. It is the ring's GEOMETRY that says
- * so, never shade alone, or a suggestion reads as a disabled control.
+ * [suggested] is a control the product proposed rather than one a person chose: its ring is drawn solid in the dimmed
+ * weight of its own colour ([circleSuggestedContour]). Style C (skydive-altimeter docs/plans/2026-10-17-skyvw-style-c.md,
+ * "Osäkert är dämpat, aldrig streckat"): uncertainty is dimmed, never dashed. It stays apart from a disabled control,
+ * whose ring is the off grey, because it keeps its own colour.
  */
 fun Modifier.circleRingContour(
     color: Color,
@@ -52,29 +53,17 @@ fun Modifier.circleRingContour(
     suggested: Boolean = false,
 ): Modifier = drawBehind {
     drawArc(
-        color = color,
+        color = circleSuggestedContour(color, suggested),
         startAngle = -90f,
         sweepAngle = 360f,
         useCenter = false,
-        style = Stroke(
-            width = strokeWidth.toPx(),
-            pathEffect = circleSuggestedDashEffect(suggested) { it.toPx() },
-        ),
+        style = Stroke(width = strokeWidth.toPx()),
     )
 }
 
-/**
- * The dash a suggested contour is drawn with, as a decision separate from the
- * drawing: an empty gap array silently renders a SOLID ring, so "did the
- * suggestion keep its dash?" has to be answerable without a screenshot.
- */
-fun circleSuggestedDashLengths(suggested: Boolean): List<Dp> =
-    if (suggested) listOf(MenuDesign.suggestedDashOn, MenuDesign.suggestedDashOff) else emptyList()
-
-internal fun circleSuggestedDashEffect(suggested: Boolean, toPx: (Dp) -> Float): PathEffect? =
-    circleSuggestedDashLengths(suggested)
-        .takeIf { it.isNotEmpty() }
-        ?.let { PathEffect.dashPathEffect(it.map(toPx).toFloatArray()) }
+/** A contour's colour, dimmed when the product only suggests the control: the decision apart from the drawing. */
+fun circleSuggestedContour(color: Color, suggested: Boolean): Color =
+    if (suggested) color.copy(alpha = color.alpha * MenuDesign.suggestedContourShare) else color
 
 /** Resolved visual state for a label-free circular action. */
 @Immutable
@@ -89,30 +78,36 @@ data class CircleActionDiscChrome(
  * One feedback law for icon-only and value-only circles. A circle without an
  * external label must never paint [circleLabelProgress] across its glyph or
  * value; the surface and contour answer instead.
+ *
+ * At rest a disc is drawn as [circleDiscLook] says, in its kind's [tones]. Over a picture it keeps its dark disc and a
+ * neutral edge, and only the icon speaks its kind (style C, the plan's "Knapp över en bild").
  */
 fun circleActionDiscChrome(
     enabled: Boolean,
     active: Boolean,
     pressed: Boolean,
     scrim: Boolean,
-    activeContour: Color = MenuDesign.ringActive,
+    tones: CircleTones = CircleStyleTokens.NeutralTones,
     iconTint: Color? = null,
-): CircleActionDiscChrome = CircleActionDiscChrome(
-    fill = when {
-        pressed -> RingTokens.ProgressSurface.copy(alpha = 0.78f)
-        scrim -> RingTokens.ProgressSurface.copy(alpha = 0.58f)
-        else -> Color.Transparent
-    },
-    contour = when {
-        !enabled -> RingTokens.Off
-        pressed -> RingTokens.OutlineStrong
-        active -> activeContour
-        else -> MenuDesign.ringNeutral
-    },
-    scale = if (pressed) MenuDesign.backPressScale else 1f,
-    // Unavailable actions must not look enabled through a semantic/custom tint.
-    iconTint = if (enabled) iconTint else RingTokens.Off,
-)
+): CircleActionDiscChrome {
+    // An action disc that is not lit is at rest, not off; only an unavailable one wears off.
+    val look = circleDiscLook(operable = true, active = if (!enabled) false else active.takeIf { it }, tones = tones)
+    return CircleActionDiscChrome(
+        fill = when {
+            pressed -> RingTokens.ProgressSurface.copy(alpha = 0.78f)
+            scrim -> RingTokens.ProgressSurface.copy(alpha = 0.58f)
+            else -> look.ground
+        },
+        contour = when {
+            pressed -> RingTokens.OutlineStrong
+            scrim && enabled && !active -> MenuDesign.ringNeutral
+            else -> requireNotNull(look.contour)
+        },
+        scale = if (pressed) MenuDesign.backPressScale else 1f,
+        // Unavailable actions must not look enabled through a semantic/custom tint.
+        iconTint = if (enabled) iconTint else look.icon,
+    )
+}
 
 /**
  * THE label-free icon action. Product icons stay in [RING_ICON_CATALOG]; this
@@ -154,7 +149,7 @@ fun CircleIconDisc(
     effect: CircleActionEffect = CircleActionEffect.ACTS,
 ) {
     val feedback = rememberCircleActionFeedbackState()
-    val activeContour = circleBrandColor()
+    val tones = circleAccentTones(accent)
     // ONE resolution, handed to the cue and to the gate. Nothing downstream sees the declaration.
     val resolved = circleResolvedTiming(timing, effect = effect)
     val cue = rememberCircleActionCueController(
@@ -169,7 +164,7 @@ fun CircleIconDisc(
         active = active,
         pressed = feedback.pressed,
         scrim = scrim,
-        activeContour = activeContour,
+        tones = tones,
         iconTint = iconTint,
     )
     val progressSweep = rememberCircleFeedbackSweep(progress = labelProgress, feedback = feedback)
@@ -241,7 +236,6 @@ fun CircleValueDisc(
     effect: CircleActionEffect = CircleActionEffect.ACTS,
 ) {
     val feedback = rememberCircleActionFeedbackState()
-    val activeContour = circleBrandColor()
     val resolved = circleResolvedTiming(timing, effect = effect)
     val cue = rememberCircleActionCueController(
         icon = RingIcons.Gauge,
@@ -254,7 +248,6 @@ fun CircleValueDisc(
         active = active,
         pressed = feedback.pressed,
         scrim = false,
-        activeContour = activeContour,
     )
     val scale by animateFloatAsState(chrome.scale, label = "circleValueDiscPress")
     Box(
@@ -310,9 +303,9 @@ fun CircleIconRing(
     /** Optional value rendered under the icon. Data-source rings use this
      * variant instead of maintaining a second ring/label implementation. */
     centerValue: String? = null,
-    /** Optional semantic contour (for example source health). Navigation
-     * rings keep deriving their contour from [accent] and [active]. */
-    contourColor: Color? = null,
+    /** The state of [centerValue] (for example source health): the scale's colour on the value. The disc and the
+     * icon keep the ring's kind, so a state has no other way onto a ring (style C). Null reads as ink. */
+    centerValueColor: Color? = null,
     iconRotationDegrees: Float = 0f,
     /** Finite-state position for a cycling action. Boolean state still lives
      * in [active]; this compact rail/dot mark distinguishes ordered choices. */
@@ -327,8 +320,8 @@ fun CircleIconRing(
     effect: CircleActionEffect = CircleActionEffect.ACTS,
     enabled: Boolean = true,
     semanticColor: Color? = null,
-    /** The product proposed this, a person did not choose it: a dashed
-     *  contour, the one reading a suggestion has anywhere in the language. */
+    /** The product proposed this, a person did not choose it: the ring is
+     *  dimmed in its own colour, never dashed ([circleSuggestedContour]). */
     suggested: Boolean = false,
 ) {
     val feedback = rememberCircleActionFeedbackState()
@@ -351,7 +344,7 @@ fun CircleIconRing(
             fontFamily = fontFamily,
             labelSize = labelSize,
             centerValue = centerValue,
-            contourColor = contourColor,
+            centerValueColor = centerValueColor,
             iconRotationDegrees = iconRotationDegrees,
             choiceState = choiceState,
             sub = sub,
@@ -413,7 +406,6 @@ fun CirclePressIconRing(
         fontFamily = fontFamily,
         labelSize = labelSize,
         centerValue = centerValue,
-        contourColor = null,
         iconRotationDegrees = 0f,
         choiceState = null,
         sub = sub,
