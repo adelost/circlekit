@@ -54,6 +54,15 @@ class ARoleLabelKeepsItsSizeTest {
         assertEquals(7.5f, style.fontSize.value)
     }
 
+    @Test fun `product copy grows past a caller's old one-line cap`() {
+        compose.setContent {
+            Box(Modifier.width(48.dp)) {
+                CircleText("TOUCH VIBRATION", CircleTextRole.LABEL, Color.White, maxLines = 1)
+            }
+        }
+        assertEquals("product words may not be cut by an old line cap", 2, layoutOf("TOUCH\nVIBRATION").lineCount)
+    }
+
     @Test fun `a parent may ask for intrinsic width before laying out its label`() {
         compose.setContent {
             Box(Modifier.width(IntrinsicSize.Max)) {

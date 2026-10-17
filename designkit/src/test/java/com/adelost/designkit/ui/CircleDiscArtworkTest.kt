@@ -1,63 +1,89 @@
 package com.adelost.designkit.ui
 
+import androidx.activity.ComponentActivity
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.size
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import androidx.compose.ui.text.TextLayoutResult
+import androidx.compose.ui.unit.dp
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
+import org.junit.Rule
 import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
+import org.robolectric.annotation.Config
+import org.robolectric.annotation.GraphicsMode
 
+/** The fixed-role contract replaces the deleted size-budget fitter; measure the actual reading now. */
+@RunWith(RobolectricTestRunner::class)
+@Config(application = android.app.Application::class, sdk = [35], qualifiers = "w192dp-h192dp-round-xhdpi")
+@GraphicsMode(GraphicsMode.Mode.NATIVE)
 class CircleDiscArtworkTest {
-    private val budget = CircleDiscTextBudget(maximumPrimarySp = 20f, minimumPrimarySp = 10f)
+    @get:Rule val compose = createAndroidComposeRule<ComponentActivity>()
+    private val layouts = mutableMapOf<String, TextLayoutResult>()
 
-    @Test
-    fun `pressure readings keep the role and unit sizes regardless of commas`() {
-        val plain = fitCircleDiscText("1008.1", "hPa", 75f, budget, ::measuredWidth)
-        val comma = fitCircleDiscText("1,008.1", "hPa", 75f, budget, ::measuredWidth)
-
-        assertTrue(plain.fits)
-        assertTrue(comma.fits)
-        assertEquals(CircleTextRole.NUMBER.watch.sp, plain.primarySp, 0f)
-        assertEquals(plain.primarySp, comma.primarySp, 0f)
-        assertEquals(CircleTextRole.NUMBER.watch.unitSp, comma.unitSp, 0f)
-    }
-
-    @Test
-    fun `a wide reading reports its shortage without reducing its role size`() {
-        val narrow = fitCircleDiscText("111111", null, 30f, budget, ::measuredWidth)
-        val wide = fitCircleDiscText("000000", null, 30f, budget, ::measuredWidth)
-
-        assertTrue(narrow.fits)
-        assertFalse(wide.fits)
-        assertEquals(CircleTextRole.NUMBER.watch.sp, narrow.primarySp, 0f)
-        assertEquals(narrow.primarySp, wide.primarySp, 0f)
-        assertFalse(narrow.measuredWidthPx == wide.measuredWidthPx)
-    }
-
-    @Test
-    fun `zero width renders no disc content without measuring text`() {
-        var measured = false
-
-        val fit = fitCircleDiscTextForBounds(
-            primaryValue = "1008.1",
-            unit = "hPa",
-            containerWidthPx = 0f,
-            containerHeightPx = 40f,
-            budget = budget,
-            measureWidthPx = { _, _ ->
-                measured = true
-                error("zero-width disc must not ask the fitter to measure")
-            },
-        )
-
-        assertEquals(null, fit)
-        assertFalse(measured)
-    }
-
-    private fun measuredWidth(text: String, sizeSp: Float): Float = text.sumOf { glyph ->
-        when (glyph) {
-            '1' -> 0.35
-            ',', '.' -> 0.22
-            ' ' -> 0.25
-            else -> 0.58
+    @Test fun `pressure readings keep their role and unit size regardless of commas`() {
+        compose.setContent {
+            CompositionLocalProvider(LocalCircleTextLayouts provides { text, layout -> layouts[text] = layout }) {
+                Column {
+                    for (value in listOf("1008.1", "1,008.1")) {
+                        CircleDiscArtwork(spec(value, "hPa"), Modifier.size(100.dp))
+                    }
+                }
+            }
         }
-    }.toFloat() * sizeSp
+        compose.waitForIdle()
+        for (text in listOf("1008.1 hPa", "1,008.1 hPa")) {
+            val layout = layouts.getValue(text)
+            assertEquals(12f, layout.layoutInput.style.fontSize.value)
+            assertEquals(7.5f, layout.layoutInput.text.spanStyles.single().item.fontSize.value)
+        }
+    }
+
+    @Test fun `a wide reading reports its shortage without reducing the role`() {
+        compose.setContent {
+            CompositionLocalProvider(LocalCircleTextLayouts provides { text, layout -> layouts[text] = layout }) {
+                CircleDiscArtwork(spec("1008.1", "hPa"), Modifier.size(20.dp))
+            }
+        }
+        compose.waitForIdle()
+        val layout = layouts.getValue("1008.1 hPa")
+        assertEquals(12f, layout.layoutInput.style.fontSize.value)
+        assertEquals(1, layout.lineCount)
+        assertTrue(layout.didOverflowWidth)
+    }
+
+    @Test fun `zero width renders no disc reading`() {
+        compose.setContent {
+            CompositionLocalProvider(LocalCircleTextLayouts provides { text, layout -> layouts[text] = layout }) {
+                Box(Modifier.size(0.dp)) { CircleDiscArtwork(spec("1008.1", "hPa")) }
+            }
+        }
+        compose.waitForIdle()
+        assertTrue(layouts.isEmpty())
+    }
+
+    @Test fun `a DEV word grows its chip instead of shrinking or clipping`() {
+        compose.setContent {
+            CompositionLocalProvider(
+                LocalCircleTextLayouts provides { text, layout -> layouts[text] = layout },
+                LocalCircleActionHostCost provides CircleActionHostCost.WORN,
+            ) {
+                CircleValueDisc("AUTO", "responsive layout", "AUTO SIZE", {}, valueRole = CircleTextRole.NAME)
+            }
+        }
+        compose.waitForIdle()
+        val layout = layouts.getValue("AUTO")
+        assertEquals(9.5f, layout.layoutInput.style.fontSize.value)
+        assertTrue("AUTO needs a wider chip: ${layout.getLineRight(0)}/${layout.layoutInput.constraints.maxWidth}",
+            layout.getLineRight(0) <= layout.layoutInput.constraints.maxWidth)
+    }
+
+    private fun spec(value: String, unit: String?) = CircleDiscArtworkSpec(
+        primaryValue = value, unit = unit, primaryColor = Color.White, contour = Color.Gray)
 }

@@ -30,7 +30,7 @@ fun circleRoleStyle(role: CircleTextRole): CircleRoleStyle =
 @Composable
 fun circleRoleTextStyle(role: CircleTextRole, color: Color, textAlign: TextAlign? = null,
     numerals: Boolean = role == CircleTextRole.NUMBER): TextStyle =
-    roleTextStyle(circleRoleStyle(role), color, textAlign, numerals)
+    roleTextStyle(circleRoleStyle(role), color, textAlign, numerals || role == CircleTextRole.NUMBER)
 
 /** Role metrics are the only type inputs. Product copy may overflow, never silently lose a word. */
 @Composable
@@ -44,19 +44,22 @@ fun CircleText(
     numerals: Boolean = role == CircleTextRole.NUMBER,
     maxLines: Int = Int.MAX_VALUE,
     onTextLayout: ((TextLayoutResult) -> Unit)? = null,
+    shadow: androidx.compose.ui.graphics.Shadow? = null,
 ) {
     val roleStyle = circleRoleStyle(role)
-    val style = roleTextStyle(roleStyle, color, textAlign, numerals)
+    val numeric = numerals || role == CircleTextRole.NUMBER
+    val lineLimit = if (role == CircleTextRole.NUMBER) 1 else if (userContent) maxLines else Int.MAX_VALUE
+    val style = roleTextStyle(roleStyle, color, textAlign, numeric).copy(shadow = shadow)
     val measurer = rememberTextMeasurer()
     val layouts = LocalCircleTextLayouts.current
-    val tracking = if (numerals) 0f else roleStyle.trackingEm * style.fontSize.value
-    val intrinsic = remember(text, style, tracking, role, maxLines, measurer) {
-        CircleTextIntrinsicPolicy(text, style, tracking, role == CircleTextRole.NUMBER, maxLines, measurer)
+    val tracking = if (numeric) 0f else roleStyle.trackingEm * style.fontSize.value
+    val intrinsic = remember(text, style, tracking, role, lineLimit, measurer) {
+        CircleTextIntrinsicPolicy(text, style, tracking, role == CircleTextRole.NUMBER, lineLimit, measurer)
     }
     Layout(modifier = modifier, measurePolicy = intrinsic, content = {
       BoxWithConstraints {
         val fit = remember(text, style, constraints.maxWidth, role) {
-            fitCircleRoleText(text, if (numerals) 0f else roleStyle.trackingEm * style.fontSize.value, constraints.maxWidth.toFloat(),
+            fitCircleRoleText(text, tracking, constraints.maxWidth.toFloat(),
                 noWrap = role == CircleTextRole.NUMBER,
                 measure = { words, tracking ->
                     measurer.measure(words, style.copy(letterSpacing = tracking.sp), softWrap = false)
@@ -67,7 +70,7 @@ fun CircleText(
             text = fit.text,
             style = style.copy(letterSpacing = fit.trackingSp.sp),
             softWrap = false,
-            maxLines = if (role == CircleTextRole.NUMBER) 1 else maxLines,
+            maxLines = lineLimit,
             overflow = if (userContent) TextOverflow.Ellipsis else TextOverflow.Visible,
             onTextLayout = { layout -> onTextLayout?.invoke(layout); layouts?.invoke(text, layout) },
         )

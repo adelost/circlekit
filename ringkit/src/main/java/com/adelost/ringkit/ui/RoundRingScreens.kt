@@ -231,7 +231,6 @@ internal fun LauncherScreen(
                 enabled = enabled,
                 actionTiming = entry.actionTiming,
                 diameter = grid.diameter,
-                labelSize = grid.labelSize,
                 onTap = { entry.open()?.let(nav::push) ?: entry.run?.invoke() },
             )
         }

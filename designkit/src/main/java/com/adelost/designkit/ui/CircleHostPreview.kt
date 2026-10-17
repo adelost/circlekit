@@ -205,6 +205,7 @@ private fun CircleWatchPreviewSelector(
         item(key = "responsive") {
             CircleValueDisc(
                 value = "AUTO",
+                valueRole = CircleTextRole.NAME,
                 contentDescription = "Return to responsive phone layout",
                 actionLabel = "AUTO SIZE",
                 onTap = onSelectResponsive,

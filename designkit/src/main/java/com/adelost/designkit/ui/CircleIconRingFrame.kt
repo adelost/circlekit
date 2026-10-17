@@ -40,8 +40,6 @@ internal fun CircleIconRingFrame(
     diameter: Dp,
     active: Boolean?,
     accent: CircleAccent,
-    fontFamily: FontFamily?,
-    labelSize: TextUnit,
     centerValue: String?,
     iconRotationDegrees: Float,
     choiceState: CircleChoiceState?,

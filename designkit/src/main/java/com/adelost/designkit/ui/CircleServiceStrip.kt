@@ -43,7 +43,8 @@ data class CircleServiceStripStyle(
     val maxWidth: Dp,
     val iconSize: Dp,
     val gap: Dp,
-    val textStyle: TextStyle,
+    val textRole: CircleTextRole = CircleTextRole.NOTE,
+    val textShadow: androidx.compose.ui.graphics.Shadow? = null,
     val liveTint: Color,
     val staleTint: Color,
     /** A dark ground under every glyph so it reads over imagery; null on a plain face. */
@@ -103,7 +104,18 @@ fun CircleServiceStrip(
             subcompose(frame.key) { CircleServiceGlyphView(frame, style, onGlyphTap) }.single().measure(free)
         }
         val gapPx = style.gap.roundToPx()
-        val layout = fitCircleServiceRows(placeables.map { it.width }, gapPx, minOf(style.maxWidth.roundToPx(), constraints.maxWidth), maxRows) { hidden ->
+        val rowHeight = placeables.maxOf { it.height }
+        val touchRoom = if (onGlyphTap != null) (style.tapRoomAbove + style.tapRoomBelow).roundToPx() else 0
+        val heightRows = if (constraints.hasBoundedHeight)
+            ((constraints.maxHeight - touchRoom + gapPx) / (rowHeight + gapPx).coerceAtLeast(1)).coerceAtLeast(0)
+            else maxRows
+        val rowsAllowed = minOf(maxRows, heightRows)
+        if (rowsAllowed == 0 || constraints.maxWidth == 0) {
+            seated.seats = emptyList()
+            seated.size = 0 to 0
+            return@SubcomposeLayout layout(0, 0) {}
+        }
+        val layout = fitCircleServiceRows(placeables.map { it.width }, gapPx, minOf(style.maxWidth.roundToPx(), constraints.maxWidth), rowsAllowed) { hidden ->
             subcompose("count-probe-$hidden") { CircleServiceText("+$hidden", style, style.liveTint) }.single().measure(free).width
         }
         val count = layout.hidden.takeIf { it > 0 }?.let { hidden ->
@@ -186,7 +198,7 @@ private fun CircleServiceGlyphView(
 
 @Composable
 private fun CircleServiceText(text: String, style: CircleServiceStripStyle, color: Color) {
-    BasicText(text, style = style.textStyle.copy(color = color), maxLines = 1)
+    CircleText(text, style.textRole, color, numerals = true, shadow = style.textShadow)
 }
 
 private const val CIRCLE_SERVICE_TICK_MS = 1_000L

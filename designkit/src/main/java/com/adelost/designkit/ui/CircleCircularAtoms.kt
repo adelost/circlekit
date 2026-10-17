@@ -228,7 +228,7 @@ fun CircleValueDisc(
     onTap: () -> Unit,
     modifier: Modifier = Modifier,
     diameter: Dp = MenuDesign.backDiameter,
-    valueSize: TextUnit = MenuDesign.textActionSize,
+    valueRole: CircleTextRole = CircleTextRole.NUMBER,
     active: Boolean = false,
     enabled: Boolean = true,
     timing: CircleActionTiming = CircleActionTiming.DELIBERATE,
@@ -250,10 +250,14 @@ fun CircleValueDisc(
         scrim = false,
     )
     val scale by animateFloatAsState(chrome.scale, label = "circleValueDiscPress")
+    val textStyle = circleRoleTextStyle(valueRole, RingTokens.Ink)
+    val textWidth = androidx.compose.ui.text.rememberTextMeasurer().measure(value, textStyle, softWrap = false).size.width
+    val density = androidx.compose.ui.platform.LocalDensity.current
+    val fittedDiameter = maxOf(diameter, with(density) { ((textWidth + 2) / CIRCLE_DISC_TEXT_WIDTH_FRACTION).toDp() })
     Box(
         contentAlignment = Alignment.Center,
         modifier = modifier
-            .size(diameter)
+            .size(fittedDiameter)
             .scale(scale)
             .clip(CircleShape)
             .background(chrome.fill)
@@ -278,10 +282,7 @@ fun CircleValueDisc(
                     else -> RingTokens.Dim
                 },
                 contour = Color.Transparent,
-            ),
-            textBudget = CircleDiscTextBudget(
-                maximumPrimarySp = valueSize.value,
-                minimumPrimarySp = minOf(9f, valueSize.value),
+                primaryRole = valueRole,
             ),
             modifier = Modifier.fillMaxSize(),
         )
@@ -298,8 +299,6 @@ fun CircleIconRing(
     diameter: Dp = MenuDesign.launcherDiameter,
     active: Boolean? = null,
     accent: CircleAccent = ringIconAccent(icon),
-    fontFamily: FontFamily? = null,
-    labelSize: TextUnit = 9.5.sp,
     /** Optional value rendered under the icon. Data-source rings use this
      * variant instead of maintaining a second ring/label implementation. */
     centerValue: String? = null,
@@ -341,8 +340,6 @@ fun CircleIconRing(
             active = active,
             accent = accent,
             semanticColor = semanticColor,
-            fontFamily = fontFamily,
-            labelSize = labelSize,
             centerValue = centerValue,
             centerValueColor = centerValueColor,
             iconRotationDegrees = iconRotationDegrees,
@@ -381,8 +378,6 @@ fun CirclePressIconRing(
     modifier: Modifier = Modifier,
     diameter: Dp = MenuDesign.launcherDiameter,
     accent: CircleAccent = ringIconAccent(icon),
-    fontFamily: FontFamily? = null,
-    labelSize: TextUnit = 9.5.sp,
     centerValue: String? = null,
     sub: String? = null,
     /** No millisecond: the kind IS the declaration, and this used to read it back off a duration. */
@@ -403,8 +398,6 @@ fun CirclePressIconRing(
         diameter = diameter,
         active = active,
         accent = accent,
-        fontFamily = fontFamily,
-        labelSize = labelSize,
         centerValue = centerValue,
         iconRotationDegrees = 0f,
         choiceState = null,

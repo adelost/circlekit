@@ -71,7 +71,6 @@ internal fun CircleMenuOptionRows(
                     active = option.active,
                     choiceState = option.choiceState,
                     diameter = layout.ringDiameter,
-                    labelSize = layout.labelSizeSp.sp,
                     timing = option.timing,
                 )
             }

@@ -51,80 +51,10 @@ data class CircleDiscArtworkSpec(
     /** A secondary value owns the complete rim or none of it; this is not progress. */
     val secondaryRimColor: Color? = null,
     val secondaryLabel: CircleDiscSecondaryLabel? = null,
+    val primaryRole: CircleTextRole = CircleTextRole.NUMBER,
 )
 
-@Immutable
-data class CircleDiscTextBudget(
-    val maximumPrimarySp: Float,
-    val minimumPrimarySp: Float = 9f,
-    val stepSp: Float = 0.5f,
-    val unitScale: Float = 0.52f,
-    val horizontalFraction: Float = 0.76f,
-) {
-    init {
-        require(maximumPrimarySp >= minimumPrimarySp && minimumPrimarySp > 0f)
-        require(stepSp > 0f)
-        require(unitScale in 0f..1f)
-        require(horizontalFraction in 0f..1f)
-    }
-}
-
-@Immutable
-data class CircleDiscTextFit(
-    val primarySp: Float,
-    val unitSp: Float,
-    val measuredWidthPx: Float,
-    val fits: Boolean,
-)
-
-/**
- * Fits by measured glyph width. Character count is deliberately absent: `1111`
- * and `1008.1` are not the same width in the product typeface.
- */
-fun fitCircleDiscText(
-    primaryValue: String,
-    unit: String?,
-    availableWidthPx: Float,
-    budget: CircleDiscTextBudget,
-    measureWidthPx: (text: String, sizeSp: Float) -> Float,
-): CircleDiscTextFit {
-    require(availableWidthPx > 0f)
-    val primarySp = CircleTextRole.NUMBER.watch.sp
-    val unitSp = CircleTextRole.NUMBER.watch.unitSp
-    val width = measureWidthPx(primaryValue, primarySp) +
-        (unit?.takeIf(String::isNotBlank)?.let { measureWidthPx(" $it", unitSp) } ?: 0f)
-    return CircleDiscTextFit(primarySp, unitSp, width, width <= availableWidthPx)
-}
-
-/**
- * Layout boundary between Compose constraints and the strict text fitter.
- * A list row outside the round chord can legitimately be measured at zero;
- * that means no visible content, not malformed text input.
- */
-internal fun fitCircleDiscTextForBounds(
-    primaryValue: String,
-    unit: String?,
-    containerWidthPx: Float,
-    containerHeightPx: Float,
-    budget: CircleDiscTextBudget,
-    measureWidthPx: (text: String, sizeSp: Float) -> Float,
-): CircleDiscTextFit? {
-    if (
-        !containerWidthPx.isFinite() || containerWidthPx <= 0f ||
-        !containerHeightPx.isFinite() || containerHeightPx <= 0f
-    ) {
-        return null
-    }
-    val availableWidthPx = containerWidthPx * budget.horizontalFraction
-    if (!availableWidthPx.isFinite() || availableWidthPx <= 0f) return null
-    return fitCircleDiscText(
-        primaryValue = primaryValue,
-        unit = unit,
-        availableWidthPx = availableWidthPx,
-        budget = budget,
-        measureWidthPx = measureWidthPx,
-    )
-}
+internal const val CIRCLE_DISC_TEXT_WIDTH_FRACTION = 0.76f
 
 /**
  * Shared, gesture-free disc artwork. Callers may place it in an app-owned dial;
@@ -134,7 +64,6 @@ internal fun fitCircleDiscTextForBounds(
 fun CircleDiscArtwork(
     spec: CircleDiscArtworkSpec,
     modifier: Modifier = Modifier,
-    textBudget: CircleDiscTextBudget = CircleDiscTextBudget(maximumPrimarySp = 18f),
 ) {
     BoxWithConstraints(
         contentAlignment = Alignment.Center,
@@ -142,9 +71,15 @@ fun CircleDiscArtwork(
             .circleRingContour(spec.secondaryRimColor ?: spec.contour),
     ) {
         if (constraints.maxWidth <= 0 || constraints.maxHeight <= 0) return@BoxWithConstraints
-        CircleReading(spec.primaryValue, spec.unit, spec.primaryColor,
-            modifier = Modifier.width(maxWidth * textBudget.horizontalFraction), unitColor = spec.unitColor,
-            textAlign = TextAlign.Center)
+        val textWidth = Modifier.width(maxWidth * CIRCLE_DISC_TEXT_WIDTH_FRACTION)
+        if (spec.primaryRole == CircleTextRole.NUMBER) {
+            CircleReading(spec.primaryValue, spec.unit, spec.primaryColor,
+                modifier = textWidth, unitColor = spec.unitColor, textAlign = TextAlign.Center)
+        } else {
+            require(spec.unit == null) { "A unit belongs to a NUMBER reading" }
+            CircleText(spec.primaryValue, spec.primaryRole, spec.primaryColor,
+                modifier = textWidth, textAlign = TextAlign.Center)
+        }
         spec.secondaryLabel?.let { secondary ->
             CircleText(text = secondary.text, role = CircleTextRole.NOTE, color = secondary.color,
                 textAlign = TextAlign.Center,
@@ -160,27 +95,11 @@ fun CircleInstrumentDisc(
     contentDescription: String,
     modifier: Modifier = Modifier,
     diameter: Dp = MenuDesign.backDiameter,
-    textBudget: CircleDiscTextBudget = CircleDiscTextBudget(maximumPrimarySp = 18f),
 ) {
     CircleDiscArtwork(
         spec = spec,
-        textBudget = textBudget,
         modifier = modifier
             .size(diameter)
             .semantics { this.contentDescription = contentDescription },
     )
 }
-
-private fun discTextStyle(
-    color: Color,
-    sizeSp: Float,
-    fontScale: Float,
-    weight: FontWeight,
-): TextStyle = TextStyle(
-    color = color,
-    fontFamily = GraphiteType.Sans,
-    fontSize = fixedCircleUiSp(sizeSp, fontScale).sp,
-    fontWeight = weight,
-    textAlign = TextAlign.Center,
-    fontFeatureSettings = GraphiteType.TABULAR_NUMERALS,
-)

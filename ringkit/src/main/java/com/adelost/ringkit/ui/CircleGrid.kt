@@ -126,7 +126,6 @@ fun CircleGrid(items: List<CircleUiModel>, spec: MenuGridSpec) {
             accent = item.accent,
             diameter = spec.diameter,
             sub = item.sub,
-            labelSize = spec.labelSize,
             onTap = item.onTap,
         )
     }
