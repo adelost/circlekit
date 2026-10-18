@@ -307,7 +307,7 @@ internal fun Modifier.circleHoldCue(progress: () -> Float, color: Color): Modifi
             style = Stroke(width = stroke, cap = StrokeCap.Round),
         )
     } else {
-        drawRect(color = color.copy(alpha = color.alpha * 0.30f), size = Size(size.width * fraction, size.height))
+        drawRect(color = color.copy(alpha = color.alpha * CircleCue.washAlpha), size = Size(size.width * fraction, size.height))
     }
 }
 
@@ -332,6 +332,6 @@ enum class CirclePressCue {
 const val CIRCLE_CUE_BRUSH_MIN_MS = CirclePress.brushMinMs
 
 /** Bounds this square are a disc or a seat and take the ring; wider ones take the fill. */
-private const val CIRCLE_CUE_ROUND_ASPECT = 1.2f
+private const val CIRCLE_CUE_ROUND_ASPECT = CircleCue.roundAspect
 
 private const val CIRCLE_CUE_RELEASE_MS = CirclePress.releaseMs.toInt()

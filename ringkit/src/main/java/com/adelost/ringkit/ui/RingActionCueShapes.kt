@@ -1,6 +1,7 @@
 package com.adelost.ringkit.ui
 
 import com.adelost.designkit.ui.CircleLine
+import com.adelost.designkit.ui.CircleCue
 import com.adelost.designkit.ui.circleProgressStroke
 
 import androidx.compose.foundation.background
@@ -107,11 +108,11 @@ internal fun RingActionCueContent(cue: CircleActionCue) {
  */
 @Composable
 private fun RingBareCue(cue: CircleActionCue) {
-    val ringSize = 104.dp
+    val ringSize = CircleCue.ringDp.dp
     Box(contentAlignment = Alignment.Center) {
         Box(
             Modifier
-                .size(114.dp)
+                .size(CircleCue.discDp.dp)
                 .background(RING_CUE_SURFACE_COLOR.copy(alpha = 1f), CircleShape),
         )
         ProgressRing(
@@ -123,14 +124,14 @@ private fun RingBareCue(cue: CircleActionCue) {
         )
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(3.dp),
-            modifier = Modifier.widthIn(max = 76.dp),
+            verticalArrangement = Arrangement.spacedBy(CircleCue.contentGapDp.dp),
+            modifier = Modifier.widthIn(max = CircleCue.labelMaxDp.dp),
         ) {
             Icon(
                 imageVector = cue.icon,
                 contentDescription = cue.label,
                 tint = cue.inkColor(),
-                modifier = Modifier.size(24.dp).rotate(cue.iconRotationDeg),
+                modifier = Modifier.size(CircleCue.iconDp.dp).rotate(cue.iconRotationDeg),
             )
             com.adelost.designkit.ui.CircleText(
                 text = cue.label,

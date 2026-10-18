@@ -2,7 +2,7 @@ import { readFileSync, writeFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { RING_ICON_ASSETS } from "../dist/src/ring-icon-assets.js";
-import { CIRCLEKIT_ACCENTS, CIRCLEKIT_LINE, CIRCLEKIT_NEUTRAL_TONES, CIRCLEKIT_PRESS, CIRCLEKIT_STYLE, CIRCLEKIT_SWITCH, CIRCLEKIT_TONE, CIRCLEKIT_TEXT } from "../dist/src/circle-style.js";
+import { CIRCLEKIT_ACCENTS, CIRCLEKIT_CUE, CIRCLEKIT_LINE, CIRCLEKIT_NEUTRAL_TONES, CIRCLEKIT_PRESS, CIRCLEKIT_STYLE, CIRCLEKIT_SWITCH, CIRCLEKIT_TONE, CIRCLEKIT_TEXT } from "../dist/src/circle-style.js";
 import { circleTones } from "../dist/src/circle-tone.js";
 import { DEFAULT_COMPOSITE_ICON_STYLES } from "./ring-icon-native-styles.mjs";
 
@@ -15,6 +15,7 @@ const outputs = new Map([
   [resolve(designkit, "CircleTextRoles.kt"), emitCircleText()],
   [resolve(designkit, "CircleLine.kt"), emitCircleLine()],
   [resolve(designkit, "CirclePress.kt"), emitCirclePress()],
+  [resolve(designkit, "CircleCue.kt"), emitCircleCue()],
 ]);
 const check = process.argv.includes("--check");
 let drift = false;
@@ -62,6 +63,14 @@ function emitCirclePress() {
   return `// GENERATED from circlekit-assets/src/circle-style.ts - do not edit.\n` +
     `package com.adelost.designkit.ui\n\n` +
     `/** The native and web press ladder share one declaration. */\nobject CirclePress {\n${rungs}\n}\n`;
+}
+
+function emitCircleCue() {
+  const fields = Object.entries(CIRCLEKIT_CUE).map(([id, value]) =>
+    `    const val ${id} = ${value}f`).join("\n");
+  return `// GENERATED from circlekit-assets/src/circle-style.ts - do not edit.\n` +
+    `package com.adelost.designkit.ui\n\n` +
+    `/** Shared centre-cue and control-trace geometry. */\nobject CircleCue {\n${fields}\n}\n`;
 }
 
 function emitRingIcons() {

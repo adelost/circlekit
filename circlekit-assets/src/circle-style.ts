@@ -68,6 +68,18 @@ export const CIRCLEKIT_PRESS = {
   hintReadingMs: hintMaxChars / hintReadCharsPerSecond * 1000,
 } as const;
 
+/** The one centre receipt and the control's own trace, in canonical dp. */
+export const CIRCLEKIT_CUE = {
+  discDp: 114,
+  ringDp: 104,
+  iconDp: 24,
+  labelMaxDp: 76,
+  contentGapDp: 3,
+  roundAspect: 1.2,
+  washAlpha: 0.30,
+  progressDiameterShare: 0.06,
+} as const;
+
 /**
  * How a colour's quieter tones follow from it. A colour is written once, as the tone you read (strong); its ground
  * sits behind an icon at a fixed lightness with a capped chroma, and its dimmed tone lies part of the way from the
