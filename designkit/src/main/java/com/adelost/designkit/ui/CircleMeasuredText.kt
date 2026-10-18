@@ -13,6 +13,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.TextUnit
+import androidx.compose.ui.unit.Constraints
+import androidx.compose.ui.unit.sp
 
 /** Canvas draws this exact Compose layout, including its typed unit span, and reports the same bounds. */
 class CircleMeasuredText internal constructor(
@@ -35,9 +37,15 @@ class CircleRoleTextMeasurer internal constructor(
     private val units: Map<CircleTextRole, Pair<TextUnit, Int>>,
     private val observer: ((CircleTextLayout) -> Unit)?,
 ) {
-    fun measure(content: CircleTextContent, role: CircleTextRole, color: Color): CircleMeasuredText {
+    fun measure(content: CircleTextContent, role: CircleTextRole, color: Color,
+        constraints: Constraints = Constraints()): CircleMeasuredText {
         require(content is CircleTextValue || role is CircleWordRole) { "NUMBER requires a typed value" }
         val style = (if (content is CircleTextValue) numerals else words).getValue(role).copy(color = color)
+        val fit = fitCircleRoleText(content.text, style.letterSpacing.value, constraints.maxWidth.toFloat(),
+            noWrap = content is CircleTextValue, measure = { text, tracking ->
+                measurer.measure(text, style.copy(letterSpacing = tracking.sp), softWrap = false)
+                    .multiParagraph.intrinsics.maxIntrinsicWidth
+            })
         val text = buildAnnotatedString {
             if (content is CircleMeasurement) {
                 append(content.value)
@@ -45,9 +53,10 @@ class CircleRoleTextMeasurer internal constructor(
                     val (size, weight) = units.getValue(role)
                     withStyle(SpanStyle(fontSize = size, fontWeight = FontWeight(weight))) { append(" $it") }
                 }
-            } else append(content.text)
+            } else append(fit.text)
         }
-        return CircleMeasuredText(measurer.measure(text, style, softWrap = false), content, role,
+        return CircleMeasuredText(measurer.measure(text, style.copy(letterSpacing = fit.trackingSp.sp),
+            softWrap = false, constraints = constraints), content, role,
             (if (content is CircleTextValue) numerals else words).getValue(role).fontSize.value, observer)
     }
 }

@@ -94,6 +94,19 @@ class ARoleLabelKeepsItsSizeTest {
         assertEquals(12f, actual.expectedFontSp)
     }
 
+    @Test fun `bounded canvas words wrap by the same fixed role policy`() {
+        var measured: CircleMeasuredText? = null
+        compose.setContent {
+            measured = rememberCircleTextMeasurer().measure(CircleWords("TOUCH VIBRATION"), CircleTextRole.LABEL,
+                Color.White, androidx.compose.ui.unit.Constraints(maxWidth = 96))
+        }
+        compose.waitForIdle()
+        val layout = requireNotNull(measured).layout
+        assertEquals(7.5f, layout.layoutInput.style.fontSize.value)
+        assertEquals("TOUCH\nVIBRATION", layout.layoutInput.text.text)
+        assertEquals(2, layout.lineCount)
+    }
+
     @Test fun `product copy grows past a caller's old one-line cap`() {
         compose.setContent {
             Box(Modifier.width(48.dp)) {
