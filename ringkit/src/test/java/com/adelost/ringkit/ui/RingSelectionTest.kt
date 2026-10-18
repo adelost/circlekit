@@ -15,7 +15,7 @@ class RingSelectionTest {
         val rows = ringSelectionRows(options, "a", RingIcons.Target) { selected = it }
         rows[1].onTap!!.invoke()
         assertEquals("b", selected)
-        assertEquals("A long readable description", rows[0].sub)
+        assertEquals("A long readable description", rows[0].sub.text)
         assertEquals(RingIcons.Check, rows[0].icon)
         assertTrue(rows.all { it.multiline })
         assertNull(rows[2].onTap)

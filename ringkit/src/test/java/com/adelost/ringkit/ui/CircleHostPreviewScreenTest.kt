@@ -45,7 +45,7 @@ class CircleHostPreviewScreenTest {
         val rows = screen.items.first()
 
         assertFalse(rows.any { it.key == "host-mode" || it.key == "orientation" })
-        assertEquals("ROUND · WATCH EXACT", rows.single().sub)
+        assertEquals("ROUND · WATCH EXACT", rows.single().sub.text)
     }
 
     @Test
