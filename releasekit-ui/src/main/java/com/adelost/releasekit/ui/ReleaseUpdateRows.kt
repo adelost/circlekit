@@ -34,7 +34,7 @@ fun releaseUpdateRows(
     val updateRow = RowSpec(
         key = updateKey,
         title = updateTitle,
-        sub = model.sub,
+        sub = com.adelost.designkit.ui.CircleWords(model.sub),
         icon = RingIcons.Download,
         hint = hint,
         semanticColor = RingTokens.Broken.takeIf {
@@ -55,7 +55,7 @@ fun releaseUpdateRows(
                 RowSpec(
                     key = "$updateKey-published",
                     title = "PUBLISHED",
-                    sub = "v${presentation.versionName} · $label",
+                    sub = com.adelost.designkit.ui.CircleWords("v${presentation.versionName} · $label"),
                     icon = RingIcons.Calendar,
                 )
             }

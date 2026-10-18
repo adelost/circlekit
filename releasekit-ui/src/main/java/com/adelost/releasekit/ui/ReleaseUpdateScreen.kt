@@ -31,7 +31,7 @@ fun releaseUpdateScreen(port: ReleaseUpdatePort): RingScreen.Rows = RingScreen.R
             RowSpec(
                 key = "auto-update",
                 title = "AUTO-UPDATE",
-                sub = if (automatic) "ON" else "OFF",
+                sub = com.adelost.designkit.ui.CircleWords(if (automatic) "ON" else "OFF"),
                 icon = RingIcons.Download,
                 choices = listOf("OFF", "ON"),
                 choiceRole = CircleChoiceRole.TOGGLE,
@@ -40,7 +40,7 @@ fun releaseUpdateScreen(port: ReleaseUpdatePort): RingScreen.Rows = RingScreen.R
             RowSpec(
                 key = "update-explanation",
                 title = "HOW IT WORKS",
-                sub = "When ON, checks on app start and downloads verified updates. When READY, tap VERSION, then confirm in Android. OFF keeps manual checks available.",
+                sub = com.adelost.designkit.ui.CircleWords("When ON, checks on app start and downloads verified updates. When READY, tap VERSION, then confirm in Android. OFF keeps manual checks available."),
                 icon = null,
             ),
         )
