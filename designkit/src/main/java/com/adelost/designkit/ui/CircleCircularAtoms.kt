@@ -326,7 +326,6 @@ fun CircleIconRing(
      *  dimmed in its own colour, never dashed ([circleSuggestedContour]). */
     suggested: Boolean = false,
     centerUnit: String? = null,
-    centerNumerals: Boolean = true,
     subColor: Color? = null,
 ) {
     val feedback = rememberCircleActionFeedbackState()
@@ -349,7 +348,6 @@ fun CircleIconRing(
             centerValue = centerValue,
             centerValueColor = centerValueColor,
             centerUnit = centerUnit,
-            centerNumerals = centerNumerals,
             subColor = subColor,
             iconRotationDegrees = iconRotationDegrees,
             choiceState = choiceState,

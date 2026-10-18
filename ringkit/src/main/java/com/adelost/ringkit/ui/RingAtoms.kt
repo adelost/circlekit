@@ -112,7 +112,6 @@ fun StatRing(
         active = if (off) false else null,
         centerValue = reading?.measurement?.value ?: numerals?.text ?: "–",
         centerUnit = reading?.measurement?.unit,
-        centerNumerals = true,
         centerValueColor = if (off) RingTokens.Dim else health.stateColor(),
         sub = reading?.statusWords ?: words?.text,
         subColor = if (off) RingTokens.Dim else health.stateColor(),
