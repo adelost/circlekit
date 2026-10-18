@@ -46,6 +46,28 @@ export const CIRCLEKIT_LINE = {
   bar: 4,
 } as const;
 
+const deliberateMs = 500;
+const hintMaxChars = 90;
+const hintReadCharsPerSecond = 30;
+
+/** One press ladder for native and web. A host chooses a rung, never a second duration. */
+export const CIRCLEKIT_PRESS = {
+  immediateMs: 0,
+  wornTouchCostMs: 200,
+  holdDeliberateMs: deliberateMs,
+  rowInfoHoldMs: deliberateMs,
+  backHoldMs: deliberateMs,
+  holdDestructiveMs: 900,
+  holdConfirmMs: 1000,
+  actionConfirmationMs: 240,
+  actionExplainMs: 1600,
+  brushMinMs: 40,
+  releaseMs: 90,
+  hintMaxChars,
+  hintReadCharsPerSecond,
+  hintReadingMs: hintMaxChars / hintReadCharsPerSecond * 1000,
+} as const;
+
 /**
  * How a colour's quieter tones follow from it. A colour is written once, as the tone you read (strong); its ground
  * sits behind an icon at a fixed lightness with a capped chroma, and its dimmed tone lies part of the way from the

@@ -170,19 +170,19 @@ object MenuDesign {
     // rungs — no control invents its own number.
 
     /** Advancing a settings choice (RingChoiceRow and friends). */
-    const val holdDeliberateMs: Long = 500L
+    const val holdDeliberateMs: Long = CirclePress.holdDeliberateMs
 
     /** The info icon is deliberately harder to open than an ordinary row. */
-    const val rowInfoHoldMs: Long = holdDeliberateMs
+    const val rowInfoHoldMs: Long = CirclePress.rowInfoHoldMs
 
     /** Every plain action's short intent gate, via [circleSafeTap]. It remains
      * visibly different from an instant touch, without making navigation feel
      * like a confirmation gesture. Settings choices keep their deliberate
      * half-second rung below; destructive actions stay longer still. */
-    const val wornTouchCostMs: Long = 200L
+    const val wornTouchCostMs: Long = CirclePress.wornTouchCostMs
 
     /** Brief centre acknowledgement after either action category commits. */
-    const val actionConfirmationMs: Long = 240L
+    const val actionConfirmationMs: Long = CirclePress.actionConfirmationMs
 
     /**
      * How long the centre cue stays up after an action that had something to
@@ -195,7 +195,7 @@ object MenuDesign {
      * read the result, short enough that a deliberate press does not feel
      * blocked.
      */
-    const val actionExplainMs: Long = 1_600L
+    const val actionExplainMs: Long = CirclePress.actionExplainMs
 
     /**
      * How long a hint may be before the centre cue ellipsises it.
@@ -210,10 +210,7 @@ object MenuDesign {
      * ran to 111 and 132 characters and were silently cut (menu UX audit
      * 2026-07-27, finding 10).
      */
-    const val hintMaxChars: Int = 90
-
-    /** Glanced UI copy, read at arm's length on a watch face. */
-    private const val hintReadCharsPerSecond: Float = 30f
+    const val hintMaxChars: Int = CirclePress.hintMaxChars
 
     /**
      * How long a cue that carries a SENTENCE needs to stay up, DERIVED from
@@ -225,8 +222,7 @@ object MenuDesign {
      * sticky or the sentence disappears half-read. This moves with the budget:
      * widen the hint and the window widens with it.
      */
-    const val hintReadingMs: Long =
-        (hintMaxChars / hintReadCharsPerSecond * 1_000f).toLong()
+    const val hintReadingMs: Long = CirclePress.hintReadingMs
 
     /** Fail at the authoring seam instead of shipping a truncated option. */
     fun requireMenuOptionLabel(label: String, owner: String) {
@@ -245,17 +241,17 @@ object MenuDesign {
     }
 
     /** Destructive / state-swapping pills (HoldPill). */
-    const val holdDestructiveMs: Long = 900L
+    const val holdDestructiveMs: Long = CirclePress.holdDestructiveMs
 
     /** Hold-to-confirm edge actions — screen unlock, home-set. */
-    const val holdConfirmMs: Long = 1_000L
+    const val holdConfirmMs: Long = CirclePress.holdConfirmMs
 
     val backDiameter: Dp = watchActionRingDiameter
     val backDiameterCompact: Dp = watchActionRingDiameter
     val backChevronSize: Dp = iconSize
     val backTouchTarget: Dp = 48.dp
     const val backPressScale: Float = 0.93f
-    const val backHoldMs: Long = holdDeliberateMs
+    const val backHoldMs: Long = CirclePress.backHoldMs
     val overlayScrim: Color = Color.Black.copy(alpha = 0.45f)
     val actionCueScrim: Color = Color.Black
 }

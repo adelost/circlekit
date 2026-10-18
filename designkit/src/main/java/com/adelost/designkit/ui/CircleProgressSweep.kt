@@ -329,9 +329,9 @@ enum class CirclePressCue {
 }
 
 /** Below this, a finger has only brushed the glass and the control says nothing (row 215). */
-const val CIRCLE_CUE_BRUSH_MIN_MS = 40L
+const val CIRCLE_CUE_BRUSH_MIN_MS = CirclePress.brushMinMs
 
 /** Bounds this square are a disc or a seat and take the ring; wider ones take the fill. */
 private const val CIRCLE_CUE_ROUND_ASPECT = 1.2f
 
-private const val CIRCLE_CUE_RELEASE_MS = 90
+private const val CIRCLE_CUE_RELEASE_MS = CirclePress.releaseMs.toInt()

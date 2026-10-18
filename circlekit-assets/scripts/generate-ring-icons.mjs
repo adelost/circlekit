@@ -2,7 +2,7 @@ import { readFileSync, writeFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { RING_ICON_ASSETS } from "../dist/src/ring-icon-assets.js";
-import { CIRCLEKIT_ACCENTS, CIRCLEKIT_LINE, CIRCLEKIT_NEUTRAL_TONES, CIRCLEKIT_STYLE, CIRCLEKIT_SWITCH, CIRCLEKIT_TONE, CIRCLEKIT_TEXT } from "../dist/src/circle-style.js";
+import { CIRCLEKIT_ACCENTS, CIRCLEKIT_LINE, CIRCLEKIT_NEUTRAL_TONES, CIRCLEKIT_PRESS, CIRCLEKIT_STYLE, CIRCLEKIT_SWITCH, CIRCLEKIT_TONE, CIRCLEKIT_TEXT } from "../dist/src/circle-style.js";
 import { circleTones } from "../dist/src/circle-tone.js";
 import { DEFAULT_COMPOSITE_ICON_STYLES } from "./ring-icon-native-styles.mjs";
 
@@ -14,6 +14,7 @@ const outputs = new Map([
   [resolve(designkit, "CircleStyleTokens.kt"), emitCircleStyle()],
   [resolve(designkit, "CircleTextRoles.kt"), emitCircleText()],
   [resolve(designkit, "CircleLine.kt"), emitCircleLine()],
+  [resolve(designkit, "CirclePress.kt"), emitCirclePress()],
 ]);
 const check = process.argv.includes("--check");
 let drift = false;
@@ -53,6 +54,14 @@ function emitCircleLine() {
     `package com.adelost.designkit.ui\n\nimport androidx.compose.ui.unit.dp\n\n` +
     `/** Line roles at the canonical 192 dp face; density scaling belongs to the viewport. */\n` +
     `object CircleLine {\n${roles}\n}\n`;
+}
+
+function emitCirclePress() {
+  const rungs = Object.entries(CIRCLEKIT_PRESS).map(([id, value]) =>
+    `    const val ${id}: ${id.endsWith("Ms") ? "Long" : "Int"} = ${value}${id.endsWith("Ms") ? "L" : ""}`).join("\n");
+  return `// GENERATED from circlekit-assets/src/circle-style.ts - do not edit.\n` +
+    `package com.adelost.designkit.ui\n\n` +
+    `/** The native and web press ladder share one declaration. */\nobject CirclePress {\n${rungs}\n}\n`;
 }
 
 function emitRingIcons() {
