@@ -52,8 +52,9 @@ fun CircleText(
     val style = roleTextStyle(roleStyle, color, textAlign, numeric).copy(shadow = shadow)
     val measurer = rememberTextMeasurer()
     val layouts = LocalCircleTextLayouts.current
-    val reporter = remember(text, role, style.fontSize, userContent, layouts) {
-        layouts?.let { CircleTextLayoutReporter(text, role, style.fontSize.value, userContent, it) }
+    val expectedFontSp = circleFixedSp(roleStyle.sp).value
+    val reporter = remember(text, role, expectedFontSp, userContent, layouts) {
+        layouts?.let { CircleTextLayoutReporter(text, role, expectedFontSp, userContent, it) }
     }
     val tracking = if (numeric) 0f else roleStyle.trackingEm * style.fontSize.value
     val intrinsic = remember(text, style, tracking, role, lineLimit, measurer) {
@@ -104,8 +105,9 @@ fun CircleReading(
     }
     val layouts = LocalCircleTextLayouts.current
     val style = roleTextStyle(spec, color, textAlign, true)
-    val reporter = remember(text, style.fontSize, layouts) {
-        layouts?.let { CircleTextLayoutReporter(text.text, CircleTextRole.NUMBER, style.fontSize.value, false, it) }
+    val expectedFontSp = circleFixedSp(spec.sp).value
+    val reporter = remember(text, expectedFontSp, layouts) {
+        layouts?.let { CircleTextLayoutReporter(text.text, CircleTextRole.NUMBER, expectedFontSp, false, it) }
     }
     BasicText(text, modifier.then(reporter?.modifier ?: Modifier), style = style, softWrap = false,
         maxLines = 1, overflow = TextOverflow.Visible, onTextLayout = { reporter?.laidOut(it) })

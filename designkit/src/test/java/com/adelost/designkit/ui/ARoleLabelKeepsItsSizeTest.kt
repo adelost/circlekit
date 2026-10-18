@@ -93,6 +93,20 @@ class ARoleLabelKeepsItsSizeTest {
             title.boundsInRoot.width >= title.layout.getLineRight(0))
     }
 
+    @Test fun `the text receipt checks the declared role independently of the rendered style`() {
+        var receipt: CircleTextLayout? = null
+        compose.setContent {
+            CompositionLocalProvider(LocalCircleTextLayouts provides { receipt = it }) {
+                CircleText("ROLE RECEIPT", CircleTextRole.NAME, Color.White)
+            }
+        }
+        compose.waitForIdle()
+        val text = requireNotNull(receipt)
+        assertEquals(CircleTextRole.NAME.watch.sp, text.expectedFontSp, 0.001f)
+        assertEquals("rendered size must equal the independently resolved role", text.expectedFontSp,
+            text.layout.layoutInput.style.fontSize.value, 0.001f)
+    }
+
     private fun mount(width: Int) = compose.setContent {
         Box(Modifier.width(width.dp)) {
             CircleText(text = "RECORDING", role = CircleTextRole.LABEL, color = Color.White)
