@@ -101,7 +101,8 @@ fun StatRing(
 ) {
     val off = health == Health.OFF
     val reading = value as? StatValue.Reading
-    val plain = value as? StatValue.Plain
+    val words = value as? StatValue.Words
+    val numerals = value as? StatValue.Numerals
     CircleIconRing(
         icon = icon,
         label = label,
@@ -109,11 +110,11 @@ fun StatRing(
         modifier = modifier,
         diameter = diameter,
         active = if (off) false else null,
-        centerValue = reading?.measurement?.value ?: plain?.takeIf { it.numerals }?.text ?: "–",
+        centerValue = reading?.measurement?.value ?: numerals?.text ?: "–",
         centerUnit = reading?.measurement?.unit,
         centerNumerals = true,
         centerValueColor = if (off) RingTokens.Dim else health.stateColor(),
-        sub = reading?.statusWords ?: plain?.takeUnless { it.numerals }?.text,
+        sub = reading?.statusWords ?: words?.text,
         subColor = if (off) RingTokens.Dim else health.stateColor(),
         iconRotationDegrees = iconRotationDeg,
     )
@@ -363,7 +364,7 @@ fun RingChoiceRow(
     val choiceState = circleChoiceState(options, selected)
     RingRow(
         title = title,
-        sub = selected,
+        sub = com.adelost.designkit.ui.CircleWords(selected),
         multiline = multiline,
         iconRotationDeg = iconRotationDeg,
         icon = icon,

@@ -198,7 +198,7 @@ private fun CircleServiceGlyphView(
 
 @Composable
 private fun CircleServiceText(text: String, style: CircleServiceStripStyle, color: Color) {
-    CircleText(text, style.textRole, color, numerals = true, shadow = style.textShadow)
+    CircleText(CircleNumerals(text), style.textRole, color, shadow = style.textShadow)
 }
 
 private const val CIRCLE_SERVICE_TICK_MS = 1_000L

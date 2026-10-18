@@ -37,7 +37,7 @@ class TheStateSitsOnTheValueTest {
 
     @Test
     fun `a row you can press keeps its glyph's kind and wears its state on the value`() {
-        mount { CircleRingRow(title = "ALARM", sub = "1 500 M", icon = RingIcons.Grid, onTap = {}, semanticColor = STATE) }
+        mount { CircleRingRow(title = "ALARM", sub = com.adelost.designkit.ui.CircleWords("1 500 M"), icon = RingIcons.Grid, onTap = {}, semanticColor = STATE) }
 
         assertTrue("the glyph wears its kind", glass.count(CircleGlassPalette.kind.strong) > 0)
         assertTrue("the value wears the state", glass.count(STATE) > 0)
@@ -47,7 +47,7 @@ class TheStateSitsOnTheValueTest {
     fun `a reading keeps its glyph's kind and wears its state on the value`() {
         mount {
             CircleRingRow(
-                title = "WIND", sub = "5 M/S", icon = RingIcons.Grid, onTap = null, semanticColor = STATE, multiline = true,
+                title = "WIND", sub = com.adelost.designkit.ui.CircleWords("5 M/S"), icon = RingIcons.Grid, onTap = null, semanticColor = STATE, multiline = true,
             )
         }
 

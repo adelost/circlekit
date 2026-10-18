@@ -80,11 +80,11 @@ object ShowcasePresentations {
                 RowSpec(
                     key = "platform-text",
                     title = if (available) "EDIT TEXT" else "TEXT INPUT",
-                    sub = when {
+                    sub = com.adelost.designkit.ui.CircleWords(when {
                         port == null -> "PLATFORM IME UNAVAILABLE"
                         text.isEmpty() -> "EMPTY · SENT $submits"
                         else -> "$text · SENT $submits"
-                    },
+                    }),
                     icon = RingIcons.Pencil,
                     hint = "Opens the Wear system editor; CircleKit keeps the same text spec.",
                     onTap = if (available) {

@@ -31,7 +31,7 @@ import androidx.compose.ui.unit.dp
 @Composable
 fun CircleRingRow(
     title: String,
-    sub: String,
+    sub: CircleTextContent,
     onTap: (() -> Unit)?,
     icon: ImageVector? = null,
     modifier: Modifier = Modifier,
@@ -92,7 +92,7 @@ fun CircleRingRow(
             // The row's own value line is already the honest state; the cue
             // repeats it in the action receipt without also smuggling the
             // row's explanation into an ordinary press.
-            stateValue = sub.takeIf { it.isNotBlank() },
+            stateValue = sub.text.takeIf { it.isNotBlank() },
         )
     } else {
         null
@@ -107,7 +107,7 @@ fun CircleRingRow(
         modifier.circleRowGesture(
             feedback = feedback,
             timing = timing,
-            label = circleRingRowAccessibilityLabel(title, sub),
+            label = circleRingRowAccessibilityLabel(title, sub.text),
             onLongPress = onLongPress,
             onTap = tap,
         )
@@ -212,7 +212,7 @@ internal val LocalActionParentOwnsRowCopy = staticCompositionLocalOf { false }
 @Composable
 fun CircleRingRowContent(
     title: String,
-    sub: String,
+    sub: CircleTextContent,
     icon: ImageVector?,
     ringActive: Boolean?,
     /** No default: see [CircleRowAffordance]. Every renderer states what its
@@ -311,8 +311,8 @@ fun CircleRingRowContent(
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     // A state sits on the value on every row, pressable or not; the glyph keeps its kind (style C).
                     val subColor = semanticColor ?: RingTokens.Dim
-                    CircleText(
-                        text = sub, role = CircleTextRole.VALUE, color = subColor,
+                    CircleContent(
+                        content = sub, role = CircleTextRole.VALUE, color = subColor,
                         modifier = (if (trailing != null && phoneDesign == null) Modifier.weight(1f) else Modifier)
                             .then(if (LocalActionParentOwnsRowCopy.current) Modifier.clearAndSetSemantics { } else Modifier),
                     )
@@ -344,7 +344,7 @@ fun CircleRingRowContent(
 @Composable
 private fun CirclePassiveReadingContent(
     title: String,
-    sub: String,
+    sub: CircleTextContent,
     icon: ImageVector?,
     accent: CircleAccent,
     semanticColor: Color?,
@@ -365,7 +365,7 @@ private fun CirclePassiveReadingContent(
                     if (sub.isNotBlank() || trailing != null) Spacer(Modifier.size(6.dp))
                 }
                 if (sub.isNotBlank()) {
-                    CircleText(text = sub, role = CircleTextRole.VALUE, color = semanticColor ?: RingTokens.Dim,
+                    CircleContent(content = sub, role = CircleTextRole.VALUE, color = semanticColor ?: RingTokens.Dim,
                         textAlign = androidx.compose.ui.text.style.TextAlign.Center, modifier = Modifier.weight(1f, fill = false))
                 }
                 if (trailing != null) {

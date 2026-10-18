@@ -33,7 +33,7 @@ private fun circleHostPreviewRows(
             RowSpec(
                 key = "host-mode",
                 title = "LAYOUT",
-                sub = state.mode.optionLabel,
+                sub = com.adelost.designkit.ui.CircleWords(state.mode.optionLabel),
                 icon = if (state.mode == CircleHostMode.WATCH_EXACT) RingIcons.Watch else RingIcons.Phone,
                 choices = CircleHostMode.entries.map(CircleHostMode::optionLabel),
                 onSelect = { label ->
@@ -46,7 +46,7 @@ private fun circleHostPreviewRows(
                 RowSpec(
                     key = "watch-diameter",
                     title = "WATCH SIZE",
-                    sub = state.watchDiameterDp.toInt().toString(),
+                    sub = com.adelost.designkit.ui.CircleWords(state.watchDiameterDp.toInt().toString()),
                     icon = RingIcons.Ruler,
                     choices = CIRCLE_WATCH_PREVIEW_DIAMETERS_DP.map { it.toInt().toString() },
                     onSelect = { label ->
@@ -65,7 +65,7 @@ private fun circleHostPreviewRows(
             RowSpec(
                 key = "orientation",
                 title = "ORIENTATION",
-                sub = state.orientation.optionLabel,
+                sub = com.adelost.designkit.ui.CircleWords(state.orientation.optionLabel),
                 icon = RingIcons.RotationRate,
                 choices = orientations.map(CircleHostOrientation::optionLabel),
                 onSelect = { label ->
@@ -80,11 +80,11 @@ private fun circleHostPreviewRows(
         RowSpec(
             key = "derived-surface",
             title = "SURFACE",
-            sub = if (port.isWatchDevice || state.mode == CircleHostMode.WATCH_EXACT) {
+            sub = com.adelost.designkit.ui.CircleWords(if (port.isWatchDevice || state.mode == CircleHostMode.WATCH_EXACT) {
                 "ROUND · WATCH EXACT"
             } else {
                 "FROM LIVE BOUNDS"
-            },
+            }),
             icon = RingIcons.Grid,
             choiceRole = CircleChoiceRole.STEPPED,
         ),

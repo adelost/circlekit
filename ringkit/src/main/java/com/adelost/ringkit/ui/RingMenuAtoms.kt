@@ -233,7 +233,7 @@ fun TextAction(
 @Composable
 fun RingRow(
     title: String,
-    sub: String,
+    sub: com.adelost.designkit.ui.CircleTextContent,
     onTap: (() -> Unit)?,
     icon: ImageVector? = null,
     modifier: Modifier = Modifier,
@@ -277,7 +277,7 @@ fun RingRow(
                     iconRotationDeg = iconRotationDeg,
                     semanticColor = semanticColor,
                     title = title,
-                    value = sub,
+                    value = sub.text,
                     hint = explanation,
                     infoAction = infoAction,
                 )
@@ -289,7 +289,7 @@ fun RingRow(
     if (holdToConfirm) {
         val confirm = requireNotNull(onTap) { "A hold row requires an action" }
         val holdActionLabel = hint.takeIf { it.isNotBlank() }
-            ?: sub.takeIf { it.isNotBlank() }
+            ?: sub.text.takeIf { it.isNotBlank() }
             ?: title
         val brandColor = circleBrandColor()
         var holdProgress by remember { mutableStateOf<Float?>(null) }
@@ -301,7 +301,7 @@ fun RingRow(
                 timing = circleResolvedTiming(CircleActionTiming.DELIBERATE, holdMs),
                 pressed = false,
                 determinateProgress = holdProgress,
-                stateValue = sub.takeIf { it.isNotBlank() },
+                stateValue = sub.text.takeIf { it.isNotBlank() },
             )
         } else {
             null
@@ -315,7 +315,7 @@ fun RingRow(
             }
         }
         HoldFillBox(
-            label = circleRingRowAccessibilityLabel(title, sub),
+            label = circleRingRowAccessibilityLabel(title, sub.text),
             onLongClickLabel = holdActionLabel,
             onConfirm = completeConfirmation,
             fill = brandColor,

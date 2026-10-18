@@ -138,7 +138,7 @@ class OneCuePerGatedControlTest {
                 val row = RowSpec(
                     key = "opening",
                     title = "OPENING",
-                    sub = "800 M",
+                    sub = com.adelost.designkit.ui.CircleWords("800 M"),
                     icon = RingIcons.Grid,
                     onDec = {},
                     onInc = {},

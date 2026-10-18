@@ -117,7 +117,7 @@ class EveryScrollShowsWhereItIsTest {
     /** One of every screen the kit draws, each with more content than the face holds. */
     private fun theScreens(): List<RingScreen> {
         val stat = StatRowSpec(
-            id = SourceId("gps"), icon = RingIcons.Grid, label = "GPS", value = flowOf(StatValue.Plain("OK")),
+            id = SourceId("gps"), icon = RingIcons.Grid, label = "GPS", value = flowOf(StatValue.Words("OK")),
             health = flowOf(Health.FRESH), detail = { theDetail() },
         )
         val dialPreview = ColorDialPreviewSpec(
@@ -127,7 +127,7 @@ class EveryScrollShowsWhereItIsTest {
         return listOf(
             RingScreen.Rows(
                 title = "ROWS",
-                items = flowOf(List(40) { RowSpec(key = "row-$it", title = "ROW $it", sub = "", icon = RingIcons.Grid) }),
+                items = flowOf(List(40) { RowSpec(key = "row-$it", title = "ROW $it", sub = com.adelost.designkit.ui.CircleWords(""), icon = RingIcons.Grid) }),
             ),
             RingScreen.Hub(title = "HUB", rows = List(6) { stat.copy(id = SourceId("source-$it")) }),
             theDetail(),

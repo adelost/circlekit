@@ -66,7 +66,7 @@ internal fun DetailActionRows(
     detailActionRows(screen.actions, screen.onRefresh, refreshEnabled, reasons).forEach { row ->
         RingRow(
             title = row.title,
-            sub = row.sub,
+            sub = CircleWords(row.sub),
             icon = row.icon,
             accent = row.accent,
             onTap = row.onTap,

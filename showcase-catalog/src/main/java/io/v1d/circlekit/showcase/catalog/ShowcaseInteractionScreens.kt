@@ -41,7 +41,7 @@ object ShowcaseInteractionScreens {
                             scenario.id.value == "two" -> "UNITS"
                             else -> "DAY"
                         },
-                        sub = options[selectedIndex],
+                        sub = com.adelost.designkit.ui.CircleWords(options[selectedIndex]),
                         icon = RingIcons.Grid,
                         hint = "Cycles through the declared finite choices.",
                         choices = options,
@@ -65,7 +65,7 @@ object ShowcaseInteractionScreens {
                     RowSpec(
                         key = "altitude",
                         title = "ALTITUDE",
-                        sub = "$value M",
+                        sub = com.adelost.designkit.ui.CircleWords("$value M"),
                         icon = RingIcons.Ruler,
                         hint = "Opens one shared continuous adjustment screen.",
                         onDec = { state.adjust(-100) },
@@ -97,7 +97,7 @@ object ShowcaseInteractionScreens {
                     RowSpec(
                         key = "work",
                         title = if (work == ShowcaseWorkState.FAILED) "RETRY" else "FETCH DATA",
-                        sub = work.copy,
+                        sub = com.adelost.designkit.ui.CircleWords(work.copy),
                         icon = if (work == ShowcaseWorkState.FAILED) RingIcons.Warning else RingIcons.Download,
                         hint = "Measured work stays in the action label.",
                         onTap = state::advanceWork,
@@ -157,7 +157,7 @@ object ShowcaseInteractionScreens {
         "confirm" -> RowSpec(
             key = "confirm",
             title = "DELETE CACHE",
-            sub = "FIRED $count",
+            sub = com.adelost.designkit.ui.CircleWords("FIRED $count"),
             icon = RingIcons.Trash,
             hint = "Requires the longer confirmation hold.",
             onTap = { state.runAction() },
@@ -168,19 +168,19 @@ object ShowcaseInteractionScreens {
             RowSpec(
                 key = "recover",
                 title = "ENABLE MIC",
-                sub = "PERMISSION NEEDED",
+                sub = com.adelost.designkit.ui.CircleWords("PERMISSION NEEDED"),
                 icon = RingIcons.Record,
                 hint = "A named action can recover this unavailable state.",
                 onTap = state::recover,
                 semanticColor = RingTokens.Aging,
             )
         } else {
-            RowSpec("recovered", "MIC READY", "AVAILABLE", RingIcons.Check, semanticColor = RingTokens.Fresh)
+            RowSpec("recovered", "MIC READY", com.adelost.designkit.ui.CircleWords("AVAILABLE"), RingIcons.Check, semanticColor = RingTokens.Fresh)
         }
         "blocked" -> RowSpec(
             key = "blocked",
             title = "SEND MESSAGE",
-            sub = "NO TARGET",
+            sub = com.adelost.designkit.ui.CircleWords("NO TARGET"),
             icon = RingIcons.Link,
             hint = "Blocked actions keep an honest reason and no gesture.",
             semanticColor = RingTokens.Broken,
@@ -188,7 +188,7 @@ object ShowcaseInteractionScreens {
         "failure" -> RowSpec(
             key = "failure",
             title = if (failed) "TRY AGAIN" else "RUN ACTION",
-            sub = if (failed) "FAILED" else "READY",
+            sub = com.adelost.designkit.ui.CircleWords(if (failed) "FAILED" else "READY"),
             icon = if (failed) RingIcons.Warning else RingIcons.Play,
             hint = "A callback failure remains recoverable in the same control.",
             onTap = { state.runAction(fails = !failed) },
@@ -207,7 +207,7 @@ object ShowcaseInteractionScreens {
     ) = RowSpec(
         key = key,
         title = title,
-        sub = sub,
+        sub = com.adelost.designkit.ui.CircleWords(sub),
         icon = RingIcons.Target,
         hint = hint,
         onTap = onTap,

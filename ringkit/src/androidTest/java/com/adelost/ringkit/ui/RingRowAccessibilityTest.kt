@@ -59,9 +59,9 @@ class RingRowAccessibilityTest {
         val name = "Alexandra Kristina Svensson Tests · FAKE"
         var accepted = false
         val rows = MutableStateFlow(listOf(
-            RowSpec("name", name, "RECEIVED", RingIcons.Link, hint = name),
-            RowSpec("accept", "ACCEPT", "", RingIcons.Check, onTap = { accepted = true }),
-            RowSpec("decline", "DECLINE", "", RingIcons.Cross, onTap = {}),
+            RowSpec("name", name, com.adelost.designkit.ui.CircleWords("RECEIVED"), RingIcons.Link, hint = name),
+            RowSpec("accept", "ACCEPT", com.adelost.designkit.ui.CircleWords(""), RingIcons.Check, onTap = { accepted = true }),
+            RowSpec("decline", "DECLINE", com.adelost.designkit.ui.CircleWords(""), RingIcons.Cross, onTap = {}),
         ))
         compose.setContent { sharedBackMenu {
             RenderRingScreen(RingNavigator(RingScreen.Rows("PEOPLE", rows)), {}, "Back")
@@ -82,7 +82,7 @@ class RingRowAccessibilityTest {
             .performSemanticsAction(SemanticsActions.OnClick)
         compose.runOnIdle {
             assertTrue(accepted)
-            rows.value = listOf(RowSpec("name", name, "FRIEND", RingIcons.Link, hint = name))
+            rows.value = listOf(RowSpec("name", name, com.adelost.designkit.ui.CircleWords("FRIEND"), RingIcons.Link, hint = name))
         }
         compose.waitForIdle()
         compose.onNodeWithText(name).assertIsDisplayed()
@@ -93,9 +93,9 @@ class RingRowAccessibilityTest {
     @Test fun scrollingPastBackNeverMovesARowSideways() {
         val name = "Alexandra Kristina Svensson Tests · FAKE"
         val rows = flowOf(listOf(
-            RowSpec("open", "OPEN", "", RingIcons.Check, onTap = {}),
-            RowSpec("name", name, "RECEIVED", RingIcons.Link)) +
-            (1..8).map { RowSpec("action-$it", "ACTION $it", "", RingIcons.Check, onTap = {}) })
+            RowSpec("open", "OPEN", com.adelost.designkit.ui.CircleWords(""), RingIcons.Check, onTap = {}),
+            RowSpec("name", name, com.adelost.designkit.ui.CircleWords("RECEIVED"), RingIcons.Link)) +
+            (1..8).map { RowSpec("action-$it", "ACTION $it", com.adelost.designkit.ui.CircleWords(""), RingIcons.Check, onTap = {}) })
         compose.setContent { sharedBackMenu {
             RenderRingScreen(RingNavigator(RingScreen.Rows("PEOPLE", rows)), {}, "Back")
         } }
@@ -123,7 +123,7 @@ class RingRowAccessibilityTest {
     @Test fun directionIsPreservedWhenTheReadingOpensInformation() {
         var published by androidx.compose.runtime.mutableStateOf<com.adelost.designkit.ui.CircleActionCue?>(null)
         val screen = RingScreen.Rows("READINGS", flowOf(listOf(
-            RowSpec("direction", "120 m", "8 m/s", RingIcons.Arrow,
+            RowSpec("direction", "120 m", com.adelost.designkit.ui.CircleWords("8 m/s"), RingIcons.Arrow,
                 hint = "FROM 270°", iconRotationDeg = 90f, semanticColor = Color.Magenta),
         )))
         val nav = RingNavigator(screen)
@@ -164,7 +164,7 @@ class RingRowAccessibilityTest {
 
     @Test fun declaredMultilineChoiceReachesTheActualRoundRow() {
         val selected = "SEA GLASS BLUE GREEN"
-        val row = RowSpec(key = "colour", title = "COLORS", sub = selected,
+        val row = RowSpec(key = "colour", title = "COLORS", sub = com.adelost.designkit.ui.CircleWords(selected),
             icon = RingIcons.Palette, choices = listOf(selected, "EMBER"), onSelect = {}, multiline = false)
         val rows = MutableStateFlow(listOf(row))
         val screen = RingScreen.Rows("DISPLAY", rows)
@@ -183,9 +183,9 @@ class RingRowAccessibilityTest {
             flowOf("1005 hPa"), flowOf("STATION · 24 KM"), flowOf("REPORTED 22m ago"),
             flowOf(Health.FRESH), flowOf(null))
         val status = RingScreen.Hub("STATUS", listOf(
-            StatRowSpec(SourceId("pressure"), RingIcons.Gauge, "PRESSURE", flowOf(StatValue.Plain("1005", numerals = true)),
+            StatRowSpec(SourceId("pressure"), RingIcons.Gauge, "PRESSURE", flowOf(StatValue.Numerals("1005")),
                 flowOf(Health.FRESH), detail = { detail }),
-            StatRowSpec(SourceId("position"), RingIcons.Gps, "POSITION", flowOf(StatValue.Plain("±5", numerals = true)),
+            StatRowSpec(SourceId("position"), RingIcons.Gps, "POSITION", flowOf(StatValue.Numerals("±5")),
                 flowOf(Health.FRESH), detail = { detail }),
         ))
         val nav = RingNavigator(status)
@@ -326,7 +326,7 @@ class RingRowAccessibilityTest {
         compose.setContent {
             RingRow(
                 title = LEGACY_TITLE,
-                sub = "",
+                sub = com.adelost.designkit.ui.CircleWords(""),
                 onTap = {},
                 icon = RingIcons.Warning,
                 holdToConfirm = true,
@@ -344,7 +344,7 @@ class RingRowAccessibilityTest {
         compose.setContent {
             RingRow(
                 title = TITLE,
-                sub = SUB,
+                sub = com.adelost.designkit.ui.CircleWords(SUB),
                 onTap = onConfirm,
                 icon = RingIcons.Activity,
                 modifier = Modifier.testTag(TARGET),

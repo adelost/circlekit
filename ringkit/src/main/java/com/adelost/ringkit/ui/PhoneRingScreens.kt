@@ -151,7 +151,7 @@ private fun PhoneHubScreen(
         PhoneScreenHeader(screen.title, back, backLabel)
         Spacer(Modifier.height(design.hubTopGap))
         RingMenuGrid(items = screen.rows, spec = grid) { row ->
-            val value = row.value.collectAsState(initial = StatValue.Plain("–", numerals = true)).value
+            val value = row.value.collectAsState(initial = StatValue.Numerals("–")).value
             val health = row.health.collectAsState(initial = Health.OFF).value
             val iconRotation = row.iconRotation.collectAsState(initial = 0f).value
             StatRing(
@@ -197,7 +197,7 @@ private fun PhoneDetailScreen(
     ) {
         PhoneScreenHeader(screen.title, back, backLabel, screen.icon)
         Spacer(Modifier.height(24.dp))
-        com.adelost.designkit.ui.CircleText(hero, role = com.adelost.designkit.ui.CircleTextRole.NUMBER, color = RingTokens.Ink)
+        com.adelost.designkit.ui.CircleText(com.adelost.designkit.ui.CircleNumerals(hero), role = com.adelost.designkit.ui.CircleTextRole.NUMBER, color = RingTokens.Ink)
         if (sub.isNotEmpty()) {
             com.adelost.designkit.ui.CircleText(sub, role = com.adelost.designkit.ui.CircleTextRole.VALUE, color = RingTokens.Dim)
         }
@@ -309,7 +309,7 @@ private fun PhoneRowsScreen(
                     val interaction = choiceRowInteraction(row)
                     RingChoiceRow(
                         title = row.title,
-                        selected = row.sub,
+                        selected = row.sub.text,
                         icon = row.icon,
                         accent = row.accent,
                         options = row.choices,

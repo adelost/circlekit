@@ -122,7 +122,7 @@ class RingRowLogicTest {
     ) = RowSpec(
         key = "k",
         title = "T",
-        sub = choices.firstOrNull() ?: "S",
+        sub = com.adelost.designkit.ui.CircleWords(choices.firstOrNull() ?: "S"),
         icon = null as ImageVector?,
         hint = hint,
         onDec = onDec,
@@ -189,16 +189,16 @@ class RingRowLogicTest {
 
     @Test
     fun `adjustment submenu follows the latest source row and navigator back pops it`() = runBlocking {
-        val first = row(onDec = {}, onInc = {}).copy(sub = "10 M")
+        val first = row(onDec = {}, onInc = {}).copy(sub = com.adelost.designkit.ui.CircleMeasurement("10", "M"))
         val rows = MutableStateFlow(listOf(first))
         val root = RingScreen.Rows(title = "FLIGHT", items = rows)
         val adjustment = root.adjustmentScreen(first)
         val navigator = RingNavigator(root)
 
         navigator.push(adjustment)
-        rows.value = listOf(first.copy(sub = "20 M"))
+        rows.value = listOf(first.copy(sub = com.adelost.designkit.ui.CircleMeasurement("20", "M")))
 
-        assertEquals("20 M", adjustment.row.first().sub)
+        assertEquals("20 M", adjustment.row.first().sub.text)
         assertSame(adjustment, navigator.current)
         assertTrue(navigator.back())
         assertSame(root, navigator.current)
@@ -376,7 +376,7 @@ class RingRowLogicTest {
         val finite = RowSpec(
             key = "weight",
             title = "BAR WEIGHT",
-            sub = "NORMAL",
+            sub = com.adelost.designkit.ui.CircleWords("NORMAL"),
             icon = null,
             choices = listOf("X-THIN", "THIN", "NORMAL", "BOLD", "X-BOLD"),
             onSelect = {},
@@ -386,7 +386,7 @@ class RingRowLogicTest {
         val continuous = RowSpec(
             key = "spot",
             title = "SPOT",
-            sub = "300 M",
+            sub = com.adelost.designkit.ui.CircleWords("300 M"),
             icon = null,
             onDec = {},
             onInc = {},

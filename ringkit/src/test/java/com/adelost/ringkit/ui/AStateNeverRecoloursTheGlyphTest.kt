@@ -74,7 +74,7 @@ class AStateNeverRecoloursTheGlyphTest {
     }
 
     private fun alarmRow(enabled: Boolean?) = RowSpec(
-        key = "pull", title = "PULL", sub = "1 200 M", icon = RingIcons.Grid, accent = CircleAccent.SOUND,
+        key = "pull", title = "PULL", sub = com.adelost.designkit.ui.CircleWords("1 200 M"), icon = RingIcons.Grid, accent = CircleAccent.SOUND,
         semanticColor = STATE, onDec = {}, onInc = {}, enabled = enabled, onToggle = ({}).takeIf { enabled != null },
     )
 

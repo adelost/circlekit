@@ -112,7 +112,7 @@ internal fun RingAdjustmentScreen(screen: RingScreen.Adjustment) {
             ScreenTitle(screen.title)
             StepperPillRow(
                 title = "VALUE",
-                value = row.adjustmentValue?.number ?: row.adjustmentValue?.primary ?: row.sub,
+                value = row.adjustmentValue?.number ?: row.adjustmentValue?.primary ?: row.sub.text,
                 unit = row.adjustmentValue?.unit,
                 supporting = row.adjustmentValue?.supporting,
                 icon = row.icon,
@@ -153,7 +153,7 @@ internal fun PhoneAdjustmentScreen(
         Spacer(Modifier.height(28.dp))
         StepperPillRow(
             title = "VALUE",
-            value = row.adjustmentValue?.number ?: row.adjustmentValue?.primary ?: row.sub,
+            value = row.adjustmentValue?.number ?: row.adjustmentValue?.primary ?: row.sub.text,
             unit = row.adjustmentValue?.unit,
             supporting = row.adjustmentValue?.supporting,
             icon = row.icon,

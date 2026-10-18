@@ -145,12 +145,12 @@ class TheScreenHandsEachRowItsDeclarationTest {
 
     private fun theChoiceRows(): List<RowSpec> = listOf(
         RowSpec(
-            key = "touch-choice", title = A_TOUCH_ROW, sub = chosen, icon = RingIcons.Grid,
+            key = "touch-choice", title = A_TOUCH_ROW, sub = com.adelost.designkit.ui.CircleWords(chosen), icon = RingIcons.Grid,
             choices = PHRASES, onSelect = { choose(it) }, choiceRole = CircleChoiceRole.STEPPED,
             actionTiming = CircleActionTiming.IMMEDIATE,
         ),
         RowSpec(
-            key = "hold-choice", title = A_HOLD_ROW, sub = chosen, icon = RingIcons.Grid,
+            key = "hold-choice", title = A_HOLD_ROW, sub = com.adelost.designkit.ui.CircleWords(chosen), icon = RingIcons.Grid,
             choices = PHRASES, onSelect = { choose(it) }, choiceRole = CircleChoiceRole.STEPPED,
             actionTiming = CircleActionTiming.DELIBERATE,
         ),
@@ -158,11 +158,11 @@ class TheScreenHandsEachRowItsDeclarationTest {
 
     private fun theActionRows(): List<RowSpec> = listOf(
         RowSpec(
-            key = "touch-action", title = A_TOUCH_ACTION, sub = "", icon = RingIcons.Grid,
+            key = "touch-action", title = A_TOUCH_ACTION, sub = com.adelost.designkit.ui.CircleWords(""), icon = RingIcons.Grid,
             onTap = { acted += 1 }, actionTiming = CircleActionTiming.IMMEDIATE,
         ),
         RowSpec(
-            key = "hold-action", title = A_HOLD_ACTION, sub = "", icon = RingIcons.Grid,
+            key = "hold-action", title = A_HOLD_ACTION, sub = com.adelost.designkit.ui.CircleWords(""), icon = RingIcons.Grid,
             onTap = { acted += 1 }, actionTiming = CircleActionTiming.DELIBERATE,
         ),
     )

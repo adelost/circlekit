@@ -213,12 +213,14 @@ private fun ColorSchemeChoice(
             iconTint = scheme.active,
             timing = CircleActionTiming.DELIBERATE,
         )
-        Spacer(Modifier.height(if (phone) 7.dp else 2.dp))
-        com.adelost.designkit.ui.CircleText(
-            text = scheme.theme.shortLabel,
-            color = if (selected) scheme.highlight else GraphiteTokens.Muted,
-            role = com.adelost.designkit.ui.CircleTextRole.NAME,
-        )
+        if (phone) {
+            Spacer(Modifier.height(7.dp))
+            com.adelost.designkit.ui.CircleText(
+                text = scheme.theme.shortLabel,
+                color = if (selected) scheme.highlight else GraphiteTokens.Muted,
+                role = com.adelost.designkit.ui.CircleTextRole.NAME,
+            )
+        }
     }
 }
 

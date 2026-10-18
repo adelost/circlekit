@@ -119,7 +119,7 @@ internal fun HubScreen(s: RingScreen.Hub, nav: RingNavigator) {
         ScreenTitle(s.title)
         Spacer(Modifier.height(6.dp))
         RingMenuGrid(items = s.rows, spec = grid) { row ->
-            val value = row.value.collectAsState(initial = StatValue.Plain("–", numerals = true)).value
+            val value = row.value.collectAsState(initial = StatValue.Numerals("–")).value
             val health = row.health.collectAsState(initial = Health.OFF).value
             val iconRotation = row.iconRotation.collectAsState(initial = 0f).value
             StatRing(
@@ -175,7 +175,7 @@ internal fun DetailScreen(s: RingScreen.Detail) {
         ) {
             ScreenTitle(s.title, s.icon)
             Spacer(Modifier.height(10.dp))
-            com.adelost.designkit.ui.CircleText(text = hero, role = com.adelost.designkit.ui.CircleTextRole.NUMBER,
+            com.adelost.designkit.ui.CircleText(text = com.adelost.designkit.ui.CircleNumerals(hero), role = com.adelost.designkit.ui.CircleTextRole.NUMBER,
                 color = RingTokens.Ink, textAlign = TextAlign.Center, modifier = readingWidth)
             // Supporting source information wraps inside that same stable band.
             if (sub.isNotEmpty()) {
@@ -339,7 +339,7 @@ internal fun RowsScreen(
                         val interaction = choiceRowInteraction(row)
                         RingChoiceRow(
                             title = row.title,
-                            selected = row.sub,
+                            selected = row.sub.text,
                             icon = row.icon,
                             accent = row.accent,
                             options = row.choices,

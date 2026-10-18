@@ -30,7 +30,7 @@ class CircleRingRowAccessibilityTest {
         compose.setContent {
             Box(Modifier.width(132.dp).testTag("row")) {
                 CircleRingRowContent(
-                    title = "ACCEPT", sub = "", icon = RingIcons.Check,
+                    title = "ACCEPT", sub = com.adelost.designkit.ui.CircleWords(""), icon = RingIcons.Check,
                     ringActive = null, affordance = CircleRowAffordance.of({}),
                     leading = null, trailing = null, feedback = null,
                 )
@@ -47,7 +47,7 @@ class CircleRingRowAccessibilityTest {
         compose.setContent {
             Box(Modifier.width(132.dp).testTag("row")) {
                 CircleRingRowContent(
-                    title = name, sub = "RECEIVED", icon = RingIcons.Link,
+                    title = name, sub = com.adelost.designkit.ui.CircleWords("RECEIVED"), icon = RingIcons.Link,
                     ringActive = null, affordance = CircleRowAffordance.of(null),
                     leading = null, trailing = null, multiline = true, feedback = null,
                 )
@@ -68,7 +68,7 @@ class CircleRingRowAccessibilityTest {
         compose.setContent {
             CircleRingRow(
                 title = TITLE,
-                sub = SUB,
+                sub = com.adelost.designkit.ui.CircleWords(SUB),
                 onTap = { actions++ },
                 icon = RingIcons.Activity,
             )
@@ -91,7 +91,7 @@ class CircleRingRowAccessibilityTest {
         compose.setContent {
             CircleRingRow(
                 title = PASSIVE_TITLE,
-                sub = PASSIVE_SUB,
+                sub = com.adelost.designkit.ui.CircleWords(PASSIVE_SUB),
                 onTap = null,
                 icon = RingIcons.Warning,
             )

@@ -53,7 +53,7 @@ object ShowcaseFlowScreens {
     fun update(state: ShowcaseFlowState): RingScreen.Rows = RingScreen.Rows(
         title = "UPDATE DEMO",
         items = state.update.map { updateState ->
-            listOf(RowSpec("demo-note", "SIMULATION", "No download or installation", icon = null)) + releaseUpdateRows(
+            listOf(RowSpec("demo-note", "SIMULATION", com.adelost.designkit.ui.CircleWords("No download or installation"), icon = null)) + releaseUpdateRows(
                 state = updateState,
                 currentVersionName = "0.3.9",
                 updateKey = "update",
@@ -71,7 +71,7 @@ object ShowcaseFlowScreens {
     )
 
     private fun demoStep(next: () -> Unit) = RowSpec(
-        "demo-next", "NEXT DEMO STEP", "Local simulation; no network request", RingIcons.ChevronRight,
+        "demo-next", "NEXT DEMO STEP", com.adelost.designkit.ui.CircleWords("Local simulation; no network request"), RingIcons.ChevronRight,
         onTap = next, multiline = true,
     )
 
@@ -83,12 +83,12 @@ object ShowcaseFlowScreens {
             RowSpec(
                 key = "status",
                 title = "SERVICE",
-                sub = when {
+                sub = com.adelost.designkit.ui.CircleWords(when {
                     active -> "ACTIVE · ${snapshot.activeTransfers} TRANSFER"
                     outcome == ServiceOutcome.SUCCESS -> "SUCCESS · ${lastAttempt.durationMs} MS"
                     outcome == ServiceOutcome.FAILED -> "FAILED · ${lastAttempt.detail ?: "UNKNOWN"}"
                     else -> "IDLE"
-                },
+                }),
                 icon = if (outcome == ServiceOutcome.FAILED) RingIcons.Warning else RingIcons.Data,
                 onTap = state::advanceService.takeIf { !active },
                 labelProgress = CircleLabelProgress.Indeterminate.takeIf { active },
@@ -97,13 +97,13 @@ object ShowcaseFlowScreens {
             RowSpec(
                 key = "network",
                 title = "NETWORK CALLS",
-                sub = snapshot.networkCallCount.toString(),
+                sub = com.adelost.designkit.ui.CircleWords(snapshot.networkCallCount.toString()),
                 icon = RingIcons.Link,
             ),
             RowSpec(
                 key = "cache",
                 title = "CACHE",
-                sub = snapshot.cache?.let { "${it.itemCount ?: 0} ITEMS · ${it.bytes / 1_048_576L} MB" } ?: "EMPTY",
+                sub = com.adelost.designkit.ui.CircleWords(snapshot.cache?.let { "${it.itemCount ?: 0} ITEMS · ${it.bytes / 1_048_576L} MB" } ?: "EMPTY"),
                 icon = RingIcons.Layers,
             ),
         )

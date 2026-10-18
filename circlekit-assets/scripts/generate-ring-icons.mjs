@@ -34,13 +34,16 @@ function emitCircleText() {
   const float = value => `${Number(value.toFixed(6))}f`;
   const spec = (role, factor) => `CircleRoleStyle(${float(role.sp * factor)}, ${role.weight}, ${float(role.tracking)}, ${float((role.unitSp ?? role.sp) * factor)}, ${role.unitWeight ?? role.weight})`;
   const roles = Object.entries(CIRCLEKIT_TEXT.roles).map(([id, role]) =>
-    `    ${id.toUpperCase()}(${spec(role, 1)}, ${spec(role, scale)})`).join(",\n");
+    `    data object ${id.toUpperCase()} : ${id === "number" ? "CircleTextRole" : "CircleWordRole"}("${id.toUpperCase()}", ${spec(role, 1)}, ${spec(role, scale)})`).join("\n");
   return `// GENERATED from circlekit-assets/src/circle-style.ts - do not edit.\n` +
     `package com.adelost.designkit.ui\n\n` +
     `data class CircleRoleStyle(val sp: Float, val weight: Int, val trackingEm: Float, val unitSp: Float, val unitWeight: Int)\n\n` +
     `enum class CircleTextFace { ONEST, BARLOW_SEMI_CONDENSED }\n\n` +
     `object CircleTextFaces { val Words = CircleTextFace.${CIRCLEKIT_TEXT.faces.words.toUpperCase().replaceAll(" ", "_")}; val Numerals = CircleTextFace.${CIRCLEKIT_TEXT.faces.numerals.toUpperCase().replaceAll(" ", "_")} }\n\n` +
-    `enum class CircleTextRole(val watch: CircleRoleStyle, val phone: CircleRoleStyle) {\n${roles};\n}\n`;
+    `sealed class CircleTextRole(val name: String, val watch: CircleRoleStyle, val phone: CircleRoleStyle) {\n${roles}\n` +
+    `    companion object { val entries: List<CircleTextRole> get() = listOf(${Object.keys(CIRCLEKIT_TEXT.roles).map(id => id.toUpperCase()).join(", ")}) }\n}\n\n` +
+    `/** Words cannot select NUMBER: only a typed value may occupy that role. */\n` +
+    `sealed class CircleWordRole(name: String, watch: CircleRoleStyle, phone: CircleRoleStyle) : CircleTextRole(name, watch, phone)\n`;
 }
 
 function emitCircleLine() {

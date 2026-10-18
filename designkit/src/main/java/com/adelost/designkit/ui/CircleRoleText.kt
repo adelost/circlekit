@@ -29,25 +29,66 @@ fun circleRoleStyle(role: CircleTextRole): CircleRoleStyle =
 /** Canvas and measured layouts consume the same role metrics as the text atom. */
 @Composable
 fun circleRoleTextStyle(role: CircleTextRole, color: Color, textAlign: TextAlign? = null,
-    numerals: Boolean = role == CircleTextRole.NUMBER): TextStyle =
-    roleTextStyle(circleRoleStyle(role), color, textAlign, numerals || role == CircleTextRole.NUMBER)
+    content: CircleTextContent = CircleWords("")): TextStyle =
+    roleTextStyle(circleRoleStyle(role), color, textAlign, content is CircleTextValue)
 
 /** Role metrics are the only type inputs. Product copy may overflow, never silently lose a word. */
 @Composable
 fun CircleText(
     text: String,
+    role: CircleWordRole,
+    color: Color,
+    modifier: Modifier = Modifier,
+    textAlign: TextAlign? = null,
+    userContent: Boolean = false,
+    maxLines: Int = Int.MAX_VALUE,
+    onTextLayout: ((TextLayoutResult) -> Unit)? = null,
+    shadow: androidx.compose.ui.graphics.Shadow? = null,
+) = CircleRoleText(CircleWords(text), role, color, modifier, textAlign, userContent, maxLines, onTextLayout, shadow)
+
+/** Only a producer's typed numeric value can select NUMBER. */
+@Composable
+fun CircleText(
+    text: CircleTextValue,
     role: CircleTextRole,
     color: Color,
     modifier: Modifier = Modifier,
     textAlign: TextAlign? = null,
     userContent: Boolean = false,
-    numerals: Boolean = role == CircleTextRole.NUMBER,
     maxLines: Int = Int.MAX_VALUE,
     onTextLayout: ((TextLayoutResult) -> Unit)? = null,
     shadow: androidx.compose.ui.graphics.Shadow? = null,
+) = CircleRoleText(text, role, color, modifier, textAlign, userContent, maxLines, onTextLayout, shadow)
+
+/** Rows may carry words or a reading, while their role stays a words-capable role. */
+@Composable
+fun CircleContent(
+    content: CircleTextContent,
+    role: CircleWordRole,
+    color: Color,
+    modifier: Modifier = Modifier,
+    textAlign: TextAlign? = null,
+) = CircleRoleText(content, role, color, modifier, textAlign, false, Int.MAX_VALUE, null, null)
+
+@Composable
+private fun CircleRoleText(
+    content: CircleTextContent,
+    role: CircleTextRole,
+    color: Color,
+    modifier: Modifier,
+    textAlign: TextAlign?,
+    userContent: Boolean,
+    maxLines: Int,
+    onTextLayout: ((TextLayoutResult) -> Unit)?,
+    shadow: androidx.compose.ui.graphics.Shadow?,
 ) {
+    if (content is CircleMeasurement) {
+        CircleReading(content.value, content.unit, color, modifier, textAlign = textAlign, role = role)
+        return
+    }
+    val text = content.text
     val roleStyle = circleRoleStyle(role)
-    val numeric = numerals || role == CircleTextRole.NUMBER
+    val numeric = content is CircleTextValue
     val lineLimit = if (role == CircleTextRole.NUMBER) 1 else if (userContent) maxLines else Int.MAX_VALUE
     val style = roleTextStyle(roleStyle, color, textAlign, numeric).copy(shadow = shadow)
     val measurer = rememberTextMeasurer()
@@ -92,8 +133,9 @@ fun CircleReading(
     modifier: Modifier = Modifier,
     unitColor: Color = color,
     textAlign: TextAlign? = null,
+    role: CircleTextRole = CircleTextRole.NUMBER,
 ) {
-    val spec = circleRoleStyle(CircleTextRole.NUMBER)
+    val spec = circleRoleStyle(role)
     val unitSize = circleFixedSp(spec.unitSp)
     val text = buildAnnotatedString {
         append(value)
@@ -107,7 +149,7 @@ fun CircleReading(
     val style = roleTextStyle(spec, color, textAlign, true)
     val expectedFontSp = circleFixedSp(spec.sp).value
     val reporter = remember(text, expectedFontSp, layouts) {
-        layouts?.let { CircleTextLayoutReporter(text.text, CircleTextRole.NUMBER, expectedFontSp, false, it) }
+        layouts?.let { CircleTextLayoutReporter(text.text, role, expectedFontSp, false, it) }
     }
     BasicText(text, modifier.then(reporter?.modifier ?: Modifier), style = style, softWrap = false,
         maxLines = 1, overflow = TextOverflow.Visible, onTextLayout = { reporter?.laidOut(it) })

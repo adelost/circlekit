@@ -77,7 +77,7 @@ fun CircleDiscArtwork(
                 modifier = textWidth, unitColor = spec.unitColor, textAlign = TextAlign.Center)
         } else {
             require(spec.unit == null) { "A unit belongs to a NUMBER reading" }
-            CircleText(spec.primaryValue, spec.primaryRole, spec.primaryColor,
+            CircleText(spec.primaryValue, spec.primaryRole as CircleWordRole, spec.primaryColor,
                 modifier = textWidth, textAlign = TextAlign.Center)
         }
         spec.secondaryLabel?.let { secondary ->

@@ -120,11 +120,11 @@ object ShowcaseScreens {
     internal fun scenarios(case: ShowcaseCase, session: ShowcaseSession): RingScreen = RingScreen.Rows(
         title = case.title,
         items = flowOf(
-            listOf(RowSpec("demo-purpose", "TRY THIS", case.purpose, icon = null)) + case.scenarios.map { scenario ->
+            listOf(RowSpec("demo-purpose", "TRY THIS", com.adelost.designkit.ui.CircleWords(case.purpose), icon = null)) + case.scenarios.map { scenario ->
                 RowSpec(
                     key = "${case.id.value}/${scenario.id.value}",
                     title = scenario.label,
-                    sub = scenario.description,
+                    sub = com.adelost.designkit.ui.CircleWords(scenario.description),
                     icon = ShowcaseNativeBindings.requireIcon(case.iconId),
                     // No family colour here: a row's semanticColor is a state on its value, and this value is prose.
                     onTap = { session.open(case.id, scenario.id) },
@@ -163,7 +163,7 @@ object ShowcaseScreens {
     private fun colorRow(key: String, title: String, color: androidx.compose.ui.graphics.Color) = RowSpec(
         key = key,
         title = title,
-        sub = color.toHexArgb(),
+        sub = com.adelost.designkit.ui.CircleWords(color.toHexArgb()),
         icon = RingIcons.Palette,
         semanticColor = color,
     )
@@ -213,7 +213,7 @@ object ShowcaseScreens {
     }
 
     private fun infoRow(key: String, title: String, sub: String, icon: androidx.compose.ui.graphics.vector.ImageVector) =
-        RowSpec(key = key, title = title, sub = sub, icon = icon)
+        RowSpec(key = key, title = title, sub = com.adelost.designkit.ui.CircleWords(sub), icon = icon)
 
     private fun iconActions(scenario: ShowcaseScenario, session: ShowcaseSession): RingScreen {
         val active: Flow<Boolean?> = when (scenario.id.value) {

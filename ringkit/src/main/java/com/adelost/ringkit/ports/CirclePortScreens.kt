@@ -23,16 +23,16 @@ fun circlePortScreen(
     items = ports.map { snapshot ->
         buildList {
             addAll(leadingRows)
-            add(RowSpec("summary", "STATUS", circlePortSummary(snapshot), RingIcons.Gauge,
+            add(RowSpec("summary", "STATUS", com.adelost.designkit.ui.CircleWords(circlePortSummary(snapshot)), RingIcons.Gauge,
                 onTap = { push(statusFilterScreen(ports, push)) }))
             val attention = snapshot.filter(CirclePortInspection::needsAttention)
             if (attention.isNotEmpty()) {
-                add(RowSpec("attention", "NEEDS ATTENTION", "${attention.size} port${if (attention.size == 1) "" else "s"}",
+                add(RowSpec("attention", "NEEDS ATTENTION", com.adelost.designkit.ui.CircleWords("${attention.size} port${if (attention.size == 1) "" else "s"}"),
                     RingIcons.Warning, accent = CircleAccent.CAUTION,
                     onTap = { push(portListScreen("NEEDS ATTENTION", ports, push, CirclePortInspection::needsAttention)) }))
             }
             circlePortGroups(snapshot).forEach { group ->
-                add(RowSpec(group.key, group.title.uppercase(), circlePortGroupSummary(group), statusIcon(group.worst),
+                add(RowSpec(group.key, group.title.uppercase(), com.adelost.designkit.ui.CircleWords(circlePortGroupSummary(group)), statusIcon(group.worst),
                     accent = statusAccent(group.worst),
                     onTap = { push(groupScreen(ports, group.key, group.title, push)) }))
             }
@@ -46,7 +46,7 @@ private fun statusFilterScreen(ports: Flow<List<CirclePortInspection>>, push: (R
         CirclePortStatus.entries.mapNotNull { status ->
             val count = snapshot.count { it.status() == status }
             if (count == 0) return@mapNotNull null
-            RowSpec(status.name, status.name, "$count port${if (count == 1) "" else "s"}", statusIcon(status),
+            RowSpec(status.name, status.name, com.adelost.designkit.ui.CircleWords("$count port${if (count == 1) "" else "s"}"), statusIcon(status),
                 accent = statusAccent(status),
                 onTap = { push(portListScreen(status.name, ports, push) { it.status() == status }) })
         }
@@ -63,7 +63,7 @@ private fun groupScreen(ports: Flow<List<CirclePortInspection>>, key: String, ti
             CirclePortRole.entries.flatMap { role ->
                 val inRole = members.filter { it.role == role }.sortedBy(CirclePortInspection::id)
                 if (inRole.isEmpty()) emptyList()
-                else listOf(RowSpec("section-$role", sectionTitle(role), "", null)) +
+                else listOf(RowSpec("section-$role", sectionTitle(role), com.adelost.designkit.ui.CircleWords(""), null)) +
                     inRole.map { portRow(it, names.getValue(it.id), ports, push) }
             }
         },
@@ -94,7 +94,7 @@ private fun portRow(
 ) = RowSpec(
     key = port.id,
     title = title,
-    sub = circlePortPreview(port),
+    sub = com.adelost.designkit.ui.CircleWords(circlePortPreview(port)),
     icon = statusIcon(port.status()),
     accent = statusAccent(port.status()),
     onTap = { push(portScreen(ports, port.id)) },
@@ -107,18 +107,18 @@ private fun portScreen(ports: Flow<List<CirclePortInspection>>, id: String) = Ri
 
 /** Level 3: every fact of one port, including its full id, which only appears here. */
 fun circlePortFactRows(port: CirclePortInspection): List<RowSpec> = buildList {
-    add(RowSpec("id", "PORT", port.id, RingIcons.Layers, multiline = true))
-    add(RowSpec("status", "STATUS", listOfNotNull(port.status().name, port.ageMs?.let(::circlePortAge)).joinToString(" · "),
+    add(RowSpec("id", "PORT", com.adelost.designkit.ui.CircleWords(port.id), RingIcons.Layers, multiline = true))
+    add(RowSpec("status", "STATUS", com.adelost.designkit.ui.CircleWords(listOfNotNull(port.status().name, port.ageMs?.let(::circlePortAge)).joinToString(" · ")),
         statusIcon(port.status()), accent = statusAccent(port.status())))
-    add(RowSpec("contract", "CONTRACT", port.contractRef, RingIcons.Book))
-    add(RowSpec("direction", "DIRECTION", "${port.direction} · ${port.boundary}${if (port.required) " · required" else ""}", RingIcons.Arrow))
-    add(RowSpec("quality", "QUALITY", port.quality.name, RingIcons.Gauge))
-    add(RowSpec("bindings", "BINDINGS", port.bindings.sorted().joinToString("\n").ifEmpty { "none" }, RingIcons.Link, multiline = true))
+    add(RowSpec("contract", "CONTRACT", com.adelost.designkit.ui.CircleWords(port.contractRef), RingIcons.Book))
+    add(RowSpec("direction", "DIRECTION", com.adelost.designkit.ui.CircleWords("${port.direction} · ${port.boundary}${if (port.required) " · required" else ""}"), RingIcons.Arrow))
+    add(RowSpec("quality", "QUALITY", com.adelost.designkit.ui.CircleWords(port.quality.name), RingIcons.Gauge))
+    add(RowSpec("bindings", "BINDINGS", com.adelost.designkit.ui.CircleWords(port.bindings.sorted().joinToString("\n").ifEmpty { "none" }), RingIcons.Link, multiline = true))
     if (port.role == CirclePortRole.DEMAND) {
-        add(RowSpec("demand", "DEMANDED BY", port.demandOwners.sorted().joinToString().ifEmpty { "nobody" }, RingIcons.Link))
+        add(RowSpec("demand", "DEMANDED BY", com.adelost.designkit.ui.CircleWords(port.demandOwners.sorted().joinToString().ifEmpty { "nobody" }), RingIcons.Link))
     }
     circlePortValueFields(port.value.orEmpty()).forEachIndexed { index, (name, value) ->
-        add(RowSpec("value-$index", name.uppercase(), value, RingIcons.Book, multiline = true))
+        add(RowSpec("value-$index", name.uppercase(), com.adelost.designkit.ui.CircleWords(value), RingIcons.Book, multiline = true))
     }
 }
 

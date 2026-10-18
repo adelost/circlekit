@@ -34,7 +34,7 @@ fun ringSelectionRows(
         RowSpec(
             key = option.id,
             title = option.title,
-            sub = option.detail,
+            sub = com.adelost.designkit.ui.CircleWords(option.detail),
             icon = if (option.id == selectedId) RingIcons.Check else option.icon ?: icon,
             accent = option.accent ?: ringIconAccent(if (option.id == selectedId) RingIcons.Check else option.icon ?: icon),
             onTap = if (option.enabled) ({ onSelect(option.id) }) else null,
@@ -62,7 +62,7 @@ fun RingSelectionScreen(
     }
     LaunchedEffect(options, selectedId, onSelect, extraRows) {
         items.value = extraRows + (ringSelectionRows(options, selectedId, icon, onSelect)
-            .ifEmpty { listOf(RowSpec("empty", emptyLabel, "", icon)) })
+            .ifEmpty { listOf(RowSpec("empty", emptyLabel, com.adelost.designkit.ui.CircleWords(""), icon)) })
     }
     RingRoundBackHost(onBack) {
         RenderRingScreen(nav = navigator, backLabel = "Back", onExit = onBack)

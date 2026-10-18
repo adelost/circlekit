@@ -11,8 +11,8 @@ import androidx.compose.ui.platform.LocalFontFamilyResolver
 
 /** Native Canvas consumes the same resolved face and role metrics as Compose text. */
 @Composable
-fun rememberCircleRolePaint(role: CircleTextRole, color: Color, numerals: Boolean = role == CircleTextRole.NUMBER): Paint {
-    val style = circleRoleTextStyle(role, color, numerals = numerals)
+fun rememberCircleRolePaint(role: CircleTextRole, color: Color, content: CircleTextContent = CircleWords("")): Paint {
+    val style = circleRoleTextStyle(role, color, content = content)
     val density = LocalDensity.current
     val resolvedFace = LocalFontFamilyResolver.current.resolve(
         requireNotNull(style.fontFamily), requireNotNull(style.fontWeight)).value as Typeface

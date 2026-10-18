@@ -210,7 +210,7 @@ class ThePressAndTheWaitAgreeOnAControlTest {
                 Box(Modifier.fillMaxSize().background(Color.Black)) {
                     CircleRingRow(
                         title = "WAKE PHRASE",
-                        sub = "HEY JARVIS",
+                        sub = com.adelost.designkit.ui.CircleWords("HEY JARVIS"),
                         icon = RingIcons.Grid,
                         onTap = { taps += 1 },
                         timing = circleResolvedTiming(declaredTiming.value, declaredHoldMs.value),

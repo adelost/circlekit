@@ -52,7 +52,7 @@ fun RingAudioCaptureFeedback(
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         com.adelost.designkit.ui.CircleText(
-            text = formatCaptureDuration(spec.elapsedMs),
+            text = com.adelost.designkit.ui.CircleNumerals(formatCaptureDuration(spec.elapsedMs)),
             color = RingTokens.Ink,
             role = com.adelost.designkit.ui.CircleTextRole.NUMBER,
         )

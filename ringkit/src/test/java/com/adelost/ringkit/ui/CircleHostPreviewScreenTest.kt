@@ -68,7 +68,7 @@ class CircleHostPreviewScreenTest {
 
         val sizeRow = screen.items.first().single { it.key == "watch-diameter" }
 
-        assertEquals("216", sizeRow.sub)
-        assertEquals(true, sizeRow.sub in sizeRow.choices)
+        assertEquals("216", sizeRow.sub.text)
+        assertEquals(true, sizeRow.sub.text in sizeRow.choices)
     }
 }

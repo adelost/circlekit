@@ -58,12 +58,40 @@ class ARoleLabelKeepsItsSizeTest {
 
     @Test fun `a numeric label keeps Barlow and has no tracking`() {
         compose.setContent {
-            CircleText("100", role = CircleTextRole.LABEL, color = Color.White, numerals = true)
+            CircleText(com.adelost.designkit.ui.CircleNumerals("100"), role = CircleTextRole.LABEL, color = Color.White,)
         }
         val style = layoutOf("100").layoutInput.style
         assertEquals(GraphiteType.Numerals, style.fontFamily)
         assertEquals(0f, style.letterSpacing.value)
         assertEquals(7.5f, style.fontSize.value)
+    }
+
+    @Test fun `typed row reading has Barlow even at VALUE and words stay Onest`() {
+        compose.setContent {
+            androidx.compose.foundation.layout.Column {
+                CircleContent(CircleMeasurement("1200", "m"), CircleTextRole.VALUE, Color.White)
+                CircleText("GPS ERROR", CircleTextRole.NOTE, Color.White)
+            }
+        }
+        assertEquals(GraphiteType.Numerals, layoutOf("1200 m").layoutInput.style.fontFamily)
+        assertEquals(GraphiteType.Sans, layoutOf("GPS ERROR").layoutInput.style.fontFamily)
+    }
+
+    @Test fun `canvas reports the actual measured reading including the unit span and root bounds`() {
+        var receipt: CircleTextLayout? = null
+        compose.setContent {
+            CompositionLocalProvider(LocalCircleTextLayouts provides { receipt = it }) {
+                val measured = rememberCircleTextMeasurer().measure(CircleMeasurement("451", "m"), CircleTextRole.NUMBER, Color.White)
+                measured.report(androidx.compose.ui.geometry.Rect(10f, 20f, 10f + measured.layout.size.width, 20f + measured.layout.size.height))
+            }
+        }
+        compose.waitForIdle()
+        val actual = requireNotNull(receipt)
+        assertEquals("451 m", actual.text)
+        assertEquals(GraphiteType.Numerals, actual.layout.layoutInput.style.fontFamily)
+        assertEquals(7.5f, actual.layout.layoutInput.text.spanStyles.single().item.fontSize.value)
+        assertEquals(10f, actual.boundsInRoot.left)
+        assertEquals(12f, actual.expectedFontSp)
     }
 
     @Test fun `product copy grows past a caller's old one-line cap`() {
@@ -89,7 +117,7 @@ class ARoleLabelKeepsItsSizeTest {
         compose.setContent {
             CompositionLocalProvider(LocalCircleTextLayouts provides { receipts[it.text] = it }) {
                 Box(Modifier.width(70.dp)) {
-                    CircleRingRowContent("BRIGHTNESS", "50 %", null, null,
+                    CircleRingRowContent("BRIGHTNESS", CircleMeasurement("50", "%"), null, null,
                         CircleRowAffordance.of({}), leading = null, trailing = null, feedback = null,
                         endSlot = CircleRowEndSlot(28.dp, occupied = false) { Box(Modifier.size(28.dp)) })
                 }

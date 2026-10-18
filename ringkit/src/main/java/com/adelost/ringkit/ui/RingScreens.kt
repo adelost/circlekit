@@ -164,7 +164,8 @@ data class ColorDialPreviewSpec(
 
 /** One observed value carries its unit atomically; words are never parsed as measurements. */
 sealed interface StatValue {
-    data class Plain(val text: String, val numerals: Boolean = false) : StatValue
+    data class Words(val text: String) : StatValue
+    data class Numerals(val text: String) : StatValue
     data class Reading(
         val measurement: com.adelost.designkit.measurement.MeasurementText,
         val statusWords: String? = null,
@@ -228,30 +229,30 @@ data class LaunchSpec(
  *
  * ```
  * // Information — shows, does nothing.
- * RowSpec(key = "sats", title = "SATELLITES", sub = "11", icon = RingIcons.Gps)
+ * RowSpec(key = "sats", title = "SATELLITES", sub = com.adelost.designkit.ui.CircleWords("11"), icon = RingIcons.Gps)
  *
  * // Action — one thing happens.
- * RowSpec(key = "cal", title = "CALIBRATE", sub = "", icon = RingIcons.Refresh,
+ * RowSpec(key = "cal", title = "CALIBRATE", sub = com.adelost.designkit.ui.CircleWords(""), icon = RingIcons.Refresh,
  *         onTap = { vm.calibrate() })
  *
  * // Toggle — two states, the ring carries them.
- * RowSpec(key = "grid", title = "GRID", sub = if (on) "ON" else "OFF",
+ * RowSpec(key = "grid", title = "GRID", sub = com.adelost.designkit.ui.CircleWords(if (on) "ON" else "OFF"),
  *         icon = RingIcons.Grid, choices = listOf("OFF", "ON"),
  *         choiceRole = CircleChoiceRole.TOGGLE, onSelect = { vm.setGrid(it == "ON") })
  *
  * // Choice of N — a finite named set; renders step dots.
- * RowSpec(key = "units", title = "UNITS", sub = current.label, icon = RingIcons.Ruler,
+ * RowSpec(key = "units", title = "UNITS", sub = com.adelost.designkit.ui.CircleWords(current.label), icon = RingIcons.Ruler,
  *         choices = Units.entries.map { it.label }, onSelect = { vm.setUnits(it) })
  *
  * // Adjustment — a CONTINUOUS value; opens its own +/- screen.
- * RowSpec(key = "spot", title = "SPOT", sub = "300 M", icon = RingIcons.Target,
+ * RowSpec(key = "spot", title = "SPOT", sub = com.adelost.designkit.ui.CircleWords("300 M"), icon = RingIcons.Target,
  *         onDec = { vm.spot(-10) }, onInc = { vm.spot(+10) })
  * ```
  */
 data class RowSpec(
     val key: String,
     val title: String,
-    val sub: String,
+    val sub: com.adelost.designkit.ui.CircleTextContent,
     /** Null is an explicit content-row decision (jump, station, aircraft).
      *  Menu/settings rows supply an icon. No default: every new row must
      *  consciously choose between those two roles. */

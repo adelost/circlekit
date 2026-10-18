@@ -97,8 +97,8 @@ object ShowcaseTemplateFixtures {
             stat(session, "wind", "WIND", StatValue.Reading(MeasurementText("6", "m/s")), Health.AGING, RingIcons.Wind),
             stat(session, "position", "POSITION", StatValue.Reading(MeasurementText("±12", "m")), Health.FRESH, RingIcons.Gps),
             stat(session, "terrain", "TERRAIN", StatValue.Reading(MeasurementText("82", "%")), Health.AGING, RingIcons.Mountain),
-            stat(session, "sync", "SYNC", StatValue.Plain("OFF"), Health.OFF, RingIcons.Link),
-            stat(session, "forecast", "FORECAST", StatValue.Plain("ERROR"), Health.BROKEN, RingIcons.Warning),
+            stat(session, "sync", "SYNC", StatValue.Words("OFF"), Health.OFF, RingIcons.Link),
+            stat(session, "forecast", "FORECAST", StatValue.Words("ERROR"), Health.BROKEN, RingIcons.Warning),
         ),
         corner = LaunchSpec(
             icon = RingIcons.Gear,
@@ -121,7 +121,8 @@ object ShowcaseTemplateFixtures {
         value = flowOf(value),
         health = flowOf(health),
         detail = { detail(session, label, when (value) {
-            is StatValue.Plain -> value.text
+            is StatValue.Words -> value.text
+            is StatValue.Numerals -> value.text
             is StatValue.Reading -> value.measurement.spaced()
         }, icon, health) },
     )
@@ -171,22 +172,22 @@ object ShowcaseTemplateFixtures {
         title = "SETTINGS DEMO",
         items = combine(session.interaction.actionCount, session.interaction.choiceIndex) { count, selected ->
             listOf(
-                RowSpec("info", "LOCAL EXAMPLE", "No product settings are changed", icon = null),
+                RowSpec("info", "LOCAL EXAMPLE", com.adelost.designkit.ui.CircleWords("No product settings are changed"), icon = null),
                 // A product-like settings run, long enough to scroll every
                 // row past the escape: a passive status, a wrapping action and
                 // a dated reading with the copy lengths real settings carry.
-                RowSpec("connection", "CONNECTED", "Connected via Tailscale", RingIcons.Wifi),
-                RowSpec("update", "UPDATE", "Up to date · v1.2.17 · tap to check", RingIcons.Download,
+                RowSpec("connection", "CONNECTED", com.adelost.designkit.ui.CircleWords("Connected via Tailscale"), RingIcons.Wifi),
+                RowSpec("update", "UPDATE", com.adelost.designkit.ui.CircleWords("Up to date · v1.2.17 · tap to check"), RingIcons.Download,
                     onTap = { session.interaction.runAction() }, multiline = true),
-                RowSpec("published", "PUBLISHED", "v1.2.17 · 14 Sep 21:30", RingIcons.Calendar),
-                RowSpec("preview", "DISPLAY PREVIEW", "Phone layout or watch-size preview", RingIcons.Phone,
+                RowSpec("published", "PUBLISHED", com.adelost.designkit.ui.CircleWords("v1.2.17 · 14 Sep 21:30"), RingIcons.Calendar),
+                RowSpec("preview", "DISPLAY PREVIEW", com.adelost.designkit.ui.CircleWords("Phone layout or watch-size preview"), RingIcons.Phone,
                     onTap = { session.interaction.runAction() }, multiline = true),
-                RowSpec("action", "RUN ACTION", "RAN $count TIMES", RingIcons.Play,
+                RowSpec("action", "RUN ACTION", com.adelost.designkit.ui.CircleWords("RAN $count TIMES"), RingIcons.Play,
                     onTap = { session.interaction.runAction() }),
                 RowSpec(
                     "toggle",
                     "TOGGLE",
-                    if (selected == 0) "OFF" else "ON",
+                    com.adelost.designkit.ui.CircleWords(if (selected == 0) "OFF" else "ON"),
                     RingIcons.Eye,
                     choices = listOf("OFF", "ON"),
                     onSelect = { session.interaction.selectChoice(if (it == "ON") 1 else 0, 2) },
@@ -200,7 +201,7 @@ object ShowcaseTemplateFixtures {
         fun row(value: Int) = RowSpec(
             key = "template-adjustment",
             title = "ALTITUDE",
-            sub = "$value M",
+            sub = com.adelost.designkit.ui.CircleWords("$value M"),
             icon = RingIcons.Ruler,
             onDec = { session.interaction.adjust(-100) },
             onInc = { session.interaction.adjust(100) },
@@ -250,7 +251,7 @@ object ShowcaseTemplateFixtures {
         title = "18 ROWS DEMO",
         items = flowOf(
             (1..18).map { index ->
-                RowSpec("row-$index", "ROW ${index.toString().padStart(2, '0')}", "SCROLLABLE", RingIcons.Book)
+                RowSpec("row-$index", "ROW ${index.toString().padStart(2, '0')}", com.adelost.designkit.ui.CircleWords("SCROLLABLE"), RingIcons.Book)
             },
         ),
     )
@@ -262,7 +263,7 @@ object ShowcaseTemplateFixtures {
                 RowSpec(
                     key = "long",
                     title = "A DELIBERATELY LONG TITLE THAT MUST REMAIN HONEST",
-                    sub = "LONG SUPPORTING COPY WRAPS OR ELLIPSIZES WITHOUT ESCAPING THE ROUND CHORD",
+                    sub = com.adelost.designkit.ui.CircleWords("LONG SUPPORTING COPY WRAPS OR ELLIPSIZES WITHOUT ESCAPING THE ROUND CHORD"),
                     icon = RingIcons.Warning,
                     hint = "Long content tests the shared geometry rather than adding sample padding.",
                 ),

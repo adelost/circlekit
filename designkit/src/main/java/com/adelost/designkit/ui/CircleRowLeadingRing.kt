@@ -55,7 +55,7 @@ internal fun CircleRowLeadingRing(
                 modifier = Modifier.size(phoneDesign?.rowIconSize ?: MenuDesign.iconSize).rotate(iconRotationDeg),
             )
         } else {
-            CircleText(text = requireNotNull(centerValue), role = CircleTextRole.NUMBER,
+            CircleText(text = CircleNumerals(requireNotNull(centerValue)), role = CircleTextRole.NUMBER,
                 color = semanticColor ?: look.icon)
         }
     }

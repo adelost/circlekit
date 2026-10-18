@@ -100,7 +100,7 @@ class OneCuePerGatedControlTest {
             Box(Modifier.fillMaxSize().background(Color.Black)) {
                 CircleRingRow(
                     title = "WAKE PHRASE",
-                    sub = "HEY JARVIS",
+                    sub = com.adelost.designkit.ui.CircleWords("HEY JARVIS"),
                     icon = RingIcons.Grid,
                     onTap = {},
                     timing = circleResolvedTiming(CircleActionTiming.DELIBERATE, declaredRowHoldMs.value),
