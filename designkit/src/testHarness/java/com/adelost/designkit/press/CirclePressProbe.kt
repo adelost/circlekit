@@ -6,6 +6,7 @@ import android.view.View
 import androidx.activity.ComponentActivity
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.test.SemanticsNodeInteraction
 import androidx.compose.ui.test.down
 import androidx.compose.ui.test.junit4.AndroidComposeTestRule
@@ -13,7 +14,6 @@ import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.test.up
 import com.adelost.designkit.ui.CircleActionHostCost
 import com.adelost.designkit.ui.LocalCircleActionHostCost
-import java.io.File
 import kotlin.math.roundToInt
 
 /**
@@ -38,8 +38,6 @@ class CirclePressProbe(
 ) {
 
     private var mounted = false
-    private var pressNumber = 0
-    private var referenceNumber = 0
 
     /**
      * Mounts [content] once. Call it from every press: a control that reads its declaration from state
@@ -63,10 +61,11 @@ class CirclePressProbe(
      */
     fun colouredAtRest(control: SemanticsNodeInteraction): Int {
         val box = boundsOf(control)
-        val frame = settleToRest()
-        frame.saveIfRequested("work-reference-${++referenceNumber}")
-        return frame.colouredInside(box)
+        return settleToRest().colouredInside(box)
     }
+
+    fun sweptAngleAtRest(control: SemanticsNodeInteraction, ring: CirclePressRing): Float =
+        settleToRest().sweptAngle(control.fetchSemanticsNode().boundsInRoot, ring)
 
     /**
      * Presses [control] for [holdFor] on a clock this probe advances, and reads EVERY frame of it.
@@ -75,8 +74,7 @@ class CirclePressProbe(
      * frames behind its gate still grows; only the whole sequence says which. The finger is lifted even
      * when a case fails mid-press, or the next press in the same test would measure the last one.
      */
-    fun press(control: SemanticsNodeInteraction, holdFor: Long): CirclePress {
-        val serial = ++pressNumber
+    fun press(control: SemanticsNodeInteraction, holdFor: Long, ring: CirclePressRing? = null): CirclePress {
         val box = boundsOf(control)
         val atRest = settleToRest()
         val restingInk = atRest.inkInside(box)
@@ -86,7 +84,6 @@ class CirclePressProbe(
                 "control mounted at the top of the window does exactly this and reads 0 for every frame"
         }
 
-        val startedAt = compose.mainClock.currentTime
         control.performTouchInput { down(center) }
         // A finger on the glass keeps row 215's cue asking for frames, so this composition is never idle
         // while it is down. The clock is advanced deliberately rather than waited on; waitForIdle() here
@@ -104,15 +101,11 @@ class CirclePressProbe(
                 compose.mainClock.advanceTimeBy(step)
                 elapsed += step
                 val now = frame()
-                if (elapsed >= holdFor - A_FRAME_MS) {
-                    val actualElapsed = compose.mainClock.currentTime - startedAt
-                    now.saveIfRequested("press-$serial-$elapsed-actual-$actualElapsed")
-                    println("CUE-FRAME planned=$elapsed actual=$actualElapsed coloured=${now.colouredInside(box)}")
-                }
                 readings += CirclePressReading(
                     elapsedMs = elapsed,
                     changed = now.differingFrom(atRest),
                     coloured = now.colouredInside(box),
+                    sweptAngle = ring?.let { now.sweptAngle(control.fetchSemanticsNode().boundsInRoot, it) },
                 )
             }
         } finally {
@@ -190,12 +183,9 @@ class CirclePressProbe(
 
     private class Frame(val pixels: IntArray, val width: Int) {
 
-        fun saveIfRequested(name: String) {
-            val folder = System.getenv("CIRCLE_PRESS_FRAMES") ?: return
-            val bitmap = Bitmap.createBitmap(pixels, width, pixels.size / width, Bitmap.Config.ARGB_8888)
-            File(folder, "$name.png").also { it.parentFile?.mkdirs() }.outputStream()
-                .use { bitmap.compress(Bitmap.CompressFormat.PNG, 100, it) }
-        }
+        fun sweptAngle(bounds: Rect, ring: CirclePressRing): Float =
+            circleRingSweep(pixels, width, bounds, ring, COLOUR_SPREAD)
+
 
         fun sameAs(other: Frame): Boolean = pixels.contentEquals(other.pixels)
 
@@ -261,7 +251,7 @@ class CirclePressProbe(
 }
 
 /** One frame of one press. */
-class CirclePressReading(val elapsedMs: Long, val changed: Int, val coloured: Int) {
+class CirclePressReading(val elapsedMs: Long, val changed: Int, val coloured: Int, val sweptAngle: Float? = null) {
     override fun toString(): String = "$elapsedMs ms: $changed changed, $coloured coloured"
 }
 
@@ -301,6 +291,9 @@ object OneCuePerGatedControl {
      * is drawn for them, or a wrist flickers all day.
      */
     fun aGrazeSaysNothing(what: String, press: CirclePress) {
+        press.frames.mapNotNull { it.sweptAngle }.forEach { angle ->
+            check(angle == 0f) { "$what drew $angle degrees during a graze" }
+        }
         val cue = press.cueByFrame
         val touched = cue.first()
         val grew = cue.maxOrNull() ?: 0
@@ -322,6 +315,10 @@ object OneCuePerGatedControl {
      * it draws nothing. That is the whole of the defect, and it is what this frame catches.
      */
     fun aHeldControlDrawsItsGateOut(what: String, gateMs: Long, press: CirclePress) {
+        if (press.frames.first().sweptAngle != null) {
+            assertCircleRingGate(what, gateMs, press.frames)
+            return
+        }
         // WHAT A TOUCH COSTS BEFORE ANY WAIT IS DRAWN. A control may change its chrome the instant a
         // finger lands, and several do: the back ring dips and brightens its contour, and that contour
         // is the product's action colour, so it cannot be told from the cue by colour alone. It is

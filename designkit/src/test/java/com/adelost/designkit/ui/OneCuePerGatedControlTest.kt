@@ -11,6 +11,7 @@ import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import com.adelost.designkit.press.CirclePress
 import com.adelost.designkit.press.CirclePressProbe
+import com.adelost.designkit.press.CirclePressRing
 import com.adelost.designkit.press.OneCuePerGatedControl
 import org.junit.Assert.assertTrue
 import org.junit.Rule
@@ -36,6 +37,11 @@ import org.robolectric.annotation.GraphicsMode
  *
  * TWO OF THE FOUR ARE HERE; the other two, RingKit's action text and its step circle, are in ringkit's
  * case of the same name, because that is where they live.
+ *
+ * skyvw:1's decision of 2026-10-18: the icon ring grows by swept angle, never a thresholded total
+ * pixel count. Closing the antialiased arc lost two edge pixels with fixed chrome while colour ink
+ * increased. CirclePressRing derives sectors and their ink floor from this disc's MenuDesign geometry.
+ * Wash laws remain unchanged; the ring must also cover every sector when its gate commits.
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(application = android.app.Application::class, sdk = [35], qualifiers = "w390dp-h844dp-xhdpi")
@@ -46,16 +52,17 @@ class OneCuePerGatedControlTest {
 
     private val probe = CirclePressProbe(compose)
     private val discWork = mutableStateOf<CircleLabelProgress?>(null)
+    private val discRing = CirclePressRing(MenuDesign.watchActionRingDiameter, MenuDesign.iconRingStroke)
 
     @Test
-    fun `a complete contour keeps at least the ink of a nearly complete contour with unchanged chrome`() {
+    fun `a complete contour keeps at least the swept angle of a nearly complete contour with unchanged chrome`() {
         mountTheDisc()
         discWork.value = CircleLabelProgress.Determinate(0.992f)
-        val near = probe.colouredAtRest(compose.onNodeWithContentDescription(THE_DISC))
+        val near = probe.sweptAngleAtRest(compose.onNodeWithContentDescription(THE_DISC), discRing)
         discWork.value = CircleLabelProgress.Determinate(1f)
-        val full = probe.colouredAtRest(compose.onNodeWithContentDescription(THE_DISC))
-        println("CONTOUR fixed chrome near=$near full=$full")
-        assertTrue("the complete contour retreats with unchanged chrome: near=$near full=$full", full >= near)
+        val full = probe.sweptAngleAtRest(compose.onNodeWithContentDescription(THE_DISC), discRing)
+        println("CONTOUR fixed chrome near=$near full=$full degrees")
+        assertTrue("the complete contour retreats with unchanged chrome: near=$near full=$full", full >= near && full == 360f)
     }
 
     @Test
@@ -148,7 +155,7 @@ class OneCuePerGatedControlTest {
 
     private fun pressTheDisc(holdFor: Long): CirclePress {
         mountTheDisc()
-        return probe.press(compose.onNodeWithContentDescription(THE_DISC), holdFor)
+        return probe.press(compose.onNodeWithContentDescription(THE_DISC), holdFor, discRing)
     }
 
     private companion object {
