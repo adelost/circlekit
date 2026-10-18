@@ -45,6 +45,18 @@ class OneCuePerGatedControlTest {
     @get:Rule val compose = createAndroidComposeRule<ComponentActivity>()
 
     private val probe = CirclePressProbe(compose)
+    private val discWork = mutableStateOf<CircleLabelProgress?>(null)
+
+    @Test
+    fun `a complete contour keeps at least the ink of a nearly complete contour with unchanged chrome`() {
+        mountTheDisc()
+        discWork.value = CircleLabelProgress.Determinate(0.992f)
+        val near = probe.colouredAtRest(compose.onNodeWithContentDescription(THE_DISC))
+        discWork.value = CircleLabelProgress.Determinate(1f)
+        val full = probe.colouredAtRest(compose.onNodeWithContentDescription(THE_DISC))
+        println("CONTOUR fixed chrome near=$near full=$full")
+        assertTrue("the complete contour retreats with unchanged chrome: near=$near full=$full", full >= near)
+    }
 
     @Test
     fun `a row says how much of its gate a finger has spent, and nothing for a graze`() {
@@ -128,6 +140,7 @@ class OneCuePerGatedControlTest {
                     // scale would be counted as cue that grew.
                     iconTint = RingTokens.Ink,
                     timing = CircleActionTiming.DELIBERATE,
+                    labelProgress = discWork.value,
                 )
             }
         }
