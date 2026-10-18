@@ -162,11 +162,20 @@ data class ColorDialPreviewSpec(
     }
 }
 
+/** One observed value carries its unit atomically; words are never parsed as measurements. */
+sealed interface StatValue {
+    data class Plain(val text: String, val numerals: Boolean = false) : StatValue
+    data class Reading(
+        val measurement: com.adelost.designkit.measurement.MeasurementText,
+        val statusWords: String? = null,
+    ) : StatValue
+}
+
 data class StatRowSpec(
     val id: SourceId,
     val icon: ImageVector,
     val label: String,
-    val value: Flow<String>,
+    val value: Flow<StatValue>,
     val health: Flow<Health>,
     /** Clockwise visual rotation for directional source icons. */
     val iconRotation: Flow<Float> = flowOf(0f),

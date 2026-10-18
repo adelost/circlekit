@@ -117,7 +117,7 @@ class EveryScrollShowsWhereItIsTest {
     /** One of every screen the kit draws, each with more content than the face holds. */
     private fun theScreens(): List<RingScreen> {
         val stat = StatRowSpec(
-            id = SourceId("gps"), icon = RingIcons.Grid, label = "GPS", value = flowOf("OK"),
+            id = SourceId("gps"), icon = RingIcons.Grid, label = "GPS", value = flowOf(StatValue.Plain("OK")),
             health = flowOf(Health.FRESH), detail = { theDetail() },
         )
         val dialPreview = ColorDialPreviewSpec(

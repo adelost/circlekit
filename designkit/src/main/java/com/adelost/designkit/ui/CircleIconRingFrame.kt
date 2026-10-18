@@ -49,7 +49,11 @@ internal fun CircleIconRingFrame(
     semanticColor: Color? = null,
     suggested: Boolean = false,
     centerValueColor: Color? = null,
+    centerUnit: String? = null,
+    centerNumerals: Boolean = true,
+    subColor: Color? = null,
 ) {
+    require(centerUnit.isNullOrBlank() || centerNumerals) { "A ring's unit belongs to a numeric reading" }
     val fontScale = LocalDensity.current.fontScale
     // One C disc for every ring, a data source's included (style C, Mattias 2026-10-17): the kind's ground and edge
     // and the icon in its kind. A reading's state is [centerValueColor] and sits on the value, never on the edge.
@@ -87,8 +91,12 @@ internal fun CircleIconRingFrame(
                         .rotate(iconRotationDegrees),
                 )
                 centerValue?.let { value ->
-                    CircleReading(value = value, unit = null, color = centerValueColor ?: RingTokens.Ink,
-                        textAlign = TextAlign.Center)
+                    if (centerNumerals) {
+                        CircleReading(value, centerUnit, centerValueColor ?: RingTokens.Ink, textAlign = TextAlign.Center)
+                    } else {
+                        CircleText(value, CircleTextRole.VALUE, centerValueColor ?: RingTokens.Ink,
+                            textAlign = TextAlign.Center)
+                    }
                 }
             }
             choiceState?.let { state ->
@@ -110,7 +118,7 @@ internal fun CircleIconRingFrame(
         sub?.let {
             CircleText(
                 text = it, role = CircleTextRole.NOTE,
-                color = if (enabled) RingTokens.Dim else RingTokens.Off,
+                color = if (enabled) subColor ?: RingTokens.Dim else RingTokens.Off,
                 textAlign = TextAlign.Center,
                 modifier = Modifier.padding(top = 1.dp).then(
                     if (LocalActionParentOwnsRowCopy.current) Modifier.clearAndSetSemantics { } else Modifier),

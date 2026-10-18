@@ -92,7 +92,7 @@ const val DELIBERATE_CHANGE_HOLD_MS = MenuDesign.holdDeliberateMs
 fun StatRing(
     icon: ImageVector,
     iconRotationDeg: Float = 0f,
-    value: String,
+    value: StatValue,
     health: Health,
     label: String,
     onTap: () -> Unit,
@@ -100,6 +100,8 @@ fun StatRing(
     diameter: Dp = MenuDesign.statRingDiameter,
 ) {
     val off = health == Health.OFF
+    val reading = value as? StatValue.Reading
+    val plain = value as? StatValue.Plain
     CircleIconRing(
         icon = icon,
         label = label,
@@ -107,8 +109,12 @@ fun StatRing(
         modifier = modifier,
         diameter = diameter,
         active = if (off) false else null,
-        centerValue = value,
+        centerValue = reading?.measurement?.value ?: plain?.takeIf { it.numerals }?.text ?: "–",
+        centerUnit = reading?.measurement?.unit,
+        centerNumerals = true,
         centerValueColor = if (off) RingTokens.Dim else health.stateColor(),
+        sub = reading?.statusWords ?: plain?.takeUnless { it.numerals }?.text,
+        subColor = if (off) RingTokens.Dim else health.stateColor(),
         iconRotationDegrees = iconRotationDeg,
     )
 }

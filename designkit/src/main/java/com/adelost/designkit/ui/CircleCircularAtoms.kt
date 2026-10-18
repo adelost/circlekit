@@ -322,6 +322,9 @@ fun CircleIconRing(
     /** The product proposed this, a person did not choose it: the ring is
      *  dimmed in its own colour, never dashed ([circleSuggestedContour]). */
     suggested: Boolean = false,
+    centerUnit: String? = null,
+    centerNumerals: Boolean = true,
+    subColor: Color? = null,
 ) {
     val feedback = rememberCircleActionFeedbackState()
     val resolved = circleResolvedTiming(timing, effect = effect)
@@ -342,6 +345,9 @@ fun CircleIconRing(
             semanticColor = semanticColor,
             centerValue = centerValue,
             centerValueColor = centerValueColor,
+            centerUnit = centerUnit,
+            centerNumerals = centerNumerals,
+            subColor = subColor,
             iconRotationDegrees = iconRotationDegrees,
             choiceState = choiceState,
             sub = sub,

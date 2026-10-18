@@ -27,6 +27,19 @@ class CircleDiscArtworkTest {
     @get:Rule val compose = createAndroidComposeRule<ComponentActivity>()
     private val layouts = mutableMapOf<String, TextLayoutResult>()
 
+    @Test fun `a ring reading keeps its unit at the declared unit size`() {
+        compose.setContent {
+            CompositionLocalProvider(LocalCircleTextLayouts provides { layouts[it.text] = it.layout }) {
+                CircleIconRingFrame(RingIcons.Wind, "WIND", Modifier, 46.dp, null,
+                    ringIconAccent(RingIcons.Wind), "6", 0f, null, null, true, Modifier, centerUnit = "m/s")
+            }
+        }
+        compose.waitForIdle()
+        val input = layouts.getValue("6 m/s").layoutInput
+        assertEquals("the unit belongs to the reading, not its primary value", 7.5f,
+            input.text.spanStyles.singleOrNull()?.item?.fontSize?.value ?: 0f, 0.001f)
+    }
+
     @Test fun `pressure readings keep their role and unit size regardless of commas`() {
         compose.setContent {
             CompositionLocalProvider(LocalCircleTextLayouts provides { receipt -> layouts[receipt.text] = receipt.layout }) {

@@ -183,9 +183,9 @@ class RingRowAccessibilityTest {
             flowOf("1005 hPa"), flowOf("STATION · 24 KM"), flowOf("REPORTED 22m ago"),
             flowOf(Health.FRESH), flowOf(null))
         val status = RingScreen.Hub("STATUS", listOf(
-            StatRowSpec(SourceId("pressure"), RingIcons.Gauge, "PRESSURE", flowOf("1005"),
+            StatRowSpec(SourceId("pressure"), RingIcons.Gauge, "PRESSURE", flowOf(StatValue.Plain("1005", numerals = true)),
                 flowOf(Health.FRESH), detail = { detail }),
-            StatRowSpec(SourceId("position"), RingIcons.Gps, "POSITION", flowOf("±5"),
+            StatRowSpec(SourceId("position"), RingIcons.Gps, "POSITION", flowOf(StatValue.Plain("±5", numerals = true)),
                 flowOf(Health.FRESH), detail = { detail }),
         ))
         val nav = RingNavigator(status)

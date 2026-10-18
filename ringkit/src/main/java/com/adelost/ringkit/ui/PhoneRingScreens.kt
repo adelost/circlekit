@@ -151,7 +151,7 @@ private fun PhoneHubScreen(
         PhoneScreenHeader(screen.title, back, backLabel)
         Spacer(Modifier.height(design.hubTopGap))
         RingMenuGrid(items = screen.rows, spec = grid) { row ->
-            val value = row.value.collectAsState(initial = "–").value
+            val value = row.value.collectAsState(initial = StatValue.Plain("–", numerals = true)).value
             val health = row.health.collectAsState(initial = Health.OFF).value
             val iconRotation = row.iconRotation.collectAsState(initial = 0f).value
             StatRing(

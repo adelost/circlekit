@@ -119,7 +119,7 @@ internal fun HubScreen(s: RingScreen.Hub, nav: RingNavigator) {
         ScreenTitle(s.title)
         Spacer(Modifier.height(6.dp))
         RingMenuGrid(items = s.rows, spec = grid) { row ->
-            val value = row.value.collectAsState(initial = "–").value
+            val value = row.value.collectAsState(initial = StatValue.Plain("–", numerals = true)).value
             val health = row.health.collectAsState(initial = Health.OFF).value
             val iconRotation = row.iconRotation.collectAsState(initial = 0f).value
             StatRing(

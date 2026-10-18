@@ -14,8 +14,10 @@ import androidx.compose.ui.platform.LocalFontFamilyResolver
 fun rememberCircleRolePaint(role: CircleTextRole, color: Color, numerals: Boolean = role == CircleTextRole.NUMBER): Paint {
     val style = circleRoleTextStyle(role, color, numerals = numerals)
     val density = LocalDensity.current
-    val face = LocalFontFamilyResolver.current.resolve(
+    val resolvedFace = LocalFontFamilyResolver.current.resolve(
         requireNotNull(style.fontFamily), requireNotNull(style.fontWeight)).value as Typeface
+    // A variable font's resolved native family can still carry Regular weight.
+    val face = Typeface.create(resolvedFace, requireNotNull(style.fontWeight).weight, false)
     return remember(style, density, face) {
         Paint(Paint.ANTI_ALIAS_FLAG).apply {
             this.color = color.toArgb()

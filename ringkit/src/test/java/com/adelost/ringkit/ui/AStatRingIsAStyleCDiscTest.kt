@@ -78,7 +78,7 @@ class AStatRingIsAStyleCDiscTest {
         CompositionLocalProvider(LocalCircleActionHostCost provides CircleActionHostCost.NONE) {
             CircleAccentPaletteProvider(CircleGlassPalette.palette) {
                 Box(Modifier.fillMaxSize().background(Color.Black), contentAlignment = Alignment.Center) {
-                    StatRing(icon = RingIcons.Grid, value = "OK", health = health.value, label = "GPS", onTap = {})
+                    StatRing(icon = RingIcons.Grid, value = StatValue.Plain("OK"), health = health.value, label = "GPS", onTap = {})
                 }
             }
         }

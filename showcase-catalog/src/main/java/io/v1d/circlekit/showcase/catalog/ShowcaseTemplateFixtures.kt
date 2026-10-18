@@ -18,6 +18,8 @@ import com.adelost.ringkit.ui.LaunchSpec
 import com.adelost.ringkit.ui.RingScreen
 import com.adelost.ringkit.ui.RowSpec
 import com.adelost.ringkit.ui.StatRowSpec
+import com.adelost.ringkit.ui.StatValue
+import com.adelost.designkit.measurement.MeasurementText
 import com.adelost.ringkit.ui.IconRing
 import com.adelost.ringkit.ui.RingSelectionOption
 import com.adelost.ringkit.ui.ringSelectionRows
@@ -91,12 +93,12 @@ object ShowcaseTemplateFixtures {
     private fun hub(session: ShowcaseSession): RingScreen.Hub = RingScreen.Hub(
         title = "DATA DEMO",
         rows = listOf(
-            stat(session, "weather", "WEATHER", "18°", Health.FRESH, RingIcons.Cloud),
-            stat(session, "wind", "WIND", "6 M/S", Health.AGING, RingIcons.Wind),
-            stat(session, "position", "POSITION", "±12 M", Health.FRESH, RingIcons.Gps),
-            stat(session, "terrain", "TERRAIN", "82%", Health.AGING, RingIcons.Mountain),
-            stat(session, "sync", "SYNC", "OFF", Health.OFF, RingIcons.Link),
-            stat(session, "forecast", "FORECAST", "ERROR", Health.BROKEN, RingIcons.Warning),
+            stat(session, "weather", "WEATHER", StatValue.Reading(MeasurementText("18", "°")), Health.FRESH, RingIcons.Cloud),
+            stat(session, "wind", "WIND", StatValue.Reading(MeasurementText("6", "m/s")), Health.AGING, RingIcons.Wind),
+            stat(session, "position", "POSITION", StatValue.Reading(MeasurementText("±12", "m")), Health.FRESH, RingIcons.Gps),
+            stat(session, "terrain", "TERRAIN", StatValue.Reading(MeasurementText("82", "%")), Health.AGING, RingIcons.Mountain),
+            stat(session, "sync", "SYNC", StatValue.Plain("OFF"), Health.OFF, RingIcons.Link),
+            stat(session, "forecast", "FORECAST", StatValue.Plain("ERROR"), Health.BROKEN, RingIcons.Warning),
         ),
         corner = LaunchSpec(
             icon = RingIcons.Gear,
@@ -109,7 +111,7 @@ object ShowcaseTemplateFixtures {
         session: ShowcaseSession,
         id: String,
         label: String,
-        value: String,
+        value: StatValue,
         health: Health,
         icon: androidx.compose.ui.graphics.vector.ImageVector,
     ) = StatRowSpec(
@@ -118,7 +120,10 @@ object ShowcaseTemplateFixtures {
         label = label,
         value = flowOf(value),
         health = flowOf(health),
-        detail = { detail(session, label, value, icon, health) },
+        detail = { detail(session, label, when (value) {
+            is StatValue.Plain -> value.text
+            is StatValue.Reading -> value.measurement.spaced()
+        }, icon, health) },
     )
 
     private fun detail(

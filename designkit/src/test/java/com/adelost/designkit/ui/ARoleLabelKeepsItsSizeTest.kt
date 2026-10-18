@@ -30,6 +30,16 @@ import org.robolectric.annotation.GraphicsMode
 class ARoleLabelKeepsItsSizeTest {
     @get:Rule val compose = createAndroidComposeRule<ComponentActivity>()
 
+    @Test fun `a canvas label takes the role weight tracking face and size`() {
+        var paint: android.graphics.Paint? = null
+        compose.setContent { paint = rememberCircleRolePaint(CircleTextRole.LABEL, Color.White) }
+        compose.waitForIdle()
+        val actual = requireNotNull(paint)
+        assertEquals("native Typeface must carry Bold, not just the Compose style", 700, actual.typeface.weight)
+        assertEquals(0.13f, actual.letterSpacing, 0.001f)
+        assertEquals(15f, actual.textSize, 0.001f)
+    }
+
     @Test fun `a long label loses tracking not size before wrapping`() {
         mount(48)
         val layout = layoutOf()
