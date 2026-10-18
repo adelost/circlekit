@@ -8,6 +8,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
@@ -287,10 +288,15 @@ internal suspend fun runCircleHoldCue(
  *
  * It draws NOTHING at zero, which is what makes it free on a face that is only being looked at.
  */
-internal fun Modifier.circleHoldCue(progress: () -> Float, color: Color): Modifier = drawBehind {
+internal fun Modifier.circleHoldCue(progress: () -> Float, color: Color): Modifier = drawWithContent {
     val fraction = progress().coerceIn(0f, 1f)
-    if (fraction <= 0f) return@drawBehind
+    if (fraction <= 0f) {
+        drawContent()
+        return@drawWithContent
+    }
     if (circleHoldCueIsRing(size.width, size.height)) {
+        // The inside contour is an opaque child. Keep the trace visible above it at the same geometry.
+        drawContent()
         // INSIDE the control's own contour, not on it. Measured on a run seat at 192 dp (2026-09-20):
         // drawn on the bounds, the arc lands exactly where the pressed contour is already a bright ring,
         // so a teal accent over white read as a tint and the frames before and after were hard to tell
@@ -307,7 +313,9 @@ internal fun Modifier.circleHoldCue(progress: () -> Float, color: Color): Modifi
             style = Stroke(width = stroke, cap = StrokeCap.Round),
         )
     } else {
+        // A label's wash still belongs behind its letters.
         drawRect(color = color.copy(alpha = color.alpha * CircleCue.washAlpha), size = Size(size.width * fraction, size.height))
+        drawContent()
     }
 }
 
