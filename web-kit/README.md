@@ -9,7 +9,7 @@ This repository holds the manifest and the gate (`npm run check`), never the fil
 A consumer locks one version, as `@v1d/product-emit` does, and keeps no copy:
 
 ```json
-"@v1d/web-kit": "https://circlekit.pages.dev/npm/v1d/web-kit/0.6.0/v1d-web-kit-0.6.0.tgz"
+"@v1d/web-kit": "https://circlekit.pages.dev/npm/v1d/web-kit/0.7.0/v1d-web-kit-0.7.0.tgz"
 ```
 
 ```js
@@ -25,8 +25,9 @@ A page sets its own values after the kit's, for example `:root { --bg: #101114; 
 Each part is a function that returns a DOM node: no framework and no bundler is needed. Icons are nodes the page gives (any SVG element).
 
 - `searchField({ placeholder, label, icon, onInput, value, id })`: the icon and an input. `onInput(words)` gets the whole text on every change, and Escape clears a field that has text. `label` is the accessible name and defaults to the placeholder. The input is `field.input`.
-- `filterChips({ kinds: [{ id, label, icon, count, color }], iconOnly, pressed, onChange, label })`: a toggle per kind, showing its icon and count. Under 900 px, or with `iconOnly`, a chip is a 44 px round button with the icon alone; `label, count` is its tooltip and its name for a screen reader. `onChange(ids)` gets every id that is on; `row.setPressed(ids)` sets them from outside. `color` is a CSS value for the icon, such as `var(--kind-item)`.
+- `filterChips({ kinds: [{ id, label, icon, count, color }], iconOnly, words, size, pressed, onChange, label })`: a toggle per kind, showing its icon and count. Under 900 px, or with `iconOnly`, a chip is a 44 px round button with the icon alone; `label, count` is its tooltip and its name for a screen reader. `onChange(ids)` gets every id that is on; `row.setPressed(ids)` sets them from outside. `color` is a CSS value for the icon, such as `var(--kind-item)`. With `words` a chip shows its word beside the icon at every width (the count as before, in the name under 900 px) and the row scrolls sideways under 900 px instead of wrapping; `size: "small"` is a card's tag, 28 px high, dim until pressed, with a 44 px box to press under a finger (`pointer: coarse`).
 - `panel({ title, mark, action, lead, className }, ...children)`: one surface with a head (the mark, the title in capitals, one action at the end) when it has a `title`, otherwise the surface alone. `panelHead` is the head alone.
+- `boxMeter({ lit, boxes, value, label, color })`: a reading as small boxes, as many lit as it is high (five boxes unless said), `lit` a whole number from 0 to `boxes`, or null where nothing was measured, which says "not measured" in words. `value` is the reading as words (`$0.0008`) and `label` what it is a reading of (`Cost`): together the row's name and tooltip. `color` is a CSS value for a lit box; the size is `--meter-size` on the row or above it (10 px unless set).
 - `codeBlock({ title, id, icon, json, text, label })`: a small title over a hairline, what the text belongs to (`id`, with its `icon`) and the text in a monospace well that scrolls sideways. `json` is shown pretty printed.
 - `el(tag, props, ...children)`: the helper the parts are made with.
 
@@ -69,3 +70,4 @@ The numbers are the ones Cutkit's studio draws from an original in the browser: 
 - 0.4.0: the time view, the song row and the song drawing (`timescale`, `timeview`, `songrow`, `songwave`, `tokens`, `timeview.css`) and the encoder (`encode`), with types. There is no 0.3.0: its song view is in 0.4.0.
 - 0.5.0: a file's identity (`file_identity`) and Quick's preparation (`picture_curve`, `preview_curve_tap`, `chapter_candidates`, `chapter_sheet_layout`, `chapter_plan`), with types.
 - 0.6.0: a song's data from an audio file (`song_data`: `songData`), with types.
+- 0.7.0: `boxMeter`; `filterChips` gets `words` and `size: "small"`; the time view's + - and Fit are a row of their own under its rows and 44 px under a finger; the search field draws one focus ring, not a second from a page's `input:focus-visible`.
