@@ -16,4 +16,4 @@ Kinds (each rule has `id`, `name`, `kind`, `fix`; `files` and `exclude` are glob
 - `absent` `{paths}`: a path that must not exist.
 - `modules` `{modules: [{dir, imports}]}`: a module is reached only through its `index`, and only along the listed edges.
 - `duplicates` `{lines?, minChars?}`: the same run of lines in two files.
-- `count` `{module, export, path, min}`: every item `path` reaches (`*` visits each key) holds at least `min` entries; the module is imported, so a `.ts` module needs `node --import tsx`.
+- `count` `{module, export, path | paths, min}`: every item `path` reaches (`*` visits each key; with `paths` the entries of all of them are summed) holds at least `min` entries; a value that is there counts, a list counts its entries; the module is imported, so a `.ts` module needs `node --import tsx`.

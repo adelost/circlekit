@@ -1,6 +1,6 @@
 {
   "name": "@v1d/arch-check",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "A repo's architecture rules as data (arch.config.json): file size, module edges, forbidden patterns, duplicates, counts, with a baseline that may only shrink. No dependencies.",
   "type": "module",
   "bin": {

@@ -50,12 +50,14 @@ const kinds = {
     }
     return hits;
   },
-  // A count read from a module's export: every item that `path` reaches (a * visits each key) must hold at least `min` entries.
+  // A count read from a module's export: every item that `path` (or the sum of `paths`) reaches holds at least `min` entries; a * visits each key and the item is named by the keys it went through.
+  // A value counts when it is there (0 and "" included): a list counts its entries, anything else counts one.
   count: async (rule, repo) => {
     const data = (await import(pathToFileURL(resolve(repo.root, rule.module)).href))[rule.export];
-    const visit = (value, steps, label) => !steps.length ? [{label, value}] : steps[0] === "*" ? Object.entries(value ?? {}).flatMap(([key, item]) => visit(item, steps.slice(1), key)) : visit(value?.[steps[0]], steps.slice(1), label);
-    return visit(data, rule.path.split("."), "").filter(({value}) => (Array.isArray(value) ? value.length : value ? 1 : 0) < rule.min)
-      .map(({label}) => ({file: rule.module, line: 1, at: label, message: `${label} has fewer than ${rule.min} (${rule.path})`}));
+    const visit = (value, steps, label) => !steps.length ? [{label, value}] : steps[0] === "*" ? Object.entries(value ?? {}).flatMap(([key, item]) => visit(item, steps.slice(1), label ? `${label}/${key}` : key)) : visit(value?.[steps[0]], steps.slice(1), label);
+    const found = new Map();
+    for (const path of rule.paths ?? [rule.path]) for (const {label, value} of visit(data, path.split("."), "")) found.set(label, (found.get(label) ?? 0) + (Array.isArray(value) ? value.length : value === undefined || value === null ? 0 : 1));
+    return [...found].filter(([, n]) => n < rule.min).map(([label]) => ({file: rule.module, line: 1, at: label, message: `${label} has fewer than ${rule.min} (${(rule.paths ?? [rule.path]).join(" or ")})`}));
   },
 };
 
