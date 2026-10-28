@@ -1,6 +1,6 @@
 // The gate of the @v1d/web-kit release: dist/ is built by Cutkit's tools/dev/publish-web-kit.mjs from Cutkit's one source (this repo keeps no copy of it),
-// so a release with no dist, or one that did not come from a Cutkit commit, stops here.
-import { existsSync, readFileSync } from 'node:fs';
+// so a release with no dist, or one that did not come from a Cutkit commit, stops here. The package must also stand alone: every import in it is a file of it.
+import { existsSync, readFileSync, readdirSync } from 'node:fs';
 
 const need = file => { if (!existsSync(file)) throw new Error(`${file} is missing: run tools/dev/publish-web-kit.mjs in Cutkit, which builds dist from Cutkit's source`); return readFileSync(file, 'utf8'); };
 const tokens = need('dist/tokens.css'), source = JSON.parse(need('dist/SOURCE.json'));
@@ -9,4 +9,17 @@ if (!/^[0-9a-f]{40}$/.test(source.cutkit ?? '')) throw new Error('dist/SOURCE.js
 const manifest = JSON.parse(readFileSync('package.json', 'utf8'));
 if (source.version !== manifest.version) throw new Error(`dist was built for ${source.version}, the package says ${manifest.version}`);
 for (const file of source.files ?? []) need(`dist/${file}`);
+
+// 0.2.0 and later: the parts. Their sheet and their entry exist, the entry exports the parts the README names, and no module imports anything but a file beside it.
+if (Number(manifest.version.split('.')[1]) >= 2) {
+  const sheet = need('dist/web-kit.css'), entry = need('dist/index.js');
+  for (const rule of ['.part-panel', '.part-search', '.part-filter-chip', '.part-code-body']) if (!sheet.includes(rule)) throw new Error(`dist/web-kit.css has no rule for ${rule}`);
+  for (const name of ['searchField', 'filterChips', 'panel', 'codeBlock']) if (!new RegExp(`export \\{[^}]*\\b${name}\\b`).test(entry)) throw new Error(`dist/index.js does not export ${name}`);
+  for (const file of readdirSync('dist').filter(name => name.endsWith('.js'))) {
+    for (const [, target] of need(`dist/${file}`).matchAll(/(?:from|import\()\s*["']([^"']+)["']/g)) {
+      if (!/^\.\/[\w-]+\.js$/.test(target)) throw new Error(`dist/${file} imports ${target}: a part of the package imports only a file beside it`);
+      need(`dist/${target.slice(2)}`);
+    }
+  }
+}
 console.log(`web-kit ${manifest.version}: ${(source.files ?? []).length} files from Cutkit ${source.cutkit.slice(0, 9)}`);

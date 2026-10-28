@@ -9,14 +9,30 @@ This repository holds the manifest and the gate (`npm run check`), never the fil
 A consumer locks one version, as `@v1d/product-emit` does, and keeps no copy:
 
 ```json
-"@v1d/web-kit": "https://circlekit.pages.dev/npm/v1d/web-kit/0.1.0/v1d-web-kit-0.1.0.tgz"
+"@v1d/web-kit": "https://circlekit.pages.dev/npm/v1d/web-kit/0.2.0/v1d-web-kit-0.2.0.tgz"
 ```
 
-```css
-@import "@v1d/web-kit/tokens.css";
-:root { /* a page's own values go here, after the kit's */ }
+```js
+import "@v1d/web-kit/tokens.css";   // the tokens, as custom properties on :root
+import "@v1d/web-kit/web-kit.css";  // the looks of the parts below, from those tokens only
+import { searchField, filterChips, panel, codeBlock } from "@v1d/web-kit";
 ```
+
+A page sets its own values after the kit's, for example `:root { --bg: #101114; --accent: #f2c14e; }`. Every colour, size and radius in `web-kit.css` is a token, so a page changes the look by changing tokens and never by overriding rules.
+
+## Parts
+
+Each part is a function that returns a DOM node: no framework and no bundler is needed. Icons are nodes the page gives (any SVG element).
+
+- `searchField({ placeholder, label, icon, onInput, value, id })`: the icon and an input. `onInput(words)` gets the whole text on every change, and Escape clears a field that has text. `label` is the accessible name and defaults to the placeholder. The input is `field.input`.
+- `filterChips({ kinds: [{ id, label, icon, count, color }], iconOnly, pressed, onChange, label })`: a toggle per kind, showing its icon and count. Under 900 px, or with `iconOnly`, a chip is a 44 px round button with the icon alone; `label, count` is its tooltip and its name for a screen reader. `onChange(ids)` gets every id that is on; `row.setPressed(ids)` sets them from outside. `color` is a CSS value for the icon, such as `var(--kind-item)`.
+- `panel({ title, mark, action, lead, className }, ...children)`: one surface with a head (the mark, the title in capitals, one action at the end) when it has a `title`, otherwise the surface alone. `panelHead` is the head alone.
+- `codeBlock({ title, id, icon, json, text, label })`: a small title over a hairline, what the text belongs to (`id`, with its `icon`) and the text in a monospace well that scrolls sideways. `json` is shown pretty printed.
+- `el(tag, props, ...children)`: the helper the parts are made with.
+
+Tokens the parts read: `--bg --fg --muted --card --input --border --control --hover --segment-on --sel --accent --radius --font --font-mono --type-small --type-heading` and the panel's `--panel-fill --panel-edge --panel-radius --panel-pad --panel-gap --panel-title --panel-lead-title`.
 
 ## Versions
 
 - 0.1.0: `tokens.css` only (the colours, sizes, radii and motion tokens as custom properties on `:root`).
+- 0.2.0: `searchField`, `filterChips`, `panel`, `codeBlock` and `el` in `index.js` with `index.d.ts`, and `web-kit.css`.
