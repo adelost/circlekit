@@ -26,6 +26,7 @@ NPM_PACKAGES=(
   "maven|circlekit-assets|circlekit-assets|v1d-circlekit-assets|check:designkit"
   "skydiving-legos|skydiving-legos|skydiving-legos|v1d-skydiving-legos|test"
   "product-emit|product-emit|product-emit|v1d-product-emit|test"
+  "web-kit|web-kit|web-kit|v1d-web-kit|check"
 )
 
 PUBLISHER="publish-maven"
