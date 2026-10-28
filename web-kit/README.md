@@ -9,7 +9,7 @@ This repository holds the manifest and the gate (`npm run check`), never the fil
 A consumer locks one version, as `@v1d/product-emit` does, and keeps no copy:
 
 ```json
-"@v1d/web-kit": "https://circlekit.pages.dev/npm/v1d/web-kit/0.4.0/v1d-web-kit-0.4.0.tgz"
+"@v1d/web-kit": "https://circlekit.pages.dev/npm/v1d/web-kit/0.5.0/v1d-web-kit-0.5.0.tgz"
 ```
 
 ```js
@@ -43,8 +43,23 @@ These draw on canvases from the `--tl-*` tokens of `tokens.css`, so a page sets 
 `@v1d/web-kit/encode`: `encodeProxy(file, ids, progress, options)` makes a browser preview of a video file. The page passes in what is its own: `options.store` (where the MP4 is written: `begin`, `finish`, `discard`), `options.library` (loads the media library, mediabunny 1.61.6) and, to score the picture curve, `options.curve`.
 The package imports no library and no storage itself: called without a store or a library it returns `{ state: 'server', reason: 'encoder-not-given-its-store-and-library' }`, as it does for any device that cannot encode (the caller then uses its other way).
 
+## A file's identity (0.5.0)
+
+`@v1d/web-kit/file_identity`: `fingerprint(file)` is `size:sha256 of the first 8 MiB:sha256 of the last 8 MiB`, cheap and enough to suggest that two files are one; `fullSha(file)` is the whole file's SHA-256 as lower-case hex, read in 8 MiB pieces, and only it identifies a file. Both take a `Blob` or `File`.
+
+## Quick's preparation (0.5.0)
+
+The picture curve and the chapter sheets, made from the same code as Cutkit's: each subpath has its types, and these files import only each other and the package's own files.
+
+- `@v1d/web-kit/picture_curve`: `createPictureScorer({ previewFps })` scores a preview's frames (`score({ small, grid })` gives `{ hard, slow }`), `curveBytes(curve)` and `readCurve(bytes)` store and read a curve, `hardPeaks` and `cutTimes` find where the picture changes, and `CURVE` holds the profile's numbers.
+- `@v1d/web-kit/preview_curve_tap`: `createCurveTap({ previewFps })` scores the frames while a preview is made: `add(canvas)` each kept frame in order, then `curve()`. Pass it to the encoder as `options.curve.tap`.
+- `@v1d/web-kit/chapter_candidates`: `candidates(curve, clock, options)` lists the cuts, events and spans a chapter may start at.
+- `@v1d/web-kit/chapter_sheet_layout`: `partsOf`, `frameTimes`, `pairTimes`, `layoutOf` and `manifestOf` lay the sheets out and describe them, `SHEETS` holds the profile's numbers.
+- `@v1d/web-kit/chapter_plan`: `chapterPlan(curveBytes, time)` joins the curve, the candidates and the layout into the parts to draw, and `sheetsWithoutCurve(time)` says how many sheets a clip needs before its curve is kept (one per 120 s).
+
 ## Versions
 
 - 0.1.0: `tokens.css` only (the colours, sizes, radii and motion tokens as custom properties on `:root`).
 - 0.2.0: `searchField`, `filterChips`, `panel`, `codeBlock` and `el` in `index.js` with `index.d.ts`, and `web-kit.css`.
 - 0.4.0: the time view, the song row and the song drawing (`timescale`, `timeview`, `songrow`, `songwave`, `tokens`, `timeview.css`) and the encoder (`encode`), with types. There is no 0.3.0: its song view is in 0.4.0.
+- 0.5.0: a file's identity (`file_identity`) and Quick's preparation (`picture_curve`, `preview_curve_tap`, `chapter_candidates`, `chapter_sheet_layout`, `chapter_plan`), with types.
