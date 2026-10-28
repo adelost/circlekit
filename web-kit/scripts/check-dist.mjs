@@ -11,6 +11,9 @@ const manifest = JSON.parse(readFileSync('package.json', 'utf8'));
 if (source.version !== manifest.version) throw new Error(`dist was built for ${source.version}, the package says ${manifest.version}`);
 for (const file of source.files ?? []) need(`dist/${file}`);
 
+// 0.9.0 and later: every UI part has its example file, the source of kit.v1d.io (not an export: the site reads the files by path).
+if (Number(manifest.version.split('.')[1]) >= 9) for (const part of ['search-field', 'filter-chips', 'panel', 'code-block', 'box-meter', 'timeview', 'songrow']) need(`dist/${part}.example.js`);
+
 // Every file the manifest exports is in dist, and so is every file its types name.
 const targets = value => typeof value === 'string' ? [value] : Object.values(value ?? {}).flatMap(targets);
 for (const [name, value] of Object.entries(manifest.exports ?? {})) for (const target of targets(value)) if (target !== './package.json') need(normalize(target));

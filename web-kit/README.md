@@ -9,7 +9,7 @@ This repository holds the manifest and the gate (`npm run check`), never the fil
 A consumer locks one version, as `@v1d/product-emit` does, and keeps no copy:
 
 ```json
-"@v1d/web-kit": "https://circlekit.pages.dev/npm/v1d/web-kit/0.8.0/v1d-web-kit-0.8.0.tgz"
+"@v1d/web-kit": "https://circlekit.pages.dev/npm/v1d/web-kit/0.9.0/v1d-web-kit-0.9.0.tgz"
 ```
 
 ```js
@@ -63,6 +63,10 @@ The picture curve and the chapter sheets, made from the same code as Cutkit's: e
 `@v1d/web-kit/song_data`: `songData(file, { hz })` is `{ duration, hz, peaks, bands: { low, mid, high } }` of an audio file (a `File` or a `Blob` the browser decodes), made with Web Audio and nothing else, ready for `songRow(song, ...)`. `peaks` is the loudest sample of each 1/`hz` second as linear amplitude 0 to 1, each band is measured the same way after its filter (low under 250 Hz, mid 250 to 2000 Hz, high above 2000 Hz), all `Float32Array`s of one length. `hz` is a whole number that divides 8000 and defaults to 50. A file the browser cannot decode, or one longer than 30 min, rejects with an Error.
 The numbers are the ones Cutkit's studio draws from an original in the browser: the file is decoded to 8 kHz and measured by the studio's own code. Against the server's waveform (ffmpeg to 8 kHz) the peaks agree to 0.004 under 500 Hz and differ more for sound near 3 kHz, where the browser's decoder rolls off more (0.24 against 0.35 for a 3 kHz tone): up to 0.13 for such a tone, 0.04 for a song with hi-hats.
 
+## Examples (0.9.0)
+
+Each UI part has an example file in `dist/` (`search-field.example.js`, `filter-chips.example.js`, `panel.example.js`, `code-block.example.js`, `box-meter.example.js`, `timeview.example.js`, `songrow.example.js`): it default-exports `{ title, about, modes: { normal, empty, error, phone } }`, each mode a function that returns a node, or `{ none: "why the part has no such state" }`; the error mode calls the part wrongly and shows what it refuses with. https://kit.v1d.io draws every part in its four modes from these files, and a version without an example for a UI part is not published. They are not exports of the package: the site reads them by path.
+
 ## Versions
 
 - 0.1.0: `tokens.css` only (the colours, sizes, radii and motion tokens as custom properties on `:root`).
@@ -72,3 +76,4 @@ The numbers are the ones Cutkit's studio draws from an original in the browser: 
 - 0.6.0: a song's data from an audio file (`song_data`: `songData`), with types.
 - 0.7.0: `boxMeter`; `filterChips` gets `words` and `size: "small"`; the time view's + - and Fit are a row of their own under its rows and 44 px under a finger; the search field draws one focus ring, not a second from a page's `input:focus-visible`.
 - 0.8.0: `filterChips` keeps the count at every width (the word is the tooltip's when the room is narrow), and `iconOnly` means icons alone only where it is set; before, a chip on a phone lost its count.
+- 0.9.0: an example file for each UI part (normal, empty, error and phone), the source of https://kit.v1d.io.
