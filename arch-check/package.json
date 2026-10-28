@@ -1,7 +1,7 @@
 {
   "name": "@v1d/arch-check",
-  "version": "0.2.0",
-  "description": "A repo's architecture rules as data (arch.config.json): file size, module edges, forbidden patterns, duplicates, counts, with a baseline that may only shrink. No dependencies.",
+  "version": "0.3.0",
+  "description": "A repo's architecture rules as data (arch.config.json): file size, module edges, forbidden patterns, duplicates, counts, WHAT/WHY comments judged by AMUX, with a baseline that may only shrink. No dependencies.",
   "type": "module",
   "bin": {
     "arch-check": "arch-check.mjs"

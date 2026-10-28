@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 // @v1d/arch-check: a repo's architecture rules as data (arch.config.json). Each rule names a kind, the files it covers and the fix; a hit names rule, file, line and fix.
 // Old debt sits in arch.baseline.json as counts per rule and file. It may only shrink: more than the baseline is red, and so is less (lower the baseline with --lower).
-// No dependencies. Run by hand or by a repo's lint script, nowhere else.
+// No dependencies (a `contract` rule borrows AMUX's contract-lint, found by --amux-root, $AMUX_ROOT or the amux on PATH). Run by hand or by a repo's lint script, nowhere else.
 import {readFileSync, readdirSync, existsSync, writeFileSync, realpathSync} from "node:fs";
-import {resolve, posix} from "node:path";
+import {resolve, posix, delimiter, dirname, join} from "node:path";
 import {pathToFileURL} from "node:url";
 
 const SKIPPED = new Set(["node_modules", "dist", "build", ".git", ".wrangler", "coverage"]);
@@ -13,6 +13,40 @@ const toRegExp = glob => new RegExp("^" + glob.replace(/[.+^${}()|[\]\\]/g, "\\$
 const matcher = globs => { const all = [globs ?? []].flat().map(toRegExp); return path => all.some(re => re.test(path)); };
 const lines = text => text.split("\n");
 const noteless = line => !/^\s*(\/\/|\*|\/\*|#)/.test(line);
+
+/** The one grammar authority for WHAT: and WHY: is AMUX's core/contract-lint.mjs. Its checkout is named by the caller (--amux-root, then $AMUX_ROOT, then the amux on PATH), never by arch.config.json,
+ *  so a config cannot make this tool run a module of its choosing. Without AMUX a contract rule stops the run: it never passes. */
+const amuxRoot = given => {
+  if (given) return given;
+  if (process.env.AMUX_ROOT) return process.env.AMUX_ROOT;
+  for (const dir of (process.env.PATH ?? "").split(delimiter)) {
+    const bin = join(dir, "amux");
+    if (!dir || !existsSync(bin)) continue;
+    for (let at = dirname(realpathSync(bin)), up = 0; up < 4; up++, at = dirname(at)) if (existsSync(join(at, "core/contract-lint.mjs"))) return at;
+  }
+  return null;
+};
+const evaluator = async given => {
+  const root = amuxRoot(given), file = root && resolve(root, "core/contract-lint.mjs");
+  if (!file || !existsSync(file)) throw new Error(`AMUX was not found${root ? ` at ${root}` : ""}: pass --amux-root DIR, set AMUX_ROOT, or have amux on PATH. A contract rule never passes without it`);
+  const lint = await import(pathToFileURL(file).href);
+  if (typeof lint.evaluateContract !== "function") throw new Error(`the AMUX at ${root} does not export evaluateContract`);
+  return lint.evaluateContract;
+};
+/** A file's first comment as plain text: a block comment with its stars taken off, or the run of // lines. A file that opens with code has no comment, so no contract. */
+const firstComment = text => {
+  const body = text.replace(/^\uFEFF/, "").replace(/^#![^\n]*\n/, "").trimStart();
+  if (body.startsWith("/*")) { const end = body.indexOf("*/"); return end < 0 ? "" : body.slice(2, end).split("\n").map(line => line.replace(/^\s*\*+ ?/, "")).join("\n").trim(); }
+  const run = [];
+  for (const line of body.split("\n")) { if (!/^\s*\/\//.test(line)) break; run.push(line.replace(/^\s*\/\/ ?/, "")); }
+  return run.join("\n").trim();
+};
+const TAG = /\b(WHAT|WHY|DTO|REMOVE|REFACTOR|MERGE|DEPRECATED|DEBT):\s*/gi;
+const tagsOf = doc => {
+  const found = {}, marks = [...doc.matchAll(TAG)];
+  marks.forEach((mark, i) => (found[mark[1].toUpperCase()] ??= []).push(doc.slice(mark.index + mark[0].length, marks[i + 1]?.index ?? doc.length).replace(/\s+/g, " ").trim()));
+  return found;
+};
 
 /** Each kind turns a rule and the repo into hits {file, line, message, weight?, at?}. weight counts toward the baseline (default 1). */
 const kinds = {
@@ -50,6 +84,16 @@ const kinds = {
     }
     return hits;
   },
+  // A file's first comment says what it is for (WHAT:) and the boundary or failure it keeps (WHY:); the words are judged by AMUX's contract-lint, the same grammar Product Studio applies in Skyvw. Errors and warnings are both red, as in Product Studio, whose check is not ok with a warning (an unknown verb, a WHAT over 16 words, a WHY over 18).
+  contract: async (rule, repo) => {
+    const evaluate = await evaluator(repo.amuxRoot);
+    return repo.covered(rule).flatMap(file => {
+      const tags = tagsOf(firstComment(repo.read(file))), what = tags.WHAT?.[0] ?? "", why = tags.WHY?.[0] ?? "", hit = message => ({file, line: 1, message});
+      if (!what || !why) return [hit(`the file's first comment has no ${!what && !why ? "WHAT: and WHY:" : !what ? "WHAT:" : "WHY:"}`)];
+      if (Object.values(tags).some(list => list.length !== 1) || Object.keys(tags).some(name => !["WHAT", "WHY"].includes(name))) return [hit("use exactly one WHAT: and one WHY:, no other tag and no repeat")];
+      return evaluate(`WHAT: ${what}\nWHY: ${why}`, {name: file, kind: "file"}).filter(finding => finding.sev === "error" || finding.sev === "warn").map(finding => hit(`${finding.code} ${finding.msg}`));
+    });
+  },
   // A count read from a module's export: every item that `path` (or the sum of `paths`) reaches holds at least `min` entries; a * visits each key and the item is named by the keys it went through.
   // A value counts when it is there (0 and "" included): a list counts its entries, anything else counts one.
   count: async (rule, repo) => {
@@ -61,9 +105,9 @@ const kinds = {
   },
 };
 
-export async function check(root, config, baseline = {}) {
+export async function check(root, config, baseline = {}, options = {}) {
   const files = walk(root), cache = new Map();
-  const repo = {root, read: file => cache.get(file) ?? (cache.set(file, readFileSync(resolve(root, file), "utf8")), cache.get(file)), covered: rule => files.filter(matcher(rule.files)).filter(file => !matcher(rule.exclude)(file))};
+  const repo = {root, amuxRoot: options.amuxRoot, read: file => cache.get(file) ?? (cache.set(file, readFileSync(resolve(root, file), "utf8")), cache.get(file)), covered: rule => files.filter(matcher(rule.files)).filter(file => !matcher(rule.exclude)(file))};
   const found = new Map();
   for (const rule of config.rules) {
     if (!kinds[rule.kind]) throw new Error(`rule ${rule.id}: unknown kind ${rule.kind}`);
@@ -82,10 +126,13 @@ export async function check(root, config, baseline = {}) {
 }
 
 if (process.argv[1] && pathToFileURL(realpathSync(process.argv[1])).href === import.meta.url) {
-  const args = process.argv.slice(2), root = resolve(args.find(arg => !arg.startsWith("--")) ?? ".");
+  const args = process.argv.slice(2), amuxAt = args.indexOf("--amux-root"), amux = amuxAt < 0 ? undefined : args[amuxAt + 1];
+  if (amuxAt >= 0 && (!amux || amux.startsWith("--"))) { console.error("arch-check: --amux-root needs the AMUX checkout"); process.exit(2); }
+  const root = resolve(args.find((arg, at) => !arg.startsWith("--") && at !== amuxAt + 1) ?? ".");
   const config = JSON.parse(readFileSync(resolve(root, "arch.config.json"), "utf8")), baselinePath = resolve(root, config.baseline ?? "arch.baseline.json");
   const baseline = existsSync(baselinePath) ? JSON.parse(readFileSync(baselinePath, "utf8")) : {};
-  const {red, counts} = await check(root, config, args.includes("--init") ? {} : baseline);
+  // a rule that cannot run (a contract rule without AMUX, an unknown kind) stops the run before any baseline is read or written: it never reads as a pass
+  const {red, counts} = await check(root, config, args.includes("--init") ? {} : baseline, {amuxRoot: amux}).catch(error => { console.error(`arch-check: cannot run: ${error.message}`); process.exit(2); });
   if (args.includes("--init")) { writeFileSync(baselinePath, JSON.stringify(counts, null, 2) + "\n"); console.log(`arch-check: baseline written (${Object.keys(counts).length} entries)`); }
   else if (args.includes("--lower")) {
     const lowered = Object.fromEntries(Object.entries(baseline).flatMap(([key, allowed]) => (counts[key] ?? 0) > 0 ? [[key, Math.min(allowed, counts[key])]] : []));
