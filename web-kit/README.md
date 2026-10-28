@@ -77,3 +77,4 @@ Each UI part has an example file in `dist/` (`search-field.example.js`, `filter-
 - 0.7.0: `boxMeter`; `filterChips` gets `words` and `size: "small"`; the time view's + - and Fit are a row of their own under its rows and 44 px under a finger; the search field draws one focus ring, not a second from a page's `input:focus-visible`.
 - 0.8.0: `filterChips` keeps the count at every width (the word is the tooltip's when the room is narrow), and `iconOnly` means icons alone only where it is set; before, a chip on a phone lost its count.
 - 0.9.0: an example file for each UI part (normal, empty, error and phone), the source of https://kit.v1d.io.
+- 0.10.0: a pressed part answers in its own shape: no browser tap box on a filter chip or a time-view button (`-webkit-tap-highlight-color: transparent`), no word selected by a long press, and the chip and the button go one step lighter (`--control`) while held. The ring stays at `:focus-visible` only.
