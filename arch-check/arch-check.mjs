@@ -57,6 +57,16 @@ const kinds = {
   },
   pattern: (rule, repo) => { const re = new RegExp(rule.pattern, rule.flags);
     return repo.covered(rule).flatMap(file => lines(repo.read(file)).flatMap((line, n) => noteless(line) && re.test(line) ? [{file, line: n + 1, message: rule.message ?? `breaks ${rule.name}`}] : [])); },
+  // The folders directly under one folder (the repo's root, or `in`) are the ones the layout lists: any other is red, and node_modules, dist, build, .git and every dot folder are left alone.
+  folders: (rule, repo) => {
+    const base = rule.in ?? "", at = resolve(repo.root, base);
+    if (!existsSync(at)) return [];
+    return readdirSync(at, {withFileTypes: true}).filter(entry => entry.isDirectory() && !SKIPPED.has(entry.name) && !entry.name.startsWith(".") && !rule.allow.includes(entry.name))
+      .map(entry => ({file: posix.join(base, entry.name), line: 1, message: rule.message ?? `a folder the layout does not list (${rule.allow.join(", ")})`}));
+  },
+  // A file's own name (without its folders) must match `pattern`: one spelling for every file the rule covers.
+  names: (rule, repo) => { const re = new RegExp(rule.pattern, rule.flags);
+    return repo.covered(rule).filter(file => !re.test(posix.basename(file))).map(file => ({file, line: 1, message: rule.message ?? `the name ${posix.basename(file)} does not match ${rule.pattern}`})); },
   absent: (rule, repo) => rule.paths.filter(path => existsSync(resolve(repo.root, path))).map(path => ({file: path, line: 1, message: rule.message ?? "must not exist"})),
   // A folder is a module when it has an entry file; everything outside it reaches it through that entry and only if the rule allows the edge.
   modules: (rule, repo) => {
