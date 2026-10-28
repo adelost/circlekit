@@ -22,7 +22,7 @@ for (const [name, value] of Object.entries(manifest.exports ?? {})) for (const t
 if (Number(manifest.version.split('.')[1]) >= 2) {
   const sheet = need('dist/web-kit.css'), entry = need('dist/index.js');
   for (const rule of ['.part-panel', '.part-search', '.part-filter-chip', '.part-code-body', ...(Number(manifest.version.split('.')[1]) >= 7 ? ['.part-box-meter'] : []), ...(Number(manifest.version.split('.')[1]) >= 13 ? ['.part-card'] : [])]) if (!sheet.includes(rule)) throw new Error(`dist/web-kit.css has no rule for ${rule}`);
-  for (const name of ['searchField', 'filterChips', 'panel', 'codeBlock', ...(Number(manifest.version.split('.')[1]) >= 7 ? ['boxMeter'] : []), ...(Number(manifest.version.split('.')[1]) >= 13 ? ['card'] : [])]) if (!new RegExp(`export \\{[^}]*\\b${name}\\b`).test(entry)) throw new Error(`dist/index.js does not export ${name}`);
+  for (const name of ['searchField', 'filterChips', 'panel', 'codeBlock', ...(Number(manifest.version.split('.')[1]) >= 7 ? ['boxMeter'] : []), ...(Number(manifest.version.split('.')[1]) >= 13 ? ['card'] : []), ...(Number(manifest.version.split('.')[1]) >= 14 ? ['icon'] : [])]) if (!new RegExp(`export \\{[^}]*\\b${name}\\b`).test(entry)) throw new Error(`dist/index.js does not export ${name}`);
   const walk = dir => readdirSync(dir).flatMap(name => statSync(join(dir, name)).isDirectory() ? walk(join(dir, name)) : [join(dir, name)]);
   const dist = resolve('dist');
   for (const file of walk('dist').filter(name => name.endsWith('.js') || name.endsWith('.d.ts'))) {
