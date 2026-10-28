@@ -12,7 +12,7 @@ if (source.version !== manifest.version) throw new Error(`dist was built for ${s
 for (const file of source.files ?? []) need(`dist/${file}`);
 
 // 0.9.0 and later: every UI part has its example file, the source of kit.v1d.io (not an export: the site reads the files by path).
-if (Number(manifest.version.split('.')[1]) >= 9) for (const part of ['search-field', 'filter-chips', 'panel', 'code-block', 'box-meter', 'timeview', 'songrow', ...(Number(manifest.version.split('.')[1]) >= 11 ? ['mark'] : []), ...(Number(manifest.version.split('.')[1]) >= 13 ? ['card'] : []), ...(Number(manifest.version.split('.')[1]) >= 15 ? ['wordrow'] : []), ...(Number(manifest.version.split('.')[1]) >= 16 ? ['probability-bars', 'file-drop', 'mask-overlay'] : [])]) need(`dist/${part}.example.js`);
+if (Number(manifest.version.split('.')[1]) >= 9) for (const part of ['search-field', 'filter-chips', 'panel', 'code-block', 'box-meter', 'timeview', 'songrow', ...(Number(manifest.version.split('.')[1]) >= 11 ? ['mark'] : []), ...(Number(manifest.version.split('.')[1]) >= 13 ? ['card'] : []), ...(Number(manifest.version.split('.')[1]) >= 15 ? ['wordrow'] : []), ...(Number(manifest.version.split('.')[1]) >= 16 ? ['probability-bars', 'file-drop', 'mask-overlay'] : []), ...(Number(manifest.version.split('.')[1]) >= 17 ? ['button', 'round-button', 'switch-control', 'chip', 'kind-tile', 'segmented', 'value-row', 'outcome', 'titled-panel'] : [])]) need(`dist/${part}.example.js`);
 
 // Every file the manifest exports is in dist, and so is every file its types name.
 const targets = value => typeof value === 'string' ? [value] : Object.values(value ?? {}).flatMap(targets);
@@ -27,10 +27,11 @@ if (Number(manifest.version.split('.')[1]) >= 2) {
   const dist = resolve('dist');
   for (const file of walk('dist').filter(name => name.endsWith('.js') || name.endsWith('.d.ts'))) {
     const code = need(file).replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|\s)\/\/.*$/gm, '');   // what a comment says of an import is no import
-    for (const [, target] of code.matchAll(/(?:\bfrom\s*|\bimport\s*\(?\s*)["']([^"']+)["']/g)) {
+    for (const [, from, dynamic] of code.matchAll(/(?:^|[;\n])\s*(?:import\b(?:[^;'"`]*?\bfrom)?|export\b[^;'"`]*?\bfrom)\s*["']([^"']+)["']|\bimport\s*\(\s*["']([^"']+)["']/g)) {   // an import at the start of a statement, or import("..."): a string that ends in the word from is no import
+      const target = from ?? dynamic;
       if (!/^\.{1,2}\//.test(target)) throw new Error(`${file} imports ${target}: a part of the package imports only files the package carries`);
       const at = resolve(dirname(file), target);
-      if (relative(dist, at).startsWith('..') || !existsSync(at)) throw new Error(`${file} imports ${target}, which is not a file of the package`);
+      if (relative(dist, at).startsWith('..') || !(file.endsWith('.d.ts') ? [at, `${at}.d.ts`] : [at]).some(path => existsSync(path))) throw new Error(`${file} imports ${target}, which is not a file of the package`);   // a types file may name another by its name without the extension
     }
   }
 }
