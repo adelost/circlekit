@@ -12,11 +12,11 @@ if (source.version !== manifest.version) throw new Error(`dist was built for ${s
 for (const file of source.files ?? []) need(`dist/${file}`);
 
 // 0.9.0 and later: every UI part has its example file, the source of kit.v1d.io (not an export: the site reads the files by path).
-if (Number(manifest.version.split('.')[1]) >= 9) for (const part of ['search-field', 'filter-chips', 'panel', 'code-block', 'box-meter', 'timeview', 'songrow']) need(`dist/${part}.example.js`);
+if (Number(manifest.version.split('.')[1]) >= 9) for (const part of ['search-field', 'filter-chips', 'panel', 'code-block', 'box-meter', 'timeview', 'songrow', ...(Number(manifest.version.split('.')[1]) >= 11 ? ['mark'] : [])]) need(`dist/${part}.example.js`);
 
 // Every file the manifest exports is in dist, and so is every file its types name.
 const targets = value => typeof value === 'string' ? [value] : Object.values(value ?? {}).flatMap(targets);
-for (const [name, value] of Object.entries(manifest.exports ?? {})) for (const target of targets(value)) if (target !== './package.json') need(normalize(target));
+for (const [name, value] of Object.entries(manifest.exports ?? {})) for (const target of targets(value)) if (target !== './package.json') target.includes('*') ? (() => { if (!existsSync(normalize(target.split('*')[0]))) throw new Error(`${target.split('*')[0]} is not a folder of the package`); })() : need(normalize(target));
 
 // 0.2.0 and later: the parts. Their sheet and their entry exist, the entry exports the parts the README names, and no module imports anything but a file the package carries.
 if (Number(manifest.version.split('.')[1]) >= 2) {

@@ -67,6 +67,10 @@ The numbers are the ones Cutkit's studio draws from an original in the browser: 
 
 Each UI part has an example file in `dist/` (`search-field.example.js`, `filter-chips.example.js`, `panel.example.js`, `code-block.example.js`, `box-meter.example.js`, `timeview.example.js`, `songrow.example.js`): it default-exports `{ title, about, modes: { normal, empty, error, phone } }`, each mode a function that returns a node, or `{ none: "why the part has no such state" }`; the error mode calls the part wrongly and shows what it refuses with. https://kit.v1d.io draws every part in its four modes from these files, and a version without an example for a UI part is not published. They are not exports of the package: the site reads them by path.
 
+## The marks (0.11.0)
+
+`import { productMark, markFontFace, MARKS } from "@v1d/web-kit/mark"`: `productMark(undefined, MARKS.api)` is the badge as markup (v1d and the chip; its size is its parent's font-size, the name is 1em; the colours are tokens of `tokens.css`), `markFontFace(url, MARKS.api)` the `@font-face` rule of its font, and `appIconSvg(resolve, { rounded: true }, MARKS.api)` the app icon as an svg. `MARKS` holds `cut` (a film strip), `api` (a cloud) and `kit` (a brick with studs); the name, the gap, the chip's height and the word's size are the same in all three. Each product's font is `fonts/<MARKS.api.font.file>` and its icons (`icon.svg`, `apple-touch-icon.png`, `favicon-16.png`, `favicon-32.png`, `icon-192.png`, `icon-512.png`, `icon-maskable-512.png`) lie in `icons/api/` (`cut`, `kit`): the manifest exports both folders, so `@v1d/web-kit/fonts/<file>` and `@v1d/web-kit/icons/api/icon.svg` reach them; copy them to where the page serves its own.
+
 ## Versions
 
 - 0.1.0: `tokens.css` only (the colours, sizes, radii and motion tokens as custom properties on `:root`).
@@ -78,3 +82,4 @@ Each UI part has an example file in `dist/` (`search-field.example.js`, `filter-
 - 0.8.0: `filterChips` keeps the count at every width (the word is the tooltip's when the room is narrow), and `iconOnly` means icons alone only where it is set; before, a chip on a phone lost its count.
 - 0.9.0: an example file for each UI part (normal, empty, error and phone), the source of https://kit.v1d.io.
 - 0.10.0: a pressed part answers in its own shape: no browser tap box on a filter chip or a time-view button (`-webkit-tap-highlight-color: transparent`), no word selected by a long press, and the chip and the button go one step lighter (`--control`) while held. The ring stays at `:focus-visible` only.
+- 0.11.0: the marks (`@v1d/web-kit/mark`): v1d and a chip for CUT, API and KIT from one spec each, as a badge and as an app icon, with each product's font in `fonts/` and its icons in `icons/<product>/`; `mark.example.js` is their page on https://kit.v1d.io.

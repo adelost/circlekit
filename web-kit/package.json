@@ -1,6 +1,6 @@
 {
   "name": "@v1d/web-kit",
-  "version": "0.10.0",
+  "version": "0.11.0",
   "description": "Cutkit's kit for web pages: the tokens and the parts Huset and the API's sandbox draw with, built from Cutkit's one source",
   "type": "module",
   "main": "./dist/index.js",
@@ -73,6 +73,12 @@
       "types": "./dist/kit/song_data.d.ts",
       "default": "./dist/kit/song_data.js"
     },
+    "./mark": {
+      "types": "./dist/mark.d.ts",
+      "default": "./dist/mark.js"
+    },
+    "./fonts/*": "./dist/fonts/*",
+    "./icons/*": "./dist/icons/*",
     "./package.json": "./package.json"
   },
   "scripts": {
