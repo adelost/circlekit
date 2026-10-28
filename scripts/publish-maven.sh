@@ -27,6 +27,7 @@ NPM_PACKAGES=(
   "skydiving-legos|skydiving-legos|skydiving-legos|v1d-skydiving-legos|test"
   "product-emit|product-emit|product-emit|v1d-product-emit|test"
   "web-kit|web-kit|web-kit|v1d-web-kit|check"
+  "arch-check|arch-check|arch-check|v1d-arch-check|check"
 )
 
 PUBLISHER="publish-maven"
