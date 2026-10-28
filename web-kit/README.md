@@ -9,7 +9,7 @@ This repository holds the manifest and the gate (`npm run check`), never the fil
 A consumer locks one version, as `@v1d/product-emit` does, and keeps no copy:
 
 ```json
-"@v1d/web-kit": "https://circlekit.pages.dev/npm/v1d/web-kit/0.5.0/v1d-web-kit-0.5.0.tgz"
+"@v1d/web-kit": "https://circlekit.pages.dev/npm/v1d/web-kit/0.6.0/v1d-web-kit-0.6.0.tgz"
 ```
 
 ```js
@@ -57,9 +57,15 @@ The picture curve and the chapter sheets, made from the same code as Cutkit's: e
 - `@v1d/web-kit/chapter_sheet_layout`: `partsOf`, `frameTimes`, `pairTimes`, `layoutOf` and `manifestOf` lay the sheets out and describe them, `SHEETS` holds the profile's numbers.
 - `@v1d/web-kit/chapter_plan`: `chapterPlan(curveBytes, time)` joins the curve, the candidates and the layout into the parts to draw, and `sheetsWithoutCurve(time)` says how many sheets a clip needs before its curve is kept (one per 120 s).
 
+## A song's data (0.6.0)
+
+`@v1d/web-kit/song_data`: `songData(file, { hz })` is `{ duration, hz, peaks, bands: { low, mid, high } }` of an audio file (a `File` or a `Blob` the browser decodes), made with Web Audio and nothing else, ready for `songRow(song, ...)`. `peaks` is the loudest sample of each 1/`hz` second as linear amplitude 0 to 1, each band is measured the same way after its filter (low under 250 Hz, mid 250 to 2000 Hz, high above 2000 Hz), all `Float32Array`s of one length. `hz` is a whole number that divides 8000 and defaults to 50. A file the browser cannot decode, or one longer than 30 min, rejects with an Error.
+The numbers are the ones Cutkit's studio draws from an original in the browser: the file is decoded to 8 kHz and measured by the studio's own code. Against the server's waveform (ffmpeg to 8 kHz) the peaks agree to 0.004 under 500 Hz and differ more for sound near 3 kHz, where the browser's decoder rolls off more (0.24 against 0.35 for a 3 kHz tone): up to 0.13 for such a tone, 0.04 for a song with hi-hats.
+
 ## Versions
 
 - 0.1.0: `tokens.css` only (the colours, sizes, radii and motion tokens as custom properties on `:root`).
 - 0.2.0: `searchField`, `filterChips`, `panel`, `codeBlock` and `el` in `index.js` with `index.d.ts`, and `web-kit.css`.
 - 0.4.0: the time view, the song row and the song drawing (`timescale`, `timeview`, `songrow`, `songwave`, `tokens`, `timeview.css`) and the encoder (`encode`), with types. There is no 0.3.0: its song view is in 0.4.0.
 - 0.5.0: a file's identity (`file_identity`) and Quick's preparation (`picture_curve`, `preview_curve_tap`, `chapter_candidates`, `chapter_sheet_layout`, `chapter_plan`), with types.
+- 0.6.0: a song's data from an audio file (`song_data`: `songData`), with types.
