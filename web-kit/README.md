@@ -9,7 +9,7 @@ This repository holds the manifest and the gate (`npm run check`), never the fil
 A consumer locks one version, as `@v1d/product-emit` does, and keeps no copy:
 
 ```json
-"@v1d/web-kit": "https://circlekit.pages.dev/npm/v1d/web-kit/0.2.0/v1d-web-kit-0.2.0.tgz"
+"@v1d/web-kit": "https://circlekit.pages.dev/npm/v1d/web-kit/0.4.0/v1d-web-kit-0.4.0.tgz"
 ```
 
 ```js
@@ -32,7 +32,19 @@ Each part is a function that returns a DOM node: no framework and no bundler is 
 
 Tokens the parts read: `--bg --fg --muted --card --input --border --control --hover --segment-on --sel --accent --radius --font --font-mono --type-small --type-heading` and the panel's `--panel-fill --panel-edge --panel-radius --panel-pad --panel-gap --panel-title --panel-lead-title`.
 
+## The time view and the song row (0.4.0)
+
+Subpath imports, each with its types: `@v1d/web-kit/timescale` (the window's arithmetic: zoom, pan, fit, time to x), `@v1d/web-kit/timeview` (`TimeView({ span, rows, playhead, wide, onSeek, onView })`: an axis, wheel and pinch zoom, +, - and Fit, panning, a playhead, tap to seek, rows drawn by plain functions) with its sheet `@v1d/web-kit/timeview.css`,
+`@v1d/web-kit/songrow` (`songRow(song, { ceilingDb, wide })`: a song as a row of a time view, its three bands and its moments), `@v1d/web-kit/songwave` (the drawing under it, for a page that draws a song on a canvas of its own) and `@v1d/web-kit/tokens` (the canvas reads the same tokens as the DOM: `token("tl-bg")`).
+These draw on canvases from the `--tl-*` tokens of `tokens.css`, so a page sets those after importing it, as for the other tokens.
+
+## The encoder (0.4.0)
+
+`@v1d/web-kit/encode`: `encodeProxy(file, ids, progress, options)` makes a browser preview of a video file. The page passes in what is its own: `options.store` (where the MP4 is written: `begin`, `finish`, `discard`), `options.library` (loads the media library, mediabunny 1.61.6) and, to score the picture curve, `options.curve`.
+The package imports no library and no storage itself: called without a store or a library it returns `{ state: 'server', reason: 'encoder-not-given-its-store-and-library' }`, as it does for any device that cannot encode (the caller then uses its other way).
+
 ## Versions
 
 - 0.1.0: `tokens.css` only (the colours, sizes, radii and motion tokens as custom properties on `:root`).
 - 0.2.0: `searchField`, `filterChips`, `panel`, `codeBlock` and `el` in `index.js` with `index.d.ts`, and `web-kit.css`.
+- 0.4.0: the time view, the song row and the song drawing (`timescale`, `timeview`, `songrow`, `songwave`, `tokens`, `timeview.css`) and the encoder (`encode`), with types. There is no 0.3.0: its song view is in 0.4.0.

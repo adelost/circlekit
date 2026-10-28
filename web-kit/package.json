@@ -1,6 +1,6 @@
 {
   "name": "@v1d/web-kit",
-  "version": "0.2.0",
+  "version": "0.4.0",
   "description": "Cutkit's kit for web pages: the tokens and the parts Huset and the API's sandbox draw with, built from Cutkit's one source",
   "type": "module",
   "main": "./dist/index.js",
@@ -20,6 +20,31 @@
     },
     "./tokens.css": "./dist/tokens.css",
     "./web-kit.css": "./dist/web-kit.css",
+    "./timeview.css": "./dist/timeview.css",
+    "./timescale": {
+      "types": "./dist/timescale.d.ts",
+      "default": "./dist/timescale.js"
+    },
+    "./timeview": {
+      "types": "./dist/timeview.d.ts",
+      "default": "./dist/timeview.js"
+    },
+    "./songrow": {
+      "types": "./dist/songrow.d.ts",
+      "default": "./dist/songrow.js"
+    },
+    "./songwave": {
+      "types": "./dist/songwave.d.ts",
+      "default": "./dist/songwave.js"
+    },
+    "./tokens": {
+      "types": "./dist/tokens.d.ts",
+      "default": "./dist/tokens.js"
+    },
+    "./encode": {
+      "types": "./dist/kit/encode.d.ts",
+      "default": "./dist/kit/encode.js"
+    },
     "./package.json": "./package.json"
   },
   "scripts": {
