@@ -1,6 +1,6 @@
 {
   "name": "@v1d/api-client",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "What the v1d API runs on the person's own device: waveform and encode (WebCodecs and mediabunny), built from the ai-gateway repository's one source",
   "type": "module",
   "main": "./dist/device/index.js",
@@ -19,6 +19,10 @@
     "./profile": {
       "types": "./dist/device/profile.d.ts",
       "default": "./dist/device/profile.js"
+    },
+    "./upload": {
+      "types": "./dist/device/upload.d.ts",
+      "default": "./dist/device/upload.js"
     },
     "./package.json": "./package.json"
   },
