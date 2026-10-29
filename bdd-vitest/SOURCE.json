@@ -1,10 +1,10 @@
 {
- "bddVitest": "36481a8050e6bdd6d9c22c66898ffce0c1d07e61",
- "version": "3.0.0",
+ "bddVitest": "a78700fc7750166c837558a95f558697bdc46168",
+ "version": "3.1.0",
  "files": [
   {
    "path": "BDD_RUN_REPORT.md",
-   "sha256": "e0d170828c66f3d46cf10edc4d368b91be89371bd4e094ffb6f850226af8bda9"
+   "sha256": "bc2a993727bcd29765d2ca2daebd10ef8b688db88bdd6fe7d13a91948dfbb048"
   },
   {
    "path": "CONTRACT.md",
@@ -16,19 +16,19 @@
   },
   {
    "path": "README.md",
-   "sha256": "9b63430d3f022ba339e8c3ba84e68bdc7207785bb77a26d1f67818072d14cd86"
+   "sha256": "86b1b2093bfd5106cc64214e204008a9dba32d5ea21fd7a2cd5f36c1174a957a"
   },
   {
    "path": "dist/chunk-2NHCFVU7.js",
    "sha256": "e7e4baa485a0c612a28554c9e1e6200fd2905787a63377c8d4f865ca58461b01"
   },
   {
-   "path": "dist/chunk-L7LBA76X.js",
-   "sha256": "d2064863054c0ed5463cf7cd5a2626063775dba5e391a3da8ac17b88251c0121"
+   "path": "dist/chunk-5SEPKZUW.js",
+   "sha256": "be6242a352f6c5f3796fbb81da79c00557441647cdf13edd1daa756b30e88a5c"
   },
   {
-   "path": "dist/chunk-MRXCZHGO.js",
-   "sha256": "1aeb2f2d0ba9c78e5e037cb3c7e02e5e113465a8dd360a002bd72675acc9e515"
+   "path": "dist/chunk-L7LBA76X.js",
+   "sha256": "d2064863054c0ed5463cf7cd5a2626063775dba5e391a3da8ac17b88251c0121"
   },
   {
    "path": "dist/contract-setup.cjs",
@@ -64,7 +64,7 @@
   },
   {
    "path": "dist/index.cjs",
-   "sha256": "bd1a899895f4609fc82e0171fe07286b0bd0e6c254ca394aa31232c64b64035f"
+   "sha256": "5e8628a5eed32824f08b5534651c2e9f9cfd9efb3e2ea0138520a630b3c2973a"
   },
   {
    "path": "dist/index.d.cts",
@@ -76,23 +76,23 @@
   },
   {
    "path": "dist/index.js",
-   "sha256": "d934a9db55b0cd4ab292de639b75a2561699ed406aba67ee2172e7e911d6ecde"
+   "sha256": "2afb950b949c5cd3487f24fbf19a398e94e04a162a05cd02619da07a095ab50e"
   },
   {
    "path": "dist/levels.cjs",
-   "sha256": "26381d04c39f8505c342d252d8db892ac5858a91c280830910d16f9d6bc2ac4b"
+   "sha256": "7258a53f64d735c4ff467c16e707685c9af63ec2c1d7a7ec91a9dc5505f4c072"
   },
   {
    "path": "dist/levels.d.cts",
-   "sha256": "459301ae89b55be32ae4da1070a457ee86d2ac0d57b00c09c3bb8119c52bf7d0"
+   "sha256": "64bcb90ffefaa2bd441a276205d3d087f2fb09c7c98772205b654eacc3a9fe6a"
   },
   {
    "path": "dist/levels.d.ts",
-   "sha256": "9405ab6597289fea72e6359033c980a52f7dfed5c52e35fa16fa3a607f66954e"
+   "sha256": "d6d4d8a45faecb1f73f24a0d868adb3333cc6c62f1f2c53417ace0e2704e1355"
   },
   {
    "path": "dist/levels.js",
-   "sha256": "1b1f929a9e89e329e28da24fb5cbd56affec4a16580c47dc7ca773df8f90770c"
+   "sha256": "0efb289e900b61001d1fa952fdee912dcb30495389fed08817a9b52308c8fe1e"
   },
   {
    "path": "dist/mock-ai.cjs",
