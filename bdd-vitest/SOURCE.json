@@ -1,0 +1,218 @@
+{
+ "bddVitest": "36481a8050e6bdd6d9c22c66898ffce0c1d07e61",
+ "version": "3.0.0",
+ "files": [
+  {
+   "path": "BDD_RUN_REPORT.md",
+   "sha256": "e0d170828c66f3d46cf10edc4d368b91be89371bd4e094ffb6f850226af8bda9"
+  },
+  {
+   "path": "CONTRACT.md",
+   "sha256": "267c327b09d6cbac528d975865f55e80a2207859645b723af3b1d8b9a2fa8f28"
+  },
+  {
+   "path": "LICENSE",
+   "sha256": "75ed0ad5d988656e35c9f5416fc0622f3c21f372154e3ca55305a04fbbd4d740"
+  },
+  {
+   "path": "README.md",
+   "sha256": "9b63430d3f022ba339e8c3ba84e68bdc7207785bb77a26d1f67818072d14cd86"
+  },
+  {
+   "path": "dist/chunk-2NHCFVU7.js",
+   "sha256": "e7e4baa485a0c612a28554c9e1e6200fd2905787a63377c8d4f865ca58461b01"
+  },
+  {
+   "path": "dist/chunk-L7LBA76X.js",
+   "sha256": "d2064863054c0ed5463cf7cd5a2626063775dba5e391a3da8ac17b88251c0121"
+  },
+  {
+   "path": "dist/chunk-MRXCZHGO.js",
+   "sha256": "1aeb2f2d0ba9c78e5e037cb3c7e02e5e113465a8dd360a002bd72675acc9e515"
+  },
+  {
+   "path": "dist/contract-setup.cjs",
+   "sha256": "e5aba61e7ce58481a2930354e1bb85a569c0eb8f6bc3a13d6460dacbe8dd0745"
+  },
+  {
+   "path": "dist/contract-setup.d.cts",
+   "sha256": "6caa0b04bdc10582a3729dae9244f21c5bec0b9ffe7e2a84999c2f868f5dd9be"
+  },
+  {
+   "path": "dist/contract-setup.d.ts",
+   "sha256": "6caa0b04bdc10582a3729dae9244f21c5bec0b9ffe7e2a84999c2f868f5dd9be"
+  },
+  {
+   "path": "dist/contract-setup.js",
+   "sha256": "4c693e3a3e52a534732159aa43b984097dec3505bc0093b97fcb1298bbe8e2a1"
+  },
+  {
+   "path": "dist/contract.cjs",
+   "sha256": "e2d3439c7bff87e6b24f271af16fe2e041c3f08cba8b63ebf315536a41b232d9"
+  },
+  {
+   "path": "dist/contract.d.cts",
+   "sha256": "31f936c9aa62b62ff784a73ec33b9c09dd655926b171649aeb0c9b07668398f0"
+  },
+  {
+   "path": "dist/contract.d.ts",
+   "sha256": "31f936c9aa62b62ff784a73ec33b9c09dd655926b171649aeb0c9b07668398f0"
+  },
+  {
+   "path": "dist/contract.js",
+   "sha256": "7fe934643a0a899215b8fd34be606b4b1aac00439647f1222400b99ec155eb60"
+  },
+  {
+   "path": "dist/index.cjs",
+   "sha256": "bd1a899895f4609fc82e0171fe07286b0bd0e6c254ca394aa31232c64b64035f"
+  },
+  {
+   "path": "dist/index.d.cts",
+   "sha256": "fb34d0280d6f53e29323830dfec53d27833a673fc672fac4f42c30436de890a1"
+  },
+  {
+   "path": "dist/index.d.ts",
+   "sha256": "9b7b2409dd7f6d03b1781106cbbb4525d8da8b5a212097929e896c138307be23"
+  },
+  {
+   "path": "dist/index.js",
+   "sha256": "d934a9db55b0cd4ab292de639b75a2561699ed406aba67ee2172e7e911d6ecde"
+  },
+  {
+   "path": "dist/levels.cjs",
+   "sha256": "26381d04c39f8505c342d252d8db892ac5858a91c280830910d16f9d6bc2ac4b"
+  },
+  {
+   "path": "dist/levels.d.cts",
+   "sha256": "459301ae89b55be32ae4da1070a457ee86d2ac0d57b00c09c3bb8119c52bf7d0"
+  },
+  {
+   "path": "dist/levels.d.ts",
+   "sha256": "9405ab6597289fea72e6359033c980a52f7dfed5c52e35fa16fa3a607f66954e"
+  },
+  {
+   "path": "dist/levels.js",
+   "sha256": "1b1f929a9e89e329e28da24fb5cbd56affec4a16580c47dc7ca773df8f90770c"
+  },
+  {
+   "path": "dist/mock-ai.cjs",
+   "sha256": "bc62af5dfa53988a027de38e3ec2da09d4eafdcff3b09e59447a88a444b7b7e3"
+  },
+  {
+   "path": "dist/mock-ai.d.cts",
+   "sha256": "0293cf7325393e283c8aea1530334edbe84edfa480371e6cfd55c287671047a9"
+  },
+  {
+   "path": "dist/mock-ai.d.ts",
+   "sha256": "0293cf7325393e283c8aea1530334edbe84edfa480371e6cfd55c287671047a9"
+  },
+  {
+   "path": "dist/mock-ai.js",
+   "sha256": "044ba3a8512cb205d052d440e3b05e028b4b2d6ebbe353c92859891b918d41f7"
+  },
+  {
+   "path": "dist/mock-fetch.cjs",
+   "sha256": "4c48a5809e8daca5c488da97c32e43657e3bb11900ff6024089833d0107c118f"
+  },
+  {
+   "path": "dist/mock-fetch.d.cts",
+   "sha256": "ca64be313eec1f6467dd73e4c720f73d57c29b8569f701ef62cc4a1e0e2ad922"
+  },
+  {
+   "path": "dist/mock-fetch.d.ts",
+   "sha256": "ca64be313eec1f6467dd73e4c720f73d57c29b8569f701ef62cc4a1e0e2ad922"
+  },
+  {
+   "path": "dist/mock-fetch.js",
+   "sha256": "506750d9ca51d9da80502ef5bf89c06983efbc31c0127794760e9edf5f0a646d"
+  },
+  {
+   "path": "dist/mock-server.cjs",
+   "sha256": "9cab9931d49dfc722ead60413a48e916d565ee718e106eb01411eaceeffba2ae"
+  },
+  {
+   "path": "dist/mock-server.d.cts",
+   "sha256": "d79e6758a2643893d8462b80fa8e67097ee0d5afd56c722bbb27312979208a97"
+  },
+  {
+   "path": "dist/mock-server.d.ts",
+   "sha256": "d79e6758a2643893d8462b80fa8e67097ee0d5afd56c722bbb27312979208a97"
+  },
+  {
+   "path": "dist/mock-server.js",
+   "sha256": "e27cebf0e9d592590c2d85104efc90471f6ded2a3322965d9b8ad574212bbfd3"
+  },
+  {
+   "path": "dist/preset.cjs",
+   "sha256": "fb54858afa5c113ccffa8f7519897ce08a6308dcb54efae55603ac1ed459531b"
+  },
+  {
+   "path": "dist/preset.d.cts",
+   "sha256": "0d1c89a8e8e26500b2365ab6a2db8d45401879102ae8dd76687672b272b5eb22"
+  },
+  {
+   "path": "dist/preset.d.ts",
+   "sha256": "1210dd2d0aa740253752e93ac831c90ba09a07bb9ba37105ef0747d37cf8cec0"
+  },
+  {
+   "path": "dist/preset.js",
+   "sha256": "5b3a1d02e3494feabddd0ce8bb715abd7f161e810b34ba1f10a697307bff95fa"
+  },
+  {
+   "path": "dist/process.cjs",
+   "sha256": "df54bc4cd9fc14e252ed35590e975342d6987734f1c7d8744f1dfe654359ddbd"
+  },
+  {
+   "path": "dist/process.d.cts",
+   "sha256": "1069f48b2f34ae13685541e3686d6fefcefa56bb0676bb29123697b763e63d6c"
+  },
+  {
+   "path": "dist/process.d.ts",
+   "sha256": "1069f48b2f34ae13685541e3686d6fefcefa56bb0676bb29123697b763e63d6c"
+  },
+  {
+   "path": "dist/process.js",
+   "sha256": "f3b4e36d5b6fd5bfa2e2e202f3cee53f2d6621911d3b8f48c1c6172dc9a6d9af"
+  },
+  {
+   "path": "dist/report.cjs",
+   "sha256": "d688900e56cc1bda9681fa96fe119607465515e476293c2343be7091a2b315be"
+  },
+  {
+   "path": "dist/report.d.cts",
+   "sha256": "652d7865ecf76961a3d2ce1449e6ddeaef5e9c06c7310b06483bcbd367395ebb"
+  },
+  {
+   "path": "dist/report.d.ts",
+   "sha256": "2fb79585bedffffe2668e4683c9eaacd538074ddd71959aa8a1f790c9e50b6bd"
+  },
+  {
+   "path": "dist/report.js",
+   "sha256": "f5accd5906edaabad929d0b26cd5c1137eac9703eb2dcb61d28cf67ecbfc1014"
+  },
+  {
+   "path": "dist/service.cjs",
+   "sha256": "f879419b897388ce19fae2580364386f46caf2b57256e31e600464617244322a"
+  },
+  {
+   "path": "dist/service.d.cts",
+   "sha256": "4c8dd662533d1ab6a02f8ef951ae737d93736a7a6e358b64fee65eaa90e8199b"
+  },
+  {
+   "path": "dist/service.d.ts",
+   "sha256": "4c8dd662533d1ab6a02f8ef951ae737d93736a7a6e358b64fee65eaa90e8199b"
+  },
+  {
+   "path": "dist/service.js",
+   "sha256": "e037a22c6430832c8b35ec7ddcb60ea94238a239720d3a10d749dfb1d1760bc3"
+  },
+  {
+   "path": "schema/bdd.run.v1.schema.json",
+   "sha256": "03feb09f7f56d1a577bae3be91e476e695844fd5b424ee83df250230c569c604"
+  },
+  {
+   "path": "schema/bdd.run.v2.schema.json",
+   "sha256": "93a0426048fe36a621f76ae30ff03a6ed1f351c56eb02801fc1c2dea1305aad8"
+  }
+ ]
+}

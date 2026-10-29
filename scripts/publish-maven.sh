@@ -29,6 +29,7 @@ NPM_PACKAGES=(
   "web-kit|web-kit|web-kit|v1d-web-kit|check"
   "arch-check|arch-check|arch-check|v1d-arch-check|check"
   "api-client|api-client|api-client|v1d-api-client|check"
+  "bdd-vitest|bdd-vitest|bdd-vitest|bdd-vitest|check"
 )
 
 PUBLISHER="publish-maven"
