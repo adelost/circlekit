@@ -1,6 +1,6 @@
 {
   "name": "@v1d/web-kit",
-  "version": "0.29.1",
+  "version": "0.30.0",
   "description": "Cutkit's kit for web pages: the tokens and the parts Huset and the API's sandbox draw with, built from Cutkit's one source",
   "type": "module",
   "main": "./dist/index.js",
