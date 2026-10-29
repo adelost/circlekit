@@ -1,6 +1,6 @@
 {
   "name": "@v1d/web-kit",
-  "version": "0.26.0",
+  "version": "0.27.0",
   "description": "Cutkit's kit for web pages: the tokens and the parts Huset and the API's sandbox draw with, built from Cutkit's one source",
   "type": "module",
   "main": "./dist/index.js",
@@ -57,10 +57,6 @@
     "./tokens": {
       "types": "./dist/tokens.d.ts",
       "default": "./dist/tokens.js"
-    },
-    "./encode": {
-      "types": "./dist/kit/encode.d.ts",
-      "default": "./dist/kit/encode.js"
     },
     "./file_identity": {
       "types": "./dist/kit/file_identity.d.ts",
