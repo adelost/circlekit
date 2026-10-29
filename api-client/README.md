@@ -9,7 +9,7 @@ This repository holds the manifest and the gate (`npm run check`), never the fil
 A consumer locks one version and keeps no copy:
 
 ```json
-"@v1d/api-client": "https://circlekit.pages.dev/npm/v1d/api-client/0.1.0/v1d-api-client-0.1.0.tgz"
+"@v1d/api-client": "https://circlekit.pages.dev/npm/v1d/api-client/0.2.0/v1d-api-client-0.2.0.tgz"
 ```
 
 ```js
@@ -21,5 +21,8 @@ const copy = await encode(file, "browser-960-v1", { signal, trace, progress, tar
 // copy.file is the MP4 as a Blob, or null when `target` ({ write({position, data}) }) took it piece by piece
 ```
 
+`encode` takes the hooks a caller that stores and shows copies needs (`store` {begin, finish, discard}, `ids`, `window` for a part as a fragmented MP4, `identity`, `twin`, `curve`, `allowOriginal` for a source that is its own preview), and `encodeSoundPart` makes a part of the sound.
+The profiles and the rules about which copy an export reads are also a dependency-free entry, `@v1d/api-client/profile`, for pages, the edge and checks that need only names and numbers.
+
 `encode` throws a `Refusal` (`code` "encode-unsupported", `reason` says why) when the device cannot or should not make the copy. A copy is never larger than its source.
-The profiles are `browser-960-v1` (long side 960) and `browser-1920-v1` (1920).
+The profiles are `browser-960-v1` (long side 960), `browser-1920-v1` (1920), `browser-2560-v1`, `browser-3840-v1` and the alpha preview `browser-960-alpha-v1`.
