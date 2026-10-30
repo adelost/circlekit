@@ -5,6 +5,7 @@
 import {readFileSync, readdirSync, existsSync, writeFileSync, realpathSync} from "node:fs";
 import {resolve, posix, delimiter, dirname, join} from "node:path";
 import {pathToFileURL} from "node:url";
+import {recordFields} from "./record-fields.mjs";
 
 const SKIPPED = new Set(["node_modules", "dist", "build", ".git", ".wrangler", "coverage"]);
 const walk = (root, dir = "") => readdirSync(resolve(root, dir), {withFileTypes: true}).flatMap(entry =>
@@ -50,6 +51,7 @@ const tagsOf = doc => {
 
 /** Each kind turns a rule and the repo into hits {file, line, message, weight?, at?}. weight counts toward the baseline (default 1). */
 const kinds = {
+  "record-fields": recordFields,
   "max-lines": (rule, repo) => repo.covered(rule).flatMap(file => { const n = lines(repo.read(file)).length; return n > rule.max ? [{file, line: 1, message: `${n} lines, max ${rule.max}`, weight: n - rule.max}] : []; }),
   "max-files": (rule, repo) => {
     const perDir = new Map(); for (const file of repo.covered(rule)) perDir.set(posix.dirname(file), (perDir.get(posix.dirname(file)) ?? 0) + 1);
