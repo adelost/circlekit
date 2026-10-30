@@ -9,7 +9,7 @@ This repository holds the manifest and the gate (`npm run check`), never the fil
 A consumer locks one version and keeps no copy:
 
 ```json
-"@v1d/api-client": "https://circlekit.pages.dev/npm/v1d/api-client/0.4.0/v1d-api-client-0.4.0.tgz"
+"@v1d/api-client": "https://circlekit.pages.dev/npm/v1d/api-client/0.5.0/v1d-api-client-0.5.0.tgz"
 ```
 
 ```js
@@ -25,6 +25,8 @@ const copy = await encode(file, "browser-960-v1", { signal, trace, progress, tar
 The profiles and the rules about which copy an export reads are also a dependency-free entry, `@v1d/api-client/profile`, for pages, the edge and checks that need only names and numbers.
 
 `@v1d/api-client/cuts` is the scene analysis: `cuts(file)` reads a video's picture on the device and answers `{fps, duration, frames, cuts: [{t, frame, kind, score}]}` (`kind` is `cut`, or `dissolve` with `{slow: 0.45}`); it also exports Cut's own picture curve (`CURVE`, `createPictureScorer`, `deriveSmall`, `hardPeaks`, `cutTimes`, `candidates`), the two files as Cut wrote them.
+
+`@v1d/api-client/media` builds the two bodies an app's own server sends the files store: `startBody` (a new upload, or a file derived from another) and `registerBody` (a file whose bytes stay on the person's computer), with their types generated from the gateway's records, so an app keeps no copy of the shapes.
 
 `@v1d/api-client/upload` is the one module that sends a file to storage in parts (each part hashed before its address is signed); it has no dependency and no page code.
 
