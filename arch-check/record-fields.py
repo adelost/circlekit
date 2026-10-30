@@ -23,6 +23,7 @@ def nodes(file, text):
     tree = ast.parse(text, filename=file)
     parents = {child: node for node in ast.walk(tree) for child in ast.iter_child_nodes(node)}
     assignments = [part for part in ast.walk(tree) if isinstance(part, (ast.Assign, ast.AnnAssign))]
+    modules = {alias.asname or alias.name: alias.name for node in ast.walk(tree) if isinstance(node, ast.Import) for alias in node.names}
     imports = {alias.asname or alias.name: {'module': node.module, 'name': alias.name}
                for node in ast.walk(tree) if isinstance(node, ast.ImportFrom) and node.module for alias in node.names}
 
@@ -44,6 +45,8 @@ def nodes(file, text):
             if not choices:
                 return [] if root else None
             selected = max(choices, key=lambda item: item.lineno)
+            if isinstance(selected.value, ast.Call) and isinstance(selected.value.func, ast.Attribute) and isinstance(selected.value.func.value, ast.Name) and selected.value.func.value.id in modules:
+                return []
             return resolve_path(selected.value, selected, seen | {expression.id})
         if isinstance(expression, ast.Attribute):
             path = resolve_path(expression.value, at, seen, root=True)
@@ -75,6 +78,8 @@ def nodes(file, text):
         if not choices:
             return expression.id
         selected = max(choices, key=lambda item: item.lineno)
+        if isinstance(selected.value, ast.Call) and isinstance(selected.value.func, ast.Attribute) and isinstance(selected.value.func.value, ast.Name) and selected.value.func.value.id in modules:
+            return expression.id
         return resolve_root(selected.value, selected, seen | {expression.id})
 
     for node in ast.walk(tree):
@@ -119,7 +124,16 @@ def nodes(file, text):
         paths = {owner: {'parts': resolve_path(ast.Name(id=owner, ctx=ast.Load()), node), 'root': resolve_root(ast.Name(id=owner, ctx=ast.Load()), node)} for owner in owners}
         guards = [{key: value for key, value in call.items() if key not in ('scope', 'line')}
                   for call in calls if call['scope'] is scope_of(node) and call['line'] < node.lineno]
-        yield {'file': file, 'line': node.lineno, 'keys': [key for key in keys if key], 'direct': direct, 'receiver': receiver, 'table': table, 'usedWith': used_with, 'paths': paths, 'guards': guards, 'language': 'py', 'collection': collection, 'intent': intent}
+        origins = []
+        for root in {path['root'] for path in paths.values() if path['root']}:
+            for assignment in assignments:
+                targets = assignment.targets if isinstance(assignment, ast.Assign) else [assignment.target]
+                if assignment.lineno >= node.lineno or scope_of(assignment) is not scope_of(node) or not any(isinstance(target, ast.Name) and target.id == root for target in targets):
+                    continue
+                value = assignment.value
+                if isinstance(value, ast.Call) and isinstance(value.func, ast.Attribute) and isinstance(value.func.value, ast.Name) and value.func.value.id in modules:
+                    origins.append({'root': root, 'module': modules[value.func.value.id], 'name': value.func.attr})
+        yield {'file': file, 'line': node.lineno, 'keys': [key for key in keys if key], 'direct': direct, 'receiver': receiver, 'table': table, 'usedWith': used_with, 'paths': paths, 'guards': guards, 'origins': origins, 'language': 'py', 'collection': collection, 'intent': intent}
 
 
 files = json.load(sys.stdin)
