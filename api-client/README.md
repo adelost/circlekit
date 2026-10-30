@@ -1,6 +1,6 @@
 # @v1d/api-client
 
-What the v1d API runs on the person's own device, so that a file never leaves it and nothing is charged: `waveform` (a file's sound drawn as peaks and three bands) and `encode` (a preview or an Optimized copy of a video, H.264 and AAC in an MP4, through WebCodecs).
+What the v1d API runs on the person's own device, so that a file never leaves it and nothing is charged: `waveform` (a file's sound drawn as peaks and three bands), `cuts` (where a video changes scene) and `encode` (a preview or an Optimized copy of a video, H.264 and AAC in an MP4, through WebCodecs).
 Published from the ai-gateway repository's `packages/api-client`, which stays the only copy of the code. `dist/` is built by that repository's `scripts/publish-api-client.mjs` (it writes `dist/SOURCE.json` with the gateway commit, the version and each file's SHA-256) and published through this repository's npm path (`scripts/publish-api-client.sh`).
 This repository holds the manifest and the gate (`npm run check`), never the files. The one dependency is `mediabunny`, pinned.
 
@@ -9,7 +9,7 @@ This repository holds the manifest and the gate (`npm run check`), never the fil
 A consumer locks one version and keeps no copy:
 
 ```json
-"@v1d/api-client": "https://circlekit.pages.dev/npm/v1d/api-client/0.3.0/v1d-api-client-0.3.0.tgz"
+"@v1d/api-client": "https://circlekit.pages.dev/npm/v1d/api-client/0.4.0/v1d-api-client-0.4.0.tgz"
 ```
 
 ```js
@@ -23,6 +23,8 @@ const copy = await encode(file, "browser-960-v1", { signal, trace, progress, tar
 
 `encode` takes the hooks a caller that stores and shows copies needs (`store` {begin, finish, discard}, `ids`, `window` for a part as a fragmented MP4, `identity`, `twin`, `curve`, `allowOriginal` for a source that is its own preview), and `encodeSoundPart` makes a part of the sound.
 The profiles and the rules about which copy an export reads are also a dependency-free entry, `@v1d/api-client/profile`, for pages, the edge and checks that need only names and numbers.
+
+`@v1d/api-client/cuts` is the scene analysis: `cuts(file)` reads a video's picture on the device and answers `{fps, duration, frames, cuts: [{t, frame, kind, score}]}` (`kind` is `cut`, or `dissolve` with `{slow: 0.45}`); it also exports Cut's own picture curve (`CURVE`, `createPictureScorer`, `deriveSmall`, `hardPeaks`, `cutTimes`, `candidates`), the two files as Cut wrote them.
 
 `@v1d/api-client/upload` is the one module that sends a file to storage in parts (each part hashed before its address is signed); it has no dependency and no page code.
 
