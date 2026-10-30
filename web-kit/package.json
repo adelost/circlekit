@@ -1,6 +1,6 @@
 {
   "name": "@v1d/web-kit",
-  "version": "0.30.2",
+  "version": "0.31.0",
   "description": "Cutkit's kit for web pages: the tokens and the parts Huset and the API's sandbox draw with, built from Cutkit's one source",
   "type": "module",
   "main": "./dist/index.js",
@@ -61,26 +61,6 @@
     "./file_identity": {
       "types": "./dist/kit/file_identity.d.ts",
       "default": "./dist/kit/file_identity.js"
-    },
-    "./picture_curve": {
-      "types": "./dist/core/picture_curve.d.ts",
-      "default": "./dist/core/picture_curve.js"
-    },
-    "./chapter_candidates": {
-      "types": "./dist/core/chapter_candidates.d.ts",
-      "default": "./dist/core/chapter_candidates.js"
-    },
-    "./chapter_sheet_layout": {
-      "types": "./dist/core/chapter_sheet_layout.d.ts",
-      "default": "./dist/core/chapter_sheet_layout.js"
-    },
-    "./chapter_plan": {
-      "types": "./dist/core/chapter_plan.d.ts",
-      "default": "./dist/core/chapter_plan.js"
-    },
-    "./preview_curve_tap": {
-      "types": "./dist/preview_curve_tap.d.ts",
-      "default": "./dist/preview_curve_tap.js"
     },
     "./song_data": {
       "types": "./dist/kit/song_data.d.ts",
