@@ -311,6 +311,40 @@ function yamlReader(root, path, cache, seen = new Set()) {
   cache.set(path, found); return found;
 }
 
+/** The validator may live outside the table module. Follow its own calls to an import of that table. */
+function usesSchemaValidator(record, module, name, root, cache) {
+  const key = `${record.file}#${module}#${name}`;
+  if (cache.has(key)) return cache.get(key);
+  if (!/^validate/.test(name)) return false;
+  if (module === record.file) return record.validators.has(name);
+  const path = resolve(root, module);
+  if (relative(root, path).startsWith('..') || !existsSync(path)) return false;
+  const tree = ts.createSourceFile(module, readFileSync(path, 'utf8'), ts.ScriptTarget.Latest, true, /\.[cm]?ts$/.test(path) ? ts.ScriptKind.TS : ts.ScriptKind.JS);
+  const own = new Set(), functions = new Map();
+  for (const part of tree.statements) {
+    if (ts.isImportDeclaration(part) && ts.isStringLiteral(part.moduleSpecifier)) {
+      const target = relative(root, resolve(dirname(path), part.moduleSpecifier.text)).replaceAll('\\', '/');
+      if (target === record.file && part.importClause?.namedBindings && ts.isNamedImports(part.importClause.namedBindings))
+        for (const entry of part.importClause.namedBindings.elements) if ((entry.propertyName?.text ?? entry.name.text) === record.module.split('#')[1].split('.')[0]) own.add(entry.name.text);
+    }
+    if (ts.isFunctionDeclaration(part) && part.name && part.body) functions.set(part.name.text, part);
+    if (ts.isVariableStatement(part)) for (const decl of part.declarationList.declarations)
+      if (ts.isIdentifier(decl.name) && decl.initializer && (ts.isArrowFunction(decl.initializer) || ts.isFunctionExpression(decl.initializer))) functions.set(decl.name.text, decl.initializer);
+  }
+  const visitFunction = (fn, seen = new Set()) => {
+    if (!fn || seen.has(fn)) return false;
+    const next = new Set([...seen, fn]); let matched = false;
+    const scan = node => {
+      if (ts.isIdentifier(node) && own.has(node.text)) matched = true;
+      if (ts.isCallExpression(node) && ts.isIdentifier(node.expression) && functions.has(node.expression.text))
+        matched ||= visitFunction(functions.get(node.expression.text), next);
+      if (!matched) ts.forEachChild(node, scan);
+    };
+    scan(fn); return matched;
+  };
+  const linked = visitFunction(functions.get(name)); cache.set(key, linked); return linked;
+}
+
 /** A missing parser or malformed source stops the rule instead of passing it. */
 export async function recordFields(rule, repo) {
   if (!Array.isArray(rule.records) || !rule.records.length) throw new Error('record-fields: name at least one record and its schema');
@@ -326,7 +360,7 @@ export async function recordFields(rule, repo) {
     if (result.error || result.status !== 0) throw new Error(`record-fields: Python parser failed: ${result.error?.message ?? result.stderr.trim()}`);
     nodes.push(...JSON.parse(result.stdout));
   }
-  const yamlCache = new Map();
+  const yamlCache = new Map(), validatorCache = new Map();
   return nodes.flatMap(node => records.flatMap(record => {
     if (node.file === record.file) return [];
     const fields = [...new Set(node.keys.filter(key => record.fields.has(key)))];
@@ -336,8 +370,7 @@ export async function recordFields(rule, repo) {
         ? yamlReader(repo.root, resolve(repo.root, dirname(node.file), origin.module), yamlCache)
         : origin.module === 'yaml'));
       if (!read) return false;
-      if (node.language === 'js') return record.validators.has(guard.name)
-        && relative(repo.root, resolve(repo.root, dirname(node.file), guard.module)).replaceAll('\\', '/') === record.file;
+      if (node.language === 'js') return usesSchemaValidator(record, relative(repo.root, resolve(repo.root, dirname(node.file), guard.module)).replaceAll('\\', '/'), guard.name, repo.root, validatorCache);
       const [module, name] = record.pythonValidator.split('#'), imported = `${guard.module.replaceAll('.', '/')}.py`;
       return guard.name === name && (imported === module || relative(repo.root, resolve(repo.root, dirname(node.file), imported)).replaceAll('\\', '/') === module);
     });
@@ -354,9 +387,8 @@ export async function recordFields(rule, repo) {
     });
     const validator = (node.schemaUses ?? []).some(use => use.kind === record.schemaKind && use.name === record.module.split('#')[1].split('.')[0]
       && relative(repo.root, resolve(repo.root, dirname(node.file), use.module)).replaceAll('\\', '/') === record.file);
-    const root = typeof record.isRoot === 'function' && node.parentName === record.kindOf([]) && node.literal
-      && record.schemaKind === record.kindOf([]) && record.isRoot(node.literal);
-    const belongs = (!node.collection && isRecord(node.receiver)) || collection || intent || direct.size >= 3 || (node.usedWith ?? []).some(isRecord) || sink || validator || root;
+    // A root-shaped object can also be a UI cache; shape alone is not writer provenance.
+    const belongs = (!node.collection && isRecord(node.receiver)) || collection || intent || direct.size >= 3 || (node.usedWith ?? []).some(isRecord) || sink || validator;
     return fields.length < 3 || !belongs ? [] : [{file: node.file, line: node.line, at: record.name,
       message: `${record.name}: ${fields.join(', ')}; importera schemat från ${record.module}`}];
   }));
