@@ -1,7 +1,7 @@
 // WHAT: Finds a record's fields copied into another list, object or binding.
 // WHY: Keeps consumers tied to the field declaration that judges the record.
 import { spawnSync } from 'node:child_process';
-import { resolve, relative } from 'node:path';
+import { resolve, relative, dirname } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import ts from 'typescript';
 
@@ -25,7 +25,7 @@ async function recordOf(root, record) {
   const fields = Array.isArray(value) ? value : value && typeof value === 'object' ? Object.keys(value) : null;
   if (!fields || fields.length < 3 || fields.some(field => typeof field !== 'string' || !field) || new Set(fields).size !== fields.length)
     throw new Error(`record-fields: ${record.name}: schema ${record.module} must expose at least three distinct field names`);
-  return { ...record, file: rel.replaceAll('\\', '/'), fields: new Set(fields), kindOf: schema.kindOf, schemaKind: selector.split('.').at(-1) };
+  return { ...record, file: rel.replaceAll('\\', '/'), fields: new Set(fields), kindOf: schema.kindOf, pythonValidator: schema.PY_VALIDATOR, validators: new Set(Object.keys(schema).filter(key => /^validate/.test(key) && typeof schema[key] === 'function')), schemaKind: selector.split('.').at(-1) };
 }
 
 function jsNodes(file, text) {
@@ -38,6 +38,19 @@ function jsNodes(file, text) {
     ts.forEachChild(node, collect);
   };
   collect(source);
+  const imports = new Map();
+  for (const statement of source.statements) if (ts.isImportDeclaration(statement) && ts.isStringLiteral(statement.moduleSpecifier)) {
+    const named = statement.importClause?.namedBindings;
+    if (named && ts.isNamedImports(named)) for (const item of named.elements) imports.set(item.name.text, {name: item.propertyName?.text ?? item.name.text, module: statement.moduleSpecifier.text});
+  }
+  const functionScope = node => { let at = node; while (at.parent && !ts.isFunctionLike(at) && !ts.isSourceFile(at)) at = at.parent; return at; };
+  const calls = [];
+  const collectCalls = node => {
+    if (ts.isCallExpression(node) && ts.isIdentifier(node.expression) && imports.has(node.expression.text))
+      for (const arg of node.arguments) if (ts.isIdentifier(arg)) calls.push({root: arg.text, ...imports.get(node.expression.text), scope: functionScope(node), at: node.getStart(source)});
+    ts.forEachChild(node, collectCalls);
+  };
+  collectCalls(source);
   const ancestorOf = (ancestor, node) => { for (let at = node; at; at = at.parent) if (at === ancestor) return true; return false; };
   const scopeOf = node => { let at = node; while (at.parent && !ts.isBlock(at) && !ts.isSourceFile(at)) at = at.parent; return at; };
   function pathOf(expression, at, seen = new Set()) {
@@ -54,6 +67,16 @@ function jsNodes(file, text) {
     if (ts.isPropertyAccessExpression(expression)) { const path = ts.isIdentifier(expression.expression) && !bindings.some(decl => decl.name.text === expression.expression.text && ancestorOf(scopeOf(decl), at)) ? [] : pathOf(expression.expression, at, seen); return path && [...path, expression.name.text]; }
     if (ts.isElementAccessExpression(expression)) { const path = ts.isIdentifier(expression.expression) && !bindings.some(decl => decl.name.text === expression.expression.text && ancestorOf(scopeOf(decl), at)) ? [] : pathOf(expression.expression, at, seen); return path && [...path, 0]; }
     return null;
+  }
+  function rootOf(expression, at, seen = new Set()) {
+    if (!expression) return null;
+    if (ts.isParenthesizedExpression(expression)) return rootOf(expression.expression, at, seen);
+    if (ts.isBinaryExpression(expression) && [ts.SyntaxKind.BarBarToken, ts.SyntaxKind.QuestionQuestionToken].includes(expression.operatorToken.kind)) return rootOf(expression.left, at, seen);
+    if (ts.isPropertyAccessExpression(expression) || ts.isElementAccessExpression(expression)) return rootOf(expression.expression, at, seen);
+    if (!ts.isIdentifier(expression) || seen.has(expression.text)) return null;
+    const candidates = bindings.filter(decl => decl.name.text === expression.text && decl.getStart(source) < at.getStart(source) && ancestorOf(scopeOf(decl), at));
+    const decl = candidates.sort((a, b) => b.getStart(source) - a.getStart(source))[0];
+    return decl ? rootOf(decl.initializer, decl, new Set([...seen, expression.text])) : expression.text;
   }
   const tableProofs = new Map();
   const bindingOf = (name, at) => bindings.filter(decl => decl.name.text === name && decl.getStart(source) < at.getStart(source) && ancestorOf(scopeOf(decl), at))
@@ -163,8 +186,9 @@ function jsNodes(file, text) {
         if (path && ts.isStringLiteral(path.initializer)) intent = [0, path.initializer.text, 0];
       }
       const owners = [...new Set([...direct.map(part => part.owner), receiver, ...usedWith].filter(Boolean))];
-      const paths = Object.fromEntries(owners.map(owner => [owner, pathOf(ts.factory.createIdentifier(owner), node)]));
-      found.push({file, line: source.getLineAndCharacterOfPosition(node.getStart(source)).line + 1, keys: keys.filter(Boolean), direct, receiver, table, usedWith, paths, collection, intent, sinks: tableProofs.get(table) ?? []});
+      const paths = Object.fromEntries(owners.map(owner => [owner, {parts: pathOf(ts.factory.createIdentifier(owner), node), root: rootOf(ts.factory.createIdentifier(owner), node)}]));
+      const guards = calls.filter(call => call.scope === functionScope(node) && call.at < node.getStart(source)).map(({root, name, module}) => ({root, name, module}));
+      found.push({file, line: source.getLineAndCharacterOfPosition(node.getStart(source)).line + 1, keys: keys.filter(Boolean), direct, receiver, table, usedWith, paths, guards, language: 'js', collection, intent, sinks: tableProofs.get(table) ?? []});
     }
     ts.forEachChild(node, visit);
   }
@@ -176,6 +200,7 @@ export async function recordFields(rule, repo) {
   if (!Array.isArray(rule.records) || !rule.records.length) throw new Error('record-fields: name at least one record and its schema');
   const records = await Promise.all(rule.records.map(record => recordOf(repo.root, record)));
   const files = repo.covered(rule), js = files.filter(file => /\.[cm]?[jt]sx?$/.test(file)), py = files.filter(file => file.endsWith('.py'));
+  if (py.length && records.some(record => typeof record.pythonValidator !== 'string' || !record.pythonValidator.includes('#'))) throw new Error('record-fields: a Python scope needs each schema module to name its actual Python validator');
   const unsupported = files.filter(file => !js.includes(file) && !py.includes(file));
   if (unsupported.length) throw new Error(`record-fields: unsupported source ${unsupported[0]}`);
   const nodes = js.flatMap(file => jsNodes(file, repo.read(file)));
@@ -187,11 +212,21 @@ export async function recordFields(rule, repo) {
   return nodes.flatMap(node => records.flatMap(record => {
     if (node.file === record.file) return [];
     const fields = [...new Set(node.keys.filter(key => record.fields.has(key)))];
-    const isRecord = owner => { const path = node.paths?.[owner]; return Array.isArray(path) && record.kindOf(path) === record.schemaKind; };
+    const validRoot = root => (node.guards ?? []).some(guard => {
+      if (guard.root !== root) return false;
+      if (node.language === 'js') return record.validators.has(guard.name)
+        && relative(repo.root, resolve(repo.root, dirname(node.file), guard.module)).replaceAll('\\', '/') === record.file;
+      const [module, name] = record.pythonValidator.split('#'), imported = `${guard.module.replaceAll('.', '/')}.py`;
+      return guard.name === name && (imported === module || relative(repo.root, resolve(repo.root, dirname(node.file), imported)).replaceAll('\\', '/') === module);
+    });
+    const pathFor = owner => { const item = node.paths?.[owner]; return item && validRoot(item.root) ? item.parts : null; };
+    const isRecord = owner => { const path = pathFor(owner); return Array.isArray(path) && record.kindOf(path) === record.schemaKind; };
     const direct = new Set((node.direct ?? []).filter(part => isRecord(part.owner) && record.fields.has(part.field)).map(part => part.field));
     const sink = (node.sinks ?? []).some(proof => proof.markers.includes(record.kindOf([])) && record.kindOf(proof.path) === record.schemaKind);
-    const collection = node.collection && Array.isArray(node.paths?.[node.receiver]) && record.kindOf([...node.paths[node.receiver], 0]) === record.schemaKind;
-    const intent = Array.isArray(node.intent) && record.kindOf(node.intent) === record.schemaKind;
+    const collectionPath = pathFor(node.receiver);
+    const collection = node.collection && Array.isArray(collectionPath) && record.kindOf([...collectionPath, 0]) === record.schemaKind;
+    // A bare {path, value} shape does not prove that any writer consumes it.
+    const intent = false;
     const belongs = (!node.collection && isRecord(node.receiver)) || collection || intent || direct.size >= 3 || (node.usedWith ?? []).some(isRecord) || sink;
     return fields.length < 3 || !belongs ? [] : [{file: node.file, line: node.line, at: record.name,
       message: `${record.name}: ${fields.join(', ')}; importera schemat från ${record.module}`}];
