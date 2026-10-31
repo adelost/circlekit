@@ -1,0 +1,11 @@
+{
+  "name": "@v1d/cli",
+  "version": "0.1.0",
+  "description": "Use v1d Cut from a terminal or an MCP client",
+  "type": "module",
+  "bin": { "v1d": "dist/v1d.mjs" },
+  "files": ["dist"],
+  "engines": { "node": ">=22" },
+  "scripts": { "check": "node build.mjs --check", "prepack": "node build.mjs" },
+  "license": "UNLICENSED"
+}
