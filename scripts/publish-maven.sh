@@ -30,6 +30,7 @@ NPM_PACKAGES=(
   "arch-check|arch-check|arch-check|v1d-arch-check|check"
   "api-client|api-client|api-client|v1d-api-client|check"
   "bdd-vitest|bdd-vitest|bdd-vitest|bdd-vitest|check"
+  "cli|cli|cli|v1d-cli|check"
 )
 
 PUBLISHER="publish-maven"
