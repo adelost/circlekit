@@ -9,7 +9,7 @@ This repository holds the manifest and the gate (`npm run check`), never the fil
 A consumer locks one version and keeps no copy:
 
 ```json
-"@v1d/api-client": "https://circlekit.pages.dev/npm/v1d/api-client/0.7.1/v1d-api-client-0.7.1.tgz"
+"@v1d/api-client": "https://circlekit.pages.dev/npm/v1d/api-client/0.8.0/v1d-api-client-0.8.0.tgz"
 ```
 
 ```js
@@ -30,7 +30,7 @@ The profiles and the rules about which copy an export reads are also a dependenc
 
 `@v1d/api-client/device` also carries `matchSource(file, sources)`: which of a film's sources a file is, by its quick `fingerprint` (it wins over any whole SHA a source holds), else the one source it shares the most of name, length, size and date with, suggested for the person to confirm (0.7.0, Cut row 1132; also from `@v1d/api-client/upload` since 0.7.1).
 
-`@v1d/api-client/profile` also carries `rankFor(purpose, candidates, frame)`, the one order of copies for play, export, cover and analyse (the page and Cut's cloud call it); `@v1d/api-client/rank-facit` is the order it must give, a fixture for the tests of both sides.
+`@v1d/api-client/profile` also carries `rankFor(purpose, candidates, frame)`, the one order of copies for play, export, cover and analyse (the page and Cut's cloud call it); `@v1d/api-client/rank-facit` is the order it must give, a fixture for the tests of both sides. The 1080p Optimized copy is `browser-1920-hq-v1` (H.264 High at 16 Mbit/s, store profile `optimized-1920-hq`), ranked above `browser-1920-v1`, which stays for copies already made; an Optimized copy's encoder asks for constant rate and the hardware encoder first (`copyEncoderConfig`, `supportedEncoderConfig`).
 
 `@v1d/api-client/upload` is the one module that sends a file to storage in parts (each part hashed before its address is signed); it has no dependency and no page code.
 
