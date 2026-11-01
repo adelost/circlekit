@@ -9,7 +9,7 @@ This repository holds the manifest and the gate (`npm run check`), never the fil
 A consumer locks one version and keeps no copy:
 
 ```json
-"@v1d/api-client": "https://circlekit.pages.dev/npm/v1d/api-client/0.6.0/v1d-api-client-0.6.0.tgz"
+"@v1d/api-client": "https://circlekit.pages.dev/npm/v1d/api-client/0.7.0/v1d-api-client-0.7.0.tgz"
 ```
 
 ```js
@@ -27,6 +27,8 @@ The profiles and the rules about which copy an export reads are also a dependenc
 `@v1d/api-client/cuts` is the scene analysis: `cuts(file)` reads a video's picture on the device and answers `{fps, duration, frames, cuts: [{t, frame, kind, score}]}` (`kind` is `cut`, or `dissolve` with `{slow: 0.45}`); it also exports Cut's own picture curve (`CURVE`, `createPictureScorer`, `deriveSmall`, `hardPeaks`, `cutTimes`, `candidates`), the two files as Cut wrote them.
 
 `@v1d/api-client/media` builds the two bodies an app's own server sends the files store: `startBody` (a new upload, or a file derived from another) and `registerBody` (a file whose bytes stay on the person's computer), with their types generated from the gateway's records, so an app keeps no copy of the shapes. The owner label {app, project, tags} is the type `MediaOwner`; `MediaRef`, its name in 0.5.0, stays as a deprecated alias for this version.
+
+`@v1d/api-client/device` also carries `matchSource(file, sources)`: which of a film's sources a file is, by its quick `fingerprint` (it wins over any whole SHA a source holds), else the one source it shares the most of name, length, size and date with, suggested for the person to confirm (0.7.0, Cut row 1132).
 
 `@v1d/api-client/profile` also carries `rankFor(purpose, candidates, frame)`, the one order of copies for play, export, cover and analyse (the page and Cut's cloud call it); `@v1d/api-client/rank-facit` is the order it must give, a fixture for the tests of both sides.
 
