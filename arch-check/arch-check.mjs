@@ -94,6 +94,25 @@ const kinds = {
     }
     return hits;
   },
+  // A stylesheet names the classes of the parts it styles: a covered .css file belongs to the part folder it lies in, and a class (a name that starts with `prefix`) that another part's script draws is that part's, so the
+  // stylesheet may name it only where its own part's script imports that part (a part names its own classes and those of the parts it imports, never another's). `scripts` are the parts' scripts, `exclude` leaves out
+  // those that draw nothing (the examples); a class no script names is nobody's. One hit per class in a stylesheet, at its first line.
+  "css-imports": (rule, repo) => {
+    const skip = matcher(rule.exclude), isScript = matcher(rule.scripts), scripts = repo.files.filter(file => isScript(file) && !skip(file)), prefix = rule.prefix.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const token = new RegExp(`(?<![\\w-])${prefix}[\\w-]*\\w(?![\\w-])`, "g"), named = new RegExp(`\\.(${prefix}[\\w-]*\\w)(?![\\w-])`, "g");
+    const drawn = new Map();   // class -> the folders whose scripts name it
+    for (const file of scripts) for (const name of new Set(repo.read(file).match(token) ?? [])) drawn.set(name, (drawn.get(name) ?? new Set()).add(posix.dirname(file)));
+    const imports = dir => new Set(scripts.filter(file => posix.dirname(file) === dir).flatMap(file => [...repo.read(file).matchAll(/(?:from|import)\s*\(?\s*["'](\.[^"']*)["']/g)].map(spec => posix.join(dir, spec[1]))));
+    return repo.covered(rule).flatMap(file => {
+      const dir = posix.dirname(file), reached = imports(dir), seen = new Set();
+      return lines(repo.read(file).replace(/\/\*[\s\S]*?\*\//g, comment => comment.replace(/[^\n]/g, " "))).flatMap((line, n) => [...line.matchAll(named)].flatMap(([, name]) => {
+        const owners = [...(drawn.get(name) ?? [])];
+        if (seen.has(name) || !owners.length || owners.includes(dir) || owners.some(owner => [...reached].some(path => path === owner || path.startsWith(owner + "/")))) return [];
+        seen.add(name);
+        return [{file, line: n + 1, message: `names .${name}, which ${owners.map(owner => posix.basename(owner)).join(" or ")} draws, and ${posix.basename(dir)}'s script does not import ${owners.length > 1 ? "any of them" : "it"}`}];
+      }));
+    });
+  },
   // A file's first comment says what it is for (WHAT:) and the boundary or failure it keeps (WHY:); the words are judged by AMUX's contract-lint, the same grammar Product Studio applies in Skyvw. Errors and warnings are both red, as in Product Studio, whose check is not ok with a warning (an unknown verb, a WHAT over 16 words, a WHY over 18).
   contract: async (rule, repo) => {
     const evaluate = await evaluator(repo.amuxRoot);
@@ -117,7 +136,7 @@ const kinds = {
 
 export async function check(root, config, baseline = {}, options = {}) {
   const files = walk(root), cache = new Map();
-  const repo = {root, amuxRoot: options.amuxRoot, read: file => cache.get(file) ?? (cache.set(file, readFileSync(resolve(root, file), "utf8")), cache.get(file)), covered: rule => files.filter(matcher(rule.files)).filter(file => !matcher(rule.exclude)(file))};
+  const repo = {root, files, amuxRoot: options.amuxRoot, read: file => cache.get(file) ?? (cache.set(file, readFileSync(resolve(root, file), "utf8")), cache.get(file)), covered: rule => files.filter(matcher(rule.files)).filter(file => !matcher(rule.exclude)(file))};
   const found = new Map();
   for (const rule of config.rules) {
     if (!kinds[rule.kind]) throw new Error(`rule ${rule.id}: unknown kind ${rule.kind}`);
