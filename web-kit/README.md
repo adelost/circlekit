@@ -58,7 +58,7 @@ Each UI part has an example file in `dist/` (`search-field.example.js`, `filter-
 
 ## Versions
 
-A page that moves from one version to another reads every line between them. From 0.36.0 each line ends in `Changed calls:`, which is `none.` or each call that changed against the version before it (the part, its call as it is now, and what a caller does); the release gate (`npm run check`) refuses a version whose line does not.
+A page that moves from one version to another reads every line between them. From 0.36.0 each line ends in `Changed calls:`, which is `none.` or each call that changed against the version before it (the part, its call as it is now, and what a caller does); the release gate (`npm run check`) refuses a version whose line does not, and a line that says only `none.` while a `.d.ts` file of dist differs from the last published version's (comments and white space left out), naming the file; a line that lists calls passes whatever differs.
 
 - 0.1.0: `tokens.css` only (the colours, sizes, radii and motion tokens as custom properties on `:root`).
 - 0.2.0: `searchField`, `filterChips`, `panel`, `codeBlock` and `el` in `index.js` with `index.d.ts`, and `web-kit.css`.
