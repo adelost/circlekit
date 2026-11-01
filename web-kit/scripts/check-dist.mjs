@@ -2,6 +2,7 @@
 // so a release with no dist, or one that did not come from a Cutkit commit, stops here. The package must also stand alone: every import in it is a file of it.
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { dirname, join, normalize, relative, resolve } from 'node:path';
+import { problemWith } from './changed-calls.mjs';
 
 const need = file => { if (!existsSync(file)) throw new Error(`${file} is missing: run tools/dev/publish-web-kit.mjs in Cutkit, which builds dist from Cutkit's source`); return readFileSync(file, 'utf8'); };
 const tokens = need('dist/tokens.css'), source = JSON.parse(need('dist/SOURCE.json'));
@@ -9,6 +10,8 @@ if (!/:root\s*\{/.test(tokens) || !/--bg\s*:/.test(tokens)) throw new Error('dis
 if (!/^[0-9a-f]{40}$/.test(source.cutkit ?? '')) throw new Error('dist/SOURCE.json names no Cutkit commit');
 const manifest = JSON.parse(readFileSync('package.json', 'utf8'));
 if (source.version !== manifest.version) throw new Error(`dist was built for ${source.version}, the package says ${manifest.version}`);
+const unnamed = problemWith(need('README.md'), manifest.version);   // row 1093: a consumer reads the lines between the version it holds and the one it takes
+if (unnamed) throw new Error(unnamed);
 for (const file of source.files ?? []) need(`dist/${file}`);
 
 // 0.9.0 and later: every UI part has its example file, the source of kit.v1d.io (not an export: the site reads the files by path).
