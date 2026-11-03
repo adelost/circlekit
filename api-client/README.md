@@ -9,7 +9,7 @@ This repository holds the manifest and the gate (`npm run check`), never the fil
 A consumer locks one version and keeps no copy:
 
 ```json
-"@v1d/api-client": "https://circlekit.pages.dev/npm/v1d/api-client/0.8.3/v1d-api-client-0.8.3.tgz"
+"@v1d/api-client": "https://circlekit.pages.dev/npm/v1d/api-client/0.9.0/v1d-api-client-0.9.0.tgz"
 ```
 
 ```js
@@ -36,3 +36,7 @@ The profiles and the rules about which copy an export reads are also a dependenc
 
 `encode` throws a `Refusal` (`code` "encode-unsupported", `reason` says why) when the device cannot or should not make the copy. A copy is never larger than its source.
 The profiles are `browser-960-v1` (long side 960), `browser-1920-v1` (1920), `browser-2560-v1`, `browser-3840-v1` and the alpha preview `browser-960-alpha-v1`.
+
+## On the person's device
+
+`@v1d/api-client/input`: a file, a live camera with a turn between front and back, or sound from the microphone, by the media types you take (`waysIn`, `openCamera`, `recordSound`). `@v1d/api-client/stored`: what your page keeps on the device, its real size, progress and Delete (`deviceStore`). `@v1d/api-client/vision`: a detector or a segmenter in your own Worker on WebGPU. How to use them: https://api.v1d.io/docs, On your device.
