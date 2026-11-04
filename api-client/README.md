@@ -9,7 +9,7 @@ This repository holds the manifest and the gate (`npm run check`), never the fil
 A consumer locks one version and keeps no copy:
 
 ```json
-"@v1d/api-client": "https://circlekit.pages.dev/npm/v1d/api-client/0.9.1/v1d-api-client-0.9.1.tgz"
+"@v1d/api-client": "https://circlekit.pages.dev/npm/v1d/api-client/0.9.2/v1d-api-client-0.9.2.tgz"
 ```
 
 ```js
