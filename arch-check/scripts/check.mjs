@@ -13,7 +13,7 @@ put("contracts/ok.ts", "/**\n * WHAT: Builds one catalog card with its name, tag
 put("kit/a/a.css", ".part-a { color: red; }\n/* .part-b-x in a comment names nothing */\n.part-a .part-b-x { color: blue; }\n"); put("kit/a/a.js", "export const a = \"part-a\";\n");
 put("kit/b/b.css", ".part-b-x { color: green; }\n"); put("kit/b/b.js", "export const b = \"part-b-x\";\n"); put("kit/b/b.example.js", "export const only = \"part-a\";\n");
 put("kit/c/c.css", ".part-c .part-b-x { color: pink; }\n"); put("kit/c/c.js", "import {b} from \"../b/b.js\";\nexport const c = [\"part-c\", b];\n");
-put("packages/copy/x.txt", "x"); put("data.mjs", "export const data = {items: {one: {list: [1]}}, routes: {a: {x: 0}, b: {y: null, z: 2}, c: {}}};\n");
+put("providers/call.ts", "// api.anthropic.com in a comment names nothing\nconst a = fetch(\"https://api.anthropic.com/v1/messages\");\nimport OpenAI from \"openai\";\nconst k = env.GEMINI_API_KEY;\nconst ok = fetch(\"https://api.v1d.io/v1/run\");\nimport cohere from \"./cohere.js\";\n"); put("providers/call.py", "import anthropic\nfrom google import genai\nvoice = \"https://swedencentral.tts.speech.microsoft.com/x\"\n# import openai in a comment\n"); put("packages/copy/x.txt", "x"); put("data.mjs", "export const data = {items: {one: {list: [1]}}, routes: {a: {x: 0}, b: {y: null, z: 2}, c: {}}};\n");
 const rules = [
   {id: 1, name: "small-files", kind: "max-lines", files: "src/**/*.ts", max: 10, fix: "split"}, {id: 2, name: "small-folders", kind: "max-files", files: "src/*.ts", max: 3, fix: "move"},
   {id: 3, name: "module-edges", kind: "modules", files: "src/**/*.ts", modules: [{dir: "src/m", imports: []}], fix: "use index"}, {id: 4, name: "pattern", kind: "pattern", files: "src/**/*.ts", pattern: "fetch\\(", fix: "adapter"},
@@ -22,6 +22,7 @@ const rules = [
   {id: 11, name: "names", kind: "names", files: "named/*", pattern: "^[a-z0-9]+(-[a-z0-9]+)*(\\.[a-z0-9]+)+$", fix: "kebab-case, then the extensions"},
   {id: 9, name: "contract", kind: "contract", files: "contracts/*.ts", fix: "begin the file with WHAT: and WHY:"},
   {id: 12, name: "css-imports", kind: "css-imports", files: "kit/*/*.css", scripts: "kit/*/*.js", exclude: "kit/*/*.example.js", prefix: "part-", fix: "import the part that draws the class in the part's script"},
+  {id: 13, name: "providers", kind: "providers", files: "providers/*", fix: "call the provider through api.v1d.io"},
   {id: 7, name: "count", kind: "count", module: "data.mjs", export: "data", path: "items.*.list", min: 2, fix: "add"},
   {id: 8, name: "any-of", kind: "count", module: "data.mjs", export: "data", paths: ["routes.*.x", "routes.*.z"], min: 1, fix: "price it"}];
 try {
@@ -35,6 +36,9 @@ try {
   if (badNames.length !== 2 || !badNames.every(line => /Bad_Name|camelCase/.test(line)) || red.some(line => line.startsWith("rule 11 ") && /good-name/.test(line))) throw new Error("names: the two badly spelt files are red, kebab-case and .d.ts are not");
   const cssHits = red.filter(line => line.startsWith("rule 12 "));
   if (cssHits.length !== 1 || !cssHits[0].includes("kit/a/a.css:3") || !cssHits[0].includes(".part-b-x") || !cssHits[0].includes("b ") || !cssHits[0].includes("does not import")) throw new Error(`css-imports: only a.css, line 3, names a class that b draws without importing b (b.css draws its own, c.css imports b, a comment names nothing, an example draws nothing): ${cssHits.join(" | ")}`);
+  const providers = red.filter(line => line.startsWith("rule 13 ")), at = line => providers.some(hit => hit.includes(line));
+  if (providers.length !== 6 || !["call.ts:2 reaches api.anthropic.com", "call.ts:3 imports openai", "call.ts:4 names the provider key GEMINI_API_KEY", "call.py:1 imports anthropic", "call.py:2 imports genai", "call.py:3 reaches speech.microsoft.com"].every(at))
+    throw new Error(`providers: a host, an SDK and a key are red in JS and Python, a comment, api.v1d.io and a local import are not: ${providers.join(" | ")}`);
   const contract = red.filter(line => line.startsWith("rule 9 "));
   if (contract.length !== 3 || !contract.some(line => line.includes("contracts/badverb.ts") && line.includes("unknown verb")) || !contract.some(line => line.includes("contracts/nowhy.ts") && line.includes("no WHY:")) || !contract.some(line => line.includes("contracts/nocomment.ts")) || contract.some(line => line.includes("contracts/ok.ts"))) throw new Error("contract: a file with no WHY, a file with no comment and a file whose WHAT opens with an unknown verb are red, a file with both and the right words is green");
   const noAmux = await check(root, {rules: rules.filter(rule => rule.kind === "contract")}, {}, {amuxRoot: join(root, "no-amux-here")}).then(() => null, error => error);

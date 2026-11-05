@@ -48,6 +48,26 @@ const tagsOf = doc => {
   return found;
 };
 
+/** The AI providers only ai-gateway may call, for the `providers` kind: their hosts (a subdomain counts), their SDKs (JS and Python) and the names of their keys, which live only as ai-gateway secrets.
+ *  It ships with the tool so every repo checks one list; a place a repo still has sits in its baseline, which may only shrink. */
+export const PROVIDERS = {
+  hosts: ["api.anthropic.com", "api.openai.com", "generativelanguage.googleapis.com", "aiplatform.googleapis.com", "texttospeech.googleapis.com", "speech.googleapis.com",
+    "api.wavespeed.ai", "api.tripo3d.ai", "api.elevenlabs.io", "api.replicate.com", "fal.run", "fal.ai", "api.mistral.ai", "api.cohere.com", "api.cohere.ai", "api.groq.com",
+    "api.together.xyz", "openrouter.ai", "api.deepseek.com", "api.x.ai", "api.stability.ai", "api-inference.huggingface.co", "router.huggingface.co", "api.assemblyai.com",
+    "api.deepgram.com", "api.runwayml.com", "api.lumalabs.ai", "api.klingai.com", "api.minimax.io", "dashscope.aliyuncs.com", "speech.microsoft.com", "cognitiveservices.azure.com",
+    "api.typesafe.ai", "api.memories.ai"],
+  js: ["@anthropic-ai/sdk", "openai", "@google/genai", "@google/generative-ai", "@google-cloud/vertexai", "@google-cloud/aiplatform", "@elevenlabs/elevenlabs-js", "elevenlabs",
+    "replicate", "@fal-ai/client", "@fal-ai/serverless-client", "@mistralai/mistralai", "cohere-ai", "groq-sdk", "together-ai", "@ai-sdk/anthropic", "@ai-sdk/openai", "@ai-sdk/google"],
+  python: ["anthropic", "openai", "google.generativeai", "google.genai", "vertexai", "elevenlabs", "replicate", "fal_client", "mistralai", "cohere", "groq", "together", "litellm"],
+  keys: ["ANTHROPIC", "OPENAI", "GEMINI", "GOOGLE_AI", "GOOGLE_GENAI", "WAVESPEED", "TRIPO", "ELEVENLABS", "ELEVEN_LABS", "FAL", "REPLICATE", "MISTRAL", "COHERE", "GROQ", "TOGETHER",
+    "OPENROUTER", "DEEPSEEK", "XAI", "STABILITY", "HUGGINGFACE", "HF", "AZURE_SPEECH", "ASSEMBLYAI", "DEEPGRAM", "RUNWAY", "LUMA", "KLING", "MINIMAX", "TYPESAFE", "MEMORIES"],
+  files: ["**/*.ts", "**/*.tsx", "**/*.js", "**/*.jsx", "**/*.mjs", "**/*.cjs", "**/*.py", "**/*.sh", "**/*.toml", "**/*.yaml", "**/*.yml"],
+};
+const escaped = list => list.map(item => item.replace(/[.*+?^${}()|[\]\\/]/g, "\\$&")).join("|");
+const PROVIDER_HOST = new RegExp(`(?<![\\w.-])(?:[\\w-]+\\.)*(${escaped(PROVIDERS.hosts)})(?![\\w-])`);
+const PROVIDER_SDK = new RegExp(`(?:\\bfrom|\\bimport|\\brequire)\\s*\\(?\\s*["'](${escaped(PROVIDERS.js)})(?:/[^"']*)?["']|^\\s*(?:from|import)\\s+(${escaped(PROVIDERS.python)})(?=[\\s.,]|$)(?!.*\\bfrom\\s*["'])|^\\s*from\\s+google\\s+import\\s+(genai|generativeai)\\b`);
+const PROVIDER_KEY = new RegExp(`\\b[A-Z0-9_]*?(?:${PROVIDERS.keys.join("|")})_(?:ADMIN_)?(?:API_)?(?:KEY|TOKEN)\\b`);
+
 /** Each kind turns a rule and the repo into hits {file, line, message, weight?, at?}. weight counts toward the baseline (default 1). */
 const kinds = {
   "max-lines": (rule, repo) => repo.covered(rule).flatMap(file => { const n = lines(repo.read(file)).length; return n > rule.max ? [{file, line: 1, message: `${n} lines, max ${rule.max}`, weight: n - rule.max}] : []; }),
@@ -57,6 +77,13 @@ const kinds = {
   },
   pattern: (rule, repo) => { const re = new RegExp(rule.pattern, rule.flags);
     return repo.covered(rule).flatMap(file => lines(repo.read(file)).flatMap((line, n) => noteless(line) && re.test(line) ? [{file, line: n + 1, message: rule.message ?? `breaks ${rule.name}`}] : [])); },
+  // Only ai-gateway reaches an AI provider: a covered line that names a provider's host, imports its SDK or names its key is red. The list is PROVIDERS, the same in every repo; ai-gateway does not turn the rule on.
+  providers: (rule, repo) => repo.covered({files: PROVIDERS.files, ...rule}).flatMap(file => lines(repo.read(file)).flatMap((line, n) => {
+    if (!noteless(line)) return [];
+    const host = PROVIDER_HOST.exec(line)?.[1], sdk = PROVIDER_SDK.exec(line), key = PROVIDER_KEY.exec(line)?.[0];
+    const what = host ? `reaches ${host}` : sdk ? `imports ${sdk.slice(1).find(Boolean)}` : key ? `names the provider key ${key}` : null;
+    return what ? [{file, line: n + 1, message: `${what}; only ai-gateway calls a provider`}] : [];
+  })),
   // The folders directly under one folder (the repo's root, or `in`) are the ones the layout lists: any other is red, and node_modules, dist, build, .git and every dot folder are left alone.
   folders: (rule, repo) => {
     const base = rule.in ?? "", at = resolve(repo.root, base);

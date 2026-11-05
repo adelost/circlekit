@@ -12,6 +12,7 @@ A hit reads `rule N name: file:line message. Fix: ...`.
 Kinds (each rule has `id`, `name`, `kind`, `fix`; `files` and `exclude` are globs with `*` and `**`):
 
 - `max-lines` `{max}`: a file over max; the excess counts toward the baseline.
+- `providers` `{}`: a line that names an AI provider's host, imports its SDK (JS or Python) or names its key is red: only ai-gateway calls a provider, and a provider key lives only as an ai-gateway secret. The list is `PROVIDERS` in arch-check.mjs, the same for every repo; `files` defaults to code and config, and the places a repo still has sit in its baseline, which may only shrink. ai-gateway does not turn it on.
 - `max-files` `{max}`: a folder with more files than max.
 - `pattern` `{pattern, flags?, message?}`: a regex per line (comment lines skipped).
 - `absent` `{paths}`: a path that must not exist.
