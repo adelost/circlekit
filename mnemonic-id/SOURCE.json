@@ -1,0 +1,31 @@
+{
+ "tarball": "https://registry.npmjs.org/mnemonic-id/-/mnemonic-id-4.1.0.tgz",
+ "integrity": "sha512-6cKVykBrnnOiY/p1U9mkZ/ZP4O9m00IlDw0eVAuVhRC5ClySm9ILzTHqhhTvtpA6ZokpCWBjY21phPYQJMn4JA==",
+ "version": "4.1.0",
+ "files": [
+  {
+   "path": "LICENSE",
+   "sha256": "1748ab08f0ab96d94123d2b70691b60c66a0bbd657598bd6bce48f3a2d639a1e"
+  },
+  {
+   "path": "README.md",
+   "sha256": "06828f322a31d2ff95caae7adf0f0bd375ce56bcc0c097104e7e4791d877f2c3"
+  },
+  {
+   "path": "dist/index.cjs",
+   "sha256": "063636441ef51b0052674946554e093d9938faea11ce1ec9062ea3845f3e1926"
+  },
+  {
+   "path": "dist/index.d.cts",
+   "sha256": "c14f706ac9ce45c8241571123dba9deee269f4c33a2a2d230af36537ceb84c24"
+  },
+  {
+   "path": "dist/index.d.ts",
+   "sha256": "c14f706ac9ce45c8241571123dba9deee269f4c33a2a2d230af36537ceb84c24"
+  },
+  {
+   "path": "dist/index.js",
+   "sha256": "1091de6de138a9b6555b217c8887d98abb59b179e2bcbcb8a9463da1617bad67"
+  }
+ ]
+}

@@ -1,0 +1,40 @@
+{
+  "name": "mnemonic-id",
+  "description": "Library to generate easy to remember, and sometimes entertaining, human readable ids",
+  "version": "4.1.0",
+  "license": "MIT",
+  "author": "Mattias E. O. Andersson",
+  "repository": "github:adelost/mnemonic-id",
+  "homepage": "https://github.com/adelost/mnemonic-id#readme",
+  "keywords": [
+    "id",
+    "uuid",
+    "mnemonic",
+    "random",
+    "name",
+    "generator",
+    "human",
+    "readable",
+    "sentence",
+    "memorable"
+  ],
+  "type": "module",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    }
+  },
+  "files": [
+    "dist",
+    "SOURCE.json"
+  ],
+  "sideEffects": false,
+  "scripts": {
+    "check": "node scripts/check-dist.mjs"
+  }
+}
