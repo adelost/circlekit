@@ -2,7 +2,7 @@
 import {mkdtempSync, mkdirSync, writeFileSync, rmSync} from "node:fs";
 import {tmpdir} from "node:os";
 import {join} from "node:path";
-import {check} from "../arch-check.mjs";
+import {check, KEY_NAMES} from "../arch-check.mjs";
 
 const root = mkdtempSync(join(tmpdir(), "arch-check-"));
 const put = (path, text) => {mkdirSync(join(root, path, ".."), {recursive: true}); writeFileSync(join(root, path), text);};
@@ -43,6 +43,9 @@ try {
   const modal = red.filter(line => line.startsWith("rule 14 ")), modalAt = line => modal.some(hit => hit.includes(line));
   if (modal.length !== 7 || !["run.py:1 imports modal", "run.py:2 imports modal", "run.py:3 reaches modal.run", "door.ts:1 names the Modal setting STATELESS_URL", "door.ts:2 names the Modal setting MODAL_TOKEN_ID", "door.ts:4 imports modal", "door.ts:5 imports modal_calls"].every(modalAt))
     throw new Error(`modal: the SDK, a *.modal.run address, a token and STATELESS_URL are red, a comment and PUBLIC_ORIGIN are not: ${modal.join(" | ")}`);
+  const named = name => KEY_NAMES.providers.test(name) ? "providers" : KEY_NAMES.modal.test(name) ? "modal" : null;
+  if (named("CUT_ANTHROPIC_API_KEY") !== "providers" || named("MODAL_TOKEN_SECRET") !== "modal" || named("STATELESS_PROXY_KEY") !== "modal" || named("CUT_CONTEXT_KEY") !== null || named("V1D_AUTH_CLIENT_SECRET") !== null)
+    throw new Error("KEY_NAMES: a provider key and a Modal key are named, an app's own key is not");
   const contract = red.filter(line => line.startsWith("rule 9 "));
   if (contract.length !== 3 || !contract.some(line => line.includes("contracts/badverb.ts") && line.includes("unknown verb")) || !contract.some(line => line.includes("contracts/nowhy.ts") && line.includes("no WHY:")) || !contract.some(line => line.includes("contracts/nocomment.ts")) || contract.some(line => line.includes("contracts/ok.ts"))) throw new Error("contract: a file with no WHY, a file with no comment and a file whose WHAT opens with an unknown verb are red, a file with both and the right words is green");
   const noAmux = await check(root, {rules: rules.filter(rule => rule.kind === "contract")}, {}, {amuxRoot: join(root, "no-amux-here")}).then(() => null, error => error);

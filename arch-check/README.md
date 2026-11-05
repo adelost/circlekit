@@ -9,6 +9,8 @@ Rules as data in `arch.config.json`; old debt as counts in `arch.baseline.json` 
 
 A hit reads `rule N name: file:line message. Fix: ...`.
 
+`KEY_NAMES` (`providers`, `modal`) exports the two key-name matchers alone, for a check of live secrets by name.
+
 Kinds (each rule has `id`, `name`, `kind`, `fix`; `files` and `exclude` are globs with `*` and `**`):
 
 - `max-lines` `{max}`: a file over max; the excess counts toward the baseline.

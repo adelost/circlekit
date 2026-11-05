@@ -74,6 +74,8 @@ const callerOf = (list, keys, extra = "") => ({
   key: new RegExp(keys)});
 const CALLERS = {providers: {...callerOf(PROVIDERS, `\\b[A-Z0-9_]*?(?:${PROVIDERS.keys.join("|")})_(?:ADMIN_)?(?:API_)?(?:KEY|TOKEN)\\b`, "|^\\s*from\\s+google\\s+import\\s+(genai|generativeai)\\b"), who: "a provider", word: "the provider key"},
   modal: {...callerOf(MODAL, MODAL.keys), who: "Modal", word: "the Modal setting"}};
+/** The key names alone, for a check of live secrets (a Worker's or Modal's names, never their values): the same matchers the lint uses. */
+export const KEY_NAMES = {providers: CALLERS.providers.key, modal: CALLERS.modal.key};
 /** A covered line that names one of the list's hosts, imports its SDK or names its key, as a hit that says which. Comment lines are left alone. */
 const callers = name => (rule, repo) => repo.covered({files: PROVIDERS.files, ...rule}).flatMap(file => lines(repo.read(file)).flatMap((line, n) => {
   if (!noteless(line)) return [];
