@@ -13,6 +13,7 @@ Kinds (each rule has `id`, `name`, `kind`, `fix`; `files` and `exclude` are glob
 
 - `max-lines` `{max}`: a file over max; the excess counts toward the baseline.
 - `providers` `{}`: a line that names an AI provider's host, imports its SDK (JS or Python) or names its key is red: only ai-gateway calls a provider, and a provider key lives only as an ai-gateway secret. The list is `PROVIDERS` in arch-check.mjs, the same for every repo; `files` defaults to code and config, and the places a repo still has sit in its baseline, which may only shrink. ai-gateway does not turn it on.
+- `modal` `{}`: the same for Modal (`MODAL` in arch-check.mjs): its SDK, a `*.modal.run` address, its token and an app's own address of a Modal app (`STATELESS_URL`, `EXECUTOR_URL` and the like) are red; only ai-gateway starts Modal work.
 - `max-files` `{max}`: a folder with more files than max.
 - `pattern` `{pattern, flags?, message?}`: a regex per line (comment lines skipped).
 - `absent` `{paths}`: a path that must not exist.

@@ -63,10 +63,24 @@ export const PROVIDERS = {
     "OPENROUTER", "DEEPSEEK", "XAI", "STABILITY", "HUGGINGFACE", "HF", "AZURE_SPEECH", "ASSEMBLYAI", "DEEPGRAM", "RUNWAY", "LUMA", "KLING", "MINIMAX", "TYPESAFE", "MEMORIES"],
   files: ["**/*.ts", "**/*.tsx", "**/*.js", "**/*.jsx", "**/*.mjs", "**/*.cjs", "**/*.py", "**/*.sh", "**/*.toml", "**/*.yaml", "**/*.yml"],
 };
+/** Modal, for the `modal` kind: only ai-gateway starts Modal work. Its SDK, a *.modal.run address, its token and an app's own address of a Modal app (STATELESS_URL and the like) are red. */
+export const MODAL = {hosts: ["modal.run", "api.modal.com"], js: ["modal"], python: ["modal", "modal_calls"], paths: ["modal_calls", "modal-calls"],
+  keys: "\\b[A-Z0-9_]*?(?:MODAL|STATELESS)[A-Z0-9_]*?_(?:URL|TOKEN_ID|TOKEN_SECRET|TOKEN|KEY|SECRET)\\b|\\b(?:EXECUTOR|RUNTIME)_URL\\b"};
 const escaped = list => list.map(item => item.replace(/[.*+?^${}()|[\]\\/]/g, "\\$&")).join("|");
-const PROVIDER_HOST = new RegExp(`(?<![\\w.-])(?:[\\w-]+\\.)*(${escaped(PROVIDERS.hosts)})(?![\\w-])`);
-const PROVIDER_SDK = new RegExp(`(?:\\bfrom|\\bimport|\\brequire)\\s*\\(?\\s*["'](${escaped(PROVIDERS.js)})(?:/[^"']*)?["']|^\\s*(?:from|import)\\s+(${escaped(PROVIDERS.python)})(?=[\\s.,]|$)(?!.*\\bfrom\\s*["'])|^\\s*from\\s+google\\s+import\\s+(genai|generativeai)\\b`);
-const PROVIDER_KEY = new RegExp(`\\b[A-Z0-9_]*?(?:${PROVIDERS.keys.join("|")})_(?:ADMIN_)?(?:API_)?(?:KEY|TOKEN)\\b`);
+/** One matcher per list: a host (a subdomain counts), an SDK import in JS or Python (a package, or a shared client named by a folder in `paths`), and a key's name. */
+const callerOf = (list, keys, extra = "") => ({
+  host: new RegExp(`(?<![\\w.-])(?:[\\w-]+\\.)*(${escaped(list.hosts)})(?![\\w-])`),
+  sdk: new RegExp(`(?:\\bfrom|\\bimport|\\brequire)\\s*\\(?\\s*["'](?:(${escaped(list.js)})(?:/[^"']*)?${list.paths?.length ? `|[^"']*?/(${escaped(list.paths)})(?:/[^"']*)?` : ""})["']|^\\s*(?:from|import)\\s+(${escaped(list.python)})(?=[\\s.,]|$)(?!.*\\bfrom\\s*["'])${extra}`),
+  key: new RegExp(keys)});
+const CALLERS = {providers: {...callerOf(PROVIDERS, `\\b[A-Z0-9_]*?(?:${PROVIDERS.keys.join("|")})_(?:ADMIN_)?(?:API_)?(?:KEY|TOKEN)\\b`, "|^\\s*from\\s+google\\s+import\\s+(genai|generativeai)\\b"), who: "a provider", word: "the provider key"},
+  modal: {...callerOf(MODAL, MODAL.keys), who: "Modal", word: "the Modal setting"}};
+/** A covered line that names one of the list's hosts, imports its SDK or names its key, as a hit that says which. Comment lines are left alone. */
+const callers = name => (rule, repo) => repo.covered({files: PROVIDERS.files, ...rule}).flatMap(file => lines(repo.read(file)).flatMap((line, n) => {
+  if (!noteless(line)) return [];
+  const {host, sdk, key, who, word} = CALLERS[name], found = host.exec(line)?.[1], imported = sdk.exec(line), named = key.exec(line)?.[0];
+  const what = found ? `reaches ${found}` : imported ? `imports ${imported.slice(1).find(Boolean)}` : named ? `names ${word} ${named}` : null;
+  return what ? [{file, line: n + 1, message: `${what}; only ai-gateway calls ${who}`}] : [];
+}));
 
 /** Each kind turns a rule and the repo into hits {file, line, message, weight?, at?}. weight counts toward the baseline (default 1). */
 const kinds = {
@@ -77,13 +91,9 @@ const kinds = {
   },
   pattern: (rule, repo) => { const re = new RegExp(rule.pattern, rule.flags);
     return repo.covered(rule).flatMap(file => lines(repo.read(file)).flatMap((line, n) => noteless(line) && re.test(line) ? [{file, line: n + 1, message: rule.message ?? `breaks ${rule.name}`}] : [])); },
-  // Only ai-gateway reaches an AI provider: a covered line that names a provider's host, imports its SDK or names its key is red. The list is PROVIDERS, the same in every repo; ai-gateway does not turn the rule on.
-  providers: (rule, repo) => repo.covered({files: PROVIDERS.files, ...rule}).flatMap(file => lines(repo.read(file)).flatMap((line, n) => {
-    if (!noteless(line)) return [];
-    const host = PROVIDER_HOST.exec(line)?.[1], sdk = PROVIDER_SDK.exec(line), key = PROVIDER_KEY.exec(line)?.[0];
-    const what = host ? `reaches ${host}` : sdk ? `imports ${sdk.slice(1).find(Boolean)}` : key ? `names the provider key ${key}` : null;
-    return what ? [{file, line: n + 1, message: `${what}; only ai-gateway calls a provider`}] : [];
-  })),
+  // Only ai-gateway reaches an AI provider or Modal: the lists are PROVIDERS and MODAL, the same in every repo; ai-gateway does not turn these rules on.
+  providers: callers("providers"),
+  modal: callers("modal"),
   // The folders directly under one folder (the repo's root, or `in`) are the ones the layout lists: any other is red, and node_modules, dist, build, .git and every dot folder are left alone.
   folders: (rule, repo) => {
     const base = rule.in ?? "", at = resolve(repo.root, base);
