@@ -1,6 +1,7 @@
 .gradle/
 **/build/
 **/dist/
+api-client/bench/
 **/node_modules/
 local.properties
 *.iml
