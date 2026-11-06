@@ -8,6 +8,7 @@
   "types": "./dist/device/index.d.ts",
   "files": [
     "dist",
+    "bench/quick",
     "README.md"
   ],
   "sideEffects": false,
