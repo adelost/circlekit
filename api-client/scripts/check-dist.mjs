@@ -16,7 +16,12 @@ const targets = value => typeof value === 'string' ? [value] : Object.values(val
 for (const value of Object.values(manifest.exports ?? {})) for (const target of targets(value)) if (target !== './package.json' && !existsSync(normalize(target))) throw new Error(`the manifest exports ${target}, which dist does not have`);
 const walk = dir => readdirSync(dir, { withFileTypes: true }).flatMap(entry => entry.isDirectory() ? walk(join(dir, entry.name)) : [join(dir, entry.name)]);
 for (const file of walk('dist').filter(name => name.endsWith('.js') || name.endsWith('.mjs') || name.endsWith('.d.ts'))) {
-  for (const match of readFileSync(file, 'utf8').matchAll(/(?:from\s*|import\s*\(?\s*)["']([^"']+)["']/g)) {
+  const imports = file.startsWith('dist/modal-proof/')
+    ? /^\s*import\s+(?:[^\n;]*?\s+from\s+)?["']([^"']+)["']/gm
+    : /(?:from\s*|import\s*\(?\s*)["']([^"']+)["']/g;
+  const text = readFileSync(file, 'utf8');
+  const matches = [...text.matchAll(imports), ...(file.startsWith('dist/modal-proof/') ? text.matchAll(/\bimport\s*\(\s*["']([^"']+)["']/g) : [])];
+  for (const match of matches) {
     const spec = match[1];
     if (spec.startsWith('.')) { if (!existsSync(join(dirname(file), spec)) && !existsSync(join(dirname(file), spec.replace(/\.js$/, '.d.ts')))) throw new Error(`${file} imports ${spec}, which the package does not carry`); }
     else if (spec !== 'mediabunny' && !(file.startsWith('dist/modal-proof/') && spec.startsWith('node:'))) throw new Error(`${file} imports ${spec}: only mediabunny may come from outside the package`);
