@@ -1,6 +1,6 @@
 {
   "name": "@v1d/api-client",
-  "version": "0.12.2",
+  "version": "0.12.3",
   "description": "What the v1d API runs on the person's own device: waveform, encode, cuts and the files store's start and register bodies (WebCodecs and mediabunny), built from the ai-gateway repository's one source",
   "type": "module",
   "main": "./dist/device/index.js",
@@ -12,6 +12,8 @@
     "README.md"
   ],
   "exports": {
+    "./modal-proof": "./dist/modal-proof/modal-serialization.mjs",
+    "./modal-proof/index-sdk-files": "./dist/modal-proof/index-sdk-files.mjs",
     "./device": {
       "types": "./dist/device/index.d.ts",
       "default": "./dist/device/index.js"

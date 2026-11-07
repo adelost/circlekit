@@ -15,11 +15,11 @@ for (const { path, sha256 } of source.files) {
 const targets = value => typeof value === 'string' ? [value] : Object.values(value ?? {}).flatMap(targets);
 for (const value of Object.values(manifest.exports ?? {})) for (const target of targets(value)) if (target !== './package.json' && !existsSync(normalize(target))) throw new Error(`the manifest exports ${target}, which dist does not have`);
 const walk = dir => readdirSync(dir, { withFileTypes: true }).flatMap(entry => entry.isDirectory() ? walk(join(dir, entry.name)) : [join(dir, entry.name)]);
-for (const file of walk('dist').filter(name => name.endsWith('.js') || name.endsWith('.d.ts'))) {
+for (const file of walk('dist').filter(name => name.endsWith('.js') || name.endsWith('.mjs') || name.endsWith('.d.ts'))) {
   for (const match of readFileSync(file, 'utf8').matchAll(/(?:from\s*|import\s*\(?\s*)["']([^"']+)["']/g)) {
     const spec = match[1];
     if (spec.startsWith('.')) { if (!existsSync(join(dirname(file), spec)) && !existsSync(join(dirname(file), spec.replace(/\.js$/, '.d.ts')))) throw new Error(`${file} imports ${spec}, which the package does not carry`); }
-    else if (spec !== 'mediabunny') throw new Error(`${file} imports ${spec}: only mediabunny may come from outside the package`);
+    else if (spec !== 'mediabunny' && !(file.startsWith('dist/modal-proof/') && spec.startsWith('node:'))) throw new Error(`${file} imports ${spec}: only mediabunny may come from outside the package`);
   }
 }
 console.log(`api-client: ${source.files.length} files are ai-gateway ${source.gateway.slice(0, 9)}, version ${manifest.version}`);
