@@ -1,6 +1,6 @@
 {
   "name": "@v1d/api-client",
-  "version": "0.12.3",
+  "version": "0.12.4",
   "description": "What the v1d API runs on the person's own device: waveform, encode, cuts and the files store's start and register bodies (WebCodecs and mediabunny), built from the ai-gateway repository's one source",
   "type": "module",
   "main": "./dist/device/index.js",
@@ -58,6 +58,10 @@
     "./input": {
       "types": "./dist/device/input.d.ts",
       "default": "./dist/device/input.js"
+    },
+    "./errors": {
+      "types": "./dist/device/errors.d.ts",
+      "default": "./dist/device/errors.js"
     }
   },
   "dependencies": {
