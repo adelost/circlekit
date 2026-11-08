@@ -1,0 +1,90 @@
+{
+ "baseline": "arch.baseline.json",
+ "rules": [
+  {
+   "id": "K8c",
+   "name": "file-500",
+   "kind": "max-lines",
+   "files": [
+    "**/*.ts",
+    "**/*.mjs",
+    "**/*.js"
+   ],
+   "exclude": [
+    "**/*.d.ts"
+   ],
+   "max": 500,
+   "fix": "keep the file at 500 lines or fewer: move a cohesive responsibility into its own module and import it; do not compress lines. Existing long files are named by their exact excess in arch.baseline.json and may only shrink. Kotlin has its own manual ratchet, scripts/check-file-length.sh"
+  },
+  {
+   "id": "K16",
+   "name": "packages-are-closed",
+   "kind": "modules",
+   "exactEdges": true,
+   "edgesOnly": true,
+   "closed": true,
+   "acyclic": true,
+   "root": ".",
+   "files": [
+    "**/*.ts",
+    "**/*.mjs",
+    "**/*.js"
+   ],
+   "modules": [
+    {
+     "dir": "api-client",
+     "imports": []
+    },
+    {
+     "dir": "arch-check",
+     "imports": []
+    },
+    {
+     "dir": "bdd-vitest",
+     "imports": []
+    },
+    {
+     "dir": "circlekit-assets",
+     "imports": []
+    },
+    {
+     "dir": "cli",
+     "imports": []
+    },
+    {
+     "dir": "link-product",
+     "imports": []
+    },
+    {
+     "dir": "mnemonic-id",
+     "imports": []
+    },
+    {
+     "dir": "product-emit",
+     "imports": []
+    },
+    {
+     "dir": "product-spec",
+     "imports": []
+    },
+    {
+     "dir": "product-studio",
+     "imports": []
+    },
+    {
+     "dir": "showcase-product",
+     "imports": []
+    },
+    {
+     "dir": "skydiving-legos",
+     "imports": []
+    },
+    {
+     "dir": "web-kit",
+     "imports": []
+    }
+   ],
+   "fix": "a package reaches another through its published name (@v1d/...), never through a relative path into its files; a relative import that leaves its package is a breach, named in arch.baseline.json and only shrinking"
+  }
+ ]
+}

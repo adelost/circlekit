@@ -1,0 +1,12 @@
+{
+  "name": "circlekit-arch-tools",
+  "private": true,
+  "description": "Dev tools for the architecture guard (scripts/arch). A manual tool like scripts/check-*.sh: never wired into Gradle, git hooks, hosted CI or a release path.",
+  "scripts": {
+    "lint": "node scripts/arch/arch_check.mjs"
+  },
+  "devDependencies": {
+    "@v1d/arch-check": "https://circlekit.pages.dev/npm/v1d/arch-check/0.8.0/v1d-arch-check-0.8.0.tgz",
+    "typescript": "5.9.3"
+  }
+}
