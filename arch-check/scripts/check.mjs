@@ -200,20 +200,28 @@ try {
         throw new Error(`write: --init never rewrites a baseline that has entries: ${again.status} ${again.stderr}`);
     }
     // Cut row 1873: the story kinds. eslint counts one ESLint rule per file with the ESLint, TypeScript parser and plugins of the repository (TypeScript
-    // files too); first-line asks line 1 to be a one-line comment; story-order names each private helper above a file's last inline export, and leaves a
-    // file that exports by a list alone. A thing that waits (a language) is a decision with until, red after it.
+    // files too); first-line asks line 1 to be a one-line comment (Python too); story-order names each private helper above a file's last inline export, and leaves a
+    // file that exports by a list alone; stepdown names a function above a caller, stepdown-order one out of the order of first calls (JS, TS and Python).
+    // A thing that waits (a language) is a decision with until, red after it.
     {
       symlinkSync(new URL("../node_modules", import.meta.url).pathname, join(repo, "node_modules"));
       gput("st/many.ts", "// many parameters, in TypeScript\nexport function many(a: number, b: number, c: number, d: number, e: number) { return a + b + c + d + e; }\n");
       gput("st/deep.js", "// a deep function\nexport function deep(a) { if (a) { if (a) { if (a) { if (a) { if (a) { if (a) { return 1; } } } } } } return 0; }\n");
       gput("st/order.js", "/** a block opens the file\n */\nconst helper = () => 1;\nexport const first = () => helper();\n");
       gput("st/listed.js", "// a list is the table of contents\nconst helper = () => 1;\nconst first = () => helper();\nexport {first};\n");
+      // stepdown: a function below every caller that holds it; recursion, functions that call each other, a shadowed name and a helper's call of an export do not hold
+      gput("st/held.js", "// none of these holds\nexport function main() { return step() + ping(2) + rec(2); }\nexport function other() { return 1; }\nfunction step() { return other(); }\n"
+        + "function ping(n) { return n ? pong(n - 1) : 0; }\nfunction pong(n) { return ping(n); }\nfunction rec(n) { return n ? rec(n - 1) : 0; }\nfunction shadow(step) { return step(); }\n");
+      gput("st/step.py", "# a private def above the public def that calls it\ndef _helper():\n    return 1\n\ndef run():\n    return _helper()\n"); gput("st/bare.py", "x = 1\n");
       const st = (id, more) => ({id, name: id, files: ["st/**"], fix: "x", ...more});
       const story = {rules: [st("P", {kind: "eslint", rule: "max-params", options: {max: 4}}), st("C", {kind: "eslint", rule: "sonarjs/cognitive-complexity", options: 15}),
-        st("F", {kind: "first-line"}), st("S", {kind: "story-order"})]};
+        st("F", {kind: "first-line"}), st("S", {kind: "story-order"}), st("B", {kind: "stepdown"}), st("O", {kind: "stepdown-order"})]};
       const {red: said, counts: told} = await check(repo, story, {});
       const keys = Object.keys(told).sort().join(" ");
-      if (keys !== "C:st/deep.js F:st/order.js P:st/many.ts S:st/order.js" || !said.some(line => /S: st\/order\.js:3 private helper helper stands above the last export \(line 4\); move it below/.test(line))
+      if (keys !== "B:st/listed.js B:st/order.js B:st/step.py C:st/deep.js F:st/bare.py F:st/order.js O:st/listed.js O:st/order.js O:st/step.py P:st/many.ts S:st/order.js S:st/step.py"
+        || !said.some(line => line.includes("S: st/order.js:3 Story first: the file's exports on top, helpers below (Clean Code stepdown rule). Move helper below first."))
+        || !said.some(line => line.includes("S: st/step.py:2 Story first: the file's exports on top, helpers below (Clean Code stepdown rule). Move _helper below run."))
+        || !said.some(line => line.includes("B: st/listed.js:2 Story first (stepdown): helper is called by first; place it below first."))
         || !said.some(line => /P: st\/many\.ts:2 Function 'many' has too many parameters \(5\)/.test(line))) throw new Error(`story: the kinds name their breaches: ${keys} ${said.join(" | ")}`);
       const waits = {who: "gate", when: "2026-11-08T00:00Z", message: "check", waits: {python: "the story rules read JS and TS"}, until: "2026-12-01"};
       if (decisionFaults([waits]).length || !decisionFaults([{...waits, until: undefined}]).length || !/python: waited until 2026-12-01/.test(expiredFaults([waits], {}, "2026-12-02").join())
