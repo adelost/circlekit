@@ -3,6 +3,7 @@
 import { execFileSync } from 'node:child_process';
 import { existsSync, readdirSync } from 'node:fs';
 import { posix, resolve } from 'node:path';
+import { UNTIL } from './policy.mjs';
 
 export const DECISIONS = 'arch.decisions.json';
 const BOUNDED = ['max-lines', 'max-line-length', 'max-module-lines', 'door-names'];   // the kinds whose max and exclude only tighten without a decision
@@ -93,14 +94,25 @@ export function ratchetFaults(root, config, baseline, { decisions = [], counts }
       const oldExcluded = new Set((oldCap.exclude ?? []).map(renamedKey));
       for (const file of cap.exclude ?? []) if (!oldExcluded.has(file)) red.push(`${cap.id}: new root exception ${file}; put the file in its module`);
     }
+    // Cut row 1868 (skyvw:0's review of 3e50d7a9d): a key that left in this change lends its count to one new key of the same rule, a move (a file split or renamed past
+    // git's reach); any other growth of a rule that stands is a decision of this change that names the key, why, and until, the day the exception goes (policy.mjs reddens it then)
+    const left = new Map(), grown = [];   // rule id -> the counts its keys that left had, smallest first
+    for (const [key, value] of Object.entries(prior)) if (!(key in baseline)) { const id = key.split(':')[0]; left.set(id, [...(left.get(id) ?? []), value].sort((a, b) => a - b)); }
     for (const [key, value] of Object.entries(baseline)) {
       const id = key.split(':')[0], oldRule = oldConfig.rules.find(r => String(r.id) === id);
       if (!oldRule) {   // a new rule starts with today's breaches, named here in the same commit, and the next commit's ratchet only lets them shrink
         if (counts && (counts[key] ?? 0) !== value) red.push(`${key}: a new rule ${id} names ${value}, today's breaches are ${counts[key] ?? 0}; name exactly today's`);
         continue;
       }
-      if (value <= (prior[key] ?? 0) || licensed(key, value)) continue;
-      red.push(`${key}: exception ${value} raises ${ref}'s ${prior[key] ?? 0}; remove the new violation instead, or name the raise in ${DECISIONS} (who, when, message) in this commit`);
+      if (value > (prior[key] ?? 0)) grown.push([key, value, id]);
+    }
+    for (const [key, value, id] of grown.sort(([, a], [, b]) => b - a)) {
+      const room = left.get(id) ?? [], at = key in prior ? -1 : room.findIndex(n => n >= value);
+      if (at >= 0) { room.splice(at, 1); continue; }
+      const named = fresh.filter(one => (one.ceilings?.[key] ?? -1) >= value);
+      if (named.some(one => one.why?.trim() && UNTIL.test(one.until ?? ''))) continue;
+      red.push(named.length ? `${key}: the decision that names it needs why and until (the day the exception goes, as 2026-12-01)`
+        : `${key}: exception ${value} raises ${ref}'s ${prior[key] ?? 0}; remove the new violation instead, or name the raise in ${DECISIONS} (who, when, why, until, message) in this commit`);
     }
   }
   return [...new Set(red)];

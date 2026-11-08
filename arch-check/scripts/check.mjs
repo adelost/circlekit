@@ -9,7 +9,7 @@ import {moduleCounts, saveImportCache} from "../guard/graph.mjs";
 import {sandboxCounts} from "../guard/sandbox.mjs";
 import {doorNameCounts, lazyCounts, otherDoorCounts} from "../guard/doors.mjs";
 import {ratchetFaults} from "../guard/ratchet.mjs";
-import {architectureGuard, decisionFaults} from "../guard/policy.mjs";
+import {architectureGuard, decisionFaults, expiredFaults} from "../guard/policy.mjs";
 import {pushedTips} from "../guard/export.mjs";
 
 const root = mkdtempSync(join(tmpdir(), "arch-check-"));
@@ -158,7 +158,10 @@ try {
     if (!/R: it was hard|R: .* left out/.test(faults({...config, rules: [{...config.rules[0], exclude: ["a/x"]}, config.rules[1]]}))) throw new Error("ratchet: an excluded file needs a decision");
     const widened = {...config, rules: [config.rules[0], {...config.rules[1], modules: [{dir: "ts/a", imports: ["ts/b"]}]}]};
     if (!/may now import ts\/b/.test(faults(widened)) || faults(widened, {}, [decided({"T:import:ts/a>ts/b": 1})])) throw new Error("ratchet: a widened dependency needs a decision, and a decision for it is enough");
-    if (!/exception 2 raises/.test(faults(config, {"R:a/x.ts": 2})) || faults(config, {"R:a/x.ts": 2}, [decided({"R:a/x.ts": 2})])) throw new Error("ratchet: a raised exception needs a decision, and a decision for it is enough");
+    // Cut row 1868 (skyvw:0's review of Cut's 3e50d7a9d): a raised or new exception of a rule that stands needs a decision with why and until; one without them is not enough
+    const reason = {why: "the split waits on the money move", until: "2026-12-01"};
+    if (!/exception 2 raises/.test(faults(config, {"R:a/x.ts": 2})) || !/needs why and until/.test(faults(config, {"R:a/x.ts": 2}, [decided({"R:a/x.ts": 2})]))
+      || faults(config, {"R:a/x.ts": 2}, [decided({"R:a/x.ts": 2}, reason)])) throw new Error("ratchet: a raised exception needs a decision with why and until, and one is enough");
     if (!/the guard .* changed/.test(faults({...config, guard: {wrapper: "w2.mjs", lint: "node w2.mjs"}}))) throw new Error("ratchet: a changed guard needs a decision");
     // a line-length rule only tightens without a decision, as max-lines does: its max, what it leaves out and its kind
     const lineRule = {id: "L", name: "l", kind: "max-line-length", files: ["a/**"], max: 160, fix: "x"}, lined = rule => ({...config, rules: [...config.rules, {...lineRule, ...rule}]});
@@ -179,6 +182,24 @@ try {
     gput("arch.config.json", JSON.stringify(lazied({}))); git("add", "."); git("commit", "-qm", "lazy imports");
     if (!/Z: the files it leaves out \(skip\) changed/.test(faults(lazied({skip: "test/"}))) || faults(lazied({skip: "test/"}), {}, [decided({"Z:skip": 1})]))
       throw new Error("ratchet: a lazy-imports rule's skip needs a decision, and one is enough");
+    // Cut row 1868: a move needs no decision (a key that left lends its count to one new key of its rule), a growth past it does; the parent and its parent both hold the old key
+    {
+      gput("arch.baseline.json", JSON.stringify({"R:a/old.ts": 3})); git("add", "."); git("commit", "-qm", "an exception"); gput("note.txt", "x"); git("add", "."); git("commit", "-qm", "another change");
+      const now = lazied({});
+      if (faults(now, {"R:a/new.ts": 3}) || faults(now, {"R:a/new.ts": 2})) throw new Error(`ratchet: a key that moves with the same or a lower count needs no decision: ${faults(now, {"R:a/new.ts": 3})}`);
+      if (!/R:a\/new\.ts: exception 4 raises/.test(faults(now, {"R:a/new.ts": 4})) || !/R:a\/new\.ts: exception 1 raises/.test(faults(now, {"R:a/old.ts": 3, "R:a/new.ts": 1})))
+        throw new Error("ratchet: a move that grows, or a new key while the old one stays, needs a decision");
+      const again = spawnSync(process.execPath, [new URL("../arch-check.mjs", import.meta.url).pathname, "--init", repo], {encoding: "utf8"});
+      if (again.status !== 1 || !again.stderr.includes("only shrinks") || readFileSync(join(repo, "arch.baseline.json"), "utf8") !== JSON.stringify({"R:a/old.ts": 3}))
+        throw new Error(`write: --init never rewrites a baseline that has entries: ${again.status} ${again.stderr}`);
+    }
+    // Cut row 1868: a decision whose until has passed is red while a key it names stands; a later until carries the key, a gone key frees it
+    {
+      const old = decided({"R:a/old.ts": 3}, {...reason, until: "2026-11-01"}), later = decided({"R:a/old.ts": 3}, reason), on = "2026-11-08";
+      if (!/R:a\/old\.ts: its decision's until 2026-11-01 has passed/.test(expiredFaults([old], {"R:a/old.ts": 3}, on).join()) || expiredFaults([old, later], {"R:a/old.ts": 3}, on).length
+        || expiredFaults([old], {}, on).length || expiredFaults([decided({"R:a/old.ts": 3})], {"R:a/old.ts": 3}, on).length) throw new Error("policy: a passed until is red while its key stands");
+      if (decisionFaults([decided({"R:x": 1}, reason)]).length || decisionFaults([decided({"R:x": 1}, {why: " ", until: "1 Dec"})]).length !== 2) throw new Error("decisions: why is words and until a day");
+    }
     if (decisionFaults([decided({"R:x": 1}), decided(undefined, {removes: ["R"]})]).length || decisionFaults([{...decided({"R:x": 1}), who: ""}, decided({"R:x": 0}), {who: "a", when: "x", message: "m"}]).length !== 4) throw new Error("decisions: who, when, message and what they cover are required");
     if (architectureGuard(repo).length) throw new Error(`policy: a repository with its pinned wrapper and lint line holds: ${architectureGuard(repo)}`);
     // Huset 1022 review: the pre-push hook lints the branches guard.branches names (default master|main), each tip once; a deleted branch and a push of only docs are not linted

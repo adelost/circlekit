@@ -224,6 +224,8 @@ if (process.argv[1] && pathToFileURL(realpathSync(process.argv[1])).href === imp
   const root = resolve(args.find((arg, at) => !arg.startsWith("--") && at !== amuxAt + 1) ?? ".");
   const config = JSON.parse(readFileSync(resolve(root, "arch.config.json"), "utf8")), baselinePath = resolve(root, config.baseline ?? "arch.baseline.json");
   const baseline = existsSync(baselinePath) ? JSON.parse(readFileSync(baselinePath, "utf8")) : {};
+  // --init writes a first baseline only; an existing one only shrinks, as guard/run.mjs holds it (Cut row 1868: no writer of the baseline raises a count)
+  if (args.includes("--init") && Object.keys(baseline).length) { console.error("arch-check: the existing baseline only shrinks; use --lower"); process.exit(1); }
   // a rule that cannot run (a contract rule without AMUX, an unknown kind) stops the run before any baseline is read or written: it never reads as a pass
   const {red, counts} = await check(root, config, args.includes("--init") ? {} : baseline, {amuxRoot: amux}).catch(error => { console.error(`arch-check: cannot run: ${error.message}`); process.exit(2); });
   if (args.includes("--init")) { writeFileSync(baselinePath, JSON.stringify(counts, null, 2) + "\n"); console.log(`arch-check: baseline written (${Object.keys(counts).length} entries)`); }
