@@ -218,15 +218,19 @@ try {
       gput("st/step.py", "# a private def above the public def that calls it\ndef _helper():\n    return 1\n\ndef run():\n    return _helper()\n"); gput("st/bare.py", "x = 1\n");
       gput("st/inner.ts", "// an inner helper takes five, the export none\nexport const x = () => inner(1, 2, 3, 4, 5);\nfunction inner(a: number, b: number, c: number, d: number, e: number) { return a + b + c + d + e; }\n");
       gput("st/ex.ts", "// one silent exception\n// @ts-ignore\nexport const y: number = \"y\";\n");
+      gput("st/top.js", "// a const helper top-level code runs at load stays above it\nconst slabs = () => [1];\nconst FLOORS = slabs();\nexport const floors = () => FLOORS;\n");
+      gput("st/loops.js", "// depth 4 holds inside a loop, not outside one\nexport function inLoop(a) { for (const x of a) { if (x) { if (x) { if (x) { return 1; } } } } return 0; }\n"
+        + "export function noLoop(a) { if (a) { if (a) { if (a) { if (a) { return 1; } } } } return 0; }\n");
       gput("st/suite.js", `// a suite's wrapper is no function of logic; its long inner function is\nfeature("a", () => {\n${"  step();\n".repeat(62)}});\nfunction steps() {\n${"  step();\n".repeat(62)}}\n`);
       const st = (id, more) => ({id, name: id, files: ["st/**"], fix: "x", ...more});
       const story = {rules: [st("P", {kind: "eslint", rule: "max-params", options: {max: 4}}), st("C", {kind: "eslint", rule: "sonarjs/cognitive-complexity", options: 15}),
         st("F", {kind: "first-line"}), st("S", {kind: "story-order"}), st("B", {kind: "stepdown"}), st("O", {kind: "stepdown-order", report: true}),
         st("PE", {kind: "eslint", rule: "max-params", options: {max: 4}, exported: true}), st("X", {kind: "exceptions"}),
-        st("L", {kind: "eslint", rule: "max-lines-per-function", options: {max: 60}, skip: ["feature"]})]};
+        st("L", {kind: "eslint", rule: "max-lines-per-function", options: {max: 60}, skip: ["feature"]}), st("D", {kind: "eslint", rule: "max-depth", options: {max: 3}, loops: 4})]};
       const {red: said, counts: told, reported} = await check(repo, story, {});
       const keys = Object.keys(told).sort().join(" ");
-      if (keys !== "B:st/listed.js B:st/order.js B:st/step.py C:st/deep.js F:st/bare.py F:st/order.js L:st/suite.js P:st/inner.ts P:st/many.ts PE:st/many.ts S:st/order.js S:st/step.py X:st/ex.ts:ts-ignore"
+      if (keys !== "B:st/listed.js B:st/order.js B:st/step.py C:st/deep.js D:st/deep.js D:st/loops.js F:st/bare.py F:st/order.js L:st/suite.js P:st/inner.ts P:st/many.ts PE:st/many.ts S:st/order.js S:st/step.py X:st/ex.ts:ts-ignore"
+        || told["D:st/loops.js"] !== 1 || !said.some(line => line.includes("D: st/loops.js:3 Blocks are nested too deeply (4)"))
         || told["L:st/suite.js"] !== 1 || !said.some(line => line.includes("L: st/suite.js:66 Function 'steps' has too many lines"))
         || Object.keys(reported).sort().join(" ") !== "O:st/listed.js O:st/order.js O:st/step.py" || said.some(line => line.startsWith("rule O "))
         || !said.some(line => line.includes("S: st/order.js:4 Story first: the file's exports on top, helpers below (Clean Code stepdown rule). Move helper below first."))
@@ -244,10 +248,10 @@ try {
         || expiredFaults([waits], {}, "2026-11-30").length) throw new Error("decisions: what waits names until, and is red after it");
       // --fix moves whole functions and changes no line: a leaf goes below its export, a helper that load-time code runs stays, a U+2028 in a string
       // breaks no line, and a Python helper goes below the public def that calls it
-      gput("fx/a.js", "// a file to fix\nconst SEP = \"\u2028\";\n/** Doubles. */\nconst double = (n) => n * 2;\nconst ready = double(1);\n\nfunction leaf() { return SEP; }\n\nexport function main() { return double(ready) + leaf(); }\n");
+      gput("fx/a.js", "// a file to fix\nconst SEP = \"\u2028\";\n/** Doubles. */\nconst double = (n) => n * 2;\nconst twice = (n) => double(double(n));\nconst ready = twice(1);\n\nfunction leaf() { return SEP; }\n\nexport function main() { return twice(ready) + leaf(); }\n");
       gput("fx/b.py", "# a file to fix\n\n\ndef _helper():\n    return 1\n\n\ndef run():\n    return _helper()\n");
       const fixed = fixStory(repo, {rules: [st("FS", {kind: "story-order"}), st("FB", {kind: "stepdown"})]}, ["fx/a.js", "fx/b.py"], () => true);
-      if (readFileSync(join(repo, "fx/a.js"), "utf8") !== "// a file to fix\nconst SEP = \"\u2028\";\n/** Doubles. */\nconst double = (n) => n * 2;\nconst ready = double(1);\n\nexport function main() { return double(ready) + leaf(); }\n\nfunction leaf() { return SEP; }\n"
+      if (readFileSync(join(repo, "fx/a.js"), "utf8") !== "// a file to fix\nconst SEP = \"\u2028\";\n/** Doubles. */\nconst double = (n) => n * 2;\nconst twice = (n) => double(double(n));\nconst ready = twice(1);\n\nexport function main() { return twice(ready) + leaf(); }\n\nfunction leaf() { return SEP; }\n"
         || readFileSync(join(repo, "fx/b.py"), "utf8") !== "# a file to fix\n\n\ndef run():\n    return _helper()\n\n\ndef _helper():\n    return 1\n"
         || !fixed.some(line => line === "fx/a.js: moved leaf; left double (it would pass code that runs it at load)")) throw new Error(`fix: whole functions move, a load-time helper stays: ${fixed.join(" | ")}`);
       // a file a push touches holds the touched rules whatever its baseline, a written line stays within 160 and none is over 250; tidy-later only tells

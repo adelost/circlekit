@@ -51,7 +51,8 @@ function pythonStory(file, text) {
   try {
     writeFileSync(join(dir, "file.py"), text);
     const [{units, items}] = pythonUnits({root: dir}, ["file.py"]);
-    return {units: units.filter(u => u.kind === "def"), tiered: true, python: true, fours: privateAbove(units).length,
+    const top = new Set(items.filter(i => i.kind !== "def").flatMap(i => i.load));
+    return {units: units.filter(u => u.kind === "def").map(u => ({...u, top: top.has(u.name)})), tiered: true, python: true, fours: privateAbove(units, items).length,
       items: items.map(i => ({...i, exported: !!i.name && !i.name.startsWith("_"), hoisted: false}))};
   } catch { return {broken: true}; } finally { rmSync(dir, {recursive: true, force: true}); }
 }
@@ -69,7 +70,7 @@ function reorder(lines, story, {order, step}) {
     const b = blocks[i];
     if (!b.name || stuck.has(b.name)) return -1;
     const last = blocks.findLastIndex(x => x.exported && (!story.python || x.kind === "def"));   // Python's last public def, JS's last inline export
-    if (order && story.tiered && !b.exported && i < last && (unit.has(b.name) || story.python)) return last;
+    if (order && story.tiered && !b.exported && i < last && (unit.has(b.name) || story.python) && !(unit.get(b.name)?.top && !b.hoisted)) return last;
     const callers = step && unit.has(b.name) ? blocks.map((x, k) => k > i && x.name && unit.has(x.name) && unit.get(x.name).calls.includes(b.name) && holds(unit.get(x.name), unit.get(b.name)) ? k : -1) : [];
     return Math.max(-1, ...callers);
   };

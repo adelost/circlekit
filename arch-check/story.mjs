@@ -17,14 +17,15 @@ const STORY = "Story first: the file's exports on top, helpers below (Clean Code
 export const storyKinds = {
   /** {rule, options?, exported?, skip?}: the ESLint rule's breaches per file, each with the function it names; every eslint rule of the config runs in
    *  one ESLint pass. `exported: true` keeps only breaches on the head of a top-level exported function (a file's API, as max-params is meant);
-   *  `skip` names callees whose callback is no function of logic (feature, describe: a suite's wrapper). */
+   *  `skip` names functions that hold no logic of their own, by name or /regex/ (a suite's feature or describe wrapper, a create* factory whose
+   *  inner functions are counted each); `loops: N` lets max-depth reach N where a loop is part of the nesting (the trial's verdict: 4 in loops). */
   eslint: async (rule, repo) => {
-    const byFile = await linted(repo), mine = new Set(repo.covered(rule)), ts = rule.exported ? typescriptOf(repo.root) : null, heads = new Map();
+    const byFile = await linted(repo), mine = new Set(repo.covered(rule)), ts = rule.exported || rule.loops ? typescriptOf(repo.root) : null, heads = new Map();
     const headsOf = file => heads.get(file) ?? heads.set(file, exportedHeads(ts, file, repo.read(file))).get(file);
-    const kept = (file, line) => !ts || headsOf(file).some(([from, to]) => line >= from && line <= to);
-    const skipped = new Set((rule.skip ?? []).map(name => ` (in ${name})`));   // a suite's wrapper (feature, describe) is no function of logic
-    return [...byFile].filter(([file]) => mine.has(file)).flatMap(([file, messages]) => messages.filter(m => m.ruleId === rule.rule && kept(file, m.line))
-      .map(m => ({file, line: m.line, at: functionAt(repo.read(file), m.line, m.message), m})).filter(h => !skipped.has(h.at))
+    const kept = (file, m) => (!rule.exported || headsOf(file).some(([from, to]) => m.line >= from && m.line <= to)) && !loopDepth(ts, rule, file, repo.read(file), m);
+    const skipped = (rule.skip ?? []).map(name => /^\/.*\/$/.test(name) ? new RegExp(name.slice(1, -1)) : new RegExp(`^${name}$`));   // a suite's wrapper is no function of logic
+    return [...byFile].filter(([file]) => mine.has(file)).flatMap(([file, messages]) => messages.filter(m => m.ruleId === rule.rule && kept(file, m))
+      .map(m => ({file, line: m.line, at: functionAt(repo.read(file), m.line, m.message), m})).filter(h => !skipped.some(re => re.test(h.at.slice(5, -1))))
       .map(({file, line, at, m}) => ({file, line, message: `${m.message.replace(/\.$/, "")}${at}`})));
   },
   /** The first line (after a shebang, and in Python a coding line) says what the file is for: a `//` comment or a block comment that opens with
@@ -37,7 +38,7 @@ export const storyKinds = {
   "story-order": (rule, repo) => {
     const files = repo.covered(rule), js = files.filter(file => CODE.test(file)), ts = js.length ? typescriptOf(repo.root) : null;
     const hits = [...js.map(file => ({file, above: helpersAbove(ts, file, repo.read(file))})),
-      ...pythonUnits(repo, files.filter(file => PY.test(file))).map(({file, units}) => ({file, above: privateAbove(units)}))];
+      ...pythonUnits(repo, files.filter(file => PY.test(file))).map(({file, units, items}) => ({file, above: privateAbove(units, items)}))];
     return hits.flatMap(({file, above}) => above.map(({name, line, last}) => ({file, line, message: `${STORY} Move ${name} below ${last}`})));
   },
   /** No silent exceptions (Mattias 8 Nov via sandman:0): each inline exception (eslint-disable, @ts-ignore, @ts-expect-error, @ts-nocheck, and the
@@ -108,6 +109,19 @@ function functionAt(text, line, message) {
   return name && !KEYWORDS.has(name) ? ` (in ${name})` : "";
 }
 
+/** Whether a max-depth hit stands within the rule's `loops` depth inside a loop: its message's depth, and a loop among the reported block's
+ *  enclosing statements up to its function. */
+function loopDepth(ts, rule, file, text, m) {
+  const depth = Number(/nested too deeply \((\d+)\)/.exec(m.message)?.[1]);
+  if (!rule.loops || !depth || depth > rule.loops) return false;
+  const src = parsed(ts, file, text, true), starts = [0, ...[...text.matchAll(/\n/g)].map(n => n.index + 1)], offset = starts[m.line - 1] + m.column - 1;
+  let found = null;
+  const visit = node => { if (node.getStart(src) <= offset && offset < node.getEnd()) { found = node; ts.forEachChild(node, visit); } };
+  ts.forEachChild(src, visit);
+  for (let node = found; node && !ts.isFunctionLike(node); node = node.parent) if (ts.isIterationStatement(node, false)) return true;
+  return false;
+}
+
 /** The lines of each top-level exported function's head, from its statement to the start of its body. */
 function exportedHeads(ts, file, text) {
   const src = parsed(ts, file, text, false), lineAt = pos => lineOf(src, null, pos);
@@ -120,20 +134,26 @@ function oneLineComment(text, python) {
   return /^\/\/.*\S/.test(first) && first !== "//" || /^\/\*\*?\s*\w/.test(first);   // a block comment that says what on its first line
 }
 
+/** Each private helper above the last inline export, less a const helper that top-level code uses at load (it must stay above that code; Huset's
+ *  trial: FLOORS = slabs() would throw). A function declaration is hoisted and moves freely. */
 function helpersAbove(ts, file, text) {
-  const src = parsed(ts, file, text, false);
+  const src = parsed(ts, file, text, true);
   if (exportList(ts, src)) return [];
   const inline = s => inlineExport(ts, s);
   const statements = [...src.statements], at = statements.findLastIndex(inline);
   if (at < 0) return [];
   const last = statements[at].name?.text ?? statements[at].declarationList?.declarations[0].name.getText(src) ?? "the last export";
-  return statements.slice(0, at).filter(s => !inline(s)).flatMap(s => functionsOf(ts, s).slice(0, 1).map(({name}) => ({name, line: lineOf(src, s), last})));
+  const names = new Set(statements.flatMap(s => functionsOf(ts, s).map(f => f.name)));
+  const top = new Set(statements.filter(s => !functionsOf(ts, s).length && !ts.isImportDeclaration(s) && !ts.isExportDeclaration(s)).flatMap(s => referencesIn(ts, s, names)));
+  return statements.slice(0, at).filter(s => !inline(s) && (ts.isFunctionDeclaration(s) || !functionsOf(ts, s).some(f => top.has(f.name))))
+    .flatMap(s => functionsOf(ts, s).slice(0, 1).map(({name}) => ({name, line: lineOf(src, s), last})));
 }
 
-/** Python's story-order: each _private def or class above the file's last public def. */
-function privateAbove(units) {
-  const at = units.findLastIndex(u => u.kind === "def" && u.exported);
-  return at < 0 ? [] : units.slice(0, at).filter(u => !u.exported).map(({name, line}) => ({name, line, last: units[at].name}));
+/** Python's story-order: each _private def or class above the file's last public def, less one that module code uses at load (a module-level
+ *  call, a decorator, a default, a class body), which must stay above that code. */
+function privateAbove(units, items = []) {
+  const at = units.findLastIndex(u => u.kind === "def" && u.exported), top = new Set(items.flatMap(i => i.load));
+  return at < 0 ? [] : units.slice(0, at).filter(u => !u.exported && !top.has(u.name)).map(({name, line}) => ({name, line, last: units[at].name}));
 }
 
 /** Each file's top-level functions in file order, with the file's other top-level functions each one calls, in the order of their first call. A
@@ -151,7 +171,8 @@ function graphs(rule, repo) {
 
 function tsUnits(ts, file, text) {
   const src = parsed(ts, file, text, true), listed = exportList(ts, src);
-  const found = src.statements.flatMap(s => functionsOf(ts, s).map(({name, body}) => ({name, line: lineOf(src, s), exported: !listed && inlineExport(ts, s), body})));
+  const found = src.statements.flatMap(s => functionsOf(ts, s).map(({name, body}) => ({name, line: lineOf(src, s), exported: !listed && inlineExport(ts, s),
+    hoisted: ts.isFunctionDeclaration(s), body})));
   const names = new Set(found.map(u => u.name)), loose = src.statements.filter(s => !functionsOf(ts, s).length && !ts.isImportDeclaration(s) && !ts.isExportDeclaration(s));
   const top = new Set(loose.flatMap(s => referencesIn(ts, s, names)));   // what top-level code uses: a test's it() callbacks, a script's main line
   const units = found.map(({body, ...unit}) => ({...unit, top: top.has(unit.name), calls: referencesIn(ts, body, names)}));
@@ -234,7 +255,7 @@ function outOfOrder(units, tiered) {
   return units.flatMap((unit, i) => kept.has(i) ? [] : [{unit, after: expected[rank.get(unit) - 1]}]);
 }
 
-/** The order the file is read in: in a tiered file the exports first and then the helpers, else one tier. Within a tier, in file order, each
+/** The order the file is read in: in a tiered file the consts that top-level code runs at load, then the exports, then the helpers; else one tier. Within a tier, in file order, each
  *  function is followed depth first by its callees in the order of first call, a callee once every caller that holds it stands above it, so a
  *  file in this order also holds stepdown. A lower tier opens with the first calls of the tiers above it. */
 function storyOrder(units, tiered) {
@@ -245,7 +266,8 @@ function storyOrder(units, tiered) {
     if (placed.has(unit) || !tier.has(unit) || !callers.get(unit).every(caller => placed.has(caller))) return;
     placed.add(unit); order.push(unit); callees(unit).forEach(callee => place(callee, tier));
   };
-  for (const list of tiered ? [units.filter(u => u.exported), units.filter(u => !u.exported)] : [units]) {
+  const pinned = u => u.top && !u.hoisted;   // a const that top-level code runs at load stays above that code
+  for (const list of tiered ? [units.filter(pinned), units.filter(u => u.exported && !pinned(u)), units.filter(u => !u.exported && !pinned(u))] : [units]) {
     const tier = new Set(list);
     [...order].forEach(above => callees(above).forEach(callee => place(callee, tier)));
     list.forEach(unit => place(unit, tier));
