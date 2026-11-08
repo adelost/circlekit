@@ -6,7 +6,7 @@
     "lint": "node scripts/arch/arch_check.mjs"
   },
   "devDependencies": {
-    "@v1d/arch-check": "https://circlekit.pages.dev/npm/v1d/arch-check/0.8.0/v1d-arch-check-0.8.0.tgz",
+    "@v1d/arch-check": "https://circlekit.pages.dev/npm/v1d/arch-check/0.9.1/v1d-arch-check-0.9.1.tgz",
     "typescript": "5.9.3"
   }
 }

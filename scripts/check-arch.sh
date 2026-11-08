@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Manual architecture check (row 1785): @v1d/arch-check 0.8.0 pinned by sha256, 500-line TypeScript and JavaScript files with a
+# Manual architecture check (row 1785): @v1d/arch-check 0.9.1 pinned by the sha256 of its code, 500-line TypeScript and JavaScript files with a
 # shrink-only baseline (arch.baseline.json), and packages that reach each other only by published name (no relative import out of a package).
 #
 # This is intentionally not wired into Gradle, git hooks, hosted CI or a release path, like the other scripts/check-*.sh.

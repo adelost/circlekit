@@ -86,5 +86,9 @@
    ],
    "fix": "a package reaches another through its published name (@v1d/...), never through a relative path into its files; a relative import that leaves its package is a breach, named in arch.baseline.json and only shrinking"
   }
- ]
+ ],
+ "guard": {
+  "wrapper": "scripts/arch/arch_check.mjs",
+  "lint": "node scripts/arch/arch_check.mjs"
+ }
 }
