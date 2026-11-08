@@ -5,7 +5,7 @@ import { existsSync, readdirSync } from 'node:fs';
 import { posix, resolve } from 'node:path';
 
 export const DECISIONS = 'arch.decisions.json';
-const BOUNDED = ['max-lines', 'max-line-length', 'max-module-lines'];   // the kinds whose max and exclude only tighten without a decision
+const BOUNDED = ['max-lines', 'max-line-length', 'max-module-lines', 'door-names'];   // the kinds whose max and exclude only tighten without a decision
 const decisionsIn = text => { try { const list = JSON.parse(text ?? '[]'); return Array.isArray(list) ? list : []; } catch { return []; } };
 
 /** A cap and named exceptions cannot be raised by the change they would otherwise reject, and a rule cannot leave or be renamed under the ratchet. Renames preserve identity.

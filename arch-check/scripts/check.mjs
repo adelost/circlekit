@@ -6,6 +6,8 @@ import {tmpdir} from "node:os";
 import {basename, join} from "node:path";
 import {check, KEY_NAMES} from "../arch-check.mjs";
 import {moduleCounts, saveImportCache} from "../guard/graph.mjs";
+import {sandboxCounts} from "../guard/sandbox.mjs";
+import {doorNameCounts, lazyCounts, otherDoorCounts} from "../guard/doors.mjs";
 import {ratchetFaults} from "../guard/ratchet.mjs";
 import {architectureGuard, decisionFaults} from "../guard/policy.mjs";
 import {pushedTips} from "../guard/export.mjs";
@@ -117,6 +119,32 @@ try {
         writeFileSync(join(bad, basename(file)), "not json"); process.env.ARCH_CACHE_DIR = bad;
         if (run() !== plain) throw new Error("import cache: an unreadable cache is no cache");
       } finally {delete process.env.ARCH_CACHE_DIR; rmSync(dir, {recursive: true, force: true}); rmSync(bad, {recursive: true, force: true});}
+    }
+    // 0.12.0 (Cut row 1820): a sandbox is loaded in a bare node with no page, and one that throws or loads a file outside its module and declared dependencies is named;
+    // import() calls are counted per module, a door's names past max (export * followed), and a door beside a module's first stands only by a decision saying when it goes
+    {
+      gput("sb/ok/index.js", "export const ok = 1;\n"); gput("sb/ok/example.js", "import {ok} from './index.js';\nexport const shown = ok;\n");
+      gput("sb/dom/index.js", "export const d = 1;\n"); gput("sb/dom/example.js", "import './index.js';\ndocument.title = 'touched at load';\n");
+      gput("sb/root.js", "export const r = 1;\n"); gput("sb/out/index.js", "export const o = 1;\n"); gput("sb/out/example.js", "import './index.js';\nimport '../root.js';\n");
+      gput("sb/dep/index.js", "export const dep = 1;\n"); gput("sb/uses/index.js", "export {dep} from '../dep/index.js';\n"); gput("sb/uses/example.js", "import {dep} from './index.js';\nexport const seen = dep;\n");
+      gput("sb/lazy/x.js", "export const x = 1;\n"); gput("sb/lazy/index.js", "const name = './x.js';\nexport const later = () => import(name);\nexport const also = () => import('./x.js');\n// import( in a comment\nexport const said = 'import(';\n");
+      gput("sb/wide/parts.js", "export const a = 1, b = 2;\nexport function c() {}\nexport default 9;\n"); gput("sb/wide/index.js", "export * from './parts.js';\nexport const own = 1;\nexport default 2;\n");
+      gput("sb/two/index.js", "export {};\n"); gput("sb/two/extra.js", "export {};\n"); gput("sb/star/a.js", "export {};\n");
+      const dirs = ["sb/ok", "sb/dom", "sb/out", "sb/dep", "sb/uses", "sb/lazy", "sb/wide", "sb/two", "sb/star"];
+      const of = mod("S", "sb", dirs, {example: "example.js"});
+      of.modules.find(m => m.dir === "sb/uses").imports = ["sb/dep"]; of.modules.find(m => m.dir === "sb/two").entry = ["index.js", "extra.js"]; of.modules.find(m => m.dir === "sb/star").entry = "*";
+      const sandbox = sandboxCounts(repo, {id: "X"}, of).counts;
+      if (JSON.stringify(Object.keys(sandbox).sort()) !== JSON.stringify(["X:outside:sb/out", "X:throws:sb/dom"]) || sandbox["X:outside:sb/out"] !== 1)
+        throw new Error(`guard (sandbox): a sandbox that touches the page at load throws, one that loads a root file is outside, one through a declared dependency holds: ${JSON.stringify(sandbox)}`);
+      const lazy = lazyCounts(repo, {id: "L"}, of).counts;
+      if (JSON.stringify(lazy) !== JSON.stringify({"L:lazy:sb/lazy": 2})) throw new Error(`guard (lazy-imports): each import() call counts, a comment or a string does not: ${JSON.stringify(lazy)}`);
+      const names = max => doorNameCounts(repo, {id: "N", max}, of).counts;
+      if (JSON.stringify(names(4)) !== JSON.stringify({"N:names:sb/wide/index.js": 5}) || Object.keys(names(5)).length) throw new Error(`guard (door-names): a door's names with export * followed (its default not), past max: ${JSON.stringify(names(4))}`);
+      const doorsWith = decisions => Object.keys(otherDoorCounts({id: "D"}, of, decisions).counts).sort().join(" ");
+      if (doorsWith([]) !== "D:door:sb/star/* D:door:sb/two/extra.js" || doorsWith([{doors: {"sb/two/extra.js": "when the editor moves", "sb/star/*": "row 9"}}]) !== "")
+        throw new Error(`guard (other-doors): a door beside the first, and *, stand only by a decision saying when they go: ${doorsWith([])}`);
+      if (decisionFaults([{who: "gate", when: "2026-11-08T00:00Z", message: "check", doors: {"sb/two/extra.js": "when the editor moves"}}]).length
+        || !decisionFaults([{who: "gate", when: "2026-11-08T00:00Z", message: "check", doors: {"sb/two/extra.js": ""}}]).length) throw new Error("decisions: doors name each door with when it goes");
     }
     const config = {baseline: "arch.baseline.json", guard: {wrapper: "w.mjs", lint: "node w.mjs"}, rules: [{id: "R", name: "r", kind: "max-lines", files: ["a/**"], max: 10, fix: "x"}, mod("T", "ts", ["ts/a"])]};
     gput("arch.config.json", JSON.stringify(config)); gput("arch.baseline.json", "{}"); gput("w.mjs", "createHash SHA256\n"); gput("package.json", JSON.stringify({scripts: {lint: "node w.mjs"}}));

@@ -85,17 +85,26 @@ function workspacePackages(root) {
   }).sort((a, b) => b.name.length - a.name.length);
 }
 
-export function moduleCounts(root, rule) {
-  const python = rule.lang === 'py', kotlin = rule.lang === 'kt', counts = {}, reasons = new Map(), SRC = rule.root, entry = rule.entry ?? (python ? '__init__.py' : kotlin ? '*' : 'index.js'), edgesOnly = rule.edgesOnly === true;   // edgesOnly (K10): who may import whom, no doors
-  const hit = (name, reason) => { const key = `${rule.id}:${name}`; counts[key] = (counts[key] ?? 0) + 1; reasons.set(key, reason); };
+export { ts };
+/** A modules rule's door files of a module, relative to it: its entry, the rule's, or the language's (`*`: every file directly in it). */
+export const moduleDoors = (rule, m) => [m.entry ?? rule.entry ?? (rule.lang === 'py' ? '__init__.py' : rule.lang === 'kt' ? '*' : 'index.js')].flat();
+/** The files a modules rule reads (tracked and untracked, its language's, no vendor, node_modules, dist or dot folder) and the module owning each, the longest folder. */
+export function moduleFiles(root, rule) {
+  const python = rule.lang === 'py', kotlin = rule.lang === 'kt';
   const files = execFileSync('git', ['-C', root, 'ls-files', '-co', '--exclude-standard', '-z'], { encoding: 'utf8', maxBuffer: 32 * 1024 * 1024 })
     .split('\0').filter(file => (python ? /\.py$/ : kotlin ? /\.kt$/ : /\.(?:[cm]?[jt]sx?|svelte)$/).test(file) && !/(?:^|\/)(?:vendor|node_modules|dist)\//.test(file) && !/(?:^|\/)\./.test(file) && existsSync(resolve(root, file)));
-  const known = new Set(files), modules = [...rule.modules].sort((a, b) => b.dir.length - a.dir.length), graph = new Map(modules.map(m => [m.dir, new Set()]));
+  const modules = [...rule.modules].sort((a, b) => b.dir.length - a.dir.length);
+  return { files, modules, owner: file => modules.find(m => file.startsWith(`${m.dir}/`)) };
+}
+
+export function moduleCounts(root, rule) {
+  const python = rule.lang === 'py', kotlin = rule.lang === 'kt', counts = {}, reasons = new Map(), SRC = rule.root, edgesOnly = rule.edgesOnly === true;   // edgesOnly (K10): who may import whom, no doors
+  const hit = (name, reason) => { const key = `${rule.id}:${name}`; counts[key] = (counts[key] ?? 0) + 1; reasons.set(key, reason); };
+  const { files, modules, owner } = moduleFiles(root, rule), known = new Set(files), graph = new Map(modules.map(m => [m.dir, new Set()]));
   const packages = rule.workspaces === true ? workspacePackages(root) : [], exported = new Set(packages.flatMap(p => [...p.doors.values()]));   // off unless a rule asks
   const packageOf = spec => packages.find(p => spec === p.name || spec.startsWith(`${p.name}/`));
-  const doorsOf = m => [m.entry ?? entry].flat();   // a module's public files, relative to it
+  const doorsOf = m => moduleDoors(rule, m);   // a module's public files, relative to it
   const isDoor = (into, base) => exported.has(base) || [into.dir, `${into.dir}/index`, `${into.dir}/index.js`].includes(base) || doorsOf(into).some(door => door === '*' ? posix.dirname(base) === into.dir : base === `${into.dir}/${door}`);
-  const owner = file => modules.find(m => file.startsWith(`${m.dir}/`));
   if (!edgesOnly) for (const dir of readdirSync(resolve(root, SRC), { withFileTypes: true }).filter(e => e.isDirectory())) {
     const name = `${SRC}/${dir.name}`;
     if ((rule.excludeFolders ?? []).includes(dir.name)) continue;

@@ -9,6 +9,9 @@ import { check } from '../arch-check.mjs';
 import { architectureGuard } from './policy.mjs';
 import { DECISIONS, ratchetFaults } from './ratchet.mjs';
 
+/** The kinds the guard itself reads, each over the modules of the modules rule its `of` names (0.12.0): sandbox.mjs and doors.mjs. */
+const GUARD_KINDS = ['sandbox', 'lazy-imports', 'door-names', 'other-doors'];
+
 /** Returns the exit code: 0 holds, 1 a breach, 2 a rule that cannot run. */
 export async function runGuard({ root, args = [] }) {
   const missing = architectureGuard(root);
@@ -16,21 +19,28 @@ export async function runGuard({ root, args = [] }) {
   const config = JSON.parse(readFileSync(join(root, 'arch.config.json'), 'utf8')), path = join(root, config.baseline), baseline = JSON.parse(readFileSync(path, 'utf8'));
   const decisions = existsSync(join(root, DECISIONS)) ? JSON.parse(readFileSync(join(root, DECISIONS), 'utf8')) : [], first = args.includes('--init');
   if (first && Object.keys(baseline).length) { console.error('arch-check: the existing baseline only shrinks; use --lower'); return 1; }
-  const parsedRules = config.rules.filter(r => r.kind === 'modules' && r.exactEdges);
-  const ids = new Set(parsedRules.map(r => String(r.id))), isParsed = key => ids.has(key.split(':')[0]);
-  const { moduleCounts, saveImportCache } = parsedRules.length ? await import('./graph.mjs') : {};   // the parser (TypeScript 5) loads only for rules that read imports
+  const parsedRules = config.rules.filter(r => r.kind === 'modules' && r.exactEdges), guardRules = config.rules.filter(r => GUARD_KINDS.includes(r.kind));
+  const ids = new Set([...parsedRules, ...guardRules].map(r => String(r.id))), isParsed = key => ids.has(key.split(':')[0]);
+  const ofRule = rule => config.rules.find(r => r.kind === 'modules' && String(r.id) === String(rule.of));
+  const lost = guardRules.filter(rule => !ofRule(rule));
+  if (lost.length) { console.error(lost.map(rule => `arch-check: cannot run: rule ${rule.id} (${rule.kind}) names no modules rule in of`).join('\n')); return 2; }
+  const graph = parsedRules.length || guardRules.length ? await import('./graph.mjs') : {};   // the parser (TypeScript 5) loads only for rules that read imports
+  const doors = guardRules.length ? await import('./doors.mjs') : {}, { sandboxCounts } = guardRules.length ? await import('./sandbox.mjs') : {};
   let built;
   try {
-    built = await check(root, { ...config, rules: config.rules.map(r => ids.has(String(r.id)) ? { ...r, files: [] } : r) },
+    built = await check(root, { ...config, rules: config.rules.filter(r => !GUARD_KINDS.includes(r.kind)).map(r => ids.has(String(r.id)) ? { ...r, files: [] } : r) },
       first ? {} : Object.fromEntries(Object.entries(baseline).filter(([key]) => !isParsed(key))));
   } catch (error) { console.error(`arch-check: cannot run: ${error.message}`); return 2; }   // a rule that cannot run never reads as a pass
   const counts = { ...built.counts }, red = [...built.red];
-  for (const rule of parsedRules) {
-    const parsed = moduleCounts(root, rule);
+  const countsOf = rule => rule.kind === 'modules' ? graph.moduleCounts(root, rule) : rule.kind === 'sandbox' ? sandboxCounts(root, rule, ofRule(rule))
+    : rule.kind === 'lazy-imports' ? doors.lazyCounts(root, rule, ofRule(rule)) : rule.kind === 'door-names' ? doors.doorNameCounts(root, rule, ofRule(rule))
+    : doors.otherDoorCounts(rule, ofRule(rule), decisions);
+  for (const rule of [...parsedRules, ...guardRules]) {
+    const parsed = countsOf(rule), allowed = key => rule.kind === 'other-doors' ? 0 : baseline[key] ?? 0;   // another door stands only by a decision, never in the baseline
     Object.assign(counts, parsed.counts);
-    if (!first) for (const [key, n] of Object.entries(parsed.counts)) if (n > (baseline[key] ?? 0)) red.push(`rule ${key}: ${parsed.reasons.get(key)} (${n}, allowed ${baseline[key] ?? 0}). Fix: ${rule.fix}`);
+    if (!first) for (const [key, n] of Object.entries(parsed.counts)) if (n > allowed(key)) red.push(`rule ${key}: ${parsed.reasons.get(key)} (${n}, allowed ${allowed(key)}). Fix: ${rule.fix}`);
   }
-  saveImportCache?.();   // ARCH_CACHE_DIR keeps each file's imports by its content, row 1795
+  graph.saveImportCache?.();   // ARCH_CACHE_DIR keeps each file's imports by its content, row 1795
   const write = value => writeFileSync(path, JSON.stringify(value, null, 2) + '\n');
   if (first) {
     const hard = config.rules.filter(r => r.hard).map(r => `${r.id}:`), kept = Object.keys(counts).filter(key => hard.some(prefix => key.startsWith(prefix)));
