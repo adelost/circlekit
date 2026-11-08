@@ -1,8 +1,13 @@
-// The gate of the @v1d/arch-check release: the tool finds a planted violation of each kind it ships, holds a clean tree, and keeps its baseline shrink-only.
+// The gate of the @v1d/arch-check release: the tool finds a planted violation of each kind it ships, holds a clean tree, and keeps its baseline shrink-only;
+// the guard (guard/) reads the imports of TypeScript, Python and Kotlin, finds a cycle, and lets no raise, removed rule or widened dependency pass without a named decision.
 import {mkdtempSync, mkdirSync, writeFileSync, rmSync} from "node:fs";
+import {execFileSync} from "node:child_process";
 import {tmpdir} from "node:os";
 import {join} from "node:path";
 import {check, KEY_NAMES} from "../arch-check.mjs";
+import {moduleCounts} from "../guard/graph.mjs";
+import {ratchetFaults} from "../guard/ratchet.mjs";
+import {architectureGuard, decisionFaults} from "../guard/policy.mjs";
 
 const root = mkdtempSync(join(tmpdir(), "arch-check-"));
 const put = (path, text) => {mkdirSync(join(root, path, ".."), {recursive: true}); writeFileSync(join(root, path), text);};
@@ -56,5 +61,33 @@ try {
   if (!shrunk.red.some(line => line.startsWith("baseline 1:src/big.ts"))) throw new Error("a baseline above today's count must be red (it may only shrink)");
   const grown = await check(root, {rules}, {...counts, "1:src/big.ts": counts["1:src/big.ts"] - 1});
   if (!grown.red.some(line => line.startsWith("rule 1 "))) throw new Error("more than the baseline allows must be red");
-  console.log(`arch-check: ${rules.length} kinds found, baseline holds and only shrinks`);
+  // the guard: a repository of two TypeScript modules, a Python package pair and two Kotlin packages
+  const repo = mkdtempSync(join(tmpdir(), "arch-guard-")), git = (...args) => execFileSync("git", ["-C", repo, ...args], {encoding: "utf8", stdio: ["ignore", "pipe", "ignore"]});
+  const gput = (path, text) => {mkdirSync(join(repo, path, ".."), {recursive: true}); writeFileSync(join(repo, path), text);};
+  try {
+    git("init", "-q"); git("config", "user.email", "a@b.c"); git("config", "user.name", "gate");
+    gput("ts/a/index.ts", "export {};\n"); gput("ts/a/in.ts", "export {};\n"); gput("ts/b/index.ts", "import \"../a/in\";\nexport const w = new Worker(new URL(\"../a/in.ts\", import.meta.url));\n"); gput("ts/a/back.ts", "import \"../b/index\";\n");
+    gput("py/p/__init__.py", ""); gput("py/p/deep.py", "X = 1\n"); gput("py/q/__init__.py", "from ..p.deep import X\n\"\"\"\nimport p.deep\n\"\"\"\n");
+    gput("kt/a/A.kt", "package k.a\n\nclass A\n"); gput("kt/b/B.kt", "package k.b\n\nimport k.a.A\nimport k.a.*\n\nclass B\n");
+    const mod = (id, root, dirs, extra) => ({id, name: id, kind: "modules", exactEdges: true, acyclic: true, root, files: [], fix: "x", modules: dirs.map(dir => ({dir, imports: []})), ...extra});
+    const ts = moduleCounts(repo, mod("T", "ts", ["ts/a", "ts/b"])).counts, py = moduleCounts(repo, mod("P", "py", ["py/p", "py/q"], {lang: "py", sourceRoots: ["py"]})).counts, kt = moduleCounts(repo, mod("K", "kt", ["kt/a", "kt/b"], {lang: "kt", edgesOnly: true})).counts;
+    if (ts["T:deep:ts/b/index.ts>ts/a/in.ts"] !== 2 || !ts["T:cycle:ts/a>ts/b"]) throw new Error(`guard (TypeScript): an import and a Worker URL past a door count, a cycle is found: ${JSON.stringify(ts)}`);
+    if (py["P:deep:py/q/__init__.py>py/p/deep.py"] !== 1 || Object.keys(py).some(key => key.includes("undeclared"))) throw new Error(`guard (Python): a relative import past a door counts, a docstring's import does not: ${JSON.stringify(py)}`);
+    if (kt["K:edge:kt/b/B.kt>kt/a"] !== 1) throw new Error(`guard (Kotlin): an import and a wildcard import of the same file along an undeclared edge count once: ${JSON.stringify(kt)}`);
+    const config = {baseline: "arch.baseline.json", guard: {wrapper: "w.mjs", lint: "node w.mjs"}, rules: [{id: "R", name: "r", kind: "max-lines", files: ["a/**"], max: 10, fix: "x"}, mod("T", "ts", ["ts/a"])]};
+    gput("arch.config.json", JSON.stringify(config)); gput("arch.baseline.json", "{}"); gput("w.mjs", "createHash SHA256\n"); gput("package.json", JSON.stringify({scripts: {lint: "node w.mjs"}}));
+    git("add", "."); git("commit", "-qm", "base");
+    const faults = (next, baseline = {}, decisions = []) => ratchetFaults(repo, next, baseline, {decisions}).join("\n"), decided = (ceilings, extra = {}) => ({who: "gate", when: "2026-11-08T00:00Z", message: "check", ceilings, ...extra});
+    if (!/R: rule removed/.test(faults({...config, rules: [config.rules[1]]}))) throw new Error("ratchet: a removed rule needs a decision");
+    if (!/R: max 99 raises/.test(faults({...config, rules: [{...config.rules[0], max: 99}, config.rules[1]]})) || faults({...config, rules: [{...config.rules[0], max: 99}, config.rules[1]]}, {}, [decided({"R:max": 99})])) throw new Error("ratchet: a higher max needs a decision, and a decision for it is enough");
+    if (!/R: it was hard|R: .* left out/.test(faults({...config, rules: [{...config.rules[0], exclude: ["a/x"]}, config.rules[1]]}))) throw new Error("ratchet: an excluded file needs a decision");
+    const widened = {...config, rules: [config.rules[0], {...config.rules[1], modules: [{dir: "ts/a", imports: ["ts/b"]}]}]};
+    if (!/may now import ts\/b/.test(faults(widened)) || faults(widened, {}, [decided({"T:import:ts/a>ts/b": 1})])) throw new Error("ratchet: a widened dependency needs a decision, and a decision for it is enough");
+    if (!/exception 2 raises/.test(faults(config, {"R:a/x.ts": 2})) || faults(config, {"R:a/x.ts": 2}, [decided({"R:a/x.ts": 2})])) throw new Error("ratchet: a raised exception needs a decision, and a decision for it is enough");
+    if (!/the guard .* changed/.test(faults({...config, guard: {wrapper: "w2.mjs", lint: "node w2.mjs"}}))) throw new Error("ratchet: a changed guard needs a decision");
+    if (decisionFaults([decided({"R:x": 1}), decided(undefined, {removes: ["R"]})]).length || decisionFaults([{...decided({"R:x": 1}), who: ""}, decided({"R:x": 0}), {who: "a", when: "x", message: "m"}]).length !== 4) throw new Error("decisions: who, when, message and what they cover are required");
+    if (architectureGuard(repo).length) throw new Error(`policy: a repository with its pinned wrapper and lint line holds: ${architectureGuard(repo)}`);
+    gput("w.mjs", "console.log('green');\n"); if (!architectureGuard(repo).some(line => line.includes("restore the pinned hash"))) throw new Error("policy: a wrapper without the pin must stop it");
+  } finally {rmSync(repo, {recursive: true, force: true});}
+  console.log(`arch-check: ${rules.length} kinds found, baseline holds and only shrinks; the guard reads three languages and holds the ratchet`);
 } finally {rmSync(root, {recursive: true, force: true});}
