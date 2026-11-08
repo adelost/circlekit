@@ -30,6 +30,7 @@ export function ratchetFaults(root, config, baseline, { decisions = [], counts }
       if (!rule) continue;
       if (oldRule.hard && !rule.hard) red.push(`${rule.id}: it was hard (no exception) in ${ref}; keep it hard`);
       if (oldRule.kind !== rule.kind && !licensed(`${rule.id}:kind`)) red.push(`${rule.id}: kind ${oldRule.kind} became ${rule.kind}; name it in ${DECISIONS} (ceilings ${rule.id}:kind: 1)`);
+      if ((rule.skip ?? null) !== (oldRule.skip ?? null) && !licensed(`${rule.id}:skip`)) red.push(`${rule.id}: the files it leaves out (skip) changed; name it in ${DECISIONS} (ceilings ${rule.id}:skip: 1)`);
       if (BOUNDED.includes(rule.kind) && rule.kind === oldRule.kind) {
         if (rule.max > oldRule.max && !licensed(`${rule.id}:max`, rule.max)) red.push(`${rule.id}: max ${rule.max} raises ${ref}'s ${oldRule.max}; name it in ${DECISIONS} (ceilings ${rule.id}:max: ${rule.max})`);
         for (const entry of rule.exclude ?? []) if (!(oldRule.exclude ?? []).includes(entry) && !licensed(`${rule.id}:exclude:${entry}`))

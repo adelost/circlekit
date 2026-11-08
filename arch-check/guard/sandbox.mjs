@@ -1,4 +1,4 @@
-// The `sandbox` kind (0.12.0, Cut row 1820, sandman:0 8 Nov): each module of the modules rule named in `of` that has its sandbox (that rule's
+// The `sandbox` kind (0.12.0, Cut row 1828, sandman:0 8 Nov): each module of the modules rule named in `of` that has its sandbox (that rule's
 // `example`) is loaded in a bare node with no page stubbed (sandbox-load.mjs), as skyvw:2's guard of Cut's views/light.js loads a door. A
 // sandbox whose load throws is named once, and the files it loads outside the module, the modules its declared imports reach and their
 // declared root files are counted. A package (node_modules), a folder the modules rule leaves out (excludeFolders, assetFolders) and node's

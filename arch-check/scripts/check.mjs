@@ -138,6 +138,9 @@ try {
         throw new Error(`guard (sandbox): a sandbox that touches the page at load throws, one that loads a root file is outside, one through a declared dependency holds: ${JSON.stringify(sandbox)}`);
       const lazy = lazyCounts(repo, {id: "L"}, of).counts;
       if (JSON.stringify(lazy) !== JSON.stringify({"L:lazy:sb/lazy": 2})) throw new Error(`guard (lazy-imports): each import() call counts, a comment or a string does not: ${JSON.stringify(lazy)}`);
+      gput("sb/lazy/test/x.test.js", "export const t = () => import('../x.js');\n");
+      const tested = skip => lazyCounts(repo, {id: "L", ...(skip ? {skip} : {})}, of).counts["L:lazy:sb/lazy"];
+      if (tested() !== 3 || tested("(^|/)test/") !== 2) throw new Error(`guard (lazy-imports, 0.12.1): skip leaves the files it matches out: ${tested()} ${tested("(^|/)test/")}`);
       const names = max => doorNameCounts(repo, {id: "N", max}, of).counts;
       if (JSON.stringify(names(4)) !== JSON.stringify({"N:names:sb/wide/index.js": 5}) || Object.keys(names(5)).length) throw new Error(`guard (door-names): a door's names with export * followed (its default not), past max: ${JSON.stringify(names(4))}`);
       const doorsWith = decisions => Object.keys(otherDoorCounts({id: "D"}, of, decisions).counts).sort().join(" ");
@@ -171,6 +174,11 @@ try {
       throw new Error("ratchet: a raised module cap needs a decision, and one is enough");
     if (!/M: m\/b's cap 50 raises/.test(faults(capped({caps: {"m/a": 60, "m/b": 50}})))) throw new Error("ratchet: a new cap above max needs a decision");
     if (faults(capped({caps: {"m/a": 50}})) || !/M: max 50 raises/.test(faults(capped({max: 50})))) throw new Error("ratchet: a lower cap needs none, a raised max does");
+    // 0.12.1: what a lazy-imports rule leaves out (skip) changes only by a decision
+    const lazyRule = {id: "Z", name: "z", kind: "lazy-imports", of: "T", fix: "x"}, lazied = rule => ({...capped({}), rules: [...capped({}).rules, {...lazyRule, ...rule}]});
+    gput("arch.config.json", JSON.stringify(lazied({}))); git("add", "."); git("commit", "-qm", "lazy imports");
+    if (!/Z: the files it leaves out \(skip\) changed/.test(faults(lazied({skip: "test/"}))) || faults(lazied({skip: "test/"}), {}, [decided({"Z:skip": 1})]))
+      throw new Error("ratchet: a lazy-imports rule's skip needs a decision, and one is enough");
     if (decisionFaults([decided({"R:x": 1}), decided(undefined, {removes: ["R"]})]).length || decisionFaults([{...decided({"R:x": 1}), who: ""}, decided({"R:x": 0}), {who: "a", when: "x", message: "m"}]).length !== 4) throw new Error("decisions: who, when, message and what they cover are required");
     if (architectureGuard(repo).length) throw new Error(`policy: a repository with its pinned wrapper and lint line holds: ${architectureGuard(repo)}`);
     // Huset 1022 review: the pre-push hook lints the branches guard.branches names (default master|main), each tip once; a deleted branch and a push of only docs are not linted

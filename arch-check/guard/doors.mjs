@@ -1,5 +1,6 @@
-// The doors of a modules rule as ratchets (0.12.0, Cut row 1820, sandman:0 8 Nov), each rule naming its modules rule in `of`:
-// `lazy-imports` counts each module's import() calls, by which a cycle hides from the cycle guard; `door-names` counts the names a door exports
+// The doors of a modules rule as ratchets (0.12.0, Cut row 1828, sandman:0 8 Nov), each rule naming its modules rule in `of`:
+// `lazy-imports` counts each module's import() calls, by which a cycle hides from the cycle guard (`skip`, a regex, leaves files out, such as tests,
+// which no module imports; 0.12.1); `door-names` counts the names a door exports
 // (export * followed), named where they pass `max`; `other-doors` asks, for each door beyond a module's first (and for "*"), a decision in
 // arch.decisions.json whose `doors` says when that door goes. The first two count today's into the baseline, which only shrinks.
 import { readFileSync, existsSync } from 'node:fs';
@@ -20,8 +21,8 @@ function lazyCalls(file, body) {
 }
 
 export function lazyCounts(root, rule, of) {
-  const { files, owner } = moduleFiles(root, of), counts = {}, reasons = new Map();
-  for (const file of files.filter(file => /\.[cm]?[jt]sx?$/.test(file) && (!of.onlyFrom || file.startsWith(of.onlyFrom)))) {
+  const { files, owner } = moduleFiles(root, of), counts = {}, reasons = new Map(), skip = rule.skip ? new RegExp(rule.skip) : null;
+  for (const file of files.filter(file => /\.[cm]?[jt]sx?$/.test(file) && (!of.onlyFrom || file.startsWith(of.onlyFrom)) && !skip?.test(file))) {
     const from = owner(file), calls = from ? lazyCalls(file, readFileSync(resolve(root, file), 'utf8')) : 0;
     if (!calls) continue;
     const key = `${rule.id}:lazy:${from.dir}`;
