@@ -15,6 +15,7 @@ import {pushedTips} from "../guard/export.mjs";
 import {touchedFaults} from "../guard/touched.mjs";
 import {fixStory} from "../story-fix.mjs";
 import {lint} from "../web.mjs";
+import {reportOf} from "../report.mjs";
 
 const root = mkdtempSync(join(tmpdir(), "arch-check-"));
 const put = (path, text) => {mkdirSync(join(root, path, ".."), {recursive: true}); writeFileSync(join(root, path), text);};
@@ -334,5 +335,35 @@ try {
     }
     gput("w.mjs", "console.log('green');\n"); if (!architectureGuard(repo).some(line => line.includes("restore the pinned hash"))) throw new Error("policy: a wrapper without the pin must stop it");
   } finally {rmSync(repo, {recursive: true, force: true});}
+  // Cut row 1877: --report reads a commit from git: totals and top from its baseline, files near a max-lines limit as an editor numbers them, growth since
+  // the commit a day older only in rules that commit had, with the decision allowing it; the root may come first on the command line
+  {
+    const at = mkdtempSync(join(tmpdir(), "arch-report-")), env = date => ({...process.env, GIT_AUTHOR_DATE: date, GIT_COMMITTER_DATE: date});
+    const git = (date, ...args) => execFileSync("git", ["-C", at, ...args], {encoding: "utf8", env: env(date), stdio: ["ignore", "pipe", "ignore"]}).trim();
+    const write = files => Object.entries(files).forEach(([path, text]) => {mkdirSync(join(at, path, ".."), {recursive: true}); writeFileSync(join(at, path), text);});
+    const json = value => JSON.stringify(value, null, 2), lined = n => "x\n".repeat(n), old = new Date(Date.now() - 2 * 24 * 3600e3).toISOString();
+    const size = {id: "S", name: "small", kind: "max-lines", files: ["src/**"], max: 10, fix: "split"}, mark = {id: "P", name: "mark", kind: "pattern", files: ["src/**"], pattern: "TODO", fix: "do it"};
+    try {
+      git(old, "init", "-q"); git(old, "config", "user.email", "a@b.c"); git(old, "config", "user.name", "gate");
+      write({"arch.config.json": json({rules: [size, mark]}), "arch.baseline.json": json({"S:src/big.ts": 2, "P:src/a.ts": 1}), "src/big.ts": lined(12)});
+      git(old, "add", "."); git(old, "commit", "-qm", "a day older"); const before = git(old, "rev-parse", "HEAD"), now = new Date().toISOString();
+      const fresh = {id: "N", name: "new", kind: "pattern", files: ["src/**"], pattern: "x", what: "no x", why: "x is noise", fix: "drop x"};
+      write({"arch.config.json": json({rules: [size, mark, fresh]}), "arch.decisions.json": json([{who: "lead", when: now, message: "m", ceilings: {"S:src/big.ts": 4}, until: "2026-12-01"}]),
+        "arch.baseline.json": json({"S:src/big.ts": 4, "S:src/other.ts": 1, "P:src/a.ts": 1, "N:src/at.ts": 5}), "src/big.ts": lined(14), "src/other.ts": lined(11),
+        "src/at.ts": lined(10), "src/near.ts": lined(8) + "x", "src/far.ts": lined(7), "src/dist/n.ts": lined(9)});
+      git(now, "add", "."); git(now, "commit", "-qm", "today");
+      const said = reportOf(at, {repo: "t"}), rule = id => said.rules.find(one => one.id === id);
+      if (said.since !== before || rule("S").total !== 5 || json(rule("S").top) !== json([{key: "S:src/big.ts", n: 4}, {key: "S:src/other.ts", n: 1}]) || rule("S").why !== null
+        || rule("N").total !== 5 || rule("N").why !== "x is noise") throw new Error(`report: totals, top and why from the baseline and config: ${json(said.rules)}`);
+      if (json(said.near) !== json([{file: "src/at.ts", lines: 10, limit: 10}, {file: "src/near.ts", lines: 9, limit: 10}])) throw new Error(`report: near is 8 to 10 lines under 10, src/dist left out: ${json(said.near)}`);
+      if (json(said.grew) !== json([{key: "S:src/big.ts", from: 2, to: 4, decision: {who: "lead", when: now, until: "2026-12-01"}}, {key: "S:src/other.ts", from: 0, to: 1, decision: null}])
+        || json(said.decisions) !== json([{key: "S:src/big.ts", until: "2026-12-01"}])) throw new Error(`report: grew in old rules only, with its decision: ${json(said.grew)} ${json(said.decisions)}`);
+      const cli = spawnSync(process.execPath, [new URL("../arch-check.mjs", import.meta.url).pathname, at, "--report", "--repo", "t"], {encoding: "utf8"});
+      if (cli.status !== 0 || json({...JSON.parse(cli.stdout), at: said.at}) !== json(said)) throw new Error(`report: the command line, root first, prints the same report: ${cli.stderr}`);
+      rmSync(join(at, "arch.config.json")); git(now, "commit", "-qam", "no config");
+      const none = spawnSync(process.execPath, [new URL("../arch-check.mjs", import.meta.url).pathname, "--report", at], {encoding: "utf8"});
+      if (none.status !== 2 || !/has no arch\.config\.json at [0-9a-f]{9}/.test(none.stderr)) throw new Error(`report: a commit without a config stops by name: ${none.stderr}`);
+    } finally {rmSync(at, {recursive: true, force: true});}
+  }
   console.log(`arch-check: ${rules.length} kinds found, baseline holds and only shrinks; the guard reads three languages and holds the ratchet`);
 } finally {rmSync(root, {recursive: true, force: true});}

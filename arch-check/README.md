@@ -42,6 +42,18 @@ Files given as text, judged by a rule set with the node run's own kinds: those t
 `Linter` (`eslint/universal`), `@typescript-eslint/parser` and the plugins by prefix (`{sonarjs}`). Bundled for a browser, the parser needs `path`
 (path-browserify) and no other node module while it runs. A hit is `{rule, file, line, message, weight}`; `check()` returns the hits too.
 
+## Code health report (`--report`, since 0.17.0)
+
+    arch-check <repo> --report [--rev origin/master] [--since <commit>] [--repo cut] > latest.json
+
+One JSON line about a commit, read from git (never the disk), for dash.v1d.io's Code tab: `{repo, sha, at, since, rules: [{id, name, what, why,
+fix, total, top: [{key, n}]}], near: [{file, lines, limit}], grew: [{key, from, to, decision}], decisions: [{key, until}]}`. `total` is the rule's
+sum in the baseline (null for a report rule) and `top` its ten biggest entries. `near` lists files 0 to 2 lines under a `max-lines` limit as an
+editor numbers them; the kind also counts the empty piece after the last newline, so a file at the limit can be one over it and in the baseline.
+`grew` compares with `since`, by default the last first-parent commit from a day before: an entry higher than there, or new, in a rule that commit
+had (a new rule's entries are its first baseline), with `{who, when, until}` of the decision whose ceiling allows it, or null. A commit without
+`arch.config.json` stops the run by name.
+
 ## The guard (`guard/`, since 0.9.0)
 
 For a repository that wants its architecture held, not only reported. A repository keeps one small pinned wrapper (it checks the sha256 of this package's `.mjs` files before it imports anything) and runs `runGuard({root, args})` from `@v1d/arch-check/guard/run.mjs`:
