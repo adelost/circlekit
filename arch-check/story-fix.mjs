@@ -4,7 +4,8 @@
 import {mkdtempSync, readFileSync, rmSync, writeFileSync} from "node:fs";
 import {tmpdir} from "node:os";
 import {join} from "node:path";
-import {aboveCallers, exportList, functionsOf, helpersAbove, holding, inlineExport, lineOf, parsed, privateAbove, pythonUnits, referencesIn, tsUnits, typescriptOf} from "./story.mjs";
+import {pythonUnits, typescriptOf} from "./repo-node.mjs";
+import {aboveCallers, exportList, functionsOf, helpersAbove, holding, inlineExport, lineOf, parsed, privateAbove, referencesIn, tsUnits} from "./story.mjs";
 
 const CODE = /\.(js|mjs|cjs|ts|tsx|mts|cts)$/;
 

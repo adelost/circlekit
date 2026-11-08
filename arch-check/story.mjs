@@ -1,17 +1,12 @@
 // story.mjs: the kinds that keep code reading as a story (Cut row 1873, Mattias 8 Nov via sandman:0): short functions with the main steps on top,
 // the helpers below. `eslint` counts one ESLint rule per file; `first-line` asks each file's first line to say what the file is for; `story-order`
 // asks a file that exports inline to put its exports above its private helpers; `stepdown` asks each function to stand below every function that
-// calls it, and `stepdown-order` names the functions out of the order their first calls are read in. ESLint, its TypeScript parser and the plugins
-// come from the repository, as TypeScript does for the guard's reader, and Python files are read by the repository's python3: no dependency here.
-import {execFileSync} from "node:child_process";
-import {existsSync, readFileSync} from "node:fs";
-import {createRequire, Module} from "node:module";
-import {join, relative, sep} from "node:path";
+// calls it, and `stepdown-order` names the functions out of the order their first calls are read in. TypeScript, ESLint and Python come from the repo:
+// on disk from its own install and python3 (repo-node.mjs), in the browser from the caller (web.mjs); no node API here (Cut row 1880).
 
-const CODE = /\.(js|mjs|cjs|ts|tsx|mts|cts)$/;
+export const CODE = /\.(js|mjs|cjs|ts|tsx|mts|cts)$/;
 const PY = /\.py$/;
 const KEYWORDS = new Set(["if", "for", "while", "switch", "catch", "return", "do", "else", "try", "with", "function", "new", "await", "typeof"]);
-const PLUGINS = {"@typescript-eslint": load => load("typescript-eslint").plugin, sonarjs: load => load("eslint-plugin-sonarjs")};
 const STORY = "Story first: the file's exports on top, helpers below (Clean Code stepdown rule).";
 
 export const storyKinds = {
@@ -20,7 +15,7 @@ export const storyKinds = {
    *  `skip` names functions that hold no logic of their own, by name or /regex/ (a suite's feature or describe wrapper, a create* factory whose
    *  inner functions are counted each); `loops: N` lets max-depth reach N where a loop is part of the nesting (the trial's verdict: 4 in loops). */
   eslint: async (rule, repo) => {
-    const byFile = await linted(repo), mine = new Set(repo.covered(rule)), ts = rule.exported || rule.loops ? typescriptOf(repo.root) : null, heads = new Map();
+    const byFile = await repo.eslint(), mine = new Set(repo.covered(rule)), ts = rule.exported || rule.loops ? repo.ts() : null, heads = new Map();
     const headsOf = file => heads.get(file) ?? heads.set(file, exportedHeads(ts, file, repo.read(file))).get(file);
     const kept = (file, m) => (!rule.exported || headsOf(file).some(([from, to]) => m.line >= from && m.line <= to)) && !loopDepth(ts, rule, file, repo.read(file), m);
     const skipped = (rule.skip ?? []).map(name => /^\/.*\/$/.test(name) ? new RegExp(name.slice(1, -1)) : new RegExp(`^${name}$`));   // a suite's wrapper is no function of logic
@@ -36,9 +31,9 @@ export const storyKinds = {
    *  left alone, the list being its table of contents. In Python a _private def or class stays below the file's last public def. Each helper above
    *  the last export is one hit, named. */
   "story-order": (rule, repo) => {
-    const files = repo.covered(rule), js = files.filter(file => CODE.test(file)), ts = js.length ? typescriptOf(repo.root) : null;
+    const files = repo.covered(rule), js = files.filter(file => CODE.test(file)), ts = js.length ? repo.ts() : null;
     const hits = [...js.map(file => ({file, above: helpersAbove(ts, file, repo.read(file))})),
-      ...pythonUnits(repo, files.filter(file => PY.test(file))).map(({file, units, items}) => ({file, above: privateAbove(units, items)}))];
+      ...repo.python(files.filter(file => PY.test(file))).map(({file, units, items}) => ({file, above: privateAbove(units, items)}))];
     return hits.flatMap(({file, above}) => above.map(({name, line, last}) => ({file, line, message: `${STORY} Move ${name} below ${last}`})));
   },
   /** No silent exceptions (Mattias 8 Nov via sandman:0): each inline exception (eslint-disable, @ts-ignore, @ts-expect-error, @ts-nocheck, and the
@@ -46,7 +41,7 @@ export const storyKinds = {
    *  until not passed; each file of `configs` that turns a rule off ("rule": "off" or 0) has a decision allowing file:rule. Counted per file and
    *  rule; `all: true` counts every exception, allowed or not (a report rule). */
   exceptions: (rule, repo) => {
-    const today = new Date().toISOString().slice(0, 10), allowed = allowedOff(repo.root, today);
+    const today = new Date().toISOString().slice(0, 10), allowed = allowedBy(repo.decisions(), today);
     const inline = repo.covered(rule).flatMap(file => exceptionsIn(repo.read(file), rule.markers ?? [], today).filter(e => rule.all || e.fault)
       .map(e => ({file, line: e.line, at: e.what, message: e.fault ?? `${e.what} is allowed until ${e.until}`})));
     const off = (rule.configs ?? []).filter(file => repo.files.includes(file)).flatMap(file => turnedOff(repo.read(file))
@@ -66,7 +61,7 @@ export const storyKinds = {
 };
 
 /** What story-fix.mjs reads of a file's story. */
-export {aboveCallers, exportList, functionsOf, helpersAbove, holding, inlineExport, lineOf, parsed, privateAbove, pythonUnits, referencesIn, tsUnits, typescriptOf};
+export {aboveCallers, exportList, functionsOf, helpersAbove, holding, inlineExport, lineOf, parsed, privateAbove, referencesIn, tsUnits};
 
 const DIRECTIVE = /(?:\/\/|\/\*|^\s*\*)\s*(eslint-disable(?:-next-line|-line)?|@ts-ignore|@ts-expect-error|@ts-nocheck)\b([^\n]*)/;
 const ALLOW = /lint-allow\s+([@\w/.-]+)\s*:\s*([^;\n]*\S)\s*;\s*until\s+(\d{4}-\d\d-\d\d)/g;
@@ -95,8 +90,7 @@ function turnedOff(text) {
 }
 
 /** The config file:rule keys that a decision in arch.decisions.json allows and whose until has not passed. */
-function allowedOff(root, today) {
-  const path = join(root, "arch.decisions.json"), decisions = existsSync(path) ? JSON.parse(readFileSync(path, "utf8")) : [];
+function allowedBy(decisions, today) {
   return new Set(decisions.filter(d => d?.allows && (d.until ?? "") >= today).flatMap(d => Object.keys(d.allows)));
 }
 
@@ -159,11 +153,11 @@ function privateAbove(units, items = []) {
 /** Each file's top-level functions in file order, with the file's other top-level functions each one calls, in the order of their first call. A
  *  tiered file is one where story-order holds the exports first (an inline export in JS/TS; every Python file, its public defs being its exports). */
 function graphs(rule, repo) {
-  const files = repo.covered(rule), js = files.filter(file => CODE.test(file)), ts = js.length ? typescriptOf(repo.root) : null;
+  const files = repo.covered(rule), js = files.filter(file => CODE.test(file)), ts = js.length ? repo.ts() : null;
   repo.storyUnits ??= new Map();
   const ofJs = file => repo.storyUnits.get(file) ?? repo.storyUnits.set(file, tsUnits(ts, file, repo.read(file))).get(file);
   return [...js.map(file => ({file, ...ofJs(file)})),
-    ...pythonUnits(repo, files.filter(file => PY.test(file))).map(({file, units, items}) => {
+    ...repo.python(files.filter(file => PY.test(file))).map(({file, units, items}) => {
       const top = new Set(items.filter(i => i.kind !== "def").flatMap(i => i.load));
       return {file, units: units.filter(u => u.kind === "def").map(u => ({...u, top: top.has(u.name)})), tiered: true};
     })];
@@ -309,109 +303,19 @@ function lineOf(src, s, pos = s.getStart(src)) {
   return lo + 1;
 }
 
-/** Python's top-level defs and classes, read by the repository's python3 in one run and kept on the run. A file Python cannot parse stops the run, as
- *  ESLint's does. */
-function pythonUnits(repo, files) {
-  repo.pythonRun ??= new Map();
-  const missing = files.filter(file => !repo.pythonRun.has(file));
-  if (missing.length) {
-    const read = JSON.parse(execFileSync("python3", ["-I", "-c", PY_UNITS, repo.root], {input: JSON.stringify(missing), encoding: "utf8", maxBuffer: 256 << 20}));
-    const broken = Object.entries(read).filter(([, r]) => r.error).map(([file, r]) => `${file} ${r.error}`);
-    if (broken.length) throw new Error(`Python cannot read ${broken.length} file(s): ${broken.slice(0, 5).join("; ")}`);
-    for (const [file, r] of Object.entries(read)) repo.pythonRun.set(file, r);
-  }
-  return files.map(file => ({file, ...repo.pythonRun.get(file)}));
+/** The rules of a config that ESLint runs: one pass for all of them. */
+export const eslintRules = rules => rules.filter(r => r.kind === "eslint");
+
+/** The one flat config both runs give ESLint: the TypeScript parser for every file, inline config off, each eslint rule at error. */
+export function eslintConfig(rules, parser, plugins) {
+  return {files: ["**/*.{js,mjs,cjs,ts,tsx,mts,cts}"], linterOptions: {noInlineConfig: true, reportUnusedDisableDirectives: "off"},
+    languageOptions: {parser, ecmaVersion: "latest", sourceType: "module"}, plugins,
+    rules: Object.fromEntries(rules.map(r => [r.rule, r.options === undefined ? "error" : ["error", r.options]]))};
 }
 
-/** One ESLint pass over every file an eslint rule covers, kept on the run: a map of each file to its messages. A file ESLint cannot parse stops the
- *  run (the rules cannot judge it); name it in the rule's exclude if it is meant to be so. ARCH_CACHE_DIR keeps ESLint's cache by content. */
-function linted(repo) {
-  repo.eslintRun ??= (async () => {
-    const rules = repo.config.rules.filter(r => r.kind === "eslint");
-    const files = [...new Set(rules.flatMap(r => repo.covered(r)))].filter(file => CODE.test(file));
-    if (!files.length) return new Map();
-    // config.eslint.from: a folder with its own package for ESLint and its plugins (the gateway's tools/lint, which carries TypeScript 5 beside its 7)
-    // (node would also find a root install above it, so the folder's own install is asked for by name)
-    const from = repo.config.eslint?.from, load = createRequire(join(repo.root, from ?? "", "package.json"));
-    if (from && !existsSync(join(repo.root, from, "node_modules/eslint/package.json"))) throw new Error(`ESLint is not installed in ${from}: npm ci --prefix ${from}`);
-    const {ESLint} = load("eslint");
-    typescriptOf(repo.root);   // the parser asks for typescript; on 7.x it is given typescript-5
-    const prefixes = [...new Set(rules.map(r => r.rule.includes("/") ? r.rule.slice(0, r.rule.lastIndexOf("/")) : null).filter(Boolean))];
-    const plugins = Object.fromEntries(prefixes.map(p => [p, PLUGINS[p] ? PLUGINS[p](load) : load(`eslint-plugin-${p}`)]));
-    const cache = process.env.ARCH_CACHE_DIR;
-    const eslint = new ESLint({cwd: repo.root, overrideConfigFile: true, ignore: false, ...(cache ? {cache: true, cacheStrategy: "content", cacheLocation: join(cache, "eslint/")} : {}),
-      overrideConfig: [{files: ["**/*.{js,mjs,cjs,ts,tsx,mts,cts}"], linterOptions: {noInlineConfig: true, reportUnusedDisableDirectives: "off"},
-        languageOptions: {parser: load("typescript-eslint").parser, ecmaVersion: "latest", sourceType: "module"}, plugins,
-        rules: Object.fromEntries(rules.map(r => [r.rule, r.options === undefined ? "error" : ["error", r.options]]))}]});
-    const results = await eslint.lintFiles(files);
-    const broken = results.flatMap(r => r.messages.filter(m => m.fatal || (!m.ruleId && /ignored/i.test(m.message))).map(m => `${relative(repo.root, r.filePath)}:${m.line} ${m.message}`));   // a file skipped is no pass
-    if (broken.length) throw new Error(`ESLint cannot read ${broken.length} file(s): ${broken.slice(0, 5).join("; ")}`);
-    return new Map(results.map(r => [relative(repo.root, r.filePath).split(sep).join("/"), r.messages]));
-  })();
-  return repo.eslintRun;
+/** ESLint's messages per file as a map, once no file is unread: a file ESLint cannot parse, or one it skipped, stops the run (a file skipped is no pass). */
+export function readable(entries) {
+  const broken = entries.flatMap(([file, messages]) => messages.filter(m => m.fatal || (!m.ruleId && /ignored/i.test(m.message))).map(m => `${file}:${m.line} ${m.message}`));
+  if (broken.length) throw new Error(`ESLint cannot read ${broken.length} file(s): ${broken.slice(0, 5).join("; ")}`);
+  return new Map(entries);
 }
-
-/** TypeScript 5's compiler API from the repository: `typescript-5` (an alias beside a newer typescript) or `typescript`. On TypeScript 7, which has
- *  none, the typescript every later require asks for (the ESLint parser's) is resolved to typescript-5 for this process. */
-function typescriptOf(root) {
-  const load = createRequire(join(root, "package.json")), api = name => { try { const ts = load(name); return typeof ts.createSourceFile === "function" ? ts : null; } catch { return null; } };
-  const ts = api("typescript");
-  if (ts) return ts;
-  const five = api("typescript-5");
-  if (!five) throw new Error("the story kinds need the TypeScript 5 compiler API: npm i -D typescript@5.9.3 (or typescript-5@npm:typescript@5.9.3 beside a newer typescript)");
-  const path = load.resolve("typescript-5"), resolveFilename = Module._resolveFilename;
-  if (!Module._resolveFilename.storyFive) Module._resolveFilename = Object.assign(function (request, ...rest) {
-    return request === "typescript" ? path : resolveFilename.call(this, request, ...rest); }, {storyFive: true});
-  return five;
-}
-
-/** Reads the files named on stdin (JSON) under the root in argv[1] and prints, per file, its top-level defs and classes in file order: name, line (a
- *  decorator's when it has one), kind, public, and for a def the file's names its body refers to, in the order of first reference, less the names
- *  the body binds itself (parameters, assignments, imports, inner defs); and every top-level statement as an item for --fix: its lines, kind, name,
- *  and the file's defs and classes it uses at load (a def's decorators and defaults, any other statement whole). */
-const PY_UNITS = String.raw`
-import ast, json, os, sys
-
-def refs(fn, names):
-    local, seen = {a.arg for a in ast.walk(fn.args) if isinstance(a, ast.arg)}, []
-    for node in (n for stmt in fn.body for n in ast.walk(stmt)):
-        if isinstance(node, ast.Name):
-            (seen.append((node.lineno, node.col_offset, node.id)) if isinstance(node.ctx, ast.Load) else local.add(node.id))
-        elif isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
-            local.add(node.name)
-        elif isinstance(node, ast.alias):
-            local.add((node.asname or node.name).split('.')[0])
-        elif isinstance(node, ast.arg):
-            local.add(node.arg)
-        elif isinstance(node, ast.ExceptHandler) and node.name:
-            local.add(node.name)
-    return list(dict.fromkeys(name for _, _, name in sorted(seen) if name in names and name not in local))
-
-def units(tree):
-    found = [n for n in tree.body if isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef))]
-    last = {n.name: i for i, n in enumerate(found)}
-    return [{'name': n.name, 'line': min([n.lineno] + [d.lineno for d in n.decorator_list]), 'kind': 'class' if isinstance(n, ast.ClassDef) else 'def',
-             'exported': not n.name.startswith('_'), 'calls': [] if isinstance(n, ast.ClassDef) else refs(n, last)} for i, n in enumerate(found) if last[n.name] == i]
-
-def loads(node, names):
-    if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
-        node = [*node.decorator_list, *node.args.defaults, *[d for d in node.args.kw_defaults if d]]
-    found = {n.id for one in (node if isinstance(node, list) else [node]) for n in ast.walk(one) if isinstance(n, ast.Name)}
-    return sorted(found & names)
-
-def items(tree):
-    names = {n.name for n in tree.body if isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef))}
-    kind = lambda n: 'def' if isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef)) else 'class' if isinstance(n, ast.ClassDef) else 'other'
-    return [{'start': min([n.lineno] + [d.lineno for d in getattr(n, 'decorator_list', [])]), 'end': n.end_lineno, 'kind': kind(n),
-             'name': getattr(n, 'name', None), 'load': loads(n, names)} for n in tree.body]
-
-out = {}
-for name in json.load(sys.stdin):
-    try:
-        with open(os.path.join(sys.argv[1], name), encoding='utf-8') as handle:
-            tree = ast.parse(handle.read(), name)
-            out[name] = {'units': units(tree), 'items': items(tree)}
-    except (SyntaxError, ValueError, UnicodeDecodeError) as error:
-        out[name] = {'error': type(error).__name__ + ': ' + str(error)}
-print(json.dumps(out))
-`;

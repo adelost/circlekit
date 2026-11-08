@@ -29,6 +29,19 @@ Kinds (each rule has `id`, `name`, `kind`, `fix`; `files` and `exclude` are glob
 - `css-imports` `{files, scripts, prefix, exclude?}`: a stylesheet (`files`) names a class that starts with `prefix` and that another folder's script (`scripts`) draws, while its own folder's script does not import that folder; a class no script names is nobody's, and `exclude` leaves out the scripts that draw nothing (examples). One hit per class in a stylesheet.
 - `count` `{module, export, path | paths, min}`: every item `path` reaches (`*` visits each key; with `paths` the entries of all of them are summed) holds at least `min` entries; a value that is there counts, a list counts its entries; the module is imported, so a `.ts` module needs `node --import tsx`.
 
+## In a browser (`web.mjs`, since 0.16.0)
+
+    import {lint} from "@v1d/arch-check/web";
+    const {hits, counts, red} = await lint({files: {"src/a.ts": text}, rules, ts, eslint: {Linter, parser, plugins}, decisions, baseline});
+
+Files given as text, judged by a rule set with the node run's own kinds: those that read text (`rules.mjs`: `max-lines`, `max-line-length`,
+`max-module-lines`, `pattern`, `providers`, `modal`, `duplicates`; `story.mjs`: `eslint`, `first-line`, `story-order`, `stepdown`, `stepdown-order`,
+`exceptions`). The gate holds its hits equal to the node run's. A kind that reads a repository's layout or runs its code (`max-files`, `names`,
+`folders`, `absent`, `modules`, `css-imports`, `contract`, `count`) is refused by name, and so is a Python file for a story kind (python3 reads it).
+`web.mjs`, `rules.mjs` and `story.mjs` use no node API. The caller brings TypeScript 5 (`ts`) for the story kinds and, for eslint rules, ESLint's
+`Linter` (`eslint/universal`), `@typescript-eslint/parser` and the plugins by prefix (`{sonarjs}`). Bundled for a browser, the parser needs `path`
+(path-browserify) and no other node module while it runs. A hit is `{rule, file, line, message, weight}`; `check()` returns the hits too.
+
 ## The guard (`guard/`, since 0.9.0)
 
 For a repository that wants its architecture held, not only reported. A repository keeps one small pinned wrapper (it checks the sha256 of this package's `.mjs` files before it imports anything) and runs `runGuard({root, args})` from `@v1d/arch-check/guard/run.mjs`:

@@ -2,6 +2,7 @@
 // the guard (guard/) reads the imports of TypeScript, Python and Kotlin, finds a cycle, and lets no raise, removed rule or widened dependency pass without a named decision.
 import {mkdtempSync, mkdirSync, readdirSync, readFileSync, writeFileSync, rmSync, symlinkSync} from "node:fs";
 import {execFileSync, spawnSync} from "node:child_process";
+import {createRequire} from "node:module";
 import {tmpdir} from "node:os";
 import {basename, join} from "node:path";
 import {check, KEY_NAMES} from "../arch-check.mjs";
@@ -13,6 +14,7 @@ import {architectureGuard, architecturePolicy, decisionFaults, expiredFaults} fr
 import {pushedTips} from "../guard/export.mjs";
 import {touchedFaults} from "../guard/touched.mjs";
 import {fixStory} from "../story-fix.mjs";
+import {lint} from "../web.mjs";
 
 const root = mkdtempSync(join(tmpdir(), "arch-check-"));
 const put = (path, text) => {mkdirSync(join(root, path, ".."), {recursive: true}); writeFileSync(join(root, path), text);};
@@ -237,6 +239,18 @@ try {
         || !said.some(line => line.includes("S: st/step.py:2 Story first: the file's exports on top, helpers below (Clean Code stepdown rule). Move _helper below run."))
         || !said.some(line => line.includes("B: st/listed.js:2 Story first (stepdown): helper is called by first; place it below first."))
         || !said.some(line => /P: st\/many\.ts:2 Function 'many' has too many parameters \(5\)/.test(line))) throw new Error(`story: the kinds name their breaches: ${keys} ${said.join(" | ")}`);
+      // 1880: the browser entry (web.mjs) judges files given as text by the same kinds, with TypeScript and ESLint from its caller: the same hits as the
+      // node run (Python is left to node, by name), a kind that reads the repository's layout refused by name, and no node API in the modules it loads
+      const load = createRequire(new URL("../package.json", import.meta.url)), eslint = {Linter: load("eslint").Linter, parser: load("typescript-eslint").parser, plugins: {sonarjs: load("eslint-plugin-sonarjs")}};
+      const texts = Object.fromEntries(readdirSync(join(repo, "st")).filter(name => !name.endsWith(".py")).map(name => [`st/${name}`, readFileSync(join(repo, "st", name), "utf8")]));
+      const web = await lint({files: texts, rules: story.rules, ts: load("typescript"), eslint}), node = (await check(repo, story, {})).hits.filter(hit => !hit.file.endsWith(".py"));
+      const sorted = list => list.map(hit => JSON.stringify(hit)).sort().join("\n");
+      if (!web.hits.length || sorted(web.hits) !== sorted(node)) throw new Error(`web: the browser entry gives the node run's hits:\n${sorted(web.hits)}\n---\n${sorted(node)}`);
+      const refused = rules => lint({files: {...texts, "st/step.py": "def run():\n    return 1\n"}, rules, ts: load("typescript"), eslint}).then(() => "ran", error => error.message);
+      if (!/python3 for st\/step\.py/.test(await refused([st("S", {kind: "story-order"})])) || !/rule 10 \(folders\) needs the node run/.test(await refused([rules.find(rule => rule.id === 10)])))
+        throw new Error("web: Python and a kind that reads the layout are refused by name, never passed");
+      const nodeApi = ["web.mjs", "rules.mjs", "story.mjs"].filter(name => /from\s*["']node:|\brequire\(|\bprocess\./.test(readFileSync(new URL(`../${name}`, import.meta.url), "utf8")));
+      if (nodeApi.length) throw new Error(`web: the browser's modules use no node API: ${nodeApi.join(", ")}`);
       if (!architecturePolicy({config: {rules: [{id: "B", kind: "stepdown", fix: "x"}, {id: "B2", kind: "stepdown", fix: "x", what: "w", why: "y", example: {without: "a", with: "b"}}]}})
         .some(line => line.includes("B is a story rule; give it what")) || architecturePolicy({config: {rules: [{id: "B2", kind: "stepdown", fix: "x", what: "w", why: "y", example: {without: "a", with: "b"}}]}})
         .some(line => line.includes("story rule"))) throw new Error("policy: a story rule carries what, why and its picture without and with");
