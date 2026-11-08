@@ -29,6 +29,7 @@ NPM_PACKAGES=(
   "web-kit|web-kit|web-kit|v1d-web-kit|check"
   "arch-check|arch-check|arch-check|v1d-arch-check|check"
   "api-client|api-client|api-client|v1d-api-client|check"
+  "engine|engine|engine|v1d-engine|check"
   "bdd-vitest|bdd-vitest|bdd-vitest|bdd-vitest|check"
   "mnemonic-id|mnemonic-id|mnemonic-id|mnemonic-id|check"
   "cli|cli|cli|v1d-cli|check"

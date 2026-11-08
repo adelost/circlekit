@@ -52,6 +52,10 @@
      "imports": []
     },
     {
+     "dir": "engine",
+     "imports": []
+    },
+    {
      "dir": "link-product",
      "imports": []
     },

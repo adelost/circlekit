@@ -1,0 +1,28 @@
+{
+  "name": "@v1d/engine",
+  "version": "0.1.0",
+  "description": "Video in the browser for any app: a source's boxes read in bounds, a frame at a second, a picked file's first frame, and what this browser encodes and decodes",
+  "type": "module",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "sideEffects": false,
+  "exports": {
+    ".": "./dist/index.js",
+    "./boxes": {
+      "types": "./dist/boxes/index.d.ts",
+      "default": "./dist/boxes/index.js"
+    },
+    "./decode": "./dist/decode/index.js"
+  },
+  "scripts": {
+    "check": "node scripts/check-dist.mjs"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "license": "UNLICENSED"
+}
