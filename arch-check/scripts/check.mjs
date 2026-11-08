@@ -8,6 +8,7 @@ import {check, KEY_NAMES} from "../arch-check.mjs";
 import {moduleCounts, saveImportCache} from "../guard/graph.mjs";
 import {ratchetFaults} from "../guard/ratchet.mjs";
 import {architectureGuard, decisionFaults} from "../guard/policy.mjs";
+import {pushedTips} from "../guard/export.mjs";
 
 const root = mkdtempSync(join(tmpdir(), "arch-check-"));
 const put = (path, text) => {mkdirSync(join(root, path, ".."), {recursive: true}); writeFileSync(join(root, path), text);};
@@ -144,6 +145,14 @@ try {
     if (faults(capped({caps: {"m/a": 50}})) || !/M: max 50 raises/.test(faults(capped({max: 50})))) throw new Error("ratchet: a lower cap needs none, a raised max does");
     if (decisionFaults([decided({"R:x": 1}), decided(undefined, {removes: ["R"]})]).length || decisionFaults([{...decided({"R:x": 1}), who: ""}, decided({"R:x": 0}), {who: "a", when: "x", message: "m"}]).length !== 4) throw new Error("decisions: who, when, message and what they cover are required");
     if (architectureGuard(repo).length) throw new Error(`policy: a repository with its pinned wrapper and lint line holds: ${architectureGuard(repo)}`);
+    // Huset 1022 review: the pre-push hook lints the branches guard.branches names (default master|main), each tip once; a deleted branch and a push of only docs are not linted
+    {
+      const line = (sha, branch, before = "0".repeat(40)) => `refs/heads/x ${sha} refs/heads/${branch} ${before}`, push = (guard, lines) => pushedTips(lines.join("\n"),
+        {configOf: () => ({guard}), changedOf: sha => sha === "d0c5" ? ["docs/a.md"] : ["src/a.ts"]}).map(tip => `${tip.sha}${tip.docsOnly ? ":docs" : ""}`).join(" ");
+      const lines = [line("a1", "master"), line("b2", "design/first-concepts"), line("c3", "release/huset-1"), line("e4", "feature"), line("0".repeat(40), "release/gone"), line("d0c5", "main"), line("a1", "main")];
+      if (push({}, lines) !== "a1 d0c5:docs") throw new Error(`export: by default master and main are linted, each tip once: ${push({}, lines)}`);
+      if (push({branches: "design/first-concepts|release/.+"}, lines) !== "b2 c3") throw new Error(`export: guard.branches names the branches a push lints: ${push({branches: "design/first-concepts|release/.+"}, lines)}`);
+    }
     gput("w.mjs", "console.log('green');\n"); if (!architectureGuard(repo).some(line => line.includes("restore the pinned hash"))) throw new Error("policy: a wrapper without the pin must stop it");
   } finally {rmSync(repo, {recursive: true, force: true});}
   console.log(`arch-check: ${rules.length} kinds found, baseline holds and only shrinks; the guard reads three languages and holds the ratchet`);
