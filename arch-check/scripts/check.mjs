@@ -218,13 +218,16 @@ try {
       gput("st/step.py", "# a private def above the public def that calls it\ndef _helper():\n    return 1\n\ndef run():\n    return _helper()\n"); gput("st/bare.py", "x = 1\n");
       gput("st/inner.ts", "// an inner helper takes five, the export none\nexport const x = () => inner(1, 2, 3, 4, 5);\nfunction inner(a: number, b: number, c: number, d: number, e: number) { return a + b + c + d + e; }\n");
       gput("st/ex.ts", "// one silent exception\n// @ts-ignore\nexport const y: number = \"y\";\n");
+      gput("st/suite.js", `// a suite's wrapper is no function of logic; its long inner function is\nfeature("a", () => {\n${"  step();\n".repeat(62)}});\nfunction steps() {\n${"  step();\n".repeat(62)}}\n`);
       const st = (id, more) => ({id, name: id, files: ["st/**"], fix: "x", ...more});
       const story = {rules: [st("P", {kind: "eslint", rule: "max-params", options: {max: 4}}), st("C", {kind: "eslint", rule: "sonarjs/cognitive-complexity", options: 15}),
         st("F", {kind: "first-line"}), st("S", {kind: "story-order"}), st("B", {kind: "stepdown"}), st("O", {kind: "stepdown-order", report: true}),
-        st("PE", {kind: "eslint", rule: "max-params", options: {max: 4}, exported: true}), st("X", {kind: "exceptions"})]};
+        st("PE", {kind: "eslint", rule: "max-params", options: {max: 4}, exported: true}), st("X", {kind: "exceptions"}),
+        st("L", {kind: "eslint", rule: "max-lines-per-function", options: {max: 60}, skip: ["feature"]})]};
       const {red: said, counts: told, reported} = await check(repo, story, {});
       const keys = Object.keys(told).sort().join(" ");
-      if (keys !== "B:st/listed.js B:st/order.js B:st/step.py C:st/deep.js F:st/bare.py F:st/order.js P:st/inner.ts P:st/many.ts PE:st/many.ts S:st/order.js S:st/step.py X:st/ex.ts:ts-ignore"
+      if (keys !== "B:st/listed.js B:st/order.js B:st/step.py C:st/deep.js F:st/bare.py F:st/order.js L:st/suite.js P:st/inner.ts P:st/many.ts PE:st/many.ts S:st/order.js S:st/step.py X:st/ex.ts:ts-ignore"
+        || told["L:st/suite.js"] !== 1 || !said.some(line => line.includes("L: st/suite.js:66 Function 'steps' has too many lines"))
         || Object.keys(reported).sort().join(" ") !== "O:st/listed.js O:st/order.js O:st/step.py" || said.some(line => line.startsWith("rule O "))
         || !said.some(line => line.includes("S: st/order.js:4 Story first: the file's exports on top, helpers below (Clean Code stepdown rule). Move helper below first."))
         || !said.some(line => line.includes("S: st/step.py:2 Story first: the file's exports on top, helpers below (Clean Code stepdown rule). Move _helper below run."))
