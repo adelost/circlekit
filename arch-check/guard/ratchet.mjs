@@ -5,6 +5,7 @@ import { existsSync, readdirSync } from 'node:fs';
 import { posix, resolve } from 'node:path';
 
 export const DECISIONS = 'arch.decisions.json';
+const BOUNDED = ['max-lines', 'max-line-length'];   // the kinds whose max and exclude only tighten without a decision
 const decisionsIn = text => { try { const list = JSON.parse(text ?? '[]'); return Array.isArray(list) ? list : []; } catch { return []; } };
 
 /** A cap and named exceptions cannot be raised by the change they would otherwise reject, and a rule cannot leave or be renamed under the ratchet. Renames preserve identity.
@@ -29,7 +30,7 @@ export function ratchetFaults(root, config, baseline, { decisions = [], counts }
       if (!rule) continue;
       if (oldRule.hard && !rule.hard) red.push(`${rule.id}: it was hard (no exception) in ${ref}; keep it hard`);
       if (oldRule.kind !== rule.kind && !licensed(`${rule.id}:kind`)) red.push(`${rule.id}: kind ${oldRule.kind} became ${rule.kind}; name it in ${DECISIONS} (ceilings ${rule.id}:kind: 1)`);
-      if (rule.kind === 'max-lines' && oldRule.kind === 'max-lines') {
+      if (BOUNDED.includes(rule.kind) && rule.kind === oldRule.kind) {
         if (rule.max > oldRule.max && !licensed(`${rule.id}:max`, rule.max)) red.push(`${rule.id}: max ${rule.max} raises ${ref}'s ${oldRule.max}; name it in ${DECISIONS} (ceilings ${rule.id}:max: ${rule.max})`);
         for (const entry of rule.exclude ?? []) if (!(oldRule.exclude ?? []).includes(entry) && !licensed(`${rule.id}:exclude:${entry}`))
           red.push(`${rule.id}: ${entry} is now left out of the rule; name it in ${DECISIONS} (ceilings ${rule.id}:exclude:${entry}: 1)`);
