@@ -81,6 +81,15 @@ try {
     if (ts["T:deep:ts/b/index.ts>ts/a/in.ts"] !== 2 || !ts["T:cycle:ts/a>ts/b"]) throw new Error(`guard (TypeScript): an import and a Worker URL past a door count, a cycle is found: ${JSON.stringify(ts)}`);
     if (py["P:deep:py/q/__init__.py>py/p/deep.py"] !== 1 || Object.keys(py).some(key => key.includes("undeclared"))) throw new Error(`guard (Python): a relative import past a door counts, a docstring's import does not: ${JSON.stringify(py)}`);
     if (kt["K:edge:kt/b/B.kt>kt/a"] !== 1) throw new Error(`guard (Kotlin): an import and a wildcard import of the same file along an undeclared edge count once: ${JSON.stringify(kt)}`);
+    // row 1022 (Huset): with workspaces an import of the repository's own package by name is read through its package.json exports, an exported subpath being its door, so the edges and a cycle through
+    // names are found; a relative import past the door still counts; without the option a name is no edge
+    gput("pk/one/package.json", JSON.stringify({name: "@w/one", exports: {".": "./src/index.ts", "./sub": {import: "./src/sub.ts"}}})); gput("pk/one/src/index.ts", "import \"@w/two\";\nexport {};\n");
+    gput("pk/one/src/sub.ts", "export {};\n"); gput("pk/one/src/inner.ts", "export {};\n"); gput("pk/two/package.json", JSON.stringify({name: "@w/two", main: "./src/index.ts"}));
+    gput("pk/two/src/index.ts", "import \"@w/one/sub\";\nimport \"../../one/src/inner.ts\";\nexport {};\n");
+    const pk = extra => moduleCounts(repo, mod("W", "pk", ["pk/one", "pk/two"], {entry: "src/index.ts", ...extra})).counts, named = pk({workspaces: true}), unnamed = pk({});
+    if (named["W:edge:pk/one/src/index.ts>pk/two"] !== 1 || named["W:edge:pk/two/src/index.ts>pk/one"] !== 2 || named["W:deep:pk/two/src/index.ts>pk/one/src/inner.ts"] !== 1
+      || Object.keys(named).some(key => key.includes(">pk/one/src/sub.ts")) || !named["W:cycle:pk/one>pk/two"]) throw new Error(`guard (workspaces): names read through exports: ${JSON.stringify(named)}`);
+    if (unnamed["W:edge:pk/one/src/index.ts>pk/two"] || unnamed["W:cycle:pk/one>pk/two"] || unnamed["W:deep:pk/two/src/index.ts>pk/one/src/inner.ts"] !== 1) throw new Error(`guard (workspaces off): a name is no edge: ${JSON.stringify(unnamed)}`);
     // row 1795: with ARCH_CACHE_DIR a file's imports are kept by its content: a cold and a warm run count what an uncached run counts, a changed file is read again, an unreadable cache is no cache
     {
       const dir = mkdtempSync(join(tmpdir(), "arch-cache-")), bad = mkdtempSync(join(tmpdir(), "arch-cache-bad-")), rule = mod("T", "ts", ["ts/a", "ts/b"]), run = () => JSON.stringify(Object.entries(moduleCounts(repo, rule).counts).sort());

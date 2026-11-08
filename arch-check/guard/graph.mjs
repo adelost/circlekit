@@ -70,14 +70,31 @@ function specsOf(file, body) {
   return found;
 }
 
+/** With `workspaces` (row 1022, Huset): the repository's own packages, each by its package.json name, with the files its "exports" (or "main") name, keyed by the subpath
+ *  an import asks for ("." or "./presentation"), as Node resolves an import of the package by name. What a package exports is its door. */
+function workspacePackages(root) {
+  const manifests = execFileSync('git', ['-C', root, 'ls-files', '-co', '--exclude-standard', '-z', '--', '*package.json'], { encoding: 'utf8' }).split('\0')
+    .filter(file => /(?:^|\/)package\.json$/.test(file) && file.includes('/') && !/(?:^|\/)(?:vendor|node_modules|dist)\//.test(file));
+  const fileOf = to => typeof to === 'string' ? to : to && typeof to === 'object' ? fileOf(to.import ?? to.default ?? Object.values(to)[0]) : null;   // a condition's file: import, else default, else the first
+  return manifests.flatMap(manifest => {
+    const json = JSON.parse(readFileSync(resolve(root, manifest), 'utf8')), dir = posix.dirname(manifest), top = json.exports;
+    if (typeof json.name !== 'string') return [];
+    const subpaths = top === undefined ? (json.main ? { '.': json.main } : {}) : typeof top === 'string' || !Object.keys(top).some(key => key.startsWith('.')) ? { '.': top } : top;
+    const doors = new Map(Object.entries(subpaths).map(([subpath, to]) => [subpath, fileOf(to)]).filter(([, to]) => to).map(([subpath, to]) => [subpath, posix.normalize(posix.join(dir, to))]));
+    return [{ name: json.name, dir, doors }];
+  }).sort((a, b) => b.name.length - a.name.length);
+}
+
 export function moduleCounts(root, rule) {
   const python = rule.lang === 'py', kotlin = rule.lang === 'kt', counts = {}, reasons = new Map(), SRC = rule.root, entry = rule.entry ?? (python ? '__init__.py' : kotlin ? '*' : 'index.js'), edgesOnly = rule.edgesOnly === true;   // edgesOnly (K10): who may import whom, no doors
   const hit = (name, reason) => { const key = `${rule.id}:${name}`; counts[key] = (counts[key] ?? 0) + 1; reasons.set(key, reason); };
   const files = execFileSync('git', ['-C', root, 'ls-files', '-co', '--exclude-standard', '-z'], { encoding: 'utf8', maxBuffer: 32 * 1024 * 1024 })
     .split('\0').filter(file => (python ? /\.py$/ : kotlin ? /\.kt$/ : /\.(?:[cm]?[jt]sx?|svelte)$/).test(file) && !/(?:^|\/)(?:vendor|node_modules|dist)\//.test(file) && !/(?:^|\/)\./.test(file) && existsSync(resolve(root, file)));
   const known = new Set(files), modules = [...rule.modules].sort((a, b) => b.dir.length - a.dir.length), graph = new Map(modules.map(m => [m.dir, new Set()]));
+  const packages = rule.workspaces === true ? workspacePackages(root) : [], exported = new Set(packages.flatMap(p => [...p.doors.values()]));   // off unless a rule asks
+  const packageOf = spec => packages.find(p => spec === p.name || spec.startsWith(`${p.name}/`));
   const doorsOf = m => [m.entry ?? entry].flat();   // a module's public files, relative to it
-  const isDoor = (into, base) => [into.dir, `${into.dir}/index`, `${into.dir}/index.js`].includes(base) || doorsOf(into).some(door => door === '*' ? posix.dirname(base) === into.dir : base === `${into.dir}/${door}`);
+  const isDoor = (into, base) => exported.has(base) || [into.dir, `${into.dir}/index`, `${into.dir}/index.js`].includes(base) || doorsOf(into).some(door => door === '*' ? posix.dirname(base) === into.dir : base === `${into.dir}/${door}`);
   const owner = file => modules.find(m => file.startsWith(`${m.dir}/`));
   if (!edgesOnly) for (const dir of readdirSync(resolve(root, SRC), { withFileTypes: true }).filter(e => e.isDirectory())) {
     const name = `${SRC}/${dir.name}`;
@@ -91,7 +108,8 @@ export function moduleCounts(root, rule) {
     for (const dep of m.imports) if (!graph.has(dep)) hit(`unknown-dependency:${m.dir}>${dep}`, `${m.dir}: unknown allowed module ${dep}`);
   }
   const targetOf = (file, spec) => {
-    const base = rule.publicPrefix && spec.startsWith(rule.publicPrefix)
+    const named = packageOf(spec), subpath = named && `.${spec.slice(named.name.length)}`;
+    const base = named ? named.doors.get(subpath) ?? posix.join(named.dir, subpath) : rule.publicPrefix && spec.startsWith(rule.publicPrefix)
       ? posix.join(SRC, spec.slice(rule.publicPrefix.length)) : posix.normalize(posix.join(posix.dirname(file), spec));
     const target = [base, `${base}.ts`, `${base}.js`, `${base}.mjs`, `${base}/index.ts`, `${base}/index.js`,
       ...(/\.js$/.test(base) ? [base.replace(/\.js$/, '.ts')] : [])].find(p => known.has(p));
@@ -115,7 +133,7 @@ export function moduleCounts(root, rule) {
     const body = readFileSync(resolve(root, file), 'utf8'), from = owner(file);
     if (python) { for (const target of pythonTargets(body, file, rule.sourceRoots ?? [SRC], known)) consider(file, from, target, target); continue; }
     if (kotlin) { for (const target of kotlinTargets(body, file, index)) consider(file, from, target, target); continue; }
-    for (const spec of specsOf(file, body)) if (spec.startsWith('.') || (rule.publicPrefix && spec.startsWith(rule.publicPrefix))) {
+    for (const spec of specsOf(file, body)) if (spec.startsWith('.') || (rule.publicPrefix && spec.startsWith(rule.publicPrefix)) || packageOf(spec)) {
       const { base, target } = targetOf(file, spec);
       consider(file, from, base, target);
     }
