@@ -45,7 +45,7 @@ export function ratchetFaults(root, config, baseline, { decisions = [], counts }
       for (const folder of rule?.excludeFolders ?? []) if (!(oldRule.excludeFolders ?? []).includes(folder))
         red.push(`${oldRule.id}: new excluded folder ${folder}; declare its module instead`);
     }
-    for (const oldRule of oldConfig.rules) if (!config.rules.some(r => r.id === oldRule.id) && !fresh.some(one => one.removes?.includes(oldRule.id)))
+    for (const oldRule of oldConfig.rules) if (!config.rules.some(r => r.id === oldRule.id) && !fresh.some(one => one.removes?.map(String).includes(String(oldRule.id))))
       red.push(`${oldRule.id}: rule removed or renamed since ${ref}; a rule leaves only through a decision in ${DECISIONS} that names it in removes`);
     const renamed = (git('diff', '--name-status', '-M', ref) ?? '').split('\n').filter(line => line.startsWith('R')).map(line => line.split('\t').slice(1));
     const movedModules = oldConfig.rules.filter(rule => rule.exactEdges).flatMap(oldRule => oldRule.modules.flatMap(module => {
@@ -72,7 +72,7 @@ export function ratchetFaults(root, config, baseline, { decisions = [], counts }
       for (const file of cap.exclude ?? []) if (!oldExcluded.has(file)) red.push(`${cap.id}: new root exception ${file}; put the file in its module`);
     }
     for (const [key, value] of Object.entries(baseline)) {
-      const id = key.split(':')[0], oldRule = oldConfig.rules.find(r => r.id === id);
+      const id = key.split(':')[0], oldRule = oldConfig.rules.find(r => String(r.id) === id);
       if (!oldRule) {   // a new rule starts with today's breaches, named here in the same commit, and the next commit's ratchet only lets them shrink
         if (counts && (counts[key] ?? 0) !== value) red.push(`${key}: a new rule ${id} names ${value}, today's breaches are ${counts[key] ?? 0}; name exactly today's`);
         continue;

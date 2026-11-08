@@ -1,11 +1,17 @@
 // The parsed module doors and directed graph of the architecture guard, from Cut (tools/dev/cloud_module_rules.mjs at a34aaa239, rows 1773, 1777) with a mandatory source root, a door per module
-// (entry, a name or a list, or "*" for every file directly in the module) and modules owned by the longest folder. A rule reads TypeScript, JavaScript and the script of a Svelte file, or with lang "py" Python. Legacy debt is named by source and target, never pooled per file. The ratchet is ratchet.mjs. row 1785.
+// (entry, a name or a list, or "*" for every file directly in the module) and modules owned by the longest folder. A rule reads TypeScript, JavaScript and the script of a Svelte file, or with lang "py" Python or with lang "kt" Kotlin. Legacy debt is named by source and target, never pooled per file. The ratchet is ratchet.mjs. row 1785.
 import { execFileSync } from 'node:child_process';
 import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { posix, resolve } from 'node:path';
-import ts from 'typescript';
+import { createRequire } from 'node:module';
 import { cyclesOf } from './cycles.mjs';
 import { pythonTargets } from './python.mjs';
+import { kotlinIndex, kotlinTargets } from './kotlin.mjs';
+
+// The compiler API of TypeScript 5 (typescript-5, an npm alias, or typescript itself); a 7.x package has none.
+const load = createRequire(import.meta.url);
+const ts = ['typescript-5', 'typescript'].map(name => { try { return load(name); } catch { return null; } }).find(api => typeof api?.createSourceFile === 'function');
+if (!ts) throw Error('arch-check: the parser needs the TypeScript 5 compiler API: npm i -D typescript@5.9.3 (or typescript-5@npm:typescript@5.9.3 beside a newer typescript)');
 
 const WORKERS = new Set(['Worker', 'SharedWorker']);
 /** `new URL('<path>', import.meta.url)`: the node of its path literal (a file named from this one's own place), else null. */
@@ -21,10 +27,10 @@ function pathsGiven(tree, arg) {
 }
 
 export function moduleCounts(root, rule) {
-  const python = rule.lang === 'py', counts = {}, reasons = new Map(), SRC = rule.root, entry = rule.entry ?? (python ? '__init__.py' : 'index.js'), edgesOnly = rule.edgesOnly === true;   // edgesOnly (K10): who may import whom, no doors
+  const python = rule.lang === 'py', kotlin = rule.lang === 'kt', counts = {}, reasons = new Map(), SRC = rule.root, entry = rule.entry ?? (python ? '__init__.py' : kotlin ? '*' : 'index.js'), edgesOnly = rule.edgesOnly === true;   // edgesOnly (K10): who may import whom, no doors
   const hit = (name, reason) => { const key = `${rule.id}:${name}`; counts[key] = (counts[key] ?? 0) + 1; reasons.set(key, reason); };
   const files = execFileSync('git', ['-C', root, 'ls-files', '-co', '--exclude-standard', '-z'], { encoding: 'utf8', maxBuffer: 32 * 1024 * 1024 })
-    .split('\0').filter(file => (python ? /\.py$/ : /\.(?:[cm]?[jt]sx?|svelte)$/).test(file) && !/(?:^|\/)(?:vendor|node_modules|dist)\//.test(file) && !/(?:^|\/)\./.test(file) && existsSync(resolve(root, file)));
+    .split('\0').filter(file => (python ? /\.py$/ : kotlin ? /\.kt$/ : /\.(?:[cm]?[jt]sx?|svelte)$/).test(file) && !/(?:^|\/)(?:vendor|node_modules|dist)\//.test(file) && !/(?:^|\/)\./.test(file) && existsSync(resolve(root, file)));
   const known = new Set(files), modules = [...rule.modules].sort((a, b) => b.dir.length - a.dir.length), graph = new Map(modules.map(m => [m.dir, new Set()]));
   const doorsOf = m => [m.entry ?? entry].flat();   // a module's public files, relative to it
   const isDoor = (into, base) => [into.dir, `${into.dir}/index`, `${into.dir}/index.js`].includes(base) || doorsOf(into).some(door => door === '*' ? posix.dirname(base) === into.dir : base === `${into.dir}/${door}`);
@@ -47,6 +53,7 @@ export function moduleCounts(root, rule) {
       ...(/\.js$/.test(base) ? [base.replace(/\.js$/, '.ts')] : [])].find(p => known.has(p));
     return { base, target: target ?? base };
   };
+  const index = kotlin ? kotlinIndex(files, file => readFileSync(resolve(root, file), 'utf8')) : null;
   const consider = (file, from, base, target) => {
     const into = owner(target);
     if (rule.closed && from && !into) hit(`outside:${file}>${target}`, `${file}: ${from.dir} imports ${target}, outside ${modules.map(m => m.dir).join(' and ')}; ${rule.id} lets it reach nothing else`);
@@ -63,6 +70,7 @@ export function moduleCounts(root, rule) {
   for (const file of files.filter(file => !rule.onlyFrom || file.startsWith(rule.onlyFrom))) {
     const body = readFileSync(resolve(root, file), 'utf8'), from = owner(file);
     if (python) { for (const target of pythonTargets(body, file, rule.sourceRoots ?? [SRC], known)) consider(file, from, target, target); continue; }
+    if (kotlin) { for (const target of kotlinTargets(body, file, index)) consider(file, from, target, target); continue; }
     const text = file.endsWith('.svelte') ? [...body.matchAll(/<script\b[^>]*>([\s\S]*?)<\/script>/g)].map(one => one[1]).join('\n') : body;
     const tree = ts.createSourceFile(file.endsWith('.svelte') ? `${file}.ts` : file, text, ts.ScriptTarget.Latest, true);
     const visit = node => {

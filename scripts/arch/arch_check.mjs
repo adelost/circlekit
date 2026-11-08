@@ -31,11 +31,12 @@ const path = join(ROOT, config.baseline), baseline = JSON.parse(readFileSync(pat
 const decisions = existsSync(join(ROOT, DECISIONS)) ? JSON.parse(readFileSync(join(ROOT, DECISIONS), 'utf8')) : [];
 if (args.includes('--init') && Object.keys(baseline).length) throw Error('arch-check: the existing baseline only shrinks; use --lower');
 const parsedRules = config.rules.filter(r => r.kind === 'modules' && r.exactEdges);
-const ids = new Set(parsedRules.map(r => r.id)), isParsed = key => ids.has(key.split(':')[0]);
+const ids = new Set(parsedRules.map(r => String(r.id))), isParsed = key => ids.has(key.split(':')[0]);
 const { moduleCounts } = parsedRules.length ? await import('./graph.mjs') : {};   // the parser (typescript) loads only for rules that read imports
 const { check } = await import(join(PACKAGE, 'arch-check.mjs'));
 const packageBaseline = args.includes('--init') ? {} : Object.fromEntries(Object.entries(baseline).filter(([key]) => !isParsed(key)));
-const built = await check(ROOT, { ...config, rules: config.rules.map(r => ids.has(r.id) ? { ...r, files: [] } : r) }, packageBaseline);
+const built = await check(ROOT, { ...config, rules: config.rules.map(r => ids.has(String(r.id)) ? { ...r, files: [] } : r) }, packageBaseline)
+  .catch(error => { console.error(`arch-check: cannot run: ${error.message}`); process.exit(2); });   // a rule that cannot run never reads as a pass
 const counts = { ...built.counts }, red = [...built.red];
 for (const rule of parsedRules) {
   const parsed = moduleCounts(ROOT, rule);
@@ -48,7 +49,7 @@ if (args.includes('--init')) {
   writeFileSync(path, JSON.stringify(counts, null, 2) + '\n'); console.log(`arch-check: first baseline written, ${Object.keys(counts).length} named entries`); process.exit(0);
 }
 if (args.includes('--adopt')) {   // a rule new to this repository starts with the breaches it has today, named once; the ratchet checks that the rule is new
-  const id = args[args.indexOf('--adopt') + 1], rule = config.rules.find(r => r.id === id), prefix = `${id}:`;
+  const id = args[args.indexOf('--adopt') + 1], rule = config.rules.find(r => String(r.id) === id), prefix = `${id}:`;
   if (!rule || rule.hard) { console.error('arch-check: --adopt takes the id of a rule of arch.config.json that is not hard'); process.exit(1); }
   if (Object.keys(baseline).some(key => key.startsWith(prefix))) { console.error(`arch-check: ${id} already has named exceptions; they only shrink (--lower)`); process.exit(1); }
   const taken = Object.entries(counts).filter(([key]) => key.startsWith(prefix));
