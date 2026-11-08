@@ -18,7 +18,7 @@ export async function runGuard({ root, args = [] }) {
   if (first && Object.keys(baseline).length) { console.error('arch-check: the existing baseline only shrinks; use --lower'); return 1; }
   const parsedRules = config.rules.filter(r => r.kind === 'modules' && r.exactEdges);
   const ids = new Set(parsedRules.map(r => String(r.id))), isParsed = key => ids.has(key.split(':')[0]);
-  const { moduleCounts } = parsedRules.length ? await import('./graph.mjs') : {};   // the parser (TypeScript 5) loads only for rules that read imports
+  const { moduleCounts, saveImportCache } = parsedRules.length ? await import('./graph.mjs') : {};   // the parser (TypeScript 5) loads only for rules that read imports
   let built;
   try {
     built = await check(root, { ...config, rules: config.rules.map(r => ids.has(String(r.id)) ? { ...r, files: [] } : r) },
@@ -30,6 +30,7 @@ export async function runGuard({ root, args = [] }) {
     Object.assign(counts, parsed.counts);
     if (!first) for (const [key, n] of Object.entries(parsed.counts)) if (n > (baseline[key] ?? 0)) red.push(`rule ${key}: ${parsed.reasons.get(key)} (${n}, allowed ${baseline[key] ?? 0}). Fix: ${rule.fix}`);
   }
+  saveImportCache?.();   // ARCH_CACHE_DIR keeps each file's imports by its content, row 1795
   const write = value => writeFileSync(path, JSON.stringify(value, null, 2) + '\n');
   if (first) {
     const hard = config.rules.filter(r => r.hard).map(r => `${r.id}:`), kept = Object.keys(counts).filter(key => hard.some(prefix => key.startsWith(prefix)));

@@ -1,11 +1,11 @@
 // The gate of the @v1d/arch-check release: the tool finds a planted violation of each kind it ships, holds a clean tree, and keeps its baseline shrink-only;
 // the guard (guard/) reads the imports of TypeScript, Python and Kotlin, finds a cycle, and lets no raise, removed rule or widened dependency pass without a named decision.
-import {mkdtempSync, mkdirSync, writeFileSync, rmSync} from "node:fs";
+import {mkdtempSync, mkdirSync, readdirSync, readFileSync, writeFileSync, rmSync} from "node:fs";
 import {execFileSync} from "node:child_process";
 import {tmpdir} from "node:os";
-import {join} from "node:path";
+import {basename, join} from "node:path";
 import {check, KEY_NAMES} from "../arch-check.mjs";
-import {moduleCounts} from "../guard/graph.mjs";
+import {moduleCounts, saveImportCache} from "../guard/graph.mjs";
 import {ratchetFaults} from "../guard/ratchet.mjs";
 import {architectureGuard, decisionFaults} from "../guard/policy.mjs";
 
@@ -81,6 +81,24 @@ try {
     if (ts["T:deep:ts/b/index.ts>ts/a/in.ts"] !== 2 || !ts["T:cycle:ts/a>ts/b"]) throw new Error(`guard (TypeScript): an import and a Worker URL past a door count, a cycle is found: ${JSON.stringify(ts)}`);
     if (py["P:deep:py/q/__init__.py>py/p/deep.py"] !== 1 || Object.keys(py).some(key => key.includes("undeclared"))) throw new Error(`guard (Python): a relative import past a door counts, a docstring's import does not: ${JSON.stringify(py)}`);
     if (kt["K:edge:kt/b/B.kt>kt/a"] !== 1) throw new Error(`guard (Kotlin): an import and a wildcard import of the same file along an undeclared edge count once: ${JSON.stringify(kt)}`);
+    // row 1795: with ARCH_CACHE_DIR a file's imports are kept by its content: a cold and a warm run count what an uncached run counts, a changed file is read again, an unreadable cache is no cache
+    {
+      const dir = mkdtempSync(join(tmpdir(), "arch-cache-")), bad = mkdtempSync(join(tmpdir(), "arch-cache-bad-")), rule = mod("T", "ts", ["ts/a", "ts/b"]), run = () => JSON.stringify(Object.entries(moduleCounts(repo, rule).counts).sort());
+      try {
+        const plain = run();
+        process.env.ARCH_CACHE_DIR = dir;
+        const cold = run(); saveImportCache(); const warm = run();
+        if (cold !== plain || warm !== plain) throw new Error("import cache: a cold and a warm run must count what an uncached run counts");
+        const file = join(dir, readdirSync(dir).find(name => name.startsWith("imports-")));
+        if (!Object.values(JSON.parse(readFileSync(file, "utf8"))).some(list => list.includes("../a/in"))) throw new Error("import cache: the specifiers of a file are kept by its content");
+        const before = readFileSync(join(repo, "ts/a/in.ts"), "utf8");
+        gput("ts/a/in.ts", "import \"../b/index\";\nexport {};\n");
+        if (!moduleCounts(repo, rule).counts["T:edge:ts/a/in.ts>ts/b"]) throw new Error("import cache: a file that changed must be read again");
+        gput("ts/a/in.ts", before);
+        writeFileSync(join(bad, basename(file)), "not json"); process.env.ARCH_CACHE_DIR = bad;
+        if (run() !== plain) throw new Error("import cache: an unreadable cache is no cache");
+      } finally {delete process.env.ARCH_CACHE_DIR; rmSync(dir, {recursive: true, force: true}); rmSync(bad, {recursive: true, force: true});}
+    }
     const config = {baseline: "arch.baseline.json", guard: {wrapper: "w.mjs", lint: "node w.mjs"}, rules: [{id: "R", name: "r", kind: "max-lines", files: ["a/**"], max: 10, fix: "x"}, mod("T", "ts", ["ts/a"])]};
     gput("arch.config.json", JSON.stringify(config)); gput("arch.baseline.json", "{}"); gput("w.mjs", "createHash SHA256\n"); gput("package.json", JSON.stringify({scripts: {lint: "node w.mjs"}}));
     git("add", "."); git("commit", "-qm", "base");

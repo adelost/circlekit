@@ -1,8 +1,9 @@
 // The parsed module doors and directed graph of the architecture guard, from Cut (tools/dev/cloud_module_rules.mjs at a34aaa239, rows 1773, 1777) with a mandatory source root, a door per module
 // (entry, a name or a list, or "*" for every file directly in the module) and modules owned by the longest folder. A rule reads TypeScript, JavaScript and the script of a Svelte file, or with lang "py" Python or with lang "kt" Kotlin. Legacy debt is named by source and target, never pooled per file. The ratchet is ratchet.mjs. row 1785.
+import { createHash } from 'node:crypto';
 import { execFileSync } from 'node:child_process';
-import { existsSync, readFileSync, readdirSync } from 'node:fs';
-import { posix, resolve } from 'node:path';
+import { existsSync, mkdirSync, readFileSync, readdirSync, renameSync, writeFileSync } from 'node:fs';
+import { join, posix, resolve } from 'node:path';
 import { createRequire } from 'node:module';
 import { cyclesOf } from './cycles.mjs';
 import { pythonTargets } from './python.mjs';
@@ -23,6 +24,49 @@ function pathsGiven(tree, arg) {
   if (ts.isTemplateExpression(arg)) return [arg.head];
   const found = [], look = node => { const path = urlPathOf(tree, node); if (path && ts.isStringLiteralLike(path)) found.push(path); ts.forEachChild(node, look); };
   look(arg);
+  return found;
+}
+
+// The specifiers a JavaScript, TypeScript or Svelte file names (import, export-from, import(), require(), Worker), in the order the parser reaches them. They depend only on the file's text, its name's extensions and the
+// parser's version, so with ARCH_CACHE_DIR set they are kept by that content: a run after a rebase parses again only the files that changed, and the rules of a repository share one parse of each file. A cache that
+// cannot be read or written is no cache, nothing else changes; without the variable nothing is kept. row 1795.
+const kept = { file: null, map: null, touched: new Set(), grew: false };
+const cacheFile = () => process.env.ARCH_CACHE_DIR ? join(process.env.ARCH_CACHE_DIR, `imports-ts${ts.version}.json`) : null;
+const keptSpecs = file => {
+  if (kept.file !== file) {
+    kept.file = file; kept.touched = new Set(); kept.grew = false;
+    try { const map = JSON.parse(readFileSync(file, 'utf8')); kept.map = map && typeof map === 'object' && !Array.isArray(map) ? map : {}; } catch { kept.map = {}; }
+  }
+  return kept.map;
+};
+/** Writes what this run used, once every rule has read its files (a rule that reads a part of the tree must not prune what another reads); entries no file of this run has are dropped. Nothing is written when nothing is new. */
+export function saveImportCache() {
+  const file = cacheFile();
+  if (!file || kept.file !== file || !kept.grew && Object.keys(kept.map).length === kept.touched.size) return;
+  try {
+    mkdirSync(join(file, '..'), { recursive: true });
+    const used = Object.fromEntries(Object.entries(kept.map).filter(([key]) => kept.touched.has(key))), part = `${file}.${process.pid}.tmp`;
+    writeFileSync(part, JSON.stringify(used)); renameSync(part, file);
+    kept.map = used; kept.grew = false;
+  } catch { /* a cache that cannot be written is no cache */ }
+}
+function specsOf(file, body) {
+  const path = cacheFile(), map = path ? keptSpecs(path) : null;
+  const key = map ? createHash('sha256').update(`${file.slice(file.lastIndexOf('/') + 1).replace(/^[^.]*/, '')}\0${body}`).digest('hex').slice(0, 32) : null;
+  if (key) { kept.touched.add(key); if (Array.isArray(map[key])) return map[key]; }
+  const svelte = file.endsWith('.svelte'), text = svelte ? [...body.matchAll(/<script\b[^>]*>([\s\S]*?)<\/script>/g)].map(one => one[1]).join('\n') : body;
+  const tree = ts.createSourceFile(svelte ? `${file}.ts` : file, text, ts.ScriptTarget.Latest, true), found = [];
+  const visit = node => {
+    let named = [];
+    if (ts.isImportDeclaration(node) || ts.isExportDeclaration(node)) named = [node.moduleSpecifier];
+    else if (ts.isImportTypeNode(node) && ts.isLiteralTypeNode(node.argument)) named = [node.argument.literal];
+    else if (ts.isCallExpression(node) && (node.expression.kind === ts.SyntaxKind.ImportKeyword || node.expression.getText(tree) === 'require')) named = pathsGiven(tree, node.arguments[0]);
+    else if (ts.isNewExpression(node) && WORKERS.has(node.expression.getText(tree))) named = pathsGiven(tree, node.arguments?.[0]);
+    for (const literal of named) if (literal && (ts.isStringLiteralLike(literal) || ts.isTemplateHead(literal))) found.push(literal.text);
+    ts.forEachChild(node, visit);
+  };
+  visit(tree);
+  if (key) { map[key] = found; kept.grew = true; }
   return found;
 }
 
@@ -71,21 +115,10 @@ export function moduleCounts(root, rule) {
     const body = readFileSync(resolve(root, file), 'utf8'), from = owner(file);
     if (python) { for (const target of pythonTargets(body, file, rule.sourceRoots ?? [SRC], known)) consider(file, from, target, target); continue; }
     if (kotlin) { for (const target of kotlinTargets(body, file, index)) consider(file, from, target, target); continue; }
-    const text = file.endsWith('.svelte') ? [...body.matchAll(/<script\b[^>]*>([\s\S]*?)<\/script>/g)].map(one => one[1]).join('\n') : body;
-    const tree = ts.createSourceFile(file.endsWith('.svelte') ? `${file}.ts` : file, text, ts.ScriptTarget.Latest, true);
-    const visit = node => {
-      let named = [];
-      if (ts.isImportDeclaration(node) || ts.isExportDeclaration(node)) named = [node.moduleSpecifier];
-      else if (ts.isImportTypeNode(node) && ts.isLiteralTypeNode(node.argument)) named = [node.argument.literal];
-      else if (ts.isCallExpression(node) && (node.expression.kind === ts.SyntaxKind.ImportKeyword || node.expression.getText(tree) === 'require')) named = pathsGiven(tree, node.arguments[0]);
-      else if (ts.isNewExpression(node) && WORKERS.has(node.expression.getText(tree))) named = pathsGiven(tree, node.arguments?.[0]);
-      for (const literal of named) if (literal && (ts.isStringLiteralLike(literal) || ts.isTemplateHead(literal)) && (literal.text.startsWith('.') || (rule.publicPrefix && literal.text.startsWith(rule.publicPrefix)))) {
-        const { base, target } = targetOf(file, literal.text);
-        consider(file, from, base, target);
-      }
-      ts.forEachChild(node, visit);
-    };
-    visit(tree);
+    for (const spec of specsOf(file, body)) if (spec.startsWith('.') || (rule.publicPrefix && spec.startsWith(rule.publicPrefix))) {
+      const { base, target } = targetOf(file, spec);
+      consider(file, from, base, target);
+    }
   }
   if (rule.acyclic) for (const component of cyclesOf(graph)) {
     for (const from of component) for (const to of graph.get(from)) if (component.includes(to))
