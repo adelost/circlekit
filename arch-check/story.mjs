@@ -330,7 +330,11 @@ function linted(repo) {
     const rules = repo.config.rules.filter(r => r.kind === "eslint");
     const files = [...new Set(rules.flatMap(r => repo.covered(r)))].filter(file => CODE.test(file));
     if (!files.length) return new Map();
-    const load = createRequire(join(repo.root, "package.json")), {ESLint} = load("eslint");
+    // config.eslint.from: a folder with its own package for ESLint and its plugins (the gateway's tools/lint, which carries TypeScript 5 beside its 7)
+    // (node would also find a root install above it, so the folder's own install is asked for by name)
+    const from = repo.config.eslint?.from, load = createRequire(join(repo.root, from ?? "", "package.json"));
+    if (from && !existsSync(join(repo.root, from, "node_modules/eslint/package.json"))) throw new Error(`ESLint is not installed in ${from}: npm ci --prefix ${from}`);
+    const {ESLint} = load("eslint");
     typescriptOf(repo.root);   // the parser asks for typescript; on 7.x it is given typescript-5
     const prefixes = [...new Set(rules.map(r => r.rule.includes("/") ? r.rule.slice(0, r.rule.lastIndexOf("/")) : null).filter(Boolean))];
     const plugins = Object.fromEntries(prefixes.map(p => [p, PLUGINS[p] ? PLUGINS[p](load) : load(`eslint-plugin-${p}`)]));

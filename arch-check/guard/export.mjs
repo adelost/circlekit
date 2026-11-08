@@ -22,6 +22,8 @@ export function lintCommit(sha, before, { rollback = false } = {}) {
     execFileSync('tar', ['-xf', archive, '-C', tree]);
     rmSync(archive);
     if (existsSync(join(root, 'node_modules'))) symlinkSync(join(root, 'node_modules'), join(tree, 'node_modules'));
+    const lintFrom = (() => { try { return JSON.parse(readFileSync(join(tree, 'arch.config.json'), 'utf8')).eslint?.from; } catch { return null; } })();
+    if (lintFrom && existsSync(join(root, lintFrom, 'node_modules'))) symlinkSync(join(root, lintFrom, 'node_modules'), join(tree, lintFrom, 'node_modules'));   // the lint package's own install
     const env = { ...process.env, GIT_DIR: gitDir, GIT_WORK_TREE: tree, GIT_INDEX_FILE: join(temp, 'index'), ARCH_REFS: `${sha}^`, ...(none(before) ? {} : { ARCH_BASE: before }),
       ...(rollback ? { ARCH_TOUCHED: 'off' } : {}) };   // a deploy's commit was held to the touched rule at its push
     execFileSync('git', ['read-tree', sha], { env });

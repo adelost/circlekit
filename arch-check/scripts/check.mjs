@@ -246,6 +246,19 @@ try {
       const waits = {who: "gate", when: "2026-11-08T00:00Z", message: "check", waits: {python: "the story rules read JS and TS"}, until: "2026-12-01"};
       if (decisionFaults([waits]).length || !decisionFaults([{...waits, until: undefined}]).length || !/python: waited until 2026-12-01/.test(expiredFaults([waits], {}, "2026-12-02").join())
         || expiredFaults([waits], {}, "2026-11-30").length) throw new Error("decisions: what waits names until, and is red after it");
+      // 0.15.5: a later decision that decides what waited ends the wait (the gateway's ESLint rules, on through their own lint package)
+      const decided = {who: "gate", when: "2026-11-09T00:00Z", message: "check", decided: {python: "the lint package reads it"}};
+      if (decisionFaults([waits, decided]).length || expiredFaults([waits, decided], {}, "2026-12-02").length || !decisionFaults([{...decided, decided: {python: ""}}]).length)
+        throw new Error("decisions: a later decision decides what waited, and the wait is over");
+      // 0.15.5: ESLint and its plugins come from config.eslint.from, a folder with its own package (its own TypeScript 5); not installed there, the run stops
+      const fromRules = {rules: [st("P", {kind: "eslint", rule: "max-params", options: {max: 4}, files: ["st/many.ts"]})]};
+      mkdirSync(join(repo, "lint"), {recursive: true}); writeFileSync(join(repo, "lint/package.json"), "{\"private\": true}\n");
+      const bare = await check(repo, {...fromRules, eslint: {from: "lint"}}, {}).then(() => "ran", error => error.message);
+      if (!/ESLint is not installed in lint: npm ci --prefix lint/.test(bare)) throw new Error(`eslint.from: a lint package not installed stops the run: ${bare}`);
+      symlinkSync(new URL("../node_modules", import.meta.url).pathname, join(repo, "lint/node_modules"));
+      const fromLint = await check(repo, {...fromRules, eslint: {from: "lint"}}, {});
+      if (fromLint.counts["P:st/many.ts"] !== 1) throw new Error(`eslint.from: the rules run from the lint package: ${JSON.stringify(fromLint.counts)}`);
+      rmSync(join(repo, "lint"), {recursive: true, force: true});
       // --fix moves whole functions and changes no line: a leaf goes below its export, a helper that load-time code runs stays, a U+2028 in a string
       // breaks no line, and a Python helper goes below the public def that calls it
       gput("fx/a.js", "// a file to fix\nconst SEP = \"\u2028\";\n/** Doubles. */\nconst double = (n) => n * 2;\nconst twice = (n) => double(double(n));\nconst ready = twice(1);\n\nfunction leaf() { return SEP; }\n\nexport function main() { return twice(ready) + leaf(); }\n");

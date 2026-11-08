@@ -19,9 +19,11 @@ export function decisionFaults(decisions) {
     const name = `${DECISIONS_FILE} #${at + 1}`, red = [];
     for (const field of ['who', 'message']) if (typeof one?.[field] !== 'string' || !one[field].trim()) red.push(`${name}: name ${field}`);
     if (!WHEN.test(one?.when ?? '')) red.push(`${name}: name when, as 2026-11-07T20:13Z`);
-    const { ceilings, removes, doors, waits, allows } = one ?? {};
-    if (ceilings === undefined && removes === undefined && doors === undefined && waits === undefined && allows === undefined)
-      red.push(`${name}: name what it covers, ceilings (key: highest count), removes (rule ids), doors (door: when it goes), waits (what: why it waits) or allows (config file:rule: why it is off)`);
+    const { ceilings, removes, doors, waits, allows, decided } = one ?? {};
+    if (ceilings === undefined && removes === undefined && doors === undefined && waits === undefined && allows === undefined && decided === undefined)
+      red.push(`${name}: name what it covers, ceilings (key: highest count), removes (rule ids), doors (door: when it goes), waits (what: why it waits), allows (config file:rule: why it is off) or decided (what waited: how it was decided)`);
+    if (decided !== undefined && (typeof decided !== 'object' || decided === null || !Object.values(decided).every(how => typeof how === 'string' && how.trim())))
+      red.push(`${name}: decided names each thing that waited with how it was decided`);
     for (const [field, what] of [['waits', 'each thing that waits'], ['allows', 'each rule a config file turns off, as file:rule,']])
       if (one?.[field] !== undefined && (typeof one[field] !== 'object' || one[field] === null || !Object.values(one[field]).every(why => typeof why === 'string' && why.trim()) || !UNTIL.test(one.until ?? '')))
         red.push(`${name}: ${field} names ${what} with why, and until the day it is decided`);
@@ -41,7 +43,10 @@ export function expiredFaults(decisions, baseline, today = new Date().toISOStrin
   for (const one of Array.isArray(decisions) ? decisions : []) for (const key of Object.keys(one?.ceilings ?? {}))
     if (UNTIL.test(one.until ?? '') && key in (baseline ?? {}) && !(last.get(key) >= one.until)) last.set(key, one.until);
   const waiting = new Map();   // Cut row 1873: what waits (a language the rules do not read yet) is red past its until, unless a later decision names it again
-  for (const one of Array.isArray(decisions) ? decisions : []) for (const key of Object.keys({...one?.waits, ...one?.allows})) if (UNTIL.test(one.until ?? '')) waiting.set(key, one.until);
+  for (const one of Array.isArray(decisions) ? decisions : []) {
+    for (const key of Object.keys({...one?.waits, ...one?.allows})) if (UNTIL.test(one.until ?? '')) waiting.set(key, one.until);
+    for (const key of Object.keys(one?.decided ?? {})) waiting.delete(key);   // a later decision decided it: the wait is over
+  }
   return [...[...last].filter(([, until]) => until < today).map(([key, until]) => `${key}: its decision's until ${until} has passed; split the file and run --lower, or name a later until in a new decision`),
     ...[...waiting].filter(([, until]) => until < today).map(([key, until]) => `${key}: waited until ${until}; decide it, or name a later until in a new decision`)];
 }
