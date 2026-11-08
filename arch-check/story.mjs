@@ -4,6 +4,7 @@
 // calls it, and `stepdown-order` names the functions out of the order their first calls are read in. ESLint, its TypeScript parser and the plugins
 // come from the repository, as TypeScript does for the guard's reader, and Python files are read by the repository's python3: no dependency here.
 import {execFileSync} from "node:child_process";
+import {existsSync, readFileSync} from "node:fs";
 import {createRequire, Module} from "node:module";
 import {join, relative, sep} from "node:path";
 
@@ -14,16 +15,22 @@ const PLUGINS = {"@typescript-eslint": load => load("typescript-eslint").plugin,
 const STORY = "Story first: the file's exports on top, helpers below (Clean Code stepdown rule).";
 
 export const storyKinds = {
-  /** {rule, options?}: the ESLint rule's breaches per file, each with the function it names; every eslint rule of the config runs in one ESLint pass. */
+  /** {rule, options?, exported?, skip?}: the ESLint rule's breaches per file, each with the function it names; every eslint rule of the config runs in
+   *  one ESLint pass. `exported: true` keeps only breaches on the head of a top-level exported function (a file's API, as max-params is meant);
+   *  `skip` names callees whose callback is no function of logic (feature, describe: a suite's wrapper). */
   eslint: async (rule, repo) => {
-    const byFile = await linted(repo), mine = new Set(repo.covered(rule));
-    return [...byFile].filter(([file]) => mine.has(file)).flatMap(([file, messages]) => messages.filter(m => m.ruleId === rule.rule)
-      .map(m => ({file, line: m.line, message: `${m.message.replace(/\.$/, "")}${functionAt(repo.read(file), m.line, m.message)}`})));
+    const byFile = await linted(repo), mine = new Set(repo.covered(rule)), ts = rule.exported ? typescriptOf(repo.root) : null, heads = new Map();
+    const headsOf = file => heads.get(file) ?? heads.set(file, exportedHeads(ts, file, repo.read(file))).get(file);
+    const kept = (file, line) => !ts || headsOf(file).some(([from, to]) => line >= from && line <= to);
+    const skipped = new Set((rule.skip ?? []).map(name => ` (in ${name})`));   // a suite's wrapper (feature, describe) is no function of logic
+    return [...byFile].filter(([file]) => mine.has(file)).flatMap(([file, messages]) => messages.filter(m => m.ruleId === rule.rule && kept(file, m.line))
+      .map(m => ({file, line: m.line, at: functionAt(repo.read(file), m.line, m.message), m})).filter(h => !skipped.has(h.at))
+      .map(({file, line, at, m}) => ({file, line, message: `${m.message.replace(/\.$/, "")}${at}`})));
   },
-  /** The first line (after a shebang, and in Python a coding line) is a one-line comment on what the file is for: `//` or a block comment closed on that line, in Python
-   *  `#` or a one-line docstring. */
+  /** The first line (after a shebang, and in Python a coding line) says what the file is for: a `//` comment or a block comment that opens with
+   *  words on that line; in Python a `#` comment or a docstring that opens with its summary (Cut's trial: a header's first line counts). */
   "first-line": (rule, repo) => repo.covered(rule).flatMap(file => oneLineComment(repo.read(file), PY.test(file)) ? []
-    : [{file, line: 1, message: "the first line is not a one-line comment on what the file is for"}]),
+    : [{file, line: 1, message: "the first line does not say what the file is for"}]),
   /** A file that exports inline (export function, export const) keeps its exports above its private helpers; a file that exports by a list is
    *  left alone, the list being its table of contents. In Python a _private def or class stays below the file's last public def. Each helper above
    *  the last export is one hit, named. */
@@ -32,6 +39,19 @@ export const storyKinds = {
     const hits = [...js.map(file => ({file, above: helpersAbove(ts, file, repo.read(file))})),
       ...pythonUnits(repo, files.filter(file => PY.test(file))).map(({file, units}) => ({file, above: privateAbove(units)}))];
     return hits.flatMap(({file, above}) => above.map(({name, line, last}) => ({file, line, message: `${STORY} Move ${name} below ${last}`})));
+  },
+  /** No silent exceptions (Mattias 8 Nov via sandman:0): each inline exception (eslint-disable, @ts-ignore, @ts-expect-error, @ts-nocheck, and the
+   *  rule's own `markers`, regexes) names what it turns off and carries `lint-allow <that>: why; until YYYY-MM-DD` on its line or the line above, its
+   *  until not passed; each file of `configs` that turns a rule off ("rule": "off" or 0) has a decision allowing file:rule. Counted per file and
+   *  rule; `all: true` counts every exception, allowed or not (a report rule). */
+  exceptions: (rule, repo) => {
+    const today = new Date().toISOString().slice(0, 10), allowed = allowedOff(repo.root, today);
+    const inline = repo.covered(rule).flatMap(file => exceptionsIn(repo.read(file), rule.markers ?? [], today).filter(e => rule.all || e.fault)
+      .map(e => ({file, line: e.line, at: e.what, message: e.fault ?? `${e.what} is allowed until ${e.until}`})));
+    const off = (rule.configs ?? []).filter(file => repo.files.includes(file)).flatMap(file => turnedOff(repo.read(file))
+      .filter(e => rule.all || !allowed.has(`${file}:${e.what}`)).map(e => ({file, line: e.line, at: e.what,
+        message: allowed.has(`${file}:${e.what}`) ? `${e.what} is off by a decision` : `${file} turns ${e.what} off without a decision; name it in arch.decisions.json allows ("${file}:${e.what}": why) with until`})));
+    return [...inline, ...off];
   },
   /** Stepdown (Clean Code ch. 3): a function never stands above a function of its file that calls it, so the file reads from the top down. A
    *  function that calls itself or functions that call each other are exempt, and so is a helper's call of an export where story-order puts the
@@ -44,6 +64,41 @@ export const storyKinds = {
     ({file, line: unit.line, message: `Story first (order): ${unit.name} is not where its first call is read; place it ${after ? `right after ${after.name}` : "first"}`}))),
 };
 
+/** What story-fix.mjs reads of a file's story. */
+export {aboveCallers, exportList, functionsOf, helpersAbove, holding, inlineExport, lineOf, parsed, privateAbove, pythonUnits, referencesIn, tsUnits, typescriptOf};
+
+const DIRECTIVE = /(?:\/\/|\/\*|^\s*\*)\s*(eslint-disable(?:-next-line|-line)?|@ts-ignore|@ts-expect-error|@ts-nocheck)\b([^\n]*)/;
+const ALLOW = /lint-allow\s+([@\w/.-]+)\s*:\s*([^;\n]*\S)\s*;\s*until\s+(\d{4}-\d\d-\d\d)/g;
+
+/** Each exception of a file, with what it turns off, its until, and its fault if it has one: no rule named, no lint-allow for it, or a passed until. */
+function exceptionsIn(text, markers, today) {
+  const lines = text.split("\n"), extra = markers.map(m => new RegExp(m));
+  return lines.flatMap((line, at) => {
+    const found = DIRECTIVE.exec(line), mark = extra.find(re => re.test(line)), allows = [...`${lines[at - 1] ?? ""}\n${line}`.matchAll(ALLOW)];
+    if (!found && !mark) return [];
+    const named = found?.[1].startsWith("eslint") ? found[2].replace(/\*\/.*/, "").split("--")[0].split(",").map(r => r.trim()).filter(Boolean)
+      : [found ? found[1].slice(1) : mark.source];
+    if (!named.length) return [{line: at + 1, what: found[1], fault: `${found[1]} names no rule; name the rule it turns off (no unlimited disable)`}];
+    return named.map(what => {
+      const allow = allows.find(a => a[1] === what);
+      const fault = !allow ? `${found?.[1] ?? "an exception"} of ${what} has no lint-allow; write // lint-allow ${what}: why; until YYYY-MM-DD on its line or the line above, or fix the code`
+        : allow[3] < today ? `the lint-allow of ${what} was until ${allow[3]}; fix the code, or decide a later until` : null;
+      return {line: at + 1, what, until: allow?.[3], fault};
+    });
+  });
+}
+
+/** The rules a config file turns off: `"rule": "off"` or `"rule": 0`, also as the first of an array. */
+function turnedOff(text) {
+  return text.split("\n").flatMap((line, at) => [...line.matchAll(/["']([@\w/.-]+)["']\s*:\s*\[?\s*(?:["']off["']|0\b)/g)].map(m => ({line: at + 1, what: m[1]})));
+}
+
+/** The config file:rule keys that a decision in arch.decisions.json allows and whose until has not passed. */
+function allowedOff(root, today) {
+  const path = join(root, "arch.decisions.json"), decisions = existsSync(path) ? JSON.parse(readFileSync(path, "utf8")) : [];
+  return new Set(decisions.filter(d => d?.allows && (d.until ?? "") >= today).flatMap(d => Object.keys(d.allows)));
+}
+
 /** The rule's message names its function when ESLint's does not (a cognitive complexity, a depth): the declaration on the reported line. */
 function functionAt(text, line, message) {
   if (/'[^']+'/.test(message)) return "";
@@ -53,10 +108,16 @@ function functionAt(text, line, message) {
   return name && !KEYWORDS.has(name) ? ` (in ${name})` : "";
 }
 
+/** The lines of each top-level exported function's head, from its statement to the start of its body. */
+function exportedHeads(ts, file, text) {
+  const src = parsed(ts, file, text, false), lineAt = pos => lineOf(src, null, pos);
+  return src.statements.filter(s => inlineExport(ts, s)).flatMap(s => functionsOf(ts, s).map(({body}) => [lineOf(src, s), lineAt((body.body ?? body).getStart(src))]));
+}
+
 function oneLineComment(text, python) {
   const first = text.replace(/^#!.*\n/, "").replace(python ? /^#.*coding[:=].*\n/ : /^$/, "").split("\n")[0].trim();
-  if (python) return /^#\s*\S/.test(first) || /^("""|''')\s*\S.*\1$/.test(first);
-  return /^\/\/.*\S/.test(first) && first !== "//" || /^\/\*.*\*\/$/.test(first);
+  if (python) return /^#\s*\S/.test(first) || /^("""|''')\s*\w/.test(first);   // a docstring's first line is its summary (PEP 257)
+  return /^\/\/.*\S/.test(first) && first !== "//" || /^\/\*\*?\s*\w/.test(first);   // a block comment that says what on its first line
 }
 
 function helpersAbove(ts, file, text) {
@@ -82,14 +143,18 @@ function graphs(rule, repo) {
   repo.storyUnits ??= new Map();
   const ofJs = file => repo.storyUnits.get(file) ?? repo.storyUnits.set(file, tsUnits(ts, file, repo.read(file))).get(file);
   return [...js.map(file => ({file, ...ofJs(file)})),
-    ...pythonUnits(repo, files.filter(file => PY.test(file))).map(({file, units}) => ({file, units: units.filter(u => u.kind === "def"), tiered: true}))];
+    ...pythonUnits(repo, files.filter(file => PY.test(file))).map(({file, units, items}) => {
+      const top = new Set(items.filter(i => i.kind !== "def").flatMap(i => i.load));
+      return {file, units: units.filter(u => u.kind === "def").map(u => ({...u, top: top.has(u.name)})), tiered: true};
+    })];
 }
 
 function tsUnits(ts, file, text) {
   const src = parsed(ts, file, text, true), listed = exportList(ts, src);
   const found = src.statements.flatMap(s => functionsOf(ts, s).map(({name, body}) => ({name, line: lineOf(src, s), exported: !listed && inlineExport(ts, s), body})));
-  const names = new Set(found.map(u => u.name));
-  const units = found.map(({body, ...unit}) => ({...unit, calls: referencesIn(ts, body, names)}));
+  const names = new Set(found.map(u => u.name)), loose = src.statements.filter(s => !functionsOf(ts, s).length && !ts.isImportDeclaration(s) && !ts.isExportDeclaration(s));
+  const top = new Set(loose.flatMap(s => referencesIn(ts, s, names)));   // what top-level code uses: a test's it() callbacks, a script's main line
+  const units = found.map(({body, ...unit}) => ({...unit, top: top.has(unit.name), calls: referencesIn(ts, body, names)}));
   return {units, tiered: !listed && src.statements.some(s => inlineExport(ts, s))};
 }
 
@@ -140,10 +205,11 @@ function aboveCallers(units, tiered) {
 }
 
 /** Whether a caller holds its callee below it: not when the two reach each other (recursion, functions that call each other: one strongly
- *  connected group), nor in a tiered file a helper's call of an export, which story-order puts first. */
+ *  connected group), nor in a tiered file a helper's call of an export, which story-order puts first, nor when top-level code uses the callee too
+ *  (a test fixture its it() callbacks share; moving it below a caller could also leave it undefined where that code runs). */
 function holding(units, tiered) {
   const at = new Map(units.map((u, i) => [u.name, i])), group = groups(units);
-  return (caller, callee) => group[at.get(caller.name)] !== group[at.get(callee.name)] && !(tiered && callee.exported && !caller.exported);
+  return (caller, callee) => !callee.top && group[at.get(caller.name)] !== group[at.get(callee.name)] && !(tiered && callee.exported && !caller.exported);
 }
 
 /** Tarjan's strongly connected groups over the calls: functions that reach each other share a group. */
@@ -213,8 +279,12 @@ function inlineExport(ts, s) {
   return ts.canHaveModifiers(s) && (ts.getModifiers(s) ?? []).some(m => m.kind === ts.SyntaxKind.ExportKeyword);
 }
 
-function lineOf(src, s) {
-  return src.getLineAndCharacterOfPosition(s.getStart(src)).line + 1;
+/** The editor's line of a position: TypeScript also breaks lines at U+2028 and U+2029, an editor and split("\n") do not. */
+function lineOf(src, s, pos = s.getStart(src)) {
+  src.newlines ??= [...src.text.matchAll(/\n/g)].map(m => m.index);
+  let lo = 0, hi = src.newlines.length;
+  while (lo < hi) { const mid = (lo + hi) >> 1; if (src.newlines[mid] < pos) lo = mid + 1; else hi = mid; }
+  return lo + 1;
 }
 
 /** Python's top-level defs and classes, read by the repository's python3 in one run and kept on the run. A file Python cannot parse stops the run, as
@@ -226,9 +296,9 @@ function pythonUnits(repo, files) {
     const read = JSON.parse(execFileSync("python3", ["-I", "-c", PY_UNITS, repo.root], {input: JSON.stringify(missing), encoding: "utf8", maxBuffer: 256 << 20}));
     const broken = Object.entries(read).filter(([, r]) => r.error).map(([file, r]) => `${file} ${r.error}`);
     if (broken.length) throw new Error(`Python cannot read ${broken.length} file(s): ${broken.slice(0, 5).join("; ")}`);
-    for (const [file, r] of Object.entries(read)) repo.pythonRun.set(file, r.units);
+    for (const [file, r] of Object.entries(read)) repo.pythonRun.set(file, r);
   }
-  return files.map(file => ({file, units: repo.pythonRun.get(file)}));
+  return files.map(file => ({file, ...repo.pythonRun.get(file)}));
 }
 
 /** One ESLint pass over every file an eslint rule covers, kept on the run: a map of each file to its messages. A file ESLint cannot parse stops the
@@ -271,7 +341,8 @@ function typescriptOf(root) {
 
 /** Reads the files named on stdin (JSON) under the root in argv[1] and prints, per file, its top-level defs and classes in file order: name, line (a
  *  decorator's when it has one), kind, public, and for a def the file's names its body refers to, in the order of first reference, less the names
- *  the body binds itself (parameters, assignments, imports, inner defs). */
+ *  the body binds itself (parameters, assignments, imports, inner defs); and every top-level statement as an item for --fix: its lines, kind, name,
+ *  and the file's defs and classes it uses at load (a def's decorators and defaults, any other statement whole). */
 const PY_UNITS = String.raw`
 import ast, json, os, sys
 
@@ -296,11 +367,24 @@ def units(tree):
     return [{'name': n.name, 'line': min([n.lineno] + [d.lineno for d in n.decorator_list]), 'kind': 'class' if isinstance(n, ast.ClassDef) else 'def',
              'exported': not n.name.startswith('_'), 'calls': [] if isinstance(n, ast.ClassDef) else refs(n, last)} for i, n in enumerate(found) if last[n.name] == i]
 
+def loads(node, names):
+    if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
+        node = [*node.decorator_list, *node.args.defaults, *[d for d in node.args.kw_defaults if d]]
+    found = {n.id for one in (node if isinstance(node, list) else [node]) for n in ast.walk(one) if isinstance(n, ast.Name)}
+    return sorted(found & names)
+
+def items(tree):
+    names = {n.name for n in tree.body if isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef))}
+    kind = lambda n: 'def' if isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef)) else 'class' if isinstance(n, ast.ClassDef) else 'other'
+    return [{'start': min([n.lineno] + [d.lineno for d in getattr(n, 'decorator_list', [])]), 'end': n.end_lineno, 'kind': kind(n),
+             'name': getattr(n, 'name', None), 'load': loads(n, names)} for n in tree.body]
+
 out = {}
 for name in json.load(sys.stdin):
     try:
         with open(os.path.join(sys.argv[1], name), encoding='utf-8') as handle:
-            out[name] = {'units': units(ast.parse(handle.read(), name))}
+            tree = ast.parse(handle.read(), name)
+            out[name] = {'units': units(tree), 'items': items(tree)}
     except (SyntaxError, ValueError, UnicodeDecodeError) as error:
         out[name] = {'error': type(error).__name__ + ': ' + str(error)}
 print(json.dumps(out))

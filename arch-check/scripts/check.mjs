@@ -9,8 +9,10 @@ import {moduleCounts, saveImportCache} from "../guard/graph.mjs";
 import {sandboxCounts} from "../guard/sandbox.mjs";
 import {doorNameCounts, lazyCounts, otherDoorCounts} from "../guard/doors.mjs";
 import {ratchetFaults} from "../guard/ratchet.mjs";
-import {architectureGuard, decisionFaults, expiredFaults} from "../guard/policy.mjs";
+import {architectureGuard, architecturePolicy, decisionFaults, expiredFaults} from "../guard/policy.mjs";
 import {pushedTips} from "../guard/export.mjs";
+import {touchedFaults} from "../guard/touched.mjs";
+import {fixStory} from "../story-fix.mjs";
 
 const root = mkdtempSync(join(tmpdir(), "arch-check-"));
 const put = (path, text) => {mkdirSync(join(root, path, ".."), {recursive: true}); writeFileSync(join(root, path), text);};
@@ -207,25 +209,55 @@ try {
       symlinkSync(new URL("../node_modules", import.meta.url).pathname, join(repo, "node_modules"));
       gput("st/many.ts", "// many parameters, in TypeScript\nexport function many(a: number, b: number, c: number, d: number, e: number) { return a + b + c + d + e; }\n");
       gput("st/deep.js", "// a deep function\nexport function deep(a) { if (a) { if (a) { if (a) { if (a) { if (a) { if (a) { return 1; } } } } } } return 0; }\n");
-      gput("st/order.js", "/** a block opens the file\n */\nconst helper = () => 1;\nexport const first = () => helper();\n");
+      gput("st/order.js", "/**\n * a block whose first line says nothing\n */\nconst helper = () => 1;\nexport const first = () => helper();\n");
       gput("st/listed.js", "// a list is the table of contents\nconst helper = () => 1;\nconst first = () => helper();\nexport {first};\n");
       // stepdown: a function below every caller that holds it; recursion, functions that call each other, a shadowed name and a helper's call of an export do not hold
       gput("st/held.js", "// none of these holds\nexport function main() { return step() + ping(2) + rec(2); }\nexport function other() { return 1; }\nfunction step() { return other(); }\n"
-        + "function ping(n) { return n ? pong(n - 1) : 0; }\nfunction pong(n) { return ping(n); }\nfunction rec(n) { return n ? rec(n - 1) : 0; }\nfunction shadow(step) { return step(); }\n");
+        + "function ping(n) { return n ? pong(n - 1) : 0; }\nfunction pong(n) { return ping(n); }\nfunction rec(n) { return n ? rec(n - 1) : 0; }\nfunction shadow(step) { return step(); }\n"
+        + "function fixture() { return 1; }\nfunction later() { return fixture(); }\nconst value = fixture();\n");
       gput("st/step.py", "# a private def above the public def that calls it\ndef _helper():\n    return 1\n\ndef run():\n    return _helper()\n"); gput("st/bare.py", "x = 1\n");
+      gput("st/inner.ts", "// an inner helper takes five, the export none\nexport const x = () => inner(1, 2, 3, 4, 5);\nfunction inner(a: number, b: number, c: number, d: number, e: number) { return a + b + c + d + e; }\n");
+      gput("st/ex.ts", "// one silent exception\n// @ts-ignore\nexport const y: number = \"y\";\n");
       const st = (id, more) => ({id, name: id, files: ["st/**"], fix: "x", ...more});
       const story = {rules: [st("P", {kind: "eslint", rule: "max-params", options: {max: 4}}), st("C", {kind: "eslint", rule: "sonarjs/cognitive-complexity", options: 15}),
-        st("F", {kind: "first-line"}), st("S", {kind: "story-order"}), st("B", {kind: "stepdown"}), st("O", {kind: "stepdown-order"})]};
-      const {red: said, counts: told} = await check(repo, story, {});
+        st("F", {kind: "first-line"}), st("S", {kind: "story-order"}), st("B", {kind: "stepdown"}), st("O", {kind: "stepdown-order", report: true}),
+        st("PE", {kind: "eslint", rule: "max-params", options: {max: 4}, exported: true}), st("X", {kind: "exceptions"})]};
+      const {red: said, counts: told, reported} = await check(repo, story, {});
       const keys = Object.keys(told).sort().join(" ");
-      if (keys !== "B:st/listed.js B:st/order.js B:st/step.py C:st/deep.js F:st/bare.py F:st/order.js O:st/listed.js O:st/order.js O:st/step.py P:st/many.ts S:st/order.js S:st/step.py"
-        || !said.some(line => line.includes("S: st/order.js:3 Story first: the file's exports on top, helpers below (Clean Code stepdown rule). Move helper below first."))
+      if (keys !== "B:st/listed.js B:st/order.js B:st/step.py C:st/deep.js F:st/bare.py F:st/order.js P:st/inner.ts P:st/many.ts PE:st/many.ts S:st/order.js S:st/step.py X:st/ex.ts:ts-ignore"
+        || Object.keys(reported).sort().join(" ") !== "O:st/listed.js O:st/order.js O:st/step.py" || said.some(line => line.startsWith("rule O "))
+        || !said.some(line => line.includes("S: st/order.js:4 Story first: the file's exports on top, helpers below (Clean Code stepdown rule). Move helper below first."))
         || !said.some(line => line.includes("S: st/step.py:2 Story first: the file's exports on top, helpers below (Clean Code stepdown rule). Move _helper below run."))
         || !said.some(line => line.includes("B: st/listed.js:2 Story first (stepdown): helper is called by first; place it below first."))
         || !said.some(line => /P: st\/many\.ts:2 Function 'many' has too many parameters \(5\)/.test(line))) throw new Error(`story: the kinds name their breaches: ${keys} ${said.join(" | ")}`);
+      if (!architecturePolicy({config: {rules: [{id: "B", kind: "stepdown", fix: "x"}, {id: "B2", kind: "stepdown", fix: "x", what: "w", why: "y", example: {without: "a", with: "b"}}]}})
+        .some(line => line.includes("B is a story rule; give it what")) || architecturePolicy({config: {rules: [{id: "B2", kind: "stepdown", fix: "x", what: "w", why: "y", example: {without: "a", with: "b"}}]}})
+        .some(line => line.includes("story rule"))) throw new Error("policy: a story rule carries what, why and its picture without and with");
+      const allows = {who: "gate", when: "2026-11-08T00:00Z", message: "check", allows: {"eslint.config.mjs:semi": "the formatter decides"}, until: "2026-12-01"};
+      if (decisionFaults([allows]).length || !decisionFaults([{...allows, until: undefined}]).length || !/semi: waited until 2026-12-01/.test(expiredFaults([allows], {}, "2026-12-02").join()))
+        throw new Error("decisions: a config's rule turned off is allowed by a decision with why and until, red after it");
       const waits = {who: "gate", when: "2026-11-08T00:00Z", message: "check", waits: {python: "the story rules read JS and TS"}, until: "2026-12-01"};
       if (decisionFaults([waits]).length || !decisionFaults([{...waits, until: undefined}]).length || !/python: waited until 2026-12-01/.test(expiredFaults([waits], {}, "2026-12-02").join())
         || expiredFaults([waits], {}, "2026-11-30").length) throw new Error("decisions: what waits names until, and is red after it");
+      // --fix moves whole functions and changes no line: a leaf goes below its export, a helper that load-time code runs stays, a U+2028 in a string
+      // breaks no line, and a Python helper goes below the public def that calls it
+      gput("fx/a.js", "// a file to fix\nconst SEP = \"\u2028\";\n/** Doubles. */\nconst double = (n) => n * 2;\nconst ready = double(1);\n\nfunction leaf() { return SEP; }\n\nexport function main() { return double(ready) + leaf(); }\n");
+      gput("fx/b.py", "# a file to fix\n\n\ndef _helper():\n    return 1\n\n\ndef run():\n    return _helper()\n");
+      const fixed = fixStory(repo, {rules: [st("FS", {kind: "story-order"}), st("FB", {kind: "stepdown"})]}, ["fx/a.js", "fx/b.py"], () => true);
+      if (readFileSync(join(repo, "fx/a.js"), "utf8") !== "// a file to fix\nconst SEP = \"\u2028\";\n/** Doubles. */\nconst double = (n) => n * 2;\nconst ready = double(1);\n\nexport function main() { return double(ready) + leaf(); }\n\nfunction leaf() { return SEP; }\n"
+        || readFileSync(join(repo, "fx/b.py"), "utf8") !== "# a file to fix\n\n\ndef run():\n    return _helper()\n\n\ndef _helper():\n    return 1\n"
+        || !fixed.some(line => line === "fx/a.js: moved leaf; left double (it would pass code that runs it at load)")) throw new Error(`fix: whole functions move, a load-time helper stays: ${fixed.join(" | ")}`);
+      // a file a push touches holds the touched rules whatever its baseline, a written line stays within 160 and none is over 250; tidy-later only tells
+      gput("tc/a.js", `// a file to touch\nexport const a = () => 1;\nconst old = "${"y".repeat(250)}";\n`); git("add", "tc/a.js"); git("commit", "-qm", "tc");
+      gput("tc/a.js", `// a file to touch\nconst helper = () => 1;\nexport const a = () => helper();\nconst old = "${"y".repeat(250)}";\nconst wide = "${"x".repeat(170)}";\n`);
+      const tc = {rules: [st("TS", {kind: "story-order", files: ["tc/**"]})], touched: {rules: ["TS"], files: ["tc/**"], changedLines: 160, wholeFile: 250}};
+      const now = await touchedFaults(repo, tc);
+      if (now.red.length !== 3 || !now.red.some(line => line.startsWith("touched: rule TS TS: tc/a.js:2 Story first")) || !now.red.some(line => /tc\/a\.js:4 is 265 characters; a touched file keeps no line over 250/.test(line))
+        || !now.red.some(line => /tc\/a\.js:5 is 186 characters; a line you write stays within 160/.test(line))) throw new Error(`touched: a rule's hit, a crammed line and a wide written line are red: ${now.red.join(" | ")}`);
+      git("add", "tc/a.js"); git("commit", "-qm", "the change\n\ntidy-later: 1873");
+      process.env.ARCH_REFS = `${git("rev-parse", "HEAD").trim()}^`;
+      const later = await touchedFaults(repo, tc).finally(() => delete process.env.ARCH_REFS);
+      if (later.red.length || !/^tidy-later 1873: 3 faults/.test(later.told[0] ?? "")) throw new Error(`touched: tidy-later tells the faults and keeps the push: ${JSON.stringify(later)}`);
       rmSync(join(repo, "st"), {recursive: true, force: true}); rmSync(join(repo, "node_modules"));
     }
     // Cut row 1868: a decision whose until has passed is red while a key it names stands; a later until carries the key, a gone key frees it

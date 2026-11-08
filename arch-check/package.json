@@ -15,6 +15,7 @@
   "files": [
     "arch-check.mjs",
     "story.mjs",
+    "story-fix.mjs",
     "guard",
     "README.md"
   ],

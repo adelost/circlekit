@@ -3,11 +3,14 @@
 //   --init            write the first baseline, once, while arch.baseline.json is empty
 //   --adopt <rule id> name a rule that is new to the repository, with its breaches today, once
 //   --lower           lower the baseline to today's counts; never raises
+//   --fix [files]     move whole functions for story-order and stepdown in the named files, else in the files changed against HEAD; changes no line
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { check } from '../arch-check.mjs';
+import { execFileSync } from 'node:child_process';
+import { check, matcher } from '../arch-check.mjs';
 import { architectureGuard } from './policy.mjs';
 import { DECISIONS, ratchetFaults } from './ratchet.mjs';
+import { touchedFaults } from './touched.mjs';
 
 /** The kinds the guard itself reads, each over the modules of the modules rule its `of` names (0.12.0): sandbox.mjs and doors.mjs. */
 const GUARD_KINDS = ['sandbox', 'lazy-imports', 'door-names', 'other-doors'];
@@ -17,6 +20,7 @@ export async function runGuard({ root, args = [] }) {
   const missing = architectureGuard(root);
   if (missing.length) { console.error(missing.join('\n')); return 1; }
   const config = JSON.parse(readFileSync(join(root, 'arch.config.json'), 'utf8')), path = join(root, config.baseline), baseline = JSON.parse(readFileSync(path, 'utf8'));
+  if (args.includes('--fix')) return fix(root, config, args.slice(args.indexOf('--fix') + 1).filter(arg => !arg.startsWith('--')));
   const decisions = existsSync(join(root, DECISIONS)) ? JSON.parse(readFileSync(join(root, DECISIONS), 'utf8')) : [], first = args.includes('--init');
   if (first && Object.keys(baseline).length) { console.error('arch-check: the existing baseline only shrinks; use --lower'); return 1; }
   const parsedRules = config.rules.filter(r => r.kind === 'modules' && r.exactEdges), guardRules = config.rules.filter(r => GUARD_KINDS.includes(r.kind));
@@ -49,7 +53,7 @@ export async function runGuard({ root, args = [] }) {
   }
   if (args.includes('--adopt')) {   // a rule new to this repository starts with the breaches it has today, named once; the ratchet checks that the rule is new
     const id = args[args.indexOf('--adopt') + 1], rule = config.rules.find(r => String(r.id) === id), prefix = `${id}:`;
-    if (!rule || rule.hard) { console.error('arch-check: --adopt takes the id of a rule of arch.config.json that is not hard'); return 1; }
+    if (!rule || rule.hard || rule.report) { console.error('arch-check: --adopt takes the id of a rule of arch.config.json that is neither hard nor report-only'); return 1; }
     if (Object.keys(baseline).some(key => key.startsWith(prefix))) { console.error(`arch-check: ${id} already has named exceptions; they only shrink (--lower)`); return 1; }
     const taken = Object.entries(counts).filter(([key]) => key.startsWith(prefix));
     write(Object.fromEntries([...Object.entries(baseline), ...taken].sort(([a], [b]) => a < b ? -1 : 1)));
@@ -67,7 +71,20 @@ export async function runGuard({ root, args = [] }) {
     }
   }
   red.push(...ratchetFaults(root, config, baseline, { decisions, counts }));
+  const touched = await touchedFaults(root, config).catch(error => ({ red: [`arch-check: cannot read the touched files: ${error.message}`], told: [] }));
+  red.push(...touched.red);
+  if (touched.told.length) console.error(touched.told.join('\n'));
   if (red.length) { console.error(red.join('\n')); return 1; }
-  console.log(`arch-check: ${config.rules.length} rules hold; baseline ${Object.keys(baseline).length} exceptions (${Object.values(baseline).reduce((sum, n) => sum + n, 0)} units)`);
+  const reported = Object.entries(built.reported ?? {}), told = config.rules.filter(r => r.report).map(r => `${r.id} ${reported.filter(([key]) => key.startsWith(`${r.id}:`)).reduce((sum, [, n]) => sum + n, 0)}`);
+  console.log(`arch-check: ${config.rules.length} rules hold; baseline ${Object.keys(baseline).length} exceptions (${Object.values(baseline).reduce((sum, n) => sum + n, 0)} units)${told.length ? `; reported, not red: ${told.join(", ")}` : ""}`);
+  return 0;
+}
+
+/** --fix: the story moves in the named files, else in the files changed against HEAD (the tidy commit's files), each told. */
+async function fix(root, config, named) {
+  const { fixStory } = await import('../story-fix.mjs'), git = (...args) => execFileSync('git', ['-C', root, ...args], { encoding: 'utf8' }).split('\n').filter(Boolean);
+  const files = named.length ? named : [...new Set([...git('diff', '--name-only', 'HEAD'), ...git('ls-files', '--others', '--exclude-standard')])].filter(file => existsSync(join(root, file)));
+  const told = fixStory(root, config, files, (rule, file) => matcher(rule.files)(file) && !matcher(rule.exclude)(file));
+  console.log(told.length ? told.join('\n') : `arch-check --fix: nothing to move in ${files.length} file(s)`);
   return 0;
 }
