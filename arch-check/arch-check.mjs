@@ -5,6 +5,7 @@
 import {readFileSync, readdirSync, existsSync, writeFileSync, realpathSync} from "node:fs";
 import {resolve, posix, delimiter, dirname, join} from "node:path";
 import {pathToFileURL} from "node:url";
+import {storyKinds} from "./story.mjs";
 
 const SKIPPED = new Set(["node_modules", "dist", "build", ".git", ".wrangler", "coverage"]);
 const walk = (root, dir = "") => readdirSync(resolve(root, dir), {withFileTypes: true}).flatMap(entry =>
@@ -92,6 +93,7 @@ const callers = name => (rule, repo) => repo.covered({files: PROVIDERS.files, ..
 
 /** Each kind turns a rule and the repo into hits {file, line, message, weight?, at?}. weight counts toward the baseline (default 1). */
 const kinds = {
+  ...storyKinds,   // eslint, first-line, story-order (Cut row 1873)
   "max-lines": (rule, repo) => repo.covered(rule).flatMap(file => { const n = lines(repo.read(file)).length; return n > rule.max ? [{file, line: 1, message: `${n} lines, max ${rule.max}`, weight: n - rule.max}] : []; }),
   // A code line over max characters, so no file keeps under its max-lines by packing its lines. Comment lines and generated files are left out.
   // The excess characters count toward the baseline, as max-lines counts excess lines, so a long line of the baseline cannot grow either.
@@ -200,7 +202,7 @@ const kinds = {
 
 export async function check(root, config, baseline = {}, options = {}) {
   const files = walk(root), cache = new Map();
-  const repo = {root, files, amuxRoot: options.amuxRoot, read: file => cache.get(file) ?? (cache.set(file, readFileSync(resolve(root, file), "utf8")), cache.get(file)), covered: rule => files.filter(matcher(rule.files)).filter(file => !matcher(rule.exclude)(file))};
+  const repo = {root, files, config, amuxRoot: options.amuxRoot, read: file => cache.get(file) ?? (cache.set(file, readFileSync(resolve(root, file), "utf8")), cache.get(file)), covered: rule => files.filter(matcher(rule.files)).filter(file => !matcher(rule.exclude)(file))};
   const found = new Map();
   for (const rule of config.rules) {
     if (!kinds[rule.kind]) throw new Error(`rule ${rule.id}: unknown kind ${rule.kind}`);

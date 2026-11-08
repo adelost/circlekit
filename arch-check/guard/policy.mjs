@@ -16,8 +16,11 @@ export function decisionFaults(decisions) {
     const name = `${DECISIONS_FILE} #${at + 1}`, red = [];
     for (const field of ['who', 'message']) if (typeof one?.[field] !== 'string' || !one[field].trim()) red.push(`${name}: name ${field}`);
     if (!WHEN.test(one?.when ?? '')) red.push(`${name}: name when, as 2026-11-07T20:13Z`);
-    const { ceilings, removes, doors } = one ?? {};
-    if (ceilings === undefined && removes === undefined && doors === undefined) red.push(`${name}: name what it covers, ceilings (key: highest count), removes (rule ids) or doors (door: when it goes)`);
+    const { ceilings, removes, doors, waits } = one ?? {};
+    if (ceilings === undefined && removes === undefined && doors === undefined && waits === undefined)
+      red.push(`${name}: name what it covers, ceilings (key: highest count), removes (rule ids), doors (door: when it goes) or waits (what: why it waits)`);
+    if (waits !== undefined && (typeof waits !== 'object' || waits === null || !Object.values(waits).every(why => typeof why === 'string' && why.trim()) || !UNTIL.test(one.until ?? '')))
+      red.push(`${name}: waits names each thing that waits with why, and until the day it is decided`);
     if (doors !== undefined && (typeof doors !== 'object' || doors === null || !Object.values(doors).every(until => typeof until === 'string' && until.trim()))) red.push(`${name}: doors are door files with when each goes`);
     if (ceilings !== undefined && (typeof ceilings !== 'object' || ceilings === null || !Object.values(ceilings).every(n => Number.isInteger(n) && n > 0))) red.push(`${name}: ceilings are keys with a count above 0`);
     if (removes !== undefined && (!Array.isArray(removes) || !removes.every(id => typeof id === 'string' && id))) red.push(`${name}: removes lists rule ids`);
@@ -33,7 +36,10 @@ export function expiredFaults(decisions, baseline, today = new Date().toISOStrin
   const last = new Map();
   for (const one of Array.isArray(decisions) ? decisions : []) for (const key of Object.keys(one?.ceilings ?? {}))
     if (UNTIL.test(one.until ?? '') && key in (baseline ?? {}) && !(last.get(key) >= one.until)) last.set(key, one.until);
-  return [...last].filter(([, until]) => until < today).map(([key, until]) => `${key}: its decision's until ${until} has passed; split the file and run --lower, or name a later until in a new decision`);
+  const waiting = new Map();   // Cut row 1873: what waits (a language the rules do not read yet) is red past its until, unless a later decision names it again
+  for (const one of Array.isArray(decisions) ? decisions : []) for (const key of Object.keys(one?.waits ?? {})) if (UNTIL.test(one.until ?? '')) waiting.set(key, one.until);
+  return [...[...last].filter(([, until]) => until < today).map(([key, until]) => `${key}: its decision's until ${until} has passed; split the file and run --lower, or name a later until in a new decision`),
+    ...[...waiting].filter(([, until]) => until < today).map(([key, until]) => `${key}: waited until ${until}; decide it, or name a later until in a new decision`)];
 }
 
 export function architecturePolicy({ lint, config, decisions = [], wrapper, baseline = {}, today }) {

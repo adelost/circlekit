@@ -1,6 +1,6 @@
 // The gate of the @v1d/arch-check release: the tool finds a planted violation of each kind it ships, holds a clean tree, and keeps its baseline shrink-only;
 // the guard (guard/) reads the imports of TypeScript, Python and Kotlin, finds a cycle, and lets no raise, removed rule or widened dependency pass without a named decision.
-import {mkdtempSync, mkdirSync, readdirSync, readFileSync, writeFileSync, rmSync} from "node:fs";
+import {mkdtempSync, mkdirSync, readdirSync, readFileSync, writeFileSync, rmSync, symlinkSync} from "node:fs";
 import {execFileSync, spawnSync} from "node:child_process";
 import {tmpdir} from "node:os";
 import {basename, join} from "node:path";
@@ -192,6 +192,27 @@ try {
       const again = spawnSync(process.execPath, [new URL("../arch-check.mjs", import.meta.url).pathname, "--init", repo], {encoding: "utf8"});
       if (again.status !== 1 || !again.stderr.includes("only shrinks") || readFileSync(join(repo, "arch.baseline.json"), "utf8") !== JSON.stringify({"R:a/old.ts": 3}))
         throw new Error(`write: --init never rewrites a baseline that has entries: ${again.status} ${again.stderr}`);
+    }
+    // Cut row 1873: the story kinds. eslint counts one ESLint rule per file with the ESLint, TypeScript parser and plugins of the repository (TypeScript
+    // files too); first-line asks line 1 to be a one-line comment; story-order names each private helper above a file's last inline export, and leaves a
+    // file that exports by a list alone. A thing that waits (a language) is a decision with until, red after it.
+    {
+      symlinkSync(new URL("../node_modules", import.meta.url).pathname, join(repo, "node_modules"));
+      gput("st/many.ts", "// many parameters, in TypeScript\nexport function many(a: number, b: number, c: number, d: number, e: number) { return a + b + c + d + e; }\n");
+      gput("st/deep.js", "// a deep function\nexport function deep(a) { if (a) { if (a) { if (a) { if (a) { if (a) { if (a) { return 1; } } } } } } return 0; }\n");
+      gput("st/order.js", "/** a block opens the file\n */\nconst helper = () => 1;\nexport const first = () => helper();\n");
+      gput("st/listed.js", "// a list is the table of contents\nconst helper = () => 1;\nconst first = () => helper();\nexport {first};\n");
+      const st = (id, more) => ({id, name: id, files: ["st/**"], fix: "x", ...more});
+      const story = {rules: [st("P", {kind: "eslint", rule: "max-params", options: {max: 4}}), st("C", {kind: "eslint", rule: "sonarjs/cognitive-complexity", options: 15}),
+        st("F", {kind: "first-line"}), st("S", {kind: "story-order"})]};
+      const {red: said, counts: told} = await check(repo, story, {});
+      const keys = Object.keys(told).sort().join(" ");
+      if (keys !== "C:st/deep.js F:st/order.js P:st/many.ts S:st/order.js" || !said.some(line => /S: st\/order\.js:3 private helper helper stands above the last export \(line 4\); move it below/.test(line))
+        || !said.some(line => /P: st\/many\.ts:2 Function 'many' has too many parameters \(5\)/.test(line))) throw new Error(`story: the kinds name their breaches: ${keys} ${said.join(" | ")}`);
+      const waits = {who: "gate", when: "2026-11-08T00:00Z", message: "check", waits: {python: "the story rules read JS and TS"}, until: "2026-12-01"};
+      if (decisionFaults([waits]).length || !decisionFaults([{...waits, until: undefined}]).length || !/python: waited until 2026-12-01/.test(expiredFaults([waits], {}, "2026-12-02").join())
+        || expiredFaults([waits], {}, "2026-11-30").length) throw new Error("decisions: what waits names until, and is red after it");
+      rmSync(join(repo, "st"), {recursive: true, force: true}); rmSync(join(repo, "node_modules"));
     }
     // Cut row 1868: a decision whose until has passed is red while a key it names stands; a later until carries the key, a gone key frees it
     {
