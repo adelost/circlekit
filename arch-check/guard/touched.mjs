@@ -7,10 +7,11 @@ import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { check, generated, matcher, noteless } from '../arch-check.mjs';
 
-/** Returns {red, told}: the faults of the touched files, red unless a commit of the push says tidy-later. */
+/** Returns {red, told}: the faults of the touched files, red unless a commit of the push says tidy-later. A push rule: with ARCH_TOUCHED=off (a deploy,
+ *  export.mjs --commit; Cut's release) nothing is touched, since a release spans many pushes, each held at its own, some from before the rule. */
 export async function touchedFaults(root, config) {
   const touched = config.touched;
-  if (!touched) return { red: [], told: [] };
+  if (!touched || process.env.ARCH_TOUCHED === 'off') return { red: [], told: [] };
   const { files, added, later } = touches(root), wanted = matcher(touched.files), left = matcher(touched.exclude);
   const mine = files.filter(file => wanted(file) && !left(file) && existsSync(join(root, file)));
   const faults = [...await ruleFaults(root, config, touched.rules ?? [], mine), ...lineFaults(root, touched, mine, added)];

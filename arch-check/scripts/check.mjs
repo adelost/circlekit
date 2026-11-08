@@ -276,6 +276,10 @@ try {
       gput("tc/b.js", `${near}${far}const fresh = "${"n".repeat(170)}";\n`);
       const moved = await touchedFaults(repo, tc);
       if (moved.red.length !== 1 || !/tc\/b\.js:5 is 187 characters; a line you write stays within 160/.test(moved.red[0])) throw new Error(`touched: a moved line is not written, a new one is: ${moved.red.join(" | ")}`);
+      // a release or a deploy spans many pushes, each held at its own push: with ARCH_TOUCHED=off (export.mjs --commit, Cut's release) nothing is touched
+      process.env.ARCH_TOUCHED = "off";
+      const released = await touchedFaults(repo, tc).finally(() => delete process.env.ARCH_TOUCHED);
+      if (released.red.length || released.told.length) throw new Error(`touched: a release does not hold the touched files: ${JSON.stringify(released)}`);
       rmSync(join(repo, "st"), {recursive: true, force: true}); rmSync(join(repo, "node_modules"));
     }
     // Cut row 1868: a decision whose until has passed is red while a key it names stands; a later until carries the key, a gone key frees it

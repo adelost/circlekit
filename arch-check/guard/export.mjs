@@ -22,7 +22,8 @@ export function lintCommit(sha, before, { rollback = false } = {}) {
     execFileSync('tar', ['-xf', archive, '-C', tree]);
     rmSync(archive);
     if (existsSync(join(root, 'node_modules'))) symlinkSync(join(root, 'node_modules'), join(tree, 'node_modules'));
-    const env = { ...process.env, GIT_DIR: gitDir, GIT_WORK_TREE: tree, GIT_INDEX_FILE: join(temp, 'index'), ARCH_REFS: `${sha}^`, ...(none(before) ? {} : { ARCH_BASE: before }) };
+    const env = { ...process.env, GIT_DIR: gitDir, GIT_WORK_TREE: tree, GIT_INDEX_FILE: join(temp, 'index'), ARCH_REFS: `${sha}^`, ...(none(before) ? {} : { ARCH_BASE: before }),
+      ...(rollback ? { ARCH_TOUCHED: 'off' } : {}) };   // a deploy's commit was held to the touched rule at its push
     execFileSync('git', ['read-tree', sha], { env });
     const configFile = join(tree, 'arch.config.json'), wrapper = existsSync(configFile) ? JSON.parse(readFileSync(configFile, 'utf8')).guard?.wrapper : null;
     if (rollback && !(wrapper && existsSync(join(tree, wrapper)))) { console.error(`arch: ${sha} predates the guard; a deploy of it is a rollback and is not checked`); return; }
