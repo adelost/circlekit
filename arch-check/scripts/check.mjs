@@ -254,6 +254,11 @@ try {
       if (readFileSync(join(repo, "fx/a.js"), "utf8") !== "// a file to fix\nconst SEP = \"\u2028\";\n/** Doubles. */\nconst double = (n) => n * 2;\nconst twice = (n) => double(double(n));\nconst ready = twice(1);\n\nexport function main() { return twice(ready) + leaf(); }\n\nfunction leaf() { return SEP; }\n"
         || readFileSync(join(repo, "fx/b.py"), "utf8") !== "# a file to fix\n\n\ndef run():\n    return _helper()\n\n\ndef _helper():\n    return 1\n"
         || !fixed.some(line => line === "fx/a.js: moved leaf; left double (it would pass code that runs it at load)")) throw new Error(`fix: whole functions move, a load-time helper stays: ${fixed.join(" | ")}`);
+      // a helper goes right below its caller, never past the load-time code below that caller (the gateway's scripts/catalog.mjs, 0.15.3)
+      gput("fx/c.js", "// a file to fix\nconst helper = () => 1;\nexport function main() { return helper(); }\nconsole.log(main());\n");
+      const placed = fixStory(repo, {rules: [st("FS", {kind: "story-order"}), st("FB", {kind: "stepdown"})]}, ["fx/c.js"], () => true);
+      if (readFileSync(join(repo, "fx/c.js"), "utf8") !== "// a file to fix\nexport function main() { return helper(); }\nconst helper = () => 1;\nconsole.log(main());\n")
+        throw new Error(`fix: a helper lands right below its caller, above the code that runs it at load: ${placed.join(" | ")}`);
       // a file a push touches holds the touched rules whatever its baseline, a written line stays within 160 and none is over 250; tidy-later only tells
       gput("tc/a.js", `// a file to touch\nexport const a = () => 1;\nconst old = "${"y".repeat(250)}";\n`); git("add", "tc/a.js"); git("commit", "-qm", "tc");
       gput("tc/a.js", `// a file to touch\nconst helper = () => 1;\nexport const a = () => helper();\nconst old = "${"y".repeat(250)}";\nconst wide = "${"x".repeat(170)}";\n`);

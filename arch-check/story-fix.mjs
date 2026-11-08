@@ -1,6 +1,6 @@
 // story-fix.mjs: --fix for story-order (4a) and stepdown (4b), Cut row 1873 (sandman:0 8 Nov): it moves whole top-level functions, with the comments
 // directly above them, and changes no line. A function moves only past code that does not run it at load; a function declaration, being hoisted,
-// moves freely. A file whose result does not hold the same lines, or has more breaches, is left as it was.
+// moves freely. A file whose result does not hold the same lines, has more breaches or runs more functions at load before they exist, is left as it was.
 import {mkdtempSync, readFileSync, rmSync, writeFileSync} from "node:fs";
 import {tmpdir} from "node:os";
 import {join} from "node:path";
@@ -19,7 +19,8 @@ export function fixStory(root, config, files, covers) {
     const {moved, stuck, lines} = reorder(text.split("\n"), story, wants);
     if (!moved.length) { if (stuck.length) told.push(`${file}: left ${stuck.join(", ")} (moving would pass code that runs it at load)`); continue; }
     const after = lines.join("\n"), kept = storyOf(root, file, after);
-    if ([...text.split("\n")].sort().join("\n") !== [...lines].sort().join("\n") || kept.broken || (kept.faults ?? 0) > (story.faults ?? 0) || breaches(kept, wants) > breaches(story, wants)) {
+    if ([...text.split("\n")].sort().join("\n") !== [...lines].sort().join("\n") || kept.broken || (kept.faults ?? 0) > (story.faults ?? 0) || breaches(kept, wants) > breaches(story, wants)
+      || early(kept).length > early(story).length) {
       told.push(`${file}: not changed, the moves did not hold`); continue;
     }
     writeFileSync(join(root, file), after);
@@ -57,6 +58,18 @@ function pythonStory(file, text) {
   } catch { return {broken: true}; } finally { rmSync(dir, {recursive: true, force: true}); }
 }
 
+/** The functions that code above them runs at load, directly or through the functions it calls, while they are not hoisted: not defined yet. */
+function early(story) {
+  const reach = reaching(story);
+  return story.items.filter((item, k) => item.name && !item.hoisted && story.items.slice(0, k).some(x => reach(x).has(item.name))).map(item => item.name);
+}
+
+/** What a block or item runs at load: the functions it uses, and the functions they call, transitively. */
+function reaching(story) {
+  const calls = new Map(story.units.map(u => [u.name, u.calls]));
+  return block => { const seen = new Set(block.load); for (const name of seen) for (const next of calls.get(name) ?? []) seen.add(next); return seen; };
+}
+
 function breaches(story, {order, step}) {
   return (order ? story.fours : 0) + (step ? aboveCallers(story.units, story.tiered).length : 0);
 }
@@ -64,8 +77,7 @@ function breaches(story, {order, step}) {
 /** The lines in the new order, the functions moved, and those left because a move would pass code that runs them at load. */
 function reorder(lines, story, {order, step}) {
   const blocks = blocksOf(lines, story.items, story.python), unit = new Map(story.units.map(u => [u.name, u])), holds = holding(story.units, story.tiered);
-  const calls = new Map(story.units.map(u => [u.name, u.calls])), moved = [], stuck = new Set();
-  const reach = block => { const seen = new Set(block.load); for (const name of seen) for (const next of calls.get(name) ?? []) seen.add(next); return seen; };
+  const reach = reaching(story), moved = [], stuck = new Set();
   const target = i => {
     const b = blocks[i];
     if (!b.name || stuck.has(b.name)) return -1;
@@ -79,7 +91,7 @@ function reorder(lines, story, {order, step}) {
     if (i < 0) break;
     const to = target(i), b = blocks[i];
     if (!b.hoisted && blocks.slice(i + 1, to + 1).some(x => reach(x).has(b.name))) { stuck.add(b.name); continue; }
-    blocks.splice(to + 1, 0, ...blocks.splice(i, 1));
+    blocks.splice(to, 0, ...blocks.splice(i, 1));   // to > i: once the block is out, the target sits at to - 1, so `to` is right below it
     if (!moved.includes(b.name)) moved.push(b.name);
   }
   return {moved, stuck: [...stuck], lines: [...blocks.head, ...blocks.flatMap((b, k) => [...(blocks.seps[k] ?? []), ...b.lines]), ...blocks.tail]};
