@@ -1,7 +1,7 @@
 // The doors of a modules rule as ratchets (0.12.0, Cut row 1828, sandman:0 8 Nov), each rule naming its modules rule in `of`:
 // `lazy-imports` counts each module's import() calls, by which a cycle hides from the cycle guard (`skip`, a regex, leaves files out, such as tests,
 // which no module imports; 0.12.1); `door-names` counts the names a door exports
-// (export * followed), named where they pass `max`; `other-doors` asks, for each door beyond a module's first (and for "*"), a decision in
+// (export * followed, and an export * as spread into every name of its file, 0.17.1), named where they pass `max`; `other-doors` asks, for each door beyond a module's first (and for "*"), a decision in
 // arch.decisions.json whose `doors` says when that door goes. The first two count today's into the baseline, which only shrinks.
 import { readFileSync, existsSync } from 'node:fs';
 import { posix, resolve } from 'node:path';
@@ -38,10 +38,15 @@ const fileNamed = (root, file, spec) => {
   return [base, `${base}.ts`, `${base}.js`, `${base}.mjs`, `${base}/index.ts`, `${base}/index.js`, ...(/\.js$/.test(base) ? [base.replace(/\.js$/, '.ts')] : [])]
     .find(path => existsSync(resolve(root, path)) && !path.endsWith('/')) ?? null;
 };
+/** The file a relative `from` of an export declaration names, or null (a package's, or none). */
+const relativeFile = (root, file, node) => node.moduleSpecifier && ts.isStringLiteral(node.moduleSpecifier) && node.moduleSpecifier.text.startsWith('.')
+  ? fileNamed(root, file, node.moduleSpecifier.text) : null;
 const bindingNames = name => ts.isIdentifier(name) ? [name.text] : name.elements.flatMap(element => ts.isOmittedExpression(element) ? [] : bindingNames(element.name));
 
-/** The names a JavaScript or TypeScript file exports, types included; `export * from` adds the names of the file it names (but its default), once. */
-export function exportedNames(root, file, seen = new Set()) {
+/** The names a JavaScript or TypeScript file exports, types included; `export * from` adds the names of the file it names (but its default), once.
+ *  `spread`: an `export * as X` of a file it can read is every name that file lets out, X.<name> with its default (0.17.1, Cut row 1962: core/index.js's
+ *  `export * as names` let 17 names out as one), else the one name X; `path` holds the files above, so a namespace that leads back is one name. */
+export function exportedNames(root, file, seen = new Set(), spread = false, path = new Set()) {
   const names = new Set();
   if (seen.has(file)) return names;
   seen.add(file);
@@ -49,10 +54,13 @@ export function exportedNames(root, file, seen = new Set()) {
     if (ts.isExportAssignment(node)) names.add('default');
     else if (ts.isExportDeclaration(node)) {
       if (node.exportClause && ts.isNamedExports(node.exportClause)) for (const one of node.exportClause.elements) names.add(one.name.text);
-      else if (node.exportClause) names.add(node.exportClause.name.text);   // export * as name
-      else if (node.moduleSpecifier && ts.isStringLiteral(node.moduleSpecifier) && node.moduleSpecifier.text.startsWith('.')) {
-        const named = fileNamed(root, file, node.moduleSpecifier.text);
-        if (named) for (const name of exportedNames(root, named, seen)) if (name !== 'default') names.add(name);
+      else if (node.exportClause) {   // export * as name
+        const named = spread ? relativeFile(root, file, node) : null, as = node.exportClause.name.text, below = new Set([...path, file]);
+        if (named && !below.has(named)) for (const name of exportedNames(root, named, new Set(), true, below)) names.add(`${as}.${name}`);
+        else names.add(as);
+      } else {
+        const named = relativeFile(root, file, node);
+        if (named) for (const name of exportedNames(root, named, seen, spread, new Set([...path, file]))) if (name !== 'default') names.add(name);
       }
     } else if (exported(node)) {
       if (ts.isVariableStatement(node)) for (const one of node.declarationList.declarations) bindingNames(one.name).forEach(name => names.add(name));
@@ -67,7 +75,7 @@ export function doorNameCounts(root, rule, of) {
   for (const m of of.modules) for (const door of moduleDoors(of, m).filter(door => door !== '*' && /\.[cm]?[jt]sx?$/.test(door))) {
     const file = `${m.dir}/${door}`;
     if (!existsSync(resolve(root, file))) continue;
-    const names = exportedNames(root, file).size;
+    const names = exportedNames(root, file, new Set(), true).size;
     if (names <= rule.max) continue;
     counts[`${rule.id}:names:${file}`] = names;
     reasons.set(`${rule.id}:names:${file}`, `${file}: ${names} names in one door, more than ${rule.max}; split the module, each part with its own door`);

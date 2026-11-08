@@ -133,7 +133,7 @@ try {
       gput("sb/root.js", "export const r = 1;\n"); gput("sb/out/index.js", "export const o = 1;\n"); gput("sb/out/example.js", "import './index.js';\nimport '../root.js';\n");
       gput("sb/dep/index.js", "export const dep = 1;\n"); gput("sb/uses/index.js", "export {dep} from '../dep/index.js';\n"); gput("sb/uses/example.js", "import {dep} from './index.js';\nexport const seen = dep;\n");
       gput("sb/lazy/x.js", "export const x = 1;\n"); gput("sb/lazy/index.js", "const name = './x.js';\nexport const later = () => import(name);\nexport const also = () => import('./x.js');\n// import( in a comment\nexport const said = 'import(';\n");
-      gput("sb/wide/parts.js", "export const a = 1, b = 2;\nexport function c() {}\nexport default 9;\n"); gput("sb/wide/index.js", "export * from './parts.js';\nexport const own = 1;\nexport default 2;\n");
+      gput("sb/wide/parts.js", "export const a = 1, b = 2;\nexport function c() {}\nexport default 9;\n"); gput("sb/wide/index.js", "export * from './parts.js';\nexport * as ns from './parts.js';\nexport const own = 1;\nexport default 2;\n");
       gput("sb/two/index.js", "export {};\n"); gput("sb/two/extra.js", "export {};\n"); gput("sb/star/a.js", "export {};\n");
       const dirs = ["sb/ok", "sb/dom", "sb/out", "sb/dep", "sb/uses", "sb/lazy", "sb/wide", "sb/two", "sb/star"];
       const of = mod("S", "sb", dirs, {example: "example.js"});
@@ -153,7 +153,9 @@ try {
       const tested = skip => lazyCounts(repo, {id: "L", ...(skip ? {skip} : {})}, of).counts["L:lazy:sb/lazy"];
       if (tested() !== 3 || tested("(^|/)test/") !== 2) throw new Error(`guard (lazy-imports, 0.12.1): skip leaves the files it matches out: ${tested()} ${tested("(^|/)test/")}`);
       const names = max => doorNameCounts(repo, {id: "N", max}, of).counts;
-      if (JSON.stringify(names(4)) !== JSON.stringify({"N:names:sb/wide/index.js": 5}) || Object.keys(names(5)).length) throw new Error(`guard (door-names): a door's names with export * followed (its default not), past max: ${JSON.stringify(names(4))}`);
+      // 0.17.1 (Cut row 1962): an export * as lets out every name of its file, its default too (ns.a, ns.b, ns.c, ns.default), not the one name ns
+      if (JSON.stringify(names(8)) !== JSON.stringify({"N:names:sb/wide/index.js": 9}) || Object.keys(names(9)).length)
+        throw new Error(`guard (door-names): a door's names with export * followed (its default not) and export * as spread (its default too), past max: ${JSON.stringify(names(8))}`);
       const doorsWith = decisions => Object.keys(otherDoorCounts({id: "D"}, of, decisions).counts).sort().join(" ");
       if (doorsWith([]) !== "D:door:sb/star/* D:door:sb/two/extra.js" || doorsWith([{doors: {"sb/two/extra.js": "when the editor moves", "sb/star/*": "row 9"}}]) !== "")
         throw new Error(`guard (other-doors): a door beside the first, and *, stand only by a decision saying when they go: ${doorsWith([])}`);
