@@ -5,7 +5,7 @@ import { existsSync, readdirSync } from 'node:fs';
 import { posix, resolve } from 'node:path';
 
 export const DECISIONS = 'arch.decisions.json';
-const BOUNDED = ['max-lines', 'max-line-length'];   // the kinds whose max and exclude only tighten without a decision
+const BOUNDED = ['max-lines', 'max-line-length', 'max-module-lines'];   // the kinds whose max and exclude only tighten without a decision
 const decisionsIn = text => { try { const list = JSON.parse(text ?? '[]'); return Array.isArray(list) ? list : []; } catch { return []; } };
 
 /** A cap and named exceptions cannot be raised by the change they would otherwise reject, and a rule cannot leave or be renamed under the ratchet. Renames preserve identity.
@@ -34,6 +34,13 @@ export function ratchetFaults(root, config, baseline, { decisions = [], counts }
         if (rule.max > oldRule.max && !licensed(`${rule.id}:max`, rule.max)) red.push(`${rule.id}: max ${rule.max} raises ${ref}'s ${oldRule.max}; name it in ${DECISIONS} (ceilings ${rule.id}:max: ${rule.max})`);
         for (const entry of rule.exclude ?? []) if (!(oldRule.exclude ?? []).includes(entry) && !licensed(`${rule.id}:exclude:${entry}`))
           red.push(`${rule.id}: ${entry} is now left out of the rule; name it in ${DECISIONS} (ceilings ${rule.id}:exclude:${entry}: 1)`);
+        for (const [module, cap] of Object.entries(rule.caps ?? {})) {   // a module's own cap only drops; a new one may not stand above the rule's max
+          const before = oldRule.caps?.[module] ?? oldRule.max;
+          if (cap > before && !licensed(`${rule.id}:cap:${module}`, cap))
+            red.push(`${rule.id}: ${module}'s cap ${cap} raises ${ref}'s ${before}; name it in ${DECISIONS} (ceilings ${rule.id}:cap:${module}: ${cap})`);
+        }
+        for (const dir of [oldRule.in ?? []].flat()) if (![rule.in ?? []].flat().includes(dir) && !licensed(`${rule.id}:in:${dir}`))
+          red.push(`${rule.id}: the modules under ${dir} left the rule; name it in ${DECISIONS} (ceilings ${rule.id}:in:${dir}: 1)`);
       }
     }
     for (const oldRule of oldConfig.rules.filter(r => r.exactEdges)) {
