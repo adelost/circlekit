@@ -41,17 +41,31 @@ function lineFaults(root, touched, mine, added) {
   });
 }
 
-/** The push's changed files, the new line numbers it wrote per file, and the row of a `tidy-later: <row>` in one of its commit messages. */
+/** The push's changed files, the new line numbers it wrote per file, and the row of a `tidy-later: <row>` in one of its commit messages. A line
+ *  the push only moved within its file is not written: --fix's tidy moves whole functions, and each moved line's text is one it removed. */
 function touches(root) {
   const git = (...args) => execFileSync('git', ['-C', root, ...args], { encoding: 'utf8', maxBuffer: 256 << 20 });
   const tip = process.env.ARCH_REFS?.split(',')[0].replace(/\^$/, ''), base = process.env.ARCH_BASE ?? (tip ? `${tip}^` : 'HEAD');
-  const diff = git('diff', ...(tip ? ['--cached'] : []), '-U0', '--no-renames', '--diff-filter=AM', base), added = new Map();
-  let file = null;
+  const diff = git('diff', ...(tip ? ['--cached'] : []), '-U0', '--no-renames', '--diff-filter=AM', base), changes = new Map();
+  let file = null, oldLeft = 0, newLeft = 0, at = 0;
   for (const line of diff.split('\n')) {
-    if (line.startsWith('+++ ')) { file = line.slice(6); added.set(file, new Set()); continue; }
-    const hunk = /^@@ -\S+ \+(\d+)(?:,(\d+))? @@/.exec(line);
-    if (hunk && file) for (let n = Number(hunk[1]); n < Number(hunk[1]) + Number(hunk[2] ?? 1); n++) added.get(file).add(n);
+    if (oldLeft || newLeft) {   // counted, so a hunk's own '--- ' or '+++ ' text is never read as a file header
+      if (line.startsWith('-')) { oldLeft--; changes.get(file).removed.push(line.slice(1)); }
+      else if (line.startsWith('+')) { newLeft--; changes.get(file).added.push([at++, line.slice(1)]); }
+      continue;
+    }
+    if (line.startsWith('+++ ')) { file = line.slice(6); changes.set(file, { removed: [], added: [] }); continue; }
+    const hunk = /^@@ -\d+(?:,(\d+))? \+(\d+)(?:,(\d+))? @@/.exec(line);
+    if (hunk && file) [oldLeft, at, newLeft] = [Number(hunk[1] ?? 1), Number(hunk[2]), Number(hunk[3] ?? 1)];
   }
+  const added = new Map([...changes].map(([name, { removed, added: lines }]) => [name, written(lines, removed)]));
   const messages = tip ? git('log', '--format=%B', `${base}..${tip}`) : '';
   return { files: [...added.keys()], added, later: /^tidy-later:\s*(\S+)/m.exec(messages)?.[1] ?? null };
+}
+
+/** The numbers of the added lines whose text no removed line of the same file had; each removed line accounts for one move. */
+function written(lines, removed) {
+  const left = new Map();
+  for (const text of removed) left.set(text, (left.get(text) ?? 0) + 1);
+  return new Set(lines.filter(([, text]) => !(left.get(text) > 0 && left.set(text, left.get(text) - 1))).map(([number]) => number));
 }

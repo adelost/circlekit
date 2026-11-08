@@ -265,6 +265,12 @@ try {
       process.env.ARCH_REFS = `${git("rev-parse", "HEAD").trim()}^`;
       const later = await touchedFaults(repo, tc).finally(() => delete process.env.ARCH_REFS);
       if (later.red.length || !/^tidy-later 1873: 3 faults/.test(later.told[0] ?? "")) throw new Error(`touched: tidy-later tells the faults and keeps the push: ${JSON.stringify(later)}`);
+      // a line the push only moves within its file is not written (--fix's tidy keeps every line); a line it writes is
+      const far = `function far() { return "${"m".repeat(160)}"; }\n`, near = "export function near() {\n  return far();\n}\n";
+      gput("tc/b.js", far + near); git("add", "tc/b.js"); git("commit", "-qm", "tb");
+      gput("tc/b.js", `${near}${far}const fresh = "${"n".repeat(170)}";\n`);
+      const moved = await touchedFaults(repo, tc);
+      if (moved.red.length !== 1 || !/tc\/b\.js:5 is 187 characters; a line you write stays within 160/.test(moved.red[0])) throw new Error(`touched: a moved line is not written, a new one is: ${moved.red.join(" | ")}`);
       rmSync(join(repo, "st"), {recursive: true, force: true}); rmSync(join(repo, "node_modules"));
     }
     // Cut row 1868: a decision whose until has passed is red while a key it names stands; a later until carries the key, a gone key frees it
