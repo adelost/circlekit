@@ -1,7 +1,7 @@
 // The gate of the @v1d/arch-check release: the tool finds a planted violation of each kind it ships, holds a clean tree, and keeps its baseline shrink-only;
 // the guard (guard/) reads the imports of TypeScript, Python and Kotlin, finds a cycle, and lets no raise, removed rule or widened dependency pass without a named decision.
 import {mkdtempSync, mkdirSync, readdirSync, readFileSync, writeFileSync, rmSync} from "node:fs";
-import {execFileSync} from "node:child_process";
+import {execFileSync, spawnSync} from "node:child_process";
 import {tmpdir} from "node:os";
 import {basename, join} from "node:path";
 import {check, KEY_NAMES} from "../arch-check.mjs";
@@ -152,6 +152,12 @@ try {
       const lines = [line("a1", "master"), line("b2", "design/first-concepts"), line("c3", "release/huset-1"), line("e4", "feature"), line("0".repeat(40), "release/gone"), line("d0c5", "main"), line("a1", "main")];
       if (push({}, lines) !== "a1 d0c5:docs") throw new Error(`export: by default master and main are linted, each tip once: ${push({}, lines)}`);
       if (push({branches: "design/first-concepts|release/.+"}, lines) !== "b2 c3") throw new Error(`export: guard.branches names the branches a push lints: ${push({branches: "design/first-concepts|release/.+"}, lines)}`);
+    }
+    // Huset release 1517: a hook's caller may read its stdout (a release tool took the guard's line for a path), so the lint of a commit writes nothing there
+    {
+      gput("w.mjs", "// createHash SHA256\nconsole.log('six rules hold');\n"); git("add", "."); git("commit", "-qm", "a wrapper that speaks");
+      const linted = spawnSync(process.execPath, [new URL("../guard/export.mjs", import.meta.url).pathname, "--commit", "HEAD"], {cwd: repo, encoding: "utf8"});
+      if (linted.status !== 0 || linted.stdout !== "" || !linted.stderr.includes("six rules hold")) throw new Error(`export: a lint's words go to stderr, stdout stays empty: ${JSON.stringify(linted)}`);
     }
     gput("w.mjs", "console.log('green');\n"); if (!architectureGuard(repo).some(line => line.includes("restore the pinned hash"))) throw new Error("policy: a wrapper without the pin must stop it");
   } finally {rmSync(repo, {recursive: true, force: true});}

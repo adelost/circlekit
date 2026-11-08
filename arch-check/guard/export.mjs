@@ -28,7 +28,8 @@ export function lintCommit(sha, before, { rollback = false } = {}) {
     if (rollback && !(wrapper && existsSync(join(tree, wrapper)))) { console.error(`arch: ${sha} predates the guard; a deploy of it is a rollback and is not checked`); return; }
     const missing = architectureGuard(tree);
     if (missing.length) throw Error(`${missing.join('; ')}; stopped`);
-    const result = spawnSync('timeout', ['--kill-after=5s', '120s', 'npm', 'run', '-s', 'lint'], { cwd: tree, env, stdio: ['ignore', 'inherit', 'inherit'] });
+    // the lint's words go to stderr: a hook's stdout reaches whoever reads git push's stdout, and Huset's release-setup.py (release 1517) took them for its answer
+    const result = spawnSync('timeout', ['--kill-after=5s', '120s', 'npm', 'run', '-s', 'lint'], { cwd: tree, env, stdio: ['ignore', 2, 'inherit'] });
     const seconds = ((Date.now() - began) / 1000).toFixed(1);
     if (result.status !== 0) throw Error(`lint failed for ${sha} in ${seconds} s (exit ${result.status ?? result.error?.message}); stopped`);
     console.error(`arch: lint passed for ${sha} in ${seconds} s`);
