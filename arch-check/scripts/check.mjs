@@ -133,9 +133,15 @@ try {
       const dirs = ["sb/ok", "sb/dom", "sb/out", "sb/dep", "sb/uses", "sb/lazy", "sb/wide", "sb/two", "sb/star"];
       const of = mod("S", "sb", dirs, {example: "example.js"});
       of.modules.find(m => m.dir === "sb/uses").imports = ["sb/dep"]; of.modules.find(m => m.dir === "sb/two").entry = ["index.js", "extra.js"]; of.modules.find(m => m.dir === "sb/star").entry = "*";
+      // 0.14.1 (Cut row 1814, skyvw:2): a workspace package npm links into node_modules is loaded from its own folder, and is a package there too
+      gput("wpk/lib/package.json", JSON.stringify({name: "@w/lib", exports: {"./x": "./x.js"}})); gput("wpk/lib/x.js", "export const x = 1;\n");
+      gput("sb/ws/index.js", "export {};\n"); gput("sb/ws/example.js", "import {x} from '@w/lib/x';\nexport const seen = x;\n");
+      mkdirSync(join(repo, "node_modules/@w"), {recursive: true}); symlinkSync("../../wpk/lib", join(repo, "node_modules/@w/lib"));
+      of.modules.push({dir: "sb/ws", imports: []});
       const sandbox = sandboxCounts(repo, {id: "X"}, of).counts;
+      rmSync(join(repo, "node_modules"), {recursive: true, force: true}); of.modules.pop();
       if (JSON.stringify(Object.keys(sandbox).sort()) !== JSON.stringify(["X:outside:sb/out", "X:throws:sb/dom"]) || sandbox["X:outside:sb/out"] !== 1)
-        throw new Error(`guard (sandbox): a sandbox that touches the page at load throws, one that loads a root file is outside, one through a declared dependency holds: ${JSON.stringify(sandbox)}`);
+        throw new Error(`guard (sandbox): a sandbox that touches the page at load throws, one that loads a root file is outside, one through a declared dependency or a workspace package holds: ${JSON.stringify(sandbox)}`);
       const lazy = lazyCounts(repo, {id: "L"}, of).counts;
       if (JSON.stringify(lazy) !== JSON.stringify({"L:lazy:sb/lazy": 2})) throw new Error(`guard (lazy-imports): each import() call counts, a comment or a string does not: ${JSON.stringify(lazy)}`);
       gput("sb/lazy/test/x.test.js", "export const t = () => import('../x.js');\n");

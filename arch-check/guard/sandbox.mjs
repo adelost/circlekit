@@ -1,12 +1,14 @@
 // The `sandbox` kind (0.12.0, Cut row 1828, sandman:0 8 Nov): each module of the modules rule named in `of` that has its sandbox (that rule's
 // `example`) is loaded in a bare node with no page stubbed (sandbox-load.mjs), as skyvw:2's guard of Cut's views/light.js loads a door. A
 // sandbox whose load throws is named once, and the files it loads outside the module, the modules its declared imports reach and their
-// declared root files are counted. A package (node_modules), a folder the modules rule leaves out (excludeFolders, assetFolders) and node's
-// own modules are not outside. `seconds` bounds one load (20 by default); a load that does not end in time throws.
+// declared root files are counted. A package (node_modules, or a workspace package's folder, which npm links into node_modules and node loads
+// from its real path), a folder the modules rule leaves out (excludeFolders, assetFolders) and node's own modules are not outside. `seconds`
+// bounds one load (20 by default); a load that does not end in time throws.
 import { spawnSync } from 'node:child_process';
 import { existsSync } from 'node:fs';
 import { relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { workspacePackages } from './graph.mjs';
 
 const LOADER = fileURLToPath(new URL('./sandbox-load.mjs', import.meta.url));
 
@@ -28,7 +30,7 @@ function load(root, file, seconds) {
 
 export function sandboxCounts(root, rule, of) {
   const counts = {}, reasons = new Map(), seconds = rule.seconds ?? 20;
-  const libraries = [...(of.excludeFolders ?? []), ...(of.assetFolders ?? [])].map(name => `${of.root}/${name}/`);
+  const libraries = [...[...(of.excludeFolders ?? []), ...(of.assetFolders ?? [])].map(name => `${of.root}/${name}/`), ...workspacePackages(root).map(p => `${p.dir}/`)];
   for (const m of of.example ? of.modules : []) {
     const example = `${m.dir}/${of.example}`;
     if (!existsSync(resolve(root, example))) continue;

@@ -72,7 +72,7 @@ function specsOf(file, body) {
 
 /** With `workspaces` (row 1022, Huset): the repository's own packages, each by its package.json name, with the files its "exports" (or "main") name, keyed by the subpath
  *  an import asks for ("." or "./presentation"), as Node resolves an import of the package by name. What a package exports is its door. */
-function workspacePackages(root) {
+export function workspacePackages(root) {
   const manifests = execFileSync('git', ['-C', root, 'ls-files', '-co', '--exclude-standard', '-z', '--', '*package.json'], { encoding: 'utf8' }).split('\0')
     .filter(file => /(?:^|\/)package\.json$/.test(file) && file.includes('/') && !/(?:^|\/)(?:vendor|node_modules|dist)\//.test(file));
   const fileOf = to => typeof to === 'string' ? to : to && typeof to === 'object' ? fileOf(to.import ?? to.default ?? Object.values(to)[0]) : null;   // a condition's file: import, else default, else the first
