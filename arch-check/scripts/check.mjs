@@ -33,6 +33,9 @@ put("wide/data.generated.ts", `export const d = "${"x".repeat(300)}";\n`); put("
 // modules: big (two files, 60 lines) is over 40; capped (50) is under its own cap of 55; small, a file directly in mods and the excluded kit are not
 put("mods/big/a.js", "x\n".repeat(30)); put("mods/big/deep/b.js", "x\n".repeat(30)); put("mods/capped/a.js", "x\n".repeat(50)); put("mods/small/a.js", "x\n".repeat(10));
 put("mods/root.js", "x\n".repeat(100)); put("mods/kit/a.js", "x\n".repeat(100));
+// # opens a comment only where the language writes one so: a CSS id selector and a JS private name are code, a Python # line is a comment
+put("hash/a.css", "#game .x { font-size: 14px; }\n/* font-size: 9px */\n  #hud { font-size: 15px; }\n"); put("hash/b.py", "# font-size: 9px\nsize = \"font-size: 3px\"\n");
+put("hash/c.js", "#!/usr/bin/env node\nclass A {\n  #size = \"font-size: 2px\";\n}\n// font-size: 9px\n");
 const rules = [
   {id: 1, name: "small-files", kind: "max-lines", files: "src/**/*.ts", max: 10, fix: "split"}, {id: 2, name: "small-folders", kind: "max-files", files: "src/*.ts", max: 3, fix: "move"},
   {id: 3, name: "module-edges", kind: "modules", files: "src/**/*.ts", modules: [{dir: "src/m", imports: []}], fix: "use index"}, {id: 4, name: "pattern", kind: "pattern", files: "src/**/*.ts", pattern: "fetch\\(", fix: "adapter"},
@@ -45,6 +48,7 @@ const rules = [
   {id: 14, name: "modal", kind: "modal", files: "modal/*", fix: "start Modal work through api.v1d.io"},
   {id: 15, name: "line-length", kind: "max-line-length", files: "wide/*", max: 160, fix: "wrap the line"},
   {id: 16, name: "module-lines", kind: "max-module-lines", in: "mods", files: "mods/**/*.js", exclude: "mods/kit/**", max: 40, caps: {"mods/capped": 55}, fix: "split the module"},
+  {id: 17, name: "hash-lines", kind: "pattern", files: "hash/*", pattern: "font-size:\\s*\\d", fix: "use the scale"},
   {id: 7, name: "count", kind: "count", module: "data.mjs", export: "data", path: "items.*.list", min: 2, fix: "add"},
   {id: 8, name: "any-of", kind: "count", module: "data.mjs", export: "data", paths: ["routes.*.x", "routes.*.z"], min: 1, fix: "price it"}];
 try {
@@ -61,6 +65,9 @@ try {
     throw new Error(`max-module-lines: only mods/big is over, by 20: ${modules.join(" | ")}`);
   const tighter = await check(root, {rules: [{...rules.find(rule => rule.id === 16), caps: {"mods/capped": 49}}]});
   if (!tighter.red.some(line => line.includes("mods/capped:1 50 lines in its 1 files, max 49"))) throw new Error("max-module-lines: a module over its own cap is red");
+  const hashed = red.filter(line => line.startsWith("rule 17 ")).map(line => line.match(/hash\/\S+:\d+/)[0]).sort().join(" ");
+  if (hashed !== "hash/a.css:1 hash/a.css:3 hash/b.py:2 hash/c.js:3")
+    throw new Error(`pattern: a line that starts with # is code in CSS and JS, a comment in Python; // and /* are comments everywhere: ${hashed}`);
   const wide = red.filter(line => line.startsWith("rule 15 "));
   if (wide.length !== 1 || !wide[0].includes("wide/long.ts:1 161 characters, max 160") || counts["15:wide/long.ts"] !== 1)
     throw new Error(`max-line-length: only the code line of 161 characters is red, with an excess of 1: ${wide.join(" | ")}`);

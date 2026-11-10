@@ -35,7 +35,7 @@ function lineFaults(root, touched, mine, added) {
     if (generated(file, text)) return [];
     return text.split('\n').flatMap((line, at) => {
       const length = [...line.replace(/\r$/, '')].length, written = added.get(file)?.has(at + 1);
-      if (!noteless(line) || length <= Math.min(touched.changedLines ?? Infinity, touched.wholeFile ?? Infinity)) return [];
+      if (!noteless(line, file) || length <= Math.min(touched.changedLines ?? Infinity, touched.wholeFile ?? Infinity)) return [];
       if (touched.wholeFile && length > touched.wholeFile) return [`touched: ${file}:${at + 1} is ${length} characters; a touched file keeps no line over ${touched.wholeFile} (a crammed line). Fix: split it into named steps`];
       return written && length > touched.changedLines ? [`touched: ${file}:${at + 1} is ${length} characters; a line you write stays within ${touched.changedLines}. Fix: wrap it, or name a part of it`] : [];
     });
