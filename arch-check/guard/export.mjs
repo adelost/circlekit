@@ -32,7 +32,8 @@ export function lintCommit(sha, before, { rollback = false } = {}) {
     const missing = architectureGuard(tree);
     if (missing.length) throw Error(`${missing.join('; ')}; stopped`);
     // the lint's words go to stderr: a hook's stdout reaches whoever reads git push's stdout, and Huset's release-setup.py (release 1517) took them for its answer
-    const result = spawnSync('timeout', ['--kill-after=5s', '120s', 'npm', 'run', '-s', 'lint'], { cwd: tree, env, stdio: ['ignore', 2, 'inherit'] });
+    // 240 s (0.17.3): Huset's lint took 112 s at load 9 and 134.5 s at load 19, and two releases stopped on the old 120 s (sandman:0, 11 Nov).
+    const result = spawnSync('timeout', ['--kill-after=5s', '240s', 'npm', 'run', '-s', 'lint'], { cwd: tree, env, stdio: ['ignore', 2, 'inherit'] });
     const seconds = ((Date.now() - began) / 1000).toFixed(1);
     if (result.status !== 0) throw Error(`lint failed for ${sha} in ${seconds} s (exit ${result.status ?? result.error?.message}); stopped`);
     console.error(`arch: lint passed for ${sha} in ${seconds} s`);
