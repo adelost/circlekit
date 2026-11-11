@@ -3,6 +3,7 @@
 //   --init            write the first baseline, once, while arch.baseline.json is empty
 //   --adopt <rule id> name a rule that is new to the repository, with its breaches today, once
 //   --lower           lower the baseline to today's counts; never raises
+//   --today <day>     read each rule's failsFrom against this day (YYYY-MM-DD), to see a told rule as it will fail
 //   --fix [files]     move whole functions for story-order and stepdown in the named files, else in the files changed against HEAD; changes no line
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
@@ -22,6 +23,7 @@ export async function runGuard({ root, args = [] }) {
   const config = JSON.parse(readFileSync(join(root, 'arch.config.json'), 'utf8')), path = join(root, config.baseline), baseline = JSON.parse(readFileSync(path, 'utf8'));
   if (args.includes('--fix')) return fix(root, config, args.slice(args.indexOf('--fix') + 1).filter(arg => !arg.startsWith('--')));
   const decisions = existsSync(join(root, DECISIONS)) ? JSON.parse(readFileSync(join(root, DECISIONS), 'utf8')) : [], first = args.includes('--init');
+  const today = args.includes('--today') ? args[args.indexOf('--today') + 1] : undefined;   // the day a rule's failsFrom is read against, today by default
   if (first && Object.keys(baseline).length) { console.error('arch-check: the existing baseline only shrinks; use --lower'); return 1; }
   const parsedRules = config.rules.filter(r => r.kind === 'modules' && r.exactEdges), guardRules = config.rules.filter(r => GUARD_KINDS.includes(r.kind));
   const ids = new Set([...parsedRules, ...guardRules].map(r => String(r.id))), isParsed = key => ids.has(key.split(':')[0]);
@@ -33,7 +35,7 @@ export async function runGuard({ root, args = [] }) {
   let built;
   try {
     built = await check(root, { ...config, rules: config.rules.filter(r => !GUARD_KINDS.includes(r.kind)).map(r => ids.has(String(r.id)) ? { ...r, files: [] } : r) },
-      first ? {} : Object.fromEntries(Object.entries(baseline).filter(([key]) => !isParsed(key))));
+      first ? {} : Object.fromEntries(Object.entries(baseline).filter(([key]) => !isParsed(key))), { today });
   } catch (error) { console.error(`arch-check: cannot run: ${error.message}`); return 2; }   // a rule that cannot run never reads as a pass
   const counts = { ...built.counts }, red = [...built.red];
   const countsOf = rule => rule.kind === 'modules' ? graph.moduleCounts(root, rule) : rule.kind === 'sandbox' ? sandboxCounts(root, rule, ofRule(rule))
@@ -73,6 +75,7 @@ export async function runGuard({ root, args = [] }) {
   red.push(...ratchetFaults(root, config, baseline, { decisions, counts }));
   const touched = await touchedFaults(root, config).catch(error => ({ red: [`arch-check: cannot read the touched files: ${error.message}`], told: [] }));
   red.push(...touched.red);
+  if (built.told?.length) console.error(built.told.join('\n'));   // a breach a rule tells before its failsFrom day
   if (touched.told.length) console.error(touched.told.join('\n'));
   if (red.length) { console.error(red.join('\n')); return 1; }
   const reported = Object.entries(built.reported ?? {}), told = config.rules.filter(r => r.report).map(r => `${r.id} ${reported.filter(([key]) => key.startsWith(`${r.id}:`)).reduce((sum, [, n]) => sum + n, 0)}`);

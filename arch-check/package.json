@@ -1,6 +1,6 @@
 {
   "name": "@v1d/arch-check",
-  "version": "0.17.3",
+  "version": "0.18.0",
   "description": "A repo's architecture rules as data (arch.config.json): file size, line length, module size, module edges, forbidden patterns, duplicates, counts, folders and file names, WHAT/WHY comments judged by AMUX, with a baseline that may only shrink. The guard (guard/): module doors, dependencies and cycles, sandboxes loaded in a bare node, lazy imports and door names counted, read from the imports of TypeScript, JavaScript, Svelte, Python and Kotlin, and a ratchet whose every raise is a named decision. web.mjs judges files given as text in a browser with the same kinds; --report reads a commit from git for code health (totals, files near a limit, growth since a day older, decisions). No dependencies; TypeScript 5 is needed only for the JavaScript reader.",
   "type": "module",
   "bin": {

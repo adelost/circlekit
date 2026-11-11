@@ -122,7 +122,7 @@ const kinds = {
 export const check = (root, config, baseline = {}, options = {}) => judge(kinds, nodeRepo(root, config, options), baseline);
 
 if (process.argv[1] && pathToFileURL(realpathSync(process.argv[1])).href === import.meta.url) {
-  const args = process.argv.slice(2), VALUED = ["--amux-root", "--rev", "--since", "--repo"];
+  const args = process.argv.slice(2), VALUED = ["--amux-root", "--rev", "--since", "--repo", "--today"];
   const option = name => { const at = args.indexOf(name), value = at < 0 ? undefined : args[at + 1];
     if (at >= 0 && (!value || value.startsWith("--"))) { console.error(`arch-check: ${name} needs a value`); process.exit(2); } return value; };
   // the root is the one argument that is neither a flag nor a flag's value, wherever it stands
@@ -137,14 +137,19 @@ if (process.argv[1] && pathToFileURL(realpathSync(process.argv[1])).href === imp
     // --init writes a first baseline only; an existing one only shrinks, as guard/run.mjs holds it (Cut row 1868: no writer of the baseline raises a count)
     if (args.includes("--init") && Object.keys(baseline).length) { console.error("arch-check: the existing baseline only shrinks; use --lower"); process.exit(1); }
     // a rule that cannot run (a contract rule without AMUX, an unknown kind) stops the run before any baseline is read or written: it never reads as a pass
-    const {red, counts} = await check(root, config, args.includes("--init") ? {} : baseline, {amuxRoot: amux}).catch(error => { console.error(`arch-check: cannot run: ${error.message}`); process.exit(2); });
+    const {red, told, counts} = await check(root, config, args.includes("--init") ? {} : baseline, {amuxRoot: amux, today: option("--today")})
+      .catch(error => { console.error(`arch-check: cannot run: ${error.message}`); process.exit(2); });
     if (args.includes("--init")) { writeFileSync(baselinePath, JSON.stringify(counts, null, 2) + "\n"); console.log(`arch-check: baseline written (${Object.keys(counts).length} entries)`); }
     else if (args.includes("--lower")) {
       const lowered = Object.fromEntries(Object.entries(baseline).flatMap(([key, allowed]) => (counts[key] ?? 0) > 0 ? [[key, Math.min(allowed, counts[key])]] : []));
       const raised = Object.keys(counts).filter(key => counts[key] > (baseline[key] ?? 0));
       if (raised.length) { console.error(`arch-check: ${raised.length} entries grew, fix them first (--lower never raises)`); process.exit(1); }
       writeFileSync(baselinePath, JSON.stringify(lowered, null, 2) + "\n"); console.log(`arch-check: baseline lowered to ${Object.keys(lowered).length} entries`);
-    } else if (red.length) { console.error(red.join("\n")); process.exit(1); }
-    else console.log(`arch-check: ${config.rules.length} rules hold, baseline ${Object.keys(baseline).length} entries (${Object.values(baseline).reduce((sum, n) => sum + n, 0)} units)`);
+    } else if (red.length) { console.error([...told, ...red].join("\n")); process.exit(1); }
+    else {   // a breach a rule tells before its failsFrom day is printed and does not fail the run
+      if (told.length) console.error(told.join("\n"));
+      const units = Object.values(baseline).reduce((sum, n) => sum + n, 0);
+      console.log(`arch-check: ${config.rules.length} rules hold, baseline ${Object.keys(baseline).length} entries (${units} units)`);
+    }
   }
 }

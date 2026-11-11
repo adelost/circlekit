@@ -10,10 +10,11 @@ import {CODE, eslintConfig, eslintRules, readable} from "./story.mjs";
 export const SKIPPED = new Set(["node_modules", "dist", "build", ".git", ".wrangler", "coverage"]);
 const PLUGINS = {"@typescript-eslint": load => load("typescript-eslint").plugin, sonarjs: load => load("eslint-plugin-sonarjs")};
 
-/** The repo the kinds read: every file under root (less SKIPPED), each read once. */
+/** The repo the kinds read: every file under root (less SKIPPED), each read once; `today` (YYYY-MM-DD, options.today) is the day a rule's
+ *  failsFrom is read against. */
 export function nodeRepo(root, config, options = {}) {
   const files = walk(root), cache = new Map(), decisions = join(root, "arch.decisions.json");
-  const repo = {root, files, config, amuxRoot: options.amuxRoot,
+  const repo = {root, files, config, amuxRoot: options.amuxRoot, today: options.today,
     read: file => cache.get(file) ?? (cache.set(file, readFileSync(resolve(root, file), "utf8")), cache.get(file)),
     covered: rule => files.filter(matcher(rule.files)).filter(file => !matcher(rule.exclude)(file)),
     ts: () => typescriptOf(root),

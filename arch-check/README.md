@@ -5,6 +5,7 @@ Rules as data in `arch.config.json`; old debt as counts in `arch.baseline.json` 
     node arch-check.mjs [repo]            check (exit 1 on any hit or stale baseline entry)
     node arch-check.mjs [repo] --init     write the baseline from today's counts (first time only; refused once it has entries)
     node arch-check.mjs [repo] --lower    lower the baseline to today's counts; never raises
+    --today YYYY-MM-DD                    read each rule's failsFrom against this day (0.18.0), to see a told rule as it will fail
     --amux-root DIR                       where AMUX is, for a `contract` rule (else $AMUX_ROOT, else the amux on PATH)
 
 A hit reads `rule N name: file:line message. Fix: ...`.
@@ -30,6 +31,10 @@ Kinds (each rule has `id`, `name`, `kind`, `fix`; `files` and `exclude` are glob
 - `duplicates` `{lines?, minChars?}`: the same run of lines in two files.
 - `contract` `{}`: the first comment of each file has exactly one `WHAT:` and one `WHY:`, and the words pass AMUX's `core/contract-lint.mjs` (`evaluateContract`: a WHAT that opens with one of its verbs, at most 16 words in the WHAT and 18 in the WHY, no filler, a boundary in the WHY); its errors and its warnings are both red, as in Product Studio. AMUX is found by `--amux-root`, `$AMUX_ROOT` or the `amux` on PATH, never by the config. Without it the run stops with exit 2, also with `--init` and `--lower`, and never reads as a pass.
 - `css-imports` `{files, scripts, prefix, exclude?}`: a stylesheet (`files`) names a class that starts with `prefix` and that another folder's script (`scripts`) draws, while its own folder's script does not import that folder; a class no script names is nobody's, and `exclude` leaves out the scripts that draw nothing (examples). One hit per class in a stylesheet.
+- `one-owner` `{files, of | in, exclude?}` (0.18.0, Huset's rule 31): a class name the covered stylesheets style has one owner. A sheet's owner is the
+  innermost folder of the `modules` rule `of` names (its `modules[].dir`), else the folder directly under one of `in`, else the sheet itself. A class styled
+  by two or more owners is one hit, keyed by the class (`N:.name`) at its first sheet and line in path order, weighing the owners past the first. A selector
+  is the text before a `{` after the last `;`, so a value such as `url(a.svg)` names no class; at-rules and comments name none.
 - `count` `{module, export, path | paths, min}`: every item `path` reaches (`*` visits each key; with `paths` the entries of all of them are summed) holds at least `min` entries; a value that is there counts, a list counts its entries; the module is imported, so a `.ts` module needs `node --import tsx`.
 
 ## In a browser (`web.mjs`, since 0.16.0)
@@ -38,9 +43,10 @@ Kinds (each rule has `id`, `name`, `kind`, `fix`; `files` and `exclude` are glob
     const {hits, counts, red} = await lint({files: {"src/a.ts": text}, rules, ts, eslint: {Linter, parser, plugins}, decisions, baseline});
 
 Files given as text, judged by a rule set with the node run's own kinds: those that read text (`rules.mjs`: `max-lines`, `max-line-length`,
-`max-module-lines`, `pattern`, `providers`, `modal`, `duplicates`; `story.mjs`: `eslint`, `first-line`, `story-order`, `stepdown`, `stepdown-order`,
-`exceptions`). The gate holds its hits equal to the node run's. A kind that reads a repository's layout or runs its code (`max-files`, `names`,
-`folders`, `absent`, `modules`, `css-imports`, `contract`, `count`) is refused by name, and so is a Python file for a story kind (python3 reads it).
+`max-module-lines`, `one-owner`, `pattern`, `providers`, `modal`, `duplicates`; `story.mjs`: `eslint`, `first-line`, `story-order`, `stepdown`,
+`stepdown-order`, `exceptions`). The gate holds its hits equal to the node run's. A kind that reads a repository's layout or runs its code
+(`max-files`, `names`, `folders`, `absent`, `modules`, `css-imports`, `contract`, `count`) is refused by name, and so is a Python file for a story
+kind (python3 reads it).
 `web.mjs`, `rules.mjs` and `story.mjs` use no node API. The caller brings TypeScript 5 (`ts`) for the story kinds and, for eslint rules, ESLint's
 `Linter` (`eslint/universal`), `@typescript-eslint/parser` and the plugins by prefix (`{sonarjs}`). Bundled for a browser, the parser needs `path`
 (path-browserify) and no other node module while it runs. A hit is `{rule, file, line, message, weight}`; `check()` returns the hits too.
@@ -71,6 +77,9 @@ For a repository that wants its architecture held, not only reported. A reposito
   - JS and TS are read with the TypeScript AST; Python with the repository's `python3` and its `ast`, in one run.
   - `story-order` and `first-line` read Python too. `first-line` accepts a header whose first line says what the file is for.
   - A rule with `report: true` is counted but is never red and never enters the baseline (`--adopt` refuses it).
+  - A rule with `failsFrom: "YYYY-MM-DD"` (0.18.0) tells a breach before that day, printed as `(told; red from ...)`, and is red from it; its counts stand
+    in the baseline from the first day (`--adopt` takes them), so a new kind is read against its first hits before it stops a push. `check()` returns the
+    told lines as `told`; `--today` sets the day.
   - The `eslint` kind takes three more options. `exported: true` keeps only breaches on a top-level exported function's head (max-params for a file's API). `skip` lists functions, by name or `/regex/`, that hold no logic of their own (feature, describe, a `/^create[A-Z]/` factory whose inner functions are counted each). `loops: N` lets max-depth reach N where a loop is part of the nesting (0.15.1).
   - Story-order leaves a const helper that top-level code runs at load, and a Python def that module code uses at load (0.15.1, Huset's trial).
   - `eslint: {from: "tools/lint"}` in arch.config.json loads ESLint and its plugins from that folder's own install (a repository on TypeScript 7 keeps TypeScript 5 there for typescript-eslint); not installed there, the run stops with `npm ci --prefix <from>`, and export.mjs links the folder's node_modules into its export (0.15.5).

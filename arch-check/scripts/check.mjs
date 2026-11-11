@@ -26,6 +26,11 @@ put("contracts/ok.ts", "/**\n * WHAT: Builds one catalog card with its name, tag
 put("kit/a/a.css", ".part-a { color: red; }\n/* .part-b-x in a comment names nothing */\n.part-a .part-b-x { color: blue; }\n"); put("kit/a/a.js", "export const a = \"part-a\";\n");
 put("kit/b/b.css", ".part-b-x { color: green; }\n"); put("kit/b/b.js", "export const b = \"part-b-x\";\n"); put("kit/b/b.example.js", "export const only = \"part-a\";\n");
 put("kit/c/c.css", ".part-c .part-b-x { color: pink; }\n"); put("kit/c/c.js", "import {b} from \"../b/b.js\";\nexport const c = [\"part-c\", b];\n");
+// one-owner: .inside is styled twice in one module (own/m), .shared by own/m and own/top.css; url(a.svg) in a declaration names no class .svg
+put("own/m/a.css", ".shared { color: red; }\n.inside { color: red; }\n"); put("own/m/b.css", ".inside { color: blue; }\n");
+put("own/m/c.css", ".svg { color: red; }\n");
+put("own/top.css", "/* .inside in a comment names nothing */\n.x { color: red; }\n.shared .x { color: blue; }\n");
+put("own/n.css", ".n { background: url(a.svg); .deep { color: red; } }\n");
 put("providers/call.ts", "// api.anthropic.com in a comment names nothing\nconst a = fetch(\"https://api.anthropic.com/v1/messages\");\nimport OpenAI from \"openai\";\nconst k = env.GEMINI_API_KEY;\nconst ok = fetch(\"https://api.v1d.io/v1/run\");\nimport cohere from \"./cohere.js\";\n"); put("providers/call.py", "import anthropic\nfrom google import genai\nvoice = \"https://swedencentral.tts.speech.microsoft.com/x\"\n# import openai in a comment\n"); put("modal/run.py", "import modal\nfrom modal import App\nurl = \"https://me--render.modal.run/job\"\n# import modal in a comment\n"); put("modal/door.ts", "const at = env.STATELESS_URL;\nconst id = process.env.MODAL_TOKEN_ID;\nconst ok = env.PUBLIC_ORIGIN;\nimport {App} from \"modal\";\nimport {request} from \"../../tools/modal_calls/client\";\nimport {x} from \"./modality.js\";\n"); put("packages/copy/x.txt", "x"); put("data.mjs", "export const data = {items: {one: {list: [1]}}, routes: {a: {x: 0}, b: {y: null, z: 2}, c: {}}};\n");
 // a code line of 161 characters is red; 160, a comment, 100 emoji (113 characters, 213 UTF-16 units) and two generated files are not
 put("wide/long.ts", `const a = "${"x".repeat(148)}";\nconst b = "${"x".repeat(147)}";\n// ${"c".repeat(300)}\nconst e = "${"\u{1F600}".repeat(100)}";\n`);
@@ -49,6 +54,7 @@ const rules = [
   {id: 15, name: "line-length", kind: "max-line-length", files: "wide/*", max: 160, fix: "wrap the line"},
   {id: 16, name: "module-lines", kind: "max-module-lines", in: "mods", files: "mods/**/*.js", exclude: "mods/kit/**", max: 40, caps: {"mods/capped": 55}, fix: "split the module"},
   {id: 17, name: "hash-lines", kind: "pattern", files: "hash/*", pattern: "font-size:\\s*\\d", fix: "use the scale"},
+  {id: 18, name: "one-owner", kind: "one-owner", files: "own/**/*.css", in: "own", fix: "style the class in its owner's sheet"},
   {id: 7, name: "count", kind: "count", module: "data.mjs", export: "data", path: "items.*.list", min: 2, fix: "add"},
   {id: 8, name: "any-of", kind: "count", module: "data.mjs", export: "data", paths: ["routes.*.x", "routes.*.z"], min: 1, fix: "price it"}];
 try {
@@ -71,6 +77,20 @@ try {
   const wide = red.filter(line => line.startsWith("rule 15 "));
   if (wide.length !== 1 || !wide[0].includes("wide/long.ts:1 161 characters, max 160") || counts["15:wide/long.ts"] !== 1)
     throw new Error(`max-line-length: only the code line of 161 characters is red, with an excess of 1: ${wide.join(" | ")}`);
+  const owned = red.filter(line => line.startsWith("rule 18 "));
+  if (owned.length !== 1 || !owned[0].includes("own/m/a.css:1 .shared is styled by 2 owners: own/m/a.css:1, own/top.css:3") || counts["18:.shared"] !== 1)
+    throw new Error(`one-owner: only .shared has two owners (own/m, own/top.css); .inside has one, url(a.svg) styles no .svg: ${owned.join(" | ")}`);
+  const ownerRule = rules.find(rule => rule.id === 18), byModules = {id: "MO", kind: "modules", files: "own/**/*.js", modules: [{dir: "own/m"}], fix: "x"};
+  const of = await check(root, {rules: [byModules, {...ownerRule, in: undefined, of: "MO"}]});
+  if (of.red.filter(line => line.startsWith("rule 18 ")).length !== 1 || of.counts["18:.shared"] !== 1)
+    throw new Error("one-owner: the modules rule `of` names gives the same owners as `in`");
+  if (!await check(root, {rules: [{...ownerRule, of: "none"}]}).then(() => false, error => /of names no modules rule/.test(error.message)))
+    throw new Error("one-owner: an of that names no modules rule cannot run");
+  const later = {...ownerRule, failsFrom: "2026-11-18"}, before = await check(root, {rules: [later]}, {}, {today: "2026-11-17"});
+  const from = await check(root, {rules: [later]}, {}, {today: "2026-11-18"});
+  if (before.red.length || before.told.length !== 1 || !before.told[0].endsWith("(told; red from 2026-11-18)") || before.counts["18:.shared"] !== 1
+    || from.red.length !== 1 || from.told.length)
+    throw new Error(`failsFrom: a breach is told before the day and red from it, counted either way: ${JSON.stringify({before, from})}`);
   const cssHits = red.filter(line => line.startsWith("rule 12 "));
   if (cssHits.length !== 1 || !cssHits[0].includes("kit/a/a.css:3") || !cssHits[0].includes(".part-b-x") || !cssHits[0].includes("b ") || !cssHits[0].includes("does not import")) throw new Error(`css-imports: only a.css, line 3, names a class that b draws without importing b (b.css draws its own, c.css imports b, a comment names nothing, an example draws nothing): ${cssHits.join(" | ")}`);
   const providers = red.filter(line => line.startsWith("rule 13 ")), at = line => providers.some(hit => hit.includes(line));

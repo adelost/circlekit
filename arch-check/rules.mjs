@@ -52,6 +52,28 @@ const callers = name => (rule, repo) => repo.covered({files: PROVIDERS.files, ..
   return what ? [{file, line: n + 1, message: `${what}; only ai-gateway calls ${who}`}] : [];
 }));
 
+/** For one-owner: a sheet's owner, the innermost module folder that holds it (the modules rule `of` names, else each folder directly under one of `in`),
+ *  or the sheet itself. An `of` that names no modules rule cannot run. */
+const ownerOf = (rule, repo) => {
+  const modules = rule.of === undefined ? null : repo.config.rules.find(other => String(other.id) === String(rule.of) && other.kind === "modules");
+  if (rule.of !== undefined && !modules) throw new Error(`rule ${rule.id}: of names no modules rule (${rule.of})`);
+  const folders = (modules?.modules ?? []).map(module => module.dir).sort((a, b) => b.length - a.length);
+  return file => folders.find(dir => file.startsWith(`${dir}/`)) ?? [rule.in ?? []].flat().flatMap(dir => {
+    const rest = file.startsWith(`${dir}/`) ? file.slice(dir.length + 1) : ""; return rest.includes("/") ? [`${dir}/${rest.split("/")[0]}`] : [];
+  })[0] ?? file;
+};
+/** For one-owner: each class name a stylesheet's selectors style, once, at the line of its first selector. A selector is the text before a {, after the
+ *  last ; of any declarations a nested rule follows; at-rules (@media, @keyframes) select nothing, and comments name nothing. */
+const classesStyled = text => {
+  const plain = text.replace(/\/\*[\s\S]*?\*\//g, comment => comment.replace(/[^\n]/g, " ")), seen = new Map();
+  for (const match of plain.matchAll(/([^{}]*)\{/g)) {
+    const selector = match[1].slice(match[1].lastIndexOf(";") + 1); if (selector.trim().startsWith("@")) continue;
+    const at = match.index + match[1].length - selector.trimStart().length, line = plain.slice(0, at).split("\n").length;
+    for (const [, name] of selector.matchAll(/\.(-?[A-Za-z_][\w-]*)/g)) if (!seen.has(name)) seen.set(name, line);
+  }
+  return [...seen].map(([name, line]) => ({name, line}));
+};
+
 /** The kinds that read only the covered files' text. Each turns a rule and the repo into hits {file, line, message, weight?, at?}; weight counts toward the baseline (default 1). */
 export const textKinds = {
   "max-lines": (rule, repo) => repo.covered(rule).flatMap(file => { const n = lines(repo.read(file)).length; return n > rule.max ? [{file, line: 1, message: `${n} lines, max ${rule.max}`, weight: n - rule.max}] : []; }),
@@ -74,6 +96,21 @@ export const textKinds = {
     return [...modules].flatMap(([module, {lines: n, files}]) => { const cap = rule.caps?.[module] ?? rule.max;
       return n > cap ? [{file: module, line: 1, message: `${n} lines in its ${files} files, max ${cap}`, weight: n - cap}] : []; });
   },
+  // A class name has one owner: the covered stylesheets that style it all lie in one module's folder. The folders are the modules rule `of` names (its
+  // modules[].dir, the innermost that holds the sheet), else each folder directly under one of `in`; a sheet in no module is its own owner. One hit per
+  // class styled by two or more owners, keyed by the class, at the first sheet and line in path order, weighing the owners past the first: a further owner
+  // is red where the baseline holds the others, and an owner that lets go lowers it (Huset's rule 31).
+  "one-owner": (rule, repo) => {
+    const owner = ownerOf(rule, repo), styled = new Map();   // class -> the sheets that style it, each at its first line
+    for (const file of repo.covered(rule).sort()) for (const {name, line} of classesStyled(repo.read(file))) {
+      const sheets = styled.get(name) ?? []; styled.set(name, sheets);
+      if (!sheets.some(sheet => sheet.file === file)) sheets.push({file, line, owner: owner(file)});
+    }
+    return [...styled].flatMap(([name, sheets]) => { const owners = new Set(sheets.map(sheet => sheet.owner)); if (owners.size < 2) return [];
+      const where = sheets.slice(0, 4).map(sheet => `${sheet.file}:${sheet.line}`).join(", ") + (sheets.length > 4 ? ` and ${sheets.length - 4} more` : "");
+      return [{file: sheets[0].file, line: sheets[0].line, key: `.${name}`, weight: owners.size - 1,
+        message: `.${name} is styled by ${owners.size} owners: ${where}`}]; });
+  },
   pattern: (rule, repo) => { const re = new RegExp(rule.pattern, rule.flags);
     return repo.covered(rule).flatMap(file => lines(repo.read(file)).flatMap((line, n) => noteless(line, file) && re.test(line) ? [{file, line: n + 1, message: rule.message ?? `breaks ${rule.name}`}] : [])); },
   // Only ai-gateway reaches an AI provider or Modal: the lists are PROVIDERS and MODAL, the same in every repo; ai-gateway does not turn these rules on.
@@ -95,23 +132,29 @@ export const textKinds = {
   },
 };
 
-/** Runs each rule's kind and weighs its hits per rule and file against the baseline: red lines, counts, the report rules' counts, and every hit by rule. */
+/** Runs each rule's kind and weighs its hits per rule and file against the baseline: red lines, the lines told before a rule's failsFrom day,
+ *  counts, the report rules' counts, and every hit by rule. A hit no one file owns names its baseline key itself (`key`, as one-owner's class). */
 export async function judge(kinds, repo, baseline = {}) {
   const found = new Map(), reported = {}, hits = [];
   for (const rule of repo.config.rules) {
     if (!kinds[rule.kind]) throw new Error(`rule ${rule.id}: unknown kind ${rule.kind}`);
     for (const hit of await kinds[rule.kind](rule, repo)) {
-      const key = `${rule.id}:${hit.file}${hit.at ? ":" + hit.at : ""}`, entry = found.get(key) ?? {rule, hits: [], weight: 0};
+      const key = `${rule.id}:${hit.key ?? hit.file + (hit.at ? ":" + hit.at : "")}`, entry = found.get(key) ?? {rule, hits: [], weight: 0};
       entry.hits.push(hit); entry.weight += hit.weight ?? 1; found.set(key, entry);
       hits.push({rule: rule.id, file: hit.file, line: hit.line, message: hit.message, weight: hit.weight ?? 1});
     }
   }
-  const red = [], counts = {};
+  const red = [], told = [], counts = {}, today = repo.today ?? new Date().toISOString().slice(0, 10);
   for (const [key, {rule, hits: mine, weight}] of found) {
     if (rule.report) { reported[key] = weight; continue; }   // a report rule (Cut row 1873's stepdown-order) is counted for the reader, never red, never in the baseline
     counts[key] = weight; const allowed = baseline[key] ?? 0;
-    if (weight > allowed) red.push(...mine.map(hit => `rule ${rule.id} ${rule.name}: ${hit.file}:${hit.line} ${hit.message}${allowed ? ` (baseline allows ${allowed}, now ${weight})` : ""}. Fix: ${rule.fix}`));
+    if (weight <= allowed) continue;
+    const said = mine.map(hit => `rule ${rule.id} ${rule.name}: ${hit.file}:${hit.line} ${hit.message}`
+      + `${allowed ? ` (baseline allows ${allowed}, now ${weight})` : ""}. Fix: ${rule.fix}`);
+    // A rule with failsFrom (YYYY-MM-DD) tells a breach until that day and is red from it, so a new kind can be read against its first hits before it
+    // stops a push (Huset's R-18); its counts stand in the baseline from the first day either way.
+    if (rule.failsFrom && today < rule.failsFrom) told.push(...said.map(line => `${line} (told; red from ${rule.failsFrom})`)); else red.push(...said);
   }
   for (const [key, allowed] of Object.entries(baseline)) if (!(key in counts) || counts[key] < allowed) red.push(`baseline ${key}: allows ${allowed}, now ${counts[key] ?? 0}. Fix: run with --lower so the baseline only shrinks`);
-  return {red, counts, reported, hits};
+  return {red, told, counts, reported, hits};
 }
