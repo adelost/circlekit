@@ -1,6 +1,6 @@
 {
   "name": "@v1d/api-client",
-  "version": "0.12.32",
+  "version": "0.12.33",
   "description": "What the v1d API runs on the person's own device: waveform, encode, cuts and the files store's start and register bodies (WebCodecs and mediabunny), built from the ai-gateway repository's one source",
   "type": "module",
   "main": "./dist/device/index.js",
@@ -74,6 +74,78 @@
     "./errors": {
       "types": "./dist/device/errors.d.ts",
       "default": "./dist/device/errors.js"
+    },
+    "./sky": {
+      "types": "./dist/device/sky.d.ts",
+      "default": "./dist/device/sky.js"
+    },
+    "./clouds": {
+      "types": "./dist/device/clouds.d.ts",
+      "default": "./dist/device/clouds.js"
+    },
+    "./ground": {
+      "types": "./dist/device/ground.d.ts",
+      "default": "./dist/device/ground.js"
+    },
+    "./aircraft": {
+      "types": "./dist/device/aircraft.d.ts",
+      "default": "./dist/device/aircraft.js"
+    },
+    "./place": {
+      "types": "./dist/device/place.d.ts",
+      "default": "./dist/device/place.js"
+    },
+    "./place-math": {
+      "types": "./dist/device/place-math.d.ts",
+      "default": "./dist/device/place-math.js"
+    },
+    "./position": {
+      "types": "./dist/device/position.d.ts",
+      "default": "./dist/device/position.js"
+    },
+    "./pressure": {
+      "types": "./dist/device/pressure.d.ts",
+      "default": "./dist/device/pressure.js"
+    },
+    "./height": {
+      "types": "./dist/device/height.d.ts",
+      "default": "./dist/device/height.js"
+    },
+    "./jump-sim": {
+      "types": "./dist/device/jump-sim.d.ts",
+      "default": "./dist/device/jump-sim.js"
+    },
+    "./jump-playback": {
+      "types": "./dist/device/jump-playback.d.ts",
+      "default": "./dist/device/jump-playback.js"
+    },
+    "./jump-file": {
+      "types": "./dist/device/jump-file.d.ts",
+      "default": "./dist/device/jump-file.js"
+    },
+    "./jump-phases": {
+      "types": "./dist/device/jump-phases.d.ts",
+      "default": "./dist/device/jump-phases.js"
+    },
+    "./milestones": {
+      "types": "./dist/device/milestones.d.ts",
+      "default": "./dist/device/milestones.js"
+    },
+    "./find": {
+      "types": "./dist/device/find.d.ts",
+      "default": "./dist/device/find.js"
+    },
+    "./stop": {
+      "types": "./dist/device/stop.d.ts",
+      "default": "./dist/device/stop.js"
+    },
+    "./scenario": {
+      "types": "./dist/device/scenario.d.ts",
+      "default": "./dist/device/scenario.js"
+    },
+    "./declared": {
+      "types": "./dist/device/declared.d.ts",
+      "default": "./dist/device/declared.js"
     }
   },
   "dependencies": {
