@@ -33,6 +33,7 @@ NPM_PACKAGES=(
   "bdd-vitest|bdd-vitest|bdd-vitest|bdd-vitest|check"
   "mnemonic-id|mnemonic-id|mnemonic-id|mnemonic-id|check"
   "cli|cli|cli|v1d-cli|check"
+  "push|push|push|v1d-push|check"
 )
 
 PUBLISHER="publish-maven"
