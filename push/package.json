@@ -1,6 +1,6 @@
 {
   "name": "@v1d/push",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "description": "The push protocol's shared command: npm run push takes a tree's HEAD to master through one line on the host, gates before the line, one commit a push with its mark, a check on the tip that takes its push back when the same check is red twice, and a pre-push hook that refuses a code push the command did not start; its lint says a repository that has not got it",
   "type": "module",
   "bin": {
