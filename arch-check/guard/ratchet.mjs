@@ -33,6 +33,8 @@ export function ratchetFaults(root, config, baseline, { decisions = [], counts }
       if (oldRule.kind !== rule.kind && !licensed(`${rule.id}:kind`)) red.push(`${rule.id}: kind ${oldRule.kind} became ${rule.kind}; name it in ${DECISIONS} (ceilings ${rule.id}:kind: 1)`);
       if (JSON.stringify(rule.skip ?? null) !== JSON.stringify(oldRule.skip ?? null) && !licensed(`${rule.id}:skip`)) red.push(`${rule.id}: the files it leaves out (skip) changed; name it in ${DECISIONS} (ceilings ${rule.id}:skip: 1)`);
       if (BOUNDED.includes(rule.kind) && rule.kind === oldRule.kind) {
+        if ((rule.count ?? null) !== (oldRule.count ?? null) && !licensed(`${rule.id}:count`))   // what a line is (all, or code) changes the bar either way
+          red.push(`${rule.id}: count ${oldRule.count ?? 'lines'} became ${rule.count ?? 'lines'}; name it in ${DECISIONS} (ceilings ${rule.id}:count: 1)`);
         if (rule.max > oldRule.max && !licensed(`${rule.id}:max`, rule.max)) red.push(`${rule.id}: max ${rule.max} raises ${ref}'s ${oldRule.max}; name it in ${DECISIONS} (ceilings ${rule.id}:max: ${rule.max})`);
         for (const entry of rule.exclude ?? []) if (!(oldRule.exclude ?? []).includes(entry) && !licensed(`${rule.id}:exclude:${entry}`))
           red.push(`${rule.id}: ${entry} is now left out of the rule; name it in ${DECISIONS} (ceilings ${rule.id}:exclude:${entry}: 1)`);

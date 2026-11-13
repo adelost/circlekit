@@ -195,6 +195,8 @@ try {
     const faults = (next, baseline = {}, decisions = []) => ratchetFaults(repo, next, baseline, {decisions}).join("\n"), decided = (ceilings, extra = {}) => ({who: "gate", when: "2026-11-08T00:00Z", message: "check", ceilings, ...extra});
     if (!/R: rule removed/.test(faults({...config, rules: [config.rules[1]]}))) throw new Error("ratchet: a removed rule needs a decision");
     if (!/R: max 99 raises/.test(faults({...config, rules: [{...config.rules[0], max: 99}, config.rules[1]]})) || faults({...config, rules: [{...config.rules[0], max: 99}, config.rules[1]]}, {}, [decided({"R:max": 99})])) throw new Error("ratchet: a higher max needs a decision, and a decision for it is enough");
+    const coded = {...config, rules: [{...config.rules[0], count: "code"}, config.rules[1]]};   // what a line is changes the bar: a decision names it
+    if (!/R: count lines became code/.test(faults(coded)) || faults(coded, {}, [decided({"R:count": 1})])) throw new Error("ratchet: a changed count needs a decision");
     if (!/R: it was hard|R: .* left out/.test(faults({...config, rules: [{...config.rules[0], exclude: ["a/x"]}, config.rules[1]]}))) throw new Error("ratchet: an excluded file needs a decision");
     const widened = {...config, rules: [config.rules[0], {...config.rules[1], modules: [{dir: "ts/a", imports: ["ts/b"]}]}]};
     if (!/may now import ts\/b/.test(faults(widened)) || faults(widened, {}, [decided({"T:import:ts/a>ts/b": 1})])) throw new Error("ratchet: a widened dependency needs a decision, and a decision for it is enough");
@@ -337,6 +339,26 @@ try {
       process.env.ARCH_TOUCHED = "off";
       const released = await touchedFaults(repo, tc).finally(() => delete process.env.ARCH_TOUCHED);
       if (released.red.length || released.told.length) throw new Error(`touched: a release does not hold the touched files: ${JSON.stringify(released)}`);
+      // Cut push-protocol-14 to -16: a cap counts code, code moved out of a file over split.from lands at split.lands or under, a deletion is free and
+      // gets a note from split.from, and a new file's name matches newNames
+      const code = n => Array.from({length: n}, (_, i) => `export const c${i} = ${i};\n`).join(""), air = "// a comment\n".repeat(10) + "\n".repeat(5);
+      git("checkout", "-q", "tc/b.js"); gput("sp/big.js", air + code(30)); git("add", "sp/big.js"); git("commit", "-qm", "sp");
+      const sp = {id: "SP", name: "sp", kind: "max-lines", count: "code", files: ["sp/**"], max: 40, split: {from: 25, lands: 20}, fix: "move one responsibility"};
+      const spc = {rules: [sp], touched: {rules: [], files: ["sp/**"], newNames: {pattern: "^(?!(?:.*[-_])?(?:helpers?|utils?)\\.)[^\\d]*$", fix: "name it"}}};
+      const counted = await check(repo, {rules: [{...sp, max: 20}]}, {});
+      if (!counted.red.some(line => line.includes("sp/big.js:1 30 lines of code (46 lines), max 20"))) throw new Error(`count code: ${counted.red.join(" | ")}`);
+      gput("sp/big.js", air + code(25)); gput("sp/moved-part.js", code(5)); git("add", "sp/moved-part.js");
+      const split = await touchedFaults(repo, spc);
+      if (split.red.length !== 1 || !/^split: sp\/big\.js went from 30 to 25 lines of code .* while sp\/moved-part\.js grew; .* lands at 20 or under\. Fix: move/.test(split.red[0]))
+        throw new Error(`split: a move out of a file over 25 that leaves it over 20 is red: ${JSON.stringify(split)}`);
+      git("rm", "-qf", "sp/moved-part.js");
+      const cut = await touchedFaults(repo, spc);
+      if (cut.red.length || !/^note: sp\/big\.js has 25 lines of code/.test(cut.told[0] ?? "")) throw new Error(`split: a deletion is free, with a note: ${JSON.stringify(cut)}`);
+      git("checkout", "-q", "sp/big.js"); gput("sp/helpers.js", code(1)); gput("sp/part2.js", code(1)); git("add", "sp/helpers.js", "sp/part2.js");
+      const junk = await touchedFaults(repo, spc);
+      if (junk.red.length !== 2 || !junk.red.every(line => /^names: sp\/(helpers|part2)\.js is a new file named .*\. Fix: name it$/.test(line)))
+        throw new Error(`names: a new helpers.js and a name with a number are red: ${JSON.stringify(junk)}`);
+      git("rm", "-qf", "sp/helpers.js", "sp/part2.js");
       rmSync(join(repo, "st"), {recursive: true, force: true}); rmSync(join(repo, "node_modules"));
     }
     // Cut row 1868: a decision whose until has passed is red while a key it names stands; a later until carries the key, a gone key frees it

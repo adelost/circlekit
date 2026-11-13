@@ -2,7 +2,7 @@
 // baseline, the files within NEAR lines of a max-lines limit, the entries that grew since the commit a day older with the decision that allows each, and
 // every decision's key with its until. It reads the commit from git, never the disk: what is pushed is what counts, and a cron needs no checkout.
 import {execFileSync} from "node:child_process";
-import {lineCount, matcher} from "./rules.mjs";
+import {codeLineCount, lineCount, matcher} from "./rules.mjs";
 import {SKIPPED} from "./repo-node.mjs";
 
 /** A file this many lines under its max-lines limit, or closer, is near it: 148 to 150 under 150, as an editor numbers them (lineCount). The max-lines
@@ -36,7 +36,8 @@ export function reportOf(root, {rev = "HEAD", since, repo = null, now = new Date
       return {id: rule.id, name: rule.name ?? null, what: rule.what ?? null, why: rule.why ?? null, fix: rule.fix ?? null,
         total: rule.report ? null : mine.reduce((sum, [, n]) => sum + n, 0), top: mine.slice(0, TOP).map(([key, n]) => ({key, n}))};
     }),
-    near: sized.flatMap(([rule, covered]) => covered.map(file => ({file, lines: lineCount(texts.get(file)), limit: rule.max})))
+    near: sized.flatMap(([rule, covered]) => covered.map(file => ({file,
+      lines: rule.count === "code" ? codeLineCount(texts.get(file), file) : lineCount(texts.get(file)), limit: rule.max})))
       .filter(one => one.lines <= one.limit && one.lines >= one.limit - NEAR).sort((a, b) => b.lines - a.lines || a.file.localeCompare(b.file)),
     grew: !then ? [] : Object.entries(baseline).filter(([key, n]) => had.has(key.slice(0, key.indexOf(":"))) && n > (then[key] ?? 0)).map(([key, to]) => {
       const by = granted.findLast(one => one.key === key && one.n >= to);

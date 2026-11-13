@@ -10,7 +10,7 @@ import {nodeRepo, SKIPPED} from "./repo-node.mjs";
 import {reportOf} from "./report.mjs";
 import {storyKinds} from "./story.mjs";
 
-export {generated, KEY_NAMES, matcher, MODAL, noteless, PROVIDERS} from "./rules.mjs";
+export {codeLineCount, generated, KEY_NAMES, matcher, MODAL, noteless, PROVIDERS} from "./rules.mjs";
 
 /** The one grammar authority for WHAT: and WHY: is AMUX's core/contract-lint.mjs. Its checkout is named by the caller (--amux-root, then $AMUX_ROOT, then the amux on PATH), never by arch.config.json,
  *  so a config cannot make this tool run a module of its choosing. Without AMUX a contract rule stops the run: it never passes. */
