@@ -6,6 +6,7 @@ Rules as data in `arch.config.json`; old debt as counts in `arch.baseline.json` 
     node arch-check.mjs [repo] --init     write the baseline from today's counts (first time only; refused once it has entries)
     node arch-check.mjs [repo] --lower    lower the baseline to today's counts; never raises
     --today YYYY-MM-DD                    read each rule's failsFrom against this day (0.18.0), to see a told rule as it will fail
+    --sums                                the rules that count over many files alone (max-files, max-module-lines, count), for a push's place after a clean rebase over other code (0.20.0)
     --amux-root DIR                       where AMUX is, for a `contract` rule (else $AMUX_ROOT, else the amux on PATH)
 
 A hit reads `rule N name: file:line message. Fix: ...`.

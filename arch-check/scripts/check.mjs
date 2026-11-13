@@ -13,6 +13,7 @@ import {ratchetFaults} from "../guard/ratchet.mjs";
 import {architectureGuard, architecturePolicy, decisionFaults, expiredFaults} from "../guard/policy.mjs";
 import {pushedTips} from "../guard/export.mjs";
 import {touchedFaults} from "../guard/touched.mjs";
+import {sumFaults} from "../guard/run.mjs";
 import {fixStory} from "../story-fix.mjs";
 import {lint} from "../web.mjs";
 import {reportOf} from "../report.mjs";
@@ -71,6 +72,12 @@ try {
     throw new Error(`max-module-lines: only mods/big is over, by 20: ${modules.join(" | ")}`);
   const tighter = await check(root, {rules: [{...rules.find(rule => rule.id === 16), caps: {"mods/capped": 49}}]});
   if (!tighter.red.some(line => line.includes("mods/capped:1 50 lines in its 1 files, max 49"))) throw new Error("max-module-lines: a module over its own cap is red");
+  // --sums (Cut row 2607): mods/big's two files of 30 lines are each under 40 and over it together; a rule of one file is not run, a stale key is not red
+  const sums = await sumFaults(root, {rules}, {});
+  if (!sums.some(line => line.includes("mods/big:1 60 lines in its 2 files, max 40")) || sums.some(line => line.startsWith("rule 11 ")))
+    throw new Error(`--sums: the module over its cap and no rule of one file: ${sums.join(" | ")}`);
+  if ((await sumFaults(root, {rules: rules.filter(rule => rule.id === 16)}, {"16:mods/big": 25})).length)
+    throw new Error("--sums: a baseline key that could shrink is --lower's, not red");
   const hashed = red.filter(line => line.startsWith("rule 17 ")).map(line => line.match(/hash\/\S+:\d+/)[0]).sort().join(" ");
   if (hashed !== "hash/a.css:1 hash/a.css:3 hash/b.py:2 hash/c.js:3")
     throw new Error(`pattern: a line that starts with # is code in CSS and JS, a comment in Python; // and /* are comments everywhere: ${hashed}`);

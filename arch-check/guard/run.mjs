@@ -5,6 +5,7 @@
 //   --lower           lower the baseline to today's counts; never raises
 //   --today <day>     read each rule's failsFrom against this day (YYYY-MM-DD), to see a told rule as it will fail
 //   --fix [files]     move whole functions for story-order and stepdown in the named files, else in the files changed against HEAD; changes no line
+//   --sums            the rules that count over many files alone (sumFaults), for a push's place after a clean rebase over other code
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { execFileSync } from 'node:child_process';
@@ -12,6 +13,9 @@ import { check, matcher } from '../arch-check.mjs';
 import { architectureGuard } from './policy.mjs';
 import { DECISIONS, ratchetFaults } from './ratchet.mjs';
 import { touchedFaults } from './touched.mjs';
+
+/** The kinds whose count reads many files at once: a folder's files, a module's lines, a pattern's count over the tree (0.20.0). */
+const SUM_KINDS = ['max-files', 'max-module-lines', 'count'];
 
 /** The kinds the guard itself reads, each over the modules of the modules rule its `of` names (0.12.0): sandbox.mjs and doors.mjs. */
 const GUARD_KINDS = ['sandbox', 'lazy-imports', 'door-names', 'other-doors'];
@@ -22,6 +26,11 @@ export async function runGuard({ root, args = [] }) {
   if (missing.length) { console.error(missing.join('\n')); return 1; }
   const config = JSON.parse(readFileSync(join(root, 'arch.config.json'), 'utf8')), path = join(root, config.baseline), baseline = JSON.parse(readFileSync(path, 'utf8'));
   if (args.includes('--fix')) return fix(root, config, args.slice(args.indexOf('--fix') + 1).filter(arg => !arg.startsWith('--')));
+  if (args.includes('--sums')) {
+    const red = await sumFaults(root, config, baseline);
+    if (red.length) console.error(red.join('\n'));
+    return red.length ? 1 : 0;
+  }
   const decisions = existsSync(join(root, DECISIONS)) ? JSON.parse(readFileSync(join(root, DECISIONS), 'utf8')) : [], first = args.includes('--init');
   const today = args.includes('--today') ? args[args.indexOf('--today') + 1] : undefined;   // the day a rule's failsFrom is read against, today by default
   if (first && Object.keys(baseline).length) { console.error('arch-check: the existing baseline only shrinks; use --lower'); return 1; }
@@ -81,6 +90,15 @@ export async function runGuard({ root, args = [] }) {
   const reported = Object.entries(built.reported ?? {}), told = config.rules.filter(r => r.report).map(r => `${r.id} ${reported.filter(([key]) => key.startsWith(`${r.id}:`)).reduce((sum, [, n]) => sum + n, 0)}`);
   console.log(`arch-check: ${config.rules.length} rules hold; baseline ${Object.keys(baseline).length} exceptions (${Object.values(baseline).reduce((sum, n) => sum + n, 0)} units)${told.length ? `; reported, not red: ${told.join(", ")}` : ""}`);
   return 0;
+}
+
+/** --sums (0.20.0, Cut row 2607): two pushes each under a cap that counts over many files can be over it together, and a clean rebase keeps each one's
+ *  verdict; the push runs these rules alone on the rebased tree, in its place (Cut: 0.2 s, the whole guard 17 s). A baseline key that could shrink is
+ *  --lower's, which the push's tidy runs before its gates, so only a rule's own hit is red here. */
+export async function sumFaults(root, config, baseline) {
+  const rules = config.rules.filter(rule => SUM_KINDS.includes(rule.kind)), ids = rules.map(rule => `${rule.id}:`);
+  const kept = Object.fromEntries(Object.entries(baseline).filter(([key]) => ids.some(id => key.startsWith(id))));
+  return (await check(root, { ...config, rules }, kept)).red.filter(line => line.startsWith('rule '));
 }
 
 /** --fix: the story moves in the named files, else in the files changed against HEAD (the tidy commit's files), each told. */
