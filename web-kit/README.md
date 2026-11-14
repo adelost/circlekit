@@ -62,6 +62,10 @@ Each UI part has an example file in `dist/` (`search-field.example.js`, `filter-
 
 `import { productMark, markFontFace, MARKS } from "@v1d/web-kit/mark"`: `productMark(undefined, MARKS.api)` is the badge as markup (v1d and the chip; its size is its parent's font-size, the name is 1em; the colours are tokens of `tokens.css`), `markFontFace(url, MARKS.api)` the `@font-face` rule of its font, and `appIconSvg(resolve, { rounded: true }, MARKS.api)` the app icon as an svg. `MARKS` holds `cut` (a film strip), `api` (a cloud) and `kit` (a brick with studs); the name, the gap, the chip's height and the word's size are the same in all three. Each product's font is `fonts/<MARKS.api.font.file>` and its icons (`icon.svg`, `apple-touch-icon.png`, `favicon-16.png`, `favicon-32.png`, `icon-192.png`, `icon-512.png`, `icon-maskable-512.png`) lie in `icons/api/` (`cut`, `kit`): the manifest exports both folders, so `@v1d/web-kit/fonts/<file>` and `@v1d/web-kit/icons/api/icon.svg` reach them; copy them to where the page serves its own.
 
+## Ready updates (0.115.0)
+
+`updateReady({ size: "sign" | "badge" | "row", onpress })` draws a green up-arrow in a ring, the sign with Update, or an Update ready row with Reload. Apps own version detection and what the press does. A row can take `under` and app-owned `actions` for recovery choices.
+
 ## Versions
 
 A page that moves from one version to another reads every line between them. From 0.36.0 each line ends in `Changed calls:`, which is `none.` or each call that changed against the version before it (the part, its call as it is now, and what a caller does); the release gate (`npm run check`) refuses a version whose line does not, and a line that says only `none.` while a `.d.ts` file of dist differs from the last published version's (comments and white space left out), naming the file; a line that lists calls passes whatever differs.
@@ -73,6 +77,7 @@ A page that moves from one version to another reads every line between them. Fro
 - 0.6.0: a song's data from an audio file (`song_data`: `songData`), with types.
 - 0.7.0: `boxMeter`; `filterChips` gets `words` and `size: "small"`; the time view's + - and Fit are a row of their own under its rows and 44 px under a finger; the search field draws one focus ring, not a second from a page's `input:focus-visible`.
 - 0.8.0: `filterChips` keeps the count at every width (the word is the tooltip's when the room is narrow), and `iconOnly` means icons alone only where it is set; before, a chip on a phone lost its count.
+- 0.115.0: from Cutkit 95238db67 (2026-11-14). Ready updates share three sizes and an app-owned press. Changed calls: new `updateReady({ size, onpress, label, action, under, actions, className })`.
 - 0.114.0: from Cutkit 08a2de6e5 (2026-11-14). The world prepares imagery away from the drawing thread; flight scenes fit the whole view and keep the correct layer on view changes. Changed calls: `worldScene` accepts an optional `placeName`; `WorldPicture` accepts optional `edgePixels` for empty polar rows.
 - 0.113.0: from Cutkit dcea56088 (2026-11-14). Sized buttons have a compact face and a 44 px touch target; a tool's Done is toned. Changed calls: none.
 - 0.112.0: from Cutkit fcdb1c27f (2026-11-14). Player cleanup releases its observers and the phone example shows the shared player. Changed calls: `jumpPlayer` returns `destroy()`.
