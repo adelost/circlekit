@@ -70,6 +70,8 @@ Each UI part has an example file in `dist/` (`search-field.example.js`, `filter-
 
 ## Versions
 
+- 0.152.0: from Cutkit 7da1ff45b (2026-11-14). A flight scene's first person can turn by a recorded body (Skyvw row 72). Changed calls: `flightScene({ body })` takes the first flight's `{ t, heading, pitch, roll, worn, margin }`; with it, first person shows Free and Body low right and a foot with the source and margin, and a finger on the picture goes back to Free. Leaving `body` out keeps today's behaviour.
+
 - 0.151.0: from Cutkit d112bc5be (2026-11-14). A film's needle takes one switch, its frame rate: the ruler on frames, a press, a drag and a step on the nearest frame, and under the lanes − 1 frame, the frame clock with the frame's number and + 1 frame (Cut 2814). Changed calls: `TimeNeedle` takes `fps`, refused beside `step`, `snap` or `label`; with it `setStep` is refused.
 - 0.150.0: from Cutkit 5a5ef5920 (2026-11-14). Finder labels its simulated standard-4000 camera tracks, estimated start and archived wind model. Changed calls: `flightScene` accepts `reaches`, `reach`, `onreach`, `layers`, `onlayers`, `source` and `sources`; `ground` is optional with reaches and `moment.cover` is optional. `tiltGesture` is removed: one finger always turns and tilts. `sunCourse(place, day)` and `moonAt(place, epoch)` return the celestial directions, and `sunArc({ place, at, cover })` draws them with an `update` method.
 
