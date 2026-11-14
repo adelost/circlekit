@@ -70,6 +70,7 @@ Each UI part has an example file in `dist/` (`search-field.example.js`, `filter-
 
 ## Versions
 
+- 0.145.0: from Cutkit 5b0570eff (2026-11-14). Finder shows an Everöd blind case with timed frames, a ground bearing and a sealed truth. Changed calls: `finder` now takes case data, scene and time-needle factories, and returns `dispose`; `frameMatch` accepts `tracked` and uses drag, pinch and tap.
 - 0.140.0: from Cutkit 7215c07ce (2026-11-14). The body bench's posture words stay inside their own span, with a gap between spans. Changed calls: none.
 
 - 0.139.0: from Cutkit ffcc316a2 (2026-11-14). Examples only: the jump log and jump player show three real jumps (wingsuit, head-down, hop and pop) read by Skyvw's recorder from openly licensed FlySight tracks, each with its source, licence and the file's GPS and height accuracy, and a simulated belly jump; the jump player and flight scene show a simulated group of three wingsuit flyers out of one exit, with their distance apart. The tracks' licences travel in `lib/example-flights.js`. Changed calls: none.
