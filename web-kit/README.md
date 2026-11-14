@@ -78,6 +78,7 @@ Each UI part has an example file in `dist/` (`search-field.example.js`, `filter-
 
 ## Versions
 
+- 0.168.0: from Cutkit 2b85633d0 (2026-11-14). `TimeNeedle`'s `detachSteps()` hands the step line (− 1 frame, the clock, + 1 frame) to the page to stand where it does not scroll; `clipRow` draws a clip narrower than one picture as a block with its name or number (Cut 2814). Changed calls: `TimeNeedle` returns `detachSteps`.
 - 0.161.0: from Cutkit e0aac793e (2026-11-14). A time view's row can write its words after the needle (`words(g, scope)`), and `spanRow` writes its names there on the block's own colour, so the needle and the orange and red marks stop at the words; a film needle's clock is short, `0:08:06 · 246/1800`, one line between − 1 frame and + 1 frame at 390 (Cut 2814). Changed calls: a `TimeView` row takes optional `words`; `blockWords` is new beside `paintBlock`, which takes `words: false`.
 - 0.158.0: from Cutkit cbe9dddb2 (2026-11-14). A player below the picture keeps its full time clear of the controls; on a narrower row the controls wrap. Changed calls: none.
 
