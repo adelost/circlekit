@@ -24,6 +24,8 @@ A page sets its own values after the kit's, for example `:root { --bg: #101114; 
 
 Each part is a function that returns a DOM node: no framework and no bundler is needed. Icons are nodes the page gives (any SVG element).
 
+Credit amounts share `formatCredits(value)` for a number and `creditsSaid(value, approx)` for the number and unit. A positive amount below 0.01 says `<0.01`, large amounts get a thousands separator, and an estimate begins with “about”. Both functions are also available from `@v1d/web-kit/credits` without loading the UI parts.
+
 Buttons have three treatments. Use a filled button for one action per view, the thing a person came to do, such as New film, Export or First cut. Use a toned button for other presses, including a tool's Done, Undo and Add more. Use text and an icon in a row or menu. The visible button is 32 px high, small is 28 px, with an 8 px radius; its invisible touch target is at least 44 × 44 px. A filled button fits its content with 12 px padding on each side.
 
 - `searchField({ placeholder, label, icon, onInput, value, id })`: the icon and an input. `onInput(words)` gets the whole text on every change, and Escape clears a field that has text. `label` is the accessible name and defaults to the placeholder. The input is `field.input`.
@@ -77,6 +79,7 @@ A page that moves from one version to another reads every line between them. Fro
 - 0.6.0: a song's data from an audio file (`song_data`: `songData`), with types.
 - 0.7.0: `boxMeter`; `filterChips` gets `words` and `size: "small"`; the time view's + - and Fit are a row of their own under its rows and 44 px under a finger; the search field draws one focus ring, not a second from a page's `input:focus-visible`.
 - 0.8.0: `filterChips` keeps the count at every width (the word is the tooltip's when the room is narrow), and `iconOnly` means icons alone only where it is set; before, a chip on a phone lost its count.
+- 0.120.0: from Cutkit 3889dd2a2 (2026-11-14). Credit amounts have one shared wording. Changed calls: `formatCredits(value)` and `creditsSaid(value, approx)` are new exports, also available through `@v1d/web-kit/credits`.
 - 0.119.0: from Cutkit 3e99ea5ff (2026-11-14). Controls can show a touch at pointerdown even in a scroller. Changed calls: `appFeel(document, { pressed: true })` enables delegated press feedback; `pressFeel(root)` applies it within one document or element. Existing calls remain unchanged until opted in.
 - 0.118.0: from Cutkit 68f60e911 (2026-11-14). Update signs and badges fit their content, and Reload stays in its row. Changed calls: none.
 - 0.117.0: from Cutkit a7fac7440 (2026-11-14). Flight scenes retain cloud and annotation nodes when Sky changes its moment. Changed calls: none.
