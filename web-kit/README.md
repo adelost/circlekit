@@ -70,7 +70,7 @@ Each UI part has an example file in `dist/` (`search-field.example.js`, `filter-
 
 ## Versions
 
-- 0.124.0: from Cutkit 7af523bf8 (2026-11-14). `ringSvg` and `ringIconNames` share Ring icon rendering and the pinned catalogue across apps; `sky` preserves the altimeter's established variants.
+- 0.124.0: from Cutkit 7af523bf8 (2026-11-14). Shares Ring icon rendering and the pinned catalogue across apps; `sky` preserves the altimeter's established variants. Changed calls: `ringSvg(id, size?, className?, variant?)` returns SVG; `ringIconNames()` lists its names.
 
 A page that moves from one version to another reads every line between them. From 0.36.0 each line ends in `Changed calls:`, which is `none.` or each call that changed against the version before it (the part, its call as it is now, and what a caller does); the release gate (`npm run check`) refuses a version whose line does not, and a line that says only `none.` while a `.d.ts` file of dist differs from the last published version's (comments and white space left out), naming the file; a line that lists calls passes whatever differs.
 
