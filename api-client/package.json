@@ -1,6 +1,6 @@
 {
   "name": "@v1d/api-client",
-  "version": "0.13.0",
+  "version": "0.13.1",
   "description": "What the v1d API runs on the person's own device: waveform, encode, cuts and the files store's start and register bodies (WebCodecs and mediabunny), built from the ai-gateway repository's one source",
   "type": "module",
   "main": "./dist/device/index.js",
@@ -158,6 +158,22 @@
     "./find": {
       "types": "./dist/device/find.d.ts",
       "default": "./dist/device/find.js"
+    },
+    "./jump-query": {
+      "types": "./dist/device/jump-query.d.ts",
+      "default": "./dist/device/jump-query.js"
+    },
+    "./jump-facts": {
+      "types": "./dist/device/jump-facts.d.ts",
+      "default": "./dist/device/jump-facts.js"
+    },
+    "./jump-draft": {
+      "types": "./dist/device/jump-draft.d.ts",
+      "default": "./dist/device/jump-draft.js"
+    },
+    "./sky-tops": {
+      "types": "./dist/device/sky-tops.d.ts",
+      "default": "./dist/device/sky-tops.js"
     },
     "./stop": {
       "types": "./dist/device/stop.d.ts",
