@@ -71,6 +71,7 @@ A page that moves from one version to another reads every line between them. Fro
 - 0.6.0: a song's data from an audio file (`song_data`: `songData`), with types.
 - 0.7.0: `boxMeter`; `filterChips` gets `words` and `size: "small"`; the time view's + - and Fit are a row of their own under its rows and 44 px under a finger; the search field draws one focus ring, not a second from a page's `input:focus-visible`.
 - 0.8.0: `filterChips` keeps the count at every width (the word is the tooltip's when the room is narrow), and `iconOnly` means icons alone only where it is set; before, a chip on a phone lost its count.
+- 0.108.0: from Cutkit a51b19443 (2026-11-14). Time-row examples use the phone layout on a phone. Changed calls: `rangeField` accepts an optional `onchange` callback.
 - 0.107.0: from Cutkit 24e6f6cc4 (2026-11-14). Clock rows paint the newest moment once per frame and keep the whole strip still while dragging. Changed calls: `TimeView` accepts `coalesce`; `TimeNeedle.redraw` accepts whether the whole strip needs repainting.
 - 0.106.0: from Cutkit 3902aa4c3 (2026-11-14). The first-person camera stays above the terrain at landing. Changed calls: none.
 - 0.105.0: from Cutkit ce02c761a (2026-11-14). Time rows show curves, cells and bounded bands; touch fits the whole span. Changed calls: `timeStrip` lanes accept a kind, upper value, tones and warning colour; `TimeNeedle` takes `showClock`; `TimeView` takes `fitCentered` and axis origin.
