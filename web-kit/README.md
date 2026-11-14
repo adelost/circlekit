@@ -5,7 +5,7 @@ Cutkit's kit for web pages, published from Cutkit's one source: `tools/studio_st
 This repository holds the manifest and the gate (`npm run check`), never the files.
 
 - 0.167.0: Finder frame matching reads the scene-owned eye and keeps a separate scene per frame; `frameMatch` takes a scene with `getEye()` and reports its eye through `onview`, with `onheight` for untracked cameras. `finder.makeScene` now takes the camera source and frame. The independently reserved 0.166.0 credit additions are not included.
-- 0.166.0: `credits` gains `amountSaid`, a row's amount as its credits at one decimal or why it drew none (Reused, Free, Not charged, Working; never Unknown), with `REASON_WORDS`, `usedCredits` and `tenthCredits` (Cut 2793 with 2830's words). Changed calls: none.
+- 0.166.0: reserved and never published (sandman:0: a later 0.167.0 came first, and latest never goes back); the credit words of Cut 2793 go out in a later version.
 - 0.165.0: a flight scene starts at ground width, offers Jumper and Landing together, and a drag on a celestial mark moves the scene (Cut 2838). Changed calls: none.
 - 0.164.0: a flight scene's sheets keep their head still and scroll only their rows (Cut 2820). Changed calls: none.
 - 0.163.0: a flight scene's foot is one 12 px line of short source names over a soft shade, never clipped; an old source marks the info glyph (Cut 2820, V 8b). Changed calls: none.
