@@ -18,7 +18,7 @@ const walk = dir => readdirSync(dir, { withFileTypes: true }).flatMap(entry => e
 for (const file of walk('dist').filter(name => name.endsWith('.js') || name.endsWith('.mjs') || name.endsWith('.d.ts'))) {
   const imports = file.startsWith('dist/modal-proof/')
     ? /^\s*import\s+(?:[^\n;]*?\s+from\s+)?["']([^"']+)["']/gm
-    : /(?:from\s*|import\s*\(?\s*)["']([^"']+)["']/g;
+    : /(?:(?<!["'\w])from\s*|import\s*\(?\s*)["']([^"']+)["']/g;   // not the word inside a string ('from' as a value)
   const text = readFileSync(file, 'utf8');
   const matches = [...text.matchAll(imports), ...(file.startsWith('dist/modal-proof/') ? text.matchAll(/\bimport\s*\(\s*["']([^"']+)["']/g) : [])];
   for (const match of matches) {
