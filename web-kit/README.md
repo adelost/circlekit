@@ -78,6 +78,7 @@ Each UI part has an example file in `dist/` (`search-field.example.js`, `filter-
 
 ## Versions
 
+- 0.170.0: a flight scene's words near its sources' line give way, so the licence line always stands clear (Cut 2820). Changed calls: none.
 - 0.169.0: a flight scene's foot is text with no press, "Old · " first for an old source; the Layers panel closes on a press outside it (Cut 2820, V 8c). Changed calls: new `sourceList({ sources })`, the rows a flight scene takes as `sources`; the scene has no Sources panel.
 - 0.168.0: from Cutkit 2b85633d0 (2026-11-14). `TimeNeedle`'s `detachSteps()` hands the step line (− 1 frame, the clock, + 1 frame) to the page to stand where it does not scroll; `clipRow` draws a clip narrower than one picture as a block with its name or number (Cut 2814). Changed calls: `TimeNeedle` returns `detachSteps`.
 - 0.161.0: from Cutkit e0aac793e (2026-11-14). A time view's row can write its words after the needle (`words(g, scope)`), and `spanRow` writes its names there on the block's own colour, so the needle and the orange and red marks stop at the words; a film needle's clock is short, `0:08:06 · 246/1800`, one line between − 1 frame and + 1 frame at 390 (Cut 2814). Changed calls: a `TimeView` row takes optional `words`; `blockWords` is new beside `paintBlock`, which takes `words: false`.
