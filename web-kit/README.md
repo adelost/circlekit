@@ -4,6 +4,7 @@ Cutkit's kit for web pages, published from Cutkit's one source: `tools/studio_st
 `dist/` is built by Cutkit's `tools/dev/publish-web-kit.mjs` (it writes `dist/SOURCE.json` with the Cutkit commit and the files) and published through this repository's npm path (`scripts/publish-web-kit.sh X.Y.Z`).
 This repository holds the manifest and the gate (`npm run check`), never the files.
 
+- 0.163.0: a flight scene's foot is one 12 px line of short source names over a soft shade, never clipped; an old source marks the info glyph (Cut 2820, V 8b). Changed calls: none.
 - 0.162.0: flight scenes turn around the selected subject at a constant scale with freely adjustable tilt (Cut 2838). Changed calls: `flightScene` uses `sources` rows with icon, label, credit, short, detail, href and old in place of `source` and `credits`; ground's `shortCredit` and `waiting` are removed (Cut 2820).
 - 0.159.0: skyColumn shows temperatures and the freezing height (Cut 2840). Changed calls: `skyColumn({ levels, zeroAt })` takes optional `temp` in °C per level and `zeroAt` in metres; omit them for the existing appearance.
 
