@@ -79,6 +79,7 @@ A page that moves from one version to another reads every line between them. Fro
 - 0.6.0: a song's data from an audio file (`song_data`: `songData`), with types.
 - 0.7.0: `boxMeter`; `filterChips` gets `words` and `size: "small"`; the time view's + - and Fit are a row of their own under its rows and 44 px under a finger; the search field draws one focus ring, not a second from a page's `input:focus-visible`.
 - 0.8.0: `filterChips` keeps the count at every width (the word is the tooltip's when the room is narrow), and `iconOnly` means icons alone only where it is set; before, a chip on a phone lost its count.
+- 0.121.0: from Cutkit 0d568d81b (2026-11-14). A fault said where its value would stand, from the closed causes of api-client's Read. Changed calls: `faultLine` and `FAULT_CAUSES` are new.
 - 0.120.0: from Cutkit 3889dd2a2 (2026-11-14). Credit amounts have one shared wording. Changed calls: `formatCredits(value)` and `creditsSaid(value, approx)` are new exports, also available through `@v1d/web-kit/credits`.
 - 0.119.0: from Cutkit 3e99ea5ff (2026-11-14). Controls can show a touch at pointerdown even in a scroller. Changed calls: `appFeel(document, { pressed: true })` enables delegated press feedback; `pressFeel(root)` applies it within one document or element. Existing calls remain unchanged until opted in.
 - 0.118.0: from Cutkit 68f60e911 (2026-11-14). Update signs and badges fit their content, and Reload stays in its row. Changed calls: none.
