@@ -71,6 +71,7 @@ A page that moves from one version to another reads every line between them. Fro
 - 0.6.0: a song's data from an audio file (`song_data`: `songData`), with types.
 - 0.7.0: `boxMeter`; `filterChips` gets `words` and `size: "small"`; the time view's + - and Fit are a row of their own under its rows and 44 px under a finger; the search field draws one focus ring, not a second from a page's `input:focus-visible`.
 - 0.8.0: `filterChips` keeps the count at every width (the word is the tooltip's when the room is narrow), and `iconOnly` means icons alone only where it is set; before, a chip on a phone lost its count.
+- 0.102.0: from Cutkit f7d5d05e9 (2026-11-14). The first-person ground fades into the sky without a rectangular seam. Changed calls: none.
 - 0.101.0: from Cutkit 84bc54621 (2026-11-14). The first-person replay example also offers the 3 km circle. Changed calls: none.
 - 0.100.0: from Cutkit 4f202d494 (2026-11-14). The first-person replay example can show the horizon. Changed calls: `groundFor` accepts the `horizon` reach; `worldScene` is new.
 - 0.98.0: from Cutkit 53b1b1cff (2026-11-14). A first-person jump view with real perspective. Changed calls: `flightScene` accepts `eyesGrounds`, `eyesReach` and an `eyes` follow mode.
