@@ -77,6 +77,7 @@ A page that moves from one version to another reads every line between them. Fro
 - 0.6.0: a song's data from an audio file (`song_data`: `songData`), with types.
 - 0.7.0: `boxMeter`; `filterChips` gets `words` and `size: "small"`; the time view's + - and Fit are a row of their own under its rows and 44 px under a finger; the search field draws one focus ring, not a second from a page's `input:focus-visible`.
 - 0.8.0: `filterChips` keeps the count at every width (the word is the tooltip's when the room is narrow), and `iconOnly` means icons alone only where it is set; before, a chip on a phone lost its count.
+- 0.116.0: from Cutkit 740e6db2e (2026-11-14). A scene view press leaves the playback controls quiet. Changed calls: `faceTaps` accepts `ignoreControls`.
 - 0.115.0: from Cutkit 8173efaae (2026-11-14). Ready updates share three sizes and an app-owned press; scene players size their pictures and leave controls quiet. Changed calls: new `updateReady({ size, onpress, label, action, under, actions, className })`; `onePlayer` accepts `roomAspect` and `roomTime`; `jumpPlayer` accepts `scene`.
 - 0.114.0: from Cutkit 08a2de6e5 (2026-11-14). The world prepares imagery away from the drawing thread; flight scenes fit the whole view and keep the correct layer on view changes. Changed calls: `worldScene` accepts an optional `placeName`; `WorldPicture` accepts optional `edgePixels` for empty polar rows.
 - 0.113.0: from Cutkit dcea56088 (2026-11-14). Sized buttons have a compact face and a 44 px touch target; a tool's Done is toned. Changed calls: none.
