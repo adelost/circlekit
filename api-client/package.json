@@ -1,6 +1,6 @@
 {
   "name": "@v1d/api-client",
-  "version": "0.15.0",
+  "version": "0.16.0",
   "description": "What the v1d API runs on the person's own device: waveform, encode, cuts and the files store's start and register bodies (WebCodecs and mediabunny), built from the ai-gateway repository's one source",
   "type": "module",
   "main": "./dist/device/index.js",
@@ -178,6 +178,14 @@
     "./sky-tops": {
       "types": "./dist/device/sky-tops.d.ts",
       "default": "./dist/device/sky-tops.js"
+    },
+    "./sky-reads": {
+      "types": "./dist/device/sky-reads.d.ts",
+      "default": "./dist/device/sky-reads.js"
+    },
+    "./kept-read": {
+      "types": "./dist/device/kept-read.d.ts",
+      "default": "./dist/device/kept-read.js"
     },
     "./sky-moment": {
       "types": "./dist/device/sky-moment.d.ts",
