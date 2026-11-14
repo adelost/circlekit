@@ -78,6 +78,7 @@ Each UI part has an example file in `dist/` (`search-field.example.js`, `filter-
 
 ## Versions
 
+- 0.174.0: Finder shows photo marks, the whole jump timeline and two open cases with the shared flight-scene layers (Cut 2809). Changed calls: `flightScene({ marks, onmark, compactTools })` draws world marks and reports presses; Finder map factories take these marks; TimeView and TimeNeedle accept optional whole-time and fitting controls.
 - 0.173.0: the flight scene's layers sheet in the order Real light, Clouds, Wind, Ground photo, Sun and moon, Exit, Aircraft (Cut 2820). Changed calls: none.
 - 0.172.0: a flight scene's foot leaves out a source whose layer is off, and the layers' rows are 44 px (Cut 2820). Changed calls: a source row may name its `layer` ("photo", "cloud").
 - 0.171.0: a flight scene's layers sheet has seven rows (Ground photo and Sun and moon added), and the choice is the kit's, the same in every scene and kept in the page's storage (Cut 2820). Changed calls: `flightScene({ layers })` takes the list of offered layer ids; new `keepSceneLayers(storage)`, `sceneLayers()`, `setSceneLayer(id, on)`, `onSceneLayers(listen)`.
