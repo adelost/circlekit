@@ -70,6 +70,7 @@ Each UI part has an example file in `dist/` (`search-field.example.js`, `filter-
 
 ## Versions
 
+- 0.146.0: from Cutkit b5967590f (2026-11-14). A span row can light the block the needle stands on (`spanRow(spans, { needle: true })`, the row's scope carries `playhead`), the step row hides its arrow keys' hint on a touch screen, and the film frame clock is exported (`frameWords`, `frameClock`) (Cut 2796). Changed calls: `spanRow` takes `needle`; a row's `draw` scope has `playhead`.
 - 0.145.0: from Cutkit 5b0570eff (2026-11-14). Finder shows an Everöd blind case with timed frames, a ground bearing and a sealed truth. Changed calls: `finder` now takes case data, scene and time-needle factories, and returns `dispose`; `frameMatch` accepts `tracked` and uses drag, pinch and tap.
 - 0.140.0: from Cutkit 7215c07ce (2026-11-14). The body bench's posture words stay inside their own span, with a gap between spans. Changed calls: none.
 
