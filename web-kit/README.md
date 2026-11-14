@@ -70,6 +70,7 @@ Each UI part has an example file in `dist/` (`search-field.example.js`, `filter-
 
 ## Versions
 
+- 0.126.0: from Cutkit 2d9f105a7 (2026-11-14). Keeps the flight scene's pivot steady while turning and settles tilt at three views. Changed calls: none.
 - 0.125.0: from Cutkit dc7477517 (2026-11-14). Shares clock and local date formatting. Changed calls: `clockSaid(seconds, precise?)` and `dateSaid(at)` are new exports.
 - 0.124.0: from Cutkit 7af523bf8 (2026-11-14). Shares Ring icon rendering and the pinned catalogue across apps; `sky` preserves the altimeter's established variants. Changed calls: `ringSvg(id, size?, className?, variant?)` returns SVG; `ringIconNames()` lists its names.
 
