@@ -70,7 +70,7 @@ Each UI part has an example file in `dist/` (`search-field.example.js`, `filter-
 
 ## Versions
 
-- 0.132.0: from Cutkit aa5227a79 (2026-11-14). Adds an update row for an app’s layout above its tab bar. Changed calls: `updateReady({ size: "bar", onpress })` says New version ready with Update; omit `onpress` and supply `label` to defer the update without a button. Existing sign, badge and menu row calls keep their behaviour.
+- 0.133.0: from Cutkit aa5227a79 (2026-11-14). Adds an update row for an app’s layout above its tab bar. Changed calls: `updateReady({ size: "bar", onpress })` says New version ready with Update; omit `onpress` and supply `label` to defer the update without a button. Existing sign, badge and menu row calls keep their behaviour.
 
 - 0.131.0: from Cutkit a716ac5c4 (2026-11-14). Finder adds a synthetic two-camera blind bench with an encrypted truth. Changed calls: `groundMarks(options)` draws pins and a wind corridor; `frameMatch(options)` aligns a frame with a supplied scene; `finder(options)` combines them with supplied geometry and case data.
 
