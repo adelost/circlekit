@@ -5,7 +5,7 @@ Cutkit's kit for web pages, published from Cutkit's one source: `tools/studio_st
 This repository holds the manifest and the gate (`npm run check`), never the files.
 
 - 0.167.0: Finder frame matching uses the scene-owned eye and keeps a separate scene per frame. Changed calls: `frameMatch({ scene, onview, onheight })` takes a scene with `getEye()`, reports its eye and reports untracked camera height to the caller; `finder({ makeScene })` calls the factory with the camera source and frame.
-- 0.166.0: reserved and never published (sandman:0: a later 0.167.0 came first, and latest never goes back); the credit words of Cut 2793 go out in a later version.
+- 0.166.0: reserved and never published (sandman:0: a later 0.167.0 came first, and latest never goes back); the credit words of Cut 2793 go out in 0.175.0.
 - 0.165.0: a flight scene starts at ground width, offers Jumper and Landing together, and a drag on a celestial mark moves the scene (Cut 2838). Changed calls: none.
 - 0.164.0: a flight scene's sheets keep their head still and scroll only their rows (Cut 2820). Changed calls: none.
 - 0.163.0: a flight scene's foot is one 12 px line of short source names over a soft shade, never clipped; an old source marks the info glyph (Cut 2820, V 8b). Changed calls: none.
@@ -78,6 +78,7 @@ Each UI part has an example file in `dist/` (`search-field.example.js`, `filter-
 
 ## Versions
 
+- 0.175.0: the credit words carry a row's amount and its reason, as 2830's Credits door says them (Cut 2793). Changed calls: new `amountSaid({ reason, credits })` says the credits at one decimal for drawn and Reused, Free, Not charged or Working otherwise, and throws on an unknown reason; new `REASON_WORDS`, `usedCredits(credits)`, `tenthCredits(credits)`.
 - 0.174.0: Finder shows photo marks, the whole jump timeline and two open cases with the shared flight-scene layers (Cut 2809). Changed calls: `flightScene({ marks, onmark, compactTools })` draws world marks and reports presses; Finder map factories take these marks; TimeView and TimeNeedle accept optional whole-time and fitting controls.
 - 0.173.0: the flight scene's layers sheet in the order Real light, Clouds, Wind, Ground photo, Sun and moon, Exit, Aircraft (Cut 2820). Changed calls: none.
 - 0.172.0: a flight scene's foot leaves out a source whose layer is off, and the layers' rows are 44 px (Cut 2820). Changed calls: a source row may name its `layer` ("photo", "cloud").
