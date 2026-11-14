@@ -4,7 +4,7 @@ Cutkit's kit for web pages, published from Cutkit's one source: `tools/studio_st
 `dist/` is built by Cutkit's `tools/dev/publish-web-kit.mjs` (it writes `dist/SOURCE.json` with the Cutkit commit and the files) and published through this repository's npm path (`scripts/publish-web-kit.sh X.Y.Z`).
 This repository holds the manifest and the gate (`npm run check`), never the files.
 
-- 0.167.0: Finder frame matching reads the scene-owned eye and keeps a separate scene per frame; `frameMatch` takes a scene with `getEye()` and reports its eye through `onview`, with `onheight` for untracked cameras. `finder.makeScene` now takes the camera source and frame. The independently reserved 0.166.0 credit additions are not included.
+- 0.167.0: Finder frame matching uses the scene-owned eye and keeps a separate scene per frame. Changed calls: `frameMatch({ scene, onview, onheight })` takes a scene with `getEye()`, reports its eye and reports untracked camera height to the caller; `finder({ makeScene })` calls the factory with the camera source and frame.
 - 0.166.0: reserved and never published (sandman:0: a later 0.167.0 came first, and latest never goes back); the credit words of Cut 2793 go out in a later version.
 - 0.165.0: a flight scene starts at ground width, offers Jumper and Landing together, and a drag on a celestial mark moves the scene (Cut 2838). Changed calls: none.
 - 0.164.0: a flight scene's sheets keep their head still and scroll only their rows (Cut 2820). Changed calls: none.
