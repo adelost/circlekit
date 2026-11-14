@@ -70,6 +70,8 @@ Each UI part has an example file in `dist/` (`search-field.example.js`, `filter-
 
 ## Versions
 
+- 0.154.0: from Cutkit b3079f26d (2026-11-14). A flight scene inside a page's panel takes a finger again (only a press or panel on the stage is its own). Changed calls: none.
+
 - 0.153.0: from Cutkit cb616768b (2026-11-14). A film's needle (`TimeNeedle` with `fps`) stands in the middle of the frame under it, so a picture sought there shows that frame, and its clock names that frame (Cut 2814). Changed calls: none.
 - 0.152.0: from Cutkit 7da1ff45b (2026-11-14). A flight scene's first person can turn by a recorded body (Skyvw row 72). Changed calls: `flightScene({ body })` takes the first flight's `{ t, heading, pitch, roll, worn, margin }`; with it, first person shows Free and Body low right and a foot with the source and margin, and a finger on the picture goes back to Free. Leaving `body` out keeps today's behaviour.
 
