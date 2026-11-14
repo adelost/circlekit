@@ -70,6 +70,7 @@ Each UI part has an example file in `dist/` (`search-field.example.js`, `filter-
 
 ## Versions
 
+- 0.128.0: from Cutkit 2eb421fd0 (2026-11-14). Keeps a raw choice for a visit when app-supplied storage is unavailable. Changed calls: `keptChoice({ key, fallback, valid, storage })` is a new export.
 - 0.127.0: from Cutkit 376437bc4 (2026-11-14). Fits a flight scene independently of its turn so a fitted view rotates without sliding. Changed calls: none.
 - 0.126.0: from Cutkit 2d9f105a7 (2026-11-14). Keeps the flight scene's pivot steady while turning and settles tilt at three views. Changed calls: none.
 - 0.125.0: from Cutkit dc7477517 (2026-11-14). Shares clock and local date formatting. Changed calls: `clockSaid(seconds, precise?)` and `dateSaid(at)` are new exports.
