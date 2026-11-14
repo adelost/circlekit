@@ -4,6 +4,8 @@ Cutkit's kit for web pages, published from Cutkit's one source: `tools/studio_st
 `dist/` is built by Cutkit's `tools/dev/publish-web-kit.mjs` (it writes `dist/SOURCE.json` with the Cutkit commit and the files) and published through this repository's npm path (`scripts/publish-web-kit.sh X.Y.Z`).
 This repository holds the manifest and the gate (`npm run check`), never the files.
 
+- 0.159.0: skyColumn accepts each level’s optional `temp` in °C and `zeroAt` for the freezing height (Cut 2840). Calls without them keep their existing appearance.
+
 ## Use
 
 A consumer locks one version, as `@v1d/product-emit` does, and keeps no copy:
