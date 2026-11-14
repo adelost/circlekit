@@ -70,7 +70,11 @@ Each UI part has an example file in `dist/` (`search-field.example.js`, `filter-
 
 ## Versions
 
+- 0.135.0: from Cutkit 0fc2f8dcd (2026-11-14). Finder's truth-key field stays readable on a phone without input zoom. Changed calls: `TimeView` and `TimeNeedle` take `heads` and `needleHead`; `clipRow`, `filmPictures`, `paintPictures`, and `pictureAt` draw the film's clips and pictures.
+
 - 0.134.0: from Cutkit 986563aaa (2026-11-14). Adds Cut's timeline for any page (Cut 2814): `TimeView` and `TimeNeedle` take `heads` (V1, A1 beside the time) and `needleHead`; `clipRow` draws a film's clips with their pictures and names; `filmPictures`, `paintPictures` and `pictureAt` make and draw a film's strip pictures; `detachStrip({ keepTop })`. `timeControls` draws only the actions it is given, in `order`. Existing calls keep their behaviour.
+
+- 0.133.0: from Cutkit aa5227a79 (2026-11-14). Adds an update row for an app’s layout above its tab bar. Changed calls: `updateReady({ size: "bar", onpress })` says New version ready with Update; omit `onpress` and supply `label` to defer the update without a button. Existing sign, badge and menu row calls keep their behaviour.
 
 - 0.132.0: from Cutkit 4fc8a81af (2026-11-14). Adds the body view bench: first person locked to a body view answer, the compass and posture, its rows in time. Changed calls: `bodyBench({ recordings, picked, onpick, ondrop, rules, onrule })` is a new export with `show(answer)` and `stopped(words)`.
 
