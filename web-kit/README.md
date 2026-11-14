@@ -70,6 +70,8 @@ Each UI part has an example file in `dist/` (`search-field.example.js`, `filter-
 
 ## Versions
 
+- 0.158.0: from Cutkit cbe9dddb2 (2026-11-14). A player below the picture keeps its full time clear of the controls; on a narrower row the controls wrap. Changed calls: none.
+
 - 0.157.0: from Cutkit b72ee52a4 (2026-11-14). `flightScene` owns its eye: `mode`, `selectView`, `selectReach`, `getEye` and `oneye` replace writing `eye`; first person holds the touched direction, and Body retains recorded roll. Changed calls: `eye` is no longer accepted as a setter; `oneye` reads `mode` and absolute eye angles.
 - 0.156.0: from Cutkit 70ea8d34f (2026-11-14). `@v1d/web-kit/clip-row` is exported, the film's clips as a time view row of their pictures and name plates, as Cut's Film draws them; 0.153.0 carried the file without the export (Cut 2814). Changed calls: none.
 - 0.155.0: from Cutkit 70ea8d34f (2026-11-14). The example flights a page can play: `@v1d/web-kit/example-flights` exports `FLIGHTS` (three real jumps read by Skyvw's recorder from openly licensed tracks, with source, licence and accuracy, and a simulated belly jump), `GROUP` (three simulated wingsuit flyers out of one exit), `MISSING` and `NOTICES` (the tracks' licences), each flight with its exact landing (`home`) and a point a second about it, typed in `example-flights.d.ts`. The site has kit.v1d.io/real-jumps/. Changed calls: `example-flights` is new: `FLIGHTS`, `GROUP`, `MISSING` and `NOTICES` with their types (`ExampleFlight`, `ExampleFlyer`, `HeightAt`, `PointAt`); a page imports them from `@v1d/web-kit/example-flights`. Nothing else changed.
