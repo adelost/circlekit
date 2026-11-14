@@ -78,6 +78,7 @@ Each UI part has an example file in `dist/` (`search-field.example.js`, `filter-
 
 ## Versions
 
+- 0.171.0: a flight scene's layers sheet has seven rows (Ground photo and Sun and moon added), and the choice is the kit's, the same in every scene and kept in the page's storage (Cut 2820). Changed calls: `flightScene({ layers })` takes the list of offered layer ids; new `keepSceneLayers(storage)`, `sceneLayers()`, `setSceneLayer(id, on)`, `onSceneLayers(listen)`.
 - 0.170.0: a flight scene's words near its sources' line give way, so the licence line always stands clear (Cut 2820). Changed calls: none.
 - 0.169.0: a flight scene's foot is text with no press, "Old · " first for an old source; the Layers panel closes on a press outside it (Cut 2820, V 8c). Changed calls: new `sourceList({ sources })`, the rows a flight scene takes as `sources`; the scene has no Sources panel.
 - 0.168.0: from Cutkit 2b85633d0 (2026-11-14). `TimeNeedle`'s `detachSteps()` hands the step line (− 1 frame, the clock, + 1 frame) to the page to stand where it does not scroll; `clipRow` draws a clip narrower than one picture as a block with its name or number (Cut 2814). Changed calls: `TimeNeedle` returns `detachSteps`.
