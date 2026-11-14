@@ -121,6 +121,11 @@ export const foregroundIngestionOwner = service({
     configField("canopyDiveAfterMs", "integer", { unit: "si.millisecond", min: 0 }),
     // After an opening, a fall that reaches this sink, faster than any canopy turn, is freefall again however late it comes (gateway 14z318).
     configField("freefallAgainMs", "number", { unit: "si.meter-per-second", positive: true }),
+    // From the climb, a fall is the exit once it reaches freefallReachMs (a jump plane sinks slower), or once canopy flight follows it: a sink
+    // between canopySinkMs and canopyFlightSinkMs held canopyFlightMs without rising (a hop and pop, a static line) (gateway 14z318).
+    configField("freefallReachMs", "number", { unit: "si.meter-per-second", positive: true }),
+    configField("canopyFlightSinkMs", "number", { unit: "si.meter-per-second", positive: true }),
+    configField("canopyFlightMs", "integer", { unit: "si.millisecond", positive: true }),
     configField("landingAltitudeM", "number", { unit: "si.meter", min: 0 }),
     configField("minimumLandingDescentM", "number", { unit: "si.meter", min: 0 }),
     configField("landingVerticalSpeedMs", "number", { unit: "si.meter-per-second", min: 0 }),
