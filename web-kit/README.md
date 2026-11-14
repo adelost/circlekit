@@ -70,6 +70,7 @@ Each UI part has an example file in `dist/` (`search-field.example.js`, `filter-
 
 ## Versions
 
+- 0.155.0: from Cutkit 70ea8d34f (2026-11-14). The example flights a page can play: `@v1d/web-kit/example-flights` exports `FLIGHTS` (three real jumps read by Skyvw's recorder from openly licensed tracks, with source, licence and accuracy, and a simulated belly jump), `GROUP` (three simulated wingsuit flyers out of one exit), `MISSING` and `NOTICES` (the tracks' licences), each flight with its exact landing (`home`) and a point a second about it, typed in `example-flights.d.ts`. The site has kit.v1d.io/real-jumps/. Changed calls: none.
 - 0.154.0: from Cutkit b3079f26d (2026-11-14). A flight scene inside a page's panel takes a finger again (only a press or panel on the stage is its own). Changed calls: none.
 
 - 0.153.0: from Cutkit cb616768b (2026-11-14). A film's needle (`TimeNeedle` with `fps`) stands in the middle of the frame under it, so a picture sought there shows that frame, and its clock names that frame (Cut 2814). Changed calls: none.
