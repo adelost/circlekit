@@ -71,6 +71,7 @@ A page that moves from one version to another reads every line between them. Fro
 - 0.6.0: a song's data from an audio file (`song_data`: `songData`), with types.
 - 0.7.0: `boxMeter`; `filterChips` gets `words` and `size: "small"`; the time view's + - and Fit are a row of their own under its rows and 44 px under a finger; the search field draws one focus ring, not a second from a page's `input:focus-visible`.
 - 0.8.0: `filterChips` keeps the count at every width (the word is the tooltip's when the room is narrow), and `iconOnly` means icons alone only where it is set; before, a chip on a phone lost its count.
+- 0.106.0: from Cutkit 3902aa4c3 (2026-11-14). The first-person camera stays above the terrain at landing. Changed calls: none.
 - 0.105.0: from Cutkit ce02c761a (2026-11-14). Time rows show curves, cells and bounded bands; touch fits the whole span. Changed calls: `timeStrip` lanes accept a kind, upper value, tones and warning colour; `TimeNeedle` takes `showClock`; `TimeView` takes `fitCentered` and axis origin.
 - 0.104.0: from Cutkit da030c284 (2026-11-14). Jump replay can show daylight by place and time and reuses its perspective paths. Changed calls: `sunAt` and `daylight` are new; `flightScene` takes `moment` and `eyeLight`.
 - 0.103.0: from Cutkit e44af4b70 (2026-11-14). First-person playback skips the hidden isometric drawing. Changed calls: none.
