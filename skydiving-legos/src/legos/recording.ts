@@ -126,6 +126,10 @@ export const foregroundIngestionOwner = service({
     configField("freefallReachMs", "number", { unit: "si.meter-per-second", positive: true }),
     configField("canopyFlightSinkMs", "number", { unit: "si.meter-per-second", positive: true }),
     configField("canopyFlightMs", "integer", { unit: "si.millisecond", positive: true }),
+    // A calm sink is a canopy only under canopyGroundSpeedMs over the ground where a position says it (a wingsuit's flare keeps its speed), and a
+    // fall inside canopyDiveAfterMs is freefall again only once held canopyFreefallDebounceMs (gateway 14z318).
+    configField("canopyGroundSpeedMs", "number", { unit: "si.meter-per-second", positive: true }),
+    configField("canopyFreefallDebounceMs", "integer", { unit: "si.millisecond", positive: true }),
     configField("landingAltitudeM", "number", { unit: "si.meter", min: 0 }),
     configField("minimumLandingDescentM", "number", { unit: "si.meter", min: 0 }),
     configField("landingVerticalSpeedMs", "number", { unit: "si.meter-per-second", min: 0 }),
