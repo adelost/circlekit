@@ -70,6 +70,8 @@ Each UI part has an example file in `dist/` (`search-field.example.js`, `filter-
 
 ## Versions
 
+- 0.131.0: from Cutkit a716ac5c4 (2026-11-14). Finder adds a synthetic two-camera blind bench with an encrypted truth. Changed calls: `groundMarks(options)` draws pins and a wind corridor; `frameMatch(options)` aligns a frame with a supplied scene; `finder(options)` combines them with supplied geometry and case data.
+
 - 0.128.0: from Cutkit 2eb421fd0 (2026-11-14). Keeps a raw choice for a visit when app-supplied storage is unavailable. Changed calls: `keptChoice({ key, fallback, valid, storage })` is a new export.
 - 0.127.0: from Cutkit 376437bc4 (2026-11-14). Fits a flight scene independently of its turn so a fitted view rotates without sliding. Changed calls: none.
 - 0.126.0: from Cutkit 2d9f105a7 (2026-11-14). Keeps the flight scene's pivot steady while turning and settles tilt at three views. Changed calls: none.
