@@ -117,6 +117,8 @@ export const foregroundIngestionOwner = service({
     configField("ascentCanopyDropM", "number", { unit: "si.meter", min: 0 }),
     configField("canopySinkMs", "number", { unit: "si.meter-per-second", min: 0 }),
     configField("canopyDebounceMs", "integer", { unit: "si.millisecond", min: 0 }),
+    // A fall at freefall speed held from this long after an opening from freefall is a canopy dive, not a new freefall (gateway 14z318).
+    configField("canopyDiveAfterMs", "integer", { unit: "si.millisecond", min: 0 }),
     configField("landingAltitudeM", "number", { unit: "si.meter", min: 0 }),
     configField("minimumLandingDescentM", "number", { unit: "si.meter", min: 0 }),
     configField("landingVerticalSpeedMs", "number", { unit: "si.meter-per-second", min: 0 }),
