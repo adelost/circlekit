@@ -12,6 +12,8 @@ This repository holds the manifest and the gate (`npm run check`), never the fil
 - 0.162.0: flight scenes turn around the selected subject at a constant scale with freely adjustable tilt (Cut 2838). Changed calls: `flightScene` uses `sources` rows with icon, label, credit, short, detail, href and old in place of `source` and `credits`; ground's `shortCredit` and `waiting` are removed (Cut 2820).
 - 0.159.0: skyColumn shows temperatures and the freezing height (Cut 2840). Changed calls: `skyColumn({ levels, zeroAt })` takes optional `temp` in °C per level and `zeroAt` in metres; omit them for the existing appearance.
 
+- 0.179.0: Jump players with a transport row show one Play control; the whole strip remains seekable (Cut 2851). Changed calls: none.
+
 ## Use
 
 A consumer locks one version, as `@v1d/product-emit` does, and keeps no copy:
