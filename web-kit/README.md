@@ -4,7 +4,7 @@ Cutkit's kit for web pages, published from Cutkit's one source: `tools/studio_st
 `dist/` is built by Cutkit's `tools/dev/publish-web-kit.mjs` (it writes `dist/SOURCE.json` with the Cutkit commit and the files) and published through this repository's npm path (`scripts/publish-web-kit.sh X.Y.Z`).
 This repository holds the manifest and the gate (`npm run check`), never the files.
 
-- 0.219.0: Scene flight accepts touches when its picture is inside a panel (Cut 3001). Changed calls: none.
+- 0.219.0: Scene flight accepts touches inside a panel (Cut 3001). Changed calls: `stepRow` accepts `variant: "number"` and `hint: false`; `TimeStripNode` is now an `HTMLElement`, so callers must not assume a div.
 - 0.218.0: Photo-led trees, fixed face light and vegetation filtering (Cut 3009). Changed calls: `treeLook` adds colour and stable shape variation; new `treeVegetation`; `centreMark` removed.
 - 0.220.0: Numeric stepping and shared picture zones (Cut 2974, 3006). Changed calls: `stepRow` accepts `variant: "number"` for minus and plus and `hint: false` to hide its keyboard hint; `TimeStripNode` is now `HTMLElement` because its root is a section.
 - 0.217.0: Reserved but not published; numeric stepping ships in 0.220.0 with the later kit parts.
