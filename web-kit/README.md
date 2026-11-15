@@ -6,8 +6,8 @@ This repository holds the manifest and the gate (`npm run check`), never the fil
 
 - 0.219.0: Scene flight accepts touches when its picture is inside a panel (Cut 3001). Changed calls: none.
 - 0.218.0: Photo-led trees, fixed face light and vegetation filtering (Cut 3009). Changed calls: `treeLook` adds colour and stable shape variation; new `treeVegetation`; `centreMark` removed.
-
-- 0.217.0: Numeric stepping in the shared kit (Cut 2974). Changed calls: `stepRow` accepts `variant: "number"` for minus and plus, and `hint: false` to hide its keyboard hint.
+- 0.220.0: Numeric stepping and shared picture zones (Cut 2974, 3006). Changed calls: `stepRow` accepts `variant: "number"` for minus and plus and `hint: false` to hide its keyboard hint; `TimeStripNode` is now `HTMLElement` because its root is a section.
+- 0.217.0: Reserved but not published; numeric stepping ships in 0.220.0 with the later kit parts.
 
 - 0.216.0: A reusable first-person flight hand for a scene (Cut 3001). Changed calls: new `sceneFly` and `sceneFlyCamera`.
 - 0.213.0: Altitude dial words use the page font while numbers keep the figure font (Cut 3003). Changed calls: none.
