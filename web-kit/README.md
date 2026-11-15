@@ -5,7 +5,8 @@ Cutkit's kit for web pages, published from Cutkit's one source: `tools/studio_st
 This repository holds the manifest and the gate (`npm run check`), never the files.
 
 - 0.212.0: Body replay interpolates full recorded rotations and the example uses steadied readings (Cut 2962). Changed calls: none.
-- 0.211.0: Zone is a shared flat surface; panel, titledPanel, statTiles and alarmKey use it by default and accept `boxed` for exceptions (Cut 2992).
+- 0.215.0: Zone is a shared flat surface; panel, titledPanel, statTiles and alarmKey use it by default and accept `boxed` for exceptions (Cut 2992).
+- 0.211.0: Reserved but not published; the zone surface ships in 0.215.0 with the later kit parts.
 - 0.214.0: Help's messages, separators, summaries, mark and proposed replies share kit parts (Cut 3000). Changed calls: `bubble` takes `side`, `kind`, `title`, `address` and `length`; new `dividerLine`, `summaryCard` and `LOCKUP_HELP`; `changeCard` takes `text`.
 - 0.209.0: Scene tools update layers while their panel is open (Cut 2993). Changed calls: `SceneLayer` accepts `count`, `note` and `disabled`; `update` accepts a changed layer list.
 - 0.208.0: World scenes share the distance-based eye tilt and a reusable centre mark (Cut 2948). Changed calls: new `worldTilt`, `worldTiltFraction` and `centreMark`.
