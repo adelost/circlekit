@@ -12,6 +12,7 @@ This repository holds the manifest and the gate (`npm run check`), never the fil
 - 0.162.0: flight scenes turn around the selected subject at a constant scale with freely adjustable tilt (Cut 2838). Changed calls: `flightScene` uses `sources` rows with icon, label, credit, short, detail, href and old in place of `source` and `credits`; ground's `shortCredit` and `waiting` are removed (Cut 2820).
 - 0.159.0: skyColumn shows temperatures and the freezing height (Cut 2840). Changed calls: `skyColumn({ levels, zeroAt })` takes optional `temp` in °C per level and `zeroAt` in metres; omit them for the existing appearance.
 
+- 0.184.0: Sun and Moon marks yield to the scene's source credits (Cut 2905). Changed calls: none.
 - 0.183.0: The flight-scene page has a cloud painting bench with four switches and turn timing (Cut 2899). Changed calls: none.
 - 0.182.0: The world reads the kit's rule for what stands on the ground; a scene's source row may name the layer Trees and buildings (Cut 2887, 2860). Changed calls: new `standingShapes`, `TREE` and `chance`; `STANDING_ZOOM` now comes from standing-shapes; `FlightSceneSource.layer` takes `standing`.
 - 0.181.0: Trees and buildings in the flight scene, drawn by scale and within 1 000 m of the chosen thing, off until switched on, with a bench on flight-scene's page (Cut 2860). Changed calls: new `standingLayer`, `STANDING_NEAR`, `STANDING_MOST` and `STANDING_ZOOM`; `flightScene` takes optional `standing` and the layer `standing`; a page that offers layers without `light` keeps its own light.
