@@ -1,6 +1,6 @@
 {
   "name": "@v1d/api-client",
-  "version": "0.41.0",
+  "version": "0.42.0",
   "description": "What the v1d API runs on the person's own device: waveform, encode, cuts and the files store's start and register bodies (WebCodecs and mediabunny), built from the ai-gateway repository's one source",
   "type": "module",
   "main": "./dist/device/index.js",
@@ -142,6 +142,22 @@
     "./ground-plan": {
       "types": "./dist/device/ground-plan.d.ts",
       "default": "./dist/device/ground-plan.js"
+    },
+    "./surface": {
+      "types": "./dist/device/surface.d.ts",
+      "default": "./dist/device/surface.js"
+    },
+    "./surface-reads": {
+      "types": "./dist/device/surface-reads.d.ts",
+      "default": "./dist/device/surface-reads.js"
+    },
+    "./buildings": {
+      "types": "./dist/device/buildings.d.ts",
+      "default": "./dist/device/buildings.js"
+    },
+    "./buildings-reads": {
+      "types": "./dist/device/buildings-reads.d.ts",
+      "default": "./dist/device/buildings-reads.js"
     },
     "./ground-keep": {
       "types": "./dist/device/ground-keep.d.ts",
