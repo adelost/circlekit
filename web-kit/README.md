@@ -6,7 +6,8 @@ This repository holds the manifest and the gate (`npm run check`), never the fil
 
 - 0.205.0: The song bench shows an existing analysis alongside its wave (Cut 2930). Changed calls: new `fitBeats` and `MOST_BEAT_PIECES`.
 - 0.204.0: Shared scene tools for maps and scenes, with touch targets for controls and details (Cut 2947). Changed calls: new `sceneTools`; `worldScene` takes `controls`; `flightScene` takes `onfullscreen`.
-- 0.203.0: The shared colour shader offers seven adjustments and their neutral values for a playing clip (Cut 2985). Changed calls: new `COLOR_CONTROLS` and `COLOR_SHADER`; `rangeField` takes optional `editable` and `neutral`.
+- 0.206.0: The shared colour shader offers seven adjustments and their neutral values for a playing clip (Cut 2985). Changed calls: new `COLOR_CONTROLS` and `COLOR_SHADER`; `rangeField` takes optional `editable` and `neutral`.
+- 0.203.0: Reserved and not published; its colour changes ship in 0.206.0 after 0.204.0 came first.
 - 0.202.0: The preview fragment player belongs to Cut and is no longer in the kit (Cut 2802). Removed files: `fragment-player.js`, `fragment-feed.js`, `fragment-store.js`.
 - 0.201.0: The selected tab has a two-pixel top line; `--tab-bar-indicator` sets its colour (Cut 2966). Changed calls: none.
 - 0.200.0: The sound-level bench shares its measurement and limiter with Cut Export (Cut 2918). Changed calls: new `integratedLufs`, `truePeakDb`, `loudnessStage`, `applyStage` and `RATE`.
