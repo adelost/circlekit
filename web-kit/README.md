@@ -4,6 +4,7 @@ Cutkit's kit for web pages, published from Cutkit's one source: `tools/studio_st
 `dist/` is built by Cutkit's `tools/dev/publish-web-kit.mjs` (it writes `dist/SOURCE.json` with the Cutkit commit and the files) and published through this repository's npm path (`scripts/publish-web-kit.sh X.Y.Z`).
 This repository holds the manifest and the gate (`npm run check`), never the files.
 
+- 0.213.0: Altitude dial words use the page font while numbers keep the figure font (Cut 3003). Changed calls: none.
 - 0.212.0: Body replay interpolates full recorded rotations and the example uses steadied readings (Cut 2962). Changed calls: none.
 - 0.215.0: Zone is a shared flat surface; panel, titledPanel, statTiles and alarmKey use it by default and accept `boxed` for exceptions (Cut 2992).
 - 0.211.0: Reserved but not published; the zone surface ships in 0.215.0 with the later kit parts.
