@@ -4,6 +4,7 @@ Cutkit's kit for web pages, published from Cutkit's one source: `tools/studio_st
 `dist/` is built by Cutkit's `tools/dev/publish-web-kit.mjs` (it writes `dist/SOURCE.json` with the Cutkit commit and the files) and published through this repository's npm path (`scripts/publish-web-kit.sh X.Y.Z`).
 This repository holds the manifest and the gate (`npm run check`), never the files.
 
+- 0.197.0: Flight-scene Layers and sources move below the picture, with labels clear of controls (Cut 2946). Changed calls: none.
 - 0.196.0: A place pin has a quiet small size: a 20 px scrim disc inside a 1 px light edge with a 12 px light glyph and no glow (Cut 2952). Changed calls: `placePin` and `placePinImage` take `size: "small"`.
 - 0.195.0: Flight-scene cloud pictures draw on the ground card and move with the scene's clock (Cut 2912). Changed calls: `FlightSceneCells.pictures`, `flightScene.updateClouds` and `flightScene.setCloudMotion`.
 - 0.193.0: Flight-scene labels share seats by mark, clear the wind arrow and fixed ruler readings, and settle after a turn (Cut 2913). Changed calls: none.
