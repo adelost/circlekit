@@ -49,15 +49,6 @@
       "types": "./dist/spanrow.d.ts",
       "default": "./dist/spanrow.js"
     },
-    "./fragment-player": {
-      "default": "./dist/fragment-player.js"
-    },
-    "./fragment-feed": {
-      "default": "./dist/fragment-feed.js"
-    },
-    "./fragment-store": {
-      "default": "./dist/fragment-store.js"
-    },
     "./songwave": {
       "types": "./dist/songwave.d.ts",
       "default": "./dist/songwave.js"
