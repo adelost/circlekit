@@ -78,6 +78,7 @@ Each UI part has an example file in `dist/` (`search-field.example.js`, `filter-
 
 ## Versions
 
+- 0.178.0: a span row's off and extra marks are 1 px and half clear where the median gap between marks is under 6 px, so the blocks above them show (Cut 2862). Changed calls: `spanRow` takes an optional `keys`.
 - 0.177.0: Finder opens a timeline frame on click, so a touch cannot activate a control revealed under the finger (Cut 2809). Changed calls: none.
 - 0.176.0: the flight scene's Real light lights the ground from above as the jumper's eyes do: two thirds of day at a sun of 3°, a sixth at night (Cut 2870). Changed calls: none.
 - 0.175.0: the credit words carry a row's amount and its reason, as 2830's Credits door says them (Cut 2793). Changed calls: new `amountSaid({ reason, credits })` says the credits at one decimal for drawn and Reused, Free, Not charged or Working otherwise, and throws on an unknown reason; new `REASON_WORDS`, `usedCredits(credits)`, `tenthCredits(credits)`.
