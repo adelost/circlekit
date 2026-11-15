@@ -4,6 +4,7 @@ Cutkit's kit for web pages, published from Cutkit's one source: `tools/studio_st
 `dist/` is built by Cutkit's `tools/dev/publish-web-kit.mjs` (it writes `dist/SOURCE.json` with the Cutkit commit and the files) and published through this repository's npm path (`scripts/publish-web-kit.sh X.Y.Z`).
 This repository holds the manifest and the gate (`npm run check`), never the files.
 
+- 0.201.0: The selected tab has a two-pixel top line; `--tab-bar-indicator` sets its colour (Cut 2966). Changed calls: none.
 - 0.200.0: The sound-level bench shares its measurement and limiter with Cut Export (Cut 2918). Changed calls: new `integratedLufs`, `truePeakDb`, `loudnessStage`, `applyStage` and `RATE`.
 - 0.199.0: Flight scenes tone arriving ground pictures off the drawing thread and recover if the worker fails (Cut 2801). Changed calls: `FlightSceneGround.id` is optional for retaining the overlay as ground data arrives.
 - 0.198.0: A shared color function and shader apply Vibrance to a clip picture (Cut 2919). Changed calls: new `vibrance`, `vibranceOf` and `VIBRANCE_SHADER`.
