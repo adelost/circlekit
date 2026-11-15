@@ -4,6 +4,7 @@ Cutkit's kit for web pages, published from Cutkit's one source: `tools/studio_st
 `dist/` is built by Cutkit's `tools/dev/publish-web-kit.mjs` (it writes `dist/SOURCE.json` with the Cutkit commit and the files) and published through this repository's npm path (`scripts/publish-web-kit.sh X.Y.Z`).
 This repository holds the manifest and the gate (`npm run check`), never the files.
 
+- 0.207.0: Flight-scene hands turn and tilt together, catching snap angles under the finger; north is seated clear of other labels (Cut 2971). Changed calls: none.
 - 0.205.0: The song bench shows an existing analysis alongside its wave (Cut 2930). Changed calls: new `fitBeats` and `MOST_BEAT_PIECES`.
 - 0.204.0: Shared scene tools for maps and scenes, with touch targets for controls and details (Cut 2947). Changed calls: new `sceneTools`; `worldScene` takes `controls`; `flightScene` takes `onfullscreen`.
 - 0.206.0: The shared colour shader offers seven adjustments and their neutral values for a playing clip (Cut 2985). Changed calls: new `COLOR_CONTROLS` and `COLOR_SHADER`; `rangeField` takes optional `editable` and `neutral`.
