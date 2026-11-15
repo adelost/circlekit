@@ -4,6 +4,7 @@ Cutkit's kit for web pages, published from Cutkit's one source: `tools/studio_st
 `dist/` is built by Cutkit's `tools/dev/publish-web-kit.mjs` (it writes `dist/SOURCE.json` with the Cutkit commit and the files) and published through this repository's npm path (`scripts/publish-web-kit.sh X.Y.Z`).
 This repository holds the manifest and the gate (`npm run check`), never the files.
 
+- 0.192.0: A place's pin is drawn from one form as an HTML pin or a picture for a map engine's symbols, the same pixels at 2x; pins have a large size (Cut 2943). Changed calls: new `placePinImage` and `PinSize`; `placePin` takes `size`.
 - 0.190.0: The flight-scene bench steps the recorded Everöd cloud case from the api-client (Cut 2929). Changed calls: none.
 - 0.189.0: A flight scene's wind arrow shows speed, marks stay on their true positions, and one seating keeps its words visible (Cut 2913). Changed calls: none.
 - 0.187.0: A place's pin is its own part, one look for worldScene's dots and a MapLibre marker's element (Cut 2914). Changed calls: new `placePin`, `pinName`, `PIN_KINDS` and `PinKind`; `WorldPlace.kind` is a `PinKind`.
