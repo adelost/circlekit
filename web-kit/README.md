@@ -4,6 +4,8 @@ Cutkit's kit for web pages, published from Cutkit's one source: `tools/studio_st
 `dist/` is built by Cutkit's `tools/dev/publish-web-kit.mjs` (it writes `dist/SOURCE.json` with the Cutkit commit and the files) and published through this repository's npm path (`scripts/publish-web-kit.sh X.Y.Z`).
 This repository holds the manifest and the gate (`npm run check`), never the files.
 
+- 0.218.0: Photo-led trees, fixed face light and vegetation filtering (Cut 3009). Changed calls: `treeLook` adds colour and stable shape variation; new `treeVegetation`; `centreMark` removed.
+
 - 0.217.0: Numeric stepping in the shared kit (Cut 2974). Changed calls: `stepRow` accepts `variant: "number"` for minus and plus, and `hint: false` to hide its keyboard hint.
 
 - 0.216.0: A reusable first-person flight hand for a scene (Cut 3001). Changed calls: new `sceneFly` and `sceneFlyCamera`.
