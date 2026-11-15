@@ -78,7 +78,7 @@ Each UI part has an example file in `dist/` (`search-field.example.js`, `filter-
 
 ## Versions
 
-- 0.176.0: the flight scene's Real light lights the ground from above as the jumper's eyes do: two thirds of day at a sun of 3°, a sixth at night (Cut 2870). No changed calls.
+- 0.176.0: the flight scene's Real light lights the ground from above as the jumper's eyes do: two thirds of day at a sun of 3°, a sixth at night (Cut 2870). Changed calls: none.
 - 0.175.0: the credit words carry a row's amount and its reason, as 2830's Credits door says them (Cut 2793). Changed calls: new `amountSaid({ reason, credits })` says the credits at one decimal for drawn and Reused, Free, Not charged or Working otherwise, and throws on an unknown reason; new `REASON_WORDS`, `usedCredits(credits)`, `tenthCredits(credits)`.
 - 0.174.0: Finder shows photo marks, the whole jump timeline and two open cases with the shared flight-scene layers (Cut 2809). Changed calls: `flightScene({ marks, onmark, compactTools })` draws world marks and reports presses; Finder map factories take these marks; TimeView and TimeNeedle accept optional whole-time and fitting controls.
 - 0.173.0: the flight scene's layers sheet in the order Real light, Clouds, Wind, Ground photo, Sun and moon, Exit, Aircraft (Cut 2820). Changed calls: none.
