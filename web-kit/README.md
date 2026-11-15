@@ -4,6 +4,7 @@ Cutkit's kit for web pages, published from Cutkit's one source: `tools/studio_st
 `dist/` is built by Cutkit's `tools/dev/publish-web-kit.mjs` (it writes `dist/SOURCE.json` with the Cutkit commit and the files) and published through this repository's npm path (`scripts/publish-web-kit.sh X.Y.Z`).
 This repository holds the manifest and the gate (`npm run check`), never the files.
 
+- 0.222.0: Scene flight accepts touches inside a surrounding panel (Cut 3001). Changed calls: none.
 - 0.221.0: Overlaid scene Layers panels keep their own surface (Cut 3009). Changed calls: none.
 
 - 0.219.0: Scene flight accepts touches inside a panel (Cut 3001). Changed calls: `stepRow` accepts `variant: "number"` and `hint: false`; `TimeStripNode` is now an `HTMLElement`, so callers must not assume a div.
