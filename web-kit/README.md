@@ -4,6 +4,8 @@ Cutkit's kit for web pages, published from Cutkit's one source: `tools/studio_st
 `dist/` is built by Cutkit's `tools/dev/publish-web-kit.mjs` (it writes `dist/SOURCE.json` with the Cutkit commit and the files) and published through this repository's npm path (`scripts/publish-web-kit.sh X.Y.Z`).
 This repository holds the manifest and the gate (`npm run check`), never the files.
 
+- 0.230.0: Trees and houses share sun-directed ground shadows (World 12). Changed calls: new `standingSun`, `treeShadow`, `treeLookWithSun` and `StandingShadow`.
+
 - 0.229.0: Place pins keep one form across map distances (World 10). Changed calls: `placePinImage` accepts `glow` and `glyph`; the unused small pin size is removed.
 
 - 0.228.0: First-person ground can follow the low eye with a level-18 photograph (Cut 2990). Changed calls: `groundFor` accepts `eye`; `flightScene` accepts `eyesDetailAt`.
