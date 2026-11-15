@@ -4,6 +4,8 @@ Cutkit's kit for web pages, published from Cutkit's one source: `tools/studio_st
 `dist/` is built by Cutkit's `tools/dev/publish-web-kit.mjs` (it writes `dist/SOURCE.json` with the Cutkit commit and the files) and published through this repository's npm path (`scripts/publish-web-kit.sh X.Y.Z`).
 This repository holds the manifest and the gate (`npm run check`), never the files.
 
+- 0.226.0: The hinted-press example uses a sized kit button (Cut 2975). Changed calls: `treeLook` accepts the surrounding forest's light and colour (Cut 3009).
+
 - 0.225.0: Sky readings use the caller's matching tone grounds (Cut 2967). Changed calls: `skyColumn` accepts `groundOf`; new `toneValue` and `ToneValueOptions`.
 - 0.224.0: Tree tones include nearby canopy colour (Cut 3009). Changed calls: `treeLook` accepts a surrounding forest colour.
 
