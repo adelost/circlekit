@@ -4,6 +4,7 @@ Cutkit's kit for web pages, published from Cutkit's one source: `tools/studio_st
 `dist/` is built by Cutkit's `tools/dev/publish-web-kit.mjs` (it writes `dist/SOURCE.json` with the Cutkit commit and the files) and published through this repository's npm path (`scripts/publish-web-kit.sh X.Y.Z`).
 This repository holds the manifest and the gate (`npm run check`), never the files.
 
+- 0.203.0: The shared colour shader offers seven adjustments and their neutral values for a playing clip (Cut 2985). Changed calls: new `COLOR_CONTROLS` and `COLOR_SHADER`; `rangeField` takes optional `editable` and `neutral`.
 - 0.202.0: The preview fragment player belongs to Cut and is no longer in the kit (Cut 2802). Removed files: `fragment-player.js`, `fragment-feed.js`, `fragment-store.js`.
 - 0.201.0: The selected tab has a two-pixel top line; `--tab-bar-indicator` sets its colour (Cut 2966). Changed calls: none.
 - 0.200.0: The sound-level bench shares its measurement and limiter with Cut Export (Cut 2918). Changed calls: new `integratedLufs`, `truePeakDb`, `loudnessStage`, `applyStage` and `RATE`.
