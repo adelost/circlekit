@@ -4,6 +4,7 @@ Cutkit's kit for web pages, published from Cutkit's one source: `tools/studio_st
 `dist/` is built by Cutkit's `tools/dev/publish-web-kit.mjs` (it writes `dist/SOURCE.json` with the Cutkit commit and the files) and published through this repository's npm path (`scripts/publish-web-kit.sh X.Y.Z`).
 This repository holds the manifest and the gate (`npm run check`), never the files.
 
+- 0.209.0: Scene tools update layers while their panel is open (Cut 2993). Changed calls: `SceneLayer` accepts `count`, `note` and `disabled`; `update` accepts a changed layer list.
 - 0.208.0: World scenes share the distance-based eye tilt and a reusable centre mark (Cut 2948). Changed calls: new `worldTilt`, `worldTiltFraction` and `centreMark`.
 - 0.207.0: Flight-scene hands turn and tilt together, catching snap angles under the finger; north is seated clear of other labels (Cut 2971). Changed calls: none.
 - 0.205.0: The song bench shows an existing analysis alongside its wave (Cut 2930). Changed calls: new `fitBeats` and `MOST_BEAT_PIECES`.
