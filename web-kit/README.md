@@ -6,7 +6,7 @@ This repository holds the manifest and the gate (`npm run check`), never the fil
 
 - 0.213.0: Altitude dial words use the page font while numbers keep the figure font (Cut 3003). Changed calls: none.
 - 0.212.0: Body replay interpolates full recorded rotations and the example uses steadied readings (Cut 2962). Changed calls: none.
-- 0.215.0: Zone is a shared flat surface; panel, titledPanel, statTiles and alarmKey use it by default and accept `boxed` for exceptions (Cut 2992).
+- 0.215.0: Shared flat surfaces (Cut 2992). Changed calls: new `zone({ ground, pad, boxed })`; `panel`, `titledPanel`, `statTiles` and `alarmKey` are flat by default and accept `boxed` for a justified exception.
 - 0.211.0: Reserved but not published; the zone surface ships in 0.215.0 with the later kit parts.
 - 0.214.0: Help's messages, separators, summaries, mark and proposed replies share kit parts (Cut 3000). Changed calls: `bubble` takes `side`, `kind`, `title`, `address` and `length`; new `dividerLine`, `summaryCard` and `LOCKUP_HELP`; `changeCard` takes `text`.
 - 0.209.0: Scene tools update layers while their panel is open (Cut 2993). Changed calls: `SceneLayer` accepts `count`, `note` and `disabled`; `update` accepts a changed layer list.
