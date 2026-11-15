@@ -1,6 +1,6 @@
 {
   "name": "@v1d/api-client",
-  "version": "0.46.0",
+  "version": "0.47.0",
   "description": "What the v1d API runs on the person's own device: waveform, encode, cuts and the files store's start and register bodies (WebCodecs and mediabunny), built from the ai-gateway repository's one source",
   "type": "module",
   "main": "./dist/device/index.js",
@@ -94,6 +94,10 @@
     "./cloud-cells": {
       "types": "./dist/device/cloud-cells.d.ts",
       "default": "./dist/device/cloud-cells.js"
+    },
+    "./cloud-motion-case": {
+      "types": "./dist/device/cloud-motion-case.d.ts",
+      "default": "./dist/device/cloud-motion-case.js"
     },
     "./cloud-field": {
       "types": "./dist/device/cloud-field.d.ts",
