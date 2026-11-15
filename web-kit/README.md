@@ -12,6 +12,7 @@ This repository holds the manifest and the gate (`npm run check`), never the fil
 - 0.162.0: flight scenes turn around the selected subject at a constant scale with freely adjustable tilt (Cut 2838). Changed calls: `flightScene` uses `sources` rows with icon, label, credit, short, detail, href and old in place of `source` and `credits`; ground's `shortCredit` and `waiting` are removed (Cut 2820).
 - 0.159.0: skyColumn shows temperatures and the freezing height (Cut 2840). Changed calls: `skyColumn({ levels, zeroAt })` takes optional `temp` in °C per level and `zeroAt` in metres; omit them for the existing appearance.
 
+- 0.181.0: Trees and buildings in the flight scene, drawn by scale and within 1 000 m of the chosen thing, off until switched on, with a bench on flight-scene's page (Cut 2860). Changed calls: new `standingLayer`, `STANDING_NEAR`, `STANDING_MOST` and `STANDING_ZOOM`; `flightScene` takes optional `standing` and the layer `standing`; a page that offers layers without `light` keeps its own light.
 - 0.180.0: Ground pictures arrive tile by tile with cached fallback, and the kept-ground bench shows the device cache (Cut 2797). Changed calls: new `progressiveGround` and `keptGround`; `groundFor` takes optional `keep`, `canPrefetch`, `heldBack`, `pendingOf`, `onupdate`, `onsurface` and `retainOnHeightFailure`, and returns optional `surface`, `waiting`, `sourceAvailable` and `oldest`.
 - 0.179.0: Jump players with a transport row show one Play control; the whole strip remains seekable (Cut 2851). Changed calls: none.
 
