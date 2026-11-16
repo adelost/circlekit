@@ -4,6 +4,8 @@ Cutkit's kit for web pages, published from Cutkit's one source: `tools/studio_st
 `dist/` is built by Cutkit's `tools/dev/publish-web-kit.mjs` (it writes `dist/SOURCE.json` with the Cutkit commit and the files) and published through this repository's npm path (`scripts/publish-web-kit.sh X.Y.Z`).
 This repository holds the manifest and the gate (`npm run check`), never the files.
 
+- 0.245.0: Responsive video comparison with a box layer for each player (Cut 2964). Changed calls: new `videoCompare`.
+
 - 0.244.0: An unanswered release check no longer delays checking again after the network returns (Cut 3074). Changed calls: none.
 
 - 0.243.0: Join uses the kit’s Lucide merge sign with the same line style as Split (Cut 3077). Changed calls: none.
