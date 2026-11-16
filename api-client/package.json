@@ -1,6 +1,6 @@
 {
   "name": "@v1d/api-client",
-  "version": "0.57.0",
+  "version": "0.58.0",
   "description": "What the v1d API runs on the person's own device: waveform, encode, cuts and the files store's start and register bodies (WebCodecs and mediabunny), built from the ai-gateway repository's one source",
   "type": "module",
   "main": "./dist/device/index.js",
@@ -67,6 +67,7 @@
       "types": "./dist/device/vision-index.d.ts",
       "default": "./dist/device/vision-index.js"
     },
+    "./vision-worker": "./dist/device/vision/worker.js",
     "./stored": {
       "types": "./dist/device/stored.d.ts",
       "default": "./dist/device/stored.js"
@@ -266,6 +267,12 @@
   },
   "dependencies": {
     "mediabunny": "1.61.6"
+  },
+  "peerDependencies": {
+    "onnxruntime-web": "1.31.1"
+  },
+  "peerDependenciesMeta": {
+    "onnxruntime-web": {"optional": true}
   },
   "scripts": {
     "check": "node scripts/check-dist.mjs"
