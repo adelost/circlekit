@@ -4,6 +4,8 @@ Cutkit's kit for web pages, published from Cutkit's one source: `tools/studio_st
 `dist/` is built by Cutkit's `tools/dev/publish-web-kit.mjs` (it writes `dist/SOURCE.json` with the Cutkit commit and the files) and published through this repository's npm path (`scripts/publish-web-kit.sh X.Y.Z`).
 This repository holds the manifest and the gate (`npm run check`), never the files.
 
+- 0.235.0: The player's chapter reading can yield to the line's finger label and return afterwards (Cut 3052). Changed calls: `playerFace` adds `labelShown(shown)`.
+
 - 0.234.0: The player line shows its visible window as a 2 px foreground stroke without a surrounding box (Cut 3051). Changed calls: none.
 
 - 0.233.0: A player's picture room keeps to the height its page gives it, so a panel under it stays readable (Skyvw 91). Changed calls: `onePlayer` accepts `roomLimit` and returns `fitRoom`.
