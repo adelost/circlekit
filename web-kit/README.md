@@ -4,6 +4,8 @@ Cutkit's kit for web pages, published from Cutkit's one source: `tools/studio_st
 `dist/` is built by Cutkit's `tools/dev/publish-web-kit.mjs` (it writes `dist/SOURCE.json` with the Cutkit commit and the files) and published through this repository's npm path (`scripts/publish-web-kit.sh X.Y.Z`).
 This repository holds the manifest and the gate (`npm run check`), never the files.
 
+- 0.243.0: Join uses the kit’s Lucide merge sign with the same line style as Split (Cut 3077). Changed calls: none.
+
 - 0.242.0: The app base owns safe-area values and touch behavior for gesture-driven pages (Cut 3075). Changed calls: new `APP_VIEWPORT` export.
 
 - 0.241.0: A place pin's disc takes its kind's colour at every zoom: club the fact blue, peak the fact green, bookmark --gold, own --fg, the glyph dark on top (Cut 3076). Changed calls: none; `placePin` and `placePinImage` draw the new colours.
