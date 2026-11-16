@@ -4,6 +4,7 @@ Cutkit's kit for web pages, published from Cutkit's one source: `tools/studio_st
 `dist/` is built by Cutkit's `tools/dev/publish-web-kit.mjs` (it writes `dist/SOURCE.json` with the Cutkit commit and the files) and published through this repository's npm path (`scripts/publish-web-kit.sh X.Y.Z`).
 This repository holds the manifest and the gate (`npm run check`), never the files.
 
+- 0.256.0: Combines video comparison masks and track colours with the new place pin. Changed calls: VideoCompareBox accepts outline and tone; trackTones is exported.
 - 0.255.0: From Cutkit 298a04e10. The place pin wears Cut's kind-tile look: a faint ground, fine edge and glyph in the kind's colour, no glow, and a picked state. Changed calls: placePinImage takes picked in place of glow; placePinColour is exported.
 - 0.254.0: Video comparisons give tracked people distinct kit colours. Changed calls: VideoCompareBox accepts tone; trackTones is exported.
 - 0.253.0: Video comparison results can draw filled polygon masks on the picture. Changed calls: VideoCompareBox accepts outline, normalized polygon coordinates.
