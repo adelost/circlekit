@@ -6,6 +6,8 @@ This repository holds the manifest and the gate (`npm run check`), never the fil
 
 - 0.234.0: The player line shows its visible window as a 2 px foreground stroke without a surrounding box (Cut 3051). Changed calls: none.
 
+- 0.233.0: A player's picture room keeps to the height its page gives it, so a panel under it stays readable (Skyvw 91). Changed calls: `onePlayer` accepts `roomLimit` and returns `fitRoom`.
+
 - 0.232.0: An empty segmented choice shows available options in the foreground colour (Cut 3048). Changed calls: `appHead` accepts `notice`; `button` accepts `explainDisabled`, `onInput`, `toolbarFace`, `appearance`, `phoneTouch`, `wrap`, `framed`, `centered`, `minWidth`, `weight` and sign/choice variants, and adds `compactPhoneButtons`; `card` adds `openCardBottom` and `cardBox` accepts `listItem`, `stackedActions`, `tileTitle`; `chatOptions` accepts `compact`; `chip` accepts `appearance: "chat"` and `prompt`; `chooser` accepts `menuSheet`; `details` accepts `wrap`; `feedRow` accepts `leadOverflow`, `playableLead`, `nameLines`, `factsWrap`, `nameInline`, and `feedFact` accepts `compactAtDesk`; `frameField` accepts `look: "inset"`; `menuRow` accepts `compact`, `divided`, `tone`; `outcome` accepts `strong`, `wrap`; new `placeCount` and `stillPress`; `roundButton` accepts `surface`; `segmented` accepts `normalCase` and `reach: "line-start"`; `textField` accepts `endButton`; `toolHead` accepts `close`; `zone` accepts `element`, card ground, small/compact padding and `edge`. Callers can use the new options where needed.
 
 - 0.231.0: Clock labels stay legible as the view widens, and a player grip can stop at full height (World 15). Changed calls: `onePlayer` accepts `roomFull` and the `full` room size.
