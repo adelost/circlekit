@@ -4,6 +4,7 @@ Cutkit's kit for web pages, published from Cutkit's one source: `tools/studio_st
 `dist/` is built by Cutkit's `tools/dev/publish-web-kit.mjs` (it writes `dist/SOURCE.json` with the Cutkit commit and the files) and published through this repository's npm path (`scripts/publish-web-kit.sh X.Y.Z`).
 This repository holds the manifest and the gate (`npm run check`), never the files.
 
+- 0.252.0: the kit's controls carry their own look with shadcn's measures (Cut 3091): a button without the studio's style.css has its own face (1 px edge on secondary, 8 px corners, 32 px, weight 500), fields are 36 px with a soft focus ring, menu rows 36 px at 14 px and a menu opens in 100 ms. New tokens `--field-h`, `--field-pad`, `--field-font`, `--radius-control`, `--button-weight`, `--dur-open`. Changed calls: none.
 - 0.251.0: wholeStrip shows the viewed window on time bars with the correct inset. Changed calls: none.
 - 0.250.0: tierMark and tierList support D; tierList max 0 draws non-selectable rows. Changed calls: tierList max accepts 0.
 - 0.249.0: Tier headings use coloured marks and comparison filters use meta-sized chips. Changed calls: new `tierMark`.
