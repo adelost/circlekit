@@ -4,6 +4,8 @@ Cutkit's kit for web pages, published from Cutkit's one source: `tools/studio_st
 `dist/` is built by Cutkit's `tools/dev/publish-web-kit.mjs` (it writes `dist/SOURCE.json` with the Cutkit commit and the files) and published through this repository's npm path (`scripts/publish-web-kit.sh X.Y.Z`).
 This repository holds the manifest and the gate (`npm run check`), never the files.
 
+- 0.249.0: Tier headings use coloured marks and comparison filters use meta-sized chips. Changed calls: new `tierMark`.
+
 - 0.248.0: Tiered comparison rows group measured choices, with filters and bounded selection. Changed calls: new `tierList`.
 
 - 0.247.0: Time strips show hour, day or month ticks and date with time for long ranges; place pins add the high kind. Changed calls: placePin and placePinImage accept `high` as a kind.
