@@ -4,6 +4,8 @@ Cutkit's kit for web pages, published from Cutkit's one source: `tools/studio_st
 `dist/` is built by Cutkit's `tools/dev/publish-web-kit.mjs` (it writes `dist/SOURCE.json` with the Cutkit commit and the files) and published through this repository's npm path (`scripts/publish-web-kit.sh X.Y.Z`).
 This repository holds the manifest and the gate (`npm run check`), never the files.
 
+- 0.239.0: Open pages share release detection with app-supplied document reads and network status (Cut 3058). Changed calls: new `releaseWatch` export.
+
 - 0.238.0: A jump player lends its lanes to a page that lays them in its own scroll, and a picture room's height limit is read per size (Skyvw 91). Changed calls: `jumpPlayer` returns `lanes`; `onePlayer`'s `roomLimit` is called with the size.
 - 0.237.0: The player face yields its whole time row while the line's finger label is shown, avoiding overlapping words (Cut 3052). Changed calls: none.
 
