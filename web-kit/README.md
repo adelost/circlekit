@@ -4,7 +4,7 @@ Cutkit's kit for web pages, published from Cutkit's one source: `tools/studio_st
 `dist/` is built by Cutkit's `tools/dev/publish-web-kit.mjs` (it writes `dist/SOURCE.json` with the Cutkit commit and the files) and published through this repository's npm path (`scripts/publish-web-kit.sh X.Y.Z`).
 This repository holds the manifest and the gate (`npm run check`), never the files.
 
-- 0.232.0: An empty segmented choice shows its available options in the foreground colour (Cut 3048). Changed calls: none.
+- 0.232.0: Reserved, not published; an empty segmented choice uses the foreground colour (Cut 3048). The 19 changed type files still need their call changes listed before publication.
 
 - 0.231.0: Clock labels stay legible as the view widens, and a player grip can stop at full height (World 15). Changed calls: `onePlayer` accepts `roomFull` and the `full` room size.
 
