@@ -4,6 +4,7 @@ Cutkit's kit for web pages, published from Cutkit's one source: `tools/studio_st
 `dist/` is built by Cutkit's `tools/dev/publish-web-kit.mjs` (it writes `dist/SOURCE.json` with the Cutkit commit and the files) and published through this repository's npm path (`scripts/publish-web-kit.sh X.Y.Z`).
 This repository holds the manifest and the gate (`npm run check`), never the files.
 
+- 0.257.0: From Cutkit 3095, parts for a jump app in Cut's look: alarmKey is a dark lane with the figures in the text's colour and each tone as a line over its cell; altitudeDial takes its ground from `--altitude-dial-ground`; jumpRow is a square grid line with its picture on the dark ground; jumpLog's day head is a dark lane (`--jump-log-gutter`); new `jumpBand`, a recording as a timeline's band with its bars in the page's height tones. Changed calls: kindTile takes tone; statTiles takes joined and a tile's icon, kind and tone; filterChips size accepts compact; a jumpRow mark takes tile; jumpBand is exported.
 - 0.256.0: Combines video comparison masks and track colours with the new place pin. Changed calls: VideoCompareBox accepts outline and tone; trackTones is exported.
 - 0.255.0: From Cutkit 298a04e10. The place pin wears Cut's kind-tile look: a faint ground, fine edge and glyph in the kind's colour, no glow, and a picked state. Changed calls: placePinImage takes picked in place of glow; placePinColour is exported.
 - 0.254.0: Video comparisons give tracked people distinct kit colours. Changed calls: VideoCompareBox accepts tone; trackTones is exported.
