@@ -4,6 +4,7 @@ Cutkit's kit for web pages, published from Cutkit's one source: `tools/studio_st
 `dist/` is built by Cutkit's `tools/dev/publish-web-kit.mjs` (it writes `dist/SOURCE.json` with the Cutkit commit and the files) and published through this repository's npm path (`scripts/publish-web-kit.sh X.Y.Z`).
 This repository holds the manifest and the gate (`npm run check`), never the files.
 
+- 0.261.0: From Cutkit 3101: roomGrip hands a page each move of a drag, so its room follows the finger; jumpLanes draws the person's own clip on its height's dim tone, shifting where the band does. Changed calls: roomGrip has ondrag(moved, done); jumpLanes' toneOf().dim is also the ground under the person's wave.
 - 0.260.0: From Cutkit 3100: new `planMap`, a plan seen from above (lines and named points in metres, north up, to one scale); skyColumn marks the page's own heights between its rows. Changed calls: planMap is exported; skyColumn has marks.
 - 0.259.0: From Cutkit 3099: jumpLanes draws a jumper's clip on a raised dark ground and names the person's parts by letter under their lane; a signed reading's number in statTiles is the text's colour. Changed calls: a JumpLane has parts; a StatTile has under and onpress.
 - 0.258.0: From Cutkit 3096, parts lifted from a jump app's page: new `laneHead` (a lane's head on the dark ground) and `roomGrip` (the grip under a room a page sizes itself); jumpBand's tile stands before the band. Changed calls: laneHead and roomGrip are exported; statTiles has update.
