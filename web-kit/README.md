@@ -4,6 +4,7 @@ Cutkit's kit for web pages, published from Cutkit's one source: `tools/studio_st
 `dist/` is built by Cutkit's `tools/dev/publish-web-kit.mjs` (it writes `dist/SOURCE.json` with the Cutkit commit and the files) and published through this repository's npm path (`scripts/publish-web-kit.sh X.Y.Z`).
 This repository holds the manifest and the gate (`npm run check`), never the files.
 
+- 0.264.0: From Cutkit 3104: the altitude dial's top line shares its room evenly between three words. Changed calls: none.
 - 0.263.0: From Cutkit 3103: altitudeDial takes a thin line in the cues' track against the page's bands, and how sure the place is in its top line. Changed calls: altitudeDial has line ({ value, bands }) and fix.
 - 0.262.0: From Cutkit 3102: a jump's whole strip (wholeJump) draws the person's clip on its height's dim tone under the profile, as their lane. Changed calls: none.
 - 0.261.0: From Cutkit 3101: roomGrip hands a page each move of a drag, so its room follows the finger; jumpLanes draws the person's own clip on its height's dim tone, shifting where the band does. Changed calls: roomGrip has ondrag(moved, done); jumpLanes' toneOf().dim is also the ground under the person's wave.
