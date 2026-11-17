@@ -4,7 +4,7 @@ Cutkit's kit for web pages, published from Cutkit's one source: `tools/studio_st
 `dist/` is built by Cutkit's `tools/dev/publish-web-kit.mjs` (it writes `dist/SOURCE.json` with the Cutkit commit and the files) and published through this repository's npm path (`scripts/publish-web-kit.sh X.Y.Z`).
 This repository holds the manifest and the gate (`npm run check`), never the files.
 
-- 0.281.0: From Cutkit 3119: jumpPlayer's declared roomSize and onRoom include full, as onePlayer's, for a page whose player gives the full room. Changed calls: none.
+- 0.281.0: From Cutkit 3119: jumpPlayer's declared roomSize and onRoom include full, as onePlayer's, for a page whose player gives the full room. Changed calls: jumpPlayer({ roomSize, onRoom }) now also takes and says 'full'; a caller that hands onRoom a narrower type widens it, nothing else changes.
 - 0.280.0: From Cutkit 3119: roomRests({ width, aspect, limit }) gives every picture's room its heights (closed, standard, tall, full), the rule the player's room stands on, for a page that lays a room itself; the player's room drags on the kit's one grip rule. altitudeDial has no size in px: a cue's sign, a page's press among the rows and its warning sign are shares of the dial's side. Changed calls: none; new: roomRests.
 - 0.279.0: From Cutkit 3118: a flight scene says its flight lines again only when the eye, the land, the tones' rule, the flight or the count of flown points moved, so a scene at rest spends no time on them. Changed calls: none.
 - 0.278.0: From Cutkit 3117: altitudeDial hangs a height's minus sign before the digits, out of their line, so the digits stand in the same place over and under the ground. Changed calls: none.
