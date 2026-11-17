@@ -4,6 +4,7 @@ Cutkit's kit for web pages, published from Cutkit's one source: `tools/studio_st
 `dist/` is built by Cutkit's `tools/dev/publish-web-kit.mjs` (it writes `dist/SOURCE.json` with the Cutkit commit and the files) and published through this repository's npm path (`scripts/publish-web-kit.sh X.Y.Z`).
 This repository holds the manifest and the gate (`npm run check`), never the files.
 
+- 0.278.0: From Cutkit 3117: altitudeDial hangs a height's minus sign before the digits, out of their line, so the digits stand in the same place over and under the ground. Changed calls: none.
 - 0.277.0: From Cutkit 3116: a tap right after a drag of a room's grip is no longer lost to the browser's fling. Changed calls: none.
 - 0.276.0: From Cutkit 3115: the rule of a picture's room is one part, lib/room-rests.js (bindRests, nearestRest): the room goes with the finger and lands in the nearest rest. Changed calls: roomGrip takes rests, sizes, height, first, ondrag(px, nearest), onrest(rest) and ontap in place of low, onchange and ondrag(moved, done); it has no update.
 - 0.275.0: From Cutkit 3114: a seamField grip moves only once a tap has marked it, else the hand moves or zooms the timeline; no step presses, a 112 px row, each grip in its seam's tone. Changed calls: seamField draws no step presses (format now only words the reading); drawSeamGrip takes own, two colours, as a fifth argument; a TimeView with playhead null draws none after a press.
