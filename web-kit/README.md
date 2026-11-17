@@ -4,6 +4,7 @@ Cutkit's kit for web pages, published from Cutkit's one source: `tools/studio_st
 `dist/` is built by Cutkit's `tools/dev/publish-web-kit.mjs` (it writes `dist/SOURCE.json` with the Cutkit commit and the files) and published through this repository's npm path (`scripts/publish-web-kit.sh X.Y.Z`).
 This repository holds the manifest and the gate (`npm run check`), never the files.
 
+- 0.270.0: From Cutkit 3110: seamField is a timeline (the time view, a timeline's own clips and its grip centred on each seam); lib/clip-grip.js is the grip's paint, moved from Cut. Changed calls: seamField takes `end`, the number the last clip runs to; paintBlock takes `fill`.
 - 0.269.0: From Cutkit 452e7a209: findList, what a search offers as rows of a mark, a name with a muted second word, a value (words or a sign) and a bookmark, in groups the page gives; a time strip's lane takes `icon`, drawn before its name, alone under 560 px; placePin kinds base, snow and nature (icons cliff and snowflake, token --place-nature-fill); onePlayer's roomAspect may be a function, read at each sizing and when the window's size changes. Changed calls: findList is new; a TimeStripLane has icon; placePin's kind takes "base", "snow" and "nature"; onePlayer's roomAspect takes a number or a function.
 - 0.268.0: From Cutkit 3109: seamField's step presses say which way to a reader. Changed calls: none.
 - 0.267.0: From Cutkit 3108: seamField, numbers that bound each other as a strip of bands with a grip in each seam, set on a ruler a step a tick. Changed calls: none (seamField is new).
