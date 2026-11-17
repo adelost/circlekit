@@ -4,6 +4,7 @@ Cutkit's kit for web pages, published from Cutkit's one source: `tools/studio_st
 `dist/` is built by Cutkit's `tools/dev/publish-web-kit.mjs` (it writes `dist/SOURCE.json` with the Cutkit commit and the files) and published through this repository's npm path (`scripts/publish-web-kit.sh X.Y.Z`).
 This repository holds the manifest and the gate (`npm run check`), never the files.
 
+- 0.266.0: From Cutkit 3106 and 3107: segmented has a tabs look (a tab bar turned up) and jumpPlayer draws views with signs so; the cloud clock draws its first frame at once, so an updated scene does not blink. Changed calls: segmented's look takes "tabs"; a jumpPlayer view has icon.
 - 0.265.0: From Cutkit 3105: the altitude dial's fix stands after a locate sign. Changed calls: none.
 - 0.264.0: From Cutkit 3104: the altitude dial's top line shares its room evenly between three words. Changed calls: none.
 - 0.263.0: From Cutkit 3103: altitudeDial takes a thin line in the cues' track against the page's bands, and how sure the place is in its top line. Changed calls: altitudeDial has line ({ value, bands }) and fix.
