@@ -4,6 +4,7 @@ Cutkit's kit for web pages, published from Cutkit's one source: `tools/studio_st
 `dist/` is built by Cutkit's `tools/dev/publish-web-kit.mjs` (it writes `dist/SOURCE.json` with the Cutkit commit and the files) and published through this repository's npm path (`scripts/publish-web-kit.sh X.Y.Z`).
 This repository holds the manifest and the gate (`npm run check`), never the files.
 
+- 0.268.0: From Cutkit 3109: seamField's step presses say which way to a reader. Changed calls: none.
 - 0.267.0: From Cutkit 3108: seamField, numbers that bound each other as a strip of bands with a grip in each seam, set on a ruler a step a tick. Changed calls: none (seamField is new).
 - 0.266.0: From Cutkit 3106 and 3107: segmented has a tabs look (a tab bar turned up) and jumpPlayer draws views with signs so; the cloud clock draws its first frame at once, so an updated scene does not blink. Changed calls: segmented's look takes "tabs"; a jumpPlayer view has icon.
 - 0.265.0: From Cutkit 3105: the altitude dial's fix stands after a locate sign. Changed calls: none.
