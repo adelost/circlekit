@@ -4,6 +4,7 @@ Cutkit's kit for web pages, published from Cutkit's one source: `tools/studio_st
 `dist/` is built by Cutkit's `tools/dev/publish-web-kit.mjs` (it writes `dist/SOURCE.json` with the Cutkit commit and the files) and published through this repository's npm path (`scripts/publish-web-kit.sh X.Y.Z`).
 This repository holds the manifest and the gate (`npm run check`), never the files.
 
+- 0.291.0: The Film ruler starts at zero and its pointer sits below the time labels. Phone clip actions keep their label widths. Track timelines show the new-track row during a carry and can keep three tracks open. Changed calls: TimeView and timeNeedle axisOptions accept an optional start in seconds.
 - 0.290.0: From Cutkit 3129: a dial rail can be a button (`onpress`), and an altitude dial's circle can run left (`turn`), its thin line and marks with it. Changed calls: dialRail takes `onpress`; altitudeDial takes `turn`.
 - 0.289.0: From Cutkit 3128: a dial rail cut in cells draws no square the ruler has not reached, holds up to fifteen squares sized by their count, and writes a line's `value` after its last square. Changed calls: dialRail's `cells` goes to 15; `past` and `below` take `value`.
 - 0.288.0: From Cutkit 3126: an altitude dial draws no grey that measures nothing: no block of a lap over where the height has been (`reached`), no track under the thin line; a cue's sign stands at every bearing; a dial rail's line past the bar is a small dot in each square's place. Changed calls: altitudeDial takes `reached`.
