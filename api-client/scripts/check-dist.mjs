@@ -1,5 +1,5 @@
 // The gate of the @v1d/api-client release: dist/ is built by ai-gateway's scripts/publish-api-client.mjs from that repository's packages/api-client (this repo keeps no copy of it),
-// so a release with no dist, or one that did not come from a gateway commit, stops here. Imports stay inside the package except mediabunny and the vision Worker's optional runtime.
+// so a release with no dist, or one that did not come from a gateway commit, stops here. Imports stay inside the package except its declared dependencies (mediabunny, @v1d/alti) and the vision Worker's optional runtime.
 import { createHash } from 'node:crypto';
 import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { dirname, join, normalize } from 'node:path';
@@ -24,10 +24,10 @@ for (const file of walk('dist').filter(name => name.endsWith('.js') || name.ends
   for (const match of matches) {
     const spec = match[1];
     if (spec.startsWith('.')) { if (!existsSync(join(dirname(file), spec)) && !existsSync(join(dirname(file), spec.replace(/\.js$/, '.d.ts')))) throw new Error(`${file} imports ${spec}, which the package does not carry`); }
-    else if (spec !== 'mediabunny' && !(file.startsWith('dist/modal-proof/') && spec.startsWith('node:'))
+    else if (!manifest.dependencies?.[spec] && !(file.startsWith('dist/modal-proof/') && spec.startsWith('node:'))
       && !(file === 'dist/device/vision/worker.js' && spec === 'onnxruntime-web/webgpu'
         && manifest.peerDependencies?.['onnxruntime-web'] && manifest.peerDependenciesMeta?.['onnxruntime-web']?.optional))
-      throw new Error(`${file} imports ${spec}: only the vision Worker may import its optional ONNX runtime`);
+      throw new Error(`${file} imports ${spec}: outside the package only a declared dependency, and the vision Worker's optional ONNX runtime, may be imported`);
   }
 }
 console.log(`api-client: ${source.files.length} files are ai-gateway ${source.gateway.slice(0, 9)}, version ${manifest.version}`);
