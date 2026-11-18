@@ -4,7 +4,7 @@ Cutkit's kit for web pages, published from Cutkit's one source: `tools/studio_st
 `dist/` is built by Cutkit's `tools/dev/publish-web-kit.mjs` (it writes `dist/SOURCE.json` with the Cutkit commit and the files) and published through this repository's npm path (`scripts/publish-web-kit.sh X.Y.Z`).
 This repository holds the manifest and the gate (`npm run check`), never the files.
 
-- 0.294.0: From Cutkit modules C2: the music cut is a lib, `music-cut.js`: where a clip ends on a song's lines (a phrase near its own end, else a bar's one, else a beat), and where a song ends with the pictures. Its example is its lab: made songs with known beats, the ends counted by hand beside the ends found.
+- 0.294.0: From Cutkit modules C2: the music cut is a lib, `music-cut.js`: where a clip ends on a song's lines (a phrase near its own end, else a bar's one, else a beat), and where a song ends with the pictures. Its example is its lab: made songs with known beats, the ends counted by hand beside the ends found. Changed calls: none.
 - 0.293.0: From Cutkit 3131: a ground's height tiles are read at their own size, 256 or 512 points a side, so a page can hand Mapterhorn's land to groundFor. Changed calls: groundFor's servers.heights may answer tiles of either size.
 - 0.292.0: A flight scene tells the page the ground point under a still tap, so a page can place a thing on the map (Skyvw: home set on the map). Changed calls: flightScene takes `onground(east, north)`.
 - 0.291.0: The Film ruler starts at zero and its pointer sits below the time labels. Phone clip actions keep their label widths. Track timelines show the new-track row during a carry and can keep three tracks open. Changed calls: TimeView and timeNeedle axisOptions accept an optional start in seconds.
