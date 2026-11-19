@@ -9,7 +9,7 @@ import androidx.compose.ui.graphics.Color
  *
  * A surface picks a tone by its role, never a pigment: [strong] is what you read now (the value, a lit icon, the
  * dial's front), [dim] the rest (the band behind the value, the scale, what is not now), [ground] the disc behind an
- * icon and [edge] that disc's fine ring.
+ * icon and [edge] a supporting line in its colour (a disc at rest has no ring: [circleDiscLook]).
  */
 @Immutable
 data class CircleTones(

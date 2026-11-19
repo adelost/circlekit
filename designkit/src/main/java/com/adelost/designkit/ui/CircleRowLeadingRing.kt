@@ -43,7 +43,7 @@ internal fun CircleRowLeadingRing(
             .size(phoneDesign?.rowIconDiameter ?: MenuDesign.iconRingDiameter)
             .clip(CircleShape)
             .background(look.ground)
-            .then(look.contour?.let { Modifier.circleRingContour(it) } ?: Modifier)
+            .circleRingContour(look.contour)
             .circleProgressContour(feedbackSweep, color = progressContour),
         contentAlignment = Alignment.Center,
     ) {

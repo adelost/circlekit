@@ -37,10 +37,10 @@ class CircleRowAffordanceTest {
     }
 
     @Test
-    fun `an operable disc wears its ground and edge, lights on, and goes grey off`() {
+    fun `an operable disc wears its ground and no edge, lights on, and goes grey off`() {
         val operable = CircleRowAffordance.of({})
 
-        assertEquals(CircleDiscLook(tones.ground, tones.edge, tones.strong), circleRowDiscLook(operable, null, tones))
+        assertEquals(CircleDiscLook(tones.ground, null, tones.strong), circleRowDiscLook(operable, null, tones))
         assertEquals(CircleDiscLook(tones.ground, tones.strong, tones.strong), circleRowDiscLook(operable, true, tones))
         assertEquals(CircleDiscLook(Color.Transparent, CircleStyleTokens.Off, tones.dim), circleRowDiscLook(operable, false, tones))
     }

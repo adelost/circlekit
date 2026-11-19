@@ -70,7 +70,7 @@ internal fun CircleIconRingFrame(
                 Modifier
                     .size(diameter)
                     .background(look.ground, CircleShape)
-                    .circleRingContour(color = requireNotNull(look.contour), suggested = suggested),
+                    .circleRingContour(color = look.contour, suggested = suggested),
             )
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 CircleStyledIcon(

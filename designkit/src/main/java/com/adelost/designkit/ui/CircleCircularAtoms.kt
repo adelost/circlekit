@@ -48,10 +48,10 @@ import androidx.compose.ui.unit.sp
  * whose ring is the off grey, because it keeps its own colour.
  */
 fun Modifier.circleRingContour(
-    color: Color,
+    color: Color?,
     strokeWidth: Dp = MenuDesign.iconRingStroke,
     suggested: Boolean = false,
-): Modifier = drawBehind {
+): Modifier = if (color == null) this else drawBehind {
     val stroke = strokeWidth.toPx()
     drawArc(
         color = circleSuggestedContour(color, suggested),
@@ -72,7 +72,8 @@ fun circleSuggestedContour(color: Color, suggested: Boolean): Color =
 @Immutable
 data class CircleActionDiscChrome(
     val fill: Color,
-    val contour: Color,
+    /** Null draws no ring: a disc at rest is its ground alone ([circleDiscLook]). */
+    val contour: Color?,
     val scale: Float,
     val iconTint: Color? = null,
 )
@@ -104,7 +105,7 @@ fun circleActionDiscChrome(
         contour = when {
             pressed -> RingTokens.OutlineStrong
             scrim && enabled && !active -> MenuDesign.ringNeutral
-            else -> requireNotNull(look.contour)
+            else -> look.contour
         },
         scale = if (pressed) MenuDesign.backPressScale else 1f,
         // Unavailable actions must not look enabled through a semantic/custom tint.

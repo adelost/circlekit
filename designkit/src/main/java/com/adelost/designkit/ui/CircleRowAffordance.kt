@@ -34,12 +34,14 @@ value class CircleRowAffordance private constructor(val operable: Boolean) {
 /**
  * How a row's leading disc is drawn: its ground, its contour (null when there is no ring) and its icon.
  *
- * Style C (Mattias 2026-10-17, the plan's "Ikonskiva"): a disc wears its kind's ground with a fine edge in its
- * colour and the icon strong; lit, the edge takes the full colour; off, the disc loses its ground, the edge turns
- * the grey that means off and the icon dims. A reading has no disc at all, only its icon (Mattias 2026-08-06).
+ * Flat (Mattias 2026-11-19: no outer ring round the icons, the plate and the icon in its colour are the whole disc):
+ * a disc at rest wears its kind's ground and the icon strong, and no edge. A ring is left only where it says
+ * something: lit, the full colour rings the disc; off, the disc loses its ground, so the grey that means off draws
+ * it and the icon dims. A reading has no disc at all, only its icon (Mattias 2026-08-06).
  *
  * The whole grammar is these four lines, and it sits here rather than inside the layout so it can be read, tested
- * and mutated on its own. A renderer that wants to disagree has to delete this function first.
+ * and mutated on its own: a change of style for every disc of every product is a change of these lines. A renderer
+ * that wants to disagree has to delete this function first.
  */
 fun circleRowDiscLook(
     affordance: CircleRowAffordance,
@@ -52,7 +54,7 @@ fun circleDiscLook(operable: Boolean, active: Boolean?, tones: CircleTones): Cir
     !operable -> CircleDiscLook(ground = Color.Transparent, contour = null, icon = tones.strong)
     active == false -> CircleDiscLook(ground = Color.Transparent, contour = CircleStyleTokens.Off, icon = tones.dim)
     active == true -> CircleDiscLook(ground = tones.ground, contour = tones.strong, icon = tones.strong)
-    else -> CircleDiscLook(ground = tones.ground, contour = tones.edge, icon = tones.strong)
+    else -> CircleDiscLook(ground = tones.ground, contour = null, icon = tones.strong)
 }
 
 /** A leading disc's three colours; [contour] null draws no ring. */

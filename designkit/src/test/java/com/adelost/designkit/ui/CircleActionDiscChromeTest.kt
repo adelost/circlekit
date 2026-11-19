@@ -38,7 +38,8 @@ class CircleActionDiscChromeTest {
         val overPicture = circleActionDiscChrome(true, false, false, true, tones = tones)
 
         assertEquals(tones.ground, rest.fill)
-        assertEquals(tones.edge, rest.contour)
+        // Flat (Mattias 2026-11-19): a disc at rest is its ground alone, no ring.
+        assertEquals(null, rest.contour)
         assertEquals(tones.strong, active.contour)
         assertEquals(CircleStyleTokens.Off, disabled.contour)
         assertEquals(MenuDesign.ringNeutral, overPicture.contour)
