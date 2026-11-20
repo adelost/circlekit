@@ -12,7 +12,7 @@
  */
 import { contractRef, field, finiteValueRef, finiteValues, listOf, validateContract } from "@v1d/product-spec";
 
-export const trackbookDevicePlatforms = finiteValues("trackbook.device-platform", ["wear-os", "apple-watch", "garmin"]);
+export const trackbookDevicePlatforms = finiteValues("trackbook.device-platform", ["wear-os", "apple-watch", "garmin", "android-phone"]);
 export const trackbookDeviceScopes = finiteValues("trackbook.device-scope", ["jumps:read", "jumps:write"]);
 export const trackbookLiveGrantScopes = finiteValues("trackbook.live-grant-scope", ["jumps:write"]);
 export const trackbookLiveSharingOn = finiteValues("trackbook.live-sharing-on", ["ON"]);

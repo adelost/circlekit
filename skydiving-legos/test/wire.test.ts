@@ -90,6 +90,11 @@ test("an undeclared finite member is refused", () => {
     /must belong to finite 'trackbook\.live-grant-scope'/u);
 });
 
+test("a native Android phone can pair under its own platform", () => {
+  const phone = { ...released, platform: "android-phone" };
+  assert.deepEqual(read(pairingStartRequestContract, phone), phone);
+});
+
 test("a duplicate scope is refused", () => {
   refused(pairingStartRequestContract, { ...released, scopes: ["jumps:write", "jumps:write"] }, "scopes", /repeats 'jumps:write'/u);
   refused(pairingStartReceiptContract, { ...receipt, requestedScopes: ["jumps:read", "jumps:read"] }, "requestedScopes",
