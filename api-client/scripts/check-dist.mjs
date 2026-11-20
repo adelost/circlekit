@@ -25,9 +25,11 @@ for (const file of walk('dist').filter(name => name.endsWith('.js') || name.ends
     const spec = match[1];
     if (spec.startsWith('.')) { if (!existsSync(join(dirname(file), spec)) && !existsSync(join(dirname(file), spec.replace(/\.js$/, '.d.ts')))) throw new Error(`${file} imports ${spec}, which the package does not carry`); }
     else if (!manifest.dependencies?.[spec] && !(file.startsWith('dist/modal-proof/') && spec.startsWith('node:'))
+      && !(file === 'dist/device/access/sheet.js' && spec === '@v1d/web-kit'
+        && manifest.peerDependencies?.[spec] && manifest.peerDependenciesMeta?.[spec]?.optional)
       && !(file === 'dist/device/vision/worker.js' && spec === 'onnxruntime-web/webgpu'
         && manifest.peerDependencies?.['onnxruntime-web'] && manifest.peerDependenciesMeta?.['onnxruntime-web']?.optional))
-      throw new Error(`${file} imports ${spec}: outside the package only a declared dependency, and the vision Worker's optional ONNX runtime, may be imported`);
+      throw new Error(`${file} imports ${spec}: outside the package only a declared dependency, and the designated browser module's optional peer, may be imported`);
   }
 }
 console.log(`api-client: ${source.files.length} files are ai-gateway ${source.gateway.slice(0, 9)}, version ${manifest.version}`);

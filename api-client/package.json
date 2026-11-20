@@ -1,6 +1,6 @@
 {
   "name": "@v1d/api-client",
-  "version": "0.81.0",
+  "version": "0.82.0",
   "description": "What the v1d API runs on the person's own device: waveform, encode, cuts and the files store's start and register bodies (WebCodecs and mediabunny), built from the ai-gateway repository's one source",
   "type": "module",
   "main": "./dist/device/index.js",
@@ -14,6 +14,14 @@
   "exports": {
     "./modal-proof": "./dist/modal-proof/modal-serialization.mjs",
     "./modal-proof/index-sdk-files": "./dist/modal-proof/index-sdk-files.mjs",
+    "./access": {
+      "types": "./dist/device/access/browser.d.ts",
+      "default": "./dist/device/access/browser.js"
+    },
+    "./access-worker": {
+      "types": "./dist/device/access/worker.d.ts",
+      "default": "./dist/device/access/worker.js"
+    },
     "./device": {
       "types": "./dist/device/index.d.ts",
       "default": "./dist/device/index.js"
@@ -298,9 +306,11 @@
     "mediabunny": "1.61.6"
   },
   "peerDependencies": {
+    "@v1d/web-kit": ">=0.256.0",
     "onnxruntime-web": "1.31.1"
   },
   "peerDependenciesMeta": {
+    "@v1d/web-kit": {"optional": true},
     "onnxruntime-web": {"optional": true}
   },
   "scripts": {
