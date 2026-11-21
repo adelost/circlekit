@@ -4,6 +4,7 @@ Cutkit's kit for web pages, published from Cutkit's one source: `tools/studio_st
 `dist/` is built by Cutkit's `tools/dev/publish-web-kit.mjs` (it writes `dist/SOURCE.json` with the Cutkit commit and the files) and published through this repository's npm path (`scripts/publish-web-kit.sh X.Y.Z`).
 This repository holds the manifest and the gate (`npm run check`), never the files.
 
+- 0.327.0: From Cutkit 8a422918e. jumpLine's width glides with the speed, eased over 3 s, each stretch from its start's width to its end's. Changed calls: none.
 - 0.326.0: From Cutkit b0ef77687. jumpLine's widths fill the strip, each stretch a block, the kilometre dots at its foot; jumpRow's folding row lights at a press as a feed row does. Changed calls: none.
 - 0.325.0: A standing figure for the character picker. Changed calls: `icon('person-standing')`, also available to buttons and dialog headings.
 - 0.324.0: From Cutkit 3e6ecc140. flightScene: with the ground photo loaded and its layer off, trees and buildings stand flat in a token grey on the bare ground. Changed calls: none.
