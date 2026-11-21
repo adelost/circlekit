@@ -5,6 +5,7 @@ Cutkit's kit for web pages, published from Cutkit's one source: `tools/studio_st
 This repository holds the manifest and the gate (`npm run check`), never the files.
 
 - 0.323.0: From Cutkit b9efb8ef2. numberDial accepts named marks and can hide its step buttons. Changed calls: numberDial({ marks?, ends? }) takes named positions and can omit the end buttons. Existing callers keep their numeric ruler and both buttons.
+- 0.323.0: From Cutkit 3e6ecc140. flightScene: with the ground photo loaded and its layer off, trees and buildings stand flat in a token grey on the bare ground. Changed calls: none.
 - 0.322.0: From Cutkit bca66c629. flightScene cameraLook "icons": Eyes, Jumper and Landing as signs alone in the top left corner; Eyes has its own sign. Changed calls: flightScene({ cameraLook? }) takes a new optional option; a caller that gives none sees nothing new.
 - 0.321.0: From Cutkit a625fd2e4. jumpPlayer transport "strip": Previous, Play and Next before the whole strip and the speed after it, Previous and Next going to the page's stops; onePlayer step and stripEnd. Changed calls: jumpPlayer({ transport?, stops? }) and onePlayer({ step?, stripEnd? }) take new optional options; a caller that gives none sees nothing new.
 - 0.320.0: From Cutkit f8fca41b1. flightScene's look.plate is drawn: the lit disc round home and the bare land round it, which 0.319.0 named but did not show. Changed calls: none.
