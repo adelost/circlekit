@@ -1,6 +1,6 @@
 {
   "name": "@v1d/api-client",
-  "version": "0.84.0",
+  "version": "0.84.1",
   "description": "What the v1d API runs on the person's own device: waveform, encode, cuts and the files store's start and register bodies (WebCodecs and mediabunny), built from the ai-gateway repository's one source",
   "type": "module",
   "main": "./dist/device/index.js",
@@ -310,8 +310,12 @@
     "onnxruntime-web": "1.31.1"
   },
   "peerDependenciesMeta": {
-    "@v1d/web-kit": {"optional": true},
-    "onnxruntime-web": {"optional": true}
+    "@v1d/web-kit": {
+      "optional": true
+    },
+    "onnxruntime-web": {
+      "optional": true
+    }
   },
   "scripts": {
     "check": "node scripts/check-dist.mjs"
