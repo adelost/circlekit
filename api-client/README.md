@@ -4,6 +4,8 @@ What the v1d API runs on the person's own device, so that a file never leaves it
 Published from the ai-gateway repository's `packages/api-client`, which stays the only copy of the code. `dist/` is built by that repository's `scripts/publish-api-client.mjs` (it writes `dist/SOURCE.json` with the gateway commit, the version and each file's SHA-256) and published through this repository's npm path (`scripts/publish-api-client.sh`).
 This repository holds the manifest and the gate (`npm run check`), never the files. The one dependency is `mediabunny`, pinned.
 
+A publishing friendship seat can pass a 16-bit `look` in `joinRoom`, change it with `setLook`, and read it on each `RoomMember` (0.84.0).
+
 ## Use
 
 A consumer locks one version and keeps no copy:
