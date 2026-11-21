@@ -4,7 +4,7 @@ Cutkit's kit for web pages, published from Cutkit's one source: `tools/studio_st
 `dist/` is built by Cutkit's `tools/dev/publish-web-kit.mjs` (it writes `dist/SOURCE.json` with the Cutkit commit and the files) and published through this repository's npm path (`scripts/publish-web-kit.sh X.Y.Z`).
 This repository holds the manifest and the gate (`npm run check`), never the files.
 
-- 0.330.0: From Cutkit 84a589c6d. Picture-icon buttons and the picture-edge token keep glyphs legible over moving imagery.
+- 0.330.0: From Cutkit 84a589c6d. Picture-icon buttons and the picture-edge token keep glyphs legible over moving imagery. Changed calls: button({ appearance: "picture-icon", alone: true }) draws a transparent 44 px press, standalone glyphs can use --picture-edge with --on-picture.
 - 0.329.0: From Cutkit 2a6602b1b. flightScene's jumper's eye looks at home over the land, so the round stays in the picture at every height. Changed calls: none.
 - 0.328.0: From Cutkit ae6b85e88. flightScene's jumper's eyes keep the photograph to the round, the land bare past it to the horizon; the photo layer's switch holds in Eyes, trees and buildings flat grey without it. Changed calls: flightScene({ eyesPhoto? }) takes "whole" for the finder's map; finder's makeMap is given eyesPhoto "whole". A caller that gives none gets the round.
 - 0.327.0: From Cutkit 8a422918e. jumpLine's width glides with the speed, eased over 3 s, each stretch from its start's width to its end's. Changed calls: none.
